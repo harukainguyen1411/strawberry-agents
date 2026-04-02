@@ -23,3 +23,5 @@ node_modules/
 __pycache__/
 *.pyc
 .venv/
+.mcp.json
+agents/health/*.json
