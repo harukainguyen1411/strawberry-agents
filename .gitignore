@@ -1,0 +1,25 @@
+# OS
+.DS_Store
+
+# Secrets and credentials
+.env
+.env.*
+*.key
+*.pem
+credentials.json
+*-credentials.json
+*-oauth-keys.json
+secrets/
+
+# Agent runtime (managed by MCP, not version-tracked)
+usage/
+*.db
+
+# Transcripts (large, auto-generated)
+transcripts/
+
+# Node / Python
+node_modules/
+__pycache__/
+*.pyc
+.venv/
