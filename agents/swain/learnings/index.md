@@ -1,0 +1,1 @@
+- 2026-04-03-gha-injection.md — GitHub Actions workflow input injection via ${{ }} in run blocks | last_used: 2026-04-03

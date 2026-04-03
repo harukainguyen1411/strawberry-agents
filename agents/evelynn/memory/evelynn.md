@@ -19,7 +19,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Specialists:** Pyke (git/security), Bard (MCP), Syndra (AI), Swain (architecture)
 - **Design:** Neeko (empathetic UX), Zoe (creative/experimental)
 - **QC:** Caitlyn
-- **Community:** Rakan (Discord/community) — added 2026-04-03
+- **Community:** Rakan (Discord/community)
 
 ## Infrastructure
 - **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
@@ -28,18 +28,21 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
 - **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
 
-## Decisions made (2026-04-03)
-- Branch protection on main: skipped — overkill for solo developer. Revisit if collaborators join.
-- API billing: Duong will switch personal system to API eventually (auto mode, usage tracking, account isolation). For now staying on subscription with /cost capture.
-- Vanilla vs framework: vanilla HTML for simple apps (<2000 lines), Vue for complex multi-view apps.
-- myapps migrated to strawberry monorepo: plan ready, not yet executed.
+## Contributor Pipeline (built 2026-04-03)
+- Discord #suggestions forum → Gemini triage → GitHub Issue → Claude Code on self-hosted runner → Firebase preview → approval → Duong merges
+- Bot at apps/contributor-bot/, workflow at .github/workflows/contributor-pipeline.yml
+- VPS: Hetzner CX22 (37.27.192.25), runner registered and active
+- **Bot not yet deployed to VPS** — next step
+
+## Decisions
+- Branch protection on main: skipped — overkill for solo developer.
+- API billing: staying on subscription for now. /cost capture at session close.
+- Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
+- Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
 
 ## Open Threads
-- Monorepo migration (plans/2026-04-03-myapps-monorepo-migration.md) — ready to execute
-- API billing switch — decided, not implemented
+- Deploy Discord bot to VPS
 - CLAUDE.md needs /cost capture step in session closing protocol
-- Rakan needs background image and roster/network updates
-- Rek'Sai iTerm profile broken — can't launch
 - Soft-delete cleanup in Firestore tasklist (non-blocking)
 - GitHub webhook to Discord #pr-and-issues
 - Personal-life agents (health, finance, social, learning) not yet created
