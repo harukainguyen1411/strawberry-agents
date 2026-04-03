@@ -25,3 +25,8 @@ __pycache__/
 .venv/
 .mcp.json
 agents/health/*.json
+
+# Operational ephemera (live in ~/.strawberry/ops/, not in git)
+agents/*/inbox/
+agents/conversations/
+agents/inbox-queue/

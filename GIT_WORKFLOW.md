@@ -35,6 +35,33 @@ Examples: `feature/agent-bootstrap`, `fix/heartbeat-crash`, `chore/update-deps`
 - Commit messages: imperative mood, concise, explain the why
 - One logical change per commit — don't mix unrelated work
 
+## Agent State Commits
+
+Memory, journals, and learnings stay in git — they're durable identity. When an agent updates these files during a session, commit them to the current branch with:
+
+```
+chore(agent): update <agent> memory/journal/learnings
+```
+
+These commits ride along with whatever branch the agent is on and merge naturally with the PR.
+
+## Operational Files (outside git)
+
+Ephemeral runtime state lives in `~/.strawberry/ops/`, NOT in the git repo:
+
+| Directory | Contents |
+|---|---|
+| `~/.strawberry/ops/inbox/<agent>/` | Inbox messages |
+| `~/.strawberry/ops/conversations/` | Multi-agent conversations |
+| `~/.strawberry/ops/health/` | Heartbeats, registry |
+| `~/.strawberry/ops/inbox-queue/` | Approval queue |
+
+These directories are gitignored. The MCP server reads/writes them via the `OPS_PATH` env var.
+
+**Note:** `agents/health/heartbeat.sh` is a tool and stays in the git repo. It writes heartbeat JSON to the ops health directory. Once the MCP server is updated with `OPS_PATH` support (Bard's PR), heartbeat output will go to `~/.strawberry/ops/health/`.
+
+**Rule: never put secrets in inbox messages or conversations.** Use env vars or a secrets manager.
+
 ## Branch Protection (main)
 
 Branch protection should be enabled on main requiring:
