@@ -1,5 +1,6 @@
 #!/bin/bash
 # Migrate operational files from git repo to ~/.strawberry/ops/
+# Covers: inbox/, conversations/, health JSONs, inbox-queue/, journal/, last-session.md
 # Run once. Safe to re-run — skips existing files.
 # Use --clean to git rm originals after migration.
 
@@ -17,7 +18,7 @@ fi
 echo "Migrating operational files from $REPO_ROOT to $OPS_ROOT"
 
 # Create ops directory structure
-mkdir -p "$OPS_ROOT"/{conversations,health/heartbeats,inbox-queue}
+mkdir -p "$OPS_ROOT"/{conversations,health/heartbeats,inbox-queue,journal,last-session}
 
 # Discover agents dynamically from repo
 MIGRATED_PATHS=()
@@ -32,7 +33,7 @@ for agent_dir in "$REPO_ROOT"/agents/*/; do
   [ "$agent" = "health" ] && continue
   [ "$agent" = "inbox-queue" ] && continue
 
-  mkdir -p "$OPS_ROOT/inbox/$agent"
+  mkdir -p "$OPS_ROOT/inbox/$agent" "$OPS_ROOT/journal/$agent"
 
   # Migrate inbox files
   if [ -d "$agent_dir/inbox" ]; then
@@ -45,6 +46,28 @@ for agent_dir in "$REPO_ROOT"/agents/*/; do
       fi
     done
     MIGRATED_PATHS+=("agents/$agent/inbox")
+  fi
+
+  # Migrate journal files
+  if [ -d "$agent_dir/journal" ]; then
+    for f in "$agent_dir/journal"/*.md; do
+      [ -f "$f" ] || continue
+      base="$(basename "$f")"
+      if [ ! -f "$OPS_ROOT/journal/$agent/$base" ]; then
+        cp "$f" "$OPS_ROOT/journal/$agent/$base"
+        echo "  journal: $agent/$base"
+      fi
+    done
+    MIGRATED_PATHS+=("agents/$agent/journal")
+  fi
+
+  # Migrate last-session.md
+  if [ -f "$agent_dir/memory/last-session.md" ]; then
+    if [ ! -f "$OPS_ROOT/last-session/$agent.md" ]; then
+      cp "$agent_dir/memory/last-session.md" "$OPS_ROOT/last-session/$agent.md"
+      echo "  last-session: $agent"
+    fi
+    MIGRATED_PATHS+=("agents/$agent/memory/last-session.md")
   fi
 done
 
