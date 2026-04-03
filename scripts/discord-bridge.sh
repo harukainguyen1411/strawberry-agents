@@ -35,7 +35,7 @@ TRIAGE_PROMPT_REPLY='You are a triage assistant for the Strawberry project. This
 
 # --- Load project context ---
 PROJECT_CONTEXT=""
-README_PATH="$STRAWBERRY_DIR/README.md"
+README_PATH="$STRAWBERRY_DIR/apps/myapps/README.md"
 if [ -f "$README_PATH" ]; then
   PROJECT_CONTEXT=$(cat "$README_PATH")
 fi
