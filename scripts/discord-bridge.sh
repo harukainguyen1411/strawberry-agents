@@ -33,6 +33,13 @@ TRIAGE_PROMPT_REPLY='You are a triage assistant for the Strawberry project. This
 - "question": user is asking something, answer in discord_response
 - "acknowledge": thanks, agreement, or chatter — just respond politely'
 
+# --- Load project context ---
+PROJECT_CONTEXT=""
+README_PATH="$STRAWBERRY_DIR/README.md"
+if [ -f "$README_PATH" ]; then
+  PROJECT_CONTEXT=$(cat "$README_PATH")
+fi
+
 # --- Rate limiter ---
 rate_limit() {
   local now
@@ -61,11 +68,24 @@ run_triage() {
   local thread_name="$2"
   local content="$3"
 
-  local system_prompt
+  local base_prompt
   if [ "$event_type" = "forum_post" ]; then
-    system_prompt="$TRIAGE_PROMPT_NEW"
+    base_prompt="$TRIAGE_PROMPT_NEW"
   else
-    system_prompt="$TRIAGE_PROMPT_REPLY"
+    base_prompt="$TRIAGE_PROMPT_REPLY"
+  fi
+
+  local system_prompt
+  if [ -n "$PROJECT_CONTEXT" ]; then
+    system_prompt="Here is the project README for context:
+
+${PROJECT_CONTEXT}
+
+---
+
+${base_prompt}"
+  else
+    system_prompt="$base_prompt"
   fi
 
   local user_prompt="Thread: ${thread_name}
