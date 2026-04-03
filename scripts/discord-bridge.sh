@@ -158,6 +158,7 @@ DELEGATION
     local delegation_result
     delegation_result=$(cd "$STRAWBERRY_DIR" && timeout 600 claude -p "$(cat "$prompt_file")" \
       --max-turns 25 \
+      --dangerously-skip-permissions \
       < /dev/null 2>&1) || true
 
     rm -f "$prompt_file"
