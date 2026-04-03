@@ -8,6 +8,7 @@
 - 2026-04-03 PM (CLI, opus-4.6): Main audit + housekeeping. PR #8.
 - 2026-04-03 Late PM (CLI, opus-4.6): Memory commit gap + monorepo migration plan.
 - 2026-04-03 Evening (CLI, opus-4.6): Migration exec (PR #10), pipeline infra (PR #11), VPS setup.
+- 2026-04-03 Late evening (CLI, opus-4.6): VPS SSH fix — ssh.socket issue on Ubuntu 24.04.
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
@@ -24,20 +25,23 @@
   **Why:** Duong's subscription auth requires self-hosted runner (no API key).
 
 ## Infrastructure
-- VPS: Hetzner CX22, 37.27.192.25, Ubuntu 24.04
+- VPS: Hetzner CX22, 37.27.192.25, Ubuntu 24.04 (Helsinki DC 2)
   - Runner: strawberry-runner (self-hosted,linux,x64), systemd managed
   - Auth: Claude Code CLI, Firebase CLI, gh CLI — all authenticated
   - Security: UFW (SSH only), fail2ban, scoped sudo for runner user
+  - SSH: key-only via ~/.ssh/strawberry, runner user only
 
 ## Open items
 - PRs #8, #10, #11 need merge
 - Branch protection on main — needs Duong manual GitHub config
-- vps-setup.sh needs idempotency fixes (failed partway on first run)
+- vps-setup.sh needs idempotency fixes
 - Discord bot needed for full contributor pipeline (Katarina's deliverable)
 
 ## Security lessons
 - Never use ${{ inputs }} directly in GHA run: blocks — pass through env: vars.
   **Why:** Command injection. Swain caught this in PR #11.
+- Ubuntu 24.04 uses `ssh.service` not `sshd.service`, and uses socket activation (`ssh.socket`).
+  **Why:** Setup script failed silently, locked out SSH. Always use `ssh` not `sshd` on modern Ubuntu.
 
 ## Working relationships
 - Syndra: sharp design partner for architecture decisions.
