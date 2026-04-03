@@ -12,23 +12,34 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - First session: 2026-04-02.
 - Duong sometimes uses voice prompts — may contain typos or unclear phrasing. Interpret generously.
 
-## Team (added 2026-04-02)
-12 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
+## Team
+13 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
 - **Fullstack:** Katarina (quick), Ornn (features), Fiora (bugfix/refactor)
 - **PR Review:** Lissandra (surface), Rek'Sai (deep/performance)
 - **Specialists:** Pyke (git/security), Bard (MCP), Syndra (AI), Swain (architecture)
 - **Design:** Neeko (empathetic UX), Zoe (creative/experimental)
 - **QC:** Caitlyn
+- **Community:** Rakan (Discord/community) — added 2026-04-03
 
-## Infrastructure (established 2026-04-03)
+## Infrastructure
 - **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
-- **Ops separation:** ephemeral files (inbox, conversations, health) at ~/.strawberry/ops/. Durable files (memory, journals, learnings, profiles, plans) stay in git.
-- **Agent-manager MCP:** all 13 agents registered. Conversation system, restart, end-all-sessions functional.
-- **Network optimization plan:** plans/2026-04-03-agent-network-optimization.md — phases 1-4 implemented, phase 5 (workflows) future.
+- **Ops separation:** ephemeral files (inbox, conversations, health, journal, last-session) at ~/.strawberry/ops/. Memory and learnings stay in git.
+- **Agent-manager MCP:** all agents registered. Conversation system, restart, end-all-sessions functional.
+- **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
+- **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
+
+## Decisions made (2026-04-03)
+- Branch protection on main: skipped — overkill for solo developer. Revisit if collaborators join.
+- API billing: Duong will switch personal system to API eventually (auto mode, usage tracking, account isolation). For now staying on subscription with /cost capture.
+- Vanilla vs framework: vanilla HTML for simple apps (<2000 lines), Vue for complex multi-view apps.
+- myapps migrated to strawberry monorepo: plan ready, not yet executed.
 
 ## Open Threads
-- PR #2 (agent bootstrap) and #4 (tasklist app) need review and merge
-- 2 bug fixes from Caitlyn's PR #3 review (timezone, regex scope) need follow-up PR
+- Monorepo migration (plans/2026-04-03-myapps-monorepo-migration.md) — ready to execute
+- API billing switch — decided, not implemented
+- CLAUDE.md needs /cost capture step in session closing protocol
+- Rakan needs background image and roster/network updates
 - Rek'Sai iTerm profile broken — can't launch
-- Branch protection on main — Duong needs to set manually in GitHub
+- Soft-delete cleanup in Firestore tasklist (non-blocking)
+- GitHub webhook to Discord #pr-and-issues
 - Personal-life agents (health, finance, social, learning) not yet created
