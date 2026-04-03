@@ -30,3 +30,7 @@ agents/health/*.json
 agents/*/inbox/
 agents/conversations/
 agents/inbox-queue/
+
+# Agent session ephemera (high-churn, no git value)
+agents/*/journal/
+agents/*/memory/last-session.md
