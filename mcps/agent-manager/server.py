@@ -1,7 +1,7 @@
 """
 Agent Manager MCP Server
 =========================
-Manages agents: list, look up, create, delete, launch, and restart.
+Manages agents: list, look up, create, launch, restart, status, messaging, and conversations.
 
 Environment Variables:
   Required:
@@ -10,6 +10,7 @@ Environment Variables:
     ITERM_PROFILES_PATH  — path to iTerm2 DynamicProfiles/agents.json
 """
 import asyncio
+import fcntl
 import json
 import logging
 import os
@@ -17,7 +18,7 @@ import re
 import shutil
 import subprocess
 import textwrap
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -313,21 +314,6 @@ async def create_agent(
     }
 
 
-@mcp.tool()
-async def delete_agent(name: str) -> dict:
-    """Delete an agent and its iTerm2 profile.
-
-    Removes the agent directory and its iTerm2 dynamic profile entry.
-    """
-    agent_dir = _find_agent(name)
-    shutil.rmtree(agent_dir)
-    iterm_result = _remove_iterm_profile(name.lower().strip())
-    return {
-        'deleted': name,
-        'iterm_profile': iterm_result,
-        'note': 'Update routing tables in CLAUDE.md if needed.',
-    }
-
 
 # ── inbox ────────────────────────────────────────────────────────────────
 
@@ -454,6 +440,8 @@ end tell
         if w['name'].lower() == recipient:
             _send_to_iterm_window(w['window_id'], startup)
             break
+
+    _set_agent_status(recipient, 'idle')
 
     result = {
         'agent': recipient,
@@ -749,6 +737,7 @@ async def end_all_sessions(exclude: Optional[list[str]] = None) -> dict[str, Any
 
         log.info(f'Ending session for {w["name"]}')
         _send_to_iterm_window(w['window_id'], end_message)
+        _set_agent_status(name_lower, 'offline')
         ended.append(w['name'])
         await asyncio.sleep(1)
 
@@ -784,8 +773,14 @@ def _timestamp() -> str:
 
 
 def _append_message(path: Path, sender: str, message: str):
-    with open(path, 'a') as f:
-        f.write(f'\n## {sender.capitalize()} — {_timestamp()}\n{message}\n')
+    with open(path, 'r+') as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            content = f.read()
+            seq = content.count('\n## ')
+            f.write(f'\n## {sender.capitalize()} — {_timestamp()} [#{seq + 1}]\n{message}\n')
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)
 
 
 def _read_participants(path: Path) -> list[str]:
@@ -852,14 +847,15 @@ async def start_conversation(
     if path.exists():
         raise ToolError(f"Conversation '{title}' already exists. Use message_in_conversation to continue it.")
 
-    participant_str = ', '.join(p.lower() for p in participants)
+    all_participants = sorted({p.lower() for p in participants} | {sender.lower()})
+    participant_str = ', '.join(all_participants)
     with open(path, 'w') as f:
         f.write(f'---\ntitle: {title}\nparticipants: {participant_str}\ncreated: {_timestamp()}\n---\n')
 
     _append_message(path, sender, message)
     subprocess.Popen(['open', str(path)])
 
-    await _ping_agents([p.lower() for p in participants], sender, title, message)
+    await _ping_agents(all_participants, sender, title, message)
 
     return {
         'conversation': title,
@@ -919,17 +915,250 @@ async def read_conversation(title: str) -> dict[str, str]:
 
 
 @mcp.tool()
-async def list_conversations() -> list[dict[str, str]]:
-    """List all conversations, most recently modified first."""
+async def list_conversations(
+    participant: Optional[str] = None,
+    since: Optional[str] = None,
+    title_contains: Optional[str] = None,
+) -> list[dict[str, str]]:
+    """List conversations with optional filters.
+
+    Args:
+        participant: Filter by participant name
+        since: Filter by date (YYYY-MM-DD format)
+        title_contains: Filter by title substring
+    """
     convos_dir = _conversations_dir()
     results = []
     for f in sorted(convos_dir.glob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
         participants = _read_participants(f)
+        if participant and participant.lower() not in participants:
+            continue
+        if title_contains and title_contains.lower() not in f.stem.lower():
+            continue
+        last_mod = datetime.fromtimestamp(f.stat().st_mtime)
+        if since:
+            try:
+                since_dt = datetime.strptime(since, '%Y-%m-%d')
+                if last_mod < since_dt:
+                    continue
+            except ValueError:
+                pass
         results.append({
             'title': f.stem,
             'participants': ', '.join(participants),
-            'last_modified': datetime.fromtimestamp(f.stat().st_mtime).strftime('%Y-%m-%d %H:%M'),
+            'last_modified': last_mod.strftime('%Y-%m-%d %H:%M'),
             'file': str(f),
+        })
+    return results
+
+
+# ── agent status registry (Phase 1) ─────────────────────────────────────
+
+def _registry_path() -> Path:
+    return _agents_root() / 'health' / 'registry.json'
+
+
+def _read_registry() -> dict[str, Any]:
+    path = _registry_path()
+    if not path.exists():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _write_registry(data: dict[str, Any]):
+    path = _registry_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=2) + '\n')
+
+
+def _is_stale(last_heartbeat: str, threshold_minutes: int = 5) -> bool:
+    try:
+        ts = datetime.fromisoformat(last_heartbeat.replace('Z', '+00:00'))
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - ts > timedelta(minutes=threshold_minutes)
+    except (ValueError, TypeError):
+        return True
+
+
+@mcp.tool()
+async def agent_status(name: Optional[str] = None) -> dict:
+    """Check agent status from the health registry.
+
+    If name is given, returns that agent's status.
+    If omitted, returns all agents with their status.
+    Agents are marked offline if their last heartbeat is older than 5 minutes.
+
+    Args:
+        name: Optional agent name. If omitted, returns all.
+    """
+    registry = _read_registry()
+
+    if name:
+        name = name.lower().strip()
+        entry = registry.get(name, {})
+        if not entry:
+            return {'name': name, 'status': 'offline'}
+        if _is_stale(entry.get('last_heartbeat', '')):
+            entry['status'] = 'offline'
+        entry['name'] = name
+        return entry
+
+    all_agents = _scan_agents()
+    result = {}
+    for agent in all_agents:
+        n = agent['name']
+        entry = registry.get(n, {})
+        status = entry.get('status', 'offline')
+        if entry and _is_stale(entry.get('last_heartbeat', '')):
+            status = 'offline'
+        result[n] = {
+            'role': agent['role'],
+            'status': status,
+            'last_heartbeat': entry.get('last_heartbeat'),
+            'platform': entry.get('platform'),
+            'current_task': entry.get('current_task'),
+        }
+    return result
+
+
+def _set_agent_status(name: str, status: str, platform: str = 'cli', task: Optional[str] = None):
+    registry = _read_registry()
+    registry[name] = {
+        'status': status,
+        'last_heartbeat': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
+        'platform': platform,
+        'current_task': task,
+    }
+    _write_registry(registry)
+
+
+# ── delivery confirmation (Phase 2) ─────────────────────────────────────
+
+def _parse_inbox_frontmatter(path: Path) -> dict[str, str]:
+    try:
+        text = path.read_text()
+        if not text.startswith('---'):
+            return {}
+        end = text.index('---', 3)
+        fm = {}
+        for line in text[3:end].strip().splitlines():
+            if ':' in line:
+                k, v = line.split(':', 1)
+                fm[k.strip()] = v.strip()
+        return fm
+    except (OSError, ValueError):
+        return {}
+
+
+@mcp.tool()
+async def check_inbox_status(
+    recipient: str,
+    sender: Optional[str] = None,
+    since_minutes: int = 30,
+) -> list[dict]:
+    """Check delivery status of messages sent to an agent.
+
+    Args:
+        recipient: Agent whose inbox to check
+        sender: Optional filter by sender
+        since_minutes: Only check messages from the last N minutes (default 30)
+    """
+    inbox = _inbox_dir(recipient.lower().strip())
+    cutoff = datetime.now() - timedelta(minutes=since_minutes)
+    results = []
+    for f in sorted(inbox.glob('*.md'), reverse=True):
+        fm = _parse_inbox_frontmatter(f)
+        if not fm:
+            continue
+        if sender and fm.get('from', '') != sender.lower():
+            continue
+        try:
+            ts = datetime.strptime(fm.get('timestamp', ''), '%Y-%m-%d %H:%M')
+            if ts < cutoff:
+                continue
+        except ValueError:
+            continue
+        results.append({
+            'filename': f.name,
+            'from': fm.get('from', ''),
+            'status': fm.get('status', 'unknown'),
+            'timestamp': fm.get('timestamp', ''),
+            'conversation': fm.get('conversation', ''),
+        })
+    return results
+
+
+@mcp.tool()
+async def acknowledge_message(
+    agent: str,
+    filename: str,
+    response: str = 'acknowledged',
+) -> str:
+    """Mark an inbox message as acknowledged and optionally record a short response.
+
+    Args:
+        agent: The agent acknowledging (must match the 'to' field)
+        filename: Inbox filename to acknowledge
+        response: Optional short response text
+    """
+    agent = agent.lower().strip()
+    inbox = _inbox_dir(agent)
+    path = inbox / filename
+    if not path.exists():
+        raise ToolError(f'Inbox file not found: {filename}')
+
+    text = path.read_text()
+    text = re.sub(r'^status:\s*\w+', f'status: acknowledged', text, count=1, flags=re.MULTILINE)
+    if 'response:' not in text:
+        text = text.replace('status: acknowledged', f'status: acknowledged\nresponse: {response}', 1)
+    path.write_text(text)
+    return f'Message {filename} acknowledged'
+
+
+# ── conversation polling (Phase 3) ───────────────────────────────────────
+
+@mcp.tool()
+async def poll_conversations(
+    agent: str,
+    since_minutes: int = 10,
+) -> list[dict]:
+    """Check for new messages in conversations the agent participates in.
+
+    Args:
+        agent: Agent name
+        since_minutes: Only return conversations modified in the last N minutes
+    """
+    agent = agent.lower().strip()
+    convos_dir = _conversations_dir()
+    cutoff = datetime.now() - timedelta(minutes=since_minutes)
+    results = []
+
+    for f in sorted(convos_dir.glob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
+        last_mod = datetime.fromtimestamp(f.stat().st_mtime)
+        if last_mod < cutoff:
+            continue
+        participants = _read_participants(f)
+        if agent not in participants:
+            continue
+        content = f.read_text()
+        total_messages = content.count('\n## ')
+        # Estimate unread: count messages after agent's last message
+        agent_pattern = f'\n## {agent.capitalize()} —'
+        last_agent_pos = content.rfind(agent_pattern)
+        if last_agent_pos >= 0:
+            unread = content[last_agent_pos:].count('\n## ') - 1
+        else:
+            unread = total_messages
+        results.append({
+            'title': f.stem,
+            'file': str(f),
+            'last_modified': last_mod.strftime('%Y-%m-%d %H:%M'),
+            'message_count': total_messages,
+            'unread_estimate': max(0, unread),
         })
     return results
 
