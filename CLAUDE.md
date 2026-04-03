@@ -46,7 +46,7 @@ Unlike the work system, Evelynn communicates with Duong directly — no Slack re
 
 Before signing off, complete **all steps** in order:
 
-1. **End session** — call the `end_session` MCP tool
+1. **End session** — run `/cost` first to capture token/cost data, then call `log_session` with `tokens_input`, `tokens_output`, and `cost_usd` from the output (skip if not on CLI)
 2. **Journal** — write/append to `journal/<platform>-YYYY-MM-DD.md`
 3. **Handoff note** — overwrite `memory/last-session.md`
 4. **Memory update** — rewrite `memory/<name>.md` (under 50 lines, living summary)
