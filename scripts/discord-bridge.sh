@@ -58,14 +58,20 @@ PROMPT
   last_invocation=$(date +%s)
   result=$(cd /tmp && claude -p "$prompt" --max-turns 1 --output-format text --system-prompt "You are Evelynn, a helpful assistant for the Strawberry project. Respond directly with a short, friendly evaluation of the suggestion. No tools needed." --disallowedTools Bash Read Write Edit Glob Grep Agent < /dev/null 2>&1) || true
 
-  if [ -n "$result" ]; then
-    # Write response JSON for the relay bot to pick up
-    local response_file="$RESPONSES_DIR/${thread_id}-$(date +%s).json"
+  local response_file="$RESPONSES_DIR/${thread_id}-$(date +%s).json"
+
+  if [ -z "$result" ]; then
+    echo "[bridge] ERROR: No result from Claude for $basename"
+    jq -n --arg threadId "$thread_id" --arg message "Sorry, I couldn't process this right now. (No response from Claude)" \
+      '{threadId: $threadId, message: $message}' > "$response_file"
+  elif echo "$result" | grep -qiE "^Error:|auth.*fail|unauthorized|expired|max turns"; then
+    echo "[bridge] ERROR: Claude returned error for $basename: $result"
+    jq -n --arg threadId "$thread_id" --arg message "Sorry, I hit an error processing this. An admin has been notified. (Error: ${result:0:200})" \
+      '{threadId: $threadId, message: $message}' > "$response_file"
+  else
     jq -n --arg threadId "$thread_id" --arg message "$result" \
       '{threadId: $threadId, message: $message}' > "$response_file"
     echo "[bridge] Response written for thread $thread_id"
-  else
-    echo "[bridge] No result from Claude for $basename"
   fi
 
   # Archive the event
