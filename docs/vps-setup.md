@@ -24,7 +24,8 @@ apt update && apt upgrade -y
 
 # Create non-root user
 adduser runner --disabled-password --gecos ""
-usermod -aG sudo runner
+echo "runner ALL=(root) NOPASSWD: /usr/bin/systemctl start actions.runner.*, /usr/bin/systemctl stop actions.runner.*, /usr/bin/systemctl restart actions.runner.*, /usr/bin/systemctl status actions.runner.*" > /etc/sudoers.d/runner
+chmod 440 /etc/sudoers.d/runner
 
 # Copy SSH key to new user
 mkdir -p /home/runner/.ssh
@@ -80,8 +81,8 @@ Select "Yes" to enable automatic updates.
 cd /home/runner
 mkdir actions-runner && cd actions-runner
 
-# Download latest runner (check https://github.com/actions/runner/releases for current version)
-RUNNER_VERSION="2.321.0"
+# Fetch latest runner version dynamically
+RUNNER_VERSION=$(curl -s https://api.github.com/repos/actions/runner/releases/latest | grep -oP '"tag_name": "v\K[^"]+')
 curl -o actions-runner.tar.gz -L "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz"
 tar xzf actions-runner.tar.gz
 rm actions-runner.tar.gz
@@ -99,10 +100,16 @@ Copy the token, then:
 
 ### Systemd Service (auto-start on reboot)
 
+Run as root (the runner user has limited sudo):
+
 ```bash
-sudo ./svc.sh install runner
-sudo ./svc.sh start
-sudo ./svc.sh status
+# Switch to root for service installation
+sudo -i
+cd /home/runner/actions-runner
+./svc.sh install runner
+./svc.sh start
+./svc.sh status
+exit
 ```
 
 This creates a systemd service at `/etc/systemd/system/actions.runner.Duongntd-strawberry.strawberry-runner.service`.
@@ -196,6 +203,27 @@ claude --version        # should print version
 gh auth status          # logged in
 sudo systemctl status actions.runner.Duongntd-strawberry.strawberry-runner.service  # active (running)
 sudo ufw status         # active, SSH only
+```
+
+## Health Check (Claude Code auth expiry detection)
+
+Add a daily cron job that verifies Claude Code auth is still valid:
+
+```bash
+# As runner user
+crontab -e
+```
+
+Add:
+
+```
+0 8 * * * claude --version > /dev/null 2>&1 || echo "Claude Code auth expired on $(hostname)" | mail -s "Runner Alert" your@email.com
+```
+
+Alternatively, if a Discord webhook is configured:
+
+```
+0 8 * * * claude --version > /dev/null 2>&1 || curl -s -X POST -H "Content-Type: application/json" -d '{"content":"Claude Code auth expired on strawberry-runner. SSH in and run `claude login`."}' "$DISCORD_WEBHOOK_URL"
 ```
 
 ## Maintenance
