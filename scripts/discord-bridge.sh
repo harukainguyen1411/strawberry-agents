@@ -14,7 +14,8 @@ STRAWBERRY_DIR="${STRAWBERRY_DIR:-/home/runner/strawberry}"
 LOCK_FILE="$DATA_DIR/.delegation-lock"
 MIN_INTERVAL=30
 
-mkdir -p "$EVENTS_DIR" "$PROCESSED_DIR" "$RESPONSES_DIR"
+DELEGATION_QUEUE="$DATA_DIR/delegation-queue"
+mkdir -p "$EVENTS_DIR" "$PROCESSED_DIR" "$RESPONSES_DIR" "$DELEGATION_QUEUE"
 
 last_invocation=0
 
@@ -176,6 +177,21 @@ DELEGATION
 
     rm -f "$LOCK_FILE"
     echo "[bridge] Delegation complete for thread $thread_id"
+
+    # Process any queued delegations
+    for qf in "$DELEGATION_QUEUE"/*.json; do
+      [ -f "$qf" ] || continue
+      local q_thread_id q_thread_name q_content q_triage
+      q_thread_id=$(jq -r '.threadId' "$qf")
+      q_thread_name=$(jq -r '.threadName' "$qf")
+      q_content=$(jq -r '.content' "$qf")
+      q_triage=$(jq -r '.triage' "$qf")
+      rm -f "$qf"
+      echo "[bridge] Processing queued delegation for $q_thread_id"
+      # Call run_delegation recursively (it will take the lock)
+      run_delegation "$q_thread_id" "$q_thread_name" "$q_content" "$q_triage"
+      break  # One at a time
+    done
   ) &
 
   return 0
@@ -228,6 +244,12 @@ process_event() {
       # Pass 2: Delegation (background)
       if ! run_delegation "$thread_id" "$thread_name" "$content" "$triage_output"; then
         write_response "$thread_id" "This is queued — I'm currently working on another task. I'll get to this shortly."
+        # Save to delegation queue so it gets retried
+        jq -n --arg threadId "$thread_id" --arg threadName "$thread_name" \
+          --arg content "$content" --arg triage "$triage_output" \
+          '{threadId: $threadId, threadName: $threadName, content: $content, triage: $triage}' \
+          > "$DELEGATION_QUEUE/${thread_id}-$(date +%s).json"
+        echo "[bridge] Queued delegation for $thread_id"
       fi
       ;;
     *)
