@@ -804,7 +804,8 @@ def _append_message(path: Path, sender: str, message: str):
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
             content = f.read()
-            seq = content.count('\n## ')
+            seq = len(re.findall(r'^## ', content, re.MULTILINE))
+            f.seek(0, 2)
             f.write(f'\n## {sender.capitalize()} — {_timestamp()} [#{seq + 1}]\n{message}\n')
         finally:
             fcntl.flock(f, fcntl.LOCK_UN)
@@ -966,10 +967,10 @@ async def list_conversations(
         if since:
             try:
                 since_dt = datetime.strptime(since, '%Y-%m-%d')
-                if last_mod < since_dt:
-                    continue
             except ValueError:
-                pass
+                raise ToolError(f"Invalid date format for 'since': {since}. Expected YYYY-MM-DD.")
+            if last_mod < since_dt:
+                continue
         results.append({
             'title': f.stem,
             'participants': ', '.join(participants),
@@ -1100,7 +1101,7 @@ async def check_inbox_status(
         since_minutes: Only check messages from the last N minutes (default 30)
     """
     inbox = _inbox_dir(recipient.lower().strip())
-    cutoff = datetime.now() - timedelta(minutes=since_minutes)
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
     results = []
     for f in sorted(inbox.glob('*.md'), reverse=True):
         fm = _parse_inbox_frontmatter(f)
@@ -1109,7 +1110,7 @@ async def check_inbox_status(
         if sender and fm.get('from', '') != sender.lower():
             continue
         try:
-            ts = datetime.strptime(fm.get('timestamp', ''), '%Y-%m-%d %H:%M')
+            ts = datetime.strptime(fm.get('timestamp', ''), '%Y-%m-%d %H:%M').replace(tzinfo=timezone.utc)
             if ts < cutoff:
                 continue
         except ValueError:
@@ -1144,9 +1145,12 @@ async def acknowledge_message(
         raise ToolError(f'Inbox file not found: {filename}')
 
     text = path.read_text()
-    text = re.sub(r'^status:\s*\w+', f'status: acknowledged', text, count=1, flags=re.MULTILINE)
-    if 'response:' not in text:
-        text = text.replace('status: acknowledged', f'status: acknowledged\nresponse: {response}', 1)
+    parts = text.split('---', 2)
+    if len(parts) >= 3:
+        fm = re.sub(r'^status:\s*\w+', f'status: acknowledged', parts[1], count=1, flags=re.MULTILINE)
+        if 'response:' not in fm:
+            fm = fm.rstrip('\n') + f'\nresponse: {response}\n'
+        text = '---' + fm + '---' + parts[2]
     path.write_text(text)
     return f'Message {filename} acknowledged'
 
@@ -1166,11 +1170,11 @@ async def poll_conversations(
     """
     agent = agent.lower().strip()
     convos_dir = _conversations_dir()
-    cutoff = datetime.now() - timedelta(minutes=since_minutes)
+    cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
     results = []
 
     for f in sorted(convos_dir.glob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
-        last_mod = datetime.fromtimestamp(f.stat().st_mtime)
+        last_mod = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
         if last_mod < cutoff:
             continue
         participants = _read_participants(f)
@@ -1179,8 +1183,8 @@ async def poll_conversations(
         content = f.read_text()
         total_messages = content.count('\n## ')
         # Estimate unread: count messages after agent's last message
-        agent_pattern = f'\n## {agent.capitalize()} —'
-        last_agent_pos = content.rfind(agent_pattern)
+        agent_matches = [m.start() for m in re.finditer(rf'\n## {re.escape(agent.capitalize())} —', content)]
+        last_agent_pos = agent_matches[-1] if agent_matches else -1
         if last_agent_pos >= 0:
             unread = content[last_agent_pos:].count('\n## ') - 1
         else:
