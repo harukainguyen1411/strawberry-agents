@@ -4,6 +4,8 @@ set -euo pipefail
 # Deploy strawberry Discord relay to VPS
 # Run as: runner@vps
 
+export PATH="$HOME/.npm-global/bin:$PATH"
+
 REPO_DIR="/home/runner/strawberry"
 DATA_DIR="/home/runner/data"
 
