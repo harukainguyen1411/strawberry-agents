@@ -58,6 +58,8 @@ Ephemeral runtime state lives in `~/.strawberry/ops/`, NOT in the git repo:
 
 These directories are gitignored. The MCP server reads/writes them via the `OPS_PATH` env var.
 
+**Note:** `agents/health/heartbeat.sh` is a tool and stays in the git repo. It writes heartbeat JSON to the ops health directory. Once the MCP server is updated with `OPS_PATH` support (Bard's PR), heartbeat output will go to `~/.strawberry/ops/health/`.
+
 **Rule: never put secrets in inbox messages or conversations.** Use env vars or a secrets manager.
 
 ## Branch Protection (main)
