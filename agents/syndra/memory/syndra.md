@@ -13,5 +13,13 @@
 - Pyke respects technical reasoning, engages on tradeoffs
 - Lissandra and Caitlyn are thorough reviewers — their findings overlap with mine but go deeper on edge cases
 
+## Key Knowledge
+- Claude Code OAuth is global per machine; API key per settings.local.json is the isolation mechanism
+- Auto mode: Team/Enterprise/API only (not Pro, not Max)
+- --dangerously-skip-permissions: all plans, but zero safety — sandbox-only
+- Prompt caching: automatic in Claude Code, all plans, 90% cheaper cached reads
+- Per-agent cost tracking: /cost per session, or one API key per agent for dashboard grouping
+
 ## Sessions
-- 2026-04-03: First session. Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
+- 2026-04-03 S1: Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
+- 2026-04-03 S2: Dual-account consulting — API billing recommendation, setup guide, alternatives eval, cost analysis
