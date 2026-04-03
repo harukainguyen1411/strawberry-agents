@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# discord-bridge.sh — Watches event queue, spawns claude --message per event
+# discord-bridge.sh — Watches event queue, spawns claude -p per event
 set -euo pipefail
+
+export PATH="$HOME/.npm-global/bin:$PATH"
 
 DATA_DIR="${DATA_DIR:-/home/runner/data}"
 EVENTS_DIR="$DATA_DIR/discord-events"
@@ -54,7 +56,7 @@ PROMPT
   # Invoke Claude as Evelynn
   local result
   last_invocation=$(date +%s)
-  result=$(cd "$STRAWBERRY_DIR" && claude --message "$prompt" --max-turns 1 --output-format text 2>&1) || true
+  result=$(cd "$STRAWBERRY_DIR" && claude -p "$prompt" --max-turns 1 --output-format text 2>&1) || true
 
   if [ -n "$result" ]; then
     # Write response JSON for the relay bot to pick up
