@@ -56,7 +56,7 @@ PROMPT
   # Invoke Claude as Evelynn
   local result
   last_invocation=$(date +%s)
-  result=$(cd "$STRAWBERRY_DIR" && claude -p "$prompt" --max-turns 1 --output-format text 2>&1) || true
+  result=$(cd "$STRAWBERRY_DIR" && claude -p "$prompt" --max-turns 3 --output-format text < /dev/null 2>&1) || true
 
   if [ -n "$result" ]; then
     # Write response JSON for the relay bot to pick up
