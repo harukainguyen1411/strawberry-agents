@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task List</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --border: #e8eaed;
+      --text-primary: #111827;
+      --text-secondary: #6b7280;
+      --text-muted: #9ca3af;
+      --accent: #6366f1;
+      --accent-light: #eef2ff;
+      --radius: 10px;
+      --done-bg: #f0fdf4;
+      --done-text: #16a34a;
+      --hold-bg: #fff7ed;
+      --hold-text: #ea580c;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      padding: 24px 32px;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 12px;
+    }
+
+    .header-left { display: flex; align-items: center; gap: 12px; }
+
+    h1 {
+      font-size: 1.15rem;
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .week-nav button {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      padding: 4px 10px;
+      font-family: inherit;
+      transition: background 0.12s;
+    }
+    .week-nav button:hover { background: var(--border); color: var(--text-primary); }
+
+    .week-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .header-actions { display: flex; gap: 8px; align-items: center; }
+
+    button {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 7px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--border); color: var(--text-primary); }
+
+    #save-flash {
+      font-size: 0.75rem;
+      color: #16a34a;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    #save-flash.visible { opacity: 1; }
+
+    #file-status {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* WEEK GRID */
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .day-column {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.15s;
+    }
+    .day-column.is-today {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1.5px var(--accent), 0 2px 8px rgba(99, 102, 241, 0.1);
+      background: #fafaff;
+    }
+    .day-column.drag-over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .day-header {
+      padding: 10px 12px 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .day-name {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+    }
+    .is-today .day-name { color: var(--accent); }
+
+    .day-date {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+    .is-today .day-date {
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.72rem;
+    }
+
+    .day-count {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 1px 7px;
+      margin-left: 6px;
+    }
+    .is-today .day-count {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .day-tasks {
+      flex: 1;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-height: 60px;
+    }
+
+    .day-add {
+      padding: 6px 10px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+    .day-add:hover { background: var(--accent-light); color: var(--accent); }
+
+    /* TASK CARD */
+    .task-card {
+      padding: 10px 12px;
+      border-radius: 7px;
+      background: var(--bg);
+      cursor: default;
+      font-size: 0.8rem;
+      transition: opacity 0.15s, box-shadow 0.12s, background 0.12s;
+      position: relative;
+    }
+    .task-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .task-card.dragging { opacity: 0.3; }
+
+    .drag-handle {
+      cursor: grab;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      line-height: 1;
+      user-select: none;
+      padding: 2px 2px 2px 0;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity 0.12s;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    .task-card:hover .drag-handle { opacity: 1; }
+
+    .task-card .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 0.78rem;
+      line-height: 1.3;
+      flex: 1;
+    }
+
+    .card-desc {
+      font-size: 0.76rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 6px;
+    }
+
+    /* tag badge */
+    .tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+      white-space: nowrap;
+      font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+    }
+
+    /* status badge */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      transition: filter 0.12s, transform 0.1s;
+    }
+    .status-badge:hover { filter: brightness(0.93); transform: scale(1.04); }
+    .status-badge:active { transform: scale(0.96); }
+
+    .status-badge.todo       { background: #f3f4f6; color: #4b5563; }
+    .status-badge.inprogress { background: #eff6ff; color: #2563eb; }
+    .status-badge.onhold     { background: #fff7ed; color: #ea580c; }
+    .status-badge.done       { background: #f0fdf4; color: #16a34a; }
+
+    /* status dropdown */
+    .status-wrapper { position: relative; }
+    .status-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+    }
+    .status-dropdown.align-right {
+      left: auto;
+      right: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+      padding: 4px;
+      z-index: 100;
+      min-width: 120px;
+    }
+    .status-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.1s;
+      white-space: nowrap;
+    }
+    .status-option:hover { background: var(--bg); }
+    .status-option .status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .status-option.todo       { color: #4b5563; }
+    .status-option.inprogress { color: #2563eb; }
+    .status-option.onhold     { color: #ea580c; }
+    .status-option.done       { color: #16a34a; }
+    .status-option.todo       .status-dot { background: #9ca3af; }
+    .status-option.inprogress .status-dot { background: #3b82f6; }
+    .status-option.onhold     .status-dot { background: #f97316; }
+    .status-option.done       .status-dot { background: #22c55e; }
+
+    .status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .todo       .status-dot { background: #9ca3af; }
+    .inprogress .status-dot { background: #3b82f6; }
+    .onhold     .status-dot { background: #f97316; }
+    .done       .status-dot { background: #22c55e; }
+
+    /* done card */
+    .task-card.is-done {
+      opacity: 0.5;
+    }
+    .task-card.is-done .card-title { text-decoration: line-through; }
+
+    /* delete btn on card */
+    .card-delete {
+      background: none;
+      border: none;
+      color: transparent;
+      font-size: 0.85rem;
+      padding: 0 2px;
+      cursor: pointer;
+      border-radius: 4px;
+      line-height: 1;
+      font-family: inherit;
+      transition: color 0.12s, background 0.12s;
+      flex-shrink: 0;
+    }
+    .task-card:hover .card-delete { color: var(--text-muted); }
+    .card-delete:hover { color: #ef4444 !important; background: #fee2e2; }
+
+    /* editable */
+    .editable {
+      cursor: text;
+      border-radius: 3px;
+      padding: 1px 3px;
+      margin: -1px -3px;
+      min-width: 30px;
+      display: inline-block;
+      transition: background 0.12s;
+    }
+    .editable:hover { background: rgba(0,0,0,0.04); }
+    .editable:focus { outline: 2px solid var(--accent); background: white; }
+
+    /* ON HOLD SECTION */
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--hold-text);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .section-label .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: #f97316;
+    }
+
+    .onhold-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+      margin-bottom: 20px;
+    }
+
+    .onhold-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .onhold-grid .task-card {
+      width: 240px;
+      flex-shrink: 0;
+    }
+
+    /* DONE SECTION */
+    .done-section {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 14px 16px;
+    }
+
+    .done-section .section-label {
+      color: var(--done-text);
+    }
+    .done-section .section-label .dot {
+      background: #22c55e;
+    }
+
+    .done-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .done-grid .task-card {
+      width: 240px;
+      flex-shrink: 0;
+      opacity: 0.55;
+    }
+    .done-grid .task-card .card-title { text-decoration: line-through; }
+
+    /* no-file banner */
+    .no-file-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: var(--radius);
+      font-size: 0.82rem;
+      color: #92400e;
+      margin-bottom: 16px;
+    }
+    .no-file-banner span { flex: 1; }
+    body.no-file .no-file-banner { display: flex; }
+    body.no-file .status-badge { cursor: default; }
+    body.no-file .status-badge:hover { filter: none; transform: none; }
+    body.no-file .editable { pointer-events: none; cursor: default; }
+    body.no-file .editable:hover { background: none; }
+    body.no-file .card-delete { display: none; }
+    body.no-file .day-add { pointer-events: none; opacity: 0.4; }
+
+    /* empty col */
+    .empty-day {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.74rem;
+      padding: 24px 8px;
+      opacity: 0.6;
+      font-style: italic;
+    }
+
+    /* ── MOBILE RESPONSIVE ──────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      body { padding: 16px 12px; }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .header-left { flex-wrap: wrap; }
+
+      .week-label { min-width: auto; font-size: 0.78rem; }
+
+      .week-grid {
+        grid-template-columns: none;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 10px;
+        padding-bottom: 8px;
+      }
+
+      .day-column {
+        min-width: 260px;
+        flex-shrink: 0;
+        scroll-snap-align: start;
+      }
+
+      .day-column.is-today { order: -1; }
+
+      .task-card { padding: 10px 12px; font-size: 0.85rem; }
+      .card-title { font-size: 0.84rem; }
+      .card-desc { font-size: 0.78rem; }
+      .status-badge { padding: 4px 10px; font-size: 0.7rem; }
+      .drag-handle { opacity: 0.5; padding: 4px 6px 4px 0; font-size: 0.9rem; color: var(--text-secondary); }
+      .card-delete { color: var(--text-muted); font-size: 1rem; padding: 4px 6px; }
+      .day-add { padding: 10px; font-size: 0.82rem; }
+
+      .onhold-grid .task-card,
+      .done-grid .task-card {
+        width: 100%;
+      }
+
+      .onhold-grid, .done-grid {
+        flex-direction: column;
+      }
+
+      .status-dropdown { min-width: 140px; }
+      .status-option { padding: 8px 12px; font-size: 0.78rem; }
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 12px 8px; }
+      .day-column { min-width: 240px; }
+      h1 { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <h1>Tasks</h1>
+      <div class="week-nav">
+        <button id="btn-prev">&#8592;</button>
+        <span class="week-label" id="week-label"></span>
+        <button id="btn-next">&#8594;</button>
+        <button id="btn-today" style="margin-left:4px">Today</button>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span id="save-flash">Saved &#10003;</span>
+      <span id="file-status"></span>
+      <button class="btn-ghost" id="btn-reload" title="Reload from file">&#8635; Reload</button>
+    </div>
+  </div>
+
+  <div class="no-file-banner">
+    <span>Not connected to server &mdash; changes won&rsquo;t be saved. Run <code>node tasklist-server.js</code> and reload.</span>
+  </div>
+
+  <div class="week-grid" id="week-grid"></div>
+
+  <div class="onhold-section" id="onhold-section" style="display:none">
+    <div class="section-label"><span class="dot"></span> On Hold</div>
+    <div class="onhold-grid" id="onhold-grid"></div>
+  </div>
+
+  <div class="done-section" id="done-section" style="display:none">
+    <div class="section-label"><span class="dot"></span> Done</div>
+    <div class="done-grid" id="done-grid"></div>
+  </div>
+
+  <script>
+    const STATUS_ORDER = ["todo", "inprogress", "onhold", "done"];
+    const STATUS_LABELS = { todo: "To Do", inprogress: "In Progress", onhold: "On Hold", done: "Done" };
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+    // ── DATE UTILS ──────────────────────────────────────────────────────
+    function toDateStr(d) {
+      return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+    }
+
+    function getMonday(d) {
+      const dt = new Date(d);
+      const day = dt.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      dt.setDate(dt.getDate() + diff);
+      dt.setHours(0,0,0,0);
+      return dt;
+    }
+
+    function getWeekDates(monday) {
+      return Array.from({length: 7}, (_, i) => {
+        const d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        return d;
+      });
+    }
+
+    function formatWeekLabel(monday) {
+      const sun = new Date(monday);
+      sun.setDate(sun.getDate() + 6);
+      const opts = { month: "short", day: "numeric" };
+      return monday.toLocaleDateString("en-GB", opts) + " — " + sun.toLocaleDateString("en-GB", opts) + ", " + sun.getFullYear();
+    }
+
+    // ── STATE ───────────────────────────────────────────────────────────
+    let allTasks = [];
+    let currentMonday = getMonday(new Date());
+    const todayStr = toDateStr(new Date());
+
+    // ── FILE I/O (via local server API) ─────────────────────────────────
+    const API_BASE = window.location.origin;
+    let connected = false;
+    let saveFlashTimer = null;
+
+    function setFileStatus(name) {
+      document.getElementById("file-status").textContent = name || "";
+      document.body.classList.toggle("no-file", !name);
+    }
+
+    function flashSaved() {
+      const el = document.getElementById("save-flash");
+      el.classList.add("visible");
+      clearTimeout(saveFlashTimer);
+      saveFlashTimer = setTimeout(() => el.classList.remove("visible"), 1500);
+    }
+
+    function carryForward(tasks) {
+      var moved = false;
+      tasks.forEach(function(t) {
+        if ((t.status === "todo" || t.status === "inprogress") && t.date < todayStr) {
+          t.date = todayStr;
+          moved = true;
+        }
+      });
+      return moved;
+    }
+
+    async function loadTasks() {
+      try {
+        const res = await fetch(API_BASE + "/api/tasks");
+        if (!res.ok) throw new Error(res.statusText);
+        allTasks = await res.json();
+        connected = true;
+        setFileStatus("tasklist.json");
+        if (carryForward(allTasks)) saveState();
+        renderWeek();
+      } catch(e) {
+        console.error("Load failed:", e);
+        connected = false;
+        setFileStatus(null);
+        allTasks = DEFAULT_TASKS.slice();
+        carryForward(allTasks);
+        renderWeek();
+      }
+    }
+
+    async function saveState() {
+      if (!connected) return;
+      try {
+        const res = await fetch(API_BASE + "/api/tasks", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(allTasks, null, 2)
+        });
+        if (res.ok) flashSaved();
+      } catch(e) {
+        console.error("Save failed:", e);
+      }
+    }
+
+    // ── TASK HELPERS ────────────────────────────────────────────────────
+    function genId() { return "task-" + Date.now() + "-" + Math.random().toString(36).slice(2,6); }
+
+    function getDropTarget(container, y) {
+      var cards = Array.from(container.querySelectorAll(".task-card:not(.dragging)"));
+      if (cards.length === 0) return { el: null, after: false };
+      for (var i = 0; i < cards.length; i++) {
+        var rect = cards[i].getBoundingClientRect();
+        var mid = rect.top + rect.height / 2;
+        if (y < mid) return { el: cards[i], after: false };
+      }
+      return { el: cards[cards.length - 1], after: true };
+    }
+
+    // ── RENDER ──────────────────────────────────────────────────────────
+    function renderWeek() {
+      const weekDates = getWeekDates(currentMonday);
+      document.getElementById("week-label").textContent = formatWeekLabel(currentMonday);
+
+      const grid = document.getElementById("week-grid");
+      grid.innerHTML = "";
+
+      weekDates.forEach(date => {
+        const dateStr = toDateStr(date);
+        const col = document.createElement("div");
+        col.className = "day-column" + (dateStr === todayStr ? " is-today" : "");
+        col.dataset.date = dateStr;
+
+        const dayNum = date.getDate();
+        const dayName = DAY_NAMES[date.getDay()];
+
+        const dayTaskCount = allTasks.filter(t => t.date === dateStr && t.status !== "done" && t.status !== "onhold").length;
+        col.innerHTML =
+          '<div class="day-header">' +
+            '<span class="day-name">' + dayName + (dayTaskCount > 0 ? '<span class="day-count">' + dayTaskCount + '</span>' : '') + '</span>' +
+            '<span class="day-date">' + dayNum + '</span>' +
+          '</div>' +
+          '<div class="day-tasks" data-date="' + dateStr + '"></div>' +
+          '<div class="day-add" data-date="' + dateStr + '">+ Add</div>';
+
+        col.querySelector(".day-add").addEventListener("click", function() {
+          addTask(this.dataset.date);
+        });
+
+        // drop zone
+        const tasksEl = col.querySelector(".day-tasks");
+        tasksEl.addEventListener("dragover", function(e) {
+          e.preventDefault();
+          col.classList.add("drag-over");
+          // show drop indicator between cards
+          var cards = Array.from(tasksEl.querySelectorAll(".task-card"));
+          cards.forEach(function(c) { c.style.borderTop = ""; c.style.borderBottom = ""; });
+          var closest = getDropTarget(tasksEl, e.clientY);
+          if (closest.el) {
+            if (closest.after) {
+              closest.el.style.borderBottom = "2px solid var(--accent)";
+            } else {
+              closest.el.style.borderTop = "2px solid var(--accent)";
+            }
+          }
+        });
+        tasksEl.addEventListener("dragleave", function() {
+          col.classList.remove("drag-over");
+          tasksEl.querySelectorAll(".task-card").forEach(function(c) { c.style.borderTop = ""; c.style.borderBottom = ""; });
+        });
+        tasksEl.addEventListener("drop", function(e) {
+          e.preventDefault();
+          col.classList.remove("drag-over");
+          tasksEl.querySelectorAll(".task-card").forEach(function(c) { c.style.borderTop = ""; c.style.borderBottom = ""; });
+          var taskId = e.dataTransfer.getData("text/plain");
+          var task = allTasks.find(function(t) { return t.id === taskId; });
+          if (!task) return;
+
+          task.date = dateStr;
+
+          // determine insert position among this day's active tasks
+          var closest = getDropTarget(tasksEl, e.clientY);
+          if (closest.el) {
+            var targetId = closest.el.dataset.id;
+            // remove task from allTasks
+            allTasks = allTasks.filter(function(t) { return t.id !== taskId; });
+            var targetIdx = allTasks.findIndex(function(t) { return t.id === targetId; });
+            if (closest.after) targetIdx++;
+            allTasks.splice(targetIdx, 0, task);
+          } else {
+            // dropped on empty area — move to end
+            allTasks = allTasks.filter(function(t) { return t.id !== taskId; });
+            allTasks.push(task);
+          }
+
+          saveState();
+          renderWeek();
+        });
+
+        grid.appendChild(col);
+
+        // render tasks for this day
+        const dayTasks = allTasks.filter(t => t.date === dateStr && t.status !== "done" && t.status !== "onhold");
+        const statusPriority = { inprogress: 0, todo: 1 };
+        dayTasks.sort(function(a, b) { return (statusPriority[a.status] || 1) - (statusPriority[b.status] || 1); });
+        const container = col.querySelector(".day-tasks");
+
+        if (dayTasks.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty-day";
+          empty.textContent = "Nothing scheduled";
+          container.appendChild(empty);
+        } else {
+          dayTasks.forEach(task => container.appendChild(renderCard(task)));
+        }
+      });
+
+      // On Hold section
+      const onholdTasks = allTasks.filter(t => t.status === "onhold");
+      const onholdSection = document.getElementById("onhold-section");
+      const onholdGrid = document.getElementById("onhold-grid");
+      onholdGrid.innerHTML = "";
+      if (onholdTasks.length > 0) {
+        onholdSection.style.display = "";
+        onholdTasks.forEach(t => onholdGrid.appendChild(renderCard(t)));
+      } else {
+        onholdSection.style.display = "none";
+      }
+
+      // Done section
+      const doneTasks = allTasks.filter(t => t.status === "done");
+      const doneSection = document.getElementById("done-section");
+      const doneGrid = document.getElementById("done-grid");
+      doneGrid.innerHTML = "";
+      if (doneTasks.length > 0) {
+        doneSection.style.display = "";
+        doneTasks.forEach(t => doneGrid.appendChild(renderCard(t)));
+      } else {
+        doneSection.style.display = "none";
+      }
+    }
+
+    function renderCard(task) {
+      const card = document.createElement("div");
+      card.className = "task-card" + (task.status === "done" ? " is-done" : "");
+      card.dataset.id = task.id;
+
+      const s = task.status || "todo";
+
+      card.innerHTML =
+        '<div class="card-top">' +
+          '<span class="drag-handle" draggable="true" title="Drag to move">\u2807</span>' +
+          (task.tag
+            ? '<span class="tag">' + esc(task.title) + '</span>'
+            : '<span class="editable card-title" data-field="title">' + esc(task.title) + '</span>') +
+          '<button class="card-delete" title="Delete">&times;</button>' +
+        '</div>' +
+        '<div class="card-desc editable" data-field="description">' + esc(task.description) + '</div>' +
+        '<div class="card-footer">' +
+          '<div class="status-wrapper">' +
+            '<button class="status-badge ' + s + '" title="Change status">' +
+              '<span class="status-dot"></span>' +
+              '<span class="status-label">' + STATUS_LABELS[s] + '</span>' +
+            '</button>' +
+          '</div>' +
+        '</div>';
+
+      // drag — only from handle
+      const handle = card.querySelector(".drag-handle");
+      handle.addEventListener("dragstart", function(e) {
+        e.dataTransfer.setData("text/plain", task.id);
+        card.classList.add("dragging");
+      });
+      handle.addEventListener("dragend", function() {
+        card.classList.remove("dragging");
+        document.querySelectorAll(".day-column.drag-over").forEach(c => c.classList.remove("drag-over"));
+      });
+
+      // touch drag for mobile
+      let touchClone = null;
+      let touchStartY = 0;
+      let touchStartX = 0;
+      handle.addEventListener("touchstart", function(e) {
+        e.preventDefault();
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        card.classList.add("dragging");
+        touchClone = card.cloneNode(true);
+        touchClone.style.position = "fixed";
+        touchClone.style.width = card.offsetWidth + "px";
+        touchClone.style.opacity = "0.8";
+        touchClone.style.pointerEvents = "none";
+        touchClone.style.zIndex = "1000";
+        touchClone.style.transform = "rotate(2deg)";
+        document.body.appendChild(touchClone);
+      }, { passive: false });
+      handle.addEventListener("touchmove", function(e) {
+        if (!touchClone) return;
+        e.preventDefault();
+        var tx = e.touches[0].clientX;
+        var ty = e.touches[0].clientY;
+        touchClone.style.left = (tx - touchClone.offsetWidth / 2) + "px";
+        touchClone.style.top = (ty - 20) + "px";
+        // highlight drop target column
+        document.querySelectorAll(".day-column").forEach(function(col) {
+          var r = col.getBoundingClientRect();
+          col.classList.toggle("drag-over", tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom);
+        });
+      }, { passive: false });
+      handle.addEventListener("touchend", function(e) {
+        card.classList.remove("dragging");
+        if (touchClone) { touchClone.remove(); touchClone = null; }
+        var tx = e.changedTouches[0].clientX;
+        var ty = e.changedTouches[0].clientY;
+        document.querySelectorAll(".day-column").forEach(function(col) {
+          col.classList.remove("drag-over");
+          var r = col.getBoundingClientRect();
+          if (tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom) {
+            var dateStr = col.dataset.date;
+            task.date = dateStr;
+            var tasksEl = col.querySelector(".day-tasks");
+            var closest = getDropTarget(tasksEl, ty);
+            allTasks = allTasks.filter(function(t) { return t.id !== task.id; });
+            if (closest.el) {
+              var targetIdx = allTasks.findIndex(function(t) { return t.id === closest.el.dataset.id; });
+              if (closest.after) targetIdx++;
+              allTasks.splice(targetIdx, 0, task);
+            } else {
+              allTasks.push(task);
+            }
+            saveState();
+            renderWeek();
+          }
+        });
+      });
+
+      // status dropdown
+      card.querySelector(".status-badge").addEventListener("click", function(e) {
+        e.stopPropagation();
+        // toggle: if this card already has a dropdown open, close it
+        var wrapper = card.querySelector(".status-wrapper");
+        var existingOwn = wrapper.querySelector(".status-dropdown");
+        // close any other dropdown
+        var existingAll = document.querySelector(".status-dropdown");
+        if (existingAll) existingAll.remove();
+        if (existingOwn) return; // was open, now closed — done
+
+        var dropdown = document.createElement("div");
+        dropdown.className = "status-dropdown";
+
+        STATUS_ORDER.forEach(function(st) {
+          var opt = document.createElement("div");
+          opt.className = "status-option " + st;
+          opt.innerHTML = '<span class="status-dot"></span> ' + STATUS_LABELS[st];
+          opt.addEventListener("click", function(ev) {
+            ev.stopPropagation();
+            task.status = st;
+            dropdown.remove();
+            saveState();
+            renderWeek();
+          });
+          dropdown.appendChild(opt);
+        });
+
+        // align right if near right edge
+        var wrapperRect = wrapper.getBoundingClientRect();
+        if (wrapperRect.left + 120 > window.innerWidth) {
+          dropdown.classList.add("align-right");
+        }
+        wrapper.appendChild(dropdown);
+
+        // close on outside click
+        setTimeout(function() {
+          document.addEventListener("click", function closeDropdown() {
+            dropdown.remove();
+            document.removeEventListener("click", closeDropdown);
+          }, { once: true });
+        }, 0);
+      });
+
+      // delete
+      card.querySelector(".card-delete").addEventListener("click", function() {
+        if (confirm("Delete this task?")) {
+          allTasks = allTasks.filter(t => t.id !== task.id);
+          saveState();
+          renderWeek();
+        }
+      });
+
+      // inline edit
+      card.querySelectorAll(".editable").forEach(function(el) {
+        const field = el.dataset.field;
+        el.contentEditable = connected ? "true" : "false";
+        el.spellcheck = false;
+        el.addEventListener("blur", function() {
+          task[field] = el.textContent.trim();
+          saveState();
+        });
+        el.addEventListener("keydown", function(e) {
+          if (e.key === "Enter") { e.preventDefault(); el.blur(); }
+          if (e.key === "Escape") { el.textContent = task[field]; el.blur(); }
+        });
+      });
+
+      return card;
+    }
+
+    function esc(s) {
+      const d = document.createElement("div");
+      d.textContent = s || "";
+      return d.innerHTML;
+    }
+
+    function addTask(dateStr) {
+      const task = {
+        id: genId(),
+        title: "New task",
+        tag: false,
+        description: "",
+        status: "todo",
+        date: dateStr
+      };
+      allTasks.push(task);
+      saveState();
+      renderWeek();
+      // focus the new card title
+      const card = document.querySelector('[data-id="' + task.id + '"] .card-title');
+      if (card) {
+        card.focus();
+        const range = document.createRange();
+        range.selectNodeContents(card);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(range);
+      }
+    }
+
+    // ── WEEK NAV ────────────────────────────────────────────────────────
+    document.getElementById("btn-prev").addEventListener("click", function() {
+      currentMonday.setDate(currentMonday.getDate() - 7);
+      renderWeek();
+    });
+    document.getElementById("btn-next").addEventListener("click", function() {
+      currentMonday.setDate(currentMonday.getDate() + 7);
+      renderWeek();
+    });
+    document.getElementById("btn-today").addEventListener("click", function() {
+      currentMonday = getMonday(new Date());
+      renderWeek();
+    });
+
+    // ── DEFAULT DATA ────────────────────────────────────────────────────
+    const DEFAULT_TASKS = [
+      { id: "mmp175", title: "MMP-175", tag: true, description: "Cloud demo builder / claim demo automation.", status: "inprogress", date: todayStr },
+      { id: "mmp184", title: "MMP-184", tag: true, description: "Demo: Globos Motor Claims. Due April 13.", status: "inprogress", date: todayStr },
+      { id: "mmp185", title: "MMP-185", tag: true, description: "Demo: Globos Travel Insurance Parametric. Due April 13.", status: "inprogress", date: todayStr },
+      { id: "pr1093", title: "mmp-app#1093", tag: false, description: "Review An's PR — fix for issue Gary reported.", status: "todo", date: todayStr },
+      { id: "budget", title: "Budget / AI cost", tag: false, description: "Savings plan discussion with Azir.", status: "todo", date: todayStr },
+      { id: "agents", title: "Agent system", tag: false, description: "Check with Lux about the agent system.", status: "todo", date: todayStr },
+      { id: "ws-mcp-refactor", title: "Wallet Studio MCP refactoring", tag: false, description: "Refactoring Wallet Studio MCP with Viktor.", status: "inprogress", date: todayStr },
+      { id: "mmp179", title: "MMP-179", tag: true, description: "R+V email template in Flowmailer. Blocked on R+V approval.", status: "onhold", date: todayStr },
+      { id: "mmp176", title: "MMP-176", tag: true, description: "Improve claim setup.", status: "onhold", date: todayStr },
+      { id: "mmp181", title: "MMP-181", tag: true, description: "HDI param key character limit. Deployed and approved.", status: "done", date: todayStr },
+    ];
+
+    // ── INIT ────────────────────────────────────────────────────────────
+    document.body.classList.add("no-file");
+    document.getElementById("btn-reload").addEventListener("click", loadTasks);
+    loadTasks();
+  </script>
+</body>
+</html>
