@@ -21,6 +21,26 @@
       --done-text: #16a34a;
       --hold-bg: #fff7ed;
       --hold-text: #ea580c;
+      --priority-high: #ef4444;
+      --priority-medium: #f59e0b;
+      --priority-low: #6b7280;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1b1e;
+        --surface: #25262b;
+        --border: #373a40;
+        --text-primary: #e1e3e6;
+        --text-secondary: #909296;
+        --text-muted: #5c5f66;
+        --accent: #818cf8;
+        --accent-light: #2e2e4a;
+        --done-bg: #1a2e1a;
+        --done-text: #4ade80;
+        --hold-bg: #2e2010;
+        --hold-text: #fb923c;
+      }
     }
 
     body {
@@ -131,7 +151,7 @@
     .day-column.is-today {
       border-color: var(--accent);
       box-shadow: 0 0 0 1.5px var(--accent), 0 2px 8px rgba(99, 102, 241, 0.1);
-      background: #fafaff;
+      background: var(--accent-light);
     }
     .day-column.drag-over {
       border-color: var(--accent);
@@ -212,27 +232,19 @@
       padding: 10px 12px;
       border-radius: 7px;
       background: var(--bg);
-      cursor: default;
+      cursor: grab;
       font-size: 0.8rem;
       transition: opacity 0.15s, box-shadow 0.12s, background 0.12s;
       position: relative;
+      animation: cardFadeIn 0.2s ease-out;
+    }
+    @keyframes cardFadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     .task-card:hover { box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .task-card:active { cursor: grabbing; }
     .task-card.dragging { opacity: 0.3; }
-
-    .drag-handle {
-      cursor: grab;
-      color: var(--text-muted);
-      font-size: 0.7rem;
-      line-height: 1;
-      user-select: none;
-      padding: 2px 2px 2px 0;
-      flex-shrink: 0;
-      opacity: 0;
-      transition: opacity 0.12s;
-    }
-    .drag-handle:active { cursor: grabbing; }
-    .task-card:hover .drag-handle { opacity: 1; }
 
     .task-card .card-top {
       display: flex;
@@ -240,6 +252,22 @@
       justify-content: space-between;
       gap: 6px;
     }
+
+    /* priority dot */
+    .priority-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 4px;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .priority-dot:hover { transform: scale(1.4); }
+    .priority-dot.high { background: var(--priority-high); }
+    .priority-dot.medium { background: var(--priority-medium); }
+    .priority-dot.low { background: var(--priority-low); }
+    .priority-dot.none { background: var(--border); }
 
     .card-title {
       font-weight: 600;
@@ -300,16 +328,19 @@
     .status-badge.onhold     { background: #fff7ed; color: #ea580c; }
     .status-badge.done       { background: #f0fdf4; color: #16a34a; }
 
+    @media (prefers-color-scheme: dark) {
+      .status-badge.todo       { background: #374151; color: #d1d5db; }
+      .status-badge.inprogress { background: #1e3a5f; color: #93c5fd; }
+      .status-badge.onhold     { background: #451a03; color: #fdba74; }
+      .status-badge.done       { background: #14532d; color: #86efac; }
+    }
+
     /* status dropdown */
     .status-wrapper { position: relative; }
     .status-dropdown {
       position: absolute;
-      top: calc(100% + 4px);
+      bottom: calc(100% + 4px);
       left: 0;
-    }
-    .status-dropdown.align-right {
-      left: auto;
-      right: 0;
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -317,6 +348,10 @@
       padding: 4px;
       z-index: 100;
       min-width: 120px;
+    }
+    .status-dropdown.align-right {
+      left: auto;
+      right: 0;
     }
     .status-option {
       display: flex;
@@ -341,15 +376,23 @@
     .status-option.onhold     .status-dot { background: #f97316; }
     .status-option.done       .status-dot { background: #22c55e; }
 
+    @media (prefers-color-scheme: dark) {
+      .status-option.todo       { color: #d1d5db; }
+      .status-option.inprogress { color: #93c5fd; }
+      .status-option.onhold     { color: #fdba74; }
+      .status-option.done       { color: #86efac; }
+      .status-dropdown { box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    }
+
     .status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .todo       .status-dot { background: #9ca3af; }
     .inprogress .status-dot { background: #3b82f6; }
     .onhold     .status-dot { background: #f97316; }
     .done       .status-dot { background: #22c55e; }
 
-    /* done card */
+    /* done card — inline in day column */
     .task-card.is-done {
-      opacity: 0.5;
+      opacity: 0.55;
     }
     .task-card.is-done .card-title { text-decoration: line-through; }
 
@@ -381,7 +424,12 @@
       transition: background 0.12s;
     }
     .editable:hover { background: rgba(0,0,0,0.04); }
-    .editable:focus { outline: 2px solid var(--accent); background: white; }
+    .editable:focus { outline: 2px solid var(--accent); background: var(--surface); }
+
+    @media (prefers-color-scheme: dark) {
+      .editable:hover { background: rgba(255,255,255,0.06); }
+      .card-delete:hover { background: #450a0a; }
+    }
 
     /* ON HOLD SECTION */
     .section-label {
@@ -418,34 +466,6 @@
       flex-shrink: 0;
     }
 
-    /* DONE SECTION */
-    .done-section {
-      background: var(--surface);
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      padding: 14px 16px;
-    }
-
-    .done-section .section-label {
-      color: var(--done-text);
-    }
-    .done-section .section-label .dot {
-      background: #22c55e;
-    }
-
-    .done-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .done-grid .task-card {
-      width: 240px;
-      flex-shrink: 0;
-      opacity: 0.55;
-    }
-    .done-grid .task-card .card-title { text-decoration: line-through; }
-
     /* no-file banner */
     .no-file-banner {
       display: none;
@@ -458,6 +478,9 @@
       font-size: 0.82rem;
       color: #92400e;
       margin-bottom: 16px;
+    }
+    @media (prefers-color-scheme: dark) {
+      .no-file-banner { background: #451a03; border-color: #92400e; color: #fde68a; }
     }
     .no-file-banner span { flex: 1; }
     body.no-file .no-file-banner { display: flex; }
@@ -478,6 +501,69 @@
       font-style: italic;
     }
 
+    /* UNDO TOAST */
+    .undo-toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1f2937;
+      color: #f9fafb;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      z-index: 1000;
+      opacity: 0;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+      pointer-events: none;
+    }
+    .undo-toast.visible {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .undo-toast button {
+      background: none;
+      border: none;
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.82rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      font-family: inherit;
+    }
+    .undo-toast button:hover { text-decoration: underline; }
+
+    @media (prefers-color-scheme: dark) {
+      .undo-toast { background: #374151; }
+    }
+
+    /* ── TABLET RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 1024px) {
+      .week-grid {
+        grid-template-columns: none;
+        display: flex;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        gap: 10px;
+        padding-bottom: 8px;
+      }
+
+      .day-column {
+        min-width: 220px;
+        flex-shrink: 0;
+        scroll-snap-align: start;
+      }
+
+      .day-column.is-today { order: -1; }
+    }
+
     /* ── MOBILE RESPONSIVE ──────────────────────────────────────────── */
     @media (max-width: 768px) {
       body { padding: 16px 12px; }
@@ -492,38 +578,22 @@
 
       .week-label { min-width: auto; font-size: 0.78rem; }
 
-      .week-grid {
-        grid-template-columns: none;
-        display: flex;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        -webkit-overflow-scrolling: touch;
-        gap: 10px;
-        padding-bottom: 8px;
-      }
-
       .day-column {
-        min-width: 260px;
-        flex-shrink: 0;
-        scroll-snap-align: start;
+        min-width: 280px;
       }
 
-      .day-column.is-today { order: -1; }
-
-      .task-card { padding: 10px 12px; font-size: 0.85rem; }
+      .task-card { padding: 12px 14px; font-size: 0.85rem; cursor: grab; }
       .card-title { font-size: 0.84rem; }
       .card-desc { font-size: 0.78rem; }
       .status-badge { padding: 4px 10px; font-size: 0.7rem; }
-      .drag-handle { opacity: 0.5; padding: 4px 6px 4px 0; font-size: 0.9rem; color: var(--text-secondary); }
       .card-delete { color: var(--text-muted); font-size: 1rem; padding: 4px 6px; }
       .day-add { padding: 10px; font-size: 0.82rem; }
 
-      .onhold-grid .task-card,
-      .done-grid .task-card {
+      .onhold-grid .task-card {
         width: 100%;
       }
 
-      .onhold-grid, .done-grid {
+      .onhold-grid {
         flex-direction: column;
       }
 
@@ -533,7 +603,7 @@
 
     @media (max-width: 480px) {
       body { padding: 12px 8px; }
-      .day-column { min-width: 240px; }
+      .day-column { min-width: 260px; }
       h1 { font-size: 1.05rem; }
     }
   </style>
@@ -567,16 +637,17 @@
     <div class="onhold-grid" id="onhold-grid"></div>
   </div>
 
-  <div class="done-section" id="done-section" style="display:none">
-    <div class="section-label"><span class="dot"></span> Done</div>
-    <div class="done-grid" id="done-grid"></div>
+  <div class="undo-toast" id="undo-toast">
+    <span id="undo-message"></span>
+    <button id="undo-btn">Undo</button>
   </div>
 
   <script>
     const STATUS_ORDER = ["todo", "inprogress", "onhold", "done"];
     const STATUS_LABELS = { todo: "To Do", inprogress: "In Progress", onhold: "On Hold", done: "Done" };
+    const PRIORITY_ORDER = ["none", "low", "medium", "high"];
+    const PRIORITY_LABELS = { none: "No priority", low: "Low", medium: "Medium", high: "High" };
     const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const DAY_NAMES_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
     // ── DATE UTILS ──────────────────────────────────────────────────────
     function toDateStr(d) {
@@ -604,13 +675,43 @@
       const sun = new Date(monday);
       sun.setDate(sun.getDate() + 6);
       const opts = { month: "short", day: "numeric" };
-      return monday.toLocaleDateString("en-GB", opts) + " — " + sun.toLocaleDateString("en-GB", opts) + ", " + sun.getFullYear();
+      return monday.toLocaleDateString("en-GB", opts) + " \u2014 " + sun.toLocaleDateString("en-GB", opts) + ", " + sun.getFullYear();
     }
 
     // ── STATE ───────────────────────────────────────────────────────────
     let allTasks = [];
     let currentMonday = getMonday(new Date());
     const todayStr = toDateStr(new Date());
+
+    // ── UNDO SYSTEM ─────────────────────────────────────────────────────
+    let undoStack = null;
+    let undoTimer = null;
+
+    function pushUndo(message, snapshot) {
+      undoStack = { message: message, tasks: JSON.parse(JSON.stringify(snapshot)) };
+      showUndoToast(message);
+    }
+
+    function showUndoToast(message) {
+      var toast = document.getElementById("undo-toast");
+      document.getElementById("undo-message").textContent = message;
+      toast.classList.add("visible");
+      clearTimeout(undoTimer);
+      undoTimer = setTimeout(function() {
+        toast.classList.remove("visible");
+        undoStack = null;
+      }, 5000);
+    }
+
+    document.getElementById("undo-btn").addEventListener("click", function() {
+      if (!undoStack) return;
+      allTasks = undoStack.tasks;
+      undoStack = null;
+      clearTimeout(undoTimer);
+      document.getElementById("undo-toast").classList.remove("visible");
+      saveState();
+      renderWeek();
+    });
 
     // ── FILE I/O (via local server API) ─────────────────────────────────
     const API_BASE = window.location.origin;
@@ -722,7 +823,6 @@
         tasksEl.addEventListener("dragover", function(e) {
           e.preventDefault();
           col.classList.add("drag-over");
-          // show drop indicator between cards
           var cards = Array.from(tasksEl.querySelectorAll(".task-card"));
           cards.forEach(function(c) { c.style.borderTop = ""; c.style.borderBottom = ""; });
           var closest = getDropTarget(tasksEl, e.clientY);
@@ -748,17 +848,14 @@
 
           task.date = dateStr;
 
-          // determine insert position among this day's active tasks
           var closest = getDropTarget(tasksEl, e.clientY);
           if (closest.el) {
             var targetId = closest.el.dataset.id;
-            // remove task from allTasks
             allTasks = allTasks.filter(function(t) { return t.id !== taskId; });
             var targetIdx = allTasks.findIndex(function(t) { return t.id === targetId; });
             if (closest.after) targetIdx++;
             allTasks.splice(targetIdx, 0, task);
           } else {
-            // dropped on empty area — move to end
             allTasks = allTasks.filter(function(t) { return t.id !== taskId; });
             allTasks.push(task);
           }
@@ -769,9 +866,9 @@
 
         grid.appendChild(col);
 
-        // render tasks for this day
-        const dayTasks = allTasks.filter(t => t.date === dateStr && t.status !== "done" && t.status !== "onhold");
-        const statusPriority = { inprogress: 0, todo: 1 };
+        // render ALL tasks for this day (including done — no separate done section)
+        const dayTasks = allTasks.filter(t => t.date === dateStr && t.status !== "onhold");
+        const statusPriority = { inprogress: 0, todo: 1, done: 2 };
         dayTasks.sort(function(a, b) { return (statusPriority[a.status] || 1) - (statusPriority[b.status] || 1); });
         const container = col.querySelector(".day-tasks");
 
@@ -796,30 +893,20 @@
       } else {
         onholdSection.style.display = "none";
       }
-
-      // Done section
-      const doneTasks = allTasks.filter(t => t.status === "done");
-      const doneSection = document.getElementById("done-section");
-      const doneGrid = document.getElementById("done-grid");
-      doneGrid.innerHTML = "";
-      if (doneTasks.length > 0) {
-        doneSection.style.display = "";
-        doneTasks.forEach(t => doneGrid.appendChild(renderCard(t)));
-      } else {
-        doneSection.style.display = "none";
-      }
     }
 
     function renderCard(task) {
       const card = document.createElement("div");
       card.className = "task-card" + (task.status === "done" ? " is-done" : "");
       card.dataset.id = task.id;
+      card.draggable = true;
 
       const s = task.status || "todo";
+      const p = task.priority || "none";
 
       card.innerHTML =
         '<div class="card-top">' +
-          '<span class="drag-handle" draggable="true" title="Drag to move">\u2807</span>' +
+          '<span class="priority-dot ' + p + '" title="' + PRIORITY_LABELS[p] + '"></span>' +
           (task.tag
             ? '<span class="tag">' + esc(task.title) + '</span>'
             : '<span class="editable card-title" data-field="title">' + esc(task.title) + '</span>') +
@@ -835,13 +922,12 @@
           '</div>' +
         '</div>';
 
-      // drag — only from handle
-      const handle = card.querySelector(".drag-handle");
-      handle.addEventListener("dragstart", function(e) {
+      // drag — whole card is draggable now
+      card.addEventListener("dragstart", function(e) {
         e.dataTransfer.setData("text/plain", task.id);
         card.classList.add("dragging");
       });
-      handle.addEventListener("dragend", function() {
+      card.addEventListener("dragend", function() {
         card.classList.remove("dragging");
         document.querySelectorAll(".day-column.drag-over").forEach(c => c.classList.remove("drag-over"));
       });
@@ -850,73 +936,102 @@
       let touchClone = null;
       let touchStartY = 0;
       let touchStartX = 0;
-      handle.addEventListener("touchstart", function(e) {
-        e.preventDefault();
+      let touchMoved = false;
+      card.addEventListener("touchstart", function(e) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
-        card.classList.add("dragging");
-        touchClone = card.cloneNode(true);
-        touchClone.style.position = "fixed";
-        touchClone.style.width = card.offsetWidth + "px";
-        touchClone.style.opacity = "0.8";
-        touchClone.style.pointerEvents = "none";
-        touchClone.style.zIndex = "1000";
-        touchClone.style.transform = "rotate(2deg)";
-        document.body.appendChild(touchClone);
-      }, { passive: false });
-      handle.addEventListener("touchmove", function(e) {
-        if (!touchClone) return;
-        e.preventDefault();
+        touchMoved = false;
+      }, { passive: true });
+      card.addEventListener("touchmove", function(e) {
         var tx = e.touches[0].clientX;
         var ty = e.touches[0].clientY;
-        touchClone.style.left = (tx - touchClone.offsetWidth / 2) + "px";
-        touchClone.style.top = (ty - 20) + "px";
-        // highlight drop target column
-        document.querySelectorAll(".day-column").forEach(function(col) {
-          var r = col.getBoundingClientRect();
-          col.classList.toggle("drag-over", tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom);
-        });
+        var dx = Math.abs(tx - touchStartX);
+        var dy = Math.abs(ty - touchStartY);
+
+        // only start drag if moved enough horizontally (to not block scrolling)
+        if (!touchClone && dx > 15) {
+          e.preventDefault();
+          touchMoved = true;
+          card.classList.add("dragging");
+          touchClone = card.cloneNode(true);
+          touchClone.style.position = "fixed";
+          touchClone.style.width = card.offsetWidth + "px";
+          touchClone.style.opacity = "0.8";
+          touchClone.style.pointerEvents = "none";
+          touchClone.style.zIndex = "1000";
+          touchClone.style.transform = "rotate(2deg)";
+          document.body.appendChild(touchClone);
+        }
+
+        if (touchClone) {
+          e.preventDefault();
+          touchClone.style.left = (tx - touchClone.offsetWidth / 2) + "px";
+          touchClone.style.top = (ty - 20) + "px";
+          document.querySelectorAll(".day-column").forEach(function(col) {
+            var r = col.getBoundingClientRect();
+            col.classList.toggle("drag-over", tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom);
+          });
+        }
       }, { passive: false });
-      handle.addEventListener("touchend", function(e) {
+      card.addEventListener("touchend", function(e) {
         card.classList.remove("dragging");
-        if (touchClone) { touchClone.remove(); touchClone = null; }
-        var tx = e.changedTouches[0].clientX;
-        var ty = e.changedTouches[0].clientY;
-        document.querySelectorAll(".day-column").forEach(function(col) {
-          col.classList.remove("drag-over");
-          var r = col.getBoundingClientRect();
-          if (tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom) {
-            var dateStr = col.dataset.date;
-            task.date = dateStr;
-            var tasksEl = col.querySelector(".day-tasks");
-            var closest = getDropTarget(tasksEl, ty);
-            allTasks = allTasks.filter(function(t) { return t.id !== task.id; });
-            if (closest.el) {
-              var targetIdx = allTasks.findIndex(function(t) { return t.id === closest.el.dataset.id; });
-              if (closest.after) targetIdx++;
-              allTasks.splice(targetIdx, 0, task);
-            } else {
-              allTasks.push(task);
+        if (touchClone) {
+          touchClone.remove();
+          touchClone = null;
+          var tx = e.changedTouches[0].clientX;
+          var ty = e.changedTouches[0].clientY;
+          document.querySelectorAll(".day-column").forEach(function(col) {
+            col.classList.remove("drag-over");
+            var r = col.getBoundingClientRect();
+            if (tx >= r.left && tx <= r.right && ty >= r.top && ty <= r.bottom) {
+              var dateStr = col.dataset.date;
+              task.date = dateStr;
+              var tasksEl = col.querySelector(".day-tasks");
+              var closest = getDropTarget(tasksEl, ty);
+              allTasks = allTasks.filter(function(t) { return t.id !== task.id; });
+              if (closest.el) {
+                var targetIdx = allTasks.findIndex(function(t) { return t.id === closest.el.dataset.id; });
+                if (closest.after) targetIdx++;
+                allTasks.splice(targetIdx, 0, task);
+              } else {
+                allTasks.push(task);
+              }
+              saveState();
+              renderWeek();
             }
-            saveState();
-            renderWeek();
-          }
-        });
+          });
+        }
+      });
+
+      // priority cycle on click
+      card.querySelector(".priority-dot").addEventListener("click", function(e) {
+        e.stopPropagation();
+        var oldPriority = task.priority || "none";
+        var snapshot = JSON.parse(JSON.stringify(allTasks));
+        var idx = PRIORITY_ORDER.indexOf(oldPriority);
+        task.priority = PRIORITY_ORDER[(idx + 1) % PRIORITY_ORDER.length];
+        pushUndo("Priority changed to " + PRIORITY_LABELS[task.priority], snapshot);
+        saveState();
+        renderWeek();
       });
 
       // status dropdown
       card.querySelector(".status-badge").addEventListener("click", function(e) {
         e.stopPropagation();
-        // toggle: if this card already has a dropdown open, close it
         var wrapper = card.querySelector(".status-wrapper");
         var existingOwn = wrapper.querySelector(".status-dropdown");
-        // close any other dropdown
         var existingAll = document.querySelector(".status-dropdown");
         if (existingAll) existingAll.remove();
-        if (existingOwn) return; // was open, now closed — done
+        if (existingOwn) return;
 
         var dropdown = document.createElement("div");
         dropdown.className = "status-dropdown";
+
+        // align right if near right edge
+        var wrapperRect = wrapper.getBoundingClientRect();
+        if (wrapperRect.left + 120 > window.innerWidth) {
+          dropdown.classList.add("align-right");
+        }
 
         STATUS_ORDER.forEach(function(st) {
           var opt = document.createElement("div");
@@ -924,22 +1039,19 @@
           opt.innerHTML = '<span class="status-dot"></span> ' + STATUS_LABELS[st];
           opt.addEventListener("click", function(ev) {
             ev.stopPropagation();
+            var snapshot = JSON.parse(JSON.stringify(allTasks));
+            var oldStatus = task.status;
             task.status = st;
             dropdown.remove();
+            pushUndo("Status: " + STATUS_LABELS[oldStatus] + " \u2192 " + STATUS_LABELS[st], snapshot);
             saveState();
             renderWeek();
           });
           dropdown.appendChild(opt);
         });
 
-        // align right if near right edge
-        var wrapperRect = wrapper.getBoundingClientRect();
-        if (wrapperRect.left + 120 > window.innerWidth) {
-          dropdown.classList.add("align-right");
-        }
         wrapper.appendChild(dropdown);
 
-        // close on outside click
         setTimeout(function() {
           document.addEventListener("click", function closeDropdown() {
             dropdown.remove();
@@ -948,13 +1060,15 @@
         }, 0);
       });
 
-      // delete
-      card.querySelector(".card-delete").addEventListener("click", function() {
-        if (confirm("Delete this task?")) {
-          allTasks = allTasks.filter(t => t.id !== task.id);
-          saveState();
-          renderWeek();
-        }
+      // delete with undo
+      card.querySelector(".card-delete").addEventListener("click", function(e) {
+        e.stopPropagation();
+        var snapshot = JSON.parse(JSON.stringify(allTasks));
+        var title = task.title;
+        allTasks = allTasks.filter(t => t.id !== task.id);
+        pushUndo("Deleted \"" + title + "\"", snapshot);
+        saveState();
+        renderWeek();
       });
 
       // inline edit
@@ -962,6 +1076,7 @@
         const field = el.dataset.field;
         el.contentEditable = connected ? "true" : "false";
         el.spellcheck = false;
+        el.addEventListener("mousedown", function(e) { e.stopPropagation(); });
         el.addEventListener("blur", function() {
           task[field] = el.textContent.trim();
           saveState();
@@ -970,6 +1085,18 @@
           if (e.key === "Enter") { e.preventDefault(); el.blur(); }
           if (e.key === "Escape") { el.textContent = task[field]; el.blur(); }
         });
+      });
+
+      // prevent drag when clicking interactive elements
+      card.querySelector(".card-delete").addEventListener("mousedown", function(e) { e.stopPropagation(); });
+      card.querySelector(".status-badge").addEventListener("mousedown", function(e) { e.stopPropagation(); });
+      card.querySelector(".priority-dot").addEventListener("mousedown", function(e) { e.stopPropagation(); });
+
+      // prevent card drag from starting on interactive children
+      card.addEventListener("dragstart", function(e) {
+        if (e.target.classList.contains("editable") || e.target.closest(".editable")) {
+          e.preventDefault();
+        }
       });
 
       return card;
@@ -988,12 +1115,12 @@
         tag: false,
         description: "",
         status: "todo",
+        priority: "none",
         date: dateStr
       };
       allTasks.push(task);
       saveState();
       renderWeek();
-      // focus the new card title
       const card = document.querySelector('[data-id="' + task.id + '"] .card-title');
       if (card) {
         card.focus();
@@ -1020,16 +1147,16 @@
 
     // ── DEFAULT DATA ────────────────────────────────────────────────────
     const DEFAULT_TASKS = [
-      { id: "mmp175", title: "MMP-175", tag: true, description: "Cloud demo builder / claim demo automation.", status: "inprogress", date: todayStr },
-      { id: "mmp184", title: "MMP-184", tag: true, description: "Demo: Globos Motor Claims. Due April 13.", status: "inprogress", date: todayStr },
-      { id: "mmp185", title: "MMP-185", tag: true, description: "Demo: Globos Travel Insurance Parametric. Due April 13.", status: "inprogress", date: todayStr },
-      { id: "pr1093", title: "mmp-app#1093", tag: false, description: "Review An's PR — fix for issue Gary reported.", status: "todo", date: todayStr },
-      { id: "budget", title: "Budget / AI cost", tag: false, description: "Savings plan discussion with Azir.", status: "todo", date: todayStr },
-      { id: "agents", title: "Agent system", tag: false, description: "Check with Lux about the agent system.", status: "todo", date: todayStr },
-      { id: "ws-mcp-refactor", title: "Wallet Studio MCP refactoring", tag: false, description: "Refactoring Wallet Studio MCP with Viktor.", status: "inprogress", date: todayStr },
-      { id: "mmp179", title: "MMP-179", tag: true, description: "R+V email template in Flowmailer. Blocked on R+V approval.", status: "onhold", date: todayStr },
-      { id: "mmp176", title: "MMP-176", tag: true, description: "Improve claim setup.", status: "onhold", date: todayStr },
-      { id: "mmp181", title: "MMP-181", tag: true, description: "HDI param key character limit. Deployed and approved.", status: "done", date: todayStr },
+      { id: "mmp175", title: "MMP-175", tag: true, description: "Cloud demo builder / claim demo automation.", status: "inprogress", priority: "high", date: todayStr },
+      { id: "mmp184", title: "MMP-184", tag: true, description: "Demo: Globos Motor Claims. Due April 13.", status: "inprogress", priority: "high", date: todayStr },
+      { id: "mmp185", title: "MMP-185", tag: true, description: "Demo: Globos Travel Insurance Parametric. Due April 13.", status: "inprogress", priority: "high", date: todayStr },
+      { id: "pr1093", title: "mmp-app#1093", tag: false, description: "Review An's PR — fix for issue Gary reported.", status: "todo", priority: "medium", date: todayStr },
+      { id: "budget", title: "Budget / AI cost", tag: false, description: "Savings plan discussion with Azir.", status: "todo", priority: "medium", date: todayStr },
+      { id: "agents", title: "Agent system", tag: false, description: "Check with Lux about the agent system.", status: "todo", priority: "low", date: todayStr },
+      { id: "ws-mcp-refactor", title: "Wallet Studio MCP refactoring", tag: false, description: "Refactoring Wallet Studio MCP with Viktor.", status: "inprogress", priority: "medium", date: todayStr },
+      { id: "mmp179", title: "MMP-179", tag: true, description: "R+V email template in Flowmailer. Blocked on R+V approval.", status: "onhold", priority: "medium", date: todayStr },
+      { id: "mmp176", title: "MMP-176", tag: true, description: "Improve claim setup.", status: "onhold", priority: "low", date: todayStr },
+      { id: "mmp181", title: "MMP-181", tag: true, description: "HDI param key character limit. Deployed and approved.", status: "done", priority: "none", date: todayStr },
     ];
 
     // ── INIT ────────────────────────────────────────────────────────────
