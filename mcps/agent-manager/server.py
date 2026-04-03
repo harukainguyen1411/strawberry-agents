@@ -8,6 +8,9 @@ Environment Variables:
     WORKSPACE_PATH       — path to workspace root
     AGENTS_PATH          — path to agents/ root (contains agent folders)
     ITERM_PROFILES_PATH  — path to iTerm2 DynamicProfiles/agents.json
+  Optional:
+    OPS_PATH             — path for operational data (inbox, conversations, health, inbox-queue).
+                           Falls back to in-repo paths under AGENTS_PATH if not set.
 """
 import asyncio
 import fcntl
@@ -31,8 +34,20 @@ log = logging.getLogger('agent-manager')
 WORKSPACE = os.environ.get('WORKSPACE_PATH', '')
 AGENTS_DIR = os.environ.get('AGENTS_PATH', '')
 ITERM_PROFILES = os.environ.get('ITERM_PROFILES_PATH', '')
+OPS_PATH = os.environ.get('OPS_PATH', '')
 
 mcp = FastMCP('agent-manager')
+
+
+# ── ops path ─────────────────────────────────────────────────────────────
+
+def _ops_root() -> Optional[Path]:
+    """Return the ops directory if OPS_PATH is set and exists, else None."""
+    if not OPS_PATH:
+        return None
+    p = Path(OPS_PATH)
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 # ── helpers ──────────────────────────────────────────────────────────────
@@ -319,16 +334,24 @@ async def create_agent(
 
 def _inbox_dir(agent_name: str) -> Path:
     """Get (and ensure) the inbox directory for an agent."""
-    agent_dir = _find_agent(agent_name)
-    d = agent_dir / 'inbox'
-    d.mkdir(exist_ok=True)
+    ops = _ops_root()
+    if ops:
+        d = ops / 'inbox' / agent_name.lower().strip()
+    else:
+        agent_dir = _find_agent(agent_name)
+        d = agent_dir / 'inbox'
+    d.mkdir(parents=True, exist_ok=True)
     return d
 
 
 def _inbox_queue_dir() -> Path:
     """Central queue for action-priority messages awaiting Duong's approval."""
-    d = _agents_root() / 'inbox-queue'
-    d.mkdir(exist_ok=True)
+    ops = _ops_root()
+    if ops:
+        d = ops / 'inbox-queue'
+    else:
+        d = _agents_root() / 'inbox-queue'
+    d.mkdir(parents=True, exist_ok=True)
     return d
 
 
@@ -751,10 +774,14 @@ async def end_all_sessions(exclude: Optional[list[str]] = None) -> dict[str, Any
 # ── conversations ────────────────────────────────────────────────────────
 
 def _conversations_dir() -> Path:
-    if not AGENTS_DIR:
-        raise ToolError('AGENTS_PATH not configured.')
-    d = Path(AGENTS_DIR) / 'conversations'
-    d.mkdir(exist_ok=True)
+    ops = _ops_root()
+    if ops:
+        d = ops / 'conversations'
+    else:
+        if not AGENTS_DIR:
+            raise ToolError('AGENTS_PATH not configured.')
+        d = Path(AGENTS_DIR) / 'conversations'
+    d.mkdir(parents=True, exist_ok=True)
     return d
 
 
@@ -955,6 +982,11 @@ async def list_conversations(
 # ── agent status registry (Phase 1) ─────────────────────────────────────
 
 def _registry_path() -> Path:
+    ops = _ops_root()
+    if ops:
+        d = ops / 'health'
+        d.mkdir(parents=True, exist_ok=True)
+        return d / 'registry.json'
     return _agents_root() / 'health' / 'registry.json'
 
 
