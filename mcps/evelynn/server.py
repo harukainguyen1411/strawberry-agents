@@ -273,34 +273,22 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
     log.info(f'Restarting Evelynn (session {short_id}...)')
     send_to_iterm_window(wid, '/exit')
 
-    # Wait for /exit to complete — poll window name for shell prompt
-    # If still showing claude after 15s, proceed anyway (best effort)
-    for _ in range(6):
-        await asyncio.sleep(3)
-        windows = get_iterm_agent_windows()
-        still_running = any(
-            w['window_id'] == wid and 'claude' in w.get('raw_name', '').lower()
-            for w in windows
-        )
-        if not still_running:
-            break
+    # Wait for /exit to complete — fixed delay since iTerm window name
+    # updates are unreliable for detecting Claude process state
+    await asyncio.sleep(5)
 
     send_to_iterm_window(wid, f'claude --resume {session_id}')
 
-    # Best-effort detection: check that the window still exists after resume.
-    # We don't check for "claude" in raw_name because iTerm may not update the
-    # session name reliably — this caused false negatives (status: "failed"
-    # even on successful restarts).
-    session_detected = False
-    for _ in range(10):  # Up to 30s
-        await asyncio.sleep(3)
-        windows = get_iterm_agent_windows()
-        window_exists = any(w['window_id'] == wid for w in windows)
-        if window_exists:
-            session_detected = True
-            break
+    # We cannot reliably detect whether the resumed session is running:
+    # - iTerm window persists throughout (checking existence is a no-op)
+    # - iTerm session name (raw_name) doesn't update reliably after resume
+    # So we always report "uncertain" and always notify.
 
-    # ALWAYS notify — regardless of detection result
+    # Wait for Claude to finish loading before delivering notification
+    await asyncio.sleep(8)
+
+    # Always notify Evelynn
+    notification_sent = False
     try:
         from pathlib import Path as _P
         inbox_dir = _P(AGENTS_DIR) / 'evelynn' / 'inbox'
@@ -308,34 +296,22 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
         ts = datetime.now()
         filename = f'{ts.strftime("%Y%m%d-%H%M")}-system-info.md'
         inbox_path = inbox_dir / filename
-        if session_detected:
-            body = f'Restart complete. Restarted by {sender} (session {short_id}...).'
-        else:
-            body = (
-                f'Restart attempted by {sender} (session {short_id}...) '
-                f'but could not confirm session is running. Check iTerm manually.'
-            )
         inbox_path.write_text(
             f'---\nfrom: system\nto: evelynn\npriority: info\n'
             f'timestamp: {ts.strftime("%Y-%m-%d %H:%M")}\nstatus: pending\n---\n\n'
-            f'{body}\n'
+            f'Restart attempted by {sender} (session {short_id}...). '
+            f'Cannot confirm session state — check iTerm if needed.\n'
         )
-        # Brief extra wait for Claude to finish loading, then deliver
-        await asyncio.sleep(5)
         send_to_iterm_window(wid, f'[inbox] {inbox_path}')
-    except Exception:
-        pass  # Best effort — don't fail the restart over notification
+        notification_sent = True
+    except Exception as e:
+        log.warning(f'Failed to send restart notification: {e}')
 
-    status = 'restarted' if session_detected else 'uncertain'
-    message = (
-        f'Evelynn restarted (session {short_id}...)'
-        if session_detected
-        else f'Restart sent but could not confirm session (session {short_id}...). Notification delivered.'
-    )
     return {
-        'status': status,
+        'status': 'uncertain',
         'session_id': short_id,
-        'message': message,
+        'notification_sent': notification_sent,
+        'message': f'Restart command sent to Evelynn (session {short_id}...). Session state cannot be confirmed automatically.',
     }
 
 
