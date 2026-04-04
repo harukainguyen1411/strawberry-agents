@@ -46,7 +46,13 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - PR documentation checklist: architecture docs, README, agent-network.md.
 - Files → Cursor, URLs/PRs → browser (open command).
 
+## Billing
+- **Personal:** Pro subscription ($20/mo) + 30% discounted extra usage bundles. Moving agents to API (per-agent keys). Why: API has no seat minimum, same token rates, full flexibility.
+- **Work:** Team plan through MMP (separate system).
+- Per-agent API key setup: settings.local.json in each agent's .claude/ dir. Duong creating keys in Console.
+
 ## Open Threads
+- API key setup — Duong filling in per-agent keys, needs to test
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
 - Meet Zilean — Duong hasn't launched him yet

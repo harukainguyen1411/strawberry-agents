@@ -15,6 +15,7 @@
 - Designed agent network optimization plan (6 phases)
 - Designed ops-separation strategy (Option 3b): split files by lifespan
 - Vanilla vs framework consulting: recommended vanilla HTML for simple AI-maintained apps
+- Claude billing comparison: `architecture/claude-billing-comparison.md` — subscription vs API vs Team
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -29,6 +30,10 @@
 - Per-agent cost tracking: /cost per session, or one API key per agent for dashboard grouping
 - Claude CLI does NOT expose context usage programmatically — self-reporting is the only option
 - Deadlines for agent delegations should be in minutes (not hours) — AI agents are fast
+- Subscription vs API: completely separate billing systems. 30% bundle discount is subscription-only.
+- Team plan requires 5 seats minimum — non-starter for solo operator
+- Team extra usage per-token rates = standard API rates (identical)
+- Auto mode: Team has it now (research preview), API rolling out
 
 ## Sessions
 - 2026-04-03 S1: Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
@@ -36,3 +41,5 @@
 - 2026-04-03 S3: Vanilla vs framework, Discord community hub recommendation
 - 2026-04-04 S4: Turn-based conversation system v1-v3 design, live testing, protocol updates
 - 2026-04-04 S5: PR #15 review (flexible convos + Evelynn MCP), context monitoring design, delegation tracking design
+- 2026-04-04 S6: Pro/Max vs API billing comparison research
+- 2026-04-04 S7: Billing doc recreation, subscription/API separation, API vs Team comparison

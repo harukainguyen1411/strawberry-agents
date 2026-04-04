@@ -11,6 +11,9 @@ credentials.json
 *-oauth-keys.json
 secrets/
 
+# Agent-local settings (contains API keys)
+settings.local.json
+
 # Agent runtime (managed by MCP, not version-tracked)
 usage/
 *.db

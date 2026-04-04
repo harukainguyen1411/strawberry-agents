@@ -13,7 +13,7 @@
 - `end-session` tools live on the usage-tracker server in blueberry, not in strawberry
 - PRs with significant changes must update relevant README.md. **Why:** README used as triage context for Discord bot
 - Sender enforcement on evelynn server is honor-system. **Why:** MCP has no caller identity
-- restart_evelynn has a false negative detection issue — plan at plans/2026-04-04-restart-evelynn-detection-fix.md
+- restart_evelynn always returns "uncertain" — iTerm has no reliable way to detect session state from outside. **Why:** window name and window existence checks both unreliable (PR #25)
 
 ## Working patterns
 - Duong prefers direct mode, communicates in chat
@@ -28,3 +28,4 @@
 - 2026-04-03: Roster fix, 6-phase network optimization, OPS_PATH, QC follow-up, usage-tracker investigation, removed /cost from protocol
 - 2026-04-04 AM: invite_to_conversation, evelynn MCP server, flexible conversations, shared helpers
 - 2026-04-04 PM: Telegram bridge v2, restart_evelynn, context health monitoring, task delegation tracking, GH token injection, restart detection fix plan
+- 2026-04-04 Eve: restart_evelynn detection fix (PR #25) — merged

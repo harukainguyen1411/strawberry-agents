@@ -10,6 +10,7 @@
 - 2026-04-03 (s4): Reviewed PR #11 (contributor-pipeline) — 3 blockers, 9 non-blocking. Also fixed Rek'Sai iTerm profile.
 - 2026-04-04 (s5): Reviewed PR #12 (Discord relay + turn-based conversations) — 3 blockers, 7 non-blocking. Awaiting fixes.
 - 2026-04-04 (s6): Reviewed PRs #15, #17, #18, #19, #20, #21, #22, #24 — all approved.
+- 2026-04-04 (s7): Reviewed PR #25 (restart-detection-fix) — 1 blocker, 2 non-blocking. All fixed, approved pass 2.
 
 ## Review History
 - PR #5: chmod/umask, heartbeat misplacement, missing cleanup, redundant gitignore. Author: Pyke.
@@ -25,6 +26,7 @@
 - PR #21: Firebase task board — no input validation, missing composite index, no existence check. All fixed.
 - PR #22: Task delegation — glob-count ID collision. Fixed.
 - PR #24: restart_evelynn notification timing — poll loop added. Approved.
+- PR #25: No-op window-existence detection, inconsistent exit-wait, silent exception. All fixed. Author: Bard.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. **Why:** flag proactively in any PR involving Claude CLI invocation.
