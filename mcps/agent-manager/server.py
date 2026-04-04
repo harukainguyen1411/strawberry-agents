@@ -795,6 +795,257 @@ async def get_agent_health_summary() -> dict[str, Any]:
     return summary
 
 
+# ── task delegation tracking ──────────────────────────────────────────
+
+def _delegations_dir() -> Path:
+    ops = _ops_root()
+    if ops:
+        d = ops / 'delegations'
+    else:
+        if not AGENTS_DIR:
+            raise ToolError('AGENTS_PATH not configured.')
+        d = Path(AGENTS_DIR) / 'delegations'
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _next_delegation_id() -> str:
+    ts = datetime.now().strftime('%Y%m%d-%H%M')
+    d = _delegations_dir()
+    existing = list(d.glob(f'd-{ts}-*.json'))
+    seq = len(existing) + 1
+    return f'd-{ts}-{seq:03d}'
+
+
+def _parse_deadline(deadline: str) -> Optional[str]:
+    """Parse deadline string. Accepts '5m', '15m', '30m', '1h', '2h' or ISO timestamp."""
+    if not deadline:
+        return None
+    deadline = deadline.strip()
+    now = datetime.now(timezone.utc)
+    if deadline.endswith('m'):
+        try:
+            minutes = int(deadline[:-1])
+            return (now + timedelta(minutes=minutes)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except ValueError:
+            pass
+    if deadline.endswith('h'):
+        try:
+            hours = int(deadline[:-1])
+            return (now + timedelta(hours=hours)).strftime('%Y-%m-%dT%H:%M:%SZ')
+        except ValueError:
+            pass
+    # Assume ISO timestamp
+    return deadline
+
+
+def _read_delegation(path: Path) -> dict[str, Any]:
+    try:
+        return json.loads(path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _write_delegation(path: Path, data: dict[str, Any]):
+    path.write_text(json.dumps(data, indent=2) + '\n')
+
+
+@mcp.tool()
+async def delegate_task(
+    sender: str,
+    agent: str,
+    task: str,
+    deadline: str = '',
+) -> dict[str, Any]:
+    """Delegate a tracked task to an agent.
+
+    Creates a delegation record and delivers the task via inbox.
+    The receiving agent must call complete_task when done.
+
+    Args:
+        sender: Who is delegating (usually evelynn)
+        agent: Who is receiving the task
+        task: Task description
+        deadline: Optional — '5m', '15m', '30m', '1h', '2h', or ISO timestamp
+    """
+    sender = sender.lower().strip()
+    agent = agent.lower().strip()
+    _find_agent(agent)
+
+    delegation_id = _next_delegation_id()
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    parsed_deadline = _parse_deadline(deadline)
+
+    record = {
+        'id': delegation_id,
+        'sender': sender,
+        'agent': agent,
+        'task': task,
+        'status': 'pending',
+        'created': now,
+        'deadline': parsed_deadline,
+        'completed_at': None,
+        'report': None,
+    }
+
+    path = _delegations_dir() / f'{delegation_id}.json'
+    _write_delegation(path, record)
+
+    # Build inbox message with delegation ID and completion instructions
+    deadline_line = f'\nDeadline: {parsed_deadline}' if parsed_deadline else ''
+    inbox_msg = (
+        f'[TASK {delegation_id}] {task}'
+        f'{deadline_line}\n'
+        f'When done: complete_task(agent={agent}, delegation_id={delegation_id}, report=<summary>)'
+    )
+
+    try:
+        inbox_path = _write_inbox_message(
+            sender=sender,
+            recipient=agent,
+            message=inbox_msg,
+            priority='info',
+        )
+        # Deliver via iTerm if running
+        iterm_windows = _get_iterm_agent_windows()
+        for w in iterm_windows:
+            if w['name'].lower() == agent:
+                _send_to_iterm_window(w['window_id'], f'[inbox] {inbox_path}')
+                break
+    except ToolError:
+        pass
+
+    return {
+        'delegation_id': delegation_id,
+        'agent': agent,
+        'task': task,
+        'deadline': parsed_deadline,
+        'status': 'delegated',
+    }
+
+
+@mcp.tool()
+async def complete_task(
+    agent: str,
+    delegation_id: str,
+    report: str,
+) -> dict[str, Any]:
+    """Mark a delegated task as complete with a summary report.
+
+    Automatically notifies the delegating agent.
+
+    Args:
+        agent: Agent completing the task
+        delegation_id: Delegation ID from the task assignment
+        report: Summary of what was done
+    """
+    agent = agent.lower().strip()
+    path = _delegations_dir() / f'{delegation_id}.json'
+
+    if not path.exists():
+        raise ToolError(f'Delegation {delegation_id} not found.')
+
+    record = _read_delegation(path)
+    if not record:
+        raise ToolError(f'Could not read delegation {delegation_id}.')
+
+    if record.get('agent') != agent:
+        raise ToolError(f'Delegation {delegation_id} is assigned to {record.get("agent")}, not {agent}.')
+
+    if record.get('status') == 'completed':
+        raise ToolError(f'Delegation {delegation_id} is already completed.')
+
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    record['status'] = 'completed'
+    record['completed_at'] = now
+    record['report'] = report
+    _write_delegation(path, record)
+
+    # Notify the delegator
+    delegator = record.get('sender', '')
+    if delegator:
+        try:
+            notify_msg = (
+                f'[TASK COMPLETE {delegation_id}] {record.get("task", "")}\n'
+                f'Agent: {agent}\n'
+                f'Report: {report}'
+            )
+            inbox_path = _write_inbox_message(
+                sender=agent,
+                recipient=delegator,
+                message=notify_msg,
+                priority='info',
+            )
+            iterm_windows = _get_iterm_agent_windows()
+            for w in iterm_windows:
+                if w['name'].lower() == delegator:
+                    _send_to_iterm_window(w['window_id'], f'[inbox] {inbox_path}')
+                    break
+        except ToolError:
+            pass
+
+    return {
+        'delegation_id': delegation_id,
+        'status': 'completed',
+        'agent': agent,
+        'report': report,
+    }
+
+
+@mcp.tool()
+async def check_delegations(
+    sender: str = '',
+    agent: str = '',
+    status: str = '',
+) -> list[dict[str, Any]]:
+    """Check status of delegated tasks.
+
+    Returns all matching delegations. Auto-marks tasks as overdue
+    if past deadline and still pending.
+
+    Args:
+        sender: Filter by who delegated (optional)
+        agent: Filter by who received (optional)
+        status: Filter — pending, completed, overdue (optional)
+    """
+    sender = sender.lower().strip() if sender else ''
+    agent = agent.lower().strip() if agent else ''
+    status = status.lower().strip() if status else ''
+    now = datetime.now(timezone.utc)
+
+    d = _delegations_dir()
+    results = []
+
+    for f in sorted(d.glob('d-*.json'), reverse=True):
+        record = _read_delegation(f)
+        if not record:
+            continue
+
+        # Auto-mark overdue
+        if record.get('status') == 'pending' and record.get('deadline'):
+            try:
+                dl = datetime.fromisoformat(record['deadline'].replace('Z', '+00:00'))
+                if dl.tzinfo is None:
+                    dl = dl.replace(tzinfo=timezone.utc)
+                if now > dl:
+                    record['status'] = 'overdue'
+                    _write_delegation(f, record)
+            except (ValueError, TypeError):
+                pass
+
+        # Apply filters
+        if sender and record.get('sender') != sender:
+            continue
+        if agent and record.get('agent') != agent:
+            continue
+        if status and record.get('status') != status:
+            continue
+
+        results.append(record)
+
+    return results
+
+
 # ── delivery confirmation (Phase 2) ─────────────────────────────────────
 
 def _parse_inbox_frontmatter(path: Path) -> dict[str, str]:
