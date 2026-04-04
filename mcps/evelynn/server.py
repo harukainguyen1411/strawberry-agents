@@ -287,8 +287,27 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
 
     send_to_iterm_window(wid, f'claude --resume {session_id}')
 
-    # Write inbox notification file
-    inbox_path = None
+    # Poll for session to come back up (check window name contains "claude")
+    session_started = False
+    for _ in range(10):  # Up to 30s
+        await asyncio.sleep(3)
+        windows = get_iterm_agent_windows()
+        is_running = any(
+            w['window_id'] == wid and 'claude' in w.get('raw_name', '').lower()
+            for w in windows
+        )
+        if is_running:
+            session_started = True
+            break
+
+    if not session_started:
+        return {
+            'status': 'failed',
+            'session_id': short_id,
+            'message': f'Evelynn session did not come back after resume (session {short_id}...). Check iTerm manually.',
+        }
+
+    # Write and deliver inbox notification
     try:
         from pathlib import Path as _P
         inbox_dir = _P(AGENTS_DIR) / 'evelynn' / 'inbox'
@@ -301,17 +320,11 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
             f'timestamp: {ts.strftime("%Y-%m-%d %H:%M")}\nstatus: pending\n---\n\n'
             f'Restart complete. Restarted by {sender} (session {short_id}...).\n'
         )
+        # Brief extra wait for Claude to finish loading, then deliver
+        await asyncio.sleep(5)
+        send_to_iterm_window(wid, f'[inbox] {inbox_path}')
     except Exception:
         pass  # Best effort — don't fail the restart over notification
-
-    # Wait for Evelynn's session to be ready before delivering the notification.
-    # Claude takes ~10-15s to fully load after --resume.
-    if inbox_path:
-        await asyncio.sleep(15)
-        try:
-            send_to_iterm_window(wid, f'[inbox] {inbox_path}')
-        except Exception:
-            pass
 
     return {
         'status': 'restarted',
