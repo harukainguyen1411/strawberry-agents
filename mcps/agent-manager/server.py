@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import textwrap
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -27,62 +28,28 @@ from typing import Any, Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 
+# Import shared helpers
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from shared.helpers import (
+    ops_root as _ops_root,
+    agents_root as _agents_root,
+    is_agent_dir as _is_agent_dir,
+    read_section as _read_section,
+    read_agent_info as _read_agent_info,
+    scan_agents as _scan_agents,
+    registry_path as _registry_path,
+    read_registry as _read_registry,
+    write_registry as _write_registry,
+    set_agent_status as _set_agent_status,
+    get_iterm_agent_windows as _get_iterm_agent_windows,
+    send_to_iterm_window as _send_to_iterm_window,
+    WORKSPACE, AGENTS_DIR, ITERM_PROFILES, OPS_PATH,
+)
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('agent-manager')
 
-WORKSPACE = os.environ.get('WORKSPACE_PATH', '')
-AGENTS_DIR = os.environ.get('AGENTS_PATH', '')
-ITERM_PROFILES = os.environ.get('ITERM_PROFILES_PATH', '')
-OPS_PATH = os.environ.get('OPS_PATH', '')
-
 mcp = FastMCP('agent-manager')
-
-
-# ── ops path ─────────────────────────────────────────────────────────────
-
-def _ops_root() -> Optional[Path]:
-    """Return the ops directory if OPS_PATH is set and exists, else None."""
-    if not OPS_PATH:
-        return None
-    p = Path(OPS_PATH)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
-
-
-# ── helpers ──────────────────────────────────────────────────────────────
-
-def _agents_root() -> Path:
-    if not AGENTS_DIR:
-        raise ToolError('AGENTS_PATH not configured.')
-    p = Path(AGENTS_DIR)
-    if not p.is_dir():
-        raise ToolError(f'AGENTS_PATH does not exist: {AGENTS_DIR}')
-    return p
-
-
-def _is_agent_dir(d: Path) -> bool:
-    return d.is_dir() and (d / 'memory').is_dir()
-
-
-def _read_section(text: str, heading: str) -> str:
-    """Extract the first line of a ## section from markdown text."""
-    match = re.search(f'^## {heading}\n(.*?)(?:\n## |\\Z)', text, re.MULTILINE | re.DOTALL)
-    if not match:
-        return ''
-    lines = [l.lstrip('- ').strip() for l in match.group(1).strip().splitlines() if l.strip()]
-    return lines[0] if lines else ''
-
-
-def _read_agent_info(agent_dir: Path, name: str) -> dict[str, str]:
-    """Read role and specialty from the agent's memory file."""
-    memory = agent_dir / 'memory' / f'{name}.md'
-    if not memory.exists():
-        return {'role': '', 'specialty': ''}
-    text = memory.read_text()
-    return {
-        'role': _read_section(text, 'Role'),
-        'specialty': _read_section(text, 'Specialty'),
-    }
 
 
 def _find_agent(name: str) -> Path:
@@ -93,22 +60,6 @@ def _find_agent(name: str) -> Path:
     if _is_agent_dir(agent_dir):
         return agent_dir
     raise ToolError(f"Agent '{name}' not found.")
-
-
-def _scan_agents() -> list[dict[str, str]]:
-    root = _agents_root()
-    agents = []
-    for agent_dir in sorted(root.iterdir()):
-        if not _is_agent_dir(agent_dir):
-            continue
-        name = agent_dir.name
-        info = _read_agent_info(agent_dir, name)
-        agents.append({
-            'name': name,
-            'role': info['role'],
-            'specialty': info['specialty'],
-        })
-    return agents
 
 
 # ── grid / window layout ────────────────────────────────────────────────
@@ -595,61 +546,6 @@ def _find_agent_sessions(agent_names: set[str]) -> dict[str, str]:
     return found
 
 
-def _get_iterm_agent_windows() -> list[dict[str, str]]:
-    """Get all iTerm2 windows with their session names and window IDs."""
-    script = """
-tell application "iTerm"
-    set output to ""
-    repeat with w in windows
-        set wid to id of w
-        try
-            set tabName to name of current session of current tab of w
-            set output to output & tabName & "|||" & wid & linefeed
-        end try
-    end repeat
-    return output
-end tell
-"""
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
-    if result.returncode != 0:
-        return []
-
-    windows = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.strip().split('|||')
-        if len(parts) != 2:
-            continue
-        raw_name = parts[0].strip()
-        agent_name = raw_name.split()[0] if raw_name else raw_name
-        windows.append({
-            'name': agent_name,
-            'raw_name': raw_name,
-            'window_id': parts[1].strip(),
-        })
-    return windows
-
-
-def _send_to_iterm_window(window_id: str, text: str) -> bool:
-    """Send text to a specific iTerm2 window by ID."""
-    flat = ' '.join(text.splitlines())
-    escaped = flat.replace('\\', '\\\\').replace('"', '\\"')
-    script = f"""
-tell application "iTerm"
-    repeat with w in windows
-        if id of w is {window_id} then
-            tell current session of current tab of w
-                write text "{escaped}"
-            end tell
-            return "ok"
-        end if
-    end repeat
-    return "not found"
-end tell
-"""
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
-    return 'ok' in result.stdout
-
-
 @mcp.tool()
 async def restart_agents(exclude: Optional[list[str]] = None) -> dict[str, Any]:
     """Restart all running agent sessions.
@@ -712,47 +608,6 @@ async def restart_agents(exclude: Optional[list[str]] = None) -> dict[str, Any]:
     }
 
 
-@mcp.tool()
-async def end_all_sessions(exclude: Optional[list[str]] = None) -> dict[str, Any]:
-    """End all running agent sessions.
-
-    Messages each agent with instructions to follow the session closing protocol
-    (end_session tool, journal, handoff note, memory update, learnings).
-
-    Args:
-        exclude: Optional list of agent names to skip
-    """
-    all_agents = _scan_agents()
-    agent_names = {a['name'] for a in all_agents}
-    exclude_set = {n.lower() for n in (exclude or [])}
-
-    iterm_windows = _get_iterm_agent_windows()
-    ended = []
-    skipped = []
-
-    end_message = 'End your session now. Follow the session closing protocol in CLAUDE.md.'
-
-    for w in iterm_windows:
-        name_lower = w['name'].lower()
-        if name_lower not in agent_names:
-            continue
-        if name_lower in exclude_set:
-            skipped.append(name_lower)
-            continue
-
-        log.info(f'Ending session for {w["name"]}')
-        _send_to_iterm_window(w['window_id'], end_message)
-        _set_agent_status(name_lower, 'offline')
-        ended.append(w['name'])
-        await asyncio.sleep(1)
-
-    return {
-        'ended': ended,
-        'skipped': skipped,
-        'message': f'Sent end-session instructions to {len(ended)} agent(s).',
-    }
-
-
 # ── conversations ────────────────────────────────────────────────────────
 
 def _conversations_dir() -> Path:
@@ -777,32 +632,7 @@ def _timestamp() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M')
 
 
-# ── agent status registry (Phase 1) ─────────────────────────────────────
-
-def _registry_path() -> Path:
-    ops = _ops_root()
-    if ops:
-        d = ops / 'health'
-        d.mkdir(parents=True, exist_ok=True)
-        return d / 'registry.json'
-    return _agents_root() / 'health' / 'registry.json'
-
-
-def _read_registry() -> dict[str, Any]:
-    path = _registry_path()
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-
-def _write_registry(data: dict[str, Any]):
-    path = _registry_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
-
+# ── agent status registry ─────────────────────────────────────────────
 
 def _is_stale(last_heartbeat: str, threshold_minutes: int = 5) -> bool:
     try:
@@ -853,17 +683,6 @@ async def agent_status(name: Optional[str] = None) -> dict:
             'current_task': entry.get('current_task'),
         }
     return result
-
-
-def _set_agent_status(name: str, status: str, platform: str = 'cli', task: Optional[str] = None):
-    registry = _read_registry()
-    registry[name] = {
-        'status': status,
-        'last_heartbeat': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
-        'platform': platform,
-        'current_task': task,
-    }
-    _write_registry(registry)
 
 
 # ── delivery confirmation (Phase 2) ─────────────────────────────────────
@@ -970,13 +789,18 @@ def _parse_turn_frontmatter(path: Path) -> dict[str, Any]:
         k, v = line.split(':', 1)
         k = k.strip()
         v = v.strip()
-        if k in ('participants', 'turn_order'):
-            fm[k] = [x.strip().strip('[]') for x in v.split(',')]
-        elif k == 'round':
+        if k in ('participants', 'turn_order', 'spoken_this_round'):
+            items = [x.strip().strip('[]') for x in v.split(',')]
+            fm[k] = [x for x in items if x]  # filter empty strings from '[]'
+        elif k in ('round', 'round_start_msg'):
             fm[k] = int(v)
         elif k == 'read_cursors':
             # parsed separately below
             pass
+        elif k == 'suggested_next':
+            # In flexible mode, suggested_next maps to current_turn internally
+            fm['current_turn'] = v
+            fm[k] = v
         else:
             fm[k] = v
     # Parse read_cursors block
@@ -1002,15 +826,23 @@ def _write_turn_frontmatter(path: Path, fm: dict[str, Any]):
     end = text.index('---', 3) + 3
     body = text[end:]
 
+    is_flexible = fm.get('conversation_mode') == 'flexible'
     lines = ['---']
     lines.append(f'title: {fm["title"]}')
-    lines.append(f'mode: turn-based')
+    lines.append(f'conversation_mode: {fm.get("conversation_mode", "ordered")}')
     if fm.get('started_by'):
         lines.append(f'started_by: {fm["started_by"]}')
     lines.append(f'participants: [{", ".join(fm["participants"])}]')
     lines.append(f'turn_order: [{", ".join(fm["turn_order"])}]')
-    lines.append(f'current_turn: {fm["current_turn"]}')
+    if is_flexible:
+        lines.append(f'suggested_next: {fm["current_turn"]}')
+        spoken = fm.get('spoken_this_round', [])
+        lines.append(f'spoken_this_round: [{", ".join(spoken)}]')
+    else:
+        lines.append(f'current_turn: {fm["current_turn"]}')
     lines.append(f'round: {fm["round"]}')
+    if fm.get('round_start_msg'):
+        lines.append(f'round_start_msg: {fm["round_start_msg"]}')
     lines.append(f'created: {fm["created"]}')
     if fm.get('status'):
         lines.append(f'status: {fm["status"]}')
@@ -1037,13 +869,44 @@ def _get_messages_after_cursor(path: Path, cursor: int) -> list[str]:
     return result
 
 
-def _advance_turn(fm: dict[str, Any]):
+def _advance_turn(fm: dict[str, Any], msg_count: int = 0):
     order = fm['turn_order']
     current_idx = order.index(fm['current_turn'])
     next_idx = (current_idx + 1) % len(order)
     fm['current_turn'] = order[next_idx]
     if next_idx == 0:
         fm['round'] = fm.get('round', 1) + 1
+        fm['round_start_msg'] = msg_count
+
+
+def _advance_flexible(fm: dict[str, Any], speaker: str, msg_count: int = 0):
+    """Advance state in flexible mode after a speak/pass/end.
+
+    Tracks who has spoken this round. When all turn_order agents have spoken
+    or passed, the round advances and spoken_this_round resets.
+    suggested_next rotates to the next agent who hasn't spoken this round.
+    """
+    spoken = fm.get('spoken_this_round', [])
+    if speaker not in spoken:
+        spoken.append(speaker)
+    fm['spoken_this_round'] = spoken
+
+    order = fm['turn_order']
+
+    # Check if all agents in turn_order have spoken/passed this round
+    if all(agent in spoken for agent in order):
+        fm['round'] = fm.get('round', 1) + 1
+        fm['round_start_msg'] = msg_count
+        fm['spoken_this_round'] = []
+        fm['current_turn'] = order[0]
+    else:
+        # Rotate suggested_next to next agent who hasn't spoken this round
+        current_idx = order.index(fm['current_turn']) if fm['current_turn'] in order else 0
+        for i in range(1, len(order) + 1):
+            candidate = order[(current_idx + i) % len(order)]
+            if candidate not in spoken:
+                fm['current_turn'] = candidate
+                break
 
 
 def _notify_next_agent(title: str, fm: dict[str, Any]):
@@ -1077,10 +940,15 @@ async def start_turn_conversation(
     participants: list[str],
     turn_order: list[str],
     message: str,
+    mode: str = 'ordered',
 ) -> dict[str, str]:
     """Start a new turn-based multi-agent conversation.
 
-    Creates a .turn.md file with strict turn enforcement.
+    Creates a .turn.md file with turn tracking. Supports two modes:
+    - 'ordered' (default): Strict round-robin turn enforcement.
+    - 'flexible': Any participant can speak at any time. A suggested_next hint
+      rotates round-robin but is not enforced.
+
     The sender posts the first message and the turn advances to the next agent.
     The sender does NOT need to be in turn_order — they can start a conversation
     as an observer (e.g., Evelynn delegating to other agents).
@@ -1091,7 +959,10 @@ async def start_turn_conversation(
         participants: List of all participant agent names
         turn_order: Ordered list for turn rotation
         message: Opening message
+        mode: 'ordered' (strict turns) or 'flexible' (any participant can speak)
     """
+    if mode not in ('ordered', 'flexible'):
+        raise ToolError(f"Invalid mode: {mode}. Must be 'ordered' or 'flexible'.")
     path = _turn_conversation_path(title)
     if path.exists():
         raise ToolError(f"Turn conversation '{title}' already exists.")
@@ -1122,19 +993,26 @@ async def start_turn_conversation(
         'created': now,
         'status': 'active',
         'read_cursors': read_cursors,
+        'conversation_mode': mode,
     }
+    if mode == 'flexible':
+        fm['spoken_this_round'] = []
     if is_observer:
         fm['started_by'] = sender
 
     # Write initial file
     lines = ['---']
     lines.append(f'title: {title}')
-    lines.append('mode: turn-based')
+    lines.append(f'conversation_mode: {mode}')
     if is_observer:
         lines.append(f'started_by: {sender}')
     lines.append(f'participants: [{", ".join(participants)}]')
     lines.append(f'turn_order: [{", ".join(turn_order)}]')
-    lines.append(f'current_turn: {first_turn}')
+    if mode == 'flexible':
+        lines.append(f'suggested_next: {first_turn}')
+        lines.append('spoken_this_round: []')
+    else:
+        lines.append(f'current_turn: {first_turn}')
     lines.append('round: 1')
     lines.append(f'created: {now}')
     lines.append('status: active')
@@ -1174,14 +1052,17 @@ async def speak_in_turn(
     sender: str,
     message: str,
 ) -> dict[str, Any]:
-    """Speak in a turn-based conversation. Rejects if it's not the sender's turn.
+    """Speak in a turn-based conversation.
+
+    In ordered mode, rejects if it's not the sender's turn.
+    In flexible mode, any participant can speak at any time.
 
     Internally reads new messages first (read-before-write), then appends
     the message and advances the turn to the next agent.
 
     Args:
         title: Conversation title
-        sender: Agent speaking (must be current_turn)
+        sender: Agent speaking (must be current_turn in ordered mode, any participant in flexible)
         message: Message to post
     """
     path = _turn_conversation_path(title)
@@ -1190,14 +1071,23 @@ async def speak_in_turn(
 
     sender = sender.lower().strip()
     fm = _parse_turn_frontmatter(path)
+    is_flexible = fm.get('conversation_mode') == 'flexible'
 
     if fm.get('status') == 'ended':
         raise ToolError(f"Conversation '{title}' has ended.")
     if fm.get('status') == 'escalated':
         raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
 
-    if fm['current_turn'] != sender:
-        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+    if is_flexible:
+        # In flexible mode, any participant or turn_order member can speak
+        allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+        if fm.get('started_by'):
+            allowed.add(fm['started_by'])
+        if sender not in allowed:
+            raise ToolError(f'{sender} is not a participant in this conversation.')
+    else:
+        if fm['current_turn'] != sender:
+            raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
 
     # Read-before-write: get new messages for this agent
     cursor = fm['read_cursors'].get(sender, 0)
@@ -1211,21 +1101,32 @@ async def speak_in_turn(
 
     # Update frontmatter
     fm['read_cursors'][sender] = msg_count
-    _advance_turn(fm)
+    prev_turn = fm['current_turn']
+    prev_round = fm['round']
+    if is_flexible:
+        _advance_flexible(fm, sender, msg_count)
+    else:
+        _advance_turn(fm, msg_count)
     _write_turn_frontmatter(path, fm)
 
-    # Notify next agent
-    _notify_next_agent(title, fm)
+    # Notify next agent — in flexible mode, only if suggested_next changed or round advanced
+    if not is_flexible or fm['current_turn'] != prev_turn or fm['round'] != prev_round:
+        _notify_next_agent(title, fm)
 
-    return {
+    result = {
         'conversation': title,
         'sender': sender,
         'message_index': msg_count,
         'new_messages_read': len(new_messages),
         'messages_before_write': new_messages,
-        'current_turn': fm['current_turn'],
         'round': fm['round'],
     }
+    if is_flexible:
+        result['suggested_next'] = fm['current_turn']
+        result['spoken_this_round'] = fm.get('spoken_this_round', [])
+    else:
+        result['current_turn'] = fm['current_turn']
+    return result
 
 
 @mcp.tool()
@@ -1237,10 +1138,11 @@ async def pass_turn(
     """Pass your turn in a turn-based conversation without contributing content.
 
     Posts a [PASS] message and advances the turn.
+    In flexible mode, any participant can pass at any time.
 
     Args:
         title: Conversation title
-        sender: Agent passing (must be current_turn)
+        sender: Agent passing (must be current_turn in ordered mode, any participant in flexible)
         reason: Optional reason for passing
     """
     path = _turn_conversation_path(title)
@@ -1249,14 +1151,22 @@ async def pass_turn(
 
     sender = sender.lower().strip()
     fm = _parse_turn_frontmatter(path)
+    is_flexible = fm.get('conversation_mode') == 'flexible'
 
     if fm.get('status') == 'ended':
         raise ToolError(f"Conversation '{title}' has ended.")
     if fm.get('status') == 'escalated':
         raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
 
-    if fm['current_turn'] != sender:
-        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+    if is_flexible:
+        allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+        if fm.get('started_by'):
+            allowed.add(fm['started_by'])
+        if sender not in allowed:
+            raise ToolError(f'{sender} is not a participant in this conversation.')
+    else:
+        if fm['current_turn'] != sender:
+            raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
 
     msg_count = _get_message_count(path) + 1
     now = _timestamp()
@@ -1264,10 +1174,16 @@ async def pass_turn(
         f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [PASS]\n{reason}\n')
 
     fm['read_cursors'][sender] = msg_count
-    _advance_turn(fm)
+    prev_turn = fm['current_turn']
+    prev_round = fm['round']
+    if is_flexible:
+        _advance_flexible(fm, sender, msg_count)
+    else:
+        _advance_turn(fm, msg_count)
     _write_turn_frontmatter(path, fm)
 
-    _notify_next_agent(title, fm)
+    if not is_flexible or fm['current_turn'] != prev_turn or fm['round'] != prev_round:
+        _notify_next_agent(title, fm)
 
     return {
         'conversation': title,
@@ -1288,10 +1204,11 @@ async def end_turn_conversation(
 
     Posts an [END] message and advances the turn. The conversation closes
     when all remaining agents in the round either END or PASS.
+    In flexible mode, any participant can propose ending.
 
     Args:
         title: Conversation title
-        sender: Agent proposing end (must be current_turn)
+        sender: Agent proposing end (must be current_turn in ordered mode, any participant in flexible)
     """
     path = _turn_conversation_path(title)
     if not path.exists():
@@ -1299,14 +1216,22 @@ async def end_turn_conversation(
 
     sender = sender.lower().strip()
     fm = _parse_turn_frontmatter(path)
+    is_flexible = fm.get('conversation_mode') == 'flexible'
 
     if fm.get('status') == 'ended':
         raise ToolError(f"Conversation '{title}' has already ended.")
     if fm.get('status') == 'escalated':
         raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
 
-    if fm['current_turn'] != sender:
-        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+    if is_flexible:
+        allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+        if fm.get('started_by'):
+            allowed.add(fm['started_by'])
+        if sender not in allowed:
+            raise ToolError(f'{sender} is not a participant in this conversation.')
+    else:
+        if fm['current_turn'] != sender:
+            raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
 
     msg_count = _get_message_count(path) + 1
     now = _timestamp()
@@ -1314,18 +1239,21 @@ async def end_turn_conversation(
         f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [END]\nProposing to end conversation.\n')
 
     fm['read_cursors'][sender] = msg_count
-    _advance_turn(fm)
+    if is_flexible:
+        _advance_flexible(fm, sender, msg_count)
+    else:
+        _advance_turn(fm, msg_count)
 
-    # Check if conversation should close: scan messages in the current round
-    # for END/PASS from all agents after the END proposer
+    # Check if conversation should close: scan only current round's messages
     text = path.read_text()
-    current_round = fm['round']
     order = fm['turn_order']
+    round_start = fm.get('round_start_msg', 0)
 
-    # Find all END/PASS messages in recent history
+    # Find END/PASS messages only from current round (index > round_start)
     end_pass_agents = set()
-    for m in re.finditer(r'^## \[\d+\] (\w+) — .+? \[(END|PASS)\]', text, re.MULTILINE):
-        end_pass_agents.add(m.group(1).lower())
+    for m in re.finditer(r'^## \[(\d+)\] (\w+) — .+? \[(END|PASS)\]', text, re.MULTILINE):
+        if int(m.group(1)) > round_start:
+            end_pass_agents.add(m.group(2).lower())
 
     # Check if all agents have END or PASS (conversation should close)
     all_done = all(agent in end_pass_agents for agent in order)
@@ -1412,16 +1340,23 @@ async def get_turn_status(
     fm = _parse_turn_frontmatter(path)
     msg_count = _get_message_count(path)
 
-    return {
+    is_flexible = fm.get('conversation_mode') == 'flexible'
+    result = {
         'conversation': title,
+        'mode': fm.get('conversation_mode', 'ordered'),
         'status': fm.get('status', 'active'),
-        'current_turn': fm['current_turn'],
         'round': fm['round'],
         'turn_order': fm['turn_order'],
         'participants': fm['participants'],
         'read_cursors': fm['read_cursors'],
         'total_messages': msg_count,
     }
+    if is_flexible:
+        result['suggested_next'] = fm['current_turn']
+        result['spoken_this_round'] = fm.get('spoken_this_round', [])
+    else:
+        result['current_turn'] = fm['current_turn']
+    return result
 
 
 @mcp.tool()
@@ -1432,12 +1367,12 @@ async def escalate_conversation(
 ) -> dict[str, Any]:
     """Escalate a turn-based conversation. Pauses the conversation and notifies Evelynn.
 
-    Only the current_turn agent can escalate. Posts an [ESCALATE] message,
-    sets status to escalated, and sends an inbox notification to Evelynn.
+    In ordered mode, only the current_turn agent can escalate.
+    In flexible mode, any participant can escalate.
 
     Args:
         title: Conversation title
-        sender: Agent escalating (must be current_turn)
+        sender: Agent escalating (must be current_turn in ordered mode, any participant in flexible)
         reason: Reason for escalation
     """
     path = _turn_conversation_path(title)
@@ -1446,14 +1381,22 @@ async def escalate_conversation(
 
     sender = sender.lower().strip()
     fm = _parse_turn_frontmatter(path)
+    is_flexible = fm.get('conversation_mode') == 'flexible'
 
     if fm.get('status') == 'ended':
         raise ToolError(f"Conversation '{title}' has ended.")
     if fm.get('status') == 'escalated':
         raise ToolError(f"Conversation '{title}' is already escalated.")
 
-    if fm['current_turn'] != sender:
-        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+    if is_flexible:
+        allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+        if fm.get('started_by'):
+            allowed.add(fm['started_by'])
+        if sender not in allowed:
+            raise ToolError(f'{sender} is not a participant in this conversation.')
+    else:
+        if fm['current_turn'] != sender:
+            raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
 
     msg_count = _get_message_count(path) + 1
     now = _timestamp()
@@ -1610,11 +1553,11 @@ async def invite_to_conversation(
     if status in ('ended', 'escalated'):
         raise ToolError(f"Cannot invite into a conversation with status '{status}'.")
 
-    # Sender must be in turn_order (not just started_by)
-    if sender not in fm['turn_order']:
+    # Sender must be in turn_order or be started_by
+    if sender not in fm['turn_order'] and sender != fm.get('started_by'):
         raise ToolError(f'{sender.capitalize()} is not in turn_order and cannot invite.')
 
-    # Agent must not already be in turn_order
+    # Agent must not already be in turn_order (but allow observer→participant upgrade)
     if agent in fm['turn_order']:
         raise ToolError(f'{agent.capitalize()} is already in turn_order.')
 
@@ -1643,21 +1586,31 @@ async def invite_to_conversation(
     # Write updated frontmatter
     _write_turn_frontmatter(path, fm)
 
-    # Notify the new agent
+    # Notify the new agent — auto-launch if not running
     try:
         slug = _slugify(title)
+        is_flexible = fm.get('conversation_mode') == 'flexible'
+        if is_flexible:
+            invite_msg = f"You've been invited to conversation '{title}' (flexible mode — you can speak any time). Use read_new_messages(title={slug}, agent={agent}) to read the full history."
+        else:
+            invite_msg = f"You've been invited to conversation '{title}'. Use read_new_messages(title={slug}, agent={agent}) to read the full history, then wait for your turn."
         inbox_path = _write_inbox_message(
             sender='system',
             recipient=agent,
-            message=f"You've been invited to conversation '{title}'. Use read_new_messages(title={slug}, agent={agent}) to read the full history, then wait for your turn.",
+            message=invite_msg,
             priority='info',
             conversation=slug,
         )
         iterm_windows = _get_iterm_agent_windows()
+        agent_running = False
         for w in iterm_windows:
             if w['name'].lower() == agent:
                 _send_to_iterm_window(w['window_id'], f'[inbox] {inbox_path}')
+                agent_running = True
                 break
+        if not agent_running:
+            # Auto-launch the agent so they can pick up the invite
+            await launch_agent(agent, task=f'[inbox] {inbox_path}')
     except ToolError:
         pass
 
@@ -1669,147 +1622,6 @@ async def invite_to_conversation(
         'message_index': msg_count,
         'current_turn': fm['current_turn'],
     }
-
-
-def _git(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
-    """Run a git command and return the result."""
-    return subprocess.run(
-        ['git'] + args,
-        cwd=cwd or WORKSPACE,
-        capture_output=True,
-        text=True,
-    )
-
-
-@mcp.tool()
-async def commit_agent_state_to_main() -> dict[str, Any]:
-    """Commit all agent state files to main branch and push.
-
-    Stages agent memory, learnings, journals, and wip files (excluding inbox),
-    commits to main with a standard message, and pushes to origin.
-    Designed to be called by Evelynn as the final step of session closing.
-    """
-    if not WORKSPACE:
-        raise ToolError('WORKSPACE_PATH not set')
-    if not AGENTS_DIR:
-        raise ToolError('AGENTS_PATH not set')
-
-    agents_rel = os.path.relpath(AGENTS_DIR, WORKSPACE)
-
-    # Record current branch
-    result = _git(['branch', '--show-current'])
-    if result.returncode != 0:
-        raise ToolError(f'Failed to get current branch: {result.stderr.strip()}')
-    original_branch = result.stdout.strip()
-    on_main = original_branch == 'main'
-
-    stashed = False
-
-    try:
-        # Stash if not on main and working tree is dirty
-        if not on_main:
-            dirty = _git(['status', '--porcelain'])
-            if dirty.stdout.strip():
-                stash_result = _git(['stash', '--include-untracked'])
-                if stash_result.returncode != 0:
-                    raise ToolError(f'Failed to stash: {stash_result.stderr.strip()}')
-                stashed = True
-
-            # Checkout main
-            checkout = _git(['checkout', 'main'])
-            if checkout.returncode != 0:
-                if stashed:
-                    _git(['stash', 'pop'])
-                raise ToolError(f'Failed to checkout main: {checkout.stderr.strip()}')
-
-        # Pull latest
-        pull = _git(['pull', 'origin', 'main'])
-        if pull.returncode != 0:
-            log.warning(f'git pull failed (continuing): {pull.stderr.strip()}')
-
-        # Stage agent state files (memory, learnings, journal, wip) — exclude inbox
-        state_patterns = [
-            f'{agents_rel}/*/memory/',
-            f'{agents_rel}/*/learnings/',
-            f'{agents_rel}/*/journal/',
-            f'{agents_rel}/*/wip/',
-            f'{agents_rel}/memory/',
-        ]
-
-        staged_files = []
-        for pattern in state_patterns:
-            pattern_path = Path(WORKSPACE) / pattern
-            if pattern_path.exists():
-                add_result = _git(['add', pattern])
-                if add_result.returncode == 0:
-                    # Check what was actually staged from this pattern
-                    diff = _git(['diff', '--cached', '--name-only', '--', pattern])
-                    if diff.stdout.strip():
-                        staged_files.extend(diff.stdout.strip().splitlines())
-
-        # Remove any inbox files that got staged
-        unstage_inbox = _git(['reset', 'HEAD', '--', f'{agents_rel}/*/inbox/'])
-        # Ignore errors — inbox dir may not exist or have nothing staged
-
-        # Check if anything is staged
-        check = _git(['diff', '--cached', '--name-only'])
-        if not check.stdout.strip():
-            # Nothing to commit — restore and return
-            if not on_main:
-                _git(['checkout', original_branch])
-                if stashed:
-                    _git(['stash', 'pop'])
-            return {'status': 'no_changes', 'message': 'No agent state changes to commit.'}
-
-        final_files = check.stdout.strip().splitlines()
-        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
-
-        # Commit
-        commit = _git(['commit', '-m', f'chore: update agent state [{timestamp}]'])
-        if commit.returncode != 0:
-            _git(['reset', 'HEAD'])
-            if not on_main:
-                _git(['checkout', original_branch])
-                if stashed:
-                    _git(['stash', 'pop'])
-            raise ToolError(f'Failed to commit: {commit.stderr.strip()}')
-
-        # Get commit hash
-        hash_result = _git(['rev-parse', '--short', 'HEAD'])
-        commit_hash = hash_result.stdout.strip()
-
-        # Push
-        push = _git(['push', 'origin', 'main'])
-        push_failed = push.returncode != 0
-        push_error = push.stderr.strip() if push_failed else None
-
-        # Restore original branch
-        if not on_main:
-            _git(['checkout', original_branch])
-            if stashed:
-                _git(['stash', 'pop'])
-
-        result = {
-            'status': 'committed',
-            'commit': commit_hash,
-            'files': final_files,
-            'files_count': len(final_files),
-            'pushed': not push_failed,
-        }
-        if push_failed:
-            result['push_error'] = push_error
-
-        return result
-
-    except ToolError:
-        raise
-    except Exception as e:
-        # Emergency cleanup
-        if not on_main:
-            _git(['checkout', original_branch])
-            if stashed:
-                _git(['stash', 'pop'])
-        raise ToolError(f'Unexpected error: {str(e)}')
 
 
 if __name__ == '__main__':
