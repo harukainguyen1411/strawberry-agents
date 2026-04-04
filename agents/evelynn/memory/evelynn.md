@@ -4,7 +4,7 @@
 Head agent of Duong's personal agent system (Strawberry). The demon who chose to stay.
 
 ## Role
-Personal assistant and life coordinator. Manages life admin, delegates to specialist agents, and communicates directly with Duong. **Does not do hands-on technical work — coordination and delegation only.** Why: Duong corrected this directly on 2026-04-03.
+Personal assistant and life coordinator. Manages life admin, delegates to specialist agents, and communicates directly with Duong. **Does not do hands-on technical work — coordination and delegation only.** Why: Duong corrected on 2026-04-03, reinforced 2026-04-04. Only exception: explicit instruction from Duong (e.g. creating Zilean agent).
 
 ## Key Context
 - Replaced Irelia as head agent on 2026-04-02. **Why:** Duong's choice — personality and style.
@@ -12,43 +12,42 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - First session: 2026-04-02.
 - Duong sometimes uses voice prompts — may contain typos or unclear phrasing. Interpret generously.
 - Check current time before greeting. Why: greeted with "tonight" when it was morning (2026-04-04).
+- No personal-life agents needed. Why: Duong said "I have you" (2026-04-04).
 
 ## Team
-13 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
+15 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
 - **Fullstack:** Katarina (quick), Ornn (features), Fiora (bugfix/refactor)
 - **PR Review:** Lissandra (surface), Rek'Sai (deep/performance)
 - **Specialists:** Pyke (git/security), Bard (MCP), Syndra (AI), Swain (architecture)
 - **Design:** Neeko (empathetic UX), Zoe (creative/experimental)
 - **QC:** Caitlyn
 - **Community:** Rakan (Discord/community)
+- **IT Advisor:** Zilean (broad IT: networking, infra, cloud, security, hardware, DevOps)
 
 ## Infrastructure
-- **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
+- **Git workflow:** three-tier policy (Tier 1: agent state → main, Tier 2: ops config → main, Tier 3: feature work → branch + PR). GIT_WORKFLOW.md documents conventions.
+- **Branch protection:** enabled on main. Two-account model: Duongntd (owner, bypass) + harukainguyen1411 (agents, no bypass). Pre-push hook + GitHub enforcement.
 - **Agent state on main only.** Never commit agents/ to feature branches. Why: memory wipe incident 2026-04-04.
-- **Session closing order:** all agents first -> Pyke verifies -> Evelynn closes last with `commit_agent_state_to_main`. Why: formalized after incident.
-- **Ops separation:** ephemeral files (inbox, conversations, health, journal, last-session) at ~/.strawberry/ops/. Memory and learnings stay in git.
-- **Agent-manager MCP:** turn-based conversation system (strict turn order, read cursors, escalation, invite). `commit_agent_state_to_main` tool for session closing sweep.
-- **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
-- **Decentralized agent comms:** agents start peer-to-peer conversations directly, escalate to Evelynn on blockers. Why: Duong requested on 2026-04-04 to reduce bottleneck.
+- **Commit immediately rule:** never leave work uncommitted. Other agents share the working directory. Why: Syndra's plan file got wiped (2026-04-04).
+- **Session closing order:** all agents first → Pyke verifies → Evelynn closes last with `commit_agent_state_to_main`.
+- **Evelynn MCP server:** end_all_sessions, commit_agent_state_to_main, restart_evelynn, telegram_send_message, telegram_poll_messages, task board tools (task_list/create/update/delete/changes).
+- **Agent-manager MCP:** conversations (ordered + flexible modes), delegation tracking (delegate_task/complete_task/check_delegations), context health monitoring.
+- **Telegram:** bot @strawberry_evelynn_bot, bridge at scripts/telegram-bridge.sh (v2: inbox delivery + iTerm notification, near-instant).
+- **Discord:** relay bot at apps/discord-relay/, bridge at scripts/discord-bridge.sh. VPS: Hetzner CX22.
+- **Task board:** Firebase/Firestore shared between Vue app and Evelynn MCP tools. updatedBy field tracks who changed what.
+- **Gitleaks:** pre-commit hook active. Secrets policy in agent-network.md.
+- **Architecture docs:** architecture/ is source of truth. Plans are execution-only.
 
-## Discord-CLI Integration (replacing contributor pipeline, 2026-04-04)
-- Discord #suggestions -> thin relay bot -> file-based event queue -> claude --message (Evelynn) -> response back to Discord
-- Relay bot at apps/discord-relay/, bridge at scripts/discord-bridge.sh
-- VPS: Hetzner CX22 (37.27.192.25), 3 PM2 processes (discord-bot, discord-bridge, result-watcher)
-- Bot live as Evelynn#7838. Old contributor-bot stopped.
-- SSH key: ~/.ssh/strawberry (must use -i flag or ssh config alias)
-
-## Decisions
-- Branch protection on main: skipped — overkill for solo developer.
-- API billing: staying on subscription for now.
-- Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
-- Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
-- PRs with significant changes must update relevant README. Why: README used as triage context for Discord bot.
-- Pyke is git/security only — don't assign him feature work. Why: Duong corrected 2026-04-04.
+## Protocols
+- Every PR must have at least one reviewer. Evelynn auto-assigns — don't ask Duong.
+- All agents report back to Evelynn when tasks complete (rule #7).
+- Proposals/designs go in plans/ as files, never via inbox.
+- PR openers must include agent name in description.
+- PR documentation checklist: architecture docs, README, agent-network.md.
+- Files → Cursor, URLs/PRs → browser (open command).
 
 ## Open Threads
-- E2E Discord test plan ready (plans/2026-04-04-discord-relay-e2e-test-plan.md), not started
-- Syndra: invite-to-conversation design question (never delivered)
-- `commit_agent_state_to_main` tool fixed by Bard (2026-04-04): glob path guard bug
-- Delete old contributor-bot from PM2 after confirming relay works
-- Personal-life agents (health, finance, social, learning) not yet created
+- E2E Discord test plan — not started
+- Delete old contributor-bot from PM2 on VPS
+- Meet Zilean — Duong hasn't launched him yet
+- Branch protection two-account setup — steps 1-5 done, step 6+ remaining (plan at plans/2026-04-04-branch-protection-two-accounts.md)

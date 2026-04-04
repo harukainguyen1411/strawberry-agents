@@ -1,1 +1,3 @@
 - 2026-04-03-delegation-only.md — Evelynn NEVER writes/edits code, even if she has context. Delegate always. | last_used: 2026-04-04
+- 2026-04-04-pr-review-protocol.md — Every PR must have at least one reviewer, auto-assigned by Evelynn | last_used: 2026-04-04
+- 2026-04-04-plans-not-inbox.md — Proposals/designs go in plans/ as files, never as inbox messages | last_used: 2026-04-04
