@@ -351,6 +351,38 @@ def _tasks_collection():
     return db.collection('users').document(uid).collection('tasks')
 
 
+VALID_STATUSES = ('todo', 'inprogress', 'onhold', 'done')
+VALID_PRIORITIES = ('high', 'medium', 'low')
+_DATE_RE = None
+
+
+def _validate_status(status: str):
+    if status not in VALID_STATUSES:
+        raise ToolError(f'Invalid status: {status}. Must be one of {VALID_STATUSES}')
+
+
+def _validate_priority(priority: str):
+    if priority not in VALID_PRIORITIES:
+        raise ToolError(f'Invalid priority: {priority}. Must be one of {VALID_PRIORITIES}')
+
+
+def _validate_date(date: str):
+    global _DATE_RE
+    if _DATE_RE is None:
+        import re
+        _DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
+    if not _DATE_RE.match(date):
+        raise ToolError(f'Invalid date: {date}. Must be YYYY-MM-DD')
+
+
+def _assert_doc_exists(doc_ref):
+    """Raise ToolError if the Firestore document does not exist."""
+    snap = doc_ref.get()
+    if not snap.exists:
+        raise ToolError(f'Task not found: {doc_ref.id}')
+    return snap
+
+
 def _task_to_dict(doc_snapshot) -> dict[str, Any]:
     """Convert a Firestore document snapshot to a plain dict."""
     data = doc_snapshot.to_dict()
@@ -425,6 +457,10 @@ async def task_create(
         category: Optional category for grouping
         notes: Optional internal notes
     """
+    _validate_status(status)
+    _validate_priority(priority)
+    _validate_date(date)
+
     from google.cloud import firestore as _fs
 
     col = _tasks_collection()
@@ -473,10 +509,18 @@ async def task_update(
         category: New category
         notes: New notes
     """
+    if status is not None:
+        _validate_status(status)
+    if priority is not None:
+        _validate_priority(priority)
+    if date is not None:
+        _validate_date(date)
+
     from google.cloud import firestore as _fs
 
     col = _tasks_collection()
     doc_ref = col.document(task_id)
+    _assert_doc_exists(doc_ref)
 
     updates: dict[str, Any] = {
         'updatedAt': _fs.SERVER_TIMESTAMP,
@@ -512,6 +556,7 @@ async def task_delete(task_id: str) -> dict[str, Any]:
 
     col = _tasks_collection()
     doc_ref = col.document(task_id)
+    _assert_doc_exists(doc_ref)
     doc_ref.update({
         '_deleted': True,
         'updatedAt': _fs.SERVER_TIMESTAMP,
