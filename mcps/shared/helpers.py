@@ -195,7 +195,11 @@ CLAUDE_PROJECTS_DIR = Path.home() / '.claude' / 'projects'
 
 
 def workspace_project_dir() -> Path:
-    """Get the Claude projects directory for the current workspace."""
+    """Get the Claude projects directory for the current workspace.
+
+    WARNING: Relies on Claude CLI internal path encoding (/ → -).
+    This is undocumented and may change between CLI versions.
+    """
     if not WORKSPACE:
         raise ValueError('WORKSPACE_PATH not set')
     encoded = WORKSPACE.replace('/', '-')
@@ -209,7 +213,11 @@ def find_agent_session(agent_name: str) -> Optional[str]:
     """Find the most recent Claude session ID for an agent.
 
     Scans JSONL transcript files looking for 'Hey <AgentName>' or
-    '[autonomous] <AgentName>' patterns in user messages.
+    '[autonomous] <AgentName>' patterns in the first user message.
+
+    WARNING: Parses Claude CLI's internal JSONL transcript format.
+    This is undocumented and may break if the CLI changes its storage format.
+    Same approach used by restart_agents in agent-manager.
     """
     project_dir = workspace_project_dir()
     jsonl_files = sorted(project_dir.glob('*.jsonl'), key=lambda f: f.stat().st_mtime, reverse=True)
@@ -223,6 +231,8 @@ def find_agent_session(agent_name: str) -> Optional[str]:
                     data = json.loads(line)
                     if data.get('type') != 'user':
                         continue
+                    # Deliberately check only the FIRST user message (the greeting).
+                    # If it doesn't match this agent, skip to the next file.
                     content = data.get('message', {}).get('content', '')
                     if isinstance(content, list):
                         for block in content:
@@ -236,7 +246,7 @@ def find_agent_session(agent_name: str) -> Optional[str]:
                                 re.match(r'\[autonomous\]\s+(\w+)', content, re.IGNORECASE)
                         if match and match.group(1).lower() == name_lower:
                             return session_id
-                    break
+                    break  # Only check first user message per file
         except (json.JSONDecodeError, OSError):
             continue
 
