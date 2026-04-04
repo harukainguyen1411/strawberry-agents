@@ -68,6 +68,8 @@ Agents are encouraged to start conversations with each other directly. You don't
 
 Same protocol as work system. `[inbox]` → read file → update status → respond.
 
+When you receive a delegated task (inbox message with a `delegation_id`), you MUST call `complete_task` when finished. This is not optional — it's how Evelynn tracks work. On startup, check for pending delegations: `check_delegations(agent=<self>, status=pending)`.
+
 ## Protocol
 
 1. `list_agents()` to check who's running
