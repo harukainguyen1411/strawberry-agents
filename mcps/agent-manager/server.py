@@ -932,7 +932,7 @@ def _parse_turn_frontmatter(path: Path) -> dict[str, Any]:
         if k in ('participants', 'turn_order', 'spoken_this_round'):
             items = [x.strip().strip('[]') for x in v.split(',')]
             fm[k] = [x for x in items if x]  # filter empty strings from '[]'
-        elif k == 'round':
+        elif k in ('round', 'round_start_msg'):
             fm[k] = int(v)
         elif k == 'read_cursors':
             # parsed separately below
@@ -981,6 +981,8 @@ def _write_turn_frontmatter(path: Path, fm: dict[str, Any]):
     else:
         lines.append(f'current_turn: {fm["current_turn"]}')
     lines.append(f'round: {fm["round"]}')
+    if fm.get('round_start_msg'):
+        lines.append(f'round_start_msg: {fm["round_start_msg"]}')
     lines.append(f'created: {fm["created"]}')
     if fm.get('status'):
         lines.append(f'status: {fm["status"]}')
@@ -1007,16 +1009,17 @@ def _get_messages_after_cursor(path: Path, cursor: int) -> list[str]:
     return result
 
 
-def _advance_turn(fm: dict[str, Any]):
+def _advance_turn(fm: dict[str, Any], msg_count: int = 0):
     order = fm['turn_order']
     current_idx = order.index(fm['current_turn'])
     next_idx = (current_idx + 1) % len(order)
     fm['current_turn'] = order[next_idx]
     if next_idx == 0:
         fm['round'] = fm.get('round', 1) + 1
+        fm['round_start_msg'] = msg_count
 
 
-def _advance_flexible(fm: dict[str, Any], speaker: str):
+def _advance_flexible(fm: dict[str, Any], speaker: str, msg_count: int = 0):
     """Advance state in flexible mode after a speak/pass/end.
 
     Tracks who has spoken this round. When all turn_order agents have spoken
@@ -1033,6 +1036,7 @@ def _advance_flexible(fm: dict[str, Any], speaker: str):
     # Check if all agents in turn_order have spoken/passed this round
     if all(agent in spoken for agent in order):
         fm['round'] = fm.get('round', 1) + 1
+        fm['round_start_msg'] = msg_count
         fm['spoken_this_round'] = []
         fm['current_turn'] = order[0]
     else:
@@ -1237,14 +1241,17 @@ async def speak_in_turn(
 
     # Update frontmatter
     fm['read_cursors'][sender] = msg_count
+    prev_turn = fm['current_turn']
+    prev_round = fm['round']
     if is_flexible:
-        _advance_flexible(fm, sender)
+        _advance_flexible(fm, sender, msg_count)
     else:
-        _advance_turn(fm)
+        _advance_turn(fm, msg_count)
     _write_turn_frontmatter(path, fm)
 
-    # Notify next agent (in flexible mode, only if suggested_next changed)
-    _notify_next_agent(title, fm)
+    # Notify next agent — in flexible mode, only if suggested_next changed or round advanced
+    if not is_flexible or fm['current_turn'] != prev_turn or fm['round'] != prev_round:
+        _notify_next_agent(title, fm)
 
     result = {
         'conversation': title,
@@ -1307,13 +1314,16 @@ async def pass_turn(
         f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [PASS]\n{reason}\n')
 
     fm['read_cursors'][sender] = msg_count
+    prev_turn = fm['current_turn']
+    prev_round = fm['round']
     if is_flexible:
-        _advance_flexible(fm, sender)
+        _advance_flexible(fm, sender, msg_count)
     else:
-        _advance_turn(fm)
+        _advance_turn(fm, msg_count)
     _write_turn_frontmatter(path, fm)
 
-    _notify_next_agent(title, fm)
+    if not is_flexible or fm['current_turn'] != prev_turn or fm['round'] != prev_round:
+        _notify_next_agent(title, fm)
 
     return {
         'conversation': title,
@@ -1370,20 +1380,20 @@ async def end_turn_conversation(
 
     fm['read_cursors'][sender] = msg_count
     if is_flexible:
-        _advance_flexible(fm, sender)
+        _advance_flexible(fm, sender, msg_count)
     else:
-        _advance_turn(fm)
+        _advance_turn(fm, msg_count)
 
-    # Check if conversation should close: scan messages in the current round
-    # for END/PASS from all agents after the END proposer
+    # Check if conversation should close: scan only current round's messages
     text = path.read_text()
-    current_round = fm['round']
     order = fm['turn_order']
+    round_start = fm.get('round_start_msg', 0)
 
-    # Find all END/PASS messages in recent history
+    # Find END/PASS messages only from current round (index > round_start)
     end_pass_agents = set()
-    for m in re.finditer(r'^## \[\d+\] (\w+) — .+? \[(END|PASS)\]', text, re.MULTILINE):
-        end_pass_agents.add(m.group(1).lower())
+    for m in re.finditer(r'^## \[(\d+)\] (\w+) — .+? \[(END|PASS)\]', text, re.MULTILINE):
+        if int(m.group(1)) > round_start:
+            end_pass_agents.add(m.group(2).lower())
 
     # Check if all agents have END or PASS (conversation should close)
     all_done = all(agent in end_pass_agents for agent in order)
@@ -1497,12 +1507,12 @@ async def escalate_conversation(
 ) -> dict[str, Any]:
     """Escalate a turn-based conversation. Pauses the conversation and notifies Evelynn.
 
-    Only the current_turn agent can escalate. Posts an [ESCALATE] message,
-    sets status to escalated, and sends an inbox notification to Evelynn.
+    In ordered mode, only the current_turn agent can escalate.
+    In flexible mode, any participant can escalate.
 
     Args:
         title: Conversation title
-        sender: Agent escalating (must be current_turn)
+        sender: Agent escalating (must be current_turn in ordered mode, any participant in flexible)
         reason: Reason for escalation
     """
     path = _turn_conversation_path(title)
@@ -1511,14 +1521,22 @@ async def escalate_conversation(
 
     sender = sender.lower().strip()
     fm = _parse_turn_frontmatter(path)
+    is_flexible = fm.get('conversation_mode') == 'flexible'
 
     if fm.get('status') == 'ended':
         raise ToolError(f"Conversation '{title}' has ended.")
     if fm.get('status') == 'escalated':
         raise ToolError(f"Conversation '{title}' is already escalated.")
 
-    if fm['current_turn'] != sender:
-        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+    if is_flexible:
+        allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+        if fm.get('started_by'):
+            allowed.add(fm['started_by'])
+        if sender not in allowed:
+            raise ToolError(f'{sender} is not a participant in this conversation.')
+    else:
+        if fm['current_turn'] != sender:
+            raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
 
     msg_count = _get_message_count(path) + 1
     now = _timestamp()
