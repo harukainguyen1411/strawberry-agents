@@ -79,6 +79,10 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
 6. One clear message beats five vague ones
 7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
 
+## Secrets Policy
+
+Never write secrets (tokens, API keys, passwords, credentials) into any file that will be committed. Use environment variables or files in `secrets/` (gitignored). If you need to reference a secret in a plan, doc, or config, use a placeholder like `$TELEGRAM_BOT_TOKEN`. A gitleaks pre-commit hook will block commits containing detected secrets.
+
 ## Restricted Tools (evelynn MCP server)
 
 These tools live on the separate `evelynn` MCP server, not `agent-manager`. Only Evelynn can call them (sender enforcement).

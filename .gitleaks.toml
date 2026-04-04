@@ -1,0 +1,16 @@
+# Gitleaks configuration for Strawberry
+# Scans staged files for secrets before commit
+
+title = "strawberry secret scanning"
+
+[extend]
+# Use the default gitleaks rules (covers AWS, GCP, GitHub, Slack, Telegram, generic API keys, etc.)
+useDefault = true
+
+[allowlist]
+# Files that are safe to ignore
+paths = [
+    '''\.gitignore''',
+    '''\.gitleaks\.toml''',
+    '''agents/.*/journal/.*''',
+]
