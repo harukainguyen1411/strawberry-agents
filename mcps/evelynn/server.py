@@ -242,7 +242,8 @@ async def commit_agent_state_to_main(sender: str) -> dict[str, Any]:
 
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
-TELEGRAM_API = 'https://api.telegram.org/bot{token}/sendMessage'
+TELEGRAM_API_BASE = 'https://api.telegram.org/bot{token}'
+_telegram_update_offset: int = 0  # tracks last processed update_id
 
 
 @mcp.tool()
@@ -272,11 +273,9 @@ async def telegram_send_message(
     if parse_mode in ('HTML', 'Markdown'):
         payload['parse_mode'] = parse_mode
 
+    url = f'{TELEGRAM_API_BASE.format(token=TELEGRAM_BOT_TOKEN)}/sendMessage'
     async with httpx.AsyncClient(timeout=10) as client:
-        resp = await client.post(
-            TELEGRAM_API.format(token=TELEGRAM_BOT_TOKEN),
-            json=payload,
-        )
+        resp = await client.post(url, json=payload)
 
     if resp.status_code != 200:
         raise ToolError(f'Telegram API error ({resp.status_code}): {resp.text}')
@@ -285,6 +284,66 @@ async def telegram_send_message(
     return {
         'status': 'sent',
         'message_id': data.get('result', {}).get('message_id'),
+    }
+
+
+@mcp.tool()
+async def telegram_poll_messages(sender: str) -> dict[str, Any]:
+    """Poll Telegram for new messages from Duong. Restricted to Evelynn only (honor-system).
+
+    Uses long polling (15s) with offset tracking to avoid duplicates.
+    Returns any new messages received since the last poll.
+
+    Args:
+        sender: Agent invoking this tool (must be 'evelynn')
+    """
+    global _telegram_update_offset
+    _enforce_evelynn(sender)
+
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        raise ToolError(
+            'Telegram not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID env vars.'
+        )
+
+    params: dict[str, Any] = {
+        'timeout': 15,
+        'allowed_updates': ['message'],
+    }
+    if _telegram_update_offset:
+        params['offset'] = _telegram_update_offset
+
+    url = f'{TELEGRAM_API_BASE.format(token=TELEGRAM_BOT_TOKEN)}/getUpdates'
+    async with httpx.AsyncClient(timeout=30) as client:
+        resp = await client.get(url, params=params)
+
+    if resp.status_code != 200:
+        raise ToolError(f'Telegram API error ({resp.status_code}): {resp.text}')
+
+    data = resp.json()
+    if not data.get('ok'):
+        raise ToolError(f'Telegram API returned error: {data}')
+
+    updates = data.get('result', [])
+    messages = []
+
+    for update in updates:
+        _telegram_update_offset = update['update_id'] + 1
+        msg = update.get('message')
+        if not msg:
+            continue
+        # Only include messages from Duong's chat
+        if str(msg.get('chat', {}).get('id')) != TELEGRAM_CHAT_ID:
+            continue
+        messages.append({
+            'message_id': msg.get('message_id'),
+            'text': msg.get('text', ''),
+            'date': msg.get('date'),
+        })
+
+    return {
+        'status': 'ok',
+        'messages': messages,
+        'count': len(messages),
     }
 
 
