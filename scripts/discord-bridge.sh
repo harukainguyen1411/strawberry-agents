@@ -120,45 +120,60 @@ run_delegation() {
   # Write the delegation prompt to a temp file to avoid shell escaping issues
   local prompt_file
   prompt_file=$(mktemp /tmp/delegation-XXXXXX.txt)
-  cat > "$prompt_file" <<DELEGATION
-[Discord delegation — suggestion already triaged as actionable]
-
-Thread: ${thread_name} (ID: ${thread_id})
-Content: ${content}
-Triage summary: ${summary}
-Suggested agent: ${delegate_to}
-
-Delegate this to the appropriate agent using your agent-manager tools. When delegation is complete, write your Discord follow-up response as a JSON file to: ${response_file}
-
-The JSON must be: {"threadId": "${thread_id}", "message": "your response here"}
-
-Use the Write tool to create that file. Keep your Discord message under 2000 characters.
-DELEGATION
+  # Build prompt via jq to avoid shell injection through heredoc delimiter collision
+  jq -n \
+    --arg thread_name "$thread_name" \
+    --arg thread_id "$thread_id" \
+    --arg content "$content" \
+    --arg summary "$summary" \
+    --arg delegate_to "$delegate_to" \
+    --arg response_file "$response_file" \
+    -r '"[Discord delegation — suggestion already triaged as actionable]\n\nThread: \($thread_name) (ID: \($thread_id))\nContent: \($content)\nTriage summary: \($summary)\nSuggested agent: \($delegate_to)\n\nDelegate this to the appropriate agent using your agent-manager tools. When delegation is complete, write your Discord follow-up response as a JSON file to: \($response_file)\n\nThe JSON must be: {\"threadId\": \"\($thread_id)\", \"message\": \"your response here\"}\n\nUse the Write tool to create that file. Keep your Discord message under 2000 characters."' \
+    > "$prompt_file"
 
   echo "[bridge] Starting delegation pass for thread $thread_id"
 
-  # Lock — only one delegation at a time
-  if [ -f "$LOCK_FILE" ]; then
-    local lock_pid
-    lock_pid=$(cat "$LOCK_FILE")
-    if kill -0 "$lock_pid" 2>/dev/null; then
-      echo "[bridge] Delegation already running (pid $lock_pid), queueing $thread_id"
-      # Re-queue by not archiving — it'll be picked up next poll
-      rm -f "$prompt_file"
-      return 1
+  # Lock — atomic mkdir (no TOCTOU race)
+  if ! mkdir "$LOCK_FILE" 2>/dev/null; then
+    # Lock exists — check if holder is still alive
+    local lock_pid_file="$LOCK_FILE/pid"
+    if [ -f "$lock_pid_file" ]; then
+      local lock_pid
+      lock_pid=$(cat "$lock_pid_file")
+      if kill -0 "$lock_pid" 2>/dev/null; then
+        echo "[bridge] Delegation already running (pid $lock_pid), queueing $thread_id"
+        rm -f "$prompt_file"
+        return 1
+      else
+        echo "[bridge] Stale lock from pid $lock_pid, removing"
+        rm -rf "$LOCK_FILE"
+        mkdir "$LOCK_FILE" 2>/dev/null || { rm -f "$prompt_file"; return 1; }
+      fi
     else
-      echo "[bridge] Stale lock from pid $lock_pid, removing"
-      rm -f "$LOCK_FILE"
+      # Lock dir exists but no pid file — stale, reclaim
+      rm -rf "$LOCK_FILE"
+      mkdir "$LOCK_FILE" 2>/dev/null || { rm -f "$prompt_file"; return 1; }
     fi
   fi
 
   # Run delegation in background with timeout
   (
-    echo $$ > "$LOCK_FILE"
+    echo $$ > "$LOCK_FILE/pid"
     local delegation_result
     delegation_result=$(cd "$STRAWBERRY_DIR" && timeout 600 claude -p "$(cat "$prompt_file")" \
       --max-turns 25 \
-      --dangerously-skip-permissions \
+      --allowedTools Read Glob Grep Write Agent \
+        mcp__agent-manager__create_agent \
+        mcp__agent-manager__launch_agent \
+        mcp__agent-manager__message_agent \
+        mcp__agent-manager__start_conversation \
+        mcp__agent-manager__message_in_conversation \
+        mcp__agent-manager__read_conversation \
+        mcp__agent-manager__list_conversations \
+        mcp__agent-manager__list_agents \
+        mcp__agent-manager__agent_status \
+        mcp__agent-manager__check_inbox_status \
+        mcp__agent-manager__poll_conversations \
       < /dev/null 2>&1) || true
 
     rm -f "$prompt_file"
@@ -176,7 +191,7 @@ DELEGATION
       fi
     fi
 
-    rm -f "$LOCK_FILE"
+    rm -rf "$LOCK_FILE"
     echo "[bridge] Delegation complete for thread $thread_id"
 
     # Process any queued delegations
