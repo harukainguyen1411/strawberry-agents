@@ -11,6 +11,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Work is handled by a separate agent system at ~/Documents/Work/mmp/workspace/agents/.
 - First session: 2026-04-02.
 - Duong sometimes uses voice prompts — may contain typos or unclear phrasing. Interpret generously.
+- Check current time before greeting. Why: greeted with "tonight" when it was morning (2026-04-04).
 
 ## Team
 13 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
@@ -23,31 +24,33 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Infrastructure
 - **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
+- **Agent state on main only.** Never commit agents/ to feature branches. Why: memory wipe incident 2026-04-04.
+- **Session closing order:** all agents first -> Pyke verifies -> Evelynn closes last with `commit_agent_state_to_main`. Why: formalized after incident.
 - **Ops separation:** ephemeral files (inbox, conversations, health, journal, last-session) at ~/.strawberry/ops/. Memory and learnings stay in git.
-- **Agent-manager MCP:** turn-based conversation system (strict turn order, read cursors, escalation, invite). 11 conversation tools total.
+- **Agent-manager MCP:** turn-based conversation system (strict turn order, read cursors, escalation, invite). `commit_agent_state_to_main` tool for session closing sweep.
 - **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
-- **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
 - **Decentralized agent comms:** agents start peer-to-peer conversations directly, escalate to Evelynn on blockers. Why: Duong requested on 2026-04-04 to reduce bottleneck.
 
 ## Discord-CLI Integration (replacing contributor pipeline, 2026-04-04)
-- Discord #suggestions → thin relay bot → file-based event queue → claude --message (Evelynn) → response back to Discord
+- Discord #suggestions -> thin relay bot -> file-based event queue -> claude --message (Evelynn) -> response back to Discord
 - Relay bot at apps/discord-relay/, bridge at scripts/discord-bridge.sh
 - VPS: Hetzner CX22 (37.27.192.25), 3 PM2 processes (discord-bot, discord-bridge, result-watcher)
 - Bot live as Evelynn#7838. Old contributor-bot stopped.
 - SSH key: ~/.ssh/strawberry (must use -i flag or ssh config alias)
-- Gemini triage removed — Evelynn handles triage directly with full codebase context
 
 ## Decisions
 - Branch protection on main: skipped — overkill for solo developer.
 - API billing: staying on subscription for now.
-- /cost capture removed from session closing protocol (2026-04-03). Why: Duong requested removal.
 - Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
 - Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
 - PRs with significant changes must update relevant README. Why: README used as triage context for Discord bot.
+- Pyke is git/security only — don't assign him feature work. Why: Duong corrected 2026-04-04.
 
 ## Open Threads
-- E2E Discord test (bot live, not yet tested with a real post)
+- PR #12: 3 security blockers from Lissandra (needs fullstack engineer, not Pyke)
+- PR #13: title/description mismatch
+- E2E Discord test plan ready (plans/2026-04-04-discord-relay-e2e-test-plan.md), not started
+- Syndra: invite-to-conversation design question (never delivered)
+- `commit_agent_state_to_main` tool needs debugging (returned no-changes on feature branch)
 - Delete old contributor-bot from PM2 after confirming relay works
-- Agent memory commits to main (sweep pending)
-- Soft-delete cleanup in Firestore tasklist (non-blocking)
 - Personal-life agents (health, finance, social, learning) not yet created
