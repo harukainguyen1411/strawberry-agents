@@ -10,6 +10,7 @@
 - 2026-04-03 Evening (CLI, opus-4.6): Migration exec (PR #10), pipeline infra (PR #11), VPS setup.
 - 2026-04-03 Late evening (CLI, opus-4.6): VPS SSH fix — ssh.socket issue on Ubuntu 24.04.
 - 2026-04-04 Night (CLI, opus-4.6): Discord-CLI integration — full infra deploy + two-pass bridge.
+- 2026-04-04 AM (CLI, opus-4.6): Incident response — memory wipe + MCP config loss. Created PRs, fixed blockers, restored memory.
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
@@ -18,6 +19,10 @@
   **Why:** Ephemeral ops files cause conflicts during branch switches.
 - Journal/ and last-session.md -> gitignored.
   **Why:** High churn, no git value.
+- Agent state belongs on main only. Never commit agents/ to feature branches.
+  **Why:** Memory wipe incident 2026-04-04 — merge conflicts destroyed 6 agents' memory.
+- Session closing order: all agents first, Pyke verifies, Evelynn closes last with commit_agent_state_to_main.
+  **Why:** Formalized after incident to prevent future state loss.
 - Agent memory commits: direct to main, no PRs. Evelynn sweeps after sessions.
   **Why:** Agent-scoped files, PRs add zero review value.
 - Myapps monorepo: git filter-repo into apps/myapps/, Firebase config stays in app dir.
@@ -28,6 +33,7 @@
   **Why:** Full Evelynn startup burns 5-7 turns; only worth it for actionable items.
 - Delegation uses --allowedTools whitelist on VPS (was --dangerously-skip-permissions, fixed in PR #12).
   **Why:** Non-interactive mode, own server, needs Write tool for inbox/responses. Whitelist limits blast radius.
+  **Why:** Lissandra flagged unrestricted Bash access from user-controlled Discord input.
 - PM2 for discord processes, systemd for GHA runner.
   **Why:** PM2 gives log rotation + dashboard without writing unit files.
 
@@ -42,24 +48,29 @@
   - jq: static binary at ~/.npm-global/bin/jq
 
 ## Open items
+- PRs #8, #10, #11, #12, #13 need merge
 - Swap file needs root access (2GB, Duong lost root password)
 - Health check cron not yet installed
 - PM2 startup hook not configured
 - Old contributor-bot in PM2 (stopped, pending deletion)
-- Branch protection on main — needs Duong manual GitHub config
+- Lissandra's N1-N7 on PR #12 (non-blocking)
+- Swain's E2E test plan needs my infra/security review
 
 ## Security lessons
+- NEVER auto-resolve agent state conflicts. Always manually merge.
+  **Why:** Incident 2026-04-04 — git checkout --theirs wiped 6 agents' memory.
 - Never use ${{ inputs }} directly in GHA run: blocks — pass through env: vars.
   **Why:** Command injection. Swain caught this in PR #11.
-- Ubuntu 24.04 uses `ssh.service` not `sshd.service`, and uses socket activation (`ssh.socket`).
+- Ubuntu 24.04 uses ssh.service + ssh.socket, not sshd.service.
   **Why:** Setup script failed silently, locked out SSH.
 - PM2 env_file is not a real option — use wrapper scripts to source .env files.
   **Why:** Secrets were not loaded, bot crashed on missing DISCORD_TOKEN.
-- Claude CLI: use -p not --message, redirect stdin with < /dev/null, run from /tmp to skip CLAUDE.md for lightweight calls.
+- Claude CLI: use -p not --message, redirect stdin with < /dev/null, run from /tmp to skip CLAUDE.md.
   **Why:** Multiple deploy failures from wrong flags and stdin warnings.
 
 ## Working relationships
 - Syndra: sharp design partner for architecture decisions.
 - Lissandra: thorough reviewer. Approved PR #8.
 - Swain: excellent architecture partner. Designed Discord-CLI integration, two-pass bridge. Clean, pragmatic.
-- Evelynn: coordinator. Reports go to her.
+- Bard: reliable MCP counterpart. Fast executor. Built commit_agent_state_to_main in one turn.
+- Evelynn: coordinator. Reports go to her. She closes last.
