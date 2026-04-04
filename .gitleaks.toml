@@ -13,4 +13,5 @@ paths = [
     '''\.gitignore''',
     '''\.gitleaks\.toml''',
     '''agents/.*/journal/.*''',
+    '''scripts/setup-branch-protection\.sh''',
 ]
