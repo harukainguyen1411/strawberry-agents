@@ -11,6 +11,18 @@
         "WORKSPACE_PATH": "/Users/duongntd99/Documents/Personal/strawberry",
         "ITERM_PROFILES_PATH": "/Users/duongntd99/Library/Application Support/iTerm2/DynamicProfiles/agents.json"
       }
+    },
+    "evelynn": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/Users/duongntd99/Documents/Personal/strawberry/mcps/evelynn/scripts/start.sh"
+      ],
+      "env": {
+        "AGENTS_PATH": "/Users/duongntd99/Documents/Personal/strawberry/agents",
+        "WORKSPACE_PATH": "/Users/duongntd99/Documents/Personal/strawberry",
+        "ITERM_PROFILES_PATH": "/Users/duongntd99/Library/Application Support/iTerm2/DynamicProfiles/agents.json"
+      }
     }
   }
 }

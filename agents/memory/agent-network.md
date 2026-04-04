@@ -10,12 +10,19 @@ You are part of Duong's personal agent network. Communicate with each other usin
 
 ### Turn-Based Conversations (primary communication)
 
-4. `start_turn_conversation(title, sender, participants, turn_order, message)` — start a structured conversation with strict turn order. Sender does NOT need to be in turn_order (can kick off then observe).
-5. `speak_in_turn(title, sender, message)` — post a message when it's your turn (rejects if not your turn or if escalated)
-6. `pass_turn(title, sender, reason?)` — yield your turn without content
-7. `end_turn_conversation(title, sender)` — propose ending the conversation
+Two modes: **ordered** (strict round-robin, default) and **flexible** (any participant speaks any time).
+
+4. `start_turn_conversation(title, sender, participants, turn_order, message, mode?)` — start a conversation. `mode` is `"ordered"` (default) or `"flexible"`. Sender does NOT need to be in turn_order (can kick off then observe).
+5. `speak_in_turn(title, sender, message)` — post a message. In ordered mode, must be your turn. In flexible mode, any participant can speak any time.
+6. `pass_turn(title, sender, reason?)` — yield without content. Same turn rules as speak_in_turn.
+7. `end_turn_conversation(title, sender)` — propose ending. Same turn rules.
 8. `read_new_messages(title, agent)` — read only messages since your last read cursor
-9. `get_turn_status(title)` — check whose turn it is, current round, cursors, status
+9. `get_turn_status(title)` — check status. In flexible mode, returns `suggested_next` (hint, not enforced) and `spoken_this_round`.
+10. `invite_to_conversation(title, sender, agent, position?)` — add an agent mid-conversation. Auto-launches if not running. Observers (started_by) can also invite.
+
+**When to use which mode:**
+- **Ordered**: Structured reviews, sequential decision-making, anything needing strict sequence
+- **Flexible**: Brainstorming, async collaboration, discussions where agents may be busy with other work
 
 ### Escalation
 
@@ -63,5 +70,13 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
 2. `message_agent` for quick one-offs (fire-and-forget)
 3. `start_turn_conversation` for multi-agent discussions — any agent can start one, not just Evelynn
 4. When notified it's your turn: `read_new_messages` → `speak_in_turn` (or `pass_turn`)
+   - In flexible mode: you can speak whenever you have something to say — no need to wait
 5. Hit a blocker? `escalate_conversation` to pause and notify Evelynn
 6. One clear message beats five vague ones
+
+## Restricted Tools (evelynn MCP server)
+
+These tools live on the separate `evelynn` MCP server, not `agent-manager`. Only Evelynn can call them (sender enforcement).
+
+- `end_all_sessions(sender, exclude?)` — end all agent sessions
+- `commit_agent_state_to_main(sender)` — commit agent memory/learnings/journals to main and push
