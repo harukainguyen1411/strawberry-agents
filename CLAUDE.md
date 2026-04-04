@@ -65,9 +65,13 @@ Messages arrive as `[inbox] /path/to/inbox/<filename>.md`. Read the file, update
 - Avoid shell approval prompts (no quoted strings, no `$()`, no globs in bash)
 - PRs with significant changes (new features, architecture changes, new apps, removed features) must update the relevant `README.md` — especially `apps/myapps/README.md`. This README is used as triage context for the Discord bot, so it must stay current.
 
+## System Documentation
+
+`architecture/` is the source of truth for how the system works. Reference these docs for understanding system design, capabilities, and integration patterns.
+
 ## Plans
 
-Plan files go in `plans/` with format `YYYY-MM-DD-<slug>.md` and YAML frontmatter (status, owner).
+Plan files go in `plans/` with format `YYYY-MM-DD-<slug>.md` and YAML frontmatter (status, owner). Plans are for execution only — once implemented, the relevant `architecture/` doc gets updated.
 
 ## Learnings
 

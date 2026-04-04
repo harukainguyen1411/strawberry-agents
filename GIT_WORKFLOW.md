@@ -1,13 +1,6 @@
 # Git Workflow — Strawberry
 
-## Branching Strategy
-
-- **`main`** is the stable branch. Never commit directly to main.
-- All work goes through **feature branches** with pull requests.
-
 ## Branch Naming
-
-Use prefixes:
 
 | Prefix | Use |
 |---|---|
@@ -16,34 +9,48 @@ Use prefixes:
 | `chore/` | Maintenance, cleanup, config changes |
 | `docs/` | Documentation only |
 
-Examples: `feature/agent-bootstrap`, `fix/heartbeat-crash`, `chore/update-deps`
+## Three-Tier Commit Policy
 
-## Workflow
+### Tier 1 — Agent State
+**Scope:** `agents/*/memory/`, `agents/*/learnings/`, `agents/*/journal/`
+**Policy:** Direct to main. No PR.
+**Prefix:** `chore:`
+**Notes:** Evelynn sweeps agent state via `commit_agent_state_to_main` after sessions. Agent-scoped files — PRs add zero review value.
 
-1. **Create a branch** from `main`: `git checkout -b feature/my-task main`
-2. **Commit** with clear messages — what changed and why
-3. **Push** and create a PR: `git push -u origin feature/my-task && gh pr create`
-4. **Review** — Lissandra or Rek'Sai review if code changes are involved
-5. **Merge** via PR (squash or merge commit, no rebase)
-6. **Delete** the branch after merge
+### Tier 2 — Operational Config
+**Scope:** `agents/memory/agent-network.md`, `.mcp.json`, `plans/`, minor MCP server tweaks (docs, descriptions, non-breaking parameter changes)
+**Policy:** Direct to main with a descriptive commit message.
+**Prefix:** `chore:` or `ops:`
+**Notes:** Living docs that change frequently. PR ceremony adds no value for a solo setup.
 
-## Rules for Agents
+### Tier 3 — Feature Work
+**Scope:** New MCP servers, new tools, breaking changes to `mcps/*/server.py`, GitHub Actions workflows, new apps, architecture changes
+**Policy:** Feature branch + PR.
+**Prefix:** `feature/`, `fix/`
+**Notes:** PRs provide a diff to review, a rollback point, and a record of what changed. Anything that changes how agents communicate or introduces new capabilities must go through a PR.
 
-- Every task gets its own branch and PR — no exceptions
+## Rule of Thumb
+
+If it changes how agents talk to each other or adds new capabilities → **PR**.
+If it's updating config, docs, or agent state → **direct to main**.
+
+## Workflow (Tier 3)
+
+1. Create a branch from `main`
+2. Commit with clear messages — what changed and why
+3. Push and create a PR
+4. Review — Lissandra or Rek'Sai review if code changes are involved
+5. Merge via PR (squash or merge commit, no rebase)
+6. Delete the branch after merge
+
+## Hard Rules
+
 - Never force-push. Never rebase. Always merge.
 - Never commit secrets, credentials, or `.env` files
-- Commit messages: imperative mood, concise, explain the why
+- Agent state belongs on main only — never commit `agents/` to feature branches
+- Never auto-resolve agent state merge conflicts — always manually merge
 - One logical change per commit — don't mix unrelated work
-
-## Agent State Commits
-
-Memory, journals, and learnings stay in git — they're durable identity. When an agent updates these files during a session, commit them to the current branch with:
-
-```
-chore(agent): update <agent> memory/journal/learnings
-```
-
-These commits ride along with whatever branch the agent is on and merge naturally with the PR.
+- Delete branches after merge
 
 ## Operational Files (outside git)
 
@@ -58,14 +65,8 @@ Ephemeral runtime state lives in `~/.strawberry/ops/`, NOT in the git repo:
 
 These directories are gitignored. The MCP server reads/writes them via the `OPS_PATH` env var.
 
-**Note:** `agents/health/heartbeat.sh` is a tool and stays in the git repo. It writes heartbeat JSON to the ops health directory. Once the MCP server is updated with `OPS_PATH` support (Bard's PR), heartbeat output will go to `~/.strawberry/ops/health/`.
+## Commit Messages
 
-**Rule: never put secrets in inbox messages or conversations.** Use env vars or a secrets manager.
-
-## Branch Protection (main)
-
-Branch protection should be enabled on main requiring:
-- Pull request before merging
-- No direct pushes
-
-Note: This requires repo admin to configure via GitHub settings or API.
+- Imperative mood, concise, explain the why
+- No AI authoring references
+- Avoid shell-unfriendly characters in commit commands
