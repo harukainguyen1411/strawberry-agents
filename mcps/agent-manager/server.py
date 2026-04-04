@@ -810,11 +810,9 @@ def _delegations_dir() -> Path:
 
 
 def _next_delegation_id() -> str:
-    ts = datetime.now().strftime('%Y%m%d-%H%M')
-    d = _delegations_dir()
-    existing = list(d.glob(f'd-{ts}-*.json'))
-    seq = len(existing) + 1
-    return f'd-{ts}-{seq:03d}'
+    ts = datetime.now().strftime('%Y%m%d-%H%M%S')
+    rand = os.urandom(3).hex()
+    return f'd-{ts}-{rand}'
 
 
 def _parse_deadline(deadline: str) -> Optional[str]:
@@ -835,8 +833,12 @@ def _parse_deadline(deadline: str) -> Optional[str]:
             return (now + timedelta(hours=hours)).strftime('%Y-%m-%dT%H:%M:%SZ')
         except ValueError:
             pass
-    # Assume ISO timestamp
-    return deadline
+    # Validate as ISO timestamp
+    try:
+        datetime.fromisoformat(deadline.replace('Z', '+00:00'))
+        return deadline
+    except (ValueError, TypeError):
+        raise ToolError(f'Invalid deadline format: {deadline}. Use "5m", "15m", "1h" or ISO timestamp.')
 
 
 def _read_delegation(path: Path) -> dict[str, Any]:
@@ -1029,7 +1031,10 @@ async def check_delegations(
                     dl = dl.replace(tzinfo=timezone.utc)
                 if now > dl:
                     record['status'] = 'overdue'
-                    _write_delegation(f, record)
+                    try:
+                        _write_delegation(f, record)
+                    except OSError as e:
+                        log.warning(f'Failed to write overdue status for {f.name}: {e}')
             except (ValueError, TypeError):
                 pass
 
