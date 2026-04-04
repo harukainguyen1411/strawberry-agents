@@ -163,17 +163,20 @@ run_delegation() {
     delegation_result=$(cd "$STRAWBERRY_DIR" && timeout 600 claude -p "$(cat "$prompt_file")" \
       --max-turns 25 \
       --allowedTools Read Glob Grep Write Agent \
-        mcp__agent-manager__create_agent \
         mcp__agent-manager__launch_agent \
         mcp__agent-manager__message_agent \
-        mcp__agent-manager__start_conversation \
-        mcp__agent-manager__message_in_conversation \
-        mcp__agent-manager__read_conversation \
-        mcp__agent-manager__list_conversations \
         mcp__agent-manager__list_agents \
         mcp__agent-manager__agent_status \
         mcp__agent-manager__check_inbox_status \
-        mcp__agent-manager__poll_conversations \
+        mcp__agent-manager__start_turn_conversation \
+        mcp__agent-manager__speak_in_turn \
+        mcp__agent-manager__pass_turn \
+        mcp__agent-manager__end_turn_conversation \
+        mcp__agent-manager__read_new_messages \
+        mcp__agent-manager__get_turn_status \
+        mcp__agent-manager__escalate_conversation \
+        mcp__agent-manager__resolve_escalation \
+        mcp__agent-manager__invite_to_conversation \
       < /dev/null 2>&1) || true
 
     rm -f "$prompt_file"

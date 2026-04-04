@@ -25,9 +25,14 @@
   **Why:** Formalized after incident to prevent future state loss.
 - Agent memory commits: direct to main, no PRs. Evelynn sweeps after sessions.
   **Why:** Agent-scoped files, PRs add zero review value.
+- Myapps monorepo: git filter-repo into apps/myapps/, Firebase config stays in app dir.
+  **Why:** Preserves full history, clean blame, no root pollution.
+- Contributor pipeline: workflow_dispatch -> Claude Code on self-hosted runner -> PR -> Firebase preview.
+  **Why:** Duong's subscription auth requires self-hosted runner (no API key).
 - Discord-CLI: two-pass bridge — triage (cheap, text-only) + delegation (full Evelynn, 25 turns).
   **Why:** Full Evelynn startup burns 5-7 turns; only worth it for actionable items.
 - Delegation uses --allowedTools whitelist on VPS (was --dangerously-skip-permissions, fixed in PR #12).
+  **Why:** Non-interactive mode, own server, needs Write tool for inbox/responses. Whitelist limits blast radius.
   **Why:** Lissandra flagged unrestricted Bash access from user-controlled Discord input.
 - PM2 for discord processes, systemd for GHA runner.
   **Why:** PM2 gives log rotation + dashboard without writing unit files.

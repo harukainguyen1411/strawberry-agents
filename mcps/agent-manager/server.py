@@ -571,8 +571,16 @@ def _find_agent_sessions(agent_names: set[str]) -> dict[str, str]:
                     if data.get('type') != 'user':
                         continue
                     content = data.get('message', {}).get('content', '')
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'text':
+                                content = block.get('text', '')
+                                break
+                        else:
+                            content = ''
                     if isinstance(content, str):
-                        match = re.match(r'Hey\s+(\w+)', content, re.IGNORECASE)
+                        match = re.match(r'Hey\s+(\w+)', content, re.IGNORECASE) or \
+                                re.match(r'\[autonomous\]\s+(\w+)', content, re.IGNORECASE)
                         if match:
                             name = match.group(1).lower()
                             if name in agent_names and name not in found:
@@ -1661,6 +1669,147 @@ async def invite_to_conversation(
         'message_index': msg_count,
         'current_turn': fm['current_turn'],
     }
+
+
+def _git(args: list[str], cwd: str | None = None) -> subprocess.CompletedProcess:
+    """Run a git command and return the result."""
+    return subprocess.run(
+        ['git'] + args,
+        cwd=cwd or WORKSPACE,
+        capture_output=True,
+        text=True,
+    )
+
+
+@mcp.tool()
+async def commit_agent_state_to_main() -> dict[str, Any]:
+    """Commit all agent state files to main branch and push.
+
+    Stages agent memory, learnings, journals, and wip files (excluding inbox),
+    commits to main with a standard message, and pushes to origin.
+    Designed to be called by Evelynn as the final step of session closing.
+    """
+    if not WORKSPACE:
+        raise ToolError('WORKSPACE_PATH not set')
+    if not AGENTS_DIR:
+        raise ToolError('AGENTS_PATH not set')
+
+    agents_rel = os.path.relpath(AGENTS_DIR, WORKSPACE)
+
+    # Record current branch
+    result = _git(['branch', '--show-current'])
+    if result.returncode != 0:
+        raise ToolError(f'Failed to get current branch: {result.stderr.strip()}')
+    original_branch = result.stdout.strip()
+    on_main = original_branch == 'main'
+
+    stashed = False
+
+    try:
+        # Stash if not on main and working tree is dirty
+        if not on_main:
+            dirty = _git(['status', '--porcelain'])
+            if dirty.stdout.strip():
+                stash_result = _git(['stash', '--include-untracked'])
+                if stash_result.returncode != 0:
+                    raise ToolError(f'Failed to stash: {stash_result.stderr.strip()}')
+                stashed = True
+
+            # Checkout main
+            checkout = _git(['checkout', 'main'])
+            if checkout.returncode != 0:
+                if stashed:
+                    _git(['stash', 'pop'])
+                raise ToolError(f'Failed to checkout main: {checkout.stderr.strip()}')
+
+        # Pull latest
+        pull = _git(['pull', 'origin', 'main'])
+        if pull.returncode != 0:
+            log.warning(f'git pull failed (continuing): {pull.stderr.strip()}')
+
+        # Stage agent state files (memory, learnings, journal, wip) — exclude inbox
+        state_patterns = [
+            f'{agents_rel}/*/memory/',
+            f'{agents_rel}/*/learnings/',
+            f'{agents_rel}/*/journal/',
+            f'{agents_rel}/*/wip/',
+            f'{agents_rel}/memory/',
+        ]
+
+        staged_files = []
+        for pattern in state_patterns:
+            pattern_path = Path(WORKSPACE) / pattern
+            if pattern_path.exists():
+                add_result = _git(['add', pattern])
+                if add_result.returncode == 0:
+                    # Check what was actually staged from this pattern
+                    diff = _git(['diff', '--cached', '--name-only', '--', pattern])
+                    if diff.stdout.strip():
+                        staged_files.extend(diff.stdout.strip().splitlines())
+
+        # Remove any inbox files that got staged
+        unstage_inbox = _git(['reset', 'HEAD', '--', f'{agents_rel}/*/inbox/'])
+        # Ignore errors — inbox dir may not exist or have nothing staged
+
+        # Check if anything is staged
+        check = _git(['diff', '--cached', '--name-only'])
+        if not check.stdout.strip():
+            # Nothing to commit — restore and return
+            if not on_main:
+                _git(['checkout', original_branch])
+                if stashed:
+                    _git(['stash', 'pop'])
+            return {'status': 'no_changes', 'message': 'No agent state changes to commit.'}
+
+        final_files = check.stdout.strip().splitlines()
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+        # Commit
+        commit = _git(['commit', '-m', f'chore: update agent state [{timestamp}]'])
+        if commit.returncode != 0:
+            _git(['reset', 'HEAD'])
+            if not on_main:
+                _git(['checkout', original_branch])
+                if stashed:
+                    _git(['stash', 'pop'])
+            raise ToolError(f'Failed to commit: {commit.stderr.strip()}')
+
+        # Get commit hash
+        hash_result = _git(['rev-parse', '--short', 'HEAD'])
+        commit_hash = hash_result.stdout.strip()
+
+        # Push
+        push = _git(['push', 'origin', 'main'])
+        push_failed = push.returncode != 0
+        push_error = push.stderr.strip() if push_failed else None
+
+        # Restore original branch
+        if not on_main:
+            _git(['checkout', original_branch])
+            if stashed:
+                _git(['stash', 'pop'])
+
+        result = {
+            'status': 'committed',
+            'commit': commit_hash,
+            'files': final_files,
+            'files_count': len(final_files),
+            'pushed': not push_failed,
+        }
+        if push_failed:
+            result['push_error'] = push_error
+
+        return result
+
+    except ToolError:
+        raise
+    except Exception as e:
+        # Emergency cleanup
+        if not on_main:
+            _git(['checkout', original_branch])
+            if stashed:
+                _git(['stash', 'pop'])
+        raise ToolError(f'Unexpected error: {str(e)}')
 
 
 if __name__ == '__main__':

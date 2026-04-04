@@ -24,17 +24,18 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Infrastructure
 - **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
 - **Ops separation:** ephemeral files (inbox, conversations, health, journal, last-session) at ~/.strawberry/ops/. Memory and learnings stay in git.
-- **Agent-manager MCP:** all agents registered. Conversation system, restart, end-all-sessions functional.
+- **Agent-manager MCP:** turn-based conversation system (strict turn order, read cursors, escalation, invite). 11 conversation tools total.
 - **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
 - **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
+- **Decentralized agent comms:** agents start peer-to-peer conversations directly, escalate to Evelynn on blockers. Why: Duong requested on 2026-04-04 to reduce bottleneck.
 
-## Contributor Pipeline (built 2026-04-03, deployed 2026-04-03)
-- Discord #suggestions forum → Gemini triage → GitHub Issue → Claude Code on self-hosted runner → Firebase preview → approval → Duong merges
-- Bot at apps/contributor-bot/, workflow at .github/workflows/contributor-pipeline.yml
-- VPS: Hetzner CX22 (37.27.192.25), runner registered and active
-- **Bot deployed via PM2**, secrets configured manually by Duong
-- GitHub webhook → Discord #pr-and-issues (Issues + PR events)
+## Discord-CLI Integration (replacing contributor pipeline, 2026-04-04)
+- Discord #suggestions → thin relay bot → file-based event queue → claude --message (Evelynn) → response back to Discord
+- Relay bot at apps/discord-relay/, bridge at scripts/discord-bridge.sh
+- VPS: Hetzner CX22 (37.27.192.25), 3 PM2 processes (discord-bot, discord-bridge, result-watcher)
+- Bot live as Evelynn#7838. Old contributor-bot stopped.
 - SSH key: ~/.ssh/strawberry (must use -i flag or ssh config alias)
+- Gemini triage removed — Evelynn handles triage directly with full codebase context
 
 ## Decisions
 - Branch protection on main: skipped — overkill for solo developer.
@@ -42,9 +43,11 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - /cost capture removed from session closing protocol (2026-04-03). Why: Duong requested removal.
 - Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
 - Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
+- PRs with significant changes must update relevant README. Why: README used as triage context for Discord bot.
 
 ## Open Threads
-- Test full contributor pipeline end-to-end
+- E2E Discord test (bot live, not yet tested with a real post)
+- Delete old contributor-bot from PM2 after confirming relay works
 - Agent memory commits to main (sweep pending)
 - Soft-delete cleanup in Firestore tasklist (non-blocking)
 - Personal-life agents (health, finance, social, learning) not yet created
