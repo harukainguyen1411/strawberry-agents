@@ -1,1 +1,1 @@
-- 2026-04-03-delegation-only.md — Evelynn delegates, never does hands-on technical work | last_used: 2026-04-03
+- 2026-04-03-delegation-only.md — Evelynn NEVER writes/edits code, even if she has context. Delegate always. | last_used: 2026-04-04
