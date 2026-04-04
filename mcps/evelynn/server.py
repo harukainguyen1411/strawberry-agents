@@ -267,17 +267,30 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
     if not session_id:
         raise ToolError('Could not find Evelynn session ID in JSONL transcript files.')
 
-    # Restart: /exit, wait, resume
-    log.info(f'Restarting Evelynn (session {session_id[:8]}...)')
-    send_to_iterm_window(evelynn_window['window_id'], '/exit')
-    await asyncio.sleep(4)
+    # Restart: /exit, wait for exit, resume
+    wid = evelynn_window['window_id']
+    short_id = session_id[:8]
+    log.info(f'Restarting Evelynn (session {short_id}...)')
+    send_to_iterm_window(wid, '/exit')
 
-    send_to_iterm_window(evelynn_window['window_id'], f'claude --resume {session_id}')
+    # Wait for /exit to complete — poll window name for shell prompt
+    # If still showing claude after 15s, proceed anyway (best effort)
+    for _ in range(6):
+        await asyncio.sleep(3)
+        windows = get_iterm_agent_windows()
+        still_running = any(
+            w['window_id'] == wid and 'claude' in w.get('raw_name', '').lower()
+            for w in windows
+        )
+        if not still_running:
+            break
+
+    send_to_iterm_window(wid, f'claude --resume {session_id}')
 
     return {
         'status': 'restarted',
-        'session_id': session_id,
-        'message': f'Evelynn restarted (session {session_id[:8]}...)',
+        'session_id': short_id,
+        'message': f'Evelynn restarted (session {short_id}...)',
     }
 
 
