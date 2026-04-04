@@ -309,6 +309,241 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
     }
 
 
+# ── firebase task board ──────────────────────────────────────────────────
+
+_firestore_db = None
+
+
+def _get_firestore():
+    """Lazy-init Firebase Admin SDK and return Firestore client."""
+    global _firestore_db
+    if _firestore_db is not None:
+        return _firestore_db
+
+    sa_path = os.environ.get('FIREBASE_SERVICE_ACCOUNT_PATH', '')
+    if not sa_path:
+        raise ToolError(
+            'FIREBASE_SERVICE_ACCOUNT_PATH not set. '
+            'Download a service account JSON from Firebase Console and configure it.'
+        )
+
+    import firebase_admin
+    from firebase_admin import credentials, firestore
+
+    if not firebase_admin._apps:
+        cred = credentials.Certificate(sa_path)
+        firebase_admin.initialize_app(cred)
+
+    _firestore_db = firestore.client()
+    return _firestore_db
+
+
+def _get_user_id() -> str:
+    uid = os.environ.get('FIREBASE_USER_ID', '')
+    if not uid:
+        raise ToolError('FIREBASE_USER_ID not set. Set it to Duong\'s Firebase UID.')
+    return uid
+
+
+def _tasks_collection():
+    db = _get_firestore()
+    uid = _get_user_id()
+    return db.collection('users').document(uid).collection('tasks')
+
+
+def _task_to_dict(doc_snapshot) -> dict[str, Any]:
+    """Convert a Firestore document snapshot to a plain dict."""
+    data = doc_snapshot.to_dict()
+    data['id'] = doc_snapshot.id
+    # Convert Firestore timestamps to ISO strings
+    for field in ('createdAt', 'updatedAt'):
+        if field in data and hasattr(data[field], 'isoformat'):
+            data[field] = data[field].isoformat()
+    return data
+
+
+@mcp.tool()
+async def task_list(
+    status: Optional[str] = None,
+    date: Optional[str] = None,
+    category: Optional[str] = None,
+    changed_since: Optional[str] = None,
+) -> dict[str, Any]:
+    """List tasks from the shared task board. Optionally filter by status, date, category, or changes since a timestamp.
+
+    Args:
+        status: Filter by status (todo, inprogress, onhold, done)
+        date: Filter by date (YYYY-MM-DD)
+        category: Filter by category
+        changed_since: ISO timestamp — only return tasks modified after this time
+    """
+    from google.cloud.firestore_v1 import FieldFilter
+
+    col = _tasks_collection()
+    q = col
+
+    # Firestore only allows one inequality filter per query, so we filter changed_since
+    # in Firestore and do the rest client-side
+    if changed_since:
+        q = q.where(filter=FieldFilter('updatedAt', '>', changed_since))
+
+    docs = q.stream()
+    results = []
+    for d in docs:
+        data = _task_to_dict(d)
+        if data.get('_deleted'):
+            continue
+        if status and data.get('status') != status:
+            continue
+        if date and data.get('date') != date:
+            continue
+        if category and data.get('category') != category:
+            continue
+        results.append(data)
+
+    return {'tasks': results, 'count': len(results)}
+
+
+@mcp.tool()
+async def task_create(
+    title: str,
+    date: str,
+    description: str = '',
+    priority: str = 'medium',
+    status: str = 'todo',
+    category: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> dict[str, Any]:
+    """Create a task on the shared task board. Sets source and updatedBy to 'evelynn'.
+
+    Args:
+        title: Task title
+        date: Due date (YYYY-MM-DD)
+        description: Task description
+        priority: Priority (high, medium, low)
+        status: Status (todo, inprogress, onhold, done)
+        category: Optional category for grouping
+        notes: Optional internal notes
+    """
+    from google.cloud import firestore as _fs
+
+    col = _tasks_collection()
+    now = _fs.SERVER_TIMESTAMP
+    doc_data = {
+        'title': title,
+        'description': description,
+        'status': status,
+        'priority': priority,
+        'date': date,
+        'tag': False,
+        'createdAt': now,
+        'updatedAt': now,
+        'updatedBy': 'evelynn',
+        'source': 'evelynn',
+    }
+    if category:
+        doc_data['category'] = category
+    if notes:
+        doc_data['notes'] = notes
+
+    _, doc_ref = col.add(doc_data)
+    return {'status': 'created', 'task_id': doc_ref.id, 'title': title}
+
+
+@mcp.tool()
+async def task_update(
+    task_id: str,
+    title: Optional[str] = None,
+    status: Optional[str] = None,
+    priority: Optional[str] = None,
+    date: Optional[str] = None,
+    description: Optional[str] = None,
+    category: Optional[str] = None,
+    notes: Optional[str] = None,
+) -> dict[str, Any]:
+    """Update a task on the shared task board. Sets updatedBy to 'evelynn'.
+
+    Args:
+        task_id: Firestore document ID of the task
+        title: New title
+        status: New status (todo, inprogress, onhold, done)
+        priority: New priority (high, medium, low)
+        date: New date (YYYY-MM-DD)
+        description: New description
+        category: New category
+        notes: New notes
+    """
+    from google.cloud import firestore as _fs
+
+    col = _tasks_collection()
+    doc_ref = col.document(task_id)
+
+    updates: dict[str, Any] = {
+        'updatedAt': _fs.SERVER_TIMESTAMP,
+        'updatedBy': 'evelynn',
+    }
+    if title is not None:
+        updates['title'] = title
+    if status is not None:
+        updates['status'] = status
+    if priority is not None:
+        updates['priority'] = priority
+    if date is not None:
+        updates['date'] = date
+    if description is not None:
+        updates['description'] = description
+    if category is not None:
+        updates['category'] = category
+    if notes is not None:
+        updates['notes'] = notes
+
+    doc_ref.update(updates)
+    return {'status': 'updated', 'task_id': task_id, 'fields': list(updates.keys())}
+
+
+@mcp.tool()
+async def task_delete(task_id: str) -> dict[str, Any]:
+    """Soft-delete a task on the shared task board (sets _deleted: true).
+
+    Args:
+        task_id: Firestore document ID of the task
+    """
+    from google.cloud import firestore as _fs
+
+    col = _tasks_collection()
+    doc_ref = col.document(task_id)
+    doc_ref.update({
+        '_deleted': True,
+        'updatedAt': _fs.SERVER_TIMESTAMP,
+        'updatedBy': 'evelynn',
+    })
+    return {'status': 'deleted', 'task_id': task_id}
+
+
+@mcp.tool()
+async def task_changes(since: str) -> dict[str, Any]:
+    """Get tasks changed by Duong since a given timestamp. Use this to see what Duong did.
+
+    Args:
+        since: ISO timestamp (e.g. 2026-04-04T10:00:00)
+    """
+    from google.cloud.firestore_v1 import FieldFilter
+
+    col = _tasks_collection()
+    q = col.where(filter=FieldFilter('updatedAt', '>', since)).where(
+        filter=FieldFilter('updatedBy', '==', 'duong')
+    )
+
+    docs = q.stream()
+    results = []
+    for d in docs:
+        data = _task_to_dict(d)
+        if not data.get('_deleted'):
+            results.append(data)
+
+    return {'tasks': results, 'count': len(results)}
+
+
 # ── telegram ─────────────────────────────────────────────────────────────
 
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
