@@ -78,6 +78,7 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
 5. Hit a blocker? `escalate_conversation` to pause and notify Evelynn
 6. One clear message beats five vague ones
 7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
+8. **Context health reporting:** Every ~10 turns, call `report_context_health` with your current turn count and weight estimate (`light`/`medium`/`heavy`/`critical`). If you notice the system compressing your conversation history, report immediately with `compression_events` incremented and `estimated_weight: "critical"`
 
 ## Agent Attribution
 
