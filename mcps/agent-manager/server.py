@@ -13,7 +13,6 @@ Environment Variables:
                            Falls back to in-repo paths under AGENTS_PATH if not set.
 """
 import asyncio
-import fcntl
 import json
 import logging
 import os
@@ -395,27 +394,6 @@ def _write_inbox_message(
 
 # ── messaging ────────────────────────────────────────────────────────────
 
-def _log_message(sender: str, recipient: str, message: str, conversation: Optional[str] = None):
-    convos = _conversations_dir()
-    is_new = False
-    if conversation:
-        path = convos / f'{_slugify(conversation)}.md'
-        if not path.exists():
-            is_new = True
-            with open(path, 'w') as f:
-                f.write(f'---\ntitle: {conversation}\nparticipants: {sender.lower()}, {recipient.lower()}\ncreated: {_timestamp()}\n---\n')
-    else:
-        pair = sorted([sender.lower(), recipient.lower()])
-        path = convos / f'{pair[0]}-{pair[1]}.md'
-        if not path.exists():
-            is_new = True
-            with open(path, 'w') as f:
-                f.write(f'---\ntitle: {pair[0]} & {pair[1]}\nparticipants: {pair[0]}, {pair[1]}\ncreated: {_timestamp()}\n---\n')
-    _append_message(path, sender, message)
-    if is_new:
-        subprocess.Popen(['open', str(path)])
-
-
 @mcp.tool()
 async def launch_agent(name: str, task: str = '') -> dict[str, str]:
     """Launch an agent in autonomous mode in a new iTerm2 window.
@@ -523,10 +501,6 @@ async def message_agent(
 
     recipient = name.strip().lower()
     greeting = recipient.capitalize()
-
-    # Log the message in conversations if sender provided
-    if sender:
-        _log_message(sender, recipient, message, conversation)
 
     # Write inbox file
     inbox_path = _write_inbox_message(
@@ -791,193 +765,8 @@ def _slugify(title: str) -> str:
     return slug[:80].strip('-')
 
 
-def _conversation_path(title: str) -> Path:
-    return _conversations_dir() / f'{_slugify(title)}.md'
-
-
 def _timestamp() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M')
-
-
-def _append_message(path: Path, sender: str, message: str):
-    with open(path, 'r+') as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
-            content = f.read()
-            seq = len(re.findall(r'^## ', content, re.MULTILINE))
-            f.seek(0, 2)
-            f.write(f'\n## {sender.capitalize()} — {_timestamp()} [#{seq + 1}]\n{message}\n')
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
-
-
-def _read_participants(path: Path) -> list[str]:
-    try:
-        text = path.read_text()
-        match = re.search(r'^participants:\s*(.+)$', text, re.MULTILINE)
-        if match:
-            return [p.strip().lower() for p in match.group(1).split(',')]
-    except OSError:
-        pass
-    return []
-
-
-async def _ping_agents(participants: list[str], sender: str, title: str, message: str):
-    """Ping conversation participants via inbox system."""
-    iterm_windows = _get_iterm_agent_windows()
-    window_map = {w['name'].lower(): w['window_id'] for w in iterm_windows}
-
-    reply_hint = f'Reply with message_in_conversation(title={_slugify(title)}, sender=<your name>, message=<your reply>). Only use read_conversation if you need older context.'
-    ping_message = f'[Conversation: {title}] {sender.capitalize()} says: {message} — {reply_hint}'
-
-    for name in participants:
-        if name.lower() == sender.lower():
-            continue
-
-        # Write inbox file with conversation context
-        try:
-            inbox_path = _write_inbox_message(
-                sender=sender,
-                recipient=name.lower(),
-                message=ping_message,
-                priority='info',
-                conversation=_slugify(title),
-                context=f'{sender.capitalize()} posted in "{title}"',
-            )
-
-            # Deliver pointer if agent has an iTerm window
-            wid = window_map.get(name.lower())
-            if wid:
-                _send_to_iterm_window(wid, f'[inbox] {inbox_path}')
-        except ToolError:
-            # Agent not found — skip silently
-            pass
-
-
-@mcp.tool()
-async def start_conversation(
-    title: str,
-    sender: str,
-    participants: list[str],
-    message: str,
-) -> dict[str, str]:
-    """Start a new multi-agent conversation.
-
-    Creates a conversation file and pings all participants.
-
-    Args:
-        title: Conversation title (used as identifier)
-        sender: Who is starting the conversation
-        participants: List of agent names to include
-        message: Opening message
-    """
-    path = _conversation_path(title)
-    if path.exists():
-        raise ToolError(f"Conversation '{title}' already exists. Use message_in_conversation to continue it.")
-
-    all_participants = sorted({p.lower() for p in participants} | {sender.lower()})
-    participant_str = ', '.join(all_participants)
-    with open(path, 'w') as f:
-        f.write(f'---\ntitle: {title}\nparticipants: {participant_str}\ncreated: {_timestamp()}\n---\n')
-
-    _append_message(path, sender, message)
-    subprocess.Popen(['open', str(path)])
-
-    await _ping_agents(all_participants, sender, title, message)
-
-    return {
-        'conversation': title,
-        'file': str(path),
-        'participants': participant_str,
-        'status': 'started',
-    }
-
-
-@mcp.tool()
-async def message_in_conversation(
-    title: str,
-    sender: str,
-    message: str,
-) -> dict[str, str]:
-    """Reply to an existing conversation.
-
-    Appends the message and pings other participants.
-
-    Args:
-        title: Conversation title
-        sender: Who is replying
-        message: Reply message
-    """
-    path = _conversation_path(title)
-    if not path.exists():
-        raise ToolError(f"Conversation '{title}' not found. Use start_conversation first.")
-
-    _append_message(path, sender, message)
-
-    participants = _read_participants(path)
-    await _ping_agents(participants, sender, title, message)
-
-    return {
-        'conversation': title,
-        'file': str(path),
-        'sender': sender,
-        'status': 'replied',
-    }
-
-
-@mcp.tool()
-async def read_conversation(title: str) -> dict[str, str]:
-    """Read the full content of a conversation.
-
-    Args:
-        title: Conversation title
-    """
-    path = _conversation_path(title)
-    if not path.exists():
-        raise ToolError(f"Conversation '{title}' not found.")
-    return {
-        'title': title,
-        'file': str(path),
-        'content': path.read_text(),
-    }
-
-
-@mcp.tool()
-async def list_conversations(
-    participant: Optional[str] = None,
-    since: Optional[str] = None,
-    title_contains: Optional[str] = None,
-) -> list[dict[str, str]]:
-    """List conversations with optional filters.
-
-    Args:
-        participant: Filter by participant name
-        since: Filter by date (YYYY-MM-DD format)
-        title_contains: Filter by title substring
-    """
-    convos_dir = _conversations_dir()
-    results = []
-    for f in sorted(convos_dir.glob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
-        participants = _read_participants(f)
-        if participant and participant.lower() not in participants:
-            continue
-        if title_contains and title_contains.lower() not in f.stem.lower():
-            continue
-        last_mod = datetime.fromtimestamp(f.stat().st_mtime)
-        if since:
-            try:
-                since_dt = datetime.strptime(since, '%Y-%m-%d')
-            except ValueError:
-                raise ToolError(f"Invalid date format for 'since': {since}. Expected YYYY-MM-DD.")
-            if last_mod < since_dt:
-                continue
-        results.append({
-            'title': f.stem,
-            'participants': ', '.join(participants),
-            'last_modified': last_mod.strftime('%Y-%m-%d %H:%M'),
-            'file': str(f),
-        })
-    return results
 
 
 # ── agent status registry (Phase 1) ─────────────────────────────────────
@@ -1155,48 +944,723 @@ async def acknowledge_message(
     return f'Message {filename} acknowledged'
 
 
-# ── conversation polling (Phase 3) ───────────────────────────────────────
+# ── turn-based conversations ─────────────────────────────────────────────
+
+def _turn_conversation_path(title: str) -> Path:
+    return _conversations_dir() / f'{_slugify(title)}.turn.md'
+
+
+def _parse_turn_frontmatter(path: Path) -> dict[str, Any]:
+    text = path.read_text()
+    if not text.startswith('---'):
+        raise ToolError('Invalid turn conversation file: missing frontmatter')
+    end = text.index('---', 3)
+    fm: dict[str, Any] = {}
+    for line in text[3:end].strip().splitlines():
+        if ':' not in line:
+            continue
+        k, v = line.split(':', 1)
+        k = k.strip()
+        v = v.strip()
+        if k in ('participants', 'turn_order'):
+            fm[k] = [x.strip().strip('[]') for x in v.split(',')]
+        elif k == 'round':
+            fm[k] = int(v)
+        elif k == 'read_cursors':
+            # parsed separately below
+            pass
+        else:
+            fm[k] = v
+    # Parse read_cursors block
+    rc_match = re.search(r'read_cursors:\n((?:\s+\w+:\s*\d+\n?)+)', text[:end + 3])
+    if rc_match:
+        fm['read_cursors'] = {}
+        for rc_line in rc_match.group(1).strip().splitlines():
+            if ':' in rc_line:
+                agent, val = rc_line.strip().split(':', 1)
+                fm['read_cursors'][agent.strip()] = int(val.strip())
+    else:
+        fm['read_cursors'] = {}
+    return fm
+
+
+def _get_message_count(path: Path) -> int:
+    text = path.read_text()
+    return len(re.findall(r'^## \[\d+\]', text, re.MULTILINE))
+
+
+def _write_turn_frontmatter(path: Path, fm: dict[str, Any]):
+    text = path.read_text()
+    end = text.index('---', 3) + 3
+    body = text[end:]
+
+    lines = ['---']
+    lines.append(f'title: {fm["title"]}')
+    lines.append(f'mode: turn-based')
+    if fm.get('started_by'):
+        lines.append(f'started_by: {fm["started_by"]}')
+    lines.append(f'participants: [{", ".join(fm["participants"])}]')
+    lines.append(f'turn_order: [{", ".join(fm["turn_order"])}]')
+    lines.append(f'current_turn: {fm["current_turn"]}')
+    lines.append(f'round: {fm["round"]}')
+    lines.append(f'created: {fm["created"]}')
+    if fm.get('status'):
+        lines.append(f'status: {fm["status"]}')
+    lines.append('read_cursors:')
+    # Include starter in read_cursors if they exist
+    all_cursor_agents = list(fm['turn_order'])
+    if fm.get('started_by') and fm['started_by'] not in all_cursor_agents:
+        all_cursor_agents.append(fm['started_by'])
+    for agent in all_cursor_agents:
+        lines.append(f'  {agent}: {fm["read_cursors"].get(agent, 0)}')
+    lines.append('---')
+
+    path.write_text('\n'.join(lines) + body)
+
+
+def _get_messages_after_cursor(path: Path, cursor: int) -> list[str]:
+    text = path.read_text()
+    messages = re.findall(r'(^## \[\d+\].*?)(?=^## \[|\Z)', text, re.MULTILINE | re.DOTALL)
+    result = []
+    for msg in messages:
+        m = re.match(r'^## \[(\d+)\]', msg)
+        if m and int(m.group(1)) > cursor:
+            result.append(msg.strip())
+    return result
+
+
+def _advance_turn(fm: dict[str, Any]):
+    order = fm['turn_order']
+    current_idx = order.index(fm['current_turn'])
+    next_idx = (current_idx + 1) % len(order)
+    fm['current_turn'] = order[next_idx]
+    if next_idx == 0:
+        fm['round'] = fm.get('round', 1) + 1
+
+
+def _notify_next_agent(title: str, fm: dict[str, Any]):
+    next_agent = fm['current_turn']
+    round_num = fm['round']
+    try:
+        _write_inbox_message(
+            sender='system',
+            recipient=next_agent,
+            message=f"It's your turn in conversation '{title}' (round {round_num}). Use read_new_messages(title={_slugify(title)}, agent={next_agent}) then speak_in_turn(title={_slugify(title)}, sender={next_agent}, message=<your message>).",
+            priority='info',
+            conversation=_slugify(title),
+        )
+        # Try to deliver via iTerm
+        iterm_windows = _get_iterm_agent_windows()
+        inbox = _inbox_dir(next_agent)
+        latest = max(inbox.glob('*.md'), key=lambda p: p.stat().st_mtime, default=None)
+        if latest:
+            for w in iterm_windows:
+                if w['name'].lower() == next_agent:
+                    _send_to_iterm_window(w['window_id'], f'[inbox] {latest}')
+                    break
+    except ToolError:
+        pass
+
 
 @mcp.tool()
-async def poll_conversations(
-    agent: str,
-    since_minutes: int = 10,
-) -> list[dict]:
-    """Check for new messages in conversations the agent participates in.
+async def start_turn_conversation(
+    title: str,
+    sender: str,
+    participants: list[str],
+    turn_order: list[str],
+    message: str,
+) -> dict[str, str]:
+    """Start a new turn-based multi-agent conversation.
+
+    Creates a .turn.md file with strict turn enforcement.
+    The sender posts the first message and the turn advances to the next agent.
+    The sender does NOT need to be in turn_order — they can start a conversation
+    as an observer (e.g., Evelynn delegating to other agents).
 
     Args:
-        agent: Agent name
-        since_minutes: Only return conversations modified in the last N minutes
+        title: Conversation title (used as slug identifier)
+        sender: Agent starting the conversation (need not be in turn_order)
+        participants: List of all participant agent names
+        turn_order: Ordered list for turn rotation
+        message: Opening message
     """
-    agent = agent.lower().strip()
-    convos_dir = _conversations_dir()
-    cutoff = datetime.now(timezone.utc) - timedelta(minutes=since_minutes)
-    results = []
+    path = _turn_conversation_path(title)
+    if path.exists():
+        raise ToolError(f"Turn conversation '{title}' already exists.")
 
-    for f in sorted(convos_dir.glob('*.md'), key=lambda p: p.stat().st_mtime, reverse=True):
-        last_mod = datetime.fromtimestamp(f.stat().st_mtime, tz=timezone.utc)
-        if last_mod < cutoff:
-            continue
-        participants = _read_participants(f)
-        if agent not in participants:
-            continue
-        content = f.read_text()
-        total_messages = content.count('\n## ')
-        # Estimate unread: count messages after agent's last message
-        agent_matches = [m.start() for m in re.finditer(rf'\n## {re.escape(agent.capitalize())} —', content)]
-        last_agent_pos = agent_matches[-1] if agent_matches else -1
-        if last_agent_pos >= 0:
-            unread = content[last_agent_pos:].count('\n## ') - 1
-        else:
-            unread = total_messages
-        results.append({
-            'title': f.stem,
-            'file': str(f),
-            'last_modified': last_mod.strftime('%Y-%m-%d %H:%M'),
-            'message_count': total_messages,
-            'unread_estimate': max(0, unread),
-        })
-    return results
+    sender = sender.lower().strip()
+    participants = [p.lower().strip() for p in participants]
+    turn_order = [t.lower().strip() for t in turn_order]
+
+    for t in turn_order:
+        if t not in participants:
+            raise ToolError(f'{t} is in turn_order but not in participants')
+
+    # Sender gets a read cursor whether or not they're in turn_order
+    read_cursors = {p: 0 for p in turn_order}
+    is_observer = sender not in turn_order
+    if is_observer:
+        read_cursors[sender] = 0
+
+    now = _timestamp()
+    first_turn = turn_order[0]
+
+    fm = {
+        'title': title,
+        'participants': participants,
+        'turn_order': turn_order,
+        'current_turn': first_turn,
+        'round': 1,
+        'created': now,
+        'status': 'active',
+        'read_cursors': read_cursors,
+    }
+    if is_observer:
+        fm['started_by'] = sender
+
+    # Write initial file
+    lines = ['---']
+    lines.append(f'title: {title}')
+    lines.append('mode: turn-based')
+    if is_observer:
+        lines.append(f'started_by: {sender}')
+    lines.append(f'participants: [{", ".join(participants)}]')
+    lines.append(f'turn_order: [{", ".join(turn_order)}]')
+    lines.append(f'current_turn: {first_turn}')
+    lines.append('round: 1')
+    lines.append(f'created: {now}')
+    lines.append('status: active')
+    lines.append('read_cursors:')
+    for agent in turn_order:
+        lines.append(f'  {agent}: 0')
+    if is_observer:
+        lines.append(f'  {sender}: 0')
+    lines.append('---')
+    lines.append('')
+    lines.append(f'## [1] {sender.capitalize()} — {now}')
+    lines.append(message)
+    lines.append('')
+
+    path.write_text('\n'.join(lines))
+
+    # Update read cursor for starter
+    fm['read_cursors'][sender] = 1
+    _write_turn_frontmatter(path, fm)
+
+    # Notify next agent
+    _notify_next_agent(title, fm)
+
+    return {
+        'conversation': title,
+        'file': str(path),
+        'participants': ', '.join(participants),
+        'current_turn': fm['current_turn'],
+        'round': str(fm['round']),
+        'status': 'started',
+    }
+
+
+@mcp.tool()
+async def speak_in_turn(
+    title: str,
+    sender: str,
+    message: str,
+) -> dict[str, Any]:
+    """Speak in a turn-based conversation. Rejects if it's not the sender's turn.
+
+    Internally reads new messages first (read-before-write), then appends
+    the message and advances the turn to the next agent.
+
+    Args:
+        title: Conversation title
+        sender: Agent speaking (must be current_turn)
+        message: Message to post
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    if fm.get('status') == 'ended':
+        raise ToolError(f"Conversation '{title}' has ended.")
+    if fm.get('status') == 'escalated':
+        raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
+
+    if fm['current_turn'] != sender:
+        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+
+    # Read-before-write: get new messages for this agent
+    cursor = fm['read_cursors'].get(sender, 0)
+    new_messages = _get_messages_after_cursor(path, cursor)
+
+    # Append message
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+    with open(path, 'a') as f:
+        f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now}\n{message}\n')
+
+    # Update frontmatter
+    fm['read_cursors'][sender] = msg_count
+    _advance_turn(fm)
+    _write_turn_frontmatter(path, fm)
+
+    # Notify next agent
+    _notify_next_agent(title, fm)
+
+    return {
+        'conversation': title,
+        'sender': sender,
+        'message_index': msg_count,
+        'new_messages_read': len(new_messages),
+        'messages_before_write': new_messages,
+        'current_turn': fm['current_turn'],
+        'round': fm['round'],
+    }
+
+
+@mcp.tool()
+async def pass_turn(
+    title: str,
+    sender: str,
+    reason: str = 'Nothing to add this round.',
+) -> dict[str, Any]:
+    """Pass your turn in a turn-based conversation without contributing content.
+
+    Posts a [PASS] message and advances the turn.
+
+    Args:
+        title: Conversation title
+        sender: Agent passing (must be current_turn)
+        reason: Optional reason for passing
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    if fm.get('status') == 'ended':
+        raise ToolError(f"Conversation '{title}' has ended.")
+    if fm.get('status') == 'escalated':
+        raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
+
+    if fm['current_turn'] != sender:
+        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+    with open(path, 'a') as f:
+        f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [PASS]\n{reason}\n')
+
+    fm['read_cursors'][sender] = msg_count
+    _advance_turn(fm)
+    _write_turn_frontmatter(path, fm)
+
+    _notify_next_agent(title, fm)
+
+    return {
+        'conversation': title,
+        'sender': sender,
+        'action': 'pass',
+        'message_index': msg_count,
+        'current_turn': fm['current_turn'],
+        'round': fm['round'],
+    }
+
+
+@mcp.tool()
+async def end_turn_conversation(
+    title: str,
+    sender: str,
+) -> dict[str, Any]:
+    """Propose ending a turn-based conversation.
+
+    Posts an [END] message and advances the turn. The conversation closes
+    when all remaining agents in the round either END or PASS.
+
+    Args:
+        title: Conversation title
+        sender: Agent proposing end (must be current_turn)
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    if fm.get('status') == 'ended':
+        raise ToolError(f"Conversation '{title}' has already ended.")
+    if fm.get('status') == 'escalated':
+        raise ToolError(f"Conversation '{title}' is escalated. Use resolve_escalation to resume.")
+
+    if fm['current_turn'] != sender:
+        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+    with open(path, 'a') as f:
+        f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [END]\nProposing to end conversation.\n')
+
+    fm['read_cursors'][sender] = msg_count
+    _advance_turn(fm)
+
+    # Check if conversation should close: scan messages in the current round
+    # for END/PASS from all agents after the END proposer
+    text = path.read_text()
+    current_round = fm['round']
+    order = fm['turn_order']
+
+    # Find all END/PASS messages in recent history
+    end_pass_agents = set()
+    for m in re.finditer(r'^## \[\d+\] (\w+) — .+? \[(END|PASS)\]', text, re.MULTILINE):
+        end_pass_agents.add(m.group(1).lower())
+
+    # Check if all agents have END or PASS (conversation should close)
+    all_done = all(agent in end_pass_agents for agent in order)
+    if all_done:
+        fm['status'] = 'ended'
+        fm['current_turn'] = 'none'
+
+    _write_turn_frontmatter(path, fm)
+
+    if not all_done:
+        _notify_next_agent(title, fm)
+
+    return {
+        'conversation': title,
+        'sender': sender,
+        'action': 'end_proposed',
+        'message_index': msg_count,
+        'conversation_ended': all_done,
+        'current_turn': fm['current_turn'],
+        'round': fm['round'],
+    }
+
+
+@mcp.tool()
+async def read_new_messages(
+    title: str,
+    agent: str,
+) -> dict[str, Any]:
+    """Read only new messages since the agent's last read cursor.
+
+    Updates the agent's read cursor after reading.
+
+    Args:
+        title: Conversation title
+        agent: Agent reading messages
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    agent = agent.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    allowed = set(fm.get('participants', []) + fm.get('turn_order', []))
+    if fm.get('started_by'):
+        allowed.add(fm['started_by'])
+    if agent not in allowed:
+        raise ToolError(f'{agent} is not a participant in this conversation.')
+
+    cursor = fm['read_cursors'].get(agent, 0)
+    new_messages = _get_messages_after_cursor(path, cursor)
+
+    # Update read cursor to latest message
+    latest = _get_message_count(path)
+    if latest > cursor:
+        fm['read_cursors'][agent] = latest
+        _write_turn_frontmatter(path, fm)
+
+    return {
+        'conversation': title,
+        'agent': agent,
+        'previous_cursor': cursor,
+        'new_cursor': latest,
+        'message_count': len(new_messages),
+        'messages': new_messages,
+    }
+
+
+@mcp.tool()
+async def get_turn_status(
+    title: str,
+) -> dict[str, Any]:
+    """Get the current status of a turn-based conversation.
+
+    Returns current_turn, round, read_cursors, and participant info.
+
+    Args:
+        title: Conversation title
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    fm = _parse_turn_frontmatter(path)
+    msg_count = _get_message_count(path)
+
+    return {
+        'conversation': title,
+        'status': fm.get('status', 'active'),
+        'current_turn': fm['current_turn'],
+        'round': fm['round'],
+        'turn_order': fm['turn_order'],
+        'participants': fm['participants'],
+        'read_cursors': fm['read_cursors'],
+        'total_messages': msg_count,
+    }
+
+
+@mcp.tool()
+async def escalate_conversation(
+    title: str,
+    sender: str,
+    reason: str,
+) -> dict[str, Any]:
+    """Escalate a turn-based conversation. Pauses the conversation and notifies Evelynn.
+
+    Only the current_turn agent can escalate. Posts an [ESCALATE] message,
+    sets status to escalated, and sends an inbox notification to Evelynn.
+
+    Args:
+        title: Conversation title
+        sender: Agent escalating (must be current_turn)
+        reason: Reason for escalation
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    if fm.get('status') == 'ended':
+        raise ToolError(f"Conversation '{title}' has ended.")
+    if fm.get('status') == 'escalated':
+        raise ToolError(f"Conversation '{title}' is already escalated.")
+
+    if fm['current_turn'] != sender:
+        raise ToolError(f"Not {sender}'s turn. Current turn: {fm['current_turn']}")
+
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+    with open(path, 'a') as f:
+        f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [ESCALATE]\n{reason}\n')
+
+    fm['read_cursors'][sender] = msg_count
+    fm['status'] = 'escalated'
+    _write_turn_frontmatter(path, fm)
+
+    # Notify Evelynn via inbox
+    escalate_msg = f"[ESCALATE] Conversation '{title}' escalated by {sender}. Reason: {reason}. Use resolve_escalation(title={_slugify(title)}, sender=evelynn, resolution=<your resolution>, action=resume) to unpause, or action=escalate_to_duong to escalate further."
+    try:
+        inbox_path = _write_inbox_message(
+            sender=sender,
+            recipient='evelynn',
+            message=escalate_msg,
+            priority='info',
+            conversation=_slugify(title),
+            context=f'Escalation from {sender} in "{title}"',
+        )
+        iterm_windows = _get_iterm_agent_windows()
+        for w in iterm_windows:
+            if w['name'].lower() == 'evelynn':
+                _send_to_iterm_window(w['window_id'], f'[inbox] {inbox_path}')
+                break
+    except ToolError:
+        pass
+
+    return {
+        'conversation': title,
+        'sender': sender,
+        'action': 'escalated',
+        'message_index': msg_count,
+        'status': 'escalated',
+        'current_turn': fm['current_turn'],
+    }
+
+
+@mcp.tool()
+async def resolve_escalation(
+    title: str,
+    sender: str,
+    resolution: str,
+    action: str = 'resume',
+) -> dict[str, Any]:
+    """Resolve an escalated turn-based conversation.
+
+    Either resumes the conversation or escalates further to Duong.
+
+    Args:
+        title: Conversation title
+        sender: Agent resolving (typically Evelynn)
+        resolution: Resolution message
+        action: 'resume' to unpause conversation, or 'escalate_to_duong' to escalate further
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    if fm.get('status') != 'escalated':
+        raise ToolError(f"Conversation '{title}' is not escalated (status: {fm.get('status')}).")
+
+    if action not in ('resume', 'escalate_to_duong'):
+        raise ToolError(f"Invalid action: {action}. Must be 'resume' or 'escalate_to_duong'.")
+
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+
+    if action == 'resume':
+        with open(path, 'a') as f:
+            f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [RESOLVED]\n{resolution}\n')
+
+        fm['status'] = 'active'
+        if sender in fm['read_cursors']:
+            fm['read_cursors'][sender] = msg_count
+        _write_turn_frontmatter(path, fm)
+
+        # Notify the agent whose turn it still is
+        _notify_next_agent(title, fm)
+
+        return {
+            'conversation': title,
+            'sender': sender,
+            'action': 'resumed',
+            'message_index': msg_count,
+            'status': 'active',
+            'current_turn': fm['current_turn'],
+            'round': fm['round'],
+        }
+    else:
+        with open(path, 'a') as f:
+            f.write(f'\n## [{msg_count}] {sender.capitalize()} — {now} [ESCALATE_TO_DUONG]\n{resolution}\n')
+
+        if sender in fm['read_cursors']:
+            fm['read_cursors'][sender] = msg_count
+        _write_turn_frontmatter(path, fm)
+
+        # Notify Duong via a special inbox message
+        duong_msg = f"[ESCALATED TO YOU] Conversation '{title}' needs your attention. Context: {resolution}. Use resolve_escalation(title={_slugify(title)}, sender=duong, resolution=<decision>, action=resume) when ready."
+        try:
+            _write_inbox_message(
+                sender=sender,
+                recipient='duong',
+                message=duong_msg,
+                priority='action',
+                conversation=_slugify(title),
+                context=f'Escalation to Duong from {sender}',
+            )
+        except ToolError:
+            pass
+
+        return {
+            'conversation': title,
+            'sender': sender,
+            'action': 'escalated_to_duong',
+            'message_index': msg_count,
+            'status': 'escalated',
+            'current_turn': fm['current_turn'],
+        }
+
+
+@mcp.tool()
+async def invite_to_conversation(
+    title: str,
+    sender: str,
+    agent: str,
+    position: Optional[int] = None,
+) -> dict[str, Any]:
+    """Invite a new agent into an active turn-based conversation.
+
+    Any current participant (in turn_order) can invite. Does NOT require it to be
+    the sender's turn. The new agent gets full history on first read_new_messages.
+
+    Args:
+        title: Conversation title
+        sender: Agent sending the invite (must be in turn_order)
+        agent: New agent to add
+        position: Optional index in turn_order to insert at (default: append to end)
+    """
+    path = _turn_conversation_path(title)
+    if not path.exists():
+        raise ToolError(f"Turn conversation '{title}' not found.")
+
+    sender = sender.lower().strip()
+    agent = agent.lower().strip()
+    fm = _parse_turn_frontmatter(path)
+
+    # Validate conversation status
+    status = fm.get('status', 'active')
+    if status in ('ended', 'escalated'):
+        raise ToolError(f"Cannot invite into a conversation with status '{status}'.")
+
+    # Sender must be in turn_order (not just started_by)
+    if sender not in fm['turn_order']:
+        raise ToolError(f'{sender.capitalize()} is not in turn_order and cannot invite.')
+
+    # Agent must not already be in turn_order
+    if agent in fm['turn_order']:
+        raise ToolError(f'{agent.capitalize()} is already in turn_order.')
+
+    # Validate the agent exists
+    _find_agent(agent)
+
+    # Insert into turn_order
+    if position is not None and 0 <= position <= len(fm['turn_order']):
+        fm['turn_order'].insert(position, agent)
+    else:
+        fm['turn_order'].append(agent)
+
+    # Add to participants if not already there
+    if agent not in fm['participants']:
+        fm['participants'].append(agent)
+
+    # Set read cursor to 0 — full history on first read
+    fm['read_cursors'][agent] = 0
+
+    # Post system JOIN message
+    msg_count = _get_message_count(path) + 1
+    now = _timestamp()
+    with open(path, 'a') as f:
+        f.write(f'\n## [{msg_count}] System — {now} [JOIN] {agent.capitalize()} invited by {sender.capitalize()}\n')
+
+    # Write updated frontmatter
+    _write_turn_frontmatter(path, fm)
+
+    # Notify the new agent
+    try:
+        slug = _slugify(title)
+        inbox_path = _write_inbox_message(
+            sender='system',
+            recipient=agent,
+            message=f"You've been invited to conversation '{title}'. Use read_new_messages(title={slug}, agent={agent}) to read the full history, then wait for your turn.",
+            priority='info',
+            conversation=slug,
+        )
+        iterm_windows = _get_iterm_agent_windows()
+        for w in iterm_windows:
+            if w['name'].lower() == agent:
+                _send_to_iterm_window(w['window_id'], f'[inbox] {inbox_path}')
+                break
+    except ToolError:
+        pass
+
+    return {
+        'conversation': title,
+        'invited': agent,
+        'invited_by': sender,
+        'position': fm['turn_order'].index(agent),
+        'message_index': msg_count,
+        'current_turn': fm['current_turn'],
+    }
 
 
 if __name__ == '__main__':

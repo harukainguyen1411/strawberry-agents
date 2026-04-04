@@ -63,6 +63,7 @@ Messages arrive as `[inbox] /path/to/inbox/<filename>.md`. Read the file, update
 - Never include AI authoring references in commits
 - Never use `git rebase` — always merge
 - Avoid shell approval prompts (no quoted strings, no `$()`, no globs in bash)
+- PRs with significant changes (new features, architecture changes, new apps, removed features) must update the relevant `README.md` — especially `apps/myapps/README.md`. This README is used as triage context for the Discord bot, so it must stay current.
 
 ## Plans
 
