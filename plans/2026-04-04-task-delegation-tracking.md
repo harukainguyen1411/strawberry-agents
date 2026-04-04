@@ -25,7 +25,7 @@ async def delegate_task(
     sender: str,        # who's delegating (usually evelynn)
     agent: str,         # who's receiving the task
     task: str,          # task description
-    deadline: str = "", # optional: "30m", "2h", "eod", or ISO timestamp
+    deadline: str = "", # optional: "5m", "15m", "30m", or ISO timestamp
 ) -> dict:
     """Delegate a task to an agent with tracking.
     Creates a tracked delegation entry and delivers via inbox.
@@ -46,7 +46,7 @@ Delegation record:
   "task": "Review PR #15 — check performance and concurrency",
   "status": "pending",
   "created": "2026-04-04T15:24:00Z",
-  "deadline": "2026-04-04T17:00:00Z",
+  "deadline": "2026-04-04T15:39:00Z",
   "completed_at": null,
   "report": null
 }
@@ -106,7 +106,7 @@ This makes it hard for agents to miss — the completion instruction is right in
 
 ### Evelynn's workflow
 
-1. Delegate: `delegate_task(sender=evelynn, agent=reksai, task="Review PR #15", deadline="2h")`
+1. Delegate: `delegate_task(sender=evelynn, agent=reksai, task="Review PR #15", deadline="15m")`
 2. Check anytime: `check_delegations(status=pending)` — see all outstanding work
 3. Get notified automatically when agents call `complete_task`
 4. Spot overdue: `check_delegations(status=overdue)` — follow up with agents who haven't reported
