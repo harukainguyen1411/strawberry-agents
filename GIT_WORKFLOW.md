@@ -38,10 +38,14 @@ If it's updating config, docs, or agent state → **direct to main**.
 
 1. Create a branch from `main`
 2. Commit with clear messages — what changed and why
-3. Push and create a PR
+3. Push and create a PR — include `Author: <agent-name>` in the PR description
 4. Review — Lissandra or Rek'Sai review if code changes are involved
 5. Merge via PR (squash or merge commit, no rebase)
 6. Delete the branch after merge
+
+## Agent Attribution
+
+Every PR must identify the agent who created it. Include `Author: <agent-name>` in the PR description. This applies to all agents — if Bard opens a PR, the description says `Author: Bard`.
 
 ## Hard Rules
 
