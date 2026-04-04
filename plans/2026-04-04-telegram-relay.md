@@ -269,8 +269,8 @@ exec "$SCRIPT_DIR/telegram-bridge.sh"
 Add to the project `.env` (not committed to git):
 
 ```
-TELEGRAM_BOT_TOKEN=8742144449:AAHTdIVXXOyacKMEtpv-2mJlDX2t7wtUdM8
-TELEGRAM_CHAT_ID=7922315245
+TELEGRAM_BOT_TOKEN=<your-bot-token-from-botfather>
+TELEGRAM_CHAT_ID=<your-chat-id>
 ```
 
 ### `.gitignore` additions
