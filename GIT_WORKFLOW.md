@@ -47,12 +47,33 @@ If it's updating config, docs, or agent state → **direct to main**.
 
 Every PR must identify the agent who created it. Include `Author: <agent-name>` in the PR description. This applies to all agents — if Bard opens a PR, the description says `Author: Bard`.
 
+## Review Protocol
+
+Reviewers (Lissandra, Rek'Sai) must verify the documentation checklist in the PR:
+- If the PR touches `mcps/`, `architecture/`, or `agents/memory/agent-network.md` — corresponding docs must be updated
+- If the PR adds/removes features — `README.md` must reflect the change
+- Block the PR if docs are missing for qualifying changes
+
+## Git Safety — Shared Working Directory
+
+**Never leave work uncommitted.** If you create or modify a file, commit it before doing anything else with git (checkout, stash, pull, merge). Uncommitted files in a shared working directory WILL be lost when another agent switches branches.
+
+**Concurrent branch work:** Use `git worktree` instead of `git checkout`:
+```bash
+git worktree add /tmp/strawberry-feature-xyz feature/xyz
+# Work in /tmp/strawberry-feature-xyz — doesn't touch the main working tree
+git worktree remove /tmp/strawberry-feature-xyz
+```
+
+**Branch switching:** Never use raw `git checkout`. Use `scripts/safe-checkout.sh` instead — it checks for uncommitted changes before switching.
+
 ## Hard Rules
 
 - Never force-push. Never rebase. Always merge.
 - Never commit secrets, credentials, or `.env` files
 - Agent state belongs on main only — never commit `agents/` to feature branches
 - Never auto-resolve agent state merge conflicts — always manually merge
+- Never leave work uncommitted — commit before checkout/stash/pull/merge
 - One logical change per commit — don't mix unrelated work
 - Delete branches after merge
 

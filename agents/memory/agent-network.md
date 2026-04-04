@@ -80,6 +80,23 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
 7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
 8. **Context health reporting:** Every ~10 turns, call `report_context_health` with your current turn count and weight estimate (`light`/`medium`/`heavy`/`critical`). If you notice the system compressing your conversation history, report immediately with `compression_events` incremented and `estimated_weight: "critical"`
 
+## Git Safety — Shared Working Directory
+
+**Never leave work uncommitted.** If you create or modify a file, commit it before doing anything else with git (checkout, stash, pull, merge). Uncommitted files in a shared working directory WILL be lost when another agent switches branches.
+
+For concurrent branch work, use `git worktree` instead of `git checkout`:
+```
+git worktree add /tmp/strawberry-<branch> <branch>
+# Work in /tmp/strawberry-<branch>
+git worktree remove /tmp/strawberry-<branch>
+```
+
+Never use raw `git checkout` to switch branches. Use `scripts/safe-checkout.sh` instead.
+
+## PR Documentation Requirements
+
+When opening a PR, check the documentation checklist in the PR template. If your change touches architecture, MCP tools, or features, update the relevant docs in the same PR.
+
 ## Agent Attribution
 
 Every PR must include `Author: <your-agent-name>` in the description so it's clear who created it.
