@@ -1,1 +1,2 @@
 - 2026-04-03-gha-injection.md — GitHub Actions workflow input injection via ${{ }} in run blocks | last_used: 2026-04-03
+- 2026-04-04-inbox-delivery-over-ephemeral-sessions.md — Prefer inbox delivery to existing agent sessions over spawning claude -p for external message bridges | last_used: 2026-04-04
