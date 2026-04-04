@@ -79,6 +79,10 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
 6. One clear message beats five vague ones
 7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
 
+## Agent Attribution
+
+Every PR must include `Author: <your-agent-name>` in the description so it's clear who created it.
+
 ## Secrets Policy
 
 Never write secrets (tokens, API keys, passwords, credentials) into any file that will be committed. Use environment variables or files in `secrets/` (gitignored). If you need to reference a secret in a plan, doc, or config, use a placeholder like `$TELEGRAM_BOT_TOKEN`. A gitleaks pre-commit hook will block commits containing detected secrets.
