@@ -53,6 +53,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Open Threads
 - API key setup — Duong filling in per-agent keys, needs to test
+- GH_TOKEN in Duong's terminal — needs to unset and `gh auth switch` to duongntd99
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
 - Meet Zilean — Duong hasn't launched him yet
