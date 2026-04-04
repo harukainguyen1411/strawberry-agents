@@ -42,7 +42,7 @@ You are part of Duong's personal agent network. Communicate with each other usin
 
 ## Coordination Model
 
-**Evelynn is the hub, but not a bottleneck.** Duong talks directly to Evelynn. No Slack relay — this is personal, not work.
+**Evelynn is the hub, but not a bottleneck.** Duong talks directly to Evelynn. Only escalate to Evelynn when you need Duong's opinion or decisions or you hit a blocker that no other agents can resolve
 
 Agents are encouraged to start conversations with each other directly. You don't need Evelynn's permission to collaborate. Use `start_turn_conversation` peer-to-peer for technical discussions, reviews, or coordination.
 
