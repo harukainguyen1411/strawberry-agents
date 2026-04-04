@@ -1,60 +1,64 @@
 ---
-status: approved
+status: revision-2
 owner: rakan
 implementer: bard
 ---
 
-# Telegram Relay — Two-Way Messaging for Evelynn
+# Telegram Relay — Two-Way Messaging for Evelynn (Revised)
 
 ## Goal
 
-Let Duong message Evelynn from Telegram and get responses back automatically. A background script polls Telegram, processes messages, and invokes Evelynn to respond — same pattern as the Discord relay but simpler.
+Real-time two-way chat between Duong (Telegram) and Evelynn. Messages should feel instant — no manual polling, no cold-start sessions.
 
-## Architecture Overview
+## What Changed from v1
+
+v1 spawned a new `claude -p` session per message. This was slow (cold start), had no context between messages, and didn't feel like chat.
+
+**v2 delivers messages to Evelynn's already-running iTerm session via the inbox system** — the same mechanism agent-manager uses. Evelynn is always running when the Mac is on. The bridge is just a Telegram→inbox translator.
+
+## Architecture
 
 ```
 Duong (Telegram app)
     ↓ sends message
 Telegram Bot API
-    ↓ getUpdates (long poll)
+    ↓ getUpdates (long poll, 30s timeout — near-instant delivery)
 scripts/telegram-bridge.sh (local Mac, runs in background)
-    ↓ parses message, invokes claude -p as Evelynn
-Evelynn (claude -p session)
-    ↓ processes request, calls telegram_send_message
-mcps/evelynn/server.py → Telegram Bot API → Duong sees response
+    ↓ writes inbox file + sends iTerm notification
+Evelynn (existing iTerm session)
+    ↓ reads inbox, processes message
+    ↓ calls telegram_send_message via MCP tool
+Telegram Bot API → Duong sees response
 ```
 
-Single script, single process. No file-based event queue. No triage pass. No separate poller.
+**Key difference:** No `claude -p`. No new sessions. The bridge writes an inbox file and types `[inbox] /path/to/file.md` into Evelynn's iTerm window — exactly how `message_agent` works.
 
-## Existing Components (already built, do not modify)
+## Flow (step by step)
 
-### `mcps/evelynn/server.py` — Evelynn MCP server
+1. `telegram-bridge.sh` starts and long-polls Telegram (`getUpdates?timeout=30`)
+2. Duong sends a message on Telegram
+3. Telegram returns the update immediately (long-poll resolves)
+4. Bridge writes an inbox file to `agents/evelynn/inbox/`:
+   ```
+   ---
+   from: duong-telegram
+   to: evelynn
+   priority: info
+   timestamp: 2026-04-04 14:30
+   status: pending
+   ---
 
-Contains two Telegram tools:
-
-- `telegram_send_message(sender, message, parse_mode?)` — sends a message to Duong
-- `telegram_poll_messages(sender)` — polls for new messages (exists but won't be used by the bridge; the bridge polls directly via curl)
-
-Env vars already configured in `.mcp.json`:
-- `TELEGRAM_BOT_TOKEN` — bot token from @BotFather
-- `TELEGRAM_CHAT_ID` — Duong's chat ID (`7922315245`)
-
-### `scripts/discord-bridge.sh` — Reference implementation
-
-The Discord bridge is the pattern to follow. Key patterns to reuse:
-- `set -euo pipefail`
-- Rate limiting between invocations
-- `claude -p` invocation with `--allowedTools`
-- Processed event archiving
-- Main loop with polling fallback
+   Hey Evelynn, what's on my calendar today?
+   ```
+5. Bridge finds Evelynn's iTerm window (via AppleScript, same as `send_to_iterm_window`)
+6. Bridge types into the window: `[inbox] /path/to/agents/evelynn/inbox/<file>.md`
+7. Evelynn reads the inbox file, processes the request, calls `telegram_send_message`
+8. Duong sees the response in Telegram
+9. Bridge loops back to step 1 (next long-poll)
 
 ## Implementation Spec
 
 ### File: `scripts/telegram-bridge.sh`
-
-This is the **only new file** needed.
-
-#### Configuration (top of script)
 
 ```bash
 #!/usr/bin/env bash
@@ -65,18 +69,14 @@ TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:?Missing TELEGRAM_BOT_TOKEN}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:?Missing TELEGRAM_CHAT_ID}"
 STRAWBERRY_DIR="${STRAWBERRY_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 TELEGRAM_API="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}"
+AGENTS_DIR="${STRAWBERRY_DIR}/agents"
+EVELYNN_INBOX="${AGENTS_DIR}/evelynn/inbox"
 
-# Offset file persists across restarts so we don't re-process old messages
 OFFSET_FILE="${STRAWBERRY_DIR}/.telegram-offset"
-POLL_TIMEOUT=30       # Telegram long-poll timeout in seconds
-PROCESS_INTERVAL=5    # seconds between processing cycles
-MAX_TURNS=15          # max claude turns per message
-```
+POLL_TIMEOUT=30
 
-#### Offset management
+# --- Offset management ---
 
-```bash
-# Read persisted offset (0 if file doesn't exist)
 read_offset() {
   if [ -f "$OFFSET_FILE" ]; then
     cat "$OFFSET_FILE"
@@ -85,36 +85,112 @@ read_offset() {
   fi
 }
 
-# Write offset to disk
 save_offset() {
   echo "$1" > "$OFFSET_FILE"
 }
-```
 
-**Why file-based offset instead of in-memory?** So restarts don't re-process old messages. The offset file is a single integer.
+# --- iTerm integration ---
+# Find Evelynn's iTerm window ID and send text to it.
+# Uses the same AppleScript pattern as shared/helpers.py send_to_iterm_window.
 
-#### Polling loop
+find_evelynn_window_id() {
+  osascript -e '
+    tell application "iTerm"
+      repeat with w in windows
+        set wName to name of w
+        if wName contains "evelynn" or wName contains "Evelynn" then
+          return id of w
+        end if
+      end repeat
+      return "not_found"
+    end tell
+  ' 2>/dev/null || echo "not_found"
+}
 
-```bash
+send_to_iterm() {
+  local window_id="$1"
+  local text="$2"
+  osascript -e "
+    tell application \"iTerm\"
+      repeat with w in windows
+        if id of w is ${window_id} then
+          tell current session of current tab of w
+            write text \"${text}\"
+          end tell
+          return \"ok\"
+        end if
+      end repeat
+      return \"not found\"
+    end tell
+  " 2>/dev/null || true
+}
+
+# --- Message delivery ---
+
+deliver_message() {
+  local text="$1"
+  local timestamp
+  timestamp=$(date +"%Y%m%d-%H%M")
+  local ts_human
+  ts_human=$(date +"%Y-%m-%d %H:%M")
+
+  # Write inbox file
+  local filename="${timestamp}-telegram-duong.md"
+  local filepath="${EVELYNN_INBOX}/${filename}"
+
+  mkdir -p "$EVELYNN_INBOX"
+
+  # Use printf to avoid shell escaping issues with message content
+  printf '%s\n' "---" \
+    "from: duong-telegram" \
+    "to: evelynn" \
+    "priority: info" \
+    "timestamp: ${ts_human}" \
+    "status: pending" \
+    "---" \
+    "" \
+    "${text}" > "$filepath"
+
+  echo "[telegram-bridge] Wrote inbox: $filename"
+
+  # Find Evelynn's iTerm window and notify
+  local window_id
+  window_id=$(find_evelynn_window_id)
+
+  if [ "$window_id" = "not_found" ]; then
+    echo "[telegram-bridge] WARNING: Evelynn iTerm window not found. Inbox file written but not delivered."
+    # Fallback: send Telegram ack that message was queued
+    curl -s -X POST "${TELEGRAM_API}/sendMessage" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg chat_id "$TELEGRAM_CHAT_ID" \
+        --arg text "Message received but Evelynn isn't running right now. It'll be waiting in her inbox." \
+        '{chat_id: $chat_id, text: $text}')" > /dev/null
+    return
+  fi
+
+  # Type the inbox notification into Evelynn's window
+  send_to_iterm "$window_id" "[inbox] ${filepath}"
+  echo "[telegram-bridge] Notified Evelynn via iTerm (window $window_id)"
+}
+
+# --- Polling ---
+
 poll_and_process() {
   local offset
   offset=$(read_offset)
 
-  # Build URL params
   local params="timeout=${POLL_TIMEOUT}&allowed_updates=%5B%22message%22%5D"
   if [ "$offset" != "0" ]; then
     params="${params}&offset=${offset}"
   fi
 
-  # Long-poll Telegram
   local response
   response=$(curl -s -m $((POLL_TIMEOUT + 10)) \
     "${TELEGRAM_API}/getUpdates?${params}") || {
-    echo "[telegram-bridge] curl failed, retrying in ${PROCESS_INTERVAL}s"
+    echo "[telegram-bridge] curl failed, retrying..."
     return 0
   }
 
-  # Check API response
   local ok
   ok=$(echo "$response" | jq -r '.ok // false')
   if [ "$ok" != "true" ]; then
@@ -122,11 +198,14 @@ poll_and_process() {
     return 0
   fi
 
-  # Process each update
-  local updates
-  updates=$(echo "$response" | jq -c '.result[]')
+  local count
+  count=$(echo "$response" | jq '.result | length')
 
-  echo "$updates" | while IFS= read -r update; do
+  if [ "$count" = "0" ]; then
+    return 0
+  fi
+
+  echo "$response" | jq -c '.result[]' | while IFS= read -r update; do
     [ -z "$update" ] && continue
 
     local update_id chat_id text
@@ -134,70 +213,30 @@ poll_and_process() {
     chat_id=$(echo "$update" | jq -r '.message.chat.id // empty')
     text=$(echo "$update" | jq -r '.message.text // empty')
 
-    # Update offset regardless (skip non-matching messages)
     save_offset "$((update_id + 1))"
 
-    # Only process messages from Duong's chat
     if [ "$chat_id" != "$TELEGRAM_CHAT_ID" ]; then
       echo "[telegram-bridge] Ignoring message from chat $chat_id"
       continue
     fi
 
-    # Skip empty messages (photos, stickers, etc.)
     if [ -z "$text" ]; then
       echo "[telegram-bridge] Skipping non-text message"
       continue
     fi
 
-    echo "[telegram-bridge] Processing message: ${text:0:80}..."
-    process_message "$text"
+    echo "[telegram-bridge] Message from Duong: ${text:0:80}..."
+    deliver_message "$text"
   done
 }
-```
 
-#### Message processing
+# --- Main loop ---
 
-```bash
-process_message() {
-  local text="$1"
-
-  # Write prompt to temp file to avoid shell escaping issues
-  local prompt_file
-  prompt_file=$(mktemp /tmp/telegram-prompt-XXXXXX.txt)
-
-  jq -n --arg text "$text" -r \
-    '"Duong sent you a message on Telegram:\n\n\($text)\n\nRespond to Duong using the telegram_send_message tool. Be yourself (Evelynn). Keep responses concise and helpful. If Duong is asking you to do something that requires agent tools beyond what you have here, let him know you will handle it in your main session and acknowledge his request."' \
-    > "$prompt_file"
-
-  local result
-  result=$(cd "$STRAWBERRY_DIR" && timeout 300 claude -p "$(cat "$prompt_file")" \
-    --max-turns "$MAX_TURNS" \
-    --output-format text \
-    --allowedTools \
-      mcp__evelynn__telegram_send_message \
-      Read Glob Grep \
-    < /dev/null 2>&1) || {
-    echo "[telegram-bridge] claude invocation failed: ${result:0:200}"
-    # Send error notification to Duong
-    curl -s -X POST "${TELEGRAM_API}/sendMessage" \
-      -H "Content-Type: application/json" \
-      -d "$(jq -n --arg chat_id "$TELEGRAM_CHAT_ID" \
-        --arg text "I had trouble processing your message. I'll catch up in my next session." \
-        '{chat_id: $chat_id, text: $text}')" > /dev/null
-  }
-
-  rm -f "$prompt_file"
-}
-```
-
-#### Main loop
-
-```bash
-echo "[telegram-bridge] Starting Telegram relay for Evelynn"
+echo "[telegram-bridge] Starting Telegram relay (inbox mode)"
 echo "[telegram-bridge] Chat ID: $TELEGRAM_CHAT_ID"
-echo "[telegram-bridge] Polling with ${POLL_TIMEOUT}s long-poll timeout"
+echo "[telegram-bridge] Long-poll timeout: ${POLL_TIMEOUT}s"
 
-# Flush old updates on first start if no offset exists
+# Flush old updates on first start
 if [ ! -f "$OFFSET_FILE" ]; then
   echo "[telegram-bridge] First run — flushing old updates"
   curl -s "${TELEGRAM_API}/getUpdates?offset=-1" > /dev/null
@@ -206,125 +245,48 @@ fi
 
 while true; do
   poll_and_process
-  sleep "$PROCESS_INTERVAL"
 done
 ```
 
-#### Environment variables
+### File: `scripts/start-telegram.sh` (unchanged from v1)
 
-| Var | Required | Source | Description |
-|-----|----------|--------|-------------|
-| `TELEGRAM_BOT_TOKEN` | Yes | `.env` or export | Bot token from @BotFather |
-| `TELEGRAM_CHAT_ID` | Yes | `.env` or export | Duong's chat ID |
-| `STRAWBERRY_DIR` | No | Auto-detected | Path to strawberry repo root |
+Same convenience wrapper — sources `.env`, validates vars, exec's the bridge.
 
-#### Error handling
+### Changes from v1
 
-- **curl failure**: Log and retry next cycle. No crash.
-- **API error**: Log and retry. No crash.
-- **claude -p failure**: Send fallback Telegram message to Duong, log error, continue.
-- **Non-text messages** (photos, stickers): Skip silently.
-- **Messages from other chats**: Skip (chat_id filter).
-- **Script crash**: Offset file ensures no re-processing on restart.
+| Aspect | v1 | v2 |
+|--------|----|----|
+| Message delivery | `claude -p` per message (cold start) | Inbox file + iTerm notification (instant) |
+| Evelynn session | New session per message | Existing running session |
+| Context | None (each message isolated) | Full (Evelynn has her conversation history) |
+| Latency | 5-30s (claude startup) | <1s (file write + AppleScript) |
+| Sleep between polls | 5s | None (long-poll blocks until message arrives) |
+| Allowed tools | Limited subset | All (Evelynn's full session) |
+| Dependencies | `claude` CLI, `curl`, `jq` | `curl`, `jq`, `osascript` |
 
-#### Allowed tools for the claude -p session
+### Error handling
 
-```
-mcp__evelynn__telegram_send_message   — reply to Duong
-Read                                   — read files for context
-Glob                                   — find files
-Grep                                   — search code
-```
+- **curl failure**: Log, retry on next poll cycle
+- **Evelynn not running**: Write inbox file anyway (persisted), send Telegram ack that message is queued
+- **Non-text messages**: Skip
+- **Other chats**: Skip (chat_id filter)
+- **Offset persistence**: File-based, survives restarts
 
-**Not included:** Write, Edit, Bash, Agent, agent-manager tools. The Telegram bridge Evelynn session is read-only + reply-only. If Duong asks for something that needs agent tools, Evelynn should acknowledge and say she'll handle it in her main session.
+### Requirement
 
-**Rationale:** Keep the bridge lightweight and safe. No code changes, no agent launches from a background process. The bridge is a notification + quick-answer channel, not a full agent session.
+Evelynn must be running in an iTerm session for real-time delivery. If she's not running, messages are still saved to inbox (they'll be there when she starts), and Duong gets a Telegram notification that Evelynn isn't online.
 
-### File: `scripts/start-telegram.sh` (convenience wrapper)
-
-```bash
-#!/usr/bin/env bash
-# Start the Telegram relay in the background
-set -euo pipefail
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-
-# Source env vars if .env exists
-if [ -f "$SCRIPT_DIR/../.env" ]; then
-  set -a
-  source "$SCRIPT_DIR/../.env"
-  set +a
-fi
-
-# Check required vars
-: "${TELEGRAM_BOT_TOKEN:?Set TELEGRAM_BOT_TOKEN in .env or environment}"
-: "${TELEGRAM_CHAT_ID:?Set TELEGRAM_CHAT_ID in .env or environment}"
-
-echo "Starting Telegram bridge..."
-exec "$SCRIPT_DIR/telegram-bridge.sh"
-```
-
-### File: `.env` additions
-
-Add to the project `.env` (not committed to git):
-
-```
-TELEGRAM_BOT_TOKEN=<your-bot-token-from-botfather>
-TELEGRAM_CHAT_ID=<your-chat-id>
-```
-
-### `.gitignore` additions
+### .gitignore
 
 ```
 .telegram-offset
 ```
 
-## Integration with existing system
-
-- **No changes to `mcps/evelynn/server.py`** — already has both tools
-- **No changes to `.mcp.json`** — already has Telegram env vars
-- **No changes to agent-manager** — bridge doesn't use agent tools
-- **Offset file** (`.telegram-offset`) lives at repo root, gitignored
-
-## How to run
-
-```bash
-# Option 1: Direct
-export TELEGRAM_BOT_TOKEN="..." TELEGRAM_CHAT_ID="..."
-./scripts/telegram-bridge.sh
-
-# Option 2: Via wrapper (reads .env)
-./scripts/start-telegram.sh
-
-# Option 3: Background
-nohup ./scripts/start-telegram.sh > /tmp/telegram-bridge.log 2>&1 &
-```
-
-Future: add a launchd plist for auto-start on login (not in scope for v1).
-
 ## Testing
 
-1. Start the bridge: `./scripts/start-telegram.sh`
-2. Send a message to the bot from Telegram: "Hey Evelynn, what time is it?"
-3. Verify:
-   - Bridge logs show the message was received
-   - claude -p is invoked
-   - Evelynn responds via `telegram_send_message`
-   - Duong sees the response in Telegram
-4. Kill and restart the bridge — verify no duplicate processing (offset file)
-5. Send a non-text message (photo) — verify it's skipped
-
-## Files to create
-
-| File | Action |
-|------|--------|
-| `scripts/telegram-bridge.sh` | Create (make executable) |
-| `scripts/start-telegram.sh` | Create (make executable) |
-| `.gitignore` | Append `.telegram-offset` |
-
-## Dependencies
-
-- `curl` (pre-installed on macOS)
-- `jq` (pre-installed or `brew install jq`)
-- `claude` CLI (already available)
-- No npm packages, no Python packages, no new MCP servers
+1. Start Evelynn in iTerm
+2. Start the bridge: `./scripts/start-telegram.sh`
+3. Send "test" from Telegram
+4. Verify: inbox file appears in `agents/evelynn/inbox/`, Evelynn's iTerm window shows the `[inbox]` notification, Evelynn reads and responds via `telegram_send_message`
+5. Kill Evelynn → send message → verify fallback Telegram ack
+6. Restart bridge → verify no duplicate messages (offset file)
