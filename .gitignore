@@ -23,7 +23,6 @@ node_modules/
 __pycache__/
 *.pyc
 .venv/
-.mcp.json
 agents/health/*.json
 
 # Operational ephemera (live in ~/.strawberry/ops/, not in git)

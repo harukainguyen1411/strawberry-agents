@@ -571,8 +571,16 @@ def _find_agent_sessions(agent_names: set[str]) -> dict[str, str]:
                     if data.get('type') != 'user':
                         continue
                     content = data.get('message', {}).get('content', '')
+                    if isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get('type') == 'text':
+                                content = block.get('text', '')
+                                break
+                        else:
+                            content = ''
                     if isinstance(content, str):
-                        match = re.match(r'Hey\s+(\w+)', content, re.IGNORECASE)
+                        match = re.match(r'Hey\s+(\w+)', content, re.IGNORECASE) or \
+                                re.match(r'\[autonomous\]\s+(\w+)', content, re.IGNORECASE)
                         if match:
                             name = match.group(1).lower()
                             if name in agent_names and name not in found:
