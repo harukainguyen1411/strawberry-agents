@@ -25,39 +25,87 @@ Two GitHub accounts with different permission levels:
 - [x] **Setup script** — `scripts/setup-branch-protection.sh` contains all commands for the remaining steps.
 - [x] **Branch protection enabled** — Duong ran Step 1 of the setup script. Main now requires PRs (enforce_admins=false so owner can bypass).
 
-## What's Remaining
+## What's Remaining — Step-by-Step (exact sequence matters)
 
-### 1. Create second GitHub account
-Duong creates a second GitHub account (or uses an existing alt). This account will be the identity for all agent CLI sessions.
+### Step 1: Invite second account as collaborator (as Duongntd)
 
-### 2. Add as collaborator with push access
+Must be done FIRST — the second account needs repo access before it can create a scoped token.
+
 ```bash
-gh api repos/Duongntd/strawberry/collaborators/SECOND_ACCOUNT -X PUT \
+# Run as Duongntd (repo owner)
+gh api repos/Duongntd/strawberry/collaborators/harukainguyen1411 -X PUT \
   -H "Accept: application/vnd.github+json" -f permission=push
 ```
 
-### 3. Create fine-grained personal access token
-On the second account, create a token with:
-- Repository access: `Duongntd/strawberry`
-- Permissions: Contents (read/write), Pull requests (read/write)
+### Step 2: Accept the invitation (as harukainguyen1411)
 
-### 4. Configure agent sessions to authenticate as second account
-Options:
-- **Environment variable:** Set `GH_TOKEN=<token>` in agent launch scripts
-- **gh auth:** Run `gh auth login --with-token` in each agent's iTerm session
-- **Git credential:** Configure git to use the second account's token for this repo
+Log into github.com as harukainguyen1411 and accept the collaboration invitation. Either:
+- Check email for the invitation link, or
+- Go to https://github.com/Duongntd/strawberry — GitHub shows a banner to accept
+- Or via API:
 
-The agent launch script (`launch_agent` in agent-manager) should set `GH_TOKEN` so all spawned agents automatically authenticate as the second account.
-
-### 5. Evelynn keeps owner auth
-Evelynn's `commit_agent_state_to_main` tool runs as the owner account (Duongntd) since it needs bypass rights to push Tier 1/2 commits directly to main.
-
-### 6. Enable auto-delete branches on merge
 ```bash
+# Run as harukainguyen1411
+gh api user/repository_invitations --jq '.[].id'
+# Then accept with the invitation ID:
+gh api user/repository_invitations/<INVITATION_ID> -X PATCH
+```
+
+### Step 3: Create fine-grained token (as harukainguyen1411)
+
+Now that the account has repo access, it can create a scoped token:
+
+1. Log into github.com as harukainguyen1411
+2. Go to: Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token
+3. Configure:
+   - **Token name:** strawberry-agents
+   - **Expiration:** 90 days (or custom)
+   - **Resource owner:** harukainguyen1411
+   - **Repository access:** Only select repositories → select `Duongntd/strawberry`
+   - **Permissions:**
+     - Contents: Read and write
+     - Pull requests: Read and write
+     - Metadata: Read (auto-selected)
+4. Generate token and copy it
+
+### Step 4: Store the token securely
+
+```bash
+# Save to gitignored secrets directory
+mkdir -p secrets
+echo "ghp_xxxxx" > secrets/agent-github-token
+```
+
+### Step 5: Configure agent sessions to use the token
+
+Option A — Set in agent launch scripts (recommended):
+```bash
+# In the agent launch script or iTerm profile
+export GH_TOKEN=$(cat ~/Documents/Personal/strawberry/secrets/agent-github-token)
+export GITHUB_TOKEN=$GH_TOKEN
+```
+
+Option B — Configure git credential for this repo:
+```bash
+# Set the remote URL to include the token
+git remote set-url origin https://harukainguyen1411:$(cat secrets/agent-github-token)@github.com/Duongntd/strawberry.git
+```
+
+Option A is cleaner — it works for both `gh` CLI and `git push` without modifying the remote URL.
+
+### Step 6: Evelynn keeps owner auth
+
+Evelynn's `commit_agent_state_to_main` tool must run as Duongntd (owner) since it needs bypass rights. Ensure the Evelynn MCP server environment does NOT have the agent token set — it should use the default `gh auth` which is Duongntd.
+
+### Step 7: Enable auto-delete branches on merge
+
+```bash
+# Run as Duongntd
 gh repo edit Duongntd/strawberry --delete-branch-on-merge
 ```
 
-### 7. Delete stale merged branches
+### Step 8: Delete stale merged branches
+
 ```bash
 git push origin --delete feature/evelynn-mcp-and-flexible-conversations
 git push origin --delete feature/contributor-pipeline
@@ -65,10 +113,13 @@ git push origin --delete feature/turn-based-conversations
 git push origin --delete fix/migrate-ops-improvements
 ```
 
-### 8. Verify
-1. As second account: try pushing a `feat:` commit to main — should be rejected by GitHub
-2. As second account: create a PR and merge — should work
-3. As Duongntd: push a `chore:` commit to main — should succeed (owner bypass)
+### Step 9: Verify
+
+1. Set `GH_TOKEN` to the agent token in a terminal
+2. Try `git push origin main` with a `feat:` commit → should be **rejected** by GitHub
+3. Create a branch, push, create PR → should **succeed**
+4. Unset `GH_TOKEN` (back to Duongntd)
+5. Push a `chore:` commit to main → should **succeed** (owner bypass)
 
 ## Security Notes
 
