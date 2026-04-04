@@ -33,7 +33,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from shared.helpers import (
     scan_agents, get_iterm_agent_windows, send_to_iterm_window,
-    set_agent_status, git, WORKSPACE, AGENTS_DIR,
+    set_agent_status, git, find_agent_session, WORKSPACE, AGENTS_DIR,
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
@@ -236,6 +236,62 @@ async def commit_agent_state_to_main(sender: str) -> dict[str, Any]:
         if warnings:
             error_msg += f' | Warnings: {"; ".join(warnings)}'
         raise ToolError(error_msg)
+
+
+@mcp.tool()
+async def restart_evelynn(sender: str) -> dict[str, Any]:
+    """Restart Evelynn's iTerm session. Any agent except Evelynn can call this.
+
+    Finds Evelynn's iTerm window, sends /exit, waits, then resumes using
+    the session ID from the JSONL transcript files.
+
+    Args:
+        sender: Agent invoking this tool (must NOT be 'evelynn')
+    """
+    if sender.lower().strip() == 'evelynn':
+        raise ToolError('Evelynn cannot restart herself. Ask another agent.')
+
+    # Find Evelynn's iTerm window
+    iterm_windows = get_iterm_agent_windows()
+    evelynn_window = None
+    for w in iterm_windows:
+        if w['name'].lower() == 'evelynn':
+            evelynn_window = w
+            break
+
+    if not evelynn_window:
+        raise ToolError('Evelynn iTerm window not found.')
+
+    # Find session ID
+    session_id = find_agent_session('evelynn')
+    if not session_id:
+        raise ToolError('Could not find Evelynn session ID in JSONL transcript files.')
+
+    # Restart: /exit, wait for exit, resume
+    wid = evelynn_window['window_id']
+    short_id = session_id[:8]
+    log.info(f'Restarting Evelynn (session {short_id}...)')
+    send_to_iterm_window(wid, '/exit')
+
+    # Wait for /exit to complete — poll window name for shell prompt
+    # If still showing claude after 15s, proceed anyway (best effort)
+    for _ in range(6):
+        await asyncio.sleep(3)
+        windows = get_iterm_agent_windows()
+        still_running = any(
+            w['window_id'] == wid and 'claude' in w.get('raw_name', '').lower()
+            for w in windows
+        )
+        if not still_running:
+            break
+
+    send_to_iterm_window(wid, f'claude --resume {session_id}')
+
+    return {
+        'status': 'restarted',
+        'session_id': short_id,
+        'message': f'Evelynn restarted (session {short_id}...)',
+    }
 
 
 # ── telegram ─────────────────────────────────────────────────────────────
