@@ -28,21 +28,23 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
 - **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
 
-## Contributor Pipeline (built 2026-04-03)
+## Contributor Pipeline (built 2026-04-03, deployed 2026-04-03)
 - Discord #suggestions forum → Gemini triage → GitHub Issue → Claude Code on self-hosted runner → Firebase preview → approval → Duong merges
 - Bot at apps/contributor-bot/, workflow at .github/workflows/contributor-pipeline.yml
 - VPS: Hetzner CX22 (37.27.192.25), runner registered and active
-- **Bot not yet deployed to VPS** — next step
+- **Bot deployed via PM2**, secrets configured manually by Duong
+- GitHub webhook → Discord #pr-and-issues (Issues + PR events)
+- SSH key: ~/.ssh/strawberry (must use -i flag or ssh config alias)
 
 ## Decisions
 - Branch protection on main: skipped — overkill for solo developer.
-- API billing: staying on subscription for now. /cost capture at session close.
+- API billing: staying on subscription for now.
+- /cost capture removed from session closing protocol (2026-04-03). Why: Duong requested removal.
 - Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
 - Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
 
 ## Open Threads
-- Deploy Discord bot to VPS
-- CLAUDE.md needs /cost capture step in session closing protocol
+- Test full contributor pipeline end-to-end
+- Agent memory commits to main (sweep pending)
 - Soft-delete cleanup in Firestore tasklist (non-blocking)
-- GitHub webhook to Discord #pr-and-issues
 - Personal-life agents (health, finance, social, learning) not yet created

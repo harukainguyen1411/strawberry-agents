@@ -6,6 +6,7 @@
 ## Sessions
 - 2026-04-03 (S1): Verified HTML tasklist UI, ported 4 features to Vue migration (myapps PR #53), fixed touch drag regression. **Why:** Neeko's design work needed QA and Ornn's Vue port was missing features.
 - 2026-04-03 (S2): Built contributor pipeline Discord bot (`apps/contributor-bot/`), applied Swain's review fixes. **Why:** Evelynn delegated bot build as part of contributor pipeline initiative.
+- 2026-04-03 (S3): Set up GitHub webhook for Discord #pr-and-issues notifications. **Why:** System task — needed PR/issue visibility in Discord.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
