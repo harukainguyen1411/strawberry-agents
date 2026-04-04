@@ -15,6 +15,8 @@ Environment Variables:
   Optional:
     OPS_PATH             — path for operational data (health registry).
                            Falls back to in-repo paths under AGENTS_PATH if not set.
+    TELEGRAM_BOT_TOKEN   — Telegram bot token from @BotFather
+    TELEGRAM_CHAT_ID     — Telegram chat ID for Duong
 """
 import asyncio
 import logging
@@ -23,6 +25,7 @@ import sys
 from datetime import datetime
 from typing import Any, Optional
 
+import httpx
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 
@@ -233,6 +236,56 @@ async def commit_agent_state_to_main(sender: str) -> dict[str, Any]:
         if warnings:
             error_msg += f' | Warnings: {"; ".join(warnings)}'
         raise ToolError(error_msg)
+
+
+# ── telegram ─────────────────────────────────────────────────────────────
+
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+TELEGRAM_API = 'https://api.telegram.org/bot{token}/sendMessage'
+
+
+@mcp.tool()
+async def telegram_send_message(
+    sender: str,
+    message: str,
+    parse_mode: Optional[str] = None,
+) -> dict[str, Any]:
+    """Send a message to Duong on Telegram. Restricted to Evelynn only (honor-system).
+
+    Args:
+        sender: Agent invoking this tool (must be 'evelynn')
+        message: Text message to send
+        parse_mode: Optional formatting — 'HTML' or 'Markdown'
+    """
+    _enforce_evelynn(sender)
+
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
+        raise ToolError(
+            'Telegram not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID env vars.'
+        )
+
+    payload: dict[str, Any] = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'text': message[:4096],  # Telegram message limit
+    }
+    if parse_mode in ('HTML', 'Markdown'):
+        payload['parse_mode'] = parse_mode
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        resp = await client.post(
+            TELEGRAM_API.format(token=TELEGRAM_BOT_TOKEN),
+            json=payload,
+        )
+
+    if resp.status_code != 200:
+        raise ToolError(f'Telegram API error ({resp.status_code}): {resp.text}')
+
+    data = resp.json()
+    return {
+        'status': 'sent',
+        'message_id': data.get('result', {}).get('message_id'),
+    }
 
 
 # ── entry point ──────────────────────────────────────────────────────────
