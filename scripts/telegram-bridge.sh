@@ -39,10 +39,12 @@ find_evelynn_window_id() {
   osascript -e '
     tell application "iTerm"
       repeat with w in windows
-        set wName to name of w
-        if wName contains "evelynn" or wName contains "Evelynn" then
-          return id of w
-        end if
+        try
+          set sName to name of current session of current tab of w
+          if sName contains "evelynn" or sName contains "Evelynn" then
+            return id of w
+          end if
+        end try
       end repeat
       return "not_found"
     end tell
@@ -72,12 +74,14 @@ send_to_iterm() {
 deliver_message() {
   local text="$1"
   local timestamp
-  timestamp=$(date +"%Y%m%d-%H%M")
+  timestamp=$(date +"%Y%m%d-%H%M%S")
   local ts_human
   ts_human=$(date +"%Y-%m-%d %H:%M")
+  local rand
+  rand=$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' ')
 
-  # Write inbox file
-  local filename="${timestamp}-telegram-duong.md"
+  # Write inbox file (seconds + random suffix to avoid collisions)
+  local filename="${timestamp}-${rand}-telegram-duong.md"
   local filepath="${EVELYNN_INBOX}/${filename}"
 
   mkdir -p "$EVELYNN_INBOX"
@@ -195,4 +199,5 @@ fi
 
 while true; do
   poll_and_process
+  sleep 1  # Brief pause to avoid hammering API on rapid returns/errors
 done
