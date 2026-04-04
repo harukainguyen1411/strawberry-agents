@@ -76,26 +76,61 @@ mkdir -p secrets
 echo "ghp_xxxxx" > secrets/agent-github-token
 ```
 
-### Step 5: Configure agent sessions to use the token
+### Step 5: Update agent-manager to inject token into agent sessions
 
-Option A — Set in agent launch scripts (recommended):
-```bash
-# In the agent launch script or iTerm profile
-export GH_TOKEN=$(cat ~/Documents/Personal/strawberry/secrets/agent-github-token)
-export GITHUB_TOKEN=$GH_TOKEN
+**This is a Bard task.** The `launch_agent` function in `mcps/agent-manager/server.py` needs to inject `GH_TOKEN` and `GITHUB_TOKEN` into the iTerm session before launching Claude Code.
+
+**Current behavior** (line ~380 in server.py):
+```applescript
+write text "cd {WORKSPACE} && claude"
 ```
 
-Option B — Configure git credential for this repo:
-```bash
-# Set the remote URL to include the token
-git remote set-url origin https://harukainguyen1411:$(cat secrets/agent-github-token)@github.com/Duongntd/strawberry.git
+**Required change:**
+```applescript
+write text "export GH_TOKEN=$(cat {WORKSPACE}/secrets/agent-github-token) && export GITHUB_TOKEN=$GH_TOKEN && cd {WORKSPACE} && claude"
 ```
 
-Option A is cleaner — it works for both `gh` CLI and `git push` without modifying the remote URL.
+This ensures:
+- Every agent launched via `launch_agent` automatically authenticates as harukainguyen1411
+- Both `gh` CLI and `git push` use the agent token
+- The token is read from disk at launch time (not hardcoded)
+- The token file path is `{WORKSPACE}/secrets/agent-github-token`
 
-### Step 6: Evelynn keeps owner auth
+**Important:** The token must be set BEFORE `claude` starts, because Claude Code inherits the shell environment. Setting it after launch has no effect.
 
-Evelynn's `commit_agent_state_to_main` tool must run as Duongntd (owner) since it needs bypass rights. Ensure the Evelynn MCP server environment does NOT have the agent token set — it should use the default `gh auth` which is Duongntd.
+**Alternative (cleaner):** Read the token in Python and inject it:
+```python
+TOKEN_FILE = os.path.join(WORKSPACE, 'secrets', 'agent-github-token')
+token = ''
+if os.path.exists(TOKEN_FILE):
+    with open(TOKEN_FILE) as f:
+        token = f.read().strip()
+
+if token:
+    launch_cmd = f'export GH_TOKEN={token} GITHUB_TOKEN={token} && cd {WORKSPACE} && claude'
+else:
+    launch_cmd = f'cd {WORKSPACE} && claude'
+```
+
+This way, if the token file doesn't exist yet, agents still launch normally (with owner auth as fallback).
+
+### Step 6: Evelynn MCP server must NOT use the agent token
+
+**Critical:** The Evelynn MCP server (`mcps/evelynn/server.py`) runs `commit_agent_state_to_main`, which pushes directly to main. This MUST run as Duongntd (owner) to bypass branch protection.
+
+**Ensure:**
+- The evelynn MCP server's `start.sh` does NOT set `GH_TOKEN` or `GITHUB_TOKEN`
+- It inherits Duong's default `gh auth` (which is Duongntd)
+- If `GH_TOKEN` is set in the parent shell, the evelynn start script must explicitly `unset GH_TOKEN GITHUB_TOKEN`
+
+**Check `mcps/evelynn/scripts/start.sh`** — if it sources any env file, make sure that file does not contain the agent token.
+
+**Bard implementation checklist:**
+1. Update `launch_agent` in `mcps/agent-manager/server.py` to inject `GH_TOKEN`/`GITHUB_TOKEN` from `secrets/agent-github-token`
+2. Verify `mcps/evelynn/scripts/start.sh` does NOT have the agent token
+3. Add `unset GH_TOKEN GITHUB_TOKEN` to `mcps/evelynn/scripts/start.sh` as a safety net
+4. Test: launch an agent, run `echo $GH_TOKEN` — should show the agent token
+5. Test: check evelynn MCP server env — should NOT have the agent token
 
 ### Step 7: Enable auto-delete branches on merge
 
