@@ -685,6 +685,116 @@ async def agent_status(name: Optional[str] = None) -> dict:
     return result
 
 
+# ── context health monitoring ─────────────────────────────────────────
+
+VALID_WEIGHTS = ('light', 'medium', 'heavy', 'critical')
+
+
+@mcp.tool()
+async def report_context_health(
+    agent: str,
+    turn_count: int,
+    estimated_weight: str,
+    compression_events: int = 0,
+    notes: str = '',
+) -> dict[str, Any]:
+    """Report context health for the current agent session.
+
+    Agents should call this every ~10 turns, or immediately when
+    compression occurs (with compression_events incremented).
+
+    Args:
+        agent: Agent name
+        turn_count: Number of user/assistant turns in this session
+        estimated_weight: Self-assessed weight — light, medium, heavy, or critical
+        compression_events: How many times the system has compressed prior messages
+        notes: Optional notes (e.g., "large file reads", "compression just happened")
+    """
+    agent = agent.lower().strip()
+    if estimated_weight not in VALID_WEIGHTS:
+        raise ToolError(f'Invalid estimated_weight: {estimated_weight}. Must be one of: {", ".join(VALID_WEIGHTS)}')
+
+    registry = _read_registry()
+    entry = registry.get(agent, {})
+    now = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')
+
+    entry['context_health'] = {
+        'turn_count': turn_count,
+        'estimated_weight': estimated_weight,
+        'compression_events': compression_events,
+        'notes': notes,
+        'last_report': now,
+        'session_start': entry.get('context_health', {}).get('session_start', now),
+    }
+    entry['last_heartbeat'] = now
+    registry[agent] = entry
+    _write_registry(registry)
+
+    return {
+        'agent': agent,
+        'status': 'reported',
+        'context_health': entry['context_health'],
+    }
+
+
+@mcp.tool()
+async def get_agent_health_summary() -> dict[str, Any]:
+    """Get context health summary for all running agents.
+
+    Returns per-agent: turn_count, estimated_weight, compression_events,
+    session_duration, and a recommendation (ok/restart-soon/restart-now).
+    """
+    registry = _read_registry()
+    now = datetime.now(timezone.utc)
+    summary = {}
+
+    for agent_name, entry in registry.items():
+        status = entry.get('status', 'offline')
+        if _is_stale(entry.get('last_heartbeat', '')):
+            status = 'offline'
+
+        ch = entry.get('context_health', {})
+        if not ch:
+            summary[agent_name] = {'status': status, 'context_health': None, 'recommendation': 'unknown'}
+            continue
+
+        # Calculate session duration
+        session_start = ch.get('session_start', '')
+        duration_hours = 0.0
+        if session_start:
+            try:
+                start_ts = datetime.fromisoformat(session_start.replace('Z', '+00:00'))
+                if start_ts.tzinfo is None:
+                    start_ts = start_ts.replace(tzinfo=timezone.utc)
+                duration_hours = (now - start_ts).total_seconds() / 3600
+            except (ValueError, TypeError):
+                pass
+
+        weight = ch.get('estimated_weight', 'light')
+        compressions = ch.get('compression_events', 0)
+        turn_count = ch.get('turn_count', 0)
+
+        # Recommendation logic
+        if weight == 'critical' or compressions >= 2 or duration_hours > 5:
+            recommendation = 'restart-now'
+        elif weight == 'heavy' or compressions >= 1 or duration_hours > 3:
+            recommendation = 'restart-soon'
+        else:
+            recommendation = 'ok'
+
+        summary[agent_name] = {
+            'status': status,
+            'turn_count': turn_count,
+            'estimated_weight': weight,
+            'compression_events': compressions,
+            'session_hours': round(duration_hours, 1),
+            'recommendation': recommendation,
+            'notes': ch.get('notes', ''),
+        }
+
+    return summary
+
+
 # ── delivery confirmation (Phase 2) ─────────────────────────────────────
 
 def _parse_inbox_frontmatter(path: Path) -> dict[str, str]:
