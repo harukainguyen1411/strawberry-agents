@@ -287,20 +287,31 @@ async def restart_evelynn(sender: str) -> dict[str, Any]:
 
     send_to_iterm_window(wid, f'claude --resume {session_id}')
 
-    # Notify Evelynn's inbox that restart completed
+    # Write inbox notification file
+    inbox_path = None
     try:
         from pathlib import Path as _P
         inbox_dir = _P(AGENTS_DIR) / 'evelynn' / 'inbox'
         inbox_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now()
         filename = f'{ts.strftime("%Y%m%d-%H%M")}-system-info.md'
-        (_P(inbox_dir) / filename).write_text(
+        inbox_path = inbox_dir / filename
+        inbox_path.write_text(
             f'---\nfrom: system\nto: evelynn\npriority: info\n'
             f'timestamp: {ts.strftime("%Y-%m-%d %H:%M")}\nstatus: pending\n---\n\n'
             f'Restart complete. Restarted by {sender} (session {short_id}...).\n'
         )
     except Exception:
         pass  # Best effort — don't fail the restart over notification
+
+    # Wait for Evelynn's session to be ready before delivering the notification.
+    # Claude takes ~10-15s to fully load after --resume.
+    if inbox_path:
+        await asyncio.sleep(15)
+        try:
+            send_to_iterm_window(wid, f'[inbox] {inbox_path}')
+        except Exception:
+            pass
 
     return {
         'status': 'restarted',
