@@ -6,17 +6,14 @@ TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:?Missing TELEGRAM_BOT_TOKEN}"
 TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID:?Missing TELEGRAM_CHAT_ID}"
 STRAWBERRY_DIR="${STRAWBERRY_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 TELEGRAM_API="https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}"
+AGENTS_DIR="${STRAWBERRY_DIR}/agents"
+EVELYNN_INBOX="${AGENTS_DIR}/evelynn/inbox"
 
-# Offset file persists across restarts so we don't re-process old messages
 OFFSET_FILE="${STRAWBERRY_DIR}/.telegram-offset"
-POLL_TIMEOUT=30       # Telegram long-poll timeout in seconds
-PROCESS_INTERVAL=5    # seconds between processing cycles
-MAX_TURNS=15          # max claude turns per message
+POLL_TIMEOUT=30
 
-# --- Signal trap for temp file cleanup ---
-CURRENT_PROMPT_FILE=""
+# --- Signal trap ---
 cleanup() {
-  [ -n "$CURRENT_PROMPT_FILE" ] && rm -f "$CURRENT_PROMPT_FILE"
   echo "[telegram-bridge] Shutting down"
   exit 0
 }
@@ -36,39 +33,87 @@ save_offset() {
   echo "$1" > "$OFFSET_FILE"
 }
 
-# --- Message processing ---
+# --- iTerm integration ---
 
-process_message() {
+find_evelynn_window_id() {
+  osascript -e '
+    tell application "iTerm"
+      repeat with w in windows
+        try
+          set sName to name of current session of current tab of w
+          if sName contains "evelynn" or sName contains "Evelynn" then
+            return id of w
+          end if
+        end try
+      end repeat
+      return "not_found"
+    end tell
+  ' 2>/dev/null || echo "not_found"
+}
+
+send_to_iterm() {
+  local window_id="$1"
+  local text="$2"
+  osascript -e "
+    tell application \"iTerm\"
+      repeat with w in windows
+        if id of w is ${window_id} then
+          tell current session of current tab of w
+            write text \"${text}\"
+          end tell
+          return \"ok\"
+        end if
+      end repeat
+      return \"not found\"
+    end tell
+  " 2>/dev/null || true
+}
+
+# --- Message delivery ---
+
+deliver_message() {
   local text="$1"
+  local timestamp
+  timestamp=$(date +"%Y%m%d-%H%M%S")
+  local ts_human
+  ts_human=$(date +"%Y-%m-%d %H:%M")
+  local rand
+  rand=$(head -c 4 /dev/urandom | od -An -tx1 | tr -d ' ')
 
-  # Write prompt to temp file to avoid shell escaping issues
-  CURRENT_PROMPT_FILE=$(mktemp /tmp/telegram-prompt-XXXXXX.txt)
+  # Write inbox file (seconds + random suffix to avoid collisions)
+  local filename="${timestamp}-${rand}-telegram-duong.md"
+  local filepath="${EVELYNN_INBOX}/${filename}"
 
-  jq -n --arg text "$text" -r \
-    '"Duong sent you a message on Telegram:\n\n\($text)\n\nRespond to Duong using the telegram_send_message tool. Be yourself (Evelynn). Keep responses concise and helpful. If Duong is asking you to do something that requires agent tools beyond what you have here, let him know you will handle it in your main session and acknowledge his request."' \
-    > "$CURRENT_PROMPT_FILE"
+  mkdir -p "$EVELYNN_INBOX"
 
-  local result exit_code=0
-  result=$(cd "$STRAWBERRY_DIR" && timeout 300 claude -p "$(cat "$CURRENT_PROMPT_FILE")" \
-    --max-turns "$MAX_TURNS" \
-    --output-format text \
-    --allowedTools \
-      mcp__evelynn__telegram_send_message \
-      Read Glob Grep \
-    < /dev/null 2>&1) || exit_code=$?
+  printf '%s\n' "---" \
+    "from: duong-telegram" \
+    "to: evelynn" \
+    "priority: info" \
+    "timestamp: ${ts_human}" \
+    "status: pending" \
+    "---" \
+    "" \
+    "${text}" > "$filepath"
 
-  if [ "$exit_code" -ne 0 ]; then
-    echo "[telegram-bridge] claude invocation failed (exit $exit_code): ${result:0:200}"
-    # Send error notification to Duong
+  echo "[telegram-bridge] Wrote inbox: $filename"
+
+  # Find Evelynn's iTerm window and notify
+  local window_id
+  window_id=$(find_evelynn_window_id)
+
+  if [ "$window_id" = "not_found" ]; then
+    echo "[telegram-bridge] WARNING: Evelynn iTerm window not found. Inbox file written but not delivered."
     curl -s -X POST "${TELEGRAM_API}/sendMessage" \
       -H "Content-Type: application/json" \
       -d "$(jq -n --arg chat_id "$TELEGRAM_CHAT_ID" \
-        --arg text "I had trouble processing your message. I'll catch up in my next session." \
+        --arg text "Message received but Evelynn isn't running right now. It'll be waiting in her inbox." \
         '{chat_id: $chat_id, text: $text}')" > /dev/null
+    return
   fi
 
-  rm -f "$CURRENT_PROMPT_FILE"
-  CURRENT_PROMPT_FILE=""
+  send_to_iterm "$window_id" "[inbox] ${filepath}"
+  echo "[telegram-bridge] Notified Evelynn via iTerm (window $window_id)"
 }
 
 # --- Polling ---
@@ -77,21 +122,18 @@ poll_and_process() {
   local offset
   offset=$(read_offset)
 
-  # Build URL params
   local params="timeout=${POLL_TIMEOUT}&allowed_updates=%5B%22message%22%5D"
   if [ "$offset" != "0" ]; then
     params="${params}&offset=${offset}"
   fi
 
-  # Long-poll Telegram
   local response
   response=$(curl -s -m $((POLL_TIMEOUT + 10)) \
     "${TELEGRAM_API}/getUpdates?${params}") || {
-    echo "[telegram-bridge] curl failed, retrying in ${PROCESS_INTERVAL}s"
+    echo "[telegram-bridge] curl failed, retrying..."
     return 0
   }
 
-  # Check API response
   local ok
   ok=$(echo "$response" | jq -r '.ok // false')
   if [ "$ok" != "true" ]; then
@@ -99,7 +141,13 @@ poll_and_process() {
     return 0
   fi
 
-  # Process each update (here-string to avoid pipe-subshell)
+  local count
+  count=$(echo "$response" | jq '.result | length')
+
+  if [ "$count" = "0" ]; then
+    return 0
+  fi
+
   local updates
   updates=$(echo "$response" | jq -c '.result[]' 2>/dev/null) || true
 
@@ -113,37 +161,34 @@ poll_and_process() {
     chat_id=$(echo "$update" | jq -r '.message.chat.id // empty')
     text=$(echo "$update" | jq -r '.message.text // empty')
 
-    # Update offset regardless (skip non-matching messages)
     save_offset "$((update_id + 1))"
 
-    # Only process messages from Duong's chat
     if [ "$chat_id" != "$TELEGRAM_CHAT_ID" ]; then
       echo "[telegram-bridge] Ignoring message from chat $chat_id"
       continue
     fi
 
-    # Skip empty messages (photos, stickers, etc.)
     if [ -z "$text" ]; then
       echo "[telegram-bridge] Skipping non-text message"
       continue
     fi
 
-    echo "[telegram-bridge] Processing message: ${text:0:80}..."
-    process_message "$text"
+    echo "[telegram-bridge] Message from Duong: ${text:0:80}..."
+    deliver_message "$text"
   done <<< "$updates"
 }
 
 # --- Main loop ---
 
-echo "[telegram-bridge] Starting Telegram relay for Evelynn"
+echo "[telegram-bridge] Starting Telegram relay (inbox mode)"
 echo "[telegram-bridge] Chat ID: $TELEGRAM_CHAT_ID"
-echo "[telegram-bridge] Polling with ${POLL_TIMEOUT}s long-poll timeout"
+echo "[telegram-bridge] Long-poll timeout: ${POLL_TIMEOUT}s"
 
-# Flush old updates on first start if no offset exists
+# Flush old updates on first start
 if [ ! -f "$OFFSET_FILE" ]; then
   echo "[telegram-bridge] First run — flushing old updates"
-  local_response=$(curl -s "${TELEGRAM_API}/getUpdates?offset=-1") || true
-  last_id=$(echo "$local_response" | jq -r '.result[-1].update_id // empty' 2>/dev/null) || true
+  flush_response=$(curl -s "${TELEGRAM_API}/getUpdates?offset=-1") || true
+  last_id=$(echo "$flush_response" | jq -r '.result[-1].update_id // empty' 2>/dev/null) || true
   if [ -n "$last_id" ]; then
     save_offset "$((last_id + 1))"
     echo "[telegram-bridge] Flushed up to update_id $last_id"
@@ -154,5 +199,5 @@ fi
 
 while true; do
   poll_and_process
-  sleep "$PROCESS_INTERVAL"
+  sleep 1  # Brief pause to avoid hammering API on rapid returns/errors
 done
