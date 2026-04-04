@@ -371,19 +371,28 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
             raise ToolError(f'{greeting} is already running. Use message_agent to send messages.')
 
     # Read agent GitHub token if available
+    # Token is read from file at launch via $(cat ...) to avoid printing the secret
+    # in terminal scrollback. The token propagates to all child processes (MCP servers,
+    # Bash tool invocations) — this is intentional so agents can use gh/git commands.
+    import stat
     token_file = os.path.join(WORKSPACE, 'secrets', 'agent-github-token')
-    token = ''
+    use_token = False
     if os.path.exists(token_file):
-        try:
-            with open(token_file) as f:
-                token = f.read().strip()
-        except OSError:
-            pass
+        st = os.stat(token_file)
+        if st.st_mode & 0o077:
+            log.warning(f'Token file {token_file} is too open (mode {oct(st.st_mode)}). Run: chmod 600 {token_file}')
+        else:
+            use_token = True
 
-    if token:
-        launch_cmd = f'export GH_TOKEN={token} GITHUB_TOKEN={token} && cd {WORKSPACE} && claude'
+    if use_token:
+        # Use $(cat ...) so the actual token value never appears in terminal scrollback
+        quoted_path = token_file.replace("'", "'\\''")
+        launch_cmd = f"GH_TOKEN=$(cat '{quoted_path}') GITHUB_TOKEN=$(cat '{quoted_path}') cd {WORKSPACE} && export GH_TOKEN GITHUB_TOKEN && claude"
     else:
         launch_cmd = f'cd {WORKSPACE} && claude'
+
+    # Escape for AppleScript embedding
+    launch_cmd_escaped = launch_cmd.replace('\\', '\\\\').replace('"', '\\"')
 
     slot = _count_agent_windows() % GRID_SLOTS
     open_script = f"""
@@ -392,7 +401,7 @@ tell application "iTerm"
     set newWindow to (create window with profile "{greeting}")
     tell current session of current tab of newWindow
         set name to "{greeting}"
-        write text "{launch_cmd}"
+        write text "{launch_cmd_escaped}"
     end tell
 end tell
 """
