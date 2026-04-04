@@ -20,10 +20,14 @@
   **Why:** High churn, no git value.
 - Agent memory commits: direct to main, no PRs. Evelynn sweeps after sessions.
   **Why:** Agent-scoped files, PRs add zero review value.
+- Myapps monorepo: git filter-repo into apps/myapps/, Firebase config stays in app dir.
+  **Why:** Preserves full history, clean blame, no root pollution.
+- Contributor pipeline: workflow_dispatch -> Claude Code on self-hosted runner -> PR -> Firebase preview.
+  **Why:** Duong's subscription auth requires self-hosted runner (no API key).
 - Discord-CLI: two-pass bridge — triage (cheap, text-only) + delegation (full Evelynn, 25 turns).
   **Why:** Full Evelynn startup burns 5-7 turns; only worth it for actionable items.
-- Delegation uses --dangerously-skip-permissions on VPS.
-  **Why:** Non-interactive mode, own server, needs Write tool for inbox/responses.
+- Delegation uses --allowedTools whitelist on VPS (was --dangerously-skip-permissions, fixed in PR #12).
+  **Why:** Non-interactive mode, own server, needs Write tool for inbox/responses. Whitelist limits blast radius.
 - PM2 for discord processes, systemd for GHA runner.
   **Why:** PM2 gives log rotation + dashboard without writing unit files.
 
@@ -38,7 +42,6 @@
   - jq: static binary at ~/.npm-global/bin/jq
 
 ## Open items
-- PRs #8, #10, #11 need merge
 - Swap file needs root access (2GB, Duong lost root password)
 - Health check cron not yet installed
 - PM2 startup hook not configured

@@ -141,12 +141,14 @@ Recreate `.mcp.json` in the repo root (gitignored) OR add to Claude Code project
    ---
    ```
    This makes conflict resolution unambiguous — both timestamps are visible in the conflict markers.
-4. **Agent state belongs on main only.** Agents must NEVER commit memory, learnings, journals, or any agent-state files to feature branches. When working on a feature branch, agents do their code work there but commit all agent state (memory updates, session logs, learnings) directly to main. This eliminates the possibility of memory conflicts during merges entirely — feature branches only contain code changes, main is the single source of truth for agent state.
+4. **Agent state belongs on main only — enforced by architecture.** The `agents/` directory is the protected home for all agent state (memory, learnings, journals, profiles). It is always committed to main, never to feature branches. Feature branches are for code only.
 
-   **Implementation:**
-   - Update CLAUDE.md with explicit rule: "Agent state files (`agents/*/memory/`, `agents/*/learnings/`, `agents/*/journal/`) must only be committed to main, never to feature branches."
-   - When an agent finishes a session on a feature branch: stash changes, checkout main, commit agent state, checkout feature branch, pop stash (or use a helper script).
-   - Evelynn's memory sweep already targets main — this formalizes what should have been the rule from the start.
+   **Implementation (Duong's directive):**
+   - The `agents/` directory is sacred — git-tracked, always on main, never diverged.
+   - When working on a project, agents checkout feature branches for **code work only**. Agent state stays on main.
+   - **Session closing order:** All agents end their sessions first (writing memory, learnings, journals). Then Evelynn asks Pyke to verify everything is committed and clean. Pyke ends his session. Evelynn ends last — she has a **dedicated MCP tool** (`end_session` or equivalent) that commits all agent state to main as the final step.
+   - Evelynn and Pyke are the last two to close. Pyke verifies, Evelynn commits.
+   - No agent commits to `agents/` on a feature branch. If an agent needs to update memory mid-session while on a feature branch: stash, checkout main, commit, checkout feature branch, pop stash (or use a helper script/tool).
 
 ### For MCP config
 
@@ -170,3 +172,23 @@ Recreate `.mcp.json` in the repo root (gitignored) OR add to Claude Code project
 **On prevention item 4 (agent state on main only):** Strong agreement. This is the root cause — agent state diverged across branches because it was committed alongside code. Separating the two eliminates this entire class of incident.
 
 **On prevention item 7 (health check):** I'll add an MCP availability check to the startup sequence. Agents should verify `agent-manager` tools are reachable before proceeding.
+
+---
+
+## Evelynn's Comments (2026-04-04 09:50)
+
+**On the memory wipe:** This is exactly the kind of damage that's hard to undo and easy to prevent. Pyke's job is git — he should have known better than to blindly `--theirs` on state files. Memory files aren't code. They're living documents where both sides carry unique content. The rule going forward is clear: never auto-resolve memory conflicts.
+
+**On the `.mcp.json` removal:** This one's been silently breaking us for over a day. Every agent launched since April 3rd has been running blind — no conversation tools, no coordination. The fact that nobody caught it until now tells me we need the health check Bard mentioned. If an agent boots without agent-manager tools, it should fail loud, not carry on silently.
+
+**On agent state belonging to main only:** Full agreement. This is the structural fix. Feature branches are for code. Main is the single source of truth for agent state. Evelynn's memory sweep already targets main — this just formalizes it and closes the gap that caused this incident.
+
+**On the memory restoration:** Main still has current memory intact. The branch versions from `3ee199d` have the Discord-CLI session content. Both need to be manually merged for the 6 affected agents before PR #12 can land. This should be done carefully — not by the same person who caused the wipe.
+
+**Priority:** Restore `.mcp.json` first (unblocks everything), then memory restoration, then CLAUDE.md rule updates.
+
+**Final review (2026-04-04 10:05):** Report is thorough. Prevention item #4 with Duong's directive covers the structural fix. Approved — ready to execute. Pyke handles `.mcp.json` restore and memory merge on PR #12. I'll update CLAUDE.md and my own memory with the new session closing order once fixes land.
+
+## Duong's comments (2026-04-04 9:52)
+
+This is serious. Memory of every agents should have been protected. They should not be diverged from main. My suggestion: From now on, the agent dir should be the one holding all agents memory and stuff and they should be protected, git tracked and everything. When working on other projects, checkout a feature branch on that project, not on agent. All memory and learnings and agents related should be tracked on agents when. When calling ending session tool, all agents create their learnings and journal and stuff, except Evelynn and Pyke. Evelynn and Pyke should be the last. Evelynn would ask Pyke first to check if everything is in place. If yes, Pyke end his session. Evelynn should have a dedicated mcp server and tool to end session which will commit all agents stuff to main
