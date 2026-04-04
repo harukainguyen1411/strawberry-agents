@@ -11,10 +11,19 @@
 - 2026-04-03 Late evening (CLI, opus-4.6): VPS SSH fix — ssh.socket issue on Ubuntu 24.04.
 - 2026-04-04 Night (CLI, opus-4.6): Discord-CLI integration — full infra deploy + two-pass bridge.
 - 2026-04-04 AM (CLI, opus-4.6): Incident response — memory wipe + MCP config loss. Created PRs, fixed blockers, restored memory.
+- 2026-04-04 PM (CLI, opus-4.6): Ops day — workflow policies, gitleaks, branch protection, git safety, PRs #15-#24.
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
   **Why:** PR discipline so nothing gets lost.
+- Three-tier commit policy: agent state → main direct; ops config → main direct; feature work → PR.
+  **Why:** Matches risk level. PRs only where they add value.
+- gitleaks pre-commit hook for secret scanning.
+  **Why:** Token leaked into plan file in PR #16.
+- Branch protection on main + two-account model (Duongntd = owner bypass, harukainguyen1411 = agent account).
+  **Why:** 14 agents in one repo. Protocol rules alone are insufficient.
+- Git safety: commit immediately, use worktrees for concurrent branches, safe-checkout.sh wrapper.
+  **Why:** Two data loss incidents from stash/checkout operations wiping uncommitted files.
 - Ops separation (Option 3b): ephemeral -> ~/.strawberry/ops/, durable stays in git.
   **Why:** Ephemeral ops files cause conflicts during branch switches.
 - Journal/ and last-session.md -> gitignored.
@@ -25,15 +34,10 @@
   **Why:** Formalized after incident to prevent future state loss.
 - Agent memory commits: direct to main, no PRs. Evelynn sweeps after sessions.
   **Why:** Agent-scoped files, PRs add zero review value.
-- Myapps monorepo: git filter-repo into apps/myapps/, Firebase config stays in app dir.
-  **Why:** Preserves full history, clean blame, no root pollution.
-- Contributor pipeline: workflow_dispatch -> Claude Code on self-hosted runner -> PR -> Firebase preview.
-  **Why:** Duong's subscription auth requires self-hosted runner (no API key).
 - Discord-CLI: two-pass bridge — triage (cheap, text-only) + delegation (full Evelynn, 25 turns).
   **Why:** Full Evelynn startup burns 5-7 turns; only worth it for actionable items.
-- Delegation uses --allowedTools whitelist on VPS (was --dangerously-skip-permissions, fixed in PR #12).
+- Delegation uses --allowedTools whitelist on VPS.
   **Why:** Non-interactive mode, own server, needs Write tool for inbox/responses. Whitelist limits blast radius.
-  **Why:** Lissandra flagged unrestricted Bash access from user-controlled Discord input.
 - PM2 for discord processes, systemd for GHA runner.
   **Why:** PM2 gives log rotation + dashboard without writing unit files.
 
@@ -43,18 +47,14 @@
   - Auth: Claude Code CLI, Firebase CLI, gh CLI — all authenticated
   - Security: UFW (SSH only), fail2ban, scoped sudo for runner user
   - SSH: key-only via ~/.ssh/strawberry, runner user only
-  - PM2 processes: discord-bot, discord-bridge (result-watcher stopped)
+  - PM2 processes: discord-bot, discord-bridge
   - Data: /home/runner/data/{discord-events,discord-responses,discord-processed,delegation-queue}
   - jq: static binary at ~/.npm-global/bin/jq
 
 ## Open items
-- PRs #8, #10, #11, #12, #13 need merge
-- Swap file needs root access (2GB, Duong lost root password)
-- Health check cron not yet installed
-- PM2 startup hook not configured
-- Old contributor-bot in PM2 (stopped, pending deletion)
-- Lissandra's N1-N7 on PR #12 (non-blocking)
-- Swain's E2E test plan needs my infra/security review
+- 8 stale merged branches (local + remote) — need deletion + enable auto-delete on merge
+- harukainguyen1411 token setup: collaborator invite may be pending, token creation + agent session config definitely pending (Steps 3-9 of plans/2026-04-04-branch-protection-two-accounts.md)
+- secrets/agent-github-token: not yet created (needs token first)
 
 ## Security lessons
 - NEVER auto-resolve agent state conflicts. Always manually merge.
@@ -67,10 +67,14 @@
   **Why:** Secrets were not loaded, bot crashed on missing DISCORD_TOKEN.
 - Claude CLI: use -p not --message, redirect stdin with < /dev/null, run from /tmp to skip CLAUDE.md.
   **Why:** Multiple deploy failures from wrong flags and stdin warnings.
+- Never leave work uncommitted before any git branch operation.
+  **Why:** Syndra's plan file wiped by my stash/checkout/pop 2026-04-04.
+- Always check current branch before committing.
+  **Why:** Committed to wrong branch twice in 2026-04-04 PM session.
 
 ## Working relationships
 - Syndra: sharp design partner for architecture decisions.
-- Lissandra: thorough reviewer. Approved PR #8.
+- Lissandra: thorough reviewer. Fast turnaround.
 - Swain: excellent architecture partner. Designed Discord-CLI integration, two-pass bridge. Clean, pragmatic.
-- Bard: reliable MCP counterpart. Fast executor. Built commit_agent_state_to_main in one turn.
+- Bard: reliable MCP counterpart. Fast executor. Built commit_agent_state_to_main + token injection.
 - Evelynn: coordinator. Reports go to her. She closes last.

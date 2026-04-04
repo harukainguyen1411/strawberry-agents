@@ -25,11 +25,24 @@
 - Once filled in .env → `pm2 start ecosystem.config.cjs` to go live
 - **Why:** Blocked on these 4 values to complete deploy
 
+## Telegram Integration
+- `telegram_send_message` + `telegram_poll_messages` tools in `mcps/evelynn/server.py` (PR #15)
+- Bot token and chat ID in `.mcp.json` under evelynn server env block
+- Relay v2 plan at `plans/2026-04-04-telegram-relay.md`:
+  - Bridge polls Telegram via curl (long-poll, instant delivery)
+  - On message: writes inbox file to `agents/evelynn/inbox/`, types `[inbox]` into Evelynn's iTerm window
+  - No `claude -p` spawning — Evelynn's existing session handles it
+- PR #16 (Bard's v1 implementation) needs `.gitignore` fix before merge
+- **Why:** v2 design chosen after Duong rejected v1 (too slow, no context)
+
 ## Open Threads
-- Finish deploy: fill secrets → pm2 start → verify health endpoint
-- Embed format specs for #pipeline-status and #previews still pending
+- Contributor bot: fill 4 secrets → pm2 start → verify health endpoint
+- Embed format specs for #pipeline-status and #previews pending
+- PR #16: needs `.telegram-offset` added to `.gitignore`
+- Telegram relay v2: Bard to implement the updated bridge spec
 
 ## Sessions
 - 2026-04-03 S1: Set up contributor pipeline channels and permissions
 - 2026-04-03 S2: Deploy attempt blocked — VPS SSH down
 - 2026-04-03 S3: Deployed bot to VPS, blocked on 4 secrets
+- 2026-04-04 S1: Telegram MCP tools, relay design/review, relay v2 architecture
