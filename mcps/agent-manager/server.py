@@ -370,6 +370,21 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
         if w['name'].lower() == recipient:
             raise ToolError(f'{greeting} is already running. Use message_agent to send messages.')
 
+    # Read agent GitHub token if available
+    token_file = os.path.join(WORKSPACE, 'secrets', 'agent-github-token')
+    token = ''
+    if os.path.exists(token_file):
+        try:
+            with open(token_file) as f:
+                token = f.read().strip()
+        except OSError:
+            pass
+
+    if token:
+        launch_cmd = f'export GH_TOKEN={token} GITHUB_TOKEN={token} && cd {WORKSPACE} && claude'
+    else:
+        launch_cmd = f'cd {WORKSPACE} && claude'
+
     slot = _count_agent_windows() % GRID_SLOTS
     open_script = f"""
 tell application "iTerm"
@@ -377,7 +392,7 @@ tell application "iTerm"
     set newWindow to (create window with profile "{greeting}")
     tell current session of current tab of newWindow
         set name to "{greeting}"
-        write text "cd {WORKSPACE} && claude"
+        write text "{launch_cmd}"
     end tell
 end tell
 """
