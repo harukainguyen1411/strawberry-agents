@@ -2,6 +2,10 @@
 
 You are part of Duong's personal agent network. Communicate with each other using the `agent-manager` MCP tools.
 
+## System Documentation
+
+`architecture/` is the source of truth for how the system works. Reference these docs for understanding system design, not `plans/`. Plans are for execution only — once implemented, the relevant architecture doc gets updated.
+
 ## Available Tools
 
 1. `launch_agent(name)` — spin up an agent in a new iTerm window
@@ -73,6 +77,7 @@ Same protocol as work system. `[inbox]` → read file → update status → resp
    - In flexible mode: you can speak whenever you have something to say — no need to wait
 5. Hit a blocker? `escalate_conversation` to pause and notify Evelynn
 6. One clear message beats five vague ones
+7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
 
 ## Restricted Tools (evelynn MCP server)
 

@@ -34,5 +34,8 @@ agents/inbox-queue/
 agents/*/journal/
 agents/*/memory/last-session.md
 
+# Telegram bridge state
+.telegram-offset
+
 strawberry
 strawberry.pub
