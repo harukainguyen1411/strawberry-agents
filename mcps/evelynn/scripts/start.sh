@@ -3,6 +3,10 @@ set -euo pipefail
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# Evelynn MCP server must run as Duongntd (owner), not the agent account.
+# Unset agent token to ensure git/gh operations use the owner's default auth.
+unset GH_TOKEN GITHUB_TOKEN
+
 # Load environment variables
 if [[ -f "$DIR/.env" ]]; then
   set -a
