@@ -47,10 +47,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Pyke is git/security only — don't assign him feature work. Why: Duong corrected 2026-04-04.
 
 ## Open Threads
-- PR #12: 3 security blockers from Lissandra (needs fullstack engineer, not Pyke)
-- PR #13: title/description mismatch
 - E2E Discord test plan ready (plans/2026-04-04-discord-relay-e2e-test-plan.md), not started
 - Syndra: invite-to-conversation design question (never delivered)
-- `commit_agent_state_to_main` tool needs debugging (returned no-changes on feature branch)
+- `commit_agent_state_to_main` tool fixed by Bard (2026-04-04): glob path guard bug
 - Delete old contributor-bot from PM2 after confirming relay works
 - Personal-life agents (health, finance, social, learning) not yet created
