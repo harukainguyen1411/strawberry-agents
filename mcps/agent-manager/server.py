@@ -19,6 +19,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import textwrap
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -27,62 +28,28 @@ from typing import Any, Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.server.fastmcp.exceptions import ToolError
 
+# Import shared helpers
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from shared.helpers import (
+    ops_root as _ops_root,
+    agents_root as _agents_root,
+    is_agent_dir as _is_agent_dir,
+    read_section as _read_section,
+    read_agent_info as _read_agent_info,
+    scan_agents as _scan_agents,
+    registry_path as _registry_path,
+    read_registry as _read_registry,
+    write_registry as _write_registry,
+    set_agent_status as _set_agent_status,
+    get_iterm_agent_windows as _get_iterm_agent_windows,
+    send_to_iterm_window as _send_to_iterm_window,
+    WORKSPACE, AGENTS_DIR, ITERM_PROFILES, OPS_PATH,
+)
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 log = logging.getLogger('agent-manager')
 
-WORKSPACE = os.environ.get('WORKSPACE_PATH', '')
-AGENTS_DIR = os.environ.get('AGENTS_PATH', '')
-ITERM_PROFILES = os.environ.get('ITERM_PROFILES_PATH', '')
-OPS_PATH = os.environ.get('OPS_PATH', '')
-
 mcp = FastMCP('agent-manager')
-
-
-# ── ops path ─────────────────────────────────────────────────────────────
-
-def _ops_root() -> Optional[Path]:
-    """Return the ops directory if OPS_PATH is set and exists, else None."""
-    if not OPS_PATH:
-        return None
-    p = Path(OPS_PATH)
-    p.mkdir(parents=True, exist_ok=True)
-    return p
-
-
-# ── helpers ──────────────────────────────────────────────────────────────
-
-def _agents_root() -> Path:
-    if not AGENTS_DIR:
-        raise ToolError('AGENTS_PATH not configured.')
-    p = Path(AGENTS_DIR)
-    if not p.is_dir():
-        raise ToolError(f'AGENTS_PATH does not exist: {AGENTS_DIR}')
-    return p
-
-
-def _is_agent_dir(d: Path) -> bool:
-    return d.is_dir() and (d / 'memory').is_dir()
-
-
-def _read_section(text: str, heading: str) -> str:
-    """Extract the first line of a ## section from markdown text."""
-    match = re.search(f'^## {heading}\n(.*?)(?:\n## |\\Z)', text, re.MULTILINE | re.DOTALL)
-    if not match:
-        return ''
-    lines = [l.lstrip('- ').strip() for l in match.group(1).strip().splitlines() if l.strip()]
-    return lines[0] if lines else ''
-
-
-def _read_agent_info(agent_dir: Path, name: str) -> dict[str, str]:
-    """Read role and specialty from the agent's memory file."""
-    memory = agent_dir / 'memory' / f'{name}.md'
-    if not memory.exists():
-        return {'role': '', 'specialty': ''}
-    text = memory.read_text()
-    return {
-        'role': _read_section(text, 'Role'),
-        'specialty': _read_section(text, 'Specialty'),
-    }
 
 
 def _find_agent(name: str) -> Path:
@@ -93,22 +60,6 @@ def _find_agent(name: str) -> Path:
     if _is_agent_dir(agent_dir):
         return agent_dir
     raise ToolError(f"Agent '{name}' not found.")
-
-
-def _scan_agents() -> list[dict[str, str]]:
-    root = _agents_root()
-    agents = []
-    for agent_dir in sorted(root.iterdir()):
-        if not _is_agent_dir(agent_dir):
-            continue
-        name = agent_dir.name
-        info = _read_agent_info(agent_dir, name)
-        agents.append({
-            'name': name,
-            'role': info['role'],
-            'specialty': info['specialty'],
-        })
-    return agents
 
 
 # ── grid / window layout ────────────────────────────────────────────────
@@ -595,61 +546,6 @@ def _find_agent_sessions(agent_names: set[str]) -> dict[str, str]:
     return found
 
 
-def _get_iterm_agent_windows() -> list[dict[str, str]]:
-    """Get all iTerm2 windows with their session names and window IDs."""
-    script = """
-tell application "iTerm"
-    set output to ""
-    repeat with w in windows
-        set wid to id of w
-        try
-            set tabName to name of current session of current tab of w
-            set output to output & tabName & "|||" & wid & linefeed
-        end try
-    end repeat
-    return output
-end tell
-"""
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
-    if result.returncode != 0:
-        return []
-
-    windows = []
-    for line in result.stdout.strip().splitlines():
-        parts = line.strip().split('|||')
-        if len(parts) != 2:
-            continue
-        raw_name = parts[0].strip()
-        agent_name = raw_name.split()[0] if raw_name else raw_name
-        windows.append({
-            'name': agent_name,
-            'raw_name': raw_name,
-            'window_id': parts[1].strip(),
-        })
-    return windows
-
-
-def _send_to_iterm_window(window_id: str, text: str) -> bool:
-    """Send text to a specific iTerm2 window by ID."""
-    flat = ' '.join(text.splitlines())
-    escaped = flat.replace('\\', '\\\\').replace('"', '\\"')
-    script = f"""
-tell application "iTerm"
-    repeat with w in windows
-        if id of w is {window_id} then
-            tell current session of current tab of w
-                write text "{escaped}"
-            end tell
-            return "ok"
-        end if
-    end repeat
-    return "not found"
-end tell
-"""
-    result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
-    return 'ok' in result.stdout
-
-
 @mcp.tool()
 async def restart_agents(exclude: Optional[list[str]] = None) -> dict[str, Any]:
     """Restart all running agent sessions.
@@ -736,32 +632,7 @@ def _timestamp() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M')
 
 
-# ── agent status registry (Phase 1) ─────────────────────────────────────
-
-def _registry_path() -> Path:
-    ops = _ops_root()
-    if ops:
-        d = ops / 'health'
-        d.mkdir(parents=True, exist_ok=True)
-        return d / 'registry.json'
-    return _agents_root() / 'health' / 'registry.json'
-
-
-def _read_registry() -> dict[str, Any]:
-    path = _registry_path()
-    if not path.exists():
-        return {}
-    try:
-        return json.loads(path.read_text())
-    except (json.JSONDecodeError, OSError):
-        return {}
-
-
-def _write_registry(data: dict[str, Any]):
-    path = _registry_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
-
+# ── agent status registry ─────────────────────────────────────────────
 
 def _is_stale(last_heartbeat: str, threshold_minutes: int = 5) -> bool:
     try:
@@ -812,17 +683,6 @@ async def agent_status(name: Optional[str] = None) -> dict:
             'current_task': entry.get('current_task'),
         }
     return result
-
-
-def _set_agent_status(name: str, status: str, platform: str = 'cli', task: Optional[str] = None):
-    registry = _read_registry()
-    registry[name] = {
-        'status': status,
-        'last_heartbeat': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S'),
-        'platform': platform,
-        'current_task': task,
-    }
-    _write_registry(registry)
 
 
 # ── delivery confirmation (Phase 2) ─────────────────────────────────────
