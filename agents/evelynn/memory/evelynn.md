@@ -12,23 +12,39 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - First session: 2026-04-02.
 - Duong sometimes uses voice prompts — may contain typos or unclear phrasing. Interpret generously.
 
-## Team (added 2026-04-02)
-12 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
+## Team
+13 agents — all LoL champions, full lore profiles, iTerm2 backgrounds:
 - **Fullstack:** Katarina (quick), Ornn (features), Fiora (bugfix/refactor)
 - **PR Review:** Lissandra (surface), Rek'Sai (deep/performance)
 - **Specialists:** Pyke (git/security), Bard (MCP), Syndra (AI), Swain (architecture)
 - **Design:** Neeko (empathetic UX), Zoe (creative/experimental)
 - **QC:** Caitlyn
+- **Community:** Rakan (Discord/community)
 
-## Infrastructure (established 2026-04-03)
+## Infrastructure
 - **Git workflow:** every task gets a branch and PR. GIT_WORKFLOW.md documents conventions.
-- **Ops separation:** ephemeral files (inbox, conversations, health) at ~/.strawberry/ops/. Durable files (memory, journals, learnings, profiles, plans) stay in git.
-- **Agent-manager MCP:** all 13 agents registered. Conversation system, restart, end-all-sessions functional.
-- **Network optimization plan:** plans/2026-04-03-agent-network-optimization.md — phases 1-4 implemented, phase 5 (workflows) future.
+- **Ops separation:** ephemeral files (inbox, conversations, health, journal, last-session) at ~/.strawberry/ops/. Memory and learnings stay in git.
+- **Agent-manager MCP:** all agents registered. Conversation system, restart, end-all-sessions functional.
+- **Discord MCP:** @pasympa/discord-mcp connected to "strawberry" server. Rakan manages.
+- **Memory commit protocol:** Evelynn sweeps and commits all agent memory/learnings to main after ending sessions. Why: avoids git race conditions with multiple agents committing simultaneously.
+
+## Contributor Pipeline (built 2026-04-03, deployed 2026-04-03)
+- Discord #suggestions forum → Gemini triage → GitHub Issue → Claude Code on self-hosted runner → Firebase preview → approval → Duong merges
+- Bot at apps/contributor-bot/, workflow at .github/workflows/contributor-pipeline.yml
+- VPS: Hetzner CX22 (37.27.192.25), runner registered and active
+- **Bot deployed via PM2**, secrets configured manually by Duong
+- GitHub webhook → Discord #pr-and-issues (Issues + PR events)
+- SSH key: ~/.ssh/strawberry (must use -i flag or ssh config alias)
+
+## Decisions
+- Branch protection on main: skipped — overkill for solo developer.
+- API billing: staying on subscription for now.
+- /cost capture removed from session closing protocol (2026-04-03). Why: Duong requested removal.
+- Vanilla vs framework: vanilla HTML for simple apps, Vue for complex multi-view apps.
+- Monorepo: myapps merged into apps/myapps/ with full git history (2026-04-03).
 
 ## Open Threads
-- PR #2 (agent bootstrap) and #4 (tasklist app) need review and merge
-- 2 bug fixes from Caitlyn's PR #3 review (timezone, regex scope) need follow-up PR
-- Rek'Sai iTerm profile broken — can't launch
-- Branch protection on main — Duong needs to set manually in GitHub
+- Test full contributor pipeline end-to-end
+- Agent memory commits to main (sweep pending)
+- Soft-delete cleanup in Firestore tasklist (non-blocking)
 - Personal-life agents (health, finance, social, learning) not yet created
