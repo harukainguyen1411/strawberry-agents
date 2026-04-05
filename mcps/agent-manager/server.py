@@ -41,6 +41,7 @@ from shared.helpers import (
     read_registry as _read_registry,
     write_registry as _write_registry,
     set_agent_status as _set_agent_status,
+    touch_heartbeat as _touch_heartbeat,
     get_iterm_agent_windows as _get_iterm_agent_windows,
     send_to_iterm_window as _send_to_iterm_window,
     WORKSPACE, AGENTS_DIR, ITERM_PROFILES, OPS_PATH,
@@ -507,6 +508,10 @@ async def message_agent(
         if w['name'].lower() == recipient:
             existing_window = w
             break
+
+    # Touch sender's heartbeat — every outbound message proves the sender is active
+    if sender:
+        _touch_heartbeat(sender.lower().strip())
 
     pointer = f'[inbox] {inbox_path}'
 
@@ -1016,6 +1021,9 @@ async def complete_task(
         except ToolError:
             pass
 
+    # Touch completing agent's heartbeat
+    _touch_heartbeat(agent)
+
     return {
         'delegation_id': delegation_id,
         'status': 'completed',
@@ -1508,6 +1516,9 @@ async def speak_in_turn(
     # Notify next agent — in flexible mode, only if suggested_next changed or round advanced
     if not is_flexible or fm['current_turn'] != prev_turn or fm['round'] != prev_round:
         _notify_next_agent(title, fm)
+
+    # Touch sender's heartbeat — every conversation turn proves the sender is active
+    _touch_heartbeat(sender)
 
     result = {
         'conversation': title,
