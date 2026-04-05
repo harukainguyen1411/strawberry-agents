@@ -11,6 +11,7 @@
 7. **Plan approval gate & Opus execution ban** — Write plans to `plans/proposed/`, stop, and report done. Never self-implement. Opus agents (Evelynn, Syndra, Swain, Pyke, Bard) plan and coordinate only — they never execute unless Duong explicitly instructs them to. Duong approves plans by moving them to `plans/approved/`; Evelynn then delegates execution to Sonnet agents.
 8. **Plan writers never assign implementers** — Plans must not specify who will implement them. Evelynn decides delegation after approval. Use `owner` in frontmatter for the plan author only, not the executor.
 9. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
+10. **Use `chore:` prefix for all commits** — All commits must use `chore:` or `ops:` prefix. Never use `fix:`, `feat:`, `docs:`, `plan:` or other prefixes. The pre-push hook enforces this on main.
 8. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 
 ## Scope
