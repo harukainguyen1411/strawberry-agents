@@ -395,8 +395,12 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
     agent_api_key_export = ''
     agent_settings_file = os.path.join(WORKSPACE, 'agents', recipient, '.claude', 'settings.local.json')
     if os.path.exists(agent_settings_file):
-        with open(agent_settings_file) as f:
-            agent_settings = json.load(f)
+        try:
+            with open(agent_settings_file) as f:
+                agent_settings = json.load(f)
+        except json.JSONDecodeError:
+            log.warning(f'Could not parse {agent_settings_file} — launching without per-agent ANTHROPIC_API_KEY')
+            agent_settings = {}
         agent_key = agent_settings.get('env', {}).get('ANTHROPIC_API_KEY', '')
         if agent_key:
             key_file = os.path.join(WORKSPACE, 'secrets', f'.agent-key-{recipient}')
