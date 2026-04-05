@@ -398,6 +398,7 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
         launch_cmd = (
             f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && "
             f"cd {WORKSPACE} && "
+            f"set +H && "
             f"git config --local credential.https://github.com.helper "
             f"\"!f() {{ echo password=$(cat '{quoted_path}'); }}; f\" && "
             f"claude --model {model_flag}"
