@@ -12,6 +12,7 @@
 - 2026-04-04 (s6): Reviewed PRs #15, #17, #18, #19, #20, #21, #22, #24 — all approved.
 - 2026-04-04 (s7): Reviewed PR #25 (restart-detection-fix) — 1 blocker, 2 non-blocking. All fixed, approved pass 2.
 - 2026-04-05 (s8): Reviewed PR #29 (GH_TOKEN scoping) — approved. Reviewed PR #30 (API key isolation) — 1 blocker found+fixed, approved pass 2.
+- 2026-04-05 (s9): Reviewed PR #31 (team-plan-migration) — clean, approved first-pass.
 
 ## Review History
 - PR #5: chmod/umask, heartbeat misplacement, missing cleanup, redundant gitignore. Author: Pyke.
@@ -30,6 +31,7 @@
 - PR #25: No-op window-existence detection, inconsistent exit-wait, silent exception. All fixed. Author: Bard.
 - PR #29: GH_TOKEN shell scoping (VAR=$(cmd) cmd2 bug). Clean. Author: Katarina.
 - PR #30: Per-agent ANTHROPIC_API_KEY injection. Blocker: no json.JSONDecodeError handling. Fixed. Author: Katarina.
+- PR #31: Team plan migration — removed API key injection from launch_agent entirely. Clean. Author: Katarina.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. **Why:** flag proactively in any PR involving Claude CLI invocation.

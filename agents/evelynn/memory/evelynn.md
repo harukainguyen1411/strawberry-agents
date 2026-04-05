@@ -38,8 +38,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Files → Cursor, URLs/PRs → browser (open command).
 
 ## Billing
-- **Personal:** API per-agent keys injected via ANTHROPIC_API_KEY at launch. All 13 agents configured.
-- **Work:** Team plan through MMP (separate system).
+- **Personal:** Agents run on Duong's work team plan (Claude Max/Team). API keys disabled for agent ops (2026-04-05). API reserved for app development only.
+- **Work:** Team plan through MMP (same plan now shared with personal agents).
 
 ## Open Threads
 - Work CLAUDE.md — verify self-contained after global cleanup
@@ -50,5 +50,5 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Delete old contributor-bot from PM2 on VPS
 - Meet Zilean — not launched yet
 - Branch protection — steps 1-5 done, step 6+ remaining
-- harukainguyen1411 GitHub auth — env conflict issue, deferred
+- harukainguyen1411 GitHub auth — push access resolved by Pyke (2026-04-05)
 - Heartbeat fix (PR #28) and API key isolation (PR #30) merged — restart MCP server to activate

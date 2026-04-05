@@ -13,16 +13,16 @@
 - CLAUDE.md signal-noise audit + cleanup: 246→164 lines, zero duplication
 - Claude billing comparison: `architecture/claude-billing-comparison.md`
 - Agent discipline rules plan: plan approval gate + session persistence rules (two new CLAUDE.md critical rules)
-- API key isolation diagnosis: per-agent settings.local.json not loaded because launch_agent cds to root; fix via env var injection
+- API key isolation diagnosis + team plan migration plan: designed key injection, then planned its removal when Duong switched to team plan
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
 - Strong spec→implement loop with Bard — I design, Bard builds, I verify
-- Reviewed Katarina's PR #30 (API key fix) — clean implementation of my plan
+- Reviewed Katarina's PRs #30 (API key fix) and #31 (team plan migration) — clean implementations
 - Pyke respects technical reasoning, engages on tradeoffs
 
 ## Key Knowledge
-- Claude Code: API key per settings.local.json is the isolation mechanism — but only if Claude Code launches from that directory
+- Agent auth now uses team plan subscription (not API keys). API keys retained for app dev only
 - Auto mode: Team/Enterprise/API only (not Pro, not Max)
 - Prompt caching: automatic in Claude Code, 90% cheaper cached reads
 - Model tiers: Opus for Evelynn/Syndra/Swain/Pyke/Bard, Sonnet for all executors
@@ -40,3 +40,4 @@
 - 2026-04-04 S7: Billing doc recreation, subscription/API separation
 - 2026-04-05 S8: AI stack consulting, agent system assessment, CLAUDE.md audit + cleanup
 - 2026-04-05 S9: Agent discipline rules plan, API key isolation plan, PR #30 review
+- 2026-04-05 S10: Team plan migration plan, PR #31 review
