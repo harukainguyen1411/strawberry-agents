@@ -14,6 +14,7 @@
 - Claude billing comparison: `architecture/claude-billing-comparison.md`
 - Agent discipline rules plan: plan approval gate + session persistence rules (two new CLAUDE.md critical rules)
 - API key isolation diagnosis + team plan migration plan: designed key injection, then planned its removal when Duong switched to team plan
+- Gemini Pro ecosystem assessment: recommended against migration, proposed Firestore MCP server as key unlock
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -29,6 +30,8 @@
 - Subscription vs API: completely separate billing. Team requires 5 seats minimum.
 - Session protocol: only Evelynn/Syndra/Swain/Pyke have mandatory full protocol
 - Evelynn is code PM/coordinator only — not life admin (Gemini handles that)
+- Gemini 3.1 Pro: strong single-shot, weak multi-step (~31% failure). Not viable for agent backbone.
+- Current infra: Firebase (Auth + Firestore + Hosting) on free tier. No GCP services.
 
 ## Sessions
 - 2026-04-03 S1: Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
@@ -41,3 +44,4 @@
 - 2026-04-05 S8: AI stack consulting, agent system assessment, CLAUDE.md audit + cleanup
 - 2026-04-05 S9: Agent discipline rules plan, API key isolation plan, PR #30 review
 - 2026-04-05 S10: Team plan migration plan, PR #31 review
+- 2026-04-05 S11: Gemini Pro ecosystem + infrastructure assessment
