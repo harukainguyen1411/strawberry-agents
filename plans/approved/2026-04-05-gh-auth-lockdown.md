@@ -1,6 +1,6 @@
 ---
 title: GitHub Auth Switching Lockdown
-status: proposed
+status: approved
 owner: pyke
 created: 2026-04-05
 ---
