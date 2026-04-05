@@ -120,6 +120,16 @@ def set_agent_status(name: str, status: str, platform: str = 'cli', task: Option
     write_registry(registry)
 
 
+def touch_heartbeat(name: str, status: str = 'active'):
+    """Update last_heartbeat and status for an agent without overwriting other fields."""
+    registry = read_registry()
+    entry = registry.get(name, {})
+    entry['last_heartbeat'] = datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%S')
+    entry['status'] = status
+    registry[name] = entry
+    write_registry(registry)
+
+
 # ── iTerm ────────────────────────────────────────────────────────────────
 
 def get_iterm_agent_windows() -> list[dict[str, str]]:
