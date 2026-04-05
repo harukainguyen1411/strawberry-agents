@@ -8,6 +8,7 @@
 - 2026-04-04 (s1): Designed Discord-CLI integration (replacing contributor pipeline), two-pass bridge architecture, rewrote myapps README.
 - 2026-04-04 (s2): Wrote E2E test plan for Discord relay system (12 steps). Posted for Pyke review.
 - 2026-04-04 (s3): Created `architecture/` living docs (9 files). Designed shared task board architecture.
+- 2026-04-05: Audited myapps TaskList codebase (~90% built). Wrote B3 implementation plan. PR #27.
 
 ## Active Architecture Decisions
 
@@ -22,6 +23,9 @@
 - Duong uses Claude subscription, not API billing. CLI on VPS authenticates via `claude login` (OAuth).
 - CLAUDE.md rule: PRs with significant changes must update relevant READMEs and architecture docs.
 - `architecture/telegram-relay.md` currently describes v1 — needs update to match v2 design in the plan.
+- **Plans go directly to main, not via PR** — use `chore:` prefix. Never use `feat:`, `plan:`, etc.
+- **Opus agents never implement** — write plan to `plans/proposed/`, call `complete_task`, stop. Duong approves; Evelynn delegates to Sonnet.
+- **Never assign implementers in plans** — Evelynn decides delegation after approval.
 
 ## Agent Relationships
 - Pyke: reliable infra counterpart. Pragmatic, doesn't waste turns. Good for architecture-infra alignment conversations.
