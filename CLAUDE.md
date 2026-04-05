@@ -7,6 +7,11 @@
 3. **Report task completion to Evelynn** via `message_agent` or inbox
 4. **Never write secrets into committed files** — use `secrets/` (gitignored) or env vars
 5. **Use `git worktree` for branches** — never raw `git checkout`. Use `scripts/safe-checkout.sh`
+6. **Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Every delegated task to a Sonnet agent must reference a plan file in `plans/`. Opus agents (Evelynn, Syndra, Swain, Pyke) create the plans; Sonnet agents read and follow them.
+7. **Plan approval gate & Opus execution ban** — Write plans to `plans/proposed/`, stop, and report done. Never self-implement. Opus agents (Evelynn, Syndra, Swain, Pyke, Bard) plan and coordinate only — they never execute unless Duong explicitly instructs them to. Duong approves plans by moving them to `plans/approved/`; Evelynn then delegates execution to Sonnet agents.
+8. **Plan writers never assign implementers** — Plans must not specify who will implement them. Evelynn decides delegation after approval. Use `owner` in frontmatter for the plan author only, not the executor.
+9. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
+8. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 
 ## Scope
 

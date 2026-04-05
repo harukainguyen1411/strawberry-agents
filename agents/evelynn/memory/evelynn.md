@@ -14,8 +14,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Team
 15 agents — all LoL champions. Model tiers configured (2026-04-05):
-- **Opus:** Evelynn, Syndra, Swain, Pyke
-- **Sonnet:** Katarina, Ornn, Fiora, Bard, Lissandra, Rek'Sai, Neeko, Zoe, Caitlyn
+- **Opus:** Evelynn, Syndra, Swain, Pyke, Bard
+- **Sonnet:** Katarina, Ornn, Fiora, Lissandra, Rek'Sai, Neeko, Zoe, Caitlyn
 - Rakan (Discord/community), Zilean (IT Advisor) — not yet model-configured
 
 ## Infrastructure
@@ -31,6 +31,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Protocols
 - Every PR must have at least one reviewer. Evelynn auto-assigns.
+- When picking up an approved plan, move it from `plans/approved/` to `plans/in-progress/` before delegating.
+- Duong will sometimes manually move a plan from `plans/proposed/` to `plans/approved/` and ping Evelynn. When this happens, pick it up and coordinate execution immediately — no need to ask for confirmation.
 - Proposals/designs go in plans/ as files, never via inbox.
 - PR openers must include agent name in description.
 - Files → Cursor, URLs/PRs → browser (open command).
