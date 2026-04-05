@@ -13,6 +13,7 @@
 - 2026-04-04 (s7): Reviewed PR #25 (restart-detection-fix) — 1 blocker, 2 non-blocking. All fixed, approved pass 2.
 - 2026-04-05 (s8): Reviewed PR #29 (GH_TOKEN scoping) — approved. Reviewed PR #30 (API key isolation) — 1 blocker found+fixed, approved pass 2.
 - 2026-04-05 (s9): Reviewed PR #31 (team-plan-migration) — clean, approved first-pass.
+- 2026-04-05 (s10): Reviewed PR #32 (heartbeat fix) — 1 blocker (normalization inconsistency across call sites), 2 non-blocking. Awaiting fix.
 
 ## Review History
 - PR #5: chmod/umask, heartbeat misplacement, missing cleanup, redundant gitignore. Author: Pyke.
@@ -32,6 +33,7 @@
 - PR #29: GH_TOKEN shell scoping (VAR=$(cmd) cmd2 bug). Clean. Author: Katarina.
 - PR #30: Per-agent ANTHROPIC_API_KEY injection. Blocker: no json.JSONDecodeError handling. Fixed. Author: Katarina.
 - PR #31: Team plan migration — removed API key injection from launch_agent entirely. Clean. Author: Katarina.
+- PR #32: Heartbeat fix (touch_heartbeat helper + 3 call sites). Blocker: speak_in_turn passes sender raw while message_agent normalizes with .lower().strip() — inconsistent. Author: Katarina.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. **Why:** flag proactively in any PR involving Claude CLI invocation.
