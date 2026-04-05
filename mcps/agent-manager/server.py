@@ -394,7 +394,14 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
     if use_token:
         # Use $(cat ...) so the actual token value never appears in terminal scrollback
         quoted_path = token_file.replace("'", "'\\''")
-        launch_cmd = f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && cd {WORKSPACE} && claude --model {model_flag}"
+        # Export token AND set git credential helper to lock auth to agent account
+        launch_cmd = (
+            f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && "
+            f"cd {WORKSPACE} && "
+            f"git config --local credential.https://github.com.helper "
+            f"\"!f() {{ echo password=$(cat '{quoted_path}'); }}; f\" && "
+            f"claude --model {model_flag}"
+        )
     else:
         launch_cmd = f'cd {WORKSPACE} && claude --model {model_flag}'
 
