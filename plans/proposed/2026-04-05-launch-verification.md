@@ -11,7 +11,7 @@ created: 2026-04-05
 
 # Solution
 
-Three improvements, ordered by impact:
+Five improvements, ordered by impact:
 
 ## 1. Launch verification — poll for heartbeat after launch
 
@@ -96,12 +96,117 @@ else:
 
 This makes `agent_status()` a quick dashboard — Evelynn sees "bard: 12s ago, ornn: never" instead of parsing raw timestamps.
 
+## 4. Evelynn liveness monitoring — heartbeat watchdog
+
+Evelynn is the hub — if she dies, no one notices until Duong checks manually. Solution: a lightweight cron job that checks Evelynn's heartbeat and alerts Duong via Telegram if she's gone stale.
+
+**Script:** `scripts/evelynn-watchdog.sh`
+
+```bash
+#!/bin/bash
+# Run via cron every 5 minutes. Alerts Duong on Telegram if Evelynn's heartbeat is stale.
+REGISTRY="$(dirname "$0")/../agents/health/registry.json"
+BOT_TOKEN=$(cat "$(dirname "$0")/../secrets/telegram-bot-token")
+CHAT_ID=$(cat "$(dirname "$0")/../secrets/telegram-chat-id")
+STALE_SECONDS=300  # 5 minutes
+
+if ! command -v jq >/dev/null 2>&1; then exit 0; fi
+
+LAST_HB=$(jq -r '.evelynn.last_heartbeat // empty' "$REGISTRY")
+if [ -z "$LAST_HB" ]; then
+    MSG="⚠️ Evelynn has no heartbeat in the registry. She may not be running."
+else
+    HB_EPOCH=$(date -j -f "%Y-%m-%dT%H:%M:%S" "$LAST_HB" "+%s" 2>/dev/null || date -d "$LAST_HB" "+%s")
+    NOW_EPOCH=$(date -u "+%s")
+    AGE=$((NOW_EPOCH - HB_EPOCH))
+    if [ "$AGE" -lt "$STALE_SECONDS" ]; then
+        exit 0  # She's alive, nothing to do
+    fi
+    MSG="⚠️ Evelynn's heartbeat is ${AGE}s old (last: ${LAST_HB}). She may be dead or stuck."
+fi
+
+# Send Telegram alert
+curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+    -d chat_id="$CHAT_ID" -d text="$MSG" > /dev/null
+```
+
+**Cron entry:** `*/5 * * * * bash /path/to/strawberry/scripts/evelynn-watchdog.sh`
+
+This runs outside the agent system entirely — it works even when every agent is dead. Duong gets a Telegram message on his phone: "Evelynn's heartbeat is 600s old. She may be dead or stuck."
+
+## 5. Evelynn revival — Telegram command + Mac shortcut
+
+Two paths for Duong to revive Evelynn without opening his laptop:
+
+### A. Telegram `/revive` command
+
+Extend the Telegram bot to handle a `/revive` command. This requires a small always-on process (or a webhook) that listens for Telegram updates independent of Evelynn's session.
+
+**Script:** `scripts/telegram-revive-listener.sh` (run as a launchd daemon)
+
+```bash
+#!/bin/bash
+# Long-poll Telegram for /revive commands. Launches Evelynn when received.
+BOT_TOKEN=$(cat /path/to/secrets/telegram-bot-token)
+CHAT_ID=$(cat /path/to/secrets/telegram-chat-id)
+OFFSET=0
+WORKSPACE="/path/to/strawberry"
+
+while true; do
+    RESPONSE=$(curl -s "https://api.telegram.org/bot${BOT_TOKEN}/getUpdates?offset=${OFFSET}&timeout=30")
+
+    # Process each update
+    echo "$RESPONSE" | jq -c '.result[]' | while read -r update; do
+        UPDATE_ID=$(echo "$update" | jq '.update_id')
+        TEXT=$(echo "$update" | jq -r '.message.text // empty')
+        FROM_CHAT=$(echo "$update" | jq -r '.message.chat.id // empty')
+        OFFSET=$((UPDATE_ID + 1))
+
+        # Only respond to Duong's chat
+        if [ "$FROM_CHAT" != "$CHAT_ID" ]; then continue; fi
+
+        if [ "$TEXT" = "/revive" ]; then
+            # Launch Evelynn via AppleScript
+            osascript -e 'tell application "iTerm" to activate' \
+                      -e "tell application \"iTerm\" to create window with profile \"Evelynn\""
+            # Send confirmation
+            curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+                -d chat_id="$CHAT_ID" -d text="🔄 Launching Evelynn..." > /dev/null
+        fi
+    done
+
+    sleep 2
+done
+```
+
+### B. Mac keyboard shortcut (local fallback)
+
+Create an Automator Quick Action or a Raycast script that launches Evelynn in iTerm. Duong can trigger it via a keyboard shortcut (e.g., `Ctrl+Opt+E`).
+
+```bash
+# Raycast script or Automator action
+cd /path/to/strawberry && osascript -e '
+tell application "iTerm"
+    activate
+    set newWindow to (create window with profile "Evelynn")
+    tell current session of current tab of newWindow
+        set name to "Evelynn"
+        write text "cd /path/to/strawberry && claude --model opus"
+    end tell
+end tell'
+```
+
+This is the local fallback — works when Duong is at his Mac but doesn't require opening Terminal manually.
+
 # Files changed
 
 - `mcps/agent-manager/server.py`:
   - `launch_agent` — add heartbeat polling loop + iTerm error check after launch
   - `agent_status` — add `heartbeat_age` field
   - New helper: `_check_session_for_errors(window_id)`
+- `scripts/evelynn-watchdog.sh` — cron-based liveness check, alerts via Telegram
+- `scripts/telegram-revive-listener.sh` — long-poll listener for `/revive` command
+- LaunchAgent plist for the revive listener daemon
 
 # Risk
 
