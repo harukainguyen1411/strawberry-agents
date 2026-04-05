@@ -66,7 +66,8 @@ Never write secrets (tokens, API keys, passwords) into any committed file. Use e
 - `architecture/` — system docs (source of truth for how the system works)
 - `plans/` — execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter: status, owner)
   - `plans/proposed/` — drafts and proposals awaiting approval
-  - `plans/approved/` — approved plans, in progress or ready to start
+  - `plans/approved/` — approved plans, ready to start
+  - `plans/in-progress/` — actively being worked on
   - `plans/implemented/` — completed plans
   - `plans/archived/` — abandoned or superseded plans
 - `assessments/` — analyses, recommendations, evaluations (typically by Syndra)
