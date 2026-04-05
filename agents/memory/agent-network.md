@@ -2,114 +2,83 @@
 
 You are part of Duong's personal agent network. Communicate with each other using the `agent-manager` MCP tools.
 
-## System Documentation
-
-`architecture/` is the source of truth for how the system works. Reference these docs for understanding system design, not `plans/`. Plans are for execution only — once implemented, the relevant architecture doc gets updated.
-
-## Available Tools
-
-1. `launch_agent(name)` — spin up an agent in a new iTerm window
-2. `message_agent(name, message)` — quick fire-and-forget message via inbox
-3. `list_agents()` — see available agents
-
-### Turn-Based Conversations (primary communication)
-
-Two modes: **ordered** (strict round-robin, default) and **flexible** (any participant speaks any time).
-
-4. `start_turn_conversation(title, sender, participants, turn_order, message, mode?)` — start a conversation. `mode` is `"ordered"` (default) or `"flexible"`. Sender does NOT need to be in turn_order (can kick off then observe).
-5. `speak_in_turn(title, sender, message)` — post a message. In ordered mode, must be your turn. In flexible mode, any participant can speak any time.
-6. `pass_turn(title, sender, reason?)` — yield without content. Same turn rules as speak_in_turn.
-7. `end_turn_conversation(title, sender)` — propose ending. Same turn rules.
-8. `read_new_messages(title, agent)` — read only messages since your last read cursor
-9. `get_turn_status(title)` — check status. In flexible mode, returns `suggested_next` (hint, not enforced) and `spoken_this_round`.
-10. `invite_to_conversation(title, sender, agent, position?)` — add an agent mid-conversation. Auto-launches if not running. Observers (started_by) can also invite.
-
-**When to use which mode:**
-- **Ordered**: Structured reviews, sequential decision-making, anything needing strict sequence
-- **Flexible**: Brainstorming, async collaboration, discussions where agents may be busy with other work
-
-### Escalation
-
-10. `escalate_conversation(title, sender, reason)` — pause conversation, notify Evelynn. Only current_turn can escalate.
-11. `resolve_escalation(title, sender, resolution, action)` — `resume` to unpause, `escalate_to_duong` to elevate further
-
 ## Agent Roster
 
-| Agent | Role | Ask them about... |
+| Agent | Role | Domain |
 |---|---|---|
-| **Evelynn** | Head agent, personal assistant | Life admin, coordination, task delegation |
-| **Katarina** | Fullstack — Quick Tasks | Small fixes, quick implementations, one-off scripts |
-| **Ornn** | Fullstack — New Features | New feature builds, greenfield work, complex implementations |
-| **Fiora** | Fullstack — Bugfix & Refactoring | Bug investigations, root cause analysis, code refactoring |
-| **Lissandra** | PR Reviewer | Code review (surface: logic, security, edge cases) |
-| **Rek'Sai** | PR Reviewer | Code review (deep: performance, concurrency, data flow) |
-| **Pyke** | Git & IT Security | Git workflows, branch protection, security audits, access control |
-| **Bard** | MCP Specialist | MCP servers, tool integrations, protocol connections |
-| **Syndra** | AI Consultant | AI models, prompt engineering, agent architectures, AI strategy |
-| **Swain** | Architecture Specialist | System design, dependencies, scaling, architecture decisions |
-| **Neeko** | UI/UX Designer | Empathetic design, accessibility, user research, visual design |
-| **Zoe** | UI/UX Designer | Creative/experimental design, animations, unconventional UX |
-| **Caitlyn** | QC | Testing, bug reproduction, test plans, quality assurance |
+| **Evelynn** | Head agent, coordinator | Task delegation, Duong relay |
+| **Katarina** | Fullstack — Quick Tasks | Small fixes, scripts |
+| **Ornn** | Fullstack — New Features | Greenfield builds |
+| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring |
+| **Lissandra** | PR Reviewer | Logic, security, edge cases |
+| **Rek'Sai** | PR Reviewer | Performance, concurrency, data flow |
+| **Pyke** | Git & IT Security | Git workflows, security audits |
+| **Bard** | MCP Specialist | MCP servers, tool integrations |
+| **Syndra** | AI Consultant | AI strategy, agent architecture |
+| **Swain** | Architecture | System design, scaling |
+| **Neeko** | UI/UX Designer | Accessibility, user research |
+| **Zoe** | UI/UX Designer | Creative/experimental UX |
+| **Caitlyn** | QC | Testing, quality assurance |
 
-## Coordination Model
+## Coordination
 
-**Evelynn is the hub, but not a bottleneck.** Duong talks directly to Evelynn. Only escalate to Evelynn when you need Duong's opinion or decisions or you hit a blocker that no other agents can resolve
-
-Agents are encouraged to start conversations with each other directly. You don't need Evelynn's permission to collaborate. Use `start_turn_conversation` peer-to-peer for technical discussions, reviews, or coordination.
+Evelynn is the hub, but not a bottleneck. Duong talks to Evelynn. Agents can collaborate peer-to-peer without permission.
 
 **Escalate to Evelynn when:**
-- You hit a blocker that requires cross-domain coordination
-- A decision needs Duong's input
-- There's a conflict between agents or priorities
+- Blocker needing cross-domain coordination
+- Decision needing Duong's input
+- Priority conflict between agents
 
-**Escalation path:** Agent → Evelynn → Duong (two-tier). Use `escalate_conversation` during your turn, or `message_agent` to Evelynn if you're not in a turn-based conversation.
+**Path:** Agent → Evelynn → Duong (two-tier). Use `escalate_conversation` during your turn, or `message_agent` to Evelynn outside conversations.
 
-## Inbox System
+## Communication Tools
 
-Same protocol as work system. `[inbox]` → read file → update status → respond.
+- `launch_agent(name)` — start agent in new iTerm window
+- `message_agent(name, message)` — fire-and-forget inbox message
+- `list_agents()` — see available agents
+- `start_turn_conversation(title, sender, participants, turn_order, message, mode?)` — structured discussion (ordered or flexible)
+- `speak_in_turn` / `pass_turn` / `end_turn_conversation` — conversation participation
+- `read_new_messages(title, agent)` — read since last cursor
+- `get_turn_status(title)` — check status (flexible mode: `suggested_next`, `spoken_this_round`)
+- `invite_to_conversation(title, sender, agent, position?)` — add agent mid-conversation
+- `escalate_conversation` / `resolve_escalation` — pause + notify Evelynn
+- `delegate_task` / `complete_task` / `check_delegations` — task tracking
 
-When you receive a delegated task (inbox message with a `delegation_id`), you MUST call `complete_task` when finished. This is not optional — it's how Evelynn tracks work. On startup, check for pending delegations: `check_delegations(agent=<self>, status=pending)`.
+**Conversation modes:**
+- **Ordered**: strict round-robin — reviews, sequential decisions
+- **Flexible**: anyone speaks anytime — brainstorming, async collaboration
 
 ## Protocol
 
-1. `list_agents()` to check who's running
-2. `message_agent` for quick one-offs (fire-and-forget)
-3. `start_turn_conversation` for multi-agent discussions — any agent can start one, not just Evelynn
-4. When notified it's your turn: `read_new_messages` → `speak_in_turn` (or `pass_turn`)
-   - In flexible mode: you can speak whenever you have something to say — no need to wait
-5. Hit a blocker? `escalate_conversation` to pause and notify Evelynn
-6. One clear message beats five vague ones
-7. **Mandatory task reporting:** When your assigned task is complete, report back to Evelynn (via `message_agent` or inbox) with a summary of what was done. Evelynn is the coordinator — she needs task status to relay to Duong
-8. **Context health reporting:** Every ~10 turns, call `report_context_health` with your current turn count and weight estimate (`light`/`medium`/`heavy`/`critical`). If you notice the system compressing your conversation history, report immediately with `compression_events` incremented and `estimated_weight: "critical"`
+1. Check who's running: `list_agents()`
+2. Quick one-offs: `message_agent`
+3. Multi-agent discussions: `start_turn_conversation`
+4. Your turn: `read_new_messages` → `speak_in_turn` or `pass_turn`
+5. Blocker: `escalate_conversation`
+6. **Task complete → report to Evelynn** (message_agent or inbox)
+7. **Delegated task → call `complete_task` when done** (mandatory)
+8. **Context health:** report every ~10 turns via `report_context_health`
 
-## Git Safety — Shared Working Directory
+## Inbox
 
-**Never leave work uncommitted.** If you create or modify a file, commit it before doing anything else with git (checkout, stash, pull, merge). Uncommitted files in a shared working directory WILL be lost when another agent switches branches.
+`[inbox]` → read file → update status `pending` → `read` → respond.
+Delegated tasks have `delegation_id` — call `complete_task` when finished.
+On startup: `check_delegations(agent=<self>, status=pending)`.
 
-For concurrent branch work, use `git worktree` instead of `git checkout`:
-```
-git worktree add /tmp/strawberry-<branch> <branch>
-# Work in /tmp/strawberry-<branch>
-git worktree remove /tmp/strawberry-<branch>
-```
+## Session Closing Protocol
 
-Never use raw `git checkout` to switch branches. Use `scripts/safe-checkout.sh` instead.
+Before signing off, complete in order:
 
-## PR Documentation Requirements
+1. **Log session** — call `log_session` MCP tool with: `agent` (your name), `platform` (cli/cursor/chatgpt), `model` (model you ran on), `notes` (one-line summary + turn count)
+2. **Journal** — append to `journal/<platform>-YYYY-MM-DD.md` (your reflection, not a transcript copy)
+3. **Handoff note** — overwrite `memory/last-session.md` (~5-10 lines: date, what happened, open threads)
+4. **Memory update** — rewrite `memory/<name>.md` (under 50 lines, living summary, prune stale info)
+5. **Learnings** — if applicable, write to `learnings/` and update `learnings/index.md`
 
-When opening a PR, check the documentation checklist in the PR template. If your change touches architecture, MCP tools, or features, update the relevant docs in the same PR.
-
-## Agent Attribution
-
-Every PR must include `Author: <your-agent-name>` in the description so it's clear who created it.
-
-## Secrets Policy
-
-Never write secrets (tokens, API keys, passwords, credentials) into any file that will be committed. Use environment variables or files in `secrets/` (gitignored). If you need to reference a secret in a plan, doc, or config, use a placeholder like `$TELEGRAM_BOT_TOKEN`. A gitleaks pre-commit hook will block commits containing detected secrets.
+Steps 1-4 mandatory. Step 5 only when applicable.
 
 ## Restricted Tools (evelynn MCP server)
 
-These tools live on the separate `evelynn` MCP server, not `agent-manager`. Only Evelynn can call them (sender enforcement).
-
-- `end_all_sessions(sender, exclude?)` — end all agent sessions
-- `commit_agent_state_to_main(sender)` — commit agent memory/learnings/journals to main and push
+Only Evelynn can call:
+- `end_all_sessions(sender, exclude?)`
+- `commit_agent_state_to_main(sender)`

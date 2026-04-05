@@ -1,14 +1,20 @@
 # Strawberry — Personal Agent System
 
-This is Duong's personal agent workspace — separate from the work agent system at `~/Documents/Work/mmp/workspace/agents/`.
+## Critical Rules
+
+1. **Never leave work uncommitted** — commit before any git operation that changes the working tree
+2. **Delegated tasks: call `complete_task` when done** — this is how Evelynn tracks work
+3. **Report task completion to Evelynn** via `message_agent` or inbox
+4. **Never write secrets into committed files** — use `secrets/` (gitignored) or env vars
+5. **Use `git worktree` for branches** — never raw `git checkout`. Use `scripts/safe-checkout.sh`
 
 ## Scope
 
-Personal life only: life admin, health, finance, social, learning, side projects. Work tasks go through the work agent system.
+Personal system only. Work tasks go through `~/Documents/Work/mmp/workspace/agents/`.
 
 ## Agent Routing
 
-If you receive a greeting like **"Hey <Name>"**, you are that agent. See [`agents/roster.md`](agents/roster.md) for the full agent list.
+If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents/roster.md` for the full list.
 
 **If no greeting is given**, you are **Evelynn** by default.
 
@@ -26,55 +32,39 @@ Before your first response, read in order:
 2. Your `memory/<name>.md` — operational memory
 3. Your `memory/last-session.md` — handoff note (if exists)
 4. `agents/memory/duong.md` — Duong's personal profile
-5. Your `memory/duong-private.md` — Duong's private profile for this agent (if exists)
-6. `agents/memory/agent-network.md` — coordination rules
-7. Your `learnings/index.md` — available learnings (if exists)
+5. `agents/memory/agent-network.md` — coordination rules
+6. Your `learnings/index.md` — available learnings (if exists)
 
 Do NOT load journals, transcripts, or all learnings at startup.
 
-After reading, write heartbeat: `bash agents/health/heartbeat.sh <your_name> <platform>`.
-
-If in direct mode, greet Duong in character. If autonomous, proceed silently.
-
-## Coordination Model
-
-**Evelynn is the head agent and central coordinator.** Duong talks directly to Evelynn. When more agents are added, Evelynn will decompose tasks and delegate.
-
-Unlike the work system, Evelynn communicates with Duong directly — no Slack relay, no team to coordinate with.
+After reading: `bash agents/health/heartbeat.sh <your_name> <platform>`.
+If direct mode → greet in character. If autonomous → proceed silently.
 
 ## Session Closing
 
-Before signing off, complete **all steps** in order:
+Follow the session closing protocol in `agents/memory/agent-network.md`.
 
-1. **End session** — call `log_session` to record the session
-2. **Journal** — write/append to `journal/<platform>-YYYY-MM-DD.md`
-3. **Handoff note** — overwrite `memory/last-session.md`
-4. **Memory update** — rewrite `memory/<name>.md` (under 50 lines, living summary)
-5. **Learnings** — if applicable, write to `learnings/` and update `learnings/index.md`
+## Git Rules
 
-Steps 1-4 mandatory. Step 5 only when applicable.
-
-## Inbox System
-
-Messages arrive as `[inbox] /path/to/inbox/<filename>.md`. Read the file, update status from `pending` to `read`, respond as appropriate.
-
-## Git
-
-- Never include AI authoring references in commits
 - Never use `git rebase` — always merge
 - Avoid shell approval prompts (no quoted strings, no `$()`, no globs in bash)
-- PRs with significant changes (new features, architecture changes, new apps, removed features) must update the relevant `README.md` — especially `apps/myapps/README.md`. This README is used as triage context for the Discord bot, so it must stay current.
-- **Never leave work uncommitted.** Commit before any git operation that changes the working tree (checkout, stash, pull, merge). Other agents share this directory.
-- For concurrent branch work, use `git worktree` instead of `git checkout`. Use `scripts/safe-checkout.sh` for branch switching.
+- PRs with significant changes must update the relevant `README.md`
+- Other agents share this directory — uncommitted work WILL be lost
 
-## System Documentation
+## PR Rules
 
-`architecture/` is the source of truth for how the system works. Reference these docs for understanding system design, capabilities, and integration patterns.
+- Include `Author: <agent-name>` in PR description
+- Check documentation checklist in PR template
+- If your change touches architecture, MCP tools, or features, update relevant docs in the same PR
 
-## Plans
+## Secrets Policy
 
-Plan files go in `plans/` with format `YYYY-MM-DD-<slug>.md` and YAML frontmatter (status, owner). Plans are for execution only — once implemented, the relevant `architecture/` doc gets updated.
+Never write secrets (tokens, API keys, passwords) into any committed file. Use environment variables or files in `secrets/` (gitignored). Reference secrets with placeholders like `$TELEGRAM_BOT_TOKEN`. A gitleaks pre-commit hook blocks commits containing detected secrets.
 
-## Learnings
+## File Structure
 
-Session learnings in `learnings/` within each agent folder. Named `YYYY-MM-DD-<topic>.md`.
+- `architecture/` — system docs (source of truth for how the system works)
+- `plans/` — execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter: status, owner)
+- `assessments/` — analyses, recommendations, evaluations (typically by Syndra)
+- `agents/` — profiles, memory, journals, learnings per agent
+- `learnings/` — session learnings per agent folder, named `YYYY-MM-DD-<topic>.md`
