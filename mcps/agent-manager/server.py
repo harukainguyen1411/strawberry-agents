@@ -395,12 +395,12 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
         # Use $(cat ...) so the actual token value never appears in terminal scrollback
         quoted_path = token_file.replace("'", "'\\''")
         # Export token AND set git credential helper to lock auth to agent account
+        # Use single quotes around the helper value so zsh doesn't expand '!'
         launch_cmd = (
             f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && "
             f"cd {WORKSPACE} && "
-            f"set +H && "
             f"git config --local credential.https://github.com.helper "
-            f"\"!f() {{ echo password=$(cat '{quoted_path}'); }}; f\" && "
+            f"'!f() {{ echo password=$(cat {quoted_path}); }}; f' && "
             f"claude --model {model_flag}"
         )
     else:
