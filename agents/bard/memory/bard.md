@@ -29,3 +29,4 @@
 - 2026-04-04 AM: invite_to_conversation, evelynn MCP server, flexible conversations, shared helpers
 - 2026-04-04 PM: Telegram bridge v2, restart_evelynn, context health monitoring, task delegation tracking, GH token injection, restart detection fix plan
 - 2026-04-04 Eve: restart_evelynn detection fix (PR #25) — merged
+- 2026-04-05: Heartbeat fix — touch_heartbeat() piggybacked on MCP tools (PR #28)

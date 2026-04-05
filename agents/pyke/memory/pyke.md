@@ -12,6 +12,7 @@
 - 2026-04-04 Night (CLI, opus-4.6): Discord-CLI integration — full infra deploy + two-pass bridge.
 - 2026-04-04 AM (CLI, opus-4.6): Incident response — memory wipe + MCP config loss. Created PRs, fixed blockers, restored memory.
 - 2026-04-04 PM (CLI, opus-4.6): Ops day — workflow policies, gitleaks, branch protection, git safety, PRs #15-#24.
+- 2026-04-05 (CLI, sonnet-4.6): B1 commit ratio tracker (PR #26), GH_TOKEN injection fix (PR #29 review), agent account plan (archived).
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
@@ -52,9 +53,9 @@
   - jq: static binary at ~/.npm-global/bin/jq
 
 ## Open items
+- PR #26 (commit-ratio-tracker) — open, awaiting merge
 - 8 stale merged branches (local + remote) — need deletion + enable auto-delete on merge
-- harukainguyen1411 token setup: collaborator invite may be pending, token creation + agent session config definitely pending (Steps 3-9 of plans/2026-04-04-branch-protection-two-accounts.md)
-- secrets/agent-github-token: not yet created (needs token first)
+- harukainguyen1411: collaborator invite + token setup deferred (not a priority per Evelynn 2026-04-05)
 
 ## Security lessons
 - NEVER auto-resolve agent state conflicts. Always manually merge.
@@ -71,6 +72,8 @@
   **Why:** Syndra's plan file wiped by my stash/checkout/pop 2026-04-04.
 - Always check current branch before committing.
   **Why:** Committed to wrong branch twice in 2026-04-04 PM session.
+- `VAR=$(cmd) some_command` only sets the var for that subprocess — does NOT persist.
+  **Why:** GH_TOKEN injection bug. Use `export VAR=$(cmd)` to persist across && chains.
 
 ## Working relationships
 - Syndra: sharp design partner for architecture decisions.
@@ -78,3 +81,4 @@
 - Swain: excellent architecture partner. Designed Discord-CLI integration, two-pass bridge. Clean, pragmatic.
 - Bard: reliable MCP counterpart. Fast executor. Built commit_agent_state_to_main + token injection.
 - Evelynn: coordinator. Reports go to her. She closes last.
+- Katarina: solid executor. Implemented GH_TOKEN fix from my plan cleanly.
