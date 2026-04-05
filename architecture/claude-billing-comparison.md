@@ -102,6 +102,17 @@ With prompt caching (automatic in Claude Code, ~90% cheaper cached reads), real-
 
 **Hybrid approach**: Pro subscription for personal use + API credits for the agent system.
 
+## Current Setup (as of 2026-04-05)
+
+Agent operations now run on Duong's **team plan** subscription. API keys are no longer injected into agent launches. Agents authenticate via Claude Code's logged-in session automatically.
+
+API keys are retained only for app development:
+- `apps/contributor-bot/` — uses Anthropic SDK directly
+- Any future app that calls the API programmatically
+
 ## Cost Isolation
 
-For per-agent cost tracking, use one API key per agent configured in each agent's `settings.local.json`. The Anthropic dashboard then shows usage grouped by key.
+With team plan auth, per-agent cost granularity via API keys is no longer available. Options if needed later:
+- Re-enable API keys for cost-sensitive agents (hybrid)
+- Use `/cost` per session and log in session closing
+- Wait for team plan admin tools to provide per-session breakdowns

@@ -390,32 +390,12 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
         else:
             use_token = True
 
-    # Read agent-specific ANTHROPIC_API_KEY from their settings.local.json
-    import json
-    agent_api_key_export = ''
-    agent_settings_file = os.path.join(WORKSPACE, 'agents', recipient, '.claude', 'settings.local.json')
-    if os.path.exists(agent_settings_file):
-        try:
-            with open(agent_settings_file) as f:
-                agent_settings = json.load(f)
-        except json.JSONDecodeError:
-            log.warning(f'Could not parse {agent_settings_file} — launching without per-agent ANTHROPIC_API_KEY')
-            agent_settings = {}
-        agent_key = agent_settings.get('env', {}).get('ANTHROPIC_API_KEY', '')
-        if agent_key:
-            key_file = os.path.join(WORKSPACE, 'secrets', f'.agent-key-{recipient}')
-            with open(key_file, 'w') as f:
-                f.write(agent_key)
-            os.chmod(key_file, 0o600)
-            quoted_key_path = key_file.replace("'", "'\\''")
-            agent_api_key_export = f"export ANTHROPIC_API_KEY=$(cat '{quoted_key_path}') && "
-
     if use_token:
         # Use $(cat ...) so the actual token value never appears in terminal scrollback
         quoted_path = token_file.replace("'", "'\\''")
-        launch_cmd = f"{agent_api_key_export}export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && cd {WORKSPACE} && claude --model {model_flag}"
+        launch_cmd = f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && cd {WORKSPACE} && claude --model {model_flag}"
     else:
-        launch_cmd = f'{agent_api_key_export}cd {WORKSPACE} && claude --model {model_flag}'
+        launch_cmd = f'cd {WORKSPACE} && claude --model {model_flag}'
 
     # Escape for AppleScript embedding
     launch_cmd_escaped = launch_cmd.replace('\\', '\\\\').replace('"', '\\"')
