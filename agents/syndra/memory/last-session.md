@@ -1,13 +1,16 @@
-# Last Session — 2026-04-05, CLI (Session 10)
+# Last Session — 2026-04-05, CLI (Session 11)
 
 ## What happened
-- Team plan migration plan: drafted plan for switching agent auth from API keys to team plan subscription
-- PR #31 review: approved Katarina's implementation — clean removal of key injection, docs updated
+- Gemini Pro ecosystem assessment: model capabilities, pricing, infrastructure analysis
+- Recommended: stay on Claude for agents, stay on Firebase for infra, build Firestore MCP server
+- Assessment committed to `assessments/gemini-pro-ecosystem-assessment.md`
 
 ## Open threads
+- Firestore MCP server — recommended as top priority, not yet built
+- BigQuery analytics layer — deferred, revisit when analytics use cases emerge
+- Gemini agentic re-evaluation in ~3 months (July 2026)
 - Agent discipline rules plan still in plans/proposed/ awaiting approval
 - First product sprint (myapps task list) still pending
-- GH_TOKEN env var blocks `gh auth switch` — had to use `GH_TOKEN="" GITHUB_TOKEN=""` prefix for PR operations
 
 ## Context
-Short autonomous session, ~12 turns. Plan + review work only.
+Autonomous session, ~15 turns. Assessment + infrastructure analysis.
