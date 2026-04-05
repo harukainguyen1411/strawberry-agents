@@ -65,6 +65,10 @@ Never write secrets (tokens, API keys, passwords) into any committed file. Use e
 
 - `architecture/` — system docs (source of truth for how the system works)
 - `plans/` — execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter: status, owner)
+  - `plans/proposed/` — drafts and proposals awaiting approval
+  - `plans/approved/` — approved plans, in progress or ready to start
+  - `plans/implemented/` — completed plans
+  - `plans/archived/` — abandoned or superseded plans
 - `assessments/` — analyses, recommendations, evaluations (typically by Syndra)
 - `agents/` — profiles, memory, journals, learnings per agent
 - `learnings/` — session learnings per agent folder, named `YYYY-MM-DD-<topic>.md`
