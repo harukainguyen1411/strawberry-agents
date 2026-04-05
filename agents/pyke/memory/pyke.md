@@ -12,7 +12,8 @@
 - 2026-04-04 Night (CLI, opus-4.6): Discord-CLI integration — full infra deploy + two-pass bridge.
 - 2026-04-04 AM (CLI, opus-4.6): Incident response — memory wipe + MCP config loss. Created PRs, fixed blockers, restored memory.
 - 2026-04-04 PM (CLI, opus-4.6): Ops day — workflow policies, gitleaks, branch protection, git safety, PRs #15-#24.
-- 2026-04-05 (CLI, sonnet-4.6): B1 commit ratio tracker (PR #26), GH_TOKEN injection fix (PR #29 review), agent account plan (archived).
+- 2026-04-05 AM (CLI, sonnet-4.6): B1 commit ratio tracker (PR #26), GH_TOKEN injection fix (PR #29 review), agent account plan (archived).
+- 2026-04-05 PM (CLI, opus-4.6): Resolved harukainguyen1411 write access — collaborator + classic PAT. Unblocked Katarina.
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
@@ -55,7 +56,7 @@
 ## Open items
 - PR #26 (commit-ratio-tracker) — open, awaiting merge
 - 8 stale merged branches (local + remote) — need deletion + enable auto-delete on merge
-- harukainguyen1411: collaborator invite + token setup deferred (not a priority per Evelynn 2026-04-05)
+- harukainguyen1411: RESOLVED 2026-04-05 — collaborator added, classic PAT with repo scope, push verified
 
 ## Security lessons
 - NEVER auto-resolve agent state conflicts. Always manually merge.
@@ -74,6 +75,8 @@
   **Why:** Committed to wrong branch twice in 2026-04-04 PM session.
 - `VAR=$(cmd) some_command` only sets the var for that subprocess — does NOT persist.
   **Why:** GH_TOKEN injection bug. Use `export VAR=$(cmd)` to persist across && chains.
+- Fine-grained PATs can't access collaborator repos — only repos owned by the token's account.
+  **Why:** harukainguyen1411 couldn't push to Duongntd/strawberry despite being collaborator. Classic PAT with `repo` scope needed.
 
 ## Working relationships
 - Syndra: sharp design partner for architecture decisions.

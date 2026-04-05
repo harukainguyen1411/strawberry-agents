@@ -9,6 +9,7 @@
 - 2026-04-03 (S3): Set up GitHub webhook for Discord #pr-and-issues notifications.
 - 2026-04-04 (S4): Built `apps/discord-relay/` bot + `scripts/discord-bridge.sh` + `scripts/result-watcher.sh` for Discord-CLI integration.
 - 2026-04-05 (S5): Diagnosed + fixed GH_TOKEN shell scoping bug and per-agent API key isolation in `mcps/agent-manager/server.py`. PRs #29 and #30.
+- 2026-04-05 (S6): Executed team-plan migration — removed API key injection from server.py, cleaned all agent settings.local.json, updated billing docs. PR #31.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
@@ -22,4 +23,5 @@
 - Gemini model for triage: gemini-2.5-flash-lite-preview-06-17 (versioned ID required)
 - discord-relay: ESM, discord.js 14, express only. File-based IPC via JSON in /home/runner/data/
 - agent-manager server.py uses `$(cat file)` pattern to inject secrets without scrollback exposure
-- Per-agent ANTHROPIC_API_KEY lives in `agents/<name>/.claude/settings.local.json` under `env.ANTHROPIC_API_KEY`
+- Per-agent ANTHROPIC_API_KEY is gone — agents now auth via team plan login
+- harukainguyen1411 now has write access to Duongntd/strawberry (token in secrets/agent-github-token)
