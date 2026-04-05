@@ -9,6 +9,7 @@
 | **Lissandra** | PR Reviewer | `lissandra/` |
 | **Rek'Sai** | PR Reviewer | `reksai/` |
 | **Pyke** | Git & IT Security Specialist | `pyke/` |
+| **Shen** | Git & IT Security Engineer — Implementation | `shen/` |
 | **Bard** | MCP Specialist | `bard/` |
 | **Syndra** | AI Consultant Specialist | `syndra/` |
 | **Swain** | Architecture Specialist | `swain/` |
