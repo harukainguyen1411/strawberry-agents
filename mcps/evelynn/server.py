@@ -58,17 +58,23 @@ def _safe_stash_pop(warnings: list[str]):
 # ── tools ────────────────────────────────────────────────────────────────
 
 @mcp.tool()
-async def end_all_sessions(sender: str, exclude: Optional[list[str]] = None) -> dict[str, Any]:
-    """End all running agent sessions. Restricted to Evelynn only (honor-system).
+async def shutdown_all_agents(sender: str, confirm: str, exclude: Optional[list[str]] = None) -> dict[str, Any]:
+    """PERMANENTLY end all agent sessions with closing protocol.
+
+    This is IRREVERSIBLE — agents lose their session context.
+    Only use when Duong explicitly says 'end sessions' or 'shut down'.
 
     Messages each agent with instructions to follow the session closing protocol
     (end_session tool, journal, handoff note, memory update, learnings).
 
     Args:
         sender: Agent invoking this tool (must be 'evelynn')
+        confirm: Must be the literal string 'yes-shutdown' to proceed
         exclude: Optional list of agent names to skip
     """
     _enforce_evelynn(sender)
+    if confirm != 'yes-shutdown':
+        raise ToolError("To shut down all agents, pass confirm='yes-shutdown'. Did you mean restart_agents instead?")
     all_agents = scan_agents()
     agent_names = {a['name'] for a in all_agents}
     exclude_set = {n.lower() for n in (exclude or [])}
