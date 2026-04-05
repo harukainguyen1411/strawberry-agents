@@ -5,7 +5,7 @@
 
 ## Key context
 - agent-manager: agent CRUD, inbox messaging, turn-based conversations (ordered + flexible), health registry, session management, context health reporting, task delegation tracking
-- evelynn server (`mcps/evelynn/`): end_all_sessions, commit_agent_state_to_main, restart_evelynn, telegram tools, firebase task board
+- evelynn server (`mcps/evelynn/`): shutdown_all_agents (renamed from end_all_sessions, has confirm gate), commit_agent_state_to_main, restart_evelynn, telegram tools, firebase task board
 - Shared helpers at `mcps/shared/helpers.py` — imported by both servers
 - Turn-based conversations: ordered (strict) and flexible (any participant speaks). **Why:** Syndra's V3 spec
 - `_is_agent_dir` requires `memory/` subdir — new agents need this or they're invisible
@@ -29,4 +29,5 @@
 - 2026-04-04 AM: invite_to_conversation, evelynn MCP server, flexible conversations, shared helpers
 - 2026-04-04 PM: Telegram bridge v2, restart_evelynn, context health monitoring, task delegation tracking, GH token injection, restart detection fix plan
 - 2026-04-04 Eve: restart_evelynn detection fix (PR #25) — merged
-- 2026-04-05: Heartbeat fix — touch_heartbeat() piggybacked on MCP tools (PR #28)
+- 2026-04-05 AM: Heartbeat fix — touch_heartbeat() piggybacked on MCP tools (PR #28)
+- 2026-04-05 PM: Reviewed PR #32 (heartbeat) & PR #34 (restart safeguards). Wrote restart safeguards plan & launch verification plan (5 sections incl. Evelynn liveness/revival)
