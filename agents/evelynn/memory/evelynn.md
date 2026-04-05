@@ -13,20 +13,21 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Check current time before greeting. Why: greeted with "tonight" when it was morning (2026-04-04).
 
 ## Team
-15 agents — all LoL champions. Model tiers configured (2026-04-05):
+16 agents — all LoL champions. Model tiers configured (2026-04-05):
 - **Opus:** Evelynn, Syndra, Swain, Pyke, Bard
-- **Sonnet:** Katarina, Ornn, Fiora, Lissandra, Rek'Sai, Neeko, Zoe, Caitlyn
+- **Sonnet:** Katarina, Ornn, Fiora, Lissandra, Rek'Sai, Neeko, Zoe, Caitlyn, Shen
 - Rakan (Discord/community), Zilean (IT Advisor) — not yet model-configured
+- **Shen** — new (2026-04-05), security implementation agent paired with Pyke
 
 ## Infrastructure
 - **Git workflow:** three-tier policy (chore:/ops: only on main). Agent state on main only.
-- **Branch protection:** two-account model: Duongntd (bypass) + harukainguyen1411 (agents, no bypass). GH_TOKEN + ANTHROPIC_API_KEY injected at launch via export pattern. MCP server restart required after code changes.
+- **Branch protection:** two-account model: Duongntd (bypass) + harukainguyen1411 (agents, no bypass). GH_TOKEN injected at launch. Auth lockdown hooks active (PR #33).
+- **Auto-rebase:** GitHub Actions workflow auto-rebases open PRs when main updates.
 - **Session closing order:** all agents first → Evelynn closes last with `commit_agent_state_to_main`.
-- **MCP servers:** evelynn (end_all_sessions, commit, telegram, task board), agent-manager (conversations, delegation, health).
-- **Telegram:** @strawberry_evelynn_bot, bridge v2.
+- **MCP servers:** evelynn (shutdown_all_agents, commit, telegram, task board), agent-manager (conversations, delegation, health).
+- **Telegram:** new bot (rotated 2026-04-05), token in secrets/telegram-bot-token. Bridge runs in separate iTerm window.
 - **Discord:** relay bot, VPS Hetzner CX22.
 - **Task board:** Firebase/Firestore, shared Vue app + MCP tools.
-- **Assessments folder:** assessments/ for analyses/recommendations (typically Syndra).
 
 ## Protocols
 - Every PR must have exactly two reviewers: (1) a code reviewer (Lissandra or Rek'Sai), and (2) the agent who wrote the plan. Evelynn auto-assigns both without asking.
@@ -36,19 +37,17 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Plans commit directly to main (never via PR). All commits use chore: or ops: prefix only.
 - PR openers must include agent name in description.
 - Files → Cursor, URLs/PRs → browser (open command).
+- **Restart ≠ End.** "Restart agents" = restart_agents. "End/close/shut down" = shutdown_all_agents.
 
 ## Billing
 - **Personal:** Agents run on Duong's work team plan (Claude Max/Team). API keys disabled for agent ops (2026-04-05). API reserved for app development only.
-- **Work:** Team plan through MMP (same plan now shared with personal agents).
 
 ## Open Threads
+- PR #54 (myapps) — task list, reviewed, ready to merge. Needs firestore index deploy.
+- Bard's launch-verification + Evelynn liveness plan — proposed, awaiting approval
+- Swain's plan viewer plan — proposed, needs manual setup
 - Work CLAUDE.md — verify self-contained after global cleanup
-- First product sprint — myapps task list (Swain's plan at plans/proposed/2026-04-05-myapps-task-list.md, awaiting Duong approval)
-- Gemini Advanced — Duong trying today
-- GH_TOKEN in terminal — needs to unset and `gh auth switch` to duongntd99
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
 - Meet Zilean — not launched yet
-- Branch protection — steps 1-5 done, step 6+ remaining
-- harukainguyen1411 GitHub auth — push access resolved by Pyke (2026-04-05)
-- Heartbeat fix (PR #28) and API key isolation (PR #30) merged — restart MCP server to activate
+- Stale PRs #26 #27 #28 — can be closed
