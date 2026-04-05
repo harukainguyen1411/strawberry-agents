@@ -1,6 +1,6 @@
 ---
 title: Fix heartbeat system — piggyback on MCP tool calls
-status: in-progress
+status: approved
 owner: bard
 created: 2026-04-05
 ---
