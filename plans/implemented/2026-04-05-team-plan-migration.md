@@ -1,6 +1,6 @@
 ---
 title: Migrate Agent System from API Keys to Team Plan
-status: approved
+status: implemented
 owner: syndra
 date: 2026-04-05
 ---
