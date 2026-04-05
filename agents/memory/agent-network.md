@@ -58,6 +58,7 @@ Evelynn is the hub, but not a bottleneck. Duong talks to Evelynn. Agents can col
 6. **Task complete → report to Evelynn** (message_agent or inbox)
 7. **Delegated task → call `complete_task` when done** (mandatory)
 8. **Context health:** report every ~10 turns via `report_context_health`
+9. **Plan approval gate:** After writing a plan to `plans/proposed/`, your task is done. Call `complete_task` and report to Evelynn. Do NOT proceed to implementation. Duong approves plans by moving them to `plans/approved/`. Evelynn then delegates execution (possibly to a different agent).
 
 ## Inbox
 
@@ -66,6 +67,8 @@ Delegated tasks have `delegation_id` — call `complete_task` when finished.
 On startup: `check_delegations(agent=<self>, status=pending)`.
 
 ## Session Closing Protocol
+
+**When to close:** Only when Duong or Evelynn explicitly says to end your session (e.g., "end session", "shut down", "close"). Completing a task is NOT a trigger to close. After task completion, stay open and wait.
 
 Before signing off, complete in order:
 

@@ -370,6 +370,12 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
         if w['name'].lower() == recipient:
             raise ToolError(f'{greeting} is already running. Use message_agent to send messages.')
 
+    # Resolve model tier for this agent
+    AGENT_MODELS = {
+        'evelynn': 'opus', 'syndra': 'opus', 'swain': 'opus', 'pyke': 'opus', 'bard': 'opus',
+    }
+    model_flag = AGENT_MODELS.get(recipient, 'sonnet')
+
     # Read agent GitHub token if available
     # Token is read from file at launch via $(cat ...) to avoid printing the secret
     # in terminal scrollback. The token propagates to all child processes (MCP servers,
@@ -387,9 +393,9 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
     if use_token:
         # Use $(cat ...) so the actual token value never appears in terminal scrollback
         quoted_path = token_file.replace("'", "'\\''")
-        launch_cmd = f"GH_TOKEN=$(cat '{quoted_path}') GITHUB_TOKEN=$(cat '{quoted_path}') cd {WORKSPACE} && export GH_TOKEN GITHUB_TOKEN && claude"
+        launch_cmd = f"GH_TOKEN=$(cat '{quoted_path}') GITHUB_TOKEN=$(cat '{quoted_path}') cd {WORKSPACE} && export GH_TOKEN GITHUB_TOKEN && claude --model {model_flag}"
     else:
-        launch_cmd = f'cd {WORKSPACE} && claude'
+        launch_cmd = f'cd {WORKSPACE} && claude --model {model_flag}'
 
     # Escape for AppleScript embedding
     launch_cmd_escaped = launch_cmd.replace('\\', '\\\\').replace('"', '\\"')
