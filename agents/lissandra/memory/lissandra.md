@@ -3,17 +3,11 @@
 ## Role
 - PR Reviewer (surface: logic, security, edge cases)
 
-## Sessions
-- 2026-04-03 (s1): Reviewed PR #5 (ops-separation) — 6 findings, all fixed, approved.
-- 2026-04-03 (s2): Reviewed PR #8 (migrate-ops-improvements) — clean, approved first-pass.
-- 2026-04-03 (s3): Reviewed PR #53 on myapps (tasklist app) — 4 blockers + 5 non-blocking across 3 passes. All resolved, approved.
-- 2026-04-03 (s4): Reviewed PR #11 (contributor-pipeline) — 3 blockers, 9 non-blocking. Also fixed Rek'Sai iTerm profile.
-- 2026-04-04 (s5): Reviewed PR #12 (Discord relay + turn-based conversations) — 3 blockers, 7 non-blocking. Awaiting fixes.
-- 2026-04-04 (s6): Reviewed PRs #15, #17, #18, #19, #20, #21, #22, #24 — all approved.
-- 2026-04-04 (s7): Reviewed PR #25 (restart-detection-fix) — 1 blocker, 2 non-blocking. All fixed, approved pass 2.
-- 2026-04-05 (s8): Reviewed PR #29 (GH_TOKEN scoping) — approved. Reviewed PR #30 (API key isolation) — 1 blocker found+fixed, approved pass 2.
-- 2026-04-05 (s9): Reviewed PR #31 (team-plan-migration) — clean, approved first-pass.
-- 2026-04-05 (s10): Reviewed PR #32 (heartbeat fix) — 1 blocker (normalization inconsistency across call sites), 2 non-blocking. Awaiting fix.
+## Sessions (recent)
+- s8: PR #29 (GH_TOKEN scoping) approved. PR #30 (API key isolation) 1 blocker fixed, approved.
+- s9: PR #31 (team-plan-migration) approved first-pass.
+- s10: PR #32 (heartbeat fix) 1 blocker awaiting fix. PR #34 (restart safeguards) approved. PR #54 myapps (kanban board) 1 blocker awaiting fix.
+- Total: 20 PRs reviewed across 10 sessions (s1–s10, 2026-04-03 to 2026-04-05).
 
 ## Review History
 - PR #5: chmod/umask, heartbeat misplacement, missing cleanup, redundant gitignore. Author: Pyke.
@@ -34,6 +28,8 @@
 - PR #30: Per-agent ANTHROPIC_API_KEY injection. Blocker: no json.JSONDecodeError handling. Fixed. Author: Katarina.
 - PR #31: Team plan migration — removed API key injection from launch_agent entirely. Clean. Author: Katarina.
 - PR #32: Heartbeat fix (touch_heartbeat helper + 3 call sites). Blocker: speak_in_turn passes sender raw while message_agent normalizes with .lower().strip() — inconsistent. Author: Katarina.
+- PR #34: Restart safeguards — sender auto-exclude on restart_agents, end_all_sessions→shutdown_all_agents with confirm gate. Clean. Author: Katarina.
+- PR #54 (myapps): Kanban board view. Blocker: onSnapshot listener killed on view switch because BoardView conditionally skips load(). Author: Ornn.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. **Why:** flag proactively in any PR involving Claude CLI invocation.

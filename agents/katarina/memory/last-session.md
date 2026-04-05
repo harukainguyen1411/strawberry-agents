@@ -1,15 +1,11 @@
-# Last Session — 2026-04-05 (S6)
+# Last Session — 2026-04-05 (S7)
 
-Executed team-plan migration per plans/approved/2026-04-05-team-plan-migration.md.
+## What happened
+- Executed heartbeat-fix plan → PR #32 (touch_heartbeat helper + 3 call sites in server.py)
+- Executed restart-safeguards plan → PR #34 (sender auto-exclude + shutdown rename + confirm gate)
+- Restarted Evelynn twice via restart_evelynn tool
+- Defended PR #32 against false positive review from Lissandra (sender already normalized)
 
-**Done:**
-- Removed API key injection from server.py launch_agent
-- Cleaned ANTHROPIC_API_KEY from all 15 agent settings.local.json (local only, gitignored)
-- Deleted secrets/.agent-key-* leftover files
-- Updated architecture/claude-billing-comparison.md
-- Marked agent-api-key-isolation plan as superseded
-- Created PR #31
-
-**Open threads:**
-- PR #31 needs review/merge
-- Push access for harukainguyen1411 to strawberry is now live (Pyke sorted it)
+## Open threads
+- PR #32 and #34 awaiting merge
+- Worktrees strawberry-heartbeat-fix and strawberry-restart-safeguards still exist
