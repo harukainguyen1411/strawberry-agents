@@ -589,19 +589,25 @@ def _find_agent_sessions(agent_names: set[str]) -> dict[str, str]:
 
 
 @mcp.tool()
-async def restart_agents(exclude: Optional[list[str]] = None) -> dict[str, Any]:
-    """Restart all running agent sessions.
+async def restart_agents(sender: str, exclude: Optional[list[str]] = None) -> dict[str, Any]:
+    """Restart all running agents (exit + resume same session).
+
+    Does NOT end sessions or trigger closing protocol.
+    Use this when Duong says 'restart'.
 
     Sends /exit to each agent window, waits, then resumes the session
     using the session ID found in the JSONL transcript files.
+    The sender is automatically excluded to prevent self-restart.
 
     Args:
+        sender: Agent invoking this tool (auto-excluded from restart)
         exclude: Optional list of agent names to skip
     """
     if not WORKSPACE:
         raise ToolError('WORKSPACE_PATH not set')
 
     exclude_set = {n.lower() for n in (exclude or [])}
+    exclude_set.add(sender.lower().strip())
 
     all_agents = _scan_agents()
     agent_names = {a['name'] for a in all_agents}
