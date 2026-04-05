@@ -1,6 +1,6 @@
 ---
 title: Restart safeguards — auto-exclude caller & prevent end/restart confusion
-status: proposed
+status: approved
 owner: bard
 created: 2026-04-05
 ---
