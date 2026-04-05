@@ -1,6 +1,6 @@
 ---
 title: Fix Agent API Key Isolation
-status: proposed
+status: superseded
 owner: syndra
 date: 2026-04-05
 ---
