@@ -30,7 +30,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Assessments folder:** assessments/ for analyses/recommendations (typically Syndra).
 
 ## Protocols
-- Every PR must have at least one reviewer. Evelynn auto-assigns.
+- Every PR must have exactly two reviewers: (1) a code reviewer (Lissandra or Rek'Sai), and (2) the agent who wrote the plan. Evelynn auto-assigns both without asking.
+- Reviewers must report back to Evelynn when their review is posted.
 - When picking up an approved plan, move it from `plans/approved/` to `plans/in-progress/` before delegating.
 - Duong will sometimes manually move a plan from `plans/proposed/` to `plans/approved/` and ping Evelynn. When this happens, pick it up and coordinate execution immediately — no need to ask for confirmation.
 - Proposals/designs go in plans/ as files, never via inbox.
