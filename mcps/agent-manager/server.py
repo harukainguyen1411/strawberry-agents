@@ -393,7 +393,7 @@ async def launch_agent(name: str, task: str = '') -> dict[str, str]:
     if use_token:
         # Use $(cat ...) so the actual token value never appears in terminal scrollback
         quoted_path = token_file.replace("'", "'\\''")
-        launch_cmd = f"GH_TOKEN=$(cat '{quoted_path}') GITHUB_TOKEN=$(cat '{quoted_path}') cd {WORKSPACE} && export GH_TOKEN GITHUB_TOKEN && claude --model {model_flag}"
+        launch_cmd = f"export GH_TOKEN=$(cat '{quoted_path}') && export GITHUB_TOKEN=$(cat '{quoted_path}') && cd {WORKSPACE} && claude --model {model_flag}"
     else:
         launch_cmd = f'cd {WORKSPACE} && claude --model {model_flag}'
 
