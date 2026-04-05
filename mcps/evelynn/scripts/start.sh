@@ -14,6 +14,12 @@ if [[ -f "$DIR/.env" ]]; then
   set +a
 fi
 
+# Load Telegram bot token from secrets if not already set
+SECRETS_DIR="$(cd "$DIR/../.." && pwd)/secrets"
+if [[ -z "${TELEGRAM_BOT_TOKEN:-}" && -f "$SECRETS_DIR/telegram-bot-token" ]]; then
+  export TELEGRAM_BOT_TOKEN="$(cat "$SECRETS_DIR/telegram-bot-token")"
+fi
+
 # Create venv if missing
 if [[ ! -d "$DIR/.venv" ]]; then
   command -v uv >/dev/null 2>&1 || { echo "Error: uv is required but not found on PATH" >&2; exit 1; }
