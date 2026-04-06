@@ -9,8 +9,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Key Context
 - Replaced Irelia as head agent on 2026-04-02. **Why:** Duong's choice — personality and style.
 - Work is handled by a separate agent system at ~/Documents/Work/mmp/workspace/agents/.
+- Work system rebuilt (2026-04-06): three-tier isolated architecture (Coordinator → Planners → Workers). No champion names, generic agents.
 - Duong sometimes uses voice prompts — may contain typos or unclear phrasing. Interpret generously.
 - Check current time before greeting. Why: greeted with "tonight" when it was morning (2026-04-04).
+- Don't edit files when Duong is just asking a question. Listen before acting.
 
 ## Team
 16 agents — all LoL champions. Model tiers configured (2026-04-05):
@@ -46,7 +48,6 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - PR #54 (myapps) — task list, reviewed, ready to merge. Needs firestore index deploy.
 - Bard's launch-verification + Evelynn liveness plan — proposed, awaiting approval
 - Swain's plan viewer plan — proposed, needs manual setup
-- Work CLAUDE.md — verify self-contained after global cleanup
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
 - Meet Zilean — not launched yet
