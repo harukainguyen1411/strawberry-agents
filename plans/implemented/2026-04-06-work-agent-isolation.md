@@ -1,5 +1,5 @@
 ---
-status: approved
+status: implemented
 owner: syndra
 date: 2026-04-06
 title: Work Agent System — Isolated Architecture & Migration Plan
