@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: approved
 owner: syndra
 date: 2026-04-06
 title: Work Agent System — Isolated Architecture & Migration Plan
@@ -127,11 +127,11 @@ No separate `~/.claude-work/` profile needed. Everything is project-scoped.
        "work-agent-manager": {
          "command": "python",
          "args": ["-m", "work_agent_manager"],
-         "cwd": "./agents/mcps/work-agent-manager",
+         "cwd": "/Users/duongntd99/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager",
          "env": {
            "AGENT_ROLE": "${AGENT_ROLE:-coordinator}",
            "AGENT_NAME": "${AGENT_NAME:-coordinator}",
-           "AGENT_BASE_DIR": "./agents"
+           "AGENT_BASE_DIR": "/Users/duongntd99/Documents/Work/mmp/workspace/agents"
          }
        }
      }
@@ -292,11 +292,11 @@ Key sections:
     "work-agent-manager": {
       "command": "python",
       "args": ["-m", "work_agent_manager"],
-      "cwd": "./agents/mcps/work-agent-manager",
+      "cwd": "/Users/duongntd99/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager",
       "env": {
         "AGENT_ROLE": "${AGENT_ROLE:-coordinator}",
         "AGENT_NAME": "${AGENT_NAME:-coordinator}",
-        "AGENT_BASE_DIR": "./agents",
+        "AGENT_BASE_DIR": "/Users/duongntd99/Documents/Work/mmp/workspace/agents",
         "ASSIGNED_PLANNER": "${ASSIGNED_PLANNER:-}"
       }
     }
@@ -311,29 +311,73 @@ Key sections:
 
 Single `.mcp.json`, three behaviors. No separate profiles needed.
 
-### Phase 5: Agent Migration
+### Phase 5: Full Cleanup — Remove Old Agent Infrastructure
 
-**Goal:** Convert existing work agents to isolated model.
+**Goal:** Complete fresh start. No recollection of past agents. Remove all old infrastructure, keep only new system files.
 
-**Steps:**
+#### 5a. Remove old agent directories
 
-1. **Retire Azir as coordinator** — Coordinator takes over. Azir becomes a worker or is removed.
+Delete all old agent directories under `agents/`:
+```
+agents/azir/
+agents/bard/
+agents/camille/
+agents/ekko/
+agents/evelynn/
+agents/heimer/
+agents/jayce/
+agents/jhin/
+agents/karma/
+agents/lux/
+agents/pyke/
+agents/ryze/
+agents/seraphine/
+agents/shen/
+agents/sona/
+agents/viktor/
+```
 
-2. **Strip agent personalities:**
-   - For each agent in `agents/<name>/profile.md`:
-     - Remove backstory, speaking style, quirks, personality
-     - Keep: role description, capabilities, domain expertise
-     - Or replace with generic: "Worker agent specializing in <domain>"
+#### 5b. Remove old shared files
 
-3. **Remove `agent-network.md` from worker boot:**
-   - Delete or move `agents/memory/agent-network.md` to `agents/coordinator/memory/` (coordinator-only)
-   - Worker boot sequence reads only: own `profile.md`, own `memory/<name>.md`, task from `inbox/`
+```
+agents/roster.md
+agents/memory/                  (entire directory — agent-network.md, etc.)
+agents/conversations/           (entire directory)
+agents/inbox-queue/             (entire directory)
+```
 
-4. **Update worker profiles** to reference `report_to_planner` instead of `message_agent`
+#### 5c. Remove old scripts
 
-5. **Clean up roster:**
-   - Create `agents/coordinator/roster.md` — coordinator-only file listing all workers and capabilities
-   - Remove shared `agents/roster.md` (or restrict to coordinator directory)
+```
+agents/scripts/boot.sh
+agents/scripts/launch-agent.sh
+agents/scripts/approve-inbox.sh
+agents/scripts/compact-memory.sh
+agents/scripts/migrate-session-history.sh
+agents/scripts/save-transcript.sh
+```
+
+#### 5d. Remove old MCP and services
+
+```
+agents/mcps/linear/             (entire directory)
+agents/usage/                   (entire directory)
+agents/health/                  (entire directory)
+agents/services/                (entire directory)
+agents/work/                    (entire directory)
+```
+
+#### 5e. What to keep (new system only)
+
+```
+agents/coordinator/             (new coordinator directory)
+agents/coordinator-instructions.md
+agents/planner-instructions.md
+agents/worker-instructions.md
+agents/mcps/work-agent-manager/ (new forked MCP)
+agents/scripts/launch-work-agent.sh (new launch script)
+agents/plans/                   (proposed/approved/in-progress/implemented)
+```
 
 ### Phase 6: Testing & Verification
 
@@ -399,17 +443,13 @@ Single `.mcp.json`, three behaviors. No separate profiles needed.
 | `agents/worker-instructions.md` | Worker instructions |
 | `agents/coordinator/roster.md` | Coordinator-only agent roster |
 
-**Files to modify:**
+**Files/directories to delete (full cleanup):**
 
-| File | Change |
+| Path | Reason |
 | --- | --- |
-| `agents/<worker>/profile.md` (each) | Strip personality, keep capabilities only |
-| `agents/coordinator/profile.md` | Update to coordinator role |
-
-**Files to remove/relocate:**
-
-| File | Action |
-| --- | --- |
-| `agents/memory/agent-network.md` | Move to `agents/coordinator/memory/` (coordinator-only) |
-| `agents/roster.md` (shared) | Replace with `agents/coordinator/roster.md` |
+| `agents/azir/`, `agents/bard/`, `agents/camille/`, `agents/ekko/`, `agents/evelynn/`, `agents/heimer/`, `agents/jayce/`, `agents/jhin/`, `agents/karma/`, `agents/lux/`, `agents/pyke/`, `agents/ryze/`, `agents/seraphine/`, `agents/shen/`, `agents/sona/`, `agents/viktor/` | Old agent directories |
+| `agents/roster.md`, `agents/memory/`, `agents/conversations/`, `agents/inbox-queue/` | Old shared files |
+| `agents/scripts/boot.sh`, `agents/scripts/launch-agent.sh`, `agents/scripts/approve-inbox.sh`, `agents/scripts/compact-memory.sh`, `agents/scripts/migrate-session-history.sh`, `agents/scripts/save-transcript.sh` | Old scripts |
+| `agents/mcps/linear/` | Old MCP |
+| `agents/usage/`, `agents/health/`, `agents/services/`, `agents/work/` | Old infrastructure |
 
