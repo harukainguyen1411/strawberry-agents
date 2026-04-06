@@ -1,5 +1,5 @@
 ---
-status: implemented
+status: proposed
 owner: syndra
 date: 2026-04-06
 title: Work Agent System — Isolated Architecture & Migration Plan
@@ -18,21 +18,22 @@ title: Work Agent System — Isolated Architecture & Migration Plan
 
 ```
 Duong
-  ↓ requests + plan approvals
-Coordinator — Coordinator (Opus, ~/.claude-work/ profile)
+  ↓ opens Claude in ~/Documents/Work/mmp/workspace/
+  ↓ "Hey Coordinator"
+Coordinator (Opus, project-scoped .mcp.json)
   ↓ delegate_task              ↑ report_to_coordinator
   ↓                            ↑
-Planner A (Opus)          Planner B (Opus)
+Planner A (Opus)          Planner B (Opus)        ← launched programmatically
   ↓ delegate_task  ↑ report     ↓ delegate_task  ↑ report
   ↓                ↑            ↓                ↑
-Worker 1 (Sonnet)  Worker 2    Worker 3 (Sonnet)  Worker 4
+Worker 1 (Sonnet)  Worker 2    Worker 3 (Sonnet)  Worker 4  ← launched programmatically
 ```
 
 **Three tiers, strict vertical channels:**
 
-- **Tier 1 — Coordinator (Coordinator):** Receives requests from Duong. Delegates to planners. Coordinates multiple parallel streams. Reports back to Duong. Does NOT plan or do heavy lifting — stays free to manage concurrency.
-- **Tier 2 — Planners (Opus):** Receive tasks from Coordinator. Design plans, break down work. Delegate implementation to Sonnet workers. Assign PR reviews and follow-up to other workers. Workers report back to their planner (not Coordinator). Planner synthesizes and reports to Coordinator.
-- **Tier 3 — Workers (Sonnet):** Receive tasks from a planner. Implement, review PRs, test. Report back to their planner only.
+- **Tier 1 — Coordinator (Opus):** Duong opens Claude normally in the work directory and says "Hey Coordinator". CLAUDE.md routing activates coordinator mode. Receives requests from Duong. Delegates to planners. Coordinates multiple parallel streams. Reports back to Duong. Does NOT plan or do heavy lifting — stays free to manage concurrency.
+- **Tier 2 — Planners (Opus):** Launched programmatically by Coordinator via `launch_agent`. Receive tasks from Coordinator. Design plans, break down work. Delegate implementation to Sonnet workers. Assign PR reviews and follow-up to other workers. Workers report back to their planner (not Coordinator). Planner synthesizes and reports to Coordinator.
+- **Tier 3 — Workers (Sonnet):** Launched programmatically by planners via `launch_worker`. Receive tasks from a planner. Implement, review PRs, test. Report back to their planner only.
 
 **Flow:** Duong → Coordinator → Planner(s) → Worker(s) → Planner → Coordinator → Duong.
 
@@ -41,11 +42,12 @@ No horizontal communication at any tier. Each agent sees only its vertical chann
 ### Key Architectural Decisions
 
 1. **Three-tier isolation** — Workers know only their planner. Planners know only Coordinator. No peer visibility at any level.
-2. **Model tiers** — Coordinator (coordinator) and planners run **Opus**. Workers run **Sonnet**.
-3. **Separate Mac profile** — Work system uses `CLAUDE_CONFIG_DIR=~/.claude-work/`. Fully isolated `settings.json`, MCP configs, memory, `CLAUDE.md`. Zero cross-contamination with Strawberry.
+2. **Model tiers** — Coordinator and planners run **Opus**. Workers run **Sonnet**.
+3. **Same UX as Strawberry** — Duong opens Claude in the work directory, greets "Hey Coordinator", and CLAUDE.md routes based on the greeting. No separate Mac profile, no special launch scripts for the coordinator. MCP isolation is project-scoped via `.mcp.json`.
 4. **Plan approval gate** — Planner drafts plan to `plans/proposed/` → Duong approves → Planner autonomously delegates implementation. Coordinator does not approve plans.
 5. **Generic workers** — No personalities or character names. Professional, task-focused.
-6. **Coordinator stays hands-free** — Coordinator's only job is routing and coordination. She never plans, implements, or reviews. This lets her manage multiple concurrent workstreams.
+6. **Coordinator stays hands-free** — Coordinator's only job is routing and coordination. It never plans, implements, or reviews. This lets it manage multiple concurrent workstreams.
+7. **Programmatic launches only for planners/workers** — Coordinator launches planners, planners launch workers. The launch tool injects `AGENT_ROLE` env var for MCP tool isolation. Only Duong starts Claude manually (as Coordinator).
 
 ### MCP Tool Split — Three Variants
 
@@ -96,70 +98,63 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
 
 ## Detailed Migration Plan
 
-### Phase 1: Profile Setup
+### Phase 1: Project Setup
 
-**Goal:** Create isolated Claude Code config directory for the work system.
+**Goal:** Set up the work directory with CLAUDE.md routing and project-scoped MCP.
 
-**Files to create:**
+**Working directory:** `~/Documents/Work/mmp/workspace/`
 
-```
-~/.claude-work/
-├── settings.json          # Work-specific settings (model: opus for Coordinator)
-├── CLAUDE.md              # Symlink → work repo's project CLAUDE.md (or empty, project-level takes precedence)
-└── projects/
-    └── <work-repo-hash>/
-        └── CLAUDE.md      # Not needed if project has its own
-```
+No separate `~/.claude-work/` profile needed. Everything is project-scoped.
 
 **Steps:**
 
-1. Create directory:
-   ```bash
-   mkdir -p ~/.claude-work/projects
+1. Create/update `CLAUDE.md` in the workspace root with greeting-based routing (like Strawberry):
+   ```markdown
+   # Work Agent System
+
+   ## Agent Routing
+   If you receive a greeting like "Hey Coordinator", you are the Coordinator agent.
+   Follow coordinator-instructions.md.
+
+   If your AGENT_ROLE env var is "planner", follow planner-instructions.md.
+   If your AGENT_ROLE env var is "worker", follow worker-instructions.md.
    ```
 
-2. Create `~/.claude-work/settings.json`:
+2. Create `.mcp.json` in the workspace root — defaults to coordinator mode (since Duong is the only one starting Claude manually):
    ```json
    {
-     "permissions": {
-       "allow": [],
-       "deny": []
-     },
-     "env": {
-       "AGENT_SYSTEM": "work",
-       "AGENT_BASE_DIR": "~/Documents/Work/mmp/workspace/agents"
+     "mcpServers": {
+       "work-agent-manager": {
+         "command": "python",
+         "args": ["-m", "work_agent_manager"],
+         "cwd": "./agents/mcps/work-agent-manager",
+         "env": {
+           "AGENT_ROLE": "${AGENT_ROLE:-coordinator}",
+           "AGENT_NAME": "${AGENT_NAME:-coordinator}",
+           "AGENT_BASE_DIR": "./agents"
+         }
+       }
      }
    }
    ```
+   When Duong opens Claude manually, `AGENT_ROLE` is unset → defaults to `coordinator`. When planners/workers are launched programmatically, `AGENT_ROLE` is set by the launch tool.
 
-3. Create launcher script at `~/Documents/Work/mmp/workspace/agents/scripts/launch-work-agent.sh`:
+3. Create launcher script at `agents/scripts/launch-work-agent.sh` (used by Coordinator's `launch_agent` and Planner's `launch_worker` tools — NOT by Duong):
    ```bash
    #!/bin/bash
-   # Usage: launch-work-agent.sh <agent-name> [--coordinator|--planner]
+   # Usage: launch-work-agent.sh <agent-name> [--planner]
+   # Called programmatically by coordinator/planner MCP tools, not by Duong.
    AGENT_NAME="$1"
-   export CLAUDE_CONFIG_DIR="$HOME/.claude-work"
    export AGENT_NAME="$AGENT_NAME"
    export AGENT_BASE_DIR="$HOME/Documents/Work/mmp/workspace/agents"
 
-   case "$2" in
-     --coordinator)
-       export AGENT_ROLE="coordinator"
-       claude --model opus "$AGENT_BASE_DIR"
-       ;;
-     --planner)
-       export AGENT_ROLE="planner"
-       claude --model opus "$AGENT_BASE_DIR"
-       ;;
-     *)
-       export AGENT_ROLE="worker"
-       claude --model sonnet "$AGENT_BASE_DIR"
-       ;;
-   esac
-   ```
-
-4. Verify isolation:
-   ```bash
-   CLAUDE_CONFIG_DIR=~/.claude-work claude --version  # should not see Strawberry MCP servers
+   if [ "$2" = "--planner" ]; then
+     export AGENT_ROLE="planner"
+     claude --model opus "$HOME/Documents/Work/mmp/workspace"
+   else
+     export AGENT_ROLE="worker"
+     claude --model sonnet "$HOME/Documents/Work/mmp/workspace"
+   fi
    ```
 
 ### Phase 2: Fork MCP Server
@@ -214,31 +209,49 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
 
 7. **Update `pyproject.toml`** / package name to `work-agent-manager`.
 
-### Phase 3: CLAUDE.md Split + Model Tiers + Plan Approval
+### Phase 3: CLAUDE.md + Instruction Files
 
-**Goal:** Three instruction sets for coordinator, planner, and worker. Establish plan approval flow.
+**Goal:** Three instruction sets for coordinator, planner, and worker. Greeting-based routing for coordinator, env-var routing for planners/workers.
 
-#### 3a. Coordinator Instructions (Coordinator)
+#### 3a. Project CLAUDE.md Router
 
-**File:** `coordinator-instructions.md`
+**File:** `~/Documents/Work/mmp/workspace/CLAUDE.md`
+
+```markdown
+# Work Agent System
+
+## Agent Routing
+
+If you receive a greeting like **"Hey Coordinator"**, you are the Coordinator.
+Follow `agents/coordinator-instructions.md`.
+
+If your AGENT_ROLE env var is "planner", follow `agents/planner-instructions.md`.
+If your AGENT_ROLE env var is "worker", follow `agents/worker-instructions.md`.
+```
+
+This mirrors Strawberry's pattern: greeting activates the role for Duong's manual sessions; env var activates the role for programmatic launches.
+
+#### 3b. Coordinator Instructions
+
+**File:** `agents/coordinator-instructions.md`
 
 Key sections:
-- Identity: "You are Coordinator, the work system coordinator. You do NOT plan or implement."
-- Model: Opus
+- Identity: "You are the Coordinator. You do NOT plan or implement."
+- Model: Opus (Duong starts Claude with default model = Opus, or can be set in settings)
 - Full roster of planners and their domains
-- Delegation protocol: receive request from Duong → delegate to appropriate planner → track progress → report back
+- Delegation protocol: receive request from Duong → launch planner → delegate → track → report back
 - "You stay hands-free. Your job is routing, coordination, and managing multiple parallel workstreams."
 - "You never write plans, implement code, or review PRs."
-- Session closing protocol (same as Strawberry)
+- Session closing protocol
 - Boot sequence: read own profile, memory, roster
 
-#### 3b. Planner Instructions
+#### 3c. Planner Instructions
 
-**File:** `planner-instructions.md`
+**File:** `agents/planner-instructions.md`
 
 Key sections:
 - Identity: "You are a planner agent. You design plans and manage workers."
-- Model: Opus
+- Model: Opus (launched with `--model opus`)
 - "You receive tasks from the coordinator. You design plans, break them down, and delegate implementation to workers."
 - Plan approval: "Write plans to `plans/proposed/`. Duong approves by moving to `plans/approved/`. Once approved, autonomously delegate implementation to workers — no further check-ins."
 - Worker management: how to use `launch_worker`, `delegate_task`, `check_delegations`
@@ -247,44 +260,31 @@ Key sections:
 - Escalation: report blockers to coordinator via `report_to_coordinator`
 - Boot sequence: read own memory, task from inbox
 
-#### 3c. Worker Instructions
+#### 3d. Worker Instructions
 
-**File:** `worker-instructions.md`
+**File:** `agents/worker-instructions.md`
 
 Key sections:
 - Identity: "You are a work agent. You execute tasks given to you."
-- Model: Sonnet
+- Model: Sonnet (launched with `--model sonnet`)
 - **No roster, no agent names, no peer references**
 - "You are the only agent. Report all results via `report_to_planner`."
 - Boot sequence: read own `memory/` and task from `inbox/`
 - Available tools: only `report_to_planner` and `get_my_task`
 - Escalation: "If blocked, use `report_to_planner` with type `blocker`."
-- Session closing: journal + memory update (simplified, no handoff needed)
-
-#### 3d. Project CLAUDE.md Router
-
-Single project-level CLAUDE.md that routes based on `$AGENT_ROLE`:
-
-```markdown
-<!-- In project CLAUDE.md -->
-If your AGENT_ROLE is "coordinator", follow coordinator-instructions.md.
-If your AGENT_ROLE is "planner", follow planner-instructions.md.
-If your AGENT_ROLE is "worker" (or unset), follow worker-instructions.md.
-```
+- Session closing: memory update only (simplified)
 
 **Files to create:**
-- `coordinator-instructions.md`
-- `planner-instructions.md`
-- `worker-instructions.md`
-- Update project `CLAUDE.md` to route based on `$AGENT_ROLE`
+- `agents/coordinator-instructions.md`
+- `agents/planner-instructions.md`
+- `agents/worker-instructions.md`
+- Update workspace `CLAUDE.md` with routing
 
 ### Phase 4: MCP Configuration
 
-**Goal:** Wire up the correct MCP variant per role.
+**Goal:** Single project-scoped `.mcp.json` that adapts based on env vars.
 
-#### 4a. Coordinator MCP Config
-
-**File:** `~/.claude-work/settings.json` (or project `.mcp.json`):
+**File:** `~/Documents/Work/mmp/workspace/.mcp.json`
 
 ```json
 {
@@ -292,52 +292,24 @@ If your AGENT_ROLE is "worker" (or unset), follow worker-instructions.md.
     "work-agent-manager": {
       "command": "python",
       "args": ["-m", "work_agent_manager"],
-      "cwd": "/Users/duongntd99/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager",
+      "cwd": "./agents/mcps/work-agent-manager",
       "env": {
-        "AGENT_ROLE": "coordinator",
-        "AGENT_NAME": "coordinator",
-        "AGENT_BASE_DIR": "/Users/duongntd99/Documents/Work/mmp/workspace/agents"
+        "AGENT_ROLE": "${AGENT_ROLE:-coordinator}",
+        "AGENT_NAME": "${AGENT_NAME:-coordinator}",
+        "AGENT_BASE_DIR": "./agents",
+        "ASSIGNED_PLANNER": "${ASSIGNED_PLANNER:-}"
       }
     }
   }
 }
 ```
 
-#### 4b. Planner & Worker MCP Config
+**How it works:**
+- **Duong opens Claude manually** → `AGENT_ROLE` unset → defaults to `coordinator` → coordinator tools exposed
+- **Coordinator launches planner** → launch tool sets `AGENT_ROLE=planner` → planner tools exposed
+- **Planner launches worker** → launch tool sets `AGENT_ROLE=worker` + `ASSIGNED_PLANNER=<name>` → worker tools exposed
 
-Launch script injects env vars before starting Claude. For planners:
-
-```bash
-export AGENT_ROLE="planner"
-export AGENT_NAME="$1"
-```
-
-For workers (planner name injected so `report_to_planner` knows the target):
-
-```bash
-export AGENT_ROLE="worker"
-export AGENT_NAME="$1"
-export ASSIGNED_PLANNER="<planner-name>"  # set by planner's launch_worker tool
-```
-
-Project-level `.mcp.json` uses env var substitution:
-
-```json
-{
-  "mcpServers": {
-    "work-agent-manager": {
-      "command": "python",
-      "args": ["-m", "work_agent_manager"],
-      "cwd": "./mcps/work-agent-manager",
-      "env": {
-        "AGENT_ROLE": "${AGENT_ROLE}",
-        "AGENT_NAME": "${AGENT_NAME}",
-        "AGENT_BASE_DIR": "${AGENT_BASE_DIR}"
-      }
-    }
-  }
-}
-```
+Single `.mcp.json`, three behaviors. No separate profiles needed.
 
 ### Phase 5: Agent Migration
 
@@ -369,10 +341,9 @@ Project-level `.mcp.json` uses env var substitution:
 
 **Test sequence:**
 
-1. Launch Coordinator (coordinator, Opus):
-   ```bash
-   ./scripts/launch-work-agent.sh coordinator --coordinator
-   ```
+1. Duong opens Claude in `~/Documents/Work/mmp/workspace/` and says "Hey Coordinator"
+   - CLAUDE.md routing activates coordinator instructions
+   - `.mcp.json` defaults to coordinator mode (AGENT_ROLE unset → coordinator)
 
 2. Coordinator delegates a task to a planner:
    - `delegate_task` writes to planner inbox
@@ -399,7 +370,7 @@ Project-level `.mcp.json` uses env var substitution:
    - Planner runs `list_agents` → tool not found (pass)
    - Planner knows only Coordinator and own workers (pass)
    - Worker's CLAUDE.md mentions no agent names → pass
-   - `~/.claude-work/` has no Strawberry MCP servers → pass
+   - No Strawberry MCP servers visible in work project → pass
 
 ## Risks and Mitigations
 
@@ -411,7 +382,7 @@ Project-level `.mcp.json` uses env var substitution:
 | Extra latency from three tiers                           | Accepted tradeoff for Coordinator staying free to manage multiple concurrent workstreams                           |
 | Slower than peer-to-peer for technical discussions       | Accepted tradeoff for isolation. Work context values control over speed                                     |
 | Workers might hallucinate agent names from training data | Worker CLAUDE.md explicitly states "you are the only agent" — no roster to contradict this                  |
-| `CLAUDE_CONFIG_DIR` not respected by all Claude features | Test thoroughly in Phase 1. Fallback: separate macOS user account                                          |
+| Coordinator MCP tools visible to planners/workers if env var not set | Launch script always sets AGENT_ROLE; `.mcp.json` defaults to coordinator only for manual sessions |
 
 ## File Inventory
 
@@ -419,21 +390,19 @@ Project-level `.mcp.json` uses env var substitution:
 
 | File | Purpose |
 | --- | --- |
-| `~/.claude-work/settings.json` | Work profile settings |
-| `scripts/launch-work-agent.sh` | Launcher with profile isolation + model tier |
-| `mcps/work-agent-manager/` | Forked MCP with coordinator/planner/worker split |
-| `coordinator-instructions.md` | Coordinator's CLAUDE.md instructions |
-| `planner-instructions.md` | Planner CLAUDE.md instructions |
-| `worker-instructions.md` | Generic worker CLAUDE.md instructions |
+| `workspace/CLAUDE.md` | Greeting-based routing (like Strawberry) |
+| `workspace/.mcp.json` | Project-scoped MCP, defaults to coordinator mode |
+| `agents/scripts/launch-work-agent.sh` | Programmatic launcher for planners/workers |
+| `agents/mcps/work-agent-manager/` | Forked MCP with coordinator/planner/worker split |
+| `agents/coordinator-instructions.md` | Coordinator instructions |
+| `agents/planner-instructions.md` | Planner instructions |
+| `agents/worker-instructions.md` | Worker instructions |
 | `agents/coordinator/roster.md` | Coordinator-only agent roster |
-| `agents/memory/agent-protocol.md` | Worker-only minimal protocol doc |
 
 **Files to modify:**
 
 | File | Change |
 | --- | --- |
-| Project `CLAUDE.md` | Route to coordinator/worker instructions based on `$AGENT_ROLE` |
-| Project `.mcp.json` | Point to `work-agent-manager` with env var substitution |
 | `agents/<worker>/profile.md` (each) | Strip personality, keep capabilities only |
 | `agents/coordinator/profile.md` | Update to coordinator role |
 
