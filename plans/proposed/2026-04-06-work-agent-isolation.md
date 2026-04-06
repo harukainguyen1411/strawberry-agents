@@ -9,7 +9,7 @@ title: Work Agent System — Isolated Architecture & Migration Plan
 
 ## Decisions
 
-- **Coordinator:** Sona (Opus) — hands-free. Manages workstreams, does not plan or implement.
+- **Coordinator:** Coordinator (Opus) — hands-free. Manages workstreams, does not plan or implement.
 - **Planners:** Opus agents that design plans, break down work, and manage their own pool of workers.
 - **Workers:** Generic Sonnet agents — no personalities, no character names. Professional, task-focused.
 - **Plan approval:** Planner drafts plan → Duong approves → Planner autonomously delegates implementation to workers without further check-ins.
@@ -19,7 +19,7 @@ title: Work Agent System — Isolated Architecture & Migration Plan
 ```
 Duong
   ↓ requests + plan approvals
-Sona — Coordinator (Opus, ~/.claude-work/ profile)
+Coordinator — Coordinator (Opus, ~/.claude-work/ profile)
   ↓ delegate_task              ↑ report_to_coordinator
   ↓                            ↑
 Planner A (Opus)          Planner B (Opus)
@@ -30,26 +30,26 @@ Worker 1 (Sonnet)  Worker 2    Worker 3 (Sonnet)  Worker 4
 
 **Three tiers, strict vertical channels:**
 
-- **Tier 1 — Sona (Coordinator):** Receives requests from Duong. Delegates to planners. Coordinates multiple parallel streams. Reports back to Duong. Does NOT plan or do heavy lifting — stays free to manage concurrency.
-- **Tier 2 — Planners (Opus):** Receive tasks from Sona. Design plans, break down work. Delegate implementation to Sonnet workers. Assign PR reviews and follow-up to other workers. Workers report back to their planner (not Sona). Planner synthesizes and reports to Sona.
+- **Tier 1 — Coordinator (Coordinator):** Receives requests from Duong. Delegates to planners. Coordinates multiple parallel streams. Reports back to Duong. Does NOT plan or do heavy lifting — stays free to manage concurrency.
+- **Tier 2 — Planners (Opus):** Receive tasks from Coordinator. Design plans, break down work. Delegate implementation to Sonnet workers. Assign PR reviews and follow-up to other workers. Workers report back to their planner (not Coordinator). Planner synthesizes and reports to Coordinator.
 - **Tier 3 — Workers (Sonnet):** Receive tasks from a planner. Implement, review PRs, test. Report back to their planner only.
 
-**Flow:** Duong → Sona → Planner(s) → Worker(s) → Planner → Sona → Duong.
+**Flow:** Duong → Coordinator → Planner(s) → Worker(s) → Planner → Coordinator → Duong.
 
 No horizontal communication at any tier. Each agent sees only its vertical channel.
 
 ### Key Architectural Decisions
 
-1. **Three-tier isolation** — Workers know only their planner. Planners know only Sona. No peer visibility at any level.
-2. **Model tiers** — Sona (coordinator) and planners run **Opus**. Workers run **Sonnet**.
+1. **Three-tier isolation** — Workers know only their planner. Planners know only Coordinator. No peer visibility at any level.
+2. **Model tiers** — Coordinator (coordinator) and planners run **Opus**. Workers run **Sonnet**.
 3. **Separate Mac profile** — Work system uses `CLAUDE_CONFIG_DIR=~/.claude-work/`. Fully isolated `settings.json`, MCP configs, memory, `CLAUDE.md`. Zero cross-contamination with Strawberry.
-4. **Plan approval gate** — Planner drafts plan to `plans/proposed/` → Duong approves → Planner autonomously delegates implementation. Sona does not approve plans.
+4. **Plan approval gate** — Planner drafts plan to `plans/proposed/` → Duong approves → Planner autonomously delegates implementation. Coordinator does not approve plans.
 5. **Generic workers** — No personalities or character names. Professional, task-focused.
-6. **Sona stays hands-free** — Sona's only job is routing and coordination. She never plans, implements, or reviews. This lets her manage multiple concurrent workstreams.
+6. **Coordinator stays hands-free** — Coordinator's only job is routing and coordination. She never plans, implements, or reviews. This lets her manage multiple concurrent workstreams.
 
 ### MCP Tool Split — Three Variants
 
-**Coordinator MCP** (`work-coordinator-manager`, Sona only):
+**Coordinator MCP** (`work-coordinator-manager`, Coordinator only):
 
 | Tool                | Purpose                                              |
 | ------------------- | ---------------------------------------------------- |
@@ -69,8 +69,8 @@ No horizontal communication at any tier. Each agent sees only its vertical chann
 | `check_delegations`     | Track status of own workers                               |
 | `agent_status`          | Check heartbeats of own workers                           |
 | `end_agent_session`     | Shut down a worker                                        |
-| `report_to_coordinator` | Send completion/blocker/update to Sona's inbox            |
-| `get_my_task`           | Re-read task assignment from Sona                         |
+| `report_to_coordinator` | Send completion/blocker/update to Coordinator's inbox            |
+| `get_my_task`           | Re-read task assignment from Coordinator                         |
 
 **Worker MCP** (`work-worker-manager`, all workers):
 
@@ -83,14 +83,14 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
 
 ### Communication Flow
 
-- **Sona → Planner:** `delegate_task` writes to `agents/<planner>/inbox/`
-- **Planner → Sona:** `report_to_coordinator` writes to `agents/sona/inbox/`
+- **Coordinator → Planner:** `delegate_task` writes to `agents/<planner>/inbox/`
+- **Planner → Coordinator:** `report_to_coordinator` writes to `agents/coordinator/inbox/`
 - **Planner → Worker:** `delegate_task` writes to `agents/<worker>/inbox/`
 - **Worker → Planner:** `report_to_planner` writes to assigning planner's inbox
-- **Worker → Sona:** Impossible (no tool, no knowledge of Sona)
+- **Worker → Coordinator:** Impossible (no tool, no knowledge of Coordinator)
 - **Worker → Worker:** Impossible (no tool, no names)
 - **Planner → Planner:** Impossible (no tool, no names)
-- **Worker blocker:** `report_to_planner` with `type: blocker` — planner mediates or escalates to Sona
+- **Worker blocker:** `report_to_planner` with `type: blocker` — planner mediates or escalates to Coordinator
 
 ---
 
@@ -104,7 +104,7 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
 
 ```
 ~/.claude-work/
-├── settings.json          # Work-specific settings (model: opus for Sona)
+├── settings.json          # Work-specific settings (model: opus for Coordinator)
 ├── CLAUDE.md              # Symlink → work repo's project CLAUDE.md (or empty, project-level takes precedence)
 └── projects/
     └── <work-repo-hash>/
@@ -183,7 +183,7 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
    ```
 
 3. **Coordinator mode** (`AGENT_ROLE=coordinator`) — expose:
-   - `list_agents` — reads `agents/sona/roster.md` (coordinator-only file)
+   - `list_agents` — reads `agents/coordinator/roster.md` (coordinator-only file)
    - `launch_agent` — calls `scripts/launch-work-agent.sh <name> --planner|--worker` via iTerm
    - `delegate_task` — writes structured task to `agents/<name>/inbox/YYYYMMDD-HHMM-task.md`
    - `check_delegations` — scans delegation records across all planners
@@ -196,7 +196,7 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
    - `check_delegations` — scans own workers' delegation records
    - `agent_status` — reads heartbeat files of own workers
    - `end_agent_session` — shut down a worker
-   - `report_to_coordinator` — writes to `agents/sona/inbox/YYYYMMDD-HHMM-<planner>-report.md`
+   - `report_to_coordinator` — writes to `agents/coordinator/inbox/YYYYMMDD-HHMM-<planner>-report.md`
      - Parameters: `type` (completion | blocker | update), `message`, `delegation_id`
    - `get_my_task` — reads most recent task from own `inbox/` with status `pending`
 
@@ -218,12 +218,12 @@ No `list_agents`, no `message_agent`, no conversations at any tier.
 
 **Goal:** Three instruction sets for coordinator, planner, and worker. Establish plan approval flow.
 
-#### 3a. Coordinator Instructions (Sona)
+#### 3a. Coordinator Instructions (Coordinator)
 
 **File:** `coordinator-instructions.md`
 
 Key sections:
-- Identity: "You are Sona, the work system coordinator. You do NOT plan or implement."
+- Identity: "You are Coordinator, the work system coordinator. You do NOT plan or implement."
 - Model: Opus
 - Full roster of planners and their domains
 - Delegation protocol: receive request from Duong → delegate to appropriate planner → track progress → report back
@@ -295,7 +295,7 @@ If your AGENT_ROLE is "worker" (or unset), follow worker-instructions.md.
       "cwd": "/Users/duongntd99/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager",
       "env": {
         "AGENT_ROLE": "coordinator",
-        "AGENT_NAME": "sona",
+        "AGENT_NAME": "coordinator",
         "AGENT_BASE_DIR": "/Users/duongntd99/Documents/Work/mmp/workspace/agents"
       }
     }
@@ -345,7 +345,7 @@ Project-level `.mcp.json` uses env var substitution:
 
 **Steps:**
 
-1. **Retire Azir as coordinator** — Sona takes over. Azir becomes a worker or is removed.
+1. **Retire Azir as coordinator** — Coordinator takes over. Azir becomes a worker or is removed.
 
 2. **Strip agent personalities:**
    - For each agent in `agents/<name>/profile.md`:
@@ -354,13 +354,13 @@ Project-level `.mcp.json` uses env var substitution:
      - Or replace with generic: "Worker agent specializing in <domain>"
 
 3. **Remove `agent-network.md` from worker boot:**
-   - Delete or move `agents/memory/agent-network.md` to `agents/sona/memory/` (coordinator-only)
+   - Delete or move `agents/memory/agent-network.md` to `agents/coordinator/memory/` (coordinator-only)
    - Worker boot sequence reads only: own `profile.md`, own `memory/<name>.md`, task from `inbox/`
 
-4. **Update worker profiles** to reference `report_to_coordinator` instead of `message_agent`
+4. **Update worker profiles** to reference `report_to_planner` instead of `message_agent`
 
 5. **Clean up roster:**
-   - Create `agents/sona/roster.md` — coordinator-only file listing all workers and capabilities
+   - Create `agents/coordinator/roster.md` — coordinator-only file listing all workers and capabilities
    - Remove shared `agents/roster.md` (or restrict to coordinator directory)
 
 ### Phase 6: Testing & Verification
@@ -369,12 +369,12 @@ Project-level `.mcp.json` uses env var substitution:
 
 **Test sequence:**
 
-1. Launch Sona (coordinator, Opus):
+1. Launch Coordinator (coordinator, Opus):
    ```bash
-   ./scripts/launch-work-agent.sh sona --coordinator
+   ./scripts/launch-work-agent.sh coordinator --coordinator
    ```
 
-2. Sona delegates a task to a planner:
+2. Coordinator delegates a task to a planner:
    - `delegate_task` writes to planner inbox
    - `launch_agent` starts planner in iTerm with Opus + planner MCP
 
@@ -388,16 +388,16 @@ Project-level `.mcp.json` uses env var substitution:
 
 6. Worker executes and reports back to planner via `report_to_planner`
 
-7. Planner synthesizes worker results and reports to Sona via `report_to_coordinator`
+7. Planner synthesizes worker results and reports to Coordinator via `report_to_coordinator`
 
-8. Sona reports to Duong
+8. Coordinator reports to Duong
 
 9. **Isolation checks:**
    - Worker runs `list_agents` → tool not found (pass)
    - Worker runs `report_to_coordinator` → tool not found (pass)
    - Worker knows planner name only via `$ASSIGNED_PLANNER` (pass)
    - Planner runs `list_agents` → tool not found (pass)
-   - Planner knows only Sona and own workers (pass)
+   - Planner knows only Coordinator and own workers (pass)
    - Worker's CLAUDE.md mentions no agent names → pass
    - `~/.claude-work/` has no Strawberry MCP servers → pass
 
@@ -406,9 +406,9 @@ Project-level `.mcp.json` uses env var substitution:
 | Risk                                                     | Mitigation                                                                                                  |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Workers can't resolve technical questions without peers  | Planner mediates: worker reports blocker → planner queries another worker or resolves directly              |
-| Sona becomes bottleneck                                  | Sona is hands-free — only routes to planners. Planners handle the heavy lifting. Multiple planners run in parallel |
+| Coordinator becomes bottleneck                                  | Coordinator is hands-free — only routes to planners. Planners handle the heavy lifting. Multiple planners run in parallel |
 | Planner becomes bottleneck for its workers               | Planner is Opus with large context. Can run multiple workers in parallel                                    |
-| Extra latency from three tiers                           | Accepted tradeoff for Sona staying free to manage multiple concurrent workstreams                           |
+| Extra latency from three tiers                           | Accepted tradeoff for Coordinator staying free to manage multiple concurrent workstreams                           |
 | Slower than peer-to-peer for technical discussions       | Accepted tradeoff for isolation. Work context values control over speed                                     |
 | Workers might hallucinate agent names from training data | Worker CLAUDE.md explicitly states "you are the only agent" — no roster to contradict this                  |
 | `CLAUDE_CONFIG_DIR` not respected by all Claude features | Test thoroughly in Phase 1. Fallback: separate macOS user account                                          |
@@ -422,10 +422,10 @@ Project-level `.mcp.json` uses env var substitution:
 | `~/.claude-work/settings.json` | Work profile settings |
 | `scripts/launch-work-agent.sh` | Launcher with profile isolation + model tier |
 | `mcps/work-agent-manager/` | Forked MCP with coordinator/planner/worker split |
-| `coordinator-instructions.md` | Sona's CLAUDE.md instructions |
+| `coordinator-instructions.md` | Coordinator's CLAUDE.md instructions |
 | `planner-instructions.md` | Planner CLAUDE.md instructions |
 | `worker-instructions.md` | Generic worker CLAUDE.md instructions |
-| `agents/sona/roster.md` | Coordinator-only agent roster |
+| `agents/coordinator/roster.md` | Coordinator-only agent roster |
 | `agents/memory/agent-protocol.md` | Worker-only minimal protocol doc |
 
 **Files to modify:**
@@ -435,12 +435,12 @@ Project-level `.mcp.json` uses env var substitution:
 | Project `CLAUDE.md` | Route to coordinator/worker instructions based on `$AGENT_ROLE` |
 | Project `.mcp.json` | Point to `work-agent-manager` with env var substitution |
 | `agents/<worker>/profile.md` (each) | Strip personality, keep capabilities only |
-| `agents/sona/profile.md` | Update to coordinator role |
+| `agents/coordinator/profile.md` | Update to coordinator role |
 
 **Files to remove/relocate:**
 
 | File | Action |
 | --- | --- |
-| `agents/memory/agent-network.md` | Move to `agents/sona/memory/` (coordinator-only) |
-| `agents/roster.md` (shared) | Replace with `agents/sona/roster.md` |
+| `agents/memory/agent-network.md` | Move to `agents/coordinator/memory/` (coordinator-only) |
+| `agents/roster.md` (shared) | Replace with `agents/coordinator/roster.md` |
 
