@@ -11,14 +11,14 @@ title: Work Agent System — Isolated Architecture & Migration Plan
 
 - **Coordinator:** Sona (Opus). Azir is retired or repurposed as a worker.
 - **Workers:** Generic — no personalities, no character names. Named by function (e.g., `worker-1`, `impl-backend`, `impl-frontend`) or kept as-is but stripped of personality in their profiles.
-- **Plan approval:** Auto-approve. Sona delegates and approves without waiting for Duong. Duong intervenes only on escalation.
+- **Plan approval:** Sona drafts plans → Duong approves → Sona autonomously delegates implementation to Sonnet workers without further check-ins.
 
 ## Architecture
 
 ```
 Duong
-  ↓ (CLI / Cursor)
-Sona — Coordinator (Opus, ~/.claude-work/ profile)
+  ↓ approves plans
+Sona — Coordinator + Planner (Opus, ~/.claude-work/ profile)
   ↓ delegate_task        ↑ report_to_coordinator
   ↓                      ↑
 Worker 1 (Sonnet)   Worker 2 (Sonnet)   Worker N (Sonnet)
@@ -26,14 +26,16 @@ Worker 1 (Sonnet)   Worker 2 (Sonnet)   Worker N (Sonnet)
   └── inbox ──────────┘── inbox ──────────┘── inbox
 ```
 
+Sona handles both coordination and planning on Opus. For complex tasks, Sona can also delegate planning subtasks to other Opus agents before breaking implementation down for Sonnet workers.
+
 Workers see only their vertical channel. No horizontal communication. No roster. No peer awareness.
 
 ### Key Architectural Decisions
 
 1. **Agent isolation** — Workers know only: their identity, their task, and `report_to_coordinator`. Nothing else.
-2. **Model tiers** — Sona (coordinator) runs **Opus**. All workers run **Sonnet**.
+2. **Model tiers** — Coordinator and planner/architecture roles run **Opus** (Sona coordinates AND plans; can delegate planning subtasks to other Opus agents if needed). Implementation/worker agents run **Sonnet**.
 3. **Separate Mac profile** — Work system uses `CLAUDE_CONFIG_DIR=~/.claude-work/`. Fully isolated `settings.json`, MCP configs, memory, `CLAUDE.md`. Zero cross-contamination with Strawberry.
-4. **No plan approval gate** — Sona auto-approves and delegates. Faster iteration for work context.
+4. **Plan approval gate** — Sona drafts plans → Duong approves → Sona autonomously coordinates implementation without further check-ins. Plans live in `plans/proposed/` until approved.
 5. **Generic workers** — No personalities or character names. Professional, task-focused.
 
 ### MCP Tool Split
@@ -43,7 +45,7 @@ Workers see only their vertical channel. No horizontal communication. No roster.
 | Tool                | Purpose                                         |
 | ------------------- | ----------------------------------------------- |
 | `list_agents`       | See all workers                                 |
-| `launch_agent`      | Spin up worker in iTerm (with Sonnet + worker MCP) |
+| `launch_agent`      | Spin up agent in iTerm (Sonnet for workers, Opus for planners) |
 | `delegate_task`     | Write task to worker inbox                      |
 | `check_delegations` | Track task status                               |
 | `agent_status`      | Check heartbeats                                |
@@ -108,17 +110,26 @@ No `list_agents`, no `message_agent`, no conversations. Workers cannot discover 
 3. Create launcher script at `~/Documents/Work/mmp/workspace/agents/scripts/launch-work-agent.sh`:
    ```bash
    #!/bin/bash
-   # Usage: launch-work-agent.sh <agent-name> [--coordinator]
+   # Usage: launch-work-agent.sh <agent-name> [--coordinator|--planner]
    AGENT_NAME="$1"
    export CLAUDE_CONFIG_DIR="$HOME/.claude-work"
    export AGENT_NAME="$AGENT_NAME"
    export AGENT_BASE_DIR="$HOME/Documents/Work/mmp/workspace/agents"
 
-   if [ "$2" = "--coordinator" ]; then
-     claude --model opus "$AGENT_BASE_DIR"
-   else
-     claude --model sonnet "$AGENT_BASE_DIR"
-   fi
+   case "$2" in
+     --coordinator)
+       export AGENT_ROLE="coordinator"
+       claude --model opus "$AGENT_BASE_DIR"
+       ;;
+     --planner)
+       export AGENT_ROLE="planner"
+       claude --model opus "$AGENT_BASE_DIR"
+       ;;
+     *)
+       export AGENT_ROLE="worker"
+       claude --model sonnet "$AGENT_BASE_DIR"
+       ;;
+   esac
    ```
 
 4. Verify isolation:
@@ -168,9 +179,9 @@ No `list_agents`, no `message_agent`, no conversations. Workers cannot discover 
 
 6. **Update `pyproject.toml`** / package name to `work-agent-manager`.
 
-### Phase 3: CLAUDE.md Split + Model Tiers
+### Phase 3: CLAUDE.md Split + Model Tiers + Plan Approval
 
-**Goal:** Separate instructions for coordinator vs workers.
+**Goal:** Separate instructions for coordinator vs workers. Establish plan approval flow.
 
 #### 3a. Coordinator CLAUDE.md
 
@@ -181,8 +192,9 @@ Key sections:
 - Model: Opus
 - Full agent roster (list of workers and their capabilities)
 - Delegation protocol: how to use `delegate_task`, `check_delegations`, `launch_agent`
-- Auto-approve: "You delegate tasks directly. No plan approval gate."
+- Planning: "You draft plans to `plans/proposed/`. Duong approves by moving to `plans/approved/`. Once approved, you autonomously delegate implementation — no further check-ins needed."
 - Mediation protocol: when a worker reports a blocker, query another worker or resolve directly
+- Planner delegation: "For complex tasks, you may launch other Opus agents for planning/architecture subtasks before breaking work down for Sonnet workers."
 - Session closing protocol (same as Strawberry)
 - Boot sequence: read own profile, memory, roster
 
