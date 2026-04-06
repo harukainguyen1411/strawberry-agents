@@ -1,185 +1,365 @@
 ---
-
-## status: proposed
+status: proposed
 owner: syndra
 date: 2026-04-06
-title: Work Agent System — Isolated Architecture
+title: Work Agent System — Isolated Architecture & Migration Plan
+---
 
-# Work Agent System — Isolated Architecture
+# Work Agent System — Isolated Architecture & Migration Plan
 
-## Problem
+## Decisions
 
-The work agent system at `~/Documents/Work/mmp/workspace/agents/` currently mirrors Strawberry's open network model: agents see the full roster, can message each other directly, and share `agent-network.md`. Duong wants agent isolation — only the coordinator knows who exists. Agents cannot discover, message, or reference each other.
+- **Coordinator:** Sona (Opus). Azir is retired or repurposed as a worker.
+- **Workers:** Generic — no personalities, no character names. Named by function (e.g., `worker-1`, `impl-backend`, `impl-frontend`) or kept as-is but stripped of personality in their profiles.
+- **Plan approval:** Auto-approve. Sona delegates and approves without waiting for Duong. Duong intervenes only on escalation.
 
-## Current State (Work System)
-
-- **Coordinator:** Sona (work assistant), Azir (head agent)
-- **13 agents** with full peer visibility via `agent-network.md` and `roster.md`
-- **MCP server:** Shared `agent-manager` from Strawberry (same binary, different env vars)
-- **Communication:** `message_agent`, `start_conversation`, `message_in_conversation` — all peer-to-peer capable
-- **Agent startup** reads `memory/agent-network.md` which contains the full roster and peer messaging instructions
-
-## Design: Isolated Hub-and-Spoke
-
-### Key Architectural Decisions
-
-1. **Agent isolation** — Workers know only themselves, their task, and how to report back. No peer visibility.
-2. **Model tiers** — Coordinator and planner agents run on **Opus**. Implementation/worker agents run on **Sonnet**. This mirrors Strawberry's model allocation (Opus for strategy, Sonnet for execution).
-3. **Separate Mac profile** — The work agent system uses a **dedicated Claude Code profile** on Duong's Mac (separate `~/.claude/` directory). This gives full isolation: separate `settings.json`, MCP server configs, memory, and `CLAUDE.md`. Zero cross-contamination with Strawberry. Achieved via the `CLAUDE_CONFIG_DIR` environment variable or a separate macOS user profile.
-
-### Core Principle
-
-Agents are blind. They know only: (1) their own identity, (2) their task, (3) how to report back to the coordinator. They do not know other agents exist.
-
-### What Changes
-
-#### 1. Remove agent-network.md from agent startup
-
-**Current:** All agents read `memory/agent-network.md` (contains roster, peer tools, communication protocol).
-**New:** Only the coordinator reads network context. Worker agents read a minimal `memory/agent-protocol.md` that contains:
-
-- How to receive tasks (inbox)
-- How to report completion (single tool: `report_to_coordinator`)
-- How to escalate blockers (same tool, with blocker flag)
-- No roster, no peer tools, no agent names
-
-#### 2. New MCP server: `work-agent-manager` (fork of `agent-manager`)
-
-Strip the agent-manager down to two variants:
-
-**Coordinator MCP** (registered only in coordinator's `.claude/settings.json`):
-
-
-| Tool                | Purpose                                         |
-| ------------------- | ----------------------------------------------- |
-| `list_agents`       | See all agents                                  |
-| `launch_agent`      | Spin up agent in iTerm                          |
-| `delegate_task`     | Send task to agent inbox with structured format |
-| `check_delegations` | Track task status                               |
-| `agent_status`      | Check heartbeats                                |
-| `end_agent_session` | Shut down a specific agent                      |
-
-
-**Worker MCP** (registered in each worker's `.claude/settings.json`):
-
-
-| Tool                    | Purpose                                             |
-| ----------------------- | --------------------------------------------------- |
-| `report_to_coordinator` | Send completion/blocker/update to coordinator inbox |
-| `get_my_task`           | Re-read current task assignment                     |
-
-
-That's it. No `list_agents`, no `message_agent`, no conversations. Workers cannot discover or address other agents.
-
-#### 3. CLAUDE.md changes (work system)
-
-**Current:** Single CLAUDE.md with agent-network references, peer collaboration instructions.
-**New:** Two CLAUDE.md variants:
-
-- **Coordinator CLAUDE.md** — Full system awareness, delegation protocol, roster access
-- **Worker CLAUDE.md template** — Generic. Reads own profile + memory, receives tasks via inbox, reports via `report_to_coordinator`. No mention of other agents. No startup read of agent-network.md.
-
-Workers get their CLAUDE.md via a per-agent `.claude/settings.json` that points to the worker template, or via a shared project-level CLAUDE.md that is agent-role-aware (checks agent name, shows only relevant instructions).
-
-#### 4. Inbox system simplification
-
-**Current:** Any agent can write to any other agent's inbox.
-**New:**
-
-- Coordinator → worker: `delegate_task` writes to `agents/<name>/inbox/`
-- Worker → coordinator: `report_to_coordinator` writes to coordinator's inbox
-- Worker → worker: **impossible** (tool doesn't exist, no agent names known)
-
-#### 5. Remove conversation system from work MCP
-
-The turn-based conversation system (`start_conversation`, `message_in_conversation`, `read_conversation`) is removed entirely from the work MCP server. All multi-agent coordination flows through the coordinator's context window — the coordinator reads worker reports and synthesizes.
-
-#### 6. iTerm launch isolation
-
-**Current:** `launch_agent` opens a window with the agent's profile. Any agent can call it.
-**New:** Only the coordinator can call `launch_agent`. Worker agents have no launch capability. The coordinator's launch script sets up per-agent environment variables including which MCP config to use (worker variant).
-
-### What Stays the Same
-
-
-| Component                     | Reuse Strategy                                                            |
-| ----------------------------- | ------------------------------------------------------------------------- |
-| **iTerm profiles**            | Keep. Same dynamic profile mechanism, separate `work-agents.json`         |
-| **Heartbeat system**          | Keep as-is. `agents/health/heartbeat.sh` works with any agent directory   |
-| **Agent directory structure** | Keep. `agents/<name>/memory/`, `journal/`, `learnings/`, `inbox/`         |
-| **Session closing protocol**  | Keep. `log_session`, journal, handoff note, memory update                 |
-| **Boot sequence**             | Keep (minus agent-network.md for workers)                                 |
-| **Plan approval gate**        | Keep if desired, or simplify since work context may need faster iteration |
-| **Git workflow**              | Keep. Same worktree approach, same commit conventions                     |
-
-
-### Architecture Diagram
+## Architecture
 
 ```
 Duong
   ↓ (CLI / Cursor)
-Coordinator (Opus, separate ~/.claude/ profile)
+Sona — Coordinator (Opus, ~/.claude-work/ profile)
   ↓ delegate_task        ↑ report_to_coordinator
   ↓                      ↑
-Worker A (Sonnet)   Worker B (Sonnet)   Worker C (Sonnet)
+Worker 1 (Sonnet)   Worker 2 (Sonnet)   Worker N (Sonnet)
   │                   │                   │
   └── inbox ──────────┘── inbox ──────────┘── inbox
 ```
 
-Workers never see horizontal arrows. They only see their vertical channel to the coordinator.
+Workers see only their vertical channel. No horizontal communication. No roster. No peer awareness.
 
-**Profile isolation:** The entire work system runs under a separate `CLAUDE_CONFIG_DIR`, so its `settings.json`, MCP configs, memory, and `CLAUDE.md` are completely independent from Strawberry.
+### Key Architectural Decisions
 
-### Implementation Phases
+1. **Agent isolation** — Workers know only: their identity, their task, and `report_to_coordinator`. Nothing else.
+2. **Model tiers** — Sona (coordinator) runs **Opus**. All workers run **Sonnet**.
+3. **Separate Mac profile** — Work system uses `CLAUDE_CONFIG_DIR=~/.claude-work/`. Fully isolated `settings.json`, MCP configs, memory, `CLAUDE.md`. Zero cross-contamination with Strawberry.
+4. **No plan approval gate** — Sona auto-approves and delegates. Faster iteration for work context.
+5. **Generic workers** — No personalities or character names. Professional, task-focused.
 
-**Phase 1: Profile setup**
+### MCP Tool Split
 
-- Create dedicated Claude Code config directory for the work system (e.g., `~/.claude-work/`)
-- Set up launch scripts that export `CLAUDE_CONFIG_DIR=~/.claude-work/` before starting any work agent
-- Initialize `settings.json`, `CLAUDE.md`, and MCP configs in the new profile directory
-- Verify full isolation: work agents see none of Strawberry's config, memory, or MCP servers
+**Coordinator MCP** (`work-coordinator-manager`, Sona only):
 
-**Phase 2: Fork MCP server**
+| Tool                | Purpose                                         |
+| ------------------- | ----------------------------------------------- |
+| `list_agents`       | See all workers                                 |
+| `launch_agent`      | Spin up worker in iTerm (with Sonnet + worker MCP) |
+| `delegate_task`     | Write task to worker inbox                      |
+| `check_delegations` | Track task status                               |
+| `agent_status`      | Check heartbeats                                |
+| `end_agent_session` | Shut down a specific worker                     |
 
-- Copy `mcps/agent-manager/` to work system as `mcps/work-agent-manager/`
-- Strip to coordinator + worker tool sets
-- Add `report_to_coordinator` tool (writes to coordinator inbox)
-- Remove all conversation tools, `list_agents` from worker variant
+**Worker MCP** (`work-worker-manager`, all workers):
 
-**Phase 3: CLAUDE.md split + model tiers**
+| Tool                    | Purpose                                             |
+| ----------------------- | --------------------------------------------------- |
+| `report_to_coordinator` | Send completion/blocker/update to Sona's inbox      |
+| `get_my_task`           | Re-read current task assignment                     |
 
-- Write coordinator CLAUDE.md with full delegation protocol, configured for **Opus** model
-- Write worker CLAUDE.md template (no roster, no peer tools), configured for **Sonnet** model
-- Set model preferences in `settings.json`: coordinator profile uses Opus, worker launch scripts pass `--model sonnet`
-- Update boot sequence: workers skip agent-network.md
+No `list_agents`, no `message_agent`, no conversations. Workers cannot discover other agents.
 
-**Phase 4: MCP configuration**
+### Communication Flow
 
-- Coordinator `.mcp.json`: coordinator MCP variant (inside `~/.claude-work/`)
-- Worker `.mcp.json` template: worker MCP variant only
-- Per-agent env var injection via launch script (including `CLAUDE_CONFIG_DIR`)
+- **Sona → Worker:** `delegate_task` writes to `agents/<worker>/inbox/`
+- **Worker → Sona:** `report_to_coordinator` writes to `agents/sona/inbox/`
+- **Worker → Worker:** Impossible (no tool, no names)
+- **Worker blocker:** `report_to_coordinator` with `type: blocker` — Sona mediates
 
-**Phase 5: Migration**
+---
 
-- Update existing work agents to use new protocol
-- Remove `memory/agent-network.md` visibility from worker agents
-- Test: launch coordinator (Opus) → delegate to worker (Sonnet) → worker reports back → coordinator synthesizes
-- Verify profile isolation: work agents cannot access Strawberry config or MCP servers
+## Detailed Migration Plan
+
+### Phase 1: Profile Setup
+
+**Goal:** Create isolated Claude Code config directory for the work system.
+
+**Files to create:**
+
+```
+~/.claude-work/
+├── settings.json          # Work-specific settings (model: opus for Sona)
+├── CLAUDE.md              # Symlink → work repo's project CLAUDE.md (or empty, project-level takes precedence)
+└── projects/
+    └── <work-repo-hash>/
+        └── CLAUDE.md      # Not needed if project has its own
+```
+
+**Steps:**
+
+1. Create directory:
+   ```bash
+   mkdir -p ~/.claude-work/projects
+   ```
+
+2. Create `~/.claude-work/settings.json`:
+   ```json
+   {
+     "permissions": {
+       "allow": [],
+       "deny": []
+     },
+     "env": {
+       "AGENT_SYSTEM": "work",
+       "AGENT_BASE_DIR": "~/Documents/Work/mmp/workspace/agents"
+     }
+   }
+   ```
+
+3. Create launcher script at `~/Documents/Work/mmp/workspace/agents/scripts/launch-work-agent.sh`:
+   ```bash
+   #!/bin/bash
+   # Usage: launch-work-agent.sh <agent-name> [--coordinator]
+   AGENT_NAME="$1"
+   export CLAUDE_CONFIG_DIR="$HOME/.claude-work"
+   export AGENT_NAME="$AGENT_NAME"
+   export AGENT_BASE_DIR="$HOME/Documents/Work/mmp/workspace/agents"
+
+   if [ "$2" = "--coordinator" ]; then
+     claude --model opus "$AGENT_BASE_DIR"
+   else
+     claude --model sonnet "$AGENT_BASE_DIR"
+   fi
+   ```
+
+4. Verify isolation:
+   ```bash
+   CLAUDE_CONFIG_DIR=~/.claude-work claude --version  # should not see Strawberry MCP servers
+   ```
+
+### Phase 2: Fork MCP Server
+
+**Goal:** Create `work-agent-manager` with coordinator/worker split.
+
+**Source:** `~/Documents/Personal/strawberry/mcps/agent-manager/`
+**Target:** `~/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager/`
+
+**Steps:**
+
+1. Copy the MCP server:
+   ```bash
+   cp -r ~/Documents/Personal/strawberry/mcps/agent-manager/ \
+         ~/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager/
+   ```
+
+2. **Modify `server.py`** (or equivalent entry point) — add a mode switch based on env var:
+   ```python
+   AGENT_ROLE = os.environ.get("AGENT_ROLE", "worker")  # "coordinator" or "worker"
+   ```
+
+3. **Coordinator mode** — expose these tools only:
+   - `list_agents` — reads `agents/roster.md` (coordinator-only file)
+   - `launch_agent` — calls `scripts/launch-work-agent.sh <name>` via iTerm
+   - `delegate_task` — writes structured task to `agents/<name>/inbox/YYYYMMDD-HHMM-task.md`
+   - `check_delegations` — scans delegation records
+   - `agent_status` — reads heartbeat files
+   - `end_agent_session` — sends SIGTERM or writes shutdown to inbox
+
+4. **Worker mode** — expose only:
+   - `report_to_coordinator` — writes to `agents/sona/inbox/YYYYMMDD-HHMM-<worker>-report.md`
+     - Parameters: `type` (completion | blocker | update), `message`, `delegation_id`
+   - `get_my_task` — reads most recent task from own `inbox/` with status `pending`
+
+5. **Remove entirely** from both modes:
+   - `message_agent` (replaced by role-specific tools)
+   - `start_turn_conversation`, `speak_in_turn`, `pass_turn`, `end_turn_conversation`
+   - `read_new_messages`, `get_turn_status`, `invite_to_conversation`
+   - `escalate_conversation`, `resolve_escalation`
+   - All conversation-related file I/O
+
+6. **Update `pyproject.toml`** / package name to `work-agent-manager`.
+
+### Phase 3: CLAUDE.md Split + Model Tiers
+
+**Goal:** Separate instructions for coordinator vs workers.
+
+#### 3a. Coordinator CLAUDE.md
+
+**File:** `~/Documents/Work/mmp/workspace/agents/CLAUDE.md` (project-level, read by Sona)
+
+Key sections:
+- Identity: "You are Sona, the work system coordinator."
+- Model: Opus
+- Full agent roster (list of workers and their capabilities)
+- Delegation protocol: how to use `delegate_task`, `check_delegations`, `launch_agent`
+- Auto-approve: "You delegate tasks directly. No plan approval gate."
+- Mediation protocol: when a worker reports a blocker, query another worker or resolve directly
+- Session closing protocol (same as Strawberry)
+- Boot sequence: read own profile, memory, roster
+
+#### 3b. Worker CLAUDE.md Template
+
+**File:** `~/Documents/Work/mmp/workspace/agents/worker-claude-template.md`
+
+Key sections:
+- Identity: "You are a work agent. You execute tasks given to you."
+- Model: Sonnet
+- **No roster, no agent names, no peer references**
+- "You are the only agent. Report all results via `report_to_coordinator`."
+- Boot sequence: read own `memory/` and task from `inbox/`
+- Available tools: only `report_to_coordinator` and `get_my_task`
+- Escalation: "If blocked, use `report_to_coordinator` with type `blocker`."
+- Session closing: journal + memory update (simplified, no handoff needed)
+
+#### 3c. Per-Worker Config
+
+Each worker's launch sets `CLAUDE_CONFIG_DIR` to a worker-specific override, or the launch script copies `worker-claude-template.md` into the project's `.claude/` before starting. Simplest approach: a single project-level CLAUDE.md that checks `$AGENT_ROLE`:
+
+```markdown
+<!-- In project CLAUDE.md -->
+If your AGENT_ROLE is "coordinator", follow coordinator-instructions.md.
+If your AGENT_ROLE is "worker" (or unset), follow worker-instructions.md.
+```
+
+**Files to create:**
+- `~/Documents/Work/mmp/workspace/agents/coordinator-instructions.md`
+- `~/Documents/Work/mmp/workspace/agents/worker-instructions.md`
+- Update project `CLAUDE.md` to route based on `$AGENT_ROLE`
+
+### Phase 4: MCP Configuration
+
+**Goal:** Wire up the correct MCP variant per role.
+
+#### 4a. Coordinator MCP Config
+
+**File:** `~/.claude-work/settings.json` (or project `.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "work-agent-manager": {
+      "command": "python",
+      "args": ["-m", "work_agent_manager"],
+      "cwd": "/Users/duongntd99/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager",
+      "env": {
+        "AGENT_ROLE": "coordinator",
+        "AGENT_NAME": "sona",
+        "AGENT_BASE_DIR": "/Users/duongntd99/Documents/Work/mmp/workspace/agents"
+      }
+    }
+  }
+}
+```
+
+#### 4b. Worker MCP Config
+
+**File:** Worker launch script injects env vars before starting Claude:
+
+```bash
+export AGENT_ROLE="worker"
+export AGENT_NAME="$1"
+# MCP config in project .mcp.json reads AGENT_ROLE from env
+```
+
+Project-level `.mcp.json` uses env var substitution:
+
+```json
+{
+  "mcpServers": {
+    "work-agent-manager": {
+      "command": "python",
+      "args": ["-m", "work_agent_manager"],
+      "cwd": "./mcps/work-agent-manager",
+      "env": {
+        "AGENT_ROLE": "${AGENT_ROLE}",
+        "AGENT_NAME": "${AGENT_NAME}",
+        "AGENT_BASE_DIR": "${AGENT_BASE_DIR}"
+      }
+    }
+  }
+}
+```
+
+### Phase 5: Agent Migration
+
+**Goal:** Convert existing work agents to isolated model.
+
+**Steps:**
+
+1. **Retire Azir as coordinator** — Sona takes over. Azir becomes a worker or is removed.
+
+2. **Strip agent personalities:**
+   - For each agent in `agents/<name>/profile.md`:
+     - Remove backstory, speaking style, quirks, personality
+     - Keep: role description, capabilities, domain expertise
+     - Or replace with generic: "Worker agent specializing in <domain>"
+
+3. **Remove `agent-network.md` from worker boot:**
+   - Delete or move `agents/memory/agent-network.md` to `agents/sona/memory/` (coordinator-only)
+   - Worker boot sequence reads only: own `profile.md`, own `memory/<name>.md`, task from `inbox/`
+
+4. **Update worker profiles** to reference `report_to_coordinator` instead of `message_agent`
+
+5. **Clean up roster:**
+   - Create `agents/sona/roster.md` — coordinator-only file listing all workers and capabilities
+   - Remove shared `agents/roster.md` (or restrict to coordinator directory)
+
+### Phase 6: Testing & Verification
+
+**Goal:** End-to-end validation of isolated architecture.
+
+**Test sequence:**
+
+1. Launch Sona (coordinator, Opus) with `CLAUDE_CONFIG_DIR=~/.claude-work`:
+   ```bash
+   ./scripts/launch-work-agent.sh sona --coordinator
+   ```
+
+2. Sona delegates a task to a worker:
+   - `delegate_task` writes to worker inbox
+   - `launch_agent` starts worker in iTerm with Sonnet + worker MCP
+
+3. Worker receives task:
+   - Reads inbox via `get_my_task`
+   - Executes the task
+   - Reports via `report_to_coordinator`
+
+4. Sona reads worker report and synthesizes
+
+5. **Isolation checks:**
+   - Worker runs `list_agents` → tool not found (pass)
+   - Worker runs `message_agent` → tool not found (pass)
+   - Worker's CLAUDE.md mentions no agent names → pass
+   - Worker's MCP config has no coordinator tools → pass
+   - `~/.claude-work/` has no Strawberry MCP servers → pass
+   - Worker cannot read `agents/sona/roster.md` (or it doesn't exist in their view) → pass
 
 ## Risks and Mitigations
 
-
 | Risk                                                     | Mitigation                                                                                                  |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Workers can't resolve technical questions without peers  | Coordinator mediates: worker reports blocker → coordinator queries another worker → relays answer back      |
-| Coordinator becomes bottleneck                           | Coordinator is Opus with large context. Parallel delegation (launch multiple workers) keeps throughput high |
+| Workers can't resolve technical questions without peers  | Sona mediates: worker reports blocker → Sona queries another worker → relays answer back                   |
+| Sona becomes bottleneck                                  | Sona is Opus with large context. Parallel delegation (launch multiple workers) keeps throughput high        |
 | Slower than peer-to-peer for technical discussions       | Accepted tradeoff for isolation. Work context values control over speed                                     |
 | Workers might hallucinate agent names from training data | Worker CLAUDE.md explicitly states "you are the only agent" — no roster to contradict this                  |
+| `CLAUDE_CONFIG_DIR` not respected by all Claude features | Test thoroughly in Phase 1. Fallback: separate macOS user account                                          |
 
+## File Inventory
 
-## Decision Points for Duong
+**New files to create:**
 
-1. **Which agent is the coordinator?** Current system has Azir (head) and Sona (work assistant) — pick one or merge roles
-2. **Do workers keep profiles/personalities?** Isolation doesn't require removing personalities, but work context might prefer generic professional agents
-3. **Plan approval gate in work system?** Strawberry requires it; work system may want faster iteration with coordinator auto-approving
+| File | Purpose |
+| --- | --- |
+| `~/.claude-work/settings.json` | Work profile settings |
+| `scripts/launch-work-agent.sh` | Launcher with profile isolation + model tier |
+| `mcps/work-agent-manager/` | Forked MCP with coordinator/worker split |
+| `coordinator-instructions.md` | Sona's CLAUDE.md instructions |
+| `worker-instructions.md` | Generic worker CLAUDE.md instructions |
+| `agents/sona/roster.md` | Coordinator-only agent roster |
+| `agents/memory/agent-protocol.md` | Worker-only minimal protocol doc |
+
+**Files to modify:**
+
+| File | Change |
+| --- | --- |
+| Project `CLAUDE.md` | Route to coordinator/worker instructions based on `$AGENT_ROLE` |
+| Project `.mcp.json` | Point to `work-agent-manager` with env var substitution |
+| `agents/<worker>/profile.md` (each) | Strip personality, keep capabilities only |
+| `agents/sona/profile.md` | Update to coordinator role |
+
+**Files to remove/relocate:**
+
+| File | Action |
+| --- | --- |
+| `agents/memory/agent-network.md` | Move to `agents/sona/memory/` (coordinator-only) |
+| `agents/roster.md` (shared) | Replace with `agents/sona/roster.md` |
 
