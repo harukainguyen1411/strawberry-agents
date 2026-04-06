@@ -1,13 +1,15 @@
-# Last Session — 2026-04-06 afternoon, CLI (Opus)
+# Last Session — 2026-04-06 evening, CLI (Opus)
 
-- Duong wants to export Strawberry's agent model to his work system (~/Documents/Work/mmp/workspace/agents/)
-- Key constraint: isolated agents — no roster visibility, no peer messaging, coordinator-only communication
-- Launched Syndra to write a plan in plans/proposed/
-- Session ended early (auth issue). Syndra may not have completed — check plans/proposed/ on next boot
+- Work agent isolation system fully implemented
+- Three-tier architecture: Coordinator → Planners (Opus) → Workers (Sonnet)
+- Plan at plans/implemented/2026-04-06-work-agent-isolation.md
+- MCP server at ~/Documents/Work/mmp/workspace/agents/mcps/work-agent-manager/
+- Duong can start Claude in /workspace, say "Hey Coordinator" — greeting-based routing
+- Launch script: no --model/--settings for coordinator+planner (inherit default Opus 1M), --model sonnet for workers
+- .mcp.json only sets AGENT_BASE_DIR — role vars omitted so parent env passes through
 
 Open threads (carried over):
 - PR #54 (myapps) ready to merge, needs firestore index deploy
 - Bard's launch-verification + Evelynn liveness plan — proposed, awaiting approval
 - Swain's plan viewer plan — proposed, needs manual setup
 - Stale PRs #26 #27 #28 — can be closed
-- Firestore MCP server — Syndra recommends as next build priority
