@@ -15,6 +15,7 @@
 - Agent discipline rules plan: plan approval gate + session persistence rules (two new CLAUDE.md critical rules)
 - API key isolation diagnosis + team plan migration plan: designed key injection, then planned its removal when Duong switched to team plan
 - Gemini Pro ecosystem assessment: recommended against migration, proposed Firestore MCP server as key unlock
+- Work agent isolation plan: hub-and-spoke architecture with coordinator/worker MCP split, no peer visibility
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -45,3 +46,4 @@
 - 2026-04-05 S9: Agent discipline rules plan, API key isolation plan, PR #30 review
 - 2026-04-05 S10: Team plan migration plan, PR #31 review
 - 2026-04-05 S11: Gemini Pro ecosystem + infrastructure assessment
+- 2026-04-06 S12: Work agent isolation plan — hub-and-spoke architecture for work system
