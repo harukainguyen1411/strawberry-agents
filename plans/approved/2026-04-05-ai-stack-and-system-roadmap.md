@@ -1,8 +1,6 @@
 ---
 status: approved
 owner: syndra
-gdoc_id: 17hr-da8-Zwgb6q1H4JkJzkMy_YBjqdfL7g6URKhIxEQ
-gdoc_url: https://docs.google.com/document/d/17hr-da8-Zwgb6q1H4JkJzkMy_YBjqdfL7g6URKhIxEQ/edit
 ---
 
 # AI Stack Setup & Agent System Roadmap
