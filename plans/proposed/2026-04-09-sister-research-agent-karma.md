@@ -228,14 +228,14 @@ Exit criteria: at least one rule in `style-rules.md` graduates from tentative to
 Numbered so Duong can answer in one shot.
 
 1. **Max subscription ToS for automated cloud backend use — real blocker.** All three advisors (Syndra, Swain, Bard) independently flagged this. Running `claude -p` from a cloud VM as an end-user-facing backend is a grey zone — Anthropic's Max terms are ambiguous on "automated use" vs "personal CLI use." Needs a real read of the current Max ToS before we build anything on this constraint. **If this is a no-go, the whole "subscription not API" direction collapses and we rebuild on API** — not the end of the world, but a different plan.
-2. **Max quota contention with autonomous-delivery-pipeline.** Shared Max account = shared quota pool. Mitigation options: (a) pipeline pauses 07:00–22:00 local, (b) second Max seat for pipeline, (c) accept the risk and monitor. Which?
+2. **Max quota contention with autonomous-delivery-pipeline.** Shared Max account = shared quota pool. Mitigation options: (a) pipeline pauses 07:00–22:00 local, (b) second Max seat for pipeline, (c) accept the risk and monitor. Which? // C
 3. **Hosting cost — cheaper than dedicated GCE?** Duong flagged the ~$13/mo VM as too expensive for a personal one-user product. Options to evaluate: (a) host on her own computer (uptime + tunneling tradeoffs), (b) does Duong's existing Google Gemini Pro / Google One AI Pro $20/mo plan include any GCP credits that cover the footprint, (c) `e2-micro` free tier or Cloud Run-only stateless dispatcher. Pick before Phase 2.
-4. **Multi-turn refinement inside a single job?** "Make the report more about X" after delivery — does she need that (session persistence), or is each job one-shot (much simpler)? Syndra's recommendation is one-shot first, add a 15-minute conversation window only if she complains.
-5. **Mobile-responsive or desktop-only for v1?** Next.js handles both; changes UI budget. Does she work from her phone?
-6. **Sister's agent personality — visible Bee character or invisible professional tool?** Duong's Strawberry roster leans heavy on character. His sister may want something flatter. Ask her directly; it shapes the profile body.
-7. **Privacy boundary of `feedback-log.md`.** Will accumulate personal phrasing and possibly work-sensitive document context. MUST NOT live in the Strawberry repo. Private GitHub repo for the memory mirror is the plan — confirm Duong's okay with that.
+4. **Multi-turn refinement inside a single job?** "Make the report more about X" after delivery — does she need that (session persistence), or is each job one-shot (much simpler)? Syndra's recommendation is one-shot first, add a 15-minute conversation window only if she complains. // 1 shot
+5. **Mobile-responsive or desktop-only for v1?** Next.js handles both; changes UI budget. Does she work from her phone? // Make both work
+6. **Sister's agent personality — visible Bee character or invisible professional tool?** Duong's Strawberry roster leans heavy on character. His sister may want something flatter. Ask her directly; it shapes the profile body. // can have character of a vietnamese girl like a secretary, friendly
+7. **Privacy boundary of** `feedback-log.md`**.** Will accumulate personal phrasing and possibly work-sensitive document context. MUST NOT live in the Strawberry repo. Private GitHub repo for the memory mirror is the plan — confirm Duong's okay with that. // OK
 8. **Tentative-rule graduation threshold** (2 confirmations, 10-session expiry) is a guess. Not gating; we ship with the defaults and tune after a few weeks.
-9. **Failure mode when Vietnamese source coverage is thin** — degrade to English paraphrased back, or stop and ask her? Syndra's lean: degrade, note the gap in Vietnamese, offer English sources as fallback.
+9. **Failure mode when Vietnamese source coverage is thin** — degrade to English paraphrased back, or stop and ask her? Syndra's lean: degrade, note the gap in Vietnamese, offer English sources as fallback. // sure
 
 ## 9. What this plan does NOT do
 
