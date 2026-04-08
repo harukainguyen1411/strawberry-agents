@@ -139,5 +139,9 @@ fi
 git -C "$REPO_ROOT" add -- "$TARGET"
 git -C "$REPO_ROOT" commit -m "chore: link gdoc for $(basename "$TARGET")" >&2
 
+# Push (matches plan-promote.sh — the plan-lifecycle script family auto-pushes
+# so the Drive mirror and origin/main stay in lockstep).
+git -C "$REPO_ROOT" push >&2
+
 gdoc::log "done. doc id: $NEW_ID"
 gdoc::log "url: https://docs.google.com/document/d/$NEW_ID/edit"
