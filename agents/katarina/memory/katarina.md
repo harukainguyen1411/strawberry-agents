@@ -11,6 +11,7 @@
 - 2026-04-05 (S5): Diagnosed + fixed GH_TOKEN shell scoping bug and per-agent API key isolation in `mcps/agent-manager/server.py`. PRs #29 and #30.
 - 2026-04-05 (S6): Executed team-plan migration — removed API key injection from server.py, cleaned all agent settings.local.json, updated billing docs. PR #31.
 - 2026-04-05 (S7): Heartbeat fix (PR #32) + restart safeguards (PR #34). Restarted Evelynn twice.
+- 2026-04-08 (S8, subagent): Mechanical plan-file maintenance — recorded blanket-approval Decisions on skills-integration, minion-layer, rules-restructure (Q2/Q6 PENDING); promoted skills-integration, minion-layer, plan-gdoc-mirror to approved/; archived Tibbers errand-runner plan with supersession note. Commit 6879747.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
