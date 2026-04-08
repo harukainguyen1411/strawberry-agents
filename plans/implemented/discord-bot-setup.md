@@ -1,8 +1,6 @@
 ---
 status: active
 owner: bard
-gdoc_id: 1O0NducUNeXVBrfhIEOQ96EErYq19hYFHGYTiRhSVaOA
-gdoc_url: https://docs.google.com/document/d/1O0NducUNeXVBrfhIEOQ96EErYq19hYFHGYTiRhSVaOA/edit
 ---
 
 # Discord Bot Setup — For MCP Integration
