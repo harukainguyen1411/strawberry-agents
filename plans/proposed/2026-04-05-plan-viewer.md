@@ -1,6 +1,8 @@
 ---
 status: proposed
 owner: swain
+gdoc_id: 1Ddm-1z_s1Suuhbh0eLyYAGSGc0wCrQFRyuNg-_DZhr4
+gdoc_url: https://docs.google.com/document/d/1Ddm-1z_s1Suuhbh0eLyYAGSGc0wCrQFRyuNg-_DZhr4/edit
 ---
 
 # Plan Viewer — Mobile Markdown Reader for Strawberry
