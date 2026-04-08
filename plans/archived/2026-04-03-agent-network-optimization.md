@@ -1,5 +1,5 @@
 ---
-status: draft
+status: archived
 owner: syndra
 created: 2026-04-03
 title: Agent Network Optimization

@@ -316,14 +316,14 @@ The rule of thumb: **when a rule is written in the tier-agnostic voice ("every a
 
 ## Decisions
 
-Partial approval from Duong on 2026-04-08. Q1, Q3, Q4, Q5 resolved via blanket approval at the end of the architectural session. Q2 and Q6 are still pending Duong's answer and this plan stays in `plans/proposed/` until they land.
+Approved by Duong on 2026-04-08. Q1, Q3, Q4, Q5 resolved via blanket approval at the end of the architectural session; Q2 and Q6 resolved later the same day (Q2 delegated to Evelynn, Q6 answered directly).
 
 1. **Roster canonicalization (`agents/roster.md` vs. `agents/memory/agent-network.md`).** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — canonicalize in `agents/roster.md`; `agent-network.md` references it.
-2. **Numbering of the Evelynn-delegates rule (append as 11 vs. reorder).** PENDING — awaiting Duong's answer.
+2. **Numbering of the Evelynn-delegates rule (append as 11 vs. reorder).** Resolved 2026-04-08. Duong delegated the placement decision to Evelynn with the guidance "make it prioritized." Evelynn's call: insert the "Evelynn always delegates" rule **within the existing delegation-rules cluster** (adjacent to the current rules about Sonnet agents needing plans and the Opus execution ban — roughly the current rules 6–8). Do **not** append as rule 11 at the end. The exact slot is at the implementing agent's discretion during the broader renumber pass the plan prescribes, as long as the rule sits adjacent to the other delegation/execution-discipline rules. Rationale: grouping related rules improves readability and makes the delegation-discipline cluster cohesive, which reflects Duong's intent to have it visibly prioritized in the rule hierarchy.
 3. **Harness-level enforcement of the Evelynn rule.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — documentation + peer enforcement first; reassess harness-level soft guard later as a follow-up plan if needed.
 4. **Session-closing rule wording for subagents.** Approved as proposed by Duong 2026-04-08 — scope/rewrite the rule so it does not require subagents to stay open after task completion (the implementer picks the cleaner of the two phrasings sketched in the plan).
 5. **Profiles gain Operating sections now vs. incrementally.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — do the migration now in one clean pass for consistency.
-6. **Promotion of `feedback_secrets_handling.md` to a durable surface.** PENDING — awaiting Duong's answer.
+6. **Promotion of `feedback_secrets_handling.md` to a durable surface.** Resolved 2026-04-08 by Duong: leave as-is. Not user-facing. The feedback memory stays as an AI-agent-only operational reminder. Do **not** create or modify `secrets/README.md` from it.
 
 ## Out of Scope for This Plan
 
