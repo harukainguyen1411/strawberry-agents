@@ -19,7 +19,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Opus planners (registered):** Evelynn, Syndra, Swain, Pyke, Bard
 - **Sonnet executors (registered):** Katarina, Lissandra
 - **Sonnet executors (aspirational, in roster.md only):** Ornn, Fiora, Rek'Sai, Neeko, Zoe, Caitlyn, Shen — these need `.claude/agents/<name>.md` files to actually be invokable
-- **Minions:** Poppy (Haiku, mechanical edits) — built 2026-04-08, invokable after restart. Yuumi superseded into separate-Claude restart-buddy role (NOT a subagent — runs as own process)
+- **Minions:** Poppy (Haiku, mechanical edits). Yuumi (Sonnet, errand-runner) — restart-buddy role retired 2026-04-08 PM after one successful live restart; she's now a harness subagent (`.claude/agents/yuumi.md`), invokable after next restart.
 - Rakan (Discord/community), Zilean (IT Advisor) — never launched
 
 ## Infrastructure
@@ -32,7 +32,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Discord:** relay bot, VPS Hetzner CX22.
 - **Task board (Mac only):** Firebase/Firestore, shared Vue app + MCP tools.
 - **Windows Mode (2026-04-08):** parallel isolated setup for non-Mac machines. Subagents in `.claude/agents/` replace iTerm windows; Remote Control replaces Telegram relay. Launch via `windows-mode\launch-evelynn.bat` (runs `claude --dangerously-skip-permissions --remote-control "Evelynn"`). 6 subagents registered: Syndra, Swain, Pyke, Bard, Katarina, Lissandra (+ Poppy after next restart). Memory continuity preserved through shared files. Mac stack untouched.
-- **Yuumi (separate Claude instance, not subagent):** runs as own `claude` process via `windows-mode\launch-yuumi.bat` (also `--dangerously-skip-permissions`). Registered with Anthropic relay as Remote Control name "Yuumi". Job: kill+relaunch Evelynn via `scripts/restart-evelynn.ps1` when Duong asks. Discovery filter verified; kill+launch path live-tested only on first restart.
+- **Yuumi (RETIRED as separate-process):** briefly ran as own `claude` process via `windows-mode\launch-yuumi.bat` for restart-buddy role; one successful live restart (2026-04-08 PM) then Duong retired the role and converted her to a regular harness subagent (`.claude/agents/yuumi.md`). `scripts/restart-evelynn.ps1` and `launch-yuumi.bat` kept on disk but unused — candidates for cleanup next hygiene pass.
 - **Encrypted-secrets pipeline (2026-04-08):** age-based, recipient pubkey `age16zn6u722syny7sywep0x4pjlqudfm6w70w492wmqa69zw2mqwujsqnxvwm` baked into `tools/encrypt.html`. Mac flow: encrypt locally → either paste ciphertext in chat OR commit `.age` blob to `secrets/encrypted/` and push. Windows flow: agent runs `tools/decrypt.sh --target secrets/<group>.env --var <KEY> < <blob>`. CLAUDE.md Rule 11 bans raw `age -d` outside `tools/decrypt.sh`. Pre-commit hook `scripts/pre-commit-secrets-guard.sh` enforces.
 - **Plan-gdoc-mirror (2026-04-08):** scripts in `scripts/plan-{publish,fetch,unpublish}.sh`, lib in `scripts/_lib_gdoc.sh`. OAuth via `drive.file` scope (tightest blast radius). Currently mirrors all-status (30 plans live in Drive), but **scheduled for revision** to proposed-only per Swain's `plans/proposed/2026-04-08-gdoc-mirror-revision.md`.
 
@@ -51,7 +51,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Open Threads
 - **Approve Swain's `plans/proposed/2026-04-08-gdoc-mirror-revision.md`** + run migration (unpublish 30 docs from Drive, delete 2 orphan gdocs, patch publish/promote to enforce proposed-only). HIGHEST PRIORITY next session.
-- **First live test of Yuumi's restart command.** PID 3312 at session end — check if alive. Discovery filter verified, kill+launch never tested live.
+- **Yuumi conversion to subagent** (2026-04-08 PM) — done. Subagent file written; not invokable until next harness restart (same subagent-loading constraint as Poppy).
 - **Wire remaining roster as actual harness subagents.** Ornn, Fiora, Shen, Caitlyn live in roster.md but not `.claude/agents/`. Needs systematic Syndra plan.
 - **Pyke cafe-from-home plan** — mostly moot now that Remote Control is native Claude Desktop product. Needs scope-down pass.
 - **Galio (service ops wrangler) proposal** — explained to Duong, no decision yet. Pending.

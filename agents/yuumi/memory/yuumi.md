@@ -44,3 +44,4 @@ Full tool surface (Bash, Read, Edit, Write, Glob, Grep, etc.). She has broad too
 
 ## Sessions
 - 2026-04-08 (S0): Created by Ornn per Evelynn's direct delegation (no plan file — this was a small single-purpose build, not a design task). Identity files, Windows-mode launcher, and `scripts/restart-evelynn.ps1` shipped in one batch. Restart script tested on discovery path only; live kill+launch path deferred to avoid killing the active Evelynn session.
+- 2026-04-08 (S1): First live restart. Killed Evelynn PID 16112 and relaunched cleanly. Full kill+launch path now validated. `pwsh` not on PATH in the bash runner, but the script ran fine via the fallback shell invocation.
