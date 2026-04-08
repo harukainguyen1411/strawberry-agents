@@ -3,6 +3,8 @@ title: Agent-Visible Frontend Testing — Closing the Loop Between Edit and See
 status: proposed
 owner: bard
 created: 2026-04-08
+gdoc_id: 1DFEiKBBk2_hFM0COvcHteHnfjCHGVBFAIXNad00u7yA
+gdoc_url: https://docs.google.com/document/d/1DFEiKBBk2_hFM0COvcHteHnfjCHGVBFAIXNad00u7yA/edit
 ---
 
 # Agent-Visible Frontend Testing
