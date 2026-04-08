@@ -16,8 +16,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Opus planners (registered):** Evelynn, Syndra, Swain, Pyke, Bard
 - **Sonnet executors (registered):** Katarina, Lissandra
 - **Minions:** Poppy (Haiku, exact-spec mechanical edits — use her for trivial work without a plan). Yuumi (Sonnet errand-runner subagent — `.claude/agents/yuumi.md` written 2026-04-08 PM, loadable next restart).
-- **Aspirational only:** Ornn, Fiora, Rek'Sai, Neeko, Zoe, Caitlyn, Shen — in roster.md but no `.claude/agents/<name>.md`. Use general-purpose with role briefs as the fallback.
-- Rakan, Zilean — never launched.
+- **Aspirational only:** Ornn, Fiora, Rek'Sai, Neeko, Zoe, Caitlyn, Shen — in roster but no `.claude/agents/<name>.md`. **Never fall back to general-purpose pretending to be them** (feedback rule 2026-04-08). Wire the profile first, or use a wired agent that actually fits.
+- Rakan aspirational, Zilean pending continuity plan.
 
 ## Infrastructure
 - **Git:** chore:/ops: prefix only on main. Three-tier policy. Agent state on main only.
@@ -32,6 +32,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Plan-gdoc-mirror:** proposed-only, enforced by `plan-publish.sh` guard + `plan-promote.sh` wrapper. 10 plans currently mirrored.
 - **`/end-session` skill (NEW 2026-04-08 PM):** Phase 1 shipped. `scripts/clean-jsonl.py` + `.claude/skills/end-session/SKILL.md` + `.claude/skills/end-subagent-session/SKILL.md`. CLAUDE.md rule 14 mandates invocation before any session close. `.gitignore` negates `agents/*/transcripts/*.md`.
 - **Agent runtime (decided 2026-04-08 PM):** dual-mode — local Windows/Mac box for interactive work + always-on GCE VM for autonomous overnight pipeline. Max plan single-account (no extra seat cost). Subscription-CLI only, never API.
+- **Subagent definition caching (discovered 2026-04-08 evening):** Claude Code loads `.claude/agents/<name>.md` at session startup and caches in-memory. Mid-session edits to those files (including `model:` frontmatter) do NOT take effect. Workaround: pass `model:` explicitly on every Agent tool spawn until next restart. Permanent fix: restart the session.
+- **Agent teams feature:** `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled. `TeamCreate`/`SendMessage`/shared TaskList workflow proven 2026-04-08 evening via protocol-audit team. This is now Evelynn's primary multi-agent coordination surface per the new feedback rule.
 
 ## Protocols
 - Every PR has exactly two reviewers: code reviewer (Lissandra/Rek'Sai) + plan author. Evelynn auto-assigns.
@@ -45,15 +47,13 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Claude Max plan** (single-account, shared usage quota across all logged-in devices, NOT seat-based). API keys disabled for agent ops 2026-04-05; API reserved for app development only.
 
 ## Open Threads
-- **6 rough plans in `plans/proposed/` awaiting Duong's approval:** continuity-and-purity, plan-lifecycle-protocol-v2, myapps-gcp-direction, autonomous-delivery-pipeline (HIGHEST — has 4 cafe decisions + 15 Drive comments + dual-mode runtime resolution), agent-visible-frontend-testing, mcp-restructure.
-- **PR #54 (myapps task list)** — one Firebase CLI command from mergeable. Duong runs `npx firebase login && npx firebase deploy --only firestore:indexes --project myapps-b31ea` from `C:/Users/AD/Duong/myapps-tasklist-board/`.
-- **myapps repo duplication** — `apps/myapps/` in strawberry vs standalone `Duongntd/myapps`. Source of truth is the standalone. Duplicate needs an investigation plan.
-- **Google account ownership audit** — verify Firebase project `myapps-b31ea` and gdoc-mirror Drive folder owners are `harukainguyen1411`. Migration plan if not.
-- **/end-session Phase 2 refinements** — chain-walk threshold, age pubkey false positive, `<local-command-caveat>` denylist canonicalization, sandbox-policy `.claude/skills/` Write workaround.
-- **Hygiene:** `plan-publish.sh` idempotent-republish exit-code bug; malformed frontmatter on 3 implemented plans.
-- **Aspirational roster wiring** — Ornn, Fiora, Shen, Caitlyn need actual `.claude/agents/<name>.md` files to be invokable.
-- **Galio (service ops wrangler)** — pending decision from a previous session.
-- **Stale PRs #26 #27 #28** — can be closed.
+- **Protocol migration paused at Commits 8 and 10** — plan in `plans/in-progress/2026-04-09-protocol-migration-detailed.md`. Duong decided commit-8 merge direction (port-then-delete). Commit 10 blocked on mcp-restructure phase-1-detailed landing.
+- **Shen + Fiora profiles unwired** — blocker for assigning specialist work. Wire tonight before spawning them. Full aspirational roster wiring (Ornn, Reksai, Neeko, Zoe, Caitlyn) wants its own plan.
+- **Sister-agent plan (Bee)** — 9 open questions in `plans/proposed/2026-04-09-sister-research-agent-karma.md`. Max ToS for automated cloud backend is gating.
+- **Plans awaiting approval:** autonomous-delivery-pipeline (HIGHEST), plan-lifecycle-protocol-v2, myapps-gcp-direction, continuity-and-purity, agent-visible-frontend-testing, mcp-restructure rough, mcp-restructure phase-1-detailed (verbally approved), operating-protocol-v2, protocol-migration-detailed.
+- **PR #54 (myapps)** — one Firebase CLI deploy command from mergeable.
+- **CLAUDE.md line 28 stale roster.md reference** — tiny follow-up, migration Commit 7 deleted the file but line 28 still points at it.
+- **/end-session Phase 2 refinements** — chain-walk threshold, age pubkey false positive, `<local-command-caveat>` denylist canon.
 
 ## Sessions
-- 2026-04-08 (S1, direct mode, cafe→home, Windows): /end-session Phase 1 shipped. Six rough plans landed. Yuumi retired-and-converted to subagent. Strengthening of Sonnet-needs-detailed-plan and decide-trivia rules. First close via the new skill.
+- 2026-04-08 (S28, direct mode, Mac evening): Sister research agent (Bee) rough plan consolidated from Syndra+Swain+Bard. First real agent-teams session (protocol-audit: Pyke+Swain+Bard → 3 plans). Rule 15 landed. 5 new feedback memories. Discovered agent defs are cached at session startup — mid-session model: edits don't take effect, pass explicit model: until restart. Katarina fixed clean-jsonl Mac-path bug. First real Mac /end-session close.

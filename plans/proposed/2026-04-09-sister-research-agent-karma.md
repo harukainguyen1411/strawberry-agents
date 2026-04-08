@@ -1,6 +1,7 @@
 ---
 
 ## status: proposed
+
 owner: evelynn
 created: 2026-04-09
 title: Sister Research Agent (Bee) — Personal .docx Research Companion
@@ -63,6 +64,8 @@ Subscription Claude Code CLI has no fine-tuning surface. Personalization lives e
     docx_gen.py                # fresh .docx generation
 ```
 
+There should be a skill that the agent track its usage like token and tool call cost etc and report (MUST) when ending session
+
 **How "learning from feedback" actually works:**
 
 1. She can reply to any delivery with plain text ("quá dài", "cite the specific article", "more bullets less prose"). That reply appends to `feedback-log.md`.
@@ -84,6 +87,7 @@ Subscription Claude Code CLI has no fine-tuning surface. Personalization lives e
 `e2-small` in `asia-southeast1` (Singapore), Debian 12, ~$13/mo always-on. One Claude Code CLI logged in interactively once with Duong's Max account.
 
 **Duong flagged cost — explore cheaper options before committing to GCE.** Open alternatives to evaluate in Phase 2 planning:
+
 - **Host on her own computer** as the always-on machine (zero infra cost, but uptime is whatever her laptop uptime is, and it changes the network/auth shape — needs a tunnel or local-only access).
 - **Google Gemini Pro plan ($20/mo)** — Duong already pays for this. Open question: does the Gemini Pro / Google One AI Pro subscription include any GCP credits that could cover the VM + Cloud Run + Firestore footprint? Needs a real read of current entitlements before pricing this plan.
 - Smaller GCE shape (`e2-micro` free tier) or Cloud Run-only with no persistent VM if the dispatcher can be made stateless.
@@ -106,7 +110,7 @@ UI is three screens: upload-with-prompt, research-prompt, job history with downl
 
 **Duong directive: skip OAuth, use a password.** This is a one-user app; the OAuth + allowlist machinery is overkill.
 
-Single shared password stored as a bcrypt/argon2 hash in GCP Secret Manager (or env var on Cloud Run). Login screen takes the password, server compares against the hash, issues a short-lived signed JWT cookie (HttpOnly, Secure, SameSite=Lax) on success. Same cookie check enforced in Next.js middleware for all `/api/*` and `/app/*` routes. Rate-limit login attempts (~5/min per IP) and the enqueue endpoint (~10 jobs/hour) so a leaked cookie can't burn quota.
+Single shared password stored as a bcrypt/argon2 hash in GCP Secret Manager (or env var on Cloud Run). Login screen takes the password, server compares against the hash, issues a short-lived signed JWT cookie (HttpOnly, Secure, SameSite=Lax) on success. Same cookie check enforced in Next.js middleware for all `/api/`* and `/app/*` routes. Rate-limit login attempts (~~5/min per IP) and the enqueue endpoint (~~10 jobs/hour) so a leaked cookie can't burn quota.
 
 No Google OAuth, no NextAuth, no allowlist email config, no Cloud IAP.
 
