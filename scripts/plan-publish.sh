@@ -29,10 +29,13 @@ EOF
 TARGET="$1"
 
 [ -f "$TARGET" ] || gdoc::die "no such file: $TARGET"
+# The Drive mirror is proposed-only (per plan 2026-04-08-gdoc-mirror-revision).
+# Anything outside plans/proposed/ does not belong in Drive. No --force escape
+# hatch: the invariant is the whole point.
 case "$TARGET" in
-  plans/*) ;;
-  */plans/*) ;;
-  *) gdoc::die "refusing to publish files outside plans/: $TARGET" ;;
+  plans/proposed/*.md) ;;
+  */plans/proposed/*.md) ;;
+  *) gdoc::die "refusing to publish $TARGET; Drive mirror is proposed-only. Move the plan back to plans/proposed/ or use plan-unpublish.sh." ;;
 esac
 
 gdoc::require_tools

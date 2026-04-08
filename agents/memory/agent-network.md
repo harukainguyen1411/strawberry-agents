@@ -61,6 +61,7 @@ Evelynn is the hub, but not a bottleneck. Duong talks to Evelynn. Agents can col
 7. **Delegated task → call `complete_task` when done** (mandatory)
 8. **Context health:** report every ~10 turns via `report_context_health`
 9. **Plan approval gate:** After writing a plan to `plans/proposed/`, your task is done. Call `complete_task` and report to Evelynn. Do NOT proceed to implementation. Duong approves plans by moving them to `plans/approved/`. Evelynn then delegates execution (possibly to a different agent).
+10. **Promoting plans out of `proposed/`:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Valid target statuses: `approved | in-progress | implemented | archived`. `plan-publish.sh` will refuse anything outside `plans/proposed/`.
 
 ## Inbox
 
