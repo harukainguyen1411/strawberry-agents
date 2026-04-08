@@ -15,11 +15,12 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Don't edit files when Duong is just asking a question. Listen before acting.
 
 ## Team
-16 agents — all LoL champions. Model tiers configured (2026-04-05):
-- **Opus:** Evelynn, Syndra, Swain, Pyke, Bard
-- **Sonnet:** Katarina, Ornn, Fiora, Lissandra, Rek'Sai, Neeko, Zoe, Caitlyn, Shen
-- Rakan (Discord/community), Zilean (IT Advisor) — not yet model-configured
-- **Shen** — new (2026-04-05), security implementation agent paired with Pyke
+17+ agents in roster.md, but **only ~6 actually wired as Windows-mode harness subagents** (see learnings/2026-04-08-roster-vs-harness-reality.md). Real Sonnet pool: katarina + general-purpose. Real planner pool: syndra, swain, pyke, bard.
+- **Opus planners (registered):** Evelynn, Syndra, Swain, Pyke, Bard
+- **Sonnet executors (registered):** Katarina, Lissandra
+- **Sonnet executors (aspirational, in roster.md only):** Ornn, Fiora, Rek'Sai, Neeko, Zoe, Caitlyn, Shen — these need `.claude/agents/<name>.md` files to actually be invokable
+- **Minions:** Poppy (Haiku, mechanical edits) — built 2026-04-08, invokable after restart. Yuumi superseded into separate-Claude restart-buddy role (NOT a subagent — runs as own process)
+- Rakan (Discord/community), Zilean (IT Advisor) — never launched
 
 ## Infrastructure
 - **Git workflow:** three-tier policy (chore:/ops: only on main). Agent state on main only.
@@ -30,7 +31,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Telegram (Mac only):** new bot (rotated 2026-04-05), token in secrets/telegram-bot-token. Bridge runs in separate iTerm window.
 - **Discord:** relay bot, VPS Hetzner CX22.
 - **Task board (Mac only):** Firebase/Firestore, shared Vue app + MCP tools.
-- **Windows Mode (2026-04-08):** parallel isolated setup for non-Mac machines. Subagents in `.claude/agents/` replace iTerm windows; Remote Control replaces Telegram relay. Launch via `windows-mode\launch-evelynn.bat` (runs `claude --dangerously-skip-permissions --remote-control "Evelynn"`). 6 subagents available: Syndra, Swain, Pyke, Bard, Katarina, Lissandra. Memory continuity preserved through shared files. Mac stack untouched.
+- **Windows Mode (2026-04-08):** parallel isolated setup for non-Mac machines. Subagents in `.claude/agents/` replace iTerm windows; Remote Control replaces Telegram relay. Launch via `windows-mode\launch-evelynn.bat` (runs `claude --dangerously-skip-permissions --remote-control "Evelynn"`). 6 subagents registered: Syndra, Swain, Pyke, Bard, Katarina, Lissandra (+ Poppy after next restart). Memory continuity preserved through shared files. Mac stack untouched.
+- **Yuumi (separate Claude instance, not subagent):** runs as own `claude` process via `windows-mode\launch-yuumi.bat` (also `--dangerously-skip-permissions`). Registered with Anthropic relay as Remote Control name "Yuumi". Job: kill+relaunch Evelynn via `scripts/restart-evelynn.ps1` when Duong asks. Discovery filter verified; kill+launch path live-tested only on first restart.
+- **Encrypted-secrets pipeline (2026-04-08):** age-based, recipient pubkey `age16zn6u722syny7sywep0x4pjlqudfm6w70w492wmqa69zw2mqwujsqnxvwm` baked into `tools/encrypt.html`. Mac flow: encrypt locally → either paste ciphertext in chat OR commit `.age` blob to `secrets/encrypted/` and push. Windows flow: agent runs `tools/decrypt.sh --target secrets/<group>.env --var <KEY> < <blob>`. CLAUDE.md Rule 11 bans raw `age -d` outside `tools/decrypt.sh`. Pre-commit hook `scripts/pre-commit-secrets-guard.sh` enforces.
+- **Plan-gdoc-mirror (2026-04-08):** scripts in `scripts/plan-{publish,fetch,unpublish}.sh`, lib in `scripts/_lib_gdoc.sh`. OAuth via `drive.file` scope (tightest blast radius). Currently mirrors all-status (30 plans live in Drive), but **scheduled for revision** to proposed-only per Swain's `plans/proposed/2026-04-08-gdoc-mirror-revision.md`.
 
 ## Protocols
 - Every PR must have exactly two reviewers: (1) a code reviewer (Lissandra or Rek'Sai), and (2) the agent who wrote the plan. Evelynn auto-assigns both without asking.
@@ -46,12 +50,16 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Personal:** Agents run on Duong's work team plan (Claude Max/Team). API keys disabled for agent ops (2026-04-05). API reserved for app development only.
 
 ## Open Threads
-- Windows Mode plan (`plans/in-progress/2026-04-08-windows-mode.md`) — implemented but not yet validated end-to-end. Move to `implemented/` once Duong tests subagent invocation. Commit `a161190` not yet pushed.
+- **Approve Swain's `plans/proposed/2026-04-08-gdoc-mirror-revision.md`** + run migration (unpublish 30 docs from Drive, delete 2 orphan gdocs, patch publish/promote to enforce proposed-only). HIGHEST PRIORITY next session.
+- **First live test of Yuumi's restart command.** PID 3312 at session end — check if alive. Discovery filter verified, kill+launch never tested live.
+- **Wire remaining roster as actual harness subagents.** Ornn, Fiora, Shen, Caitlyn live in roster.md but not `.claude/agents/`. Needs systematic Syndra plan.
+- **Pyke cafe-from-home plan** — mostly moot now that Remote Control is native Claude Desktop product. Needs scope-down pass.
+- **Galio (service ops wrangler) proposal** — explained to Duong, no decision yet. Pending.
 - PR #54 (myapps) — task list, reviewed, ready to merge. Needs firestore index deploy.
 - Bard's launch-verification + Evelynn liveness plan — proposed, awaiting approval
 - Swain's plan viewer plan — proposed, needs manual setup
 - Work CLAUDE.md — verify self-contained after global cleanup
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
-- Meet Zilean — not launched yet
+- Meet Zilean — not launched yet (worth meeting before deciding on Galio — may overlap)
 - Stale PRs #26 #27 #28 — can be closed
