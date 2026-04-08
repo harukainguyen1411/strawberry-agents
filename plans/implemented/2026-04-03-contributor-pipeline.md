@@ -1,8 +1,6 @@
 ---
 status: proposed-v2
 owner: swain
-gdoc_id: 1YD0hdUtXLs-9I9bRfgUAhsgElvkzvar5VHUKNjJHvTc
-gdoc_url: https://docs.google.com/document/d/1YD0hdUtXLs-9I9bRfgUAhsgElvkzvar5VHUKNjJHvTc/edit
 ---
 
 # Contributor Pipeline Architecture (v2)
