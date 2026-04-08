@@ -5,8 +5,6 @@ owner: evelynn
 created: 2026-04-08
 implemented: 2026-04-08
 implementer: katarina
-gdoc_id: 18YALYfNxCD8pJgrbF-K-z6d21YV_diBc_c3c5G3hpCQ
-gdoc_url: https://docs.google.com/document/d/18YALYfNxCD8pJgrbF-K-z6d21YV_diBc_c3c5G3hpCQ/edit
 ---
 
 # Encrypted Secrets in Repo (age-based)
