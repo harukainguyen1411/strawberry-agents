@@ -1,6 +1,8 @@
 ---
 status: implemented
 owner: syndra
+gdoc_id: 1y4cAzvbCScSXxNkLGOFuMibLJeXISRhLesuJ4w4QoB4
+gdoc_url: https://docs.google.com/document/d/1y4cAzvbCScSXxNkLGOFuMibLJeXISRhLesuJ4w4QoB4/edit
 ---
 
 # Flexible Turn-Based Conversations — Design Proposal
