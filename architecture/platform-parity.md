@@ -47,5 +47,5 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 
 - `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0
 - `plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md`
-- `plans/proposed/2026-04-09-protocol-migration-detailed.md` commit 5
+- `plans/in-progress/2026-04-09-protocol-migration-detailed.md` (commits 5, 6, 9)
 - `CLAUDE.md` Rules 16/17/18/19 (once numbered per Commit 9 verification)
