@@ -20,11 +20,22 @@ Hosting. **Zero Cloud Run. Zero GCP billing. Fully free tier.**
   Actions with `ANTHROPIC_API_KEY`.
 - **v3 (2026-04-09):** coder agent pivoted out of GH Actions to a local
   Windows NSSM worker under Duong's Max OAuth (ToS compliance).
-- **v4 (2026-04-09, this revision):** discord-relay also moves to the
-  Windows computer. Cloud Run is decommissioned entirely. `ANTHROPIC_API_
-  KEY` never exists. GCP billing escalation cancelled. Only GitHub
-  Actions runners (for MyApps build/deploy) remain as cloud workloads,
-  and those don't touch Claude so no ToS concern.
+- **v4 (2026-04-09):** discord-relay also moves to the Windows
+  computer. Cloud Run is decommissioned entirely. `ANTHROPIC_API_KEY`
+  never exists. GCP billing escalation cancelled. Only GitHub Actions
+  runners (for MyApps build/deploy) remain as cloud workloads, and
+  those don't touch Claude so no ToS concern.
+- **v5 (2026-04-09, this revision):** Post-ship state sync. All four
+  tonight-escalations resolved. Hetzner contributor-pipeline killed —
+  `contributor-pipeline.yml` and `contributor-merge-notify.yml`
+  deleted at `e4bab47` on main. Branch protection applied with
+  required checks `validate-scope` + `preview`. Firebase SA locked
+  down per Pyke M6: `firebase-hosting-deployer@myapps-b31ea.iam.
+  gserviceaccount.com` scoped to `roles/firebasehosting.admin` only,
+  secret name `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA`. M5 PAT
+  rotated with `workflow` scope removed. Two new Wave T items for
+  Katarina: deregister the Hetzner self-hosted runner from GitHub
+  Actions runners list and shut down the Hetzner VPS.
 
 ## 0. Final Success Criterion
 
@@ -160,14 +171,15 @@ self-contained process or workflow.
 
 Only **one** cloud-credential remains in the system:
 
-- **`FIREBASE_SERVICE_ACCOUNT`** — JSON key stored as a GitHub Actions
-  repo secret, consumed by `FirebaseExtended/action-hosting-deploy` in
-  `preview-myapps.yml` and `deploy-myapps-prod.yml`. Service account
-  scoped to `roles/firebasehosting.admin` +
-  `roles/serviceusage.serviceUsageConsumer` on the Firebase project
-  only. We accept the long-lived JSON key here because the action does
-  not support WIF cleanly for Firebase Hosting and the key is tightly
-  scoped.
+- **`FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA`** — JSON key stored as a
+  GitHub Actions repo secret, consumed by
+  `FirebaseExtended/action-hosting-deploy` in `preview-myapps.yml` and
+  `deploy-myapps-prod.yml`. SA is
+  `firebase-hosting-deployer@myapps-b31ea.iam.gserviceaccount.com`,
+  scoped to **`roles/firebasehosting.admin` only** on the Firebase
+  project (locked down per Pyke M6). We accept the long-lived JSON
+  key here because the action does not support WIF cleanly for
+  Firebase Hosting and the key is tightly scoped.
 
 On the Windows box, tokens live in flat files under
 `%USERPROFILE%\bee\secrets\` (or equivalent path to be decided by
@@ -275,11 +287,14 @@ No auto-merge. Duong is the approval gate.
 - Branch protection on `main`:
   - Require PR before merging, **require 1 approval**, dismiss stale
     approvals on new commits.
-  - Require status checks to pass: `lint`, `typecheck`, `test` (MyApps
-    CI subset) + `preview-myapps` (the preview deploy itself is a
-    check — no URL to review means no green merge).
+  - Require status checks to pass: **`validate-scope` + `preview`**
+    (applied to main, verified live as of `e4bab47`). `validate-scope`
+    enforces the "bot may only touch `apps/myapps/`" rule from Pyke's
+    M6 payload; `preview` is the Firebase Hosting preview deploy —
+    no URL to review means no green merge.
   - Allow auto-merge: OFF.
-  - Direct push to `main`: disallowed (PR-only).
+  - Direct push to `main`: disallowed (PR-only, except admin override
+    for plan-file commits like this one).
   - Enforce admins: OFF (so Duong can emergency-merge).
 - Every bot-authored PR carries label `bot-authored` for filtering. No
   workflow or worker ever calls `gh pr merge`. The coder worker opens
@@ -295,8 +310,8 @@ No auto-merge. Duong is the approval gate.
 | `DISCORD_BOT_TOKEN` | `secrets/discord-bot-token.txt` on Windows box (NTFS ACL) | discord-relay |
 | `GEMINI_API_KEY` | `secrets/gemini-api-key.txt` on Windows box (NTFS ACL) | discord-relay |
 | `GITHUB_TOKEN` (PAT with `repo`) | `secrets/github-triage-pat.txt` on Windows box (NTFS ACL) | discord-relay + coder-worker |
-| `FIREBASE_SERVICE_ACCOUNT` | GitHub Actions repo secret (JSON) | preview-myapps.yml + deploy-myapps-prod.yml |
-| `FIREBASE_PROJECT_ID` | GitHub Actions repo variable | same |
+| `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA` | GitHub Actions repo secret (JSON) | preview-myapps.yml + deploy-myapps-prod.yml |
+| `FIREBASE_PROJECT_ID` (=`myapps-b31ea`) | GitHub Actions repo variable | same |
 
 No GCP Secret Manager. No Cloud Run runtime SA. No WIF. No Anthropic API key.
 
@@ -306,16 +321,21 @@ The task list has mostly completed through earlier pivots. What
 remains after this v4 correction is primarily teardown + repurposing
 plus the still-in-progress smoke test.
 
-**Wave T — Teardown (Katarina):**
+**Wave T — Teardown (Katarina, priority 1):**
 - Delete the Cloud Run service that was deployed for task #4:
   `gcloud run services delete discord-relay --region asia-southeast1 --quiet`.
 - Delete any GCP Secret Manager secrets created for discord-relay:
   `gcloud secrets delete gemini-api-key --quiet` (and any sibling
   entries). Verify `strawberry-agents-discord` has no residual
-  billing-accruing resources (Cloud Run, Artifact Registry images,
-  Cloud Build history can remain).
+  billing-accruing resources.
 - Optional: leave the GCP project itself in place; nothing bills
   without the services.
+- **Hetzner cleanup (new in v5):**
+  - Deregister the self-hosted runner from GitHub Settings →
+    Actions → Runners on `Duongntd/strawberry`.
+  - Shut down the Hetzner VPS (via `hcloud server delete` or the
+    Hetzner console). Its sole purpose was the contributor-pipeline,
+    whose workflows were deleted at `e4bab47`.
 
 **Wave W — Windows-ification of discord-relay (Katarina):**
 - Add `apps/discord-relay/scripts/windows/install-discord-relay.ps1`
@@ -343,15 +363,15 @@ plus the still-in-progress smoke test.
 - Duong registers the NSSM service, confirms a test issue walks the
   full loop and lands a PR.
 
-**Wave G — GitHub Actions cleanup (Fiora):**
-- Delete `.github/workflows/issue-to-pr.yml` (the dead coder action).
-- Delete `.github/coder-agent/` directory if it exists (system prompt
-  now lives inside `apps/coder-worker/prompts/`).
-- Keep `preview-myapps.yml`, `deploy-myapps-prod.yml`,
-  `label-new-issues.yml` as-is. Nothing else changes in GitHub Actions.
-- Branch protection: confirm `required_approving_review_count: 1` and
-  `preview-myapps` is in the required status checks list (see the
-  earlier correction in §2.5).
+**Wave G — GitHub Actions cleanup (Fiora): COMPLETE**
+- `issue-to-pr.yml` deleted in an earlier commit.
+- `contributor-pipeline.yml` + `contributor-merge-notify.yml`
+  deleted at `e4bab47` (Hetzner kill).
+- `preview-myapps.yml`, `deploy-myapps-prod.yml`,
+  `label-new-issues.yml` live on main.
+- Branch protection applied with required checks `validate-scope` +
+  `preview`, verified live as of `e4bab47`.
+- `myapps-pr-preview.yml` path-filter trap fix from Fiora M4 is live.
 
 **Wave S — Verification (Task #10, whoever owns it):**
 - End-to-end smoke test: Duong posts in the Discord forum → issue
@@ -384,28 +404,32 @@ being locked in (it is, as of this revision). Wave S is last.
 | `apps/coder-worker/package.json` + `tsconfig.json` + `.env.example` + `README.md` | project files | C |
 | *(deleted)* `.github/workflows/issue-to-pr.yml` | — | G |
 | *(deleted)* `.github/coder-agent/` | moved into apps/coder-worker/prompts/ | G |
+| *(deleted at e4bab47)* `.github/workflows/contributor-pipeline.yml` | Hetzner kill | T |
+| *(deleted at e4bab47)* `.github/workflows/contributor-merge-notify.yml` | Hetzner kill | T |
 | *(deleted)* `apps/discord-relay/Dockerfile` | follow-up; not urgent | — |
 | *(NOT created)* `infra/gcp/*` | GCP bootstrap scripts — cancelled, no GCP surface remains | — |
 
-## 5. Escalations (needs Duong's hands)
+## 5. Escalations — ALL RESOLVED (v5)
 
-Short list, v4:
+All four tonight-escalations are cleared:
 
-1. **Firebase project ID + `FIREBASE_SERVICE_ACCOUNT` secret** —
-   required by GitHub Actions workflows. Katarina generates the SA
-   JSON from the Firebase project, Duong pastes into GitHub repo
-   secrets. (Already in flight.)
-2. **Branch protection rules** — requires admin click on
-   `Duongntd/strawberry`. The `.github/branch-protection.json` is
-   source-of-truth; applying it needs admin scope.
-3. **Windows computer ready state** — Claude Code installed and
-   logged in to Duong's Max plan; NSSM installed; Git Bash present;
-   secrets directory created with NTFS ACLs set to Duong's user only.
-4. **GitHub PAT** with `repo` scope — already in place (reused from
-   discord-relay triage path).
+1. ✅ **Firebase project ID + SA secret** — `myapps-b31ea` +
+   `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA`. SA is
+   `firebase-hosting-deployer@myapps-b31ea.iam.gserviceaccount.com`
+   scoped to `roles/firebasehosting.admin` only (Pyke M6 lockdown).
+2. ✅ **Branch protection** — applied to `main` with required checks
+   `validate-scope` + `preview`. Verified live at `e4bab47`.
+3. ✅ **Windows computer ready state** — Claude Code + Node + Git
+   Bash + NSSM confirmed installed. Secrets directory NTFS ACL is
+   Katarina's responsibility during install-script execution; the
+   install scripts themselves must verify and refuse to register
+   NSSM if the ACL is wrong (see §6 risk row).
+4. ✅ **GitHub PAT** — rotated with `workflow` scope removed,
+   `repo` scope retained. Runtime consumers (discord-relay, coder-
+   worker) are unaffected.
 
-**Cancelled** (from earlier revisions — do not act on these, they do
-not exist anymore):
+**Cancelled** (phantom escalations from earlier revisions — do not
+act on these, they do not exist):
 
 - ~~Anthropic API key~~ — never needed.
 - ~~GCP billing confirmation~~ — no Cloud Run, no billing.
@@ -458,8 +482,13 @@ One-command per failure mode:
 
 **Follow-up:**
 - Delete `apps/discord-relay/Dockerfile` (cruft).
-- Delete the strawberry-agents-discord GCP project entirely (if no
+- Delete the `strawberry-agents-discord` GCP project entirely (if no
   other service uses it).
+- Deregister the Hetzner self-hosted GitHub runner and shut down the
+  VPS (tracked in Wave T, Katarina).
+- Pyke post-ship IAM audit: `gcloud projects get-iam-policy
+  strawberry-agents-discord` and `gcloud projects get-iam-policy
+  myapps-b31ea` after Wave T completes.
 - Observability: Windows service log rotation; Discord webhook
   alert on NSSM restarts; PR-comment alert on coder-worker failure.
 - `needs-human` label for low-confidence Gemini triage.
