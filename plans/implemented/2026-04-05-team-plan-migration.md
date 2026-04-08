@@ -3,6 +3,8 @@ title: Migrate Agent System from API Keys to Team Plan
 status: implemented
 owner: syndra
 date: 2026-04-05
+gdoc_id: 1bg76Usp779U9Hie9W4CUSqLg65NzHsCuT_1cuBQ85hM
+gdoc_url: https://docs.google.com/document/d/1bg76Usp779U9Hie9W4CUSqLg65NzHsCuT_1cuBQ85hM/edit
 ---
 
 # Migrate Agent System from API Keys to Team Plan
