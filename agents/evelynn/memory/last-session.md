@@ -1,46 +1,52 @@
-# Last Session — 2026-04-08 (Mac evening, Direct mode, S28, post-restart)
+# Last Session — 2026-04-08 (S30, Mac, Direct mode)
 
-**Mode:** Direct mode all the way. Restarted into a fresh Evelynn around 7:46 PM on Mac, worked until ~10:15 PM. First real Mac-side `/end-session` skill test.
+Four-hour delivery-pipeline marathon. Landed a working Discord → Gemini → GitHub issue triage bot for MyApps, full Firebase Hosting CI/CD with preview channels + approval gate + prod deploy on merge. Protocol migration sequence closed. Delivery-pipeline team spawned via TeamCreate (Swain/Pyke/Katarina/Fiora); all idle.
 
 ## Critical for next session — read first
 
-1. **Every agent's `model:` frontmatter takes effect THIS session** — you're fresh, definitions loaded cleanly at startup. Katarina spawns as Sonnet by default. Verify by watching the Max plan dashboard's Sonnet-only bar move above 0% after the first Sonnet spawn.
-2. **Protocol migration paused at Commits 8 and 10** — plan lives at `plans/in-progress/2026-04-09-protocol-migration-detailed.md`. Duong gave three "yes" decisions ("1 sure, 2 now, 3 now"): (1) Commit 8 merge direction is port-then-delete (port missing sections from `GIT_WORKFLOW.md` into `architecture/git-workflow.md`, then `git rm` the root file); (2) push commits 6/7/9 — already done; (3) approve mcp-restructure phase-1 now to unblock Commit 10.
-3. **Phase-1-detailed plan needs promotion** — `plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md` is verbally approved, run `scripts/plan-promote.sh` on it before spawning anyone to execute it.
-4. **Shen and Fiora profiles are NOT wired** — seven aspirational specialists total (Ornn, Fiora, Reksai, Neeko, Zoe, Caitlyn, Shen) with no `.claude/agents/<name>.md`. Duong's rule: wire them, don't fake with general-purpose. Author Shen + Fiora profiles tonight BEFORE spawning them for Commit 8 and phase-1 execution. The other five can be folded into a dedicated wiring plan.
-5. **Sister research agent plan — codename Bee** — `plans/proposed/2026-04-09-sister-research-agent-karma.md` (filename still says karma, content is Bee throughout). 9 open questions; the biggest is whether Claude Max subscription ToS allows automated cloud-backend use. Personal product for Duong's sister. Vietnamese .docx research companion. Every one of Syndra/Swain/Bard flagged the ToS question independently — don't move on infrastructure until it's answered.
+1. **Triage bot is OFFLINE until Duong runs `install-discord-relay.ps1` on his Windows computer.** Cloud Run torn down tonight. Encrypted secrets (`secrets/encrypted/{gemini-api-key,discord-bot-token,github-triage-pat}.age`) ready to pull. Decrypt on Windows via `tools/decrypt.sh`. Bot will reconnect as Evelynn#7838 and watch Discord channel `1489570533103112375` (`#suggestions` forum) once running.
+2. **coder-worker is ALSO offline** until Duong runs `install-service.ps1`. Scaffolded at `apps/coder-worker/` with hardened `--allowedTools Edit,Write,Read,Glob,Grep,LS` (no Bash) and per-job JSONL audit log at `%USERPROFILE%\coder-worker\var\logs\{jobId}.jsonl`. Shares runlock at `%USERPROFILE%\.claude-runlock\claude.lock` per `architecture/claude-runlock.md`.
+3. **Bee is parked.** Build plan at `plans/approved/2026-04-09-bee-mvp-build.md` (Syndra, 10 PRs sequenced). Architecture at `plans/approved/2026-04-09-sister-research-agent-karma.md`. Ready to delegate after delivery-pipeline fully smokes green. Top 3 to delegate first: B1 scaffold `apps/bee-worker/`, B3 `comments.py` OOXML helper, B7 Firestore+Storage rules.
+4. **Branch protection is LIVE on main** with 1-approval review + required status checks `Validate Scope / validate-scope` + `Firebase Hosting PR Preview / preview`. Admin can bypass (enforce_admins: false). `allow_auto_merge` is OFF.
+5. **Hetzner VPS + runner deleted.** Zero residual cloud cost anywhere in the project. Delivery pipeline is fully free-tier.
+6. **Two new feedback memories saved tonight** and should bite on the next session: `feedback_google_claude_free_default.md` (Google+Claude free-tier default, escalate paid) and `feedback_verify_before_redelegating.md` (read the file before re-delegating a patch).
+7. **Session jsonl had two secret-scanner trips** — `github-pat` at line 552 (real PAT, Duong scrubbed, rotate if not already done), `age-pubkey` at line 904 (false positive — age public keys are not secret; the cleaner's `age-pubkey` rule is overreaching and should be downgraded in a future plan).
 
-## What shipped this session (slice 3 of 2026-04-08)
+## What shipped this session
 
-- **Sister research agent rough plan (Bee)** committed `dfcfe19` + revised `ac921d2`. Karma → Bee rename, NextAuth Google → shared password, cost concerns absorbed, playbook reference folded in. 4 inline `// ` directives from Duong applied by a general-purpose subagent that ran on Opus (should have been Poppy or Sonnet — flagged).
-- **First real agent-team session** using `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. Three teammates (Pyke, Swain, Bard), three tasks with dependency chain. Delivered: protocol-leftover audit (`assessments/2026-04-08-protocol-leftover-audit.md`, 625f789), operating-protocol-v2 (2cbc80e → 5bd1ea3 → 6c6e27e through revisions), protocol-migration-detailed 10-commit plan (a078979 → 06a9b5b → 9a33a80 → 7f64f52).
-- **Rule 15 landed** — every `.claude/agents/<name>.md` must declare `model:`. CLAUDE.md updated. 7 existing definitions got frontmatter (opus/sonnet/haiku per tier). Commit `eb6c0a9`.
-- **Katarina migration execution** — promoted plan to approved (`0e6eba1`) → in-progress (`96ddb72`) → executed Commits 1, 3, 4, 5, 6, 7, 9. Commit 2 was no-op (Zilean already absent). Stopped at 8 (merge-direction blocker) and 10 (phase-1 dependency).
-- **clean-jsonl.py platform resolver fix** — detailed plan (`0b22cd3`), Katarina executed with explicit `model: "sonnet"` override, commit `0a0a52d`, plan to implemented. Unblocked this very `/end-session` close. First Sonnet spawn of the session (all earlier Katarina runs were Opus because of the cached-definition bug).
-- **Five new feedback memories** — model-explicit (tightened for session-startup caching), evelynn-primary-tools (teams/subagents/Yuumi, not legacy MCP), subagents-background (always run_in_background), no-git-while-subagent-running (shared tree hazard), no-general-purpose-fallback (wire or use wired, never pretend).
+- **Protocol migration closed**: Commit 8 (Shen, port-then-delete `GIT_WORKFLOW.md`, `8d41ed0`) + Commit 10 (Fiora drift sweep, `55b20fd`) + plan promoted to implemented (`f450a06`).
+- **MCP restructure phase-1 landed by Fiora** (`b95e2fe` + `3c55222` + `f5e87ec`) — agent-manager archived, `/agent-ops` skill, wiring of `apps/myapps/` peer dirs.
+- **Shen + Fiora profiles wired** at `.claude/agents/{shen,fiora}.md` per Rule 15.
+- **Syndra wrote Bee architecture plan** three separate times as directional pivots landed. Final at `f482034`. Then wrote the MVP build plan at `09d5091`.
+- **Delivery-pipeline team**: Swain plan v1→v5 (final at `a63bbf1`), Pyke assessment REV 0→REV 3 (final at `1aa196c`), all 13 tasks completed across Waves A-S except end-to-end smoke test (waits on Duong's Windows install).
+- **Workflow files**: added `auto-label-ready.yml`, `auto-rebase.yml`, `myapps-pr-preview.yml`, `myapps-prod-deploy.yml`, `validate-scope.yml`. Killed `contributor-pipeline.yml` + `contributor-merge-notify.yml` (Hetzner self-hosted Claude invocation, ToS wall).
+- **apps/discord-relay/**: Gemini 2.5-flash-lite triage bot. Scaffold landed, smoke-tested live end-to-end against Duong's Discord `#suggestions` forum — filed a real `[Read Tracker] Vietnamese date picker broken on Safari` issue via a forum post. Now reshaped for Windows NSSM execution.
+- **apps/coder-worker/**: Scaffold + hardening shipped at `8b87396`. Polls GitHub for issues labeled `myapps+ready+!bot-in-progress`, atomic label swap, acquires runlock, invokes `claude -p` locally, commits on `bot/issue-{number}`, opens PR with `bot-authored` label.
+- **mcps/discord/**: Wrapper script for upstream `mcp-discord` npm package (barryyip0625). `.mcp.json` entry added. Not boot-tested yet — follow-up for next session.
+- **architecture/claude-runlock.md**: Shared runlock contract between coder-worker and future bee-worker.
+- **docs/delivery-pipeline-setup.md**: Full runbook for Duong. Windows prereqs, PAT rotation, Firebase SA scoping, branch protection, Windows worker install flow, physical security asks.
+- **Branch protection applied** directly via admin push with the full payload (required_pull_request_reviews + required_status_checks + dismiss_stale_reviews true + enforce_admins false).
+- **72 Dependabot vulnerabilities** surfaced on MyApps — backlog, not blocking.
 
 ## Open threads (priority order)
 
-1. **Wire Shen and Fiora profiles** — blocker for the migration finish.
-2. **Promote phase-1-detailed to approved/** — needed before Commit 10 can run.
-3. **Execute migration Commit 8** — Shen (once wired) with a port-then-delete mini-spec.
-4. **Execute phase-1-detailed end-to-end** — Fiora (once wired). 16 steps. Her own drift sweep is embedded.
-5. **Execute migration Commit 10** — Katarina. Unblocked after phase-1 lands.
-6. **Final migration promotion** — Katarina moves the migration plan to implemented/ after Commit 10.
-7. **CLAUDE.md line 28 stale `agents/roster.md` reference** — tiny follow-up, `agents/roster.md` was deleted by migration Commit 7 but line 28 still points at it.
-8. **Plan Step 4 defect in `2026-04-09-clean-jsonl-platform-resolver.md`** — the Windows-simulation smoke test can't run on Mac pathlib. Post-mortem cleanup, not urgent.
-9. **Wiring debt plan** — propose a dedicated plan to author Ornn, Reksai, Neeko, Zoe, Caitlyn profiles alongside Shen + Fiora.
-10. **Sister-agent plan 9 open questions** — especially Max ToS for automated backend use (blocking), quota contention with autonomous pipeline, and whether the sister wants a character-forward Bee or a flat tool.
-11. **Max plan quota** — this session ran at ~52% of current-session quota pre-restart. All Opus burn. Next session should show Sonnet usage >0% as soon as any Sonnet subagent runs.
+1. **Duong runs `install-discord-relay.ps1` on Windows** → verify `StrawberryDiscordRelay` service is running and triage bot reconnects as Evelynn#7838. Test by posting a new forum post in `#suggestions`.
+2. **Duong runs `install-service.ps1` for coder-worker** → verify service runs, label a test issue `ready`, watch coder-worker open a PR within ~60 seconds.
+3. **End-to-end smoke test** after both services are running: Discord post → issue → `ready` label → coder-worker PR → Firebase preview URL → Duong merges → prod deploy. If all green, delivery pipeline is shipped.
+4. **Bee MVP execution** (after delivery pipeline is smoke-green): delegate B1 → B3 → B7 as first wave from Syndra's build plan.
+5. **Rotate the GitHub PAT one more time** if it hasn't been since the cleaner flagged it at jsonl line 552. The value was in my working-context memory tonight; belt-and-braces is to rotate even though the file was scrubbed.
+6. **Boot-test `mcp-discord`** — Bard scaffolded the wrapper but we skipped the actual `npx -y mcp-discord` boot because it needed network in the subagent sandbox. Do it from a top-level session on Mac.
+7. **Fix the cleaner's `age-pubkey` false positive** — age public keys are intentionally public (they go in `secrets/recipients.txt` which is committed). The cleaner's rule should downgrade to warn-not-fail for `age1...` pubkeys. Worth a small plan.
+8. **72 MyApps Dependabot vulnerabilities** — triage when bandwidth allows. `npm audit fix` on each `apps/myapps/*` workspace as a first pass.
+9. **GHAS paywall for secret scanning on private repos** — known gap, documented. Either make MyApps public (bad idea), accept the gap, or pay for GHAS (against free-tier rule).
+10. **Cleaner dropped false-positive for `age16zn6u...`** — consider reducing cleaner noise in S31.
 
-## Lessons saved (cross-reference for memory hygiene)
+## Lessons saved (cross-reference)
 
-- `feedback_agent_model_explicit.md` (tightened — now covers session-startup caching + first-failure case)
-- `feedback_evelynn_primary_tools.md`
-- `feedback_subagents_background.md`
-- `feedback_no_git_while_subagent_running.md`
-- `feedback_no_general_purpose_fallback.md` (tightened — now covers general-purpose model override + first-failure case)
+- `feedback_google_claude_free_default.md` — new this session, failed twice to apply it
+- `feedback_verify_before_redelegating.md` — new this session, triple-re-delegation mistake with Katarina
+- All prior memories still apply
 
 ## Ended cleanly
 
-First successful Mac-side `/end-session evelynn` invocation after the cleaner fix. Working tree empty going in. Single session-close commit + push at the end.
+Second successful end-session of tonight (first was S29). Cleaner tripped on two secret patterns (one real, one false positive), Duong scrubbed both, cleaner passed on the third probe. Session transcript archived at `agents/evelynn/transcripts/2026-04-08-6563945f.md`. Handing off to S31 with a live triage product queued for first-boot on Duong's Windows computer.

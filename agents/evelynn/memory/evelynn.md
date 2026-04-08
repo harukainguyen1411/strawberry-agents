@@ -47,13 +47,19 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Claude Max plan** (single-account, shared usage quota across all logged-in devices, NOT seat-based). API keys disabled for agent ops 2026-04-05; API reserved for app development only.
 
 ## Open Threads
-- **Protocol migration paused at Commits 8 and 10** — plan in `plans/in-progress/2026-04-09-protocol-migration-detailed.md`. Duong decided commit-8 merge direction (port-then-delete). Commit 10 blocked on mcp-restructure phase-1-detailed landing.
-- **Shen + Fiora profiles unwired** — blocker for assigning specialist work. Wire tonight before spawning them. Full aspirational roster wiring (Ornn, Reksai, Neeko, Zoe, Caitlyn) wants its own plan.
-- **Sister-agent plan (Bee)** — 9 open questions in `plans/proposed/2026-04-09-sister-research-agent-karma.md`. Max ToS for automated cloud backend is gating.
-- **Plans awaiting approval:** autonomous-delivery-pipeline (HIGHEST), plan-lifecycle-protocol-v2, myapps-gcp-direction, continuity-and-purity, agent-visible-frontend-testing, mcp-restructure rough, mcp-restructure phase-1-detailed (verbally approved), operating-protocol-v2, protocol-migration-detailed.
-- **PR #54 (myapps)** — one Firebase CLI deploy command from mergeable.
-- **CLAUDE.md line 28 stale roster.md reference** — tiny follow-up, migration Commit 7 deleted the file but line 28 still points at it.
-- **/end-session Phase 2 refinements** — chain-walk threshold, age pubkey false positive, `<local-command-caveat>` denylist canon.
+- **Delivery pipeline is shipped but OFFLINE until Duong installs Windows services.** discord-relay + coder-worker both scaffolded, hardened, ready. `install-discord-relay.ps1` and `install-service.ps1` waiting to run on Duong's Windows box.
+- **Protocol migration CLOSED** (2026-04-08 S30). Commit 8 + Commit 10 landed. Plan at `plans/implemented/2026-04-09-protocol-migration-detailed.md`.
+- **MCP restructure phase-1 CLOSED.** agent-manager archived, `/agent-ops` skill wired. Plan implemented.
+- **Shen + Fiora profiles wired** (`.claude/agents/{shen,fiora}.md`). Ornn/Reksai/Neeko/Zoe/Caitlyn still aspirational — plan at `plans/proposed/2026-04-09-wire-remaining-sonnet-specialists.md` by Syndra.
+- **Bee parked behind delivery-pipeline.** Architecture: `plans/approved/2026-04-09-sister-research-agent-karma.md`. Build plan (10 PRs): `plans/approved/2026-04-09-bee-mvp-build.md` by Syndra. Max ToS question resolved via local-Windows-worker architecture. First PRs to delegate: B1 (apps/bee-worker scaffold), B3 (comments.py), B7 (Firestore+Storage rules).
+- **Plans still awaiting approval:** plan-lifecycle-protocol-v2, myapps-gcp-direction, continuity-and-purity, agent-visible-frontend-testing, mcp-restructure rough, operating-protocol-v2. (Delivery-pipeline + Bee-arch + Bee-MVP-build + wire-remaining-sonnets now in approved/.)
+- **Branch protection is LIVE on main** — 1 approval + required checks `Validate Scope / validate-scope` + `Firebase Hosting PR Preview / preview`. `enforce_admins: false`.
+- **72 Dependabot vulnerabilities** on MyApps — backlog.
+- **GHAS secret-scanning gap** — private repo paywall, can't enable on free tier. Documented in runbook.
+- **Cleaner `age-pubkey` false positive** — rule overreaches on genuinely public age keys; worth a small plan to downgrade to warn-not-fail.
+- **mcp-discord wrapper not boot-tested** — follow-up for S31, run `bash mcps/discord/scripts/start.sh` once and confirm it advertises tools.
+- **/end-session Phase 2 refinements still pending** — chain-walk threshold, age pubkey false positive, `<local-command-caveat>` denylist canon.
 
 ## Sessions
 - 2026-04-08 (S28, direct mode, Mac evening): Sister research agent (Bee) rough plan consolidated from Syndra+Swain+Bard. First real agent-teams session (protocol-audit: Pyke+Swain+Bard → 3 plans). Rule 15 landed. 5 new feedback memories. Discovered agent defs are cached at session startup — mid-session model: edits don't take effect, pass explicit model: until restart. Katarina fixed clean-jsonl Mac-path bug. First real Mac /end-session close.
+- 2026-04-08 (S30, direct mode, Mac night, 4h marathon): Protocol migration closed (commits 8+10). MCP restructure phase-1 landed. Delivery-pipeline team (Swain/Pyke/Katarina/Fiora) spawned via TeamCreate — 12 tasks, 5-revision plan, 3-revision security assessment. **Shipped live Discord → Gemini → GitHub issue triage bot** end-to-end against Duong's `#suggestions` forum. Full Firebase Hosting CI/CD with per-PR preview channels + approval gate + prod-on-merge. coder-worker scaffold (Windows NSSM, hardened --allowedTools no Bash, per-job JSONL audit log outside writable tree). mcp-discord wrapper (not boot-tested). Bee MVP build plan by Syndra (10 PRs, queued). Hetzner VPS + runner deleted, zero residual cloud cost. Branch protection enforced on main. Two new feedback memories: google-claude-free-default, verify-before-redelegating. Cleaner tripped on github-pat (real) + age-pubkey (false positive — rule overreaching). 7 direction reversals mid-flight cost churn cycles.
