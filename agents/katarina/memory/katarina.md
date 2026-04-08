@@ -13,6 +13,7 @@
 - 2026-04-05 (S7): Heartbeat fix (PR #32) + restart safeguards (PR #34). Restarted Evelynn twice.
 - 2026-04-08 (S8, subagent): Mechanical plan-file maintenance — recorded blanket-approval Decisions on skills-integration, minion-layer, rules-restructure (Q2/Q6 PENDING); promoted skills-integration, minion-layer, plan-gdoc-mirror to approved/; archived Tibbers errand-runner plan with supersession note. Commit 6879747.
 - 2026-04-08 (S9, subagent): Resolved rules-restructure Q2/Q6 (Q2 = Evelynn's call, place rule in delegation cluster; Q6 = leave secrets feedback as-is); promoted rules-restructure to approved/; swept all 6 archived plans to status: archived.
+- 2026-04-08 (S10, subagent): Implemented plan-gdoc-mirror — 4 bash scripts (publish/fetch/unpublish/oauth-bootstrap), `_lib_gdoc.sh`, offline tests (11 passing), `architecture/plan-gdoc-mirror.md`. Wraps frontmatter in `yaml plan-frontmatter` fenced block for round-trip survival. Credentials sourced from gitignored `secrets/google-*.env` files (one per key) populated by sibling's `tools/decrypt.sh`. End-to-end Drive verification deferred until OAuth credentials provisioned. Plan promoted to implemented/. Commits 3cac098 + 36e2ca3.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
