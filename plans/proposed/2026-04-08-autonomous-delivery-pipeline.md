@@ -3,6 +3,8 @@ title: Autonomous Delivery Pipeline — Discord Issue to Deployed Feature with P
 status: proposed
 owner: syndra
 created: 2026-04-08
+gdoc_id: 1NBbg3Re75bRJTikMNyk07OB9_BKzJP4O5lyID5sKOJc
+gdoc_url: https://docs.google.com/document/d/1NBbg3Re75bRJTikMNyk07OB9_BKzJP4O5lyID5sKOJc/edit
 ---
 
 # Autonomous Delivery Pipeline
