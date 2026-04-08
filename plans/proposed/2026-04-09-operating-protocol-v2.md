@@ -113,15 +113,23 @@ v2 fixes this at three sub-layers: roster consolidation, model-tier declaration,
 
 ### 1.1 Roster as single source of truth
 
-**Protocol invariant:** `agents/memory/agent-network.md` is the single roster. `agents/roster.md` is deleted or becomes a thin pointer file. `scripts/list-agents.sh` (introduced by Phase 1 MCP restructure) reads the filesystem to produce a machine-readable list; the human-readable narrative lives in `agents/memory/agent-network.md`. Any divergence between what `list-agents.sh` finds and what `agent-network.md` lists is a CI failure (future hook).
+**Protocol invariant:** `agents/memory/agent-network.md` is the single roster — it is the file every agent reads at startup, so it has to be the source of truth. `scripts/list-agents.sh` (Phase 1 MCP restructure) produces a machine-readable view from the filesystem; the human narrative lives in `agent-network.md`. Any divergence between what `list-agents.sh` finds and what `agent-network.md` lists is a CI failure (future hook).
 
-**What "being on the roster" means:** the agent has (a) a directory at `agents/<name>/` with at minimum `profile.md` and `memory/<name>.md`, (b) a subagent definition at `.claude/agents/<name>.md` with a declared `model:` tier, (c) a row in `agents/memory/agent-network.md` listing role, tier, and platforms, (d) a parity row in `architecture/platform-parity.md` if the agent has any platform-specific affordances. If any of these four are missing, the agent is not on the roster and cannot be invoked.
+**`agents/roster.md` — still open.** Duong is undecided between (a) hard-delete and rely on `agent-network.md` alone, or (b) keep a thin pointer file. Swain's lean: (a), consistent with the hard-delete retirement policy in §1.3 — fewer surfaces, fewer ways to drift. Flagged as the first item under "Open questions" for final call at approval time.
+
+**Wired vs aspirational — two tiers of roster membership.** Not every name in `agent-network.md` is invokable today. v2 formalizes the distinction:
+
+- **Wired.** The agent has all four of: `agents/<name>/` directory with `profile.md` and `memory/<name>.md`; `.claude/agents/<name>.md` with declared `model:` tier; a row in `agents/memory/agent-network.md`; and a parity row in `architecture/platform-parity.md` if applicable. A wired agent can be invoked as a subagent.
+- **Aspirational.** The agent has a row in `agent-network.md` describing intended role/tier and may have `agents/<name>/` scaffolding, but lacks a `.claude/agents/<name>.md` harness profile. An aspirational agent cannot be invoked — the row is a design placeholder, not a live surface. Rakan, Ornn, Fiora, and similar currently sit here (per Duong's Q5 decision: keep Rakan as "aspirational, not wired").
+
+Aspirational rows are legal in `agent-network.md` but must be clearly marked (e.g., a `status: aspirational` column in the roster table). They are not protocol violations; they are intended future wiring. When an aspirational agent is wired, it graduates to wired in a single onboarding commit per §1.3.
 
 **Implication for pyke §8.3 (half-scaffolded agents):**
 
-- **Zilean** — directory exists without `profile.md` or `memory/`. Either finish scaffolding per the draft in the continuity-and-purity plan's Component B (which ships them when that plan lands), or delete the skeleton. Task #3 picks the path; v2 says "one or the other, pick now."
-- **Irelia** — retired. Must be removed from the live roster per the retirement procedure below. Her directory moves to `agents/.retired/irelia/` or is deleted. Her row leaves `agent-network.md`.
-- **Rakan, Shen** — unclear status. Must be classified: active (then they need model-tier, `.claude/agents/` file, parity row) or retired (then the retirement procedure runs on them). No middle ground.
+- **Zilean** — directory exists without `profile.md` or `memory/`. Either finish scaffolding per continuity-and-purity Component B (which ships them when that plan lands), or delete the skeleton. Until one of those happens Zilean is neither wired nor aspirational — she is a broken row that must be resolved. Task #3 picks the path.
+- **Irelia** — retired. Removed from the live roster via the §1.3 retirement procedure (hard delete per Q4).
+- **Shen** — wired. CLAUDE.md Rule 15 lists him on Sonnet; Task #3 adds his row to `agent-network.md` and confirms `.claude/agents/shen.md` declares `model: sonnet`.
+- **Rakan** — aspirational (per Q5). Stays in `agent-network.md` as an aspirational row. No `.claude/agents/rakan.md` needed until/unless someone wires him.
 
 ### 1.2 Agent model-tier declaration (new hard rule)
 
@@ -130,8 +138,10 @@ v2 fixes this at three sub-layers: roster consolidation, model-tier declaration,
 | `model:` value | Used for | Tier rationale |
 |---|---|---|
 | `opus` | Planners, coordinators, architects. Write plans, design systems, route work. Never execute. | Judgment work, long-horizon design, expensive to run but high leverage per token. |
-| `sonnet` | Executors and reviewers. Implement plans, run tests, review PRs, ship code. Always read a plan file before working. | Strong execution tier; correct judgment/cost tradeoff for implementation work. |
-| `haiku` | Minions. Bounded, mechanical, pattern-match tasks: retrieval, mechanical edits, shell-wrapping, status reports. | Cheap, fast, no interpretation surface; hallucinations must be controlled by contract not tier. |
+| `sonnet` | **Default for everything except really simple mechanical work.** Executors, reviewers, specialists, condensers, retrieval agents with any interpretation surface. Always read a plan file before doing execution work. | Strong, reliable tier across judgment-adjacent work. Correct cost/quality tradeoff for the overwhelming majority of tasks. |
+| `haiku` | **Exception tier, reserved for really simple tasks.** Single-verb mechanical work with a tight contract and no interpretation surface — Poppy-class edits where the caller hands a file path, an old string, and a new string. | Cheap and fast, but only safe when the task is narrow enough that hallucination cannot slip through the contract. |
+
+**Rule of thumb (per Duong, 2026-04-09):** Haiku only for really simple tasks. Sonnet is the default even when cost is a concern. If there is any doubt whether a task is "really simple" enough for Haiku, the answer is Sonnet. The cost of a wrong Haiku choice (a minion confidently mis-executes) dwarfs the cost of a conservative Sonnet choice.
 
 No agent inherits its model tier from the parent session. Inheritance produced the silent-degradation class of bugs (an Opus agent running accidentally on Sonnet during a Sonnet parent session, producing worse plans than expected, with nobody noticing until a week later). The `model:` field is load-bearing.
 
@@ -146,7 +156,7 @@ This mapping is already authoritative in `CLAUDE.md` Rule 15; v2 pins it here so
 - **Yuumi is Sonnet**, not Haiku. The minion-tier default from continuity-and-purity's language does not apply to her — her role (errand runner, multi-step file moves, script execution with reporting) is judgment-adjacent and Rule 15 assigns Sonnet.
 - **Shen is on the live roster as Sonnet.** Pyke's audit §1 flagged Shen as "not in `agent-network.md`, active-or-retired unclear." Rule 15's mapping resolves the question: active, Sonnet tier. Task #3 must add Shen's row to `agent-network.md` and confirm his `.claude/agents/shen.md` declares `model: sonnet`.
 - **Rakan and Irelia are absent from Rule 15.** That is consistent with Irelia's retirement and with Rakan being pre-retirement-decision territory. Task #3 retires Irelia via the procedure below. Rakan is an open question for Duong (see §"Open questions" item 5).
-- **Zilean and Ionia are not yet on Rule 15** because neither ships until continuity-and-purity lands. When they do, their `.claude/agents/*.md` files must declare `model: haiku` (Zilean, retrieval-only) and `model: sonnet` (Ionia, per Component A's judgment-tier rationale) respectively, and Rule 15 should be amended to list them.
+- **Zilean and Ionia are not yet on Rule 15** because neither ships until continuity-and-purity lands. When they do, both declare `model: sonnet` — Ionia for judgment-tier transcript summarization, and Zilean because even "retrieval with verbatim citation" has enough interpretation surface (deciding which quote answers the question) that Haiku's rule-of-thumb exemption does not apply. Rule 15 amends to list them at that time. This is a direct consequence of Q2 (Duong, 2026-04-09): Haiku is the exception, Sonnet is the default.
 
 **Task #3 (pyke migration plan) action:** add `model:` to every existing `.claude/agents/<name>.md` file, using Rule 15's mapping verbatim. Any agent missing from both Rule 15 and the legitimate exceptions above is escalated to Duong, not resolved unilaterally.
 
@@ -164,17 +174,18 @@ This mapping is already authoritative in `CLAUDE.md` Rule 15; v2 pins it here so
 
 Onboarding is done via `scripts/new-agent.sh` (Phase 1 MCP restructure). The script covers items 1–3 automatically; 4–7 are manual in Phase 1 and may become scripted later.
 
-**Retirement procedure** (new rule; pyke §8.3 explicitly flagged this as missing):
+**Retirement procedure** (per Q4, Duong 2026-04-09: hard delete, git-controlled — no `.retired/` directory):
 
-1. Add `retired: YYYY-MM-DD` and `retirement-reason: <one-line>` to the agent's `profile.md` frontmatter.
-2. Move `agents/<name>/` → `agents/.retired/<name>/`. Preserve history via `git mv`, not delete + re-add.
-3. Delete `.claude/agents/<name>.md` entirely. A retired agent cannot be invoked by the harness.
-4. Remove the row from `agents/memory/agent-network.md` roster. Add a footnote under a "Retired" section listing name + retirement date + retirement reason.
-5. Remove the row from `architecture/platform-parity.md` if present.
-6. Do NOT retroactively delete the agent's prior learnings, journals, transcripts, or historical plan authorship. Those are history.
-7. All of the above in a single commit with `chore: retire <name> agent`.
+1. `git rm -r agents/<name>/` — hard delete the entire agent directory. History is preserved by git itself; the working tree no longer carries the dead weight. No `agents/.retired/<name>/` shadow copy.
+2. `git rm .claude/agents/<name>.md` — delete the harness profile. A retired agent cannot be invoked.
+3. Remove the row from `agents/memory/agent-network.md` roster. A short "Retired" footnote section lists name + retirement date + one-line reason for continuity; detailed history lives in git log.
+4. Remove the row from `architecture/platform-parity.md` if present.
+5. Prior learnings, journals, transcripts, and plan authorship attributable to the agent survive via git history. Do not scrub them from older commits or rewrite history.
+6. All of the above land in a single commit. **Commit message template:** `chore: retire <name> agent — <one-line reason>`. The commit body restates the retirement reason and, if relevant, names the plan that authorized the retirement.
 
-**Pyke §8.3 cleanup targets on retirement procedure adoption:** Irelia (retired already per prior decision, cleanup incomplete). Possibly Rakan/Shen pending classification.
+**Rationale for hard delete over archive directory:** an archive directory reintroduces the fossil problem this plan is trying to solve. Once a dir exists, it gets scanned, listed, and occasionally read — which means "retired" silently becomes "half-retired." Git history is a better archive than a working-tree directory because it is immutable and does not pollute filesystem scans. Rollback if a retirement turns out to be premature: `git revert <retirement-commit>` restores every file atomically.
+
+**Pyke §8.3 cleanup targets on retirement procedure adoption:** Irelia is the first use of this procedure. Task #3 (pyke's migration plan) executes the retirement as the canonical example.
 
 ---
 
@@ -192,7 +203,11 @@ Depends on: `plans/proposed/2026-04-08-plan-lifecycle-protocol-v2.md` introducin
 
 ### 2.2 Rule 7 (Plan approval gate & Opus execution ban) — tightened
 
-Current text is load-bearing already. v2 adds one sentence: "Opus agents take no `Edit`, `Write`, `Bash` (non-read-only), or `git` actions outside their own memory/learnings files. If an Opus agent is tempted to make an edit directly, they stop and dispatch a minion (Poppy for mechanical edits, Yuumi for errands, Katarina for engineering). The continuity-and-purity plan's Component C tripwire recommendation is the enforcement mechanism for this clause at the discipline layer; v2 pins it as the target."
+Current text is load-bearing already. v2 adds one sentence: "Opus agents take no `Edit`, `Write`, `Bash` (non-read-only), or `git` actions outside their own memory/learnings files. If an Opus agent is tempted to make an edit directly, they stop and dispatch a minion (Poppy for mechanical edits, Yuumi for errands, Katarina for engineering)."
+
+**Tripwire placement (per Q1, Duong 2026-04-09): Claude Code harness pre-tool-use hook, not profile text.** The enforcement surface for this clause is a hook that intercepts `Edit`, `Write`, `Bash`, and `git`-shelling calls on agents whose `model:` is `opus` and whose target paths are not inside `agents/<self>/memory/**` or `agents/<self>/learnings/**`. On hit, the hook refuses the tool call and emits a reminder to dispatch a minion. Profile text and Rule 7 prose are documentation; the hook is enforcement. This is a deliberate departure from Swain's initial lean (both profile and rule text). Rationale: the continuity-and-purity Component C audit showed that prose reminders are not holding for Evelynn even after three prior learning files — the discipline-layer enforcement needs a structural tripwire.
+
+Hook implementation is **out of scope for this plan**. v2 pins the placement decision; the hook itself is a follow-up plan (owner: Bard or Pyke, tooling-layer specialists). The plan must address: cross-platform compatibility (the hook runs on both macOS and Windows Git Bash), agent-identity detection inside the hook (reading `model:` from the current subagent's frontmatter), the allowlist of paths an Opus agent may still touch (own memory, own learnings, and plan files under `plans/proposed/` — the latter is how Opus agents still write their own plans), and escape-hatch semantics for Duong's "go ahead" override clause already in Rule 7.
 
 ### 2.3 Rule 9 (Plans go directly to main, never via PR) — unchanged in intent, clarified
 
@@ -265,21 +280,24 @@ Today, protocol violations produce a learning file and drift back into normal op
 
 ## Open questions for Duong
 
-1. **Rule 7 tripwire placement.** The continuity-and-purity plan Component C recommends a pre-action self-check tripwire for Evelynn and defers its home to "the rules restructure plan." v2 is that plan. Duong's call: does the tripwire go in `CLAUDE.md` Rule 7 text (declarative), in Evelynn's profile (identity-scoped), or as a Claude Code harness hook (enforcement-scoped)? **Swain's lean: Evelynn's profile AND Rule 7 text.** Both surfaces. The profile is where Evelynn rereads it at startup; Rule 7 is where other Opus agents absorb it via osmosis. Harness hooks are brittle and platform-specific; skip.
+### Resolved in-session (2026-04-09)
 
-2. **Haiku baseline for minions, or Sonnet?** v2 declares Haiku as the minion default with Ionia (the condenser) as a documented Sonnet exception. Continuity-and-purity Component A recommends Sonnet for Ionia because "lossy-but-faithful summarization of multi-thousand-line transcripts is above Haiku's rated tier." Duong's call: accept the exception, or force Ionia to Haiku with stricter contracts?
+- **Q1 — Rule 7 tripwire placement.** RESOLVED: pre-tool-use harness hook, not profile text. §2.2 updated. Hook implementation is a follow-up plan.
+- **Q2 — Haiku baseline for minions, or Sonnet?** RESOLVED: Sonnet is the default. Haiku is the exception, reserved for really simple mechanical tasks (Poppy-class). §1.2 updated; Ionia and Zilean both declare `model: sonnet` when they ship.
+- **Q4 — Retirement target directory.** RESOLVED: hard delete, git-controlled. No `.retired/` directory. §1.3 updated.
+- **Q5 — Rakan classification.** RESOLVED: keep Rakan as "aspirational, not wired." §1.1 introduces the wired/aspirational distinction to formalize this status. Ornn, Fiora, and similar sit in the same tier.
 
-3. **Roster consolidation path.** Two options: (a) delete `agents/roster.md` and consolidate into `agents/memory/agent-network.md`; (b) keep `agents/roster.md` as a thin pointer file that links to `agents/memory/agent-network.md`. Swain's lean: (a), delete it. Less surface, fewer ways to drift. But (b) is gentler if any tooling still references `roster.md`.
+### Still open
 
-4. **Retirement target directory — `.retired/` or outright delete?** The procedure above proposes `agents/.retired/<name>/`. Alternative: hard delete and rely on git history. Swain's lean: `.retired/` for the first retirement (Irelia) as a documentation artifact, then evaluate whether the directory provides ongoing value. If nobody reads it in a month, hard delete going forward.
+1. **Roster file consolidation.** Duong is unsure whether to hard-delete `agents/roster.md` or keep it as a thin pointer to `agents/memory/agent-network.md`. Swain's lean (consistent with the Q4 hard-delete policy for retirement): delete `agents/roster.md` outright. `agent-network.md` is the file agents actually read at startup; the pointer file is drift-bait. Final call at approval time.
 
-5. **Model tier for Lissandra, Caitlyn, and any other currently-ambiguous agents.** The baseline mapping above is Swain's best-guess. Duong may want to override. v2's detailed phase (if approved) or Task #3 must confirm with Duong agent-by-agent before committing the `model:` field.
+2. **Model tier for agents not yet in Rule 15.** Rule 15 covers the current roster. Aspirational agents (Rakan etc) don't need a tier until they're wired. But when they ARE wired, Task #3 or the onboarding plan must confirm the tier with Duong rather than inferring from role description. This is process, not a blocker — flagging so the onboarding skill checklist includes it.
 
-6. **Pyke §8.7 — stale plans in `plans/proposed/`.** Four plans from 2026-04-03 to 2026-04-05 are stuck. Does v2 add a staleness-TTL rule (e.g., a plan in `proposed/` with no update for N days gets auto-archived), or is that the plan-lifecycle-v2 plan's job? Swain's lean: let plan-lifecycle-v2 own it; v2 just flags that it needs to exist.
+3. **Pyke §8.7 — stale plans in `plans/proposed/`.** Four plans from 2026-04-03 to 2026-04-05 are stuck. Does v2 add a staleness-TTL rule (e.g., a plan in `proposed/` with no update for N days gets auto-archived), or is that the plan-lifecycle-v2 plan's job? Swain's lean: let plan-lifecycle-v2 own it; v2 just flags that it needs to exist.
 
-7. **Where does `architecture/platform-parity.md` get maintained?** It's created by Phase 1 detailed MCP restructure and v2 pins it as the single source of truth. But who maintains it as new artifacts land? Swain's lean: the `draft-plan` and `detailed-plan` skills from plan-lifecycle-v2 must include a "parity row update" reminder in their body. Skill-level enforcement, not a hook.
+4. **Where does `architecture/platform-parity.md` get maintained?** It's created by Phase 1 detailed MCP restructure and v2 pins it as the single source of truth. But who maintains it as new artifacts land? Swain's lean: the `draft-plan` and `detailed-plan` skills from plan-lifecycle-v2 must include a "parity row update" reminder in their body. Skill-level enforcement, complemented by the Rule 7 tripwire hook for edit discipline.
 
-8. **Agent identity in SendMessage vs inbox.** In subagent mode (this session), agents communicate via SendMessage. In top-level mode, they write to `agents/<name>/inbox/`. v2 treats these as two surfaces for the same primitive; the agent's code doesn't change. But is this actually equivalent, or does SendMessage introduce auditability gaps the inbox path doesn't have? **Flagging — not blocking v2 approval, but worth a follow-up plan if the gap is real.**
+5. **Agent identity in SendMessage vs inbox.** In subagent mode (this session), agents communicate via SendMessage. In top-level mode, they write to `agents/<name>/inbox/`. v2 treats these as two surfaces for the same primitive; the agent's code doesn't change. But is this actually equivalent, or does SendMessage introduce auditability gaps the inbox path doesn't have? Flagging — not blocking v2 approval, but worth a follow-up plan if the gap is real.
 
 ---
 
