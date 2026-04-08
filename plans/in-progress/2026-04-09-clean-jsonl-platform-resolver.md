@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 owner: evelynn
 created: 2026-04-09
 title: clean-jsonl.py platform-aware project-dir resolver
