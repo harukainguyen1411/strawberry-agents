@@ -1,6 +1,6 @@
 ---
 title: /end-session Skill — Phase 1 Execution Spec
-status: ready
+status: in-progress
 owner: bard
 detailed_owner: bard
 created: 2026-04-08
