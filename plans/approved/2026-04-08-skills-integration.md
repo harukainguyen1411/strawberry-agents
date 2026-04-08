@@ -3,6 +3,8 @@ status: proposed
 owner: syndra
 date: 2026-04-08
 title: Claude Skills Integration — Migration Plan for the Strawberry Agent System
+gdoc_id: 1ScvmPhEXni2GyhQns6Mt1oshjNQOx8LUzO24_26N-kw
+gdoc_url: https://docs.google.com/document/d/1ScvmPhEXni2GyhQns6Mt1oshjNQOx8LUzO24_26N-kw/edit
 ---
 
 # Claude Skills Integration
