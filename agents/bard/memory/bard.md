@@ -27,3 +27,4 @@
 ## Sessions
 - 2026-04-04/05: evelynn MCP server, telegram bridge, heartbeat fix, restart safeguards, launch verification plan
 - 2026-04-08: Wrote agent-visible-frontend-testing plan (proposed) — MVP reuses existing Playwright, new e2e/agent-verify.spec.ts + npm run verify:frontend; Phase 2 adopts/builds Playwright MCP; recommended pipeline gate placement (c) both local pre-PR and preview pre-Discord; skip Storybook for MVP. Slots into Syndra's autonomous-delivery-pipeline plan.
+- 2026-04-08: Wrote /end-session skill plan (proposed) — jsonl cleaner (Python), transcripts/ dir, 11-step close orchestration, hosts Syndra Component A condenser, supersedes v1 /close-session. Recommended split into /end-session + /end-subagent-session because Sonnet subagents have no own jsonl. Phase 1 ships without condenser; Phase 2 wires it in.
