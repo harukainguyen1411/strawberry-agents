@@ -3,6 +3,8 @@ status: proposed
 owner: swain
 created: 2026-04-08
 title: MyApps on Google Infrastructure — Direction, Not Migration
+gdoc_id: 14bW5IugBZbOwisDjpR9vXHo8WqPCrXtP8dHEYs6ITOY
+gdoc_url: https://docs.google.com/document/d/14bW5IugBZbOwisDjpR9vXHo8WqPCrXtP8dHEYs6ITOY/edit
 ---
 
 # MyApps on Google Infrastructure — Direction, Not Migration
