@@ -1,6 +1,8 @@
 ---
 status: implemented
 owner: bard
+gdoc_id: 1c6sBY5dMke9Pe0FanP3VB5wkHG5UyOZX7a9olN6Unyk
+gdoc_url: https://docs.google.com/document/d/1c6sBY5dMke9Pe0FanP3VB5wkHG5UyOZX7a9olN6Unyk/edit
 ---
 
 # Fix restart_evelynn False Negative Detection
