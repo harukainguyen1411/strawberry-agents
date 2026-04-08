@@ -78,7 +78,26 @@ Katarina is setting up the Firebase project in parallel. Once she finishes, she'
 - [ ] Click **Add secret**
 - [ ] **Delete the downloaded JSON file from your Downloads folder** — gitleaks will not catch this, and we do not want it sitting on disk
 
-⚠️ Pyke flagged: scope this service account to **Firebase Hosting Admin** only (not Project Editor). In the GCP console → IAM → find the new service account → remove `Editor` role → add `Firebase Hosting Admin` role only.
+⚠️ Pyke flagged: scope this service account to **Firebase Hosting Admin** only (not Project Editor). Two options:
+
+**GCP Console (visual):**
+1. https://console.cloud.google.com/iam-admin/iam?project=strawberry-agents-discord
+2. Find the SA you generated (e.g. `firebase-adminsdk-xxxxx@strawberry-agents-discord.iam.gserviceaccount.com`)
+3. Click the pencil icon at the right → trash icon on any non-Hosting-Admin role → **+ ADD ANOTHER ROLE** → type "Firebase Hosting Admin" → Save
+4. Verify: the principal shows exactly one role, `Firebase Hosting Admin`
+
+**gcloud CLI (faster):**
+```bash
+SA="firebase-adminsdk-xxxxx@strawberry-agents-discord.iam.gserviceaccount.com"
+PROJECT="strawberry-agents-discord"
+gcloud projects remove-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:$SA" --role="roles/editor"
+gcloud projects add-iam-policy-binding "$PROJECT" \
+  --member="serviceAccount:$SA" --role="roles/firebasehosting.admin"
+gcloud projects get-iam-policy "$PROJECT" --flatten="bindings[].members" \
+  --filter="bindings.members:$SA" --format="value(bindings.role)"
+# Should output exactly: roles/firebasehosting.admin
+```
 
 ---
 
