@@ -3,8 +3,8 @@
 ## Critical Rules
 
 1. **Never leave work uncommitted** — commit before any git operation that changes the working tree
-2. **Delegated tasks: call `complete_task` when done** — this is how Evelynn tracks work
-3. **Report task completion to Evelynn** via `message_agent` or inbox
+2. **Delegated tasks: report completion to Evelynn and update the delegation JSON file directly** — this is how Evelynn tracks work (Phase 1; `/agent-ops delegate` comes in Phase 2 if needed)
+3. **Report task completion to Evelynn** via `/agent-ops send evelynn <message>` or inbox
 4. **Never write secrets into committed files** — use `secrets/` (gitignored) or env vars
 5. **Use `git worktree` for branches** — never raw `git checkout`. Use `scripts/safe-checkout.sh`
 6. **Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Every delegated task to a Sonnet agent must reference a plan file in `plans/`. Opus agents (Evelynn, Syndra, Swain, Pyke) create the plans; Sonnet agents read and follow them.
@@ -18,6 +18,10 @@
 14. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level Claude Code sessions use `/end-session`; Sonnet subagent sessions use `/end-subagent-session`. These skills produce the cleaned-transcript archive (top-level only), handoff note, memory refresh, learnings, and commit. Closing without running the appropriate skill is a protocol violation. The skills are `disable-model-invocation: true` — Duong or Evelynn must explicitly trigger them.
 
 15. **Every agent definition must declare its model** — every `.claude/agents/<name>.md` file MUST include a `model:` frontmatter field. Use `opus` for planners (evelynn, syndra, swain, pyke, bard), `sonnet` for executors/reviewers (katarina, lissandra, yuumi, ornn, fiora, reksai, neeko, zoe, caitlyn, shen), `haiku` for minions (poppy). Use the short alias names, not pinned version IDs, so agents auto-upgrade when Anthropic ships new tiers. Agents must NEVER silently inherit the parent session's model. Spawning with an explicit `model:` parameter override is allowed only with a deliberate reason.
+
+16. **Project MCPs are only for external system integration.** Local coordination, state management, and procedural discipline belong in skills, CLAUDE.md rules, and shell scripts. Before adding a new MCP, confirm it talks to a stateful or protocol-heavy external system per `architecture/platform-parity.md` and the decision tree in `plans/proposed/2026-04-08-mcp-restructure.md` §1. The `agent-manager` MCP is archived as of Phase 1 of the MCP restructure; use `/agent-ops` instead.
+
+17. **All skills and scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) MUST be POSIX-portable bash runnable on both macOS and Git Bash on Windows.** Platform-specific affordances live under `scripts/mac/` or `scripts/windows/` and are listed in `architecture/platform-parity.md`.
 
 ## Scope
 

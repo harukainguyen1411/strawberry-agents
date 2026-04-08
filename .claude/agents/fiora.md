@@ -1,5 +1,6 @@
 ---
 name: fiora
+skills: [agent-ops]
 model: sonnet
 description: Fullstack engineer for bugfixes and refactoring — surgical root-cause fixes and elegant cleanups. Sonnet-tier executor. Always works from an approved plan in plans/approved/ or plans/in-progress/.
 tools: Read, Write, Edit, Glob, Grep, Bash

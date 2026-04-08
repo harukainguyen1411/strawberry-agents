@@ -1,5 +1,6 @@
 ---
 name: yuumi
+skills: [agent-ops]
 model: sonnet
 description: Evelynn's errand-runner familiar. Sonnet-tier. Handles light coordination chores for Evelynn — file moves, lookups, mechanical admin, quick multi-step errands that don't need Katarina's full engineering scope or Poppy's one-file Haiku precision. Code/config changes still require a plan file per CLAUDE.md rule 6.
 tools: Read, Write, Edit, Glob, Grep, Bash

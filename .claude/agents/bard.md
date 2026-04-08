@@ -1,5 +1,6 @@
 ---
 name: bard
+skills: [agent-ops]
 model: opus
 description: MCP server and tool integration specialist. Use for designing MCP servers, planning tool integrations, evaluating MCP architecture decisions, and reviewing MCP server changes. Opus-tier planner — writes plans, never self-implements.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch

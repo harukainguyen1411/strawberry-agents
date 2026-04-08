@@ -31,7 +31,7 @@
 - CLAUDE.md rule: PRs with significant changes must update relevant READMEs and architecture docs.
 - `architecture/telegram-relay.md` currently describes v1 — needs update to match v2 design in the plan.
 - **Plans go directly to main, not via PR** — use `chore:` prefix. Never use `feat:`, `plan:`, etc.
-- **Opus agents never implement** — write plan to `plans/proposed/`, call `complete_task`, stop. Duong approves; Evelynn delegates to Sonnet.
+- **Opus agents never implement** — write plan to `plans/proposed/`, report to Evelynn, stop. Duong approves; Evelynn delegates to Sonnet.
 - **Never assign implementers in plans** — Evelynn decides delegation after approval.
 
 ## Agent Relationships

@@ -70,4 +70,6 @@ Steps 1-4 are mandatory. Step 5 only when something new and reusable was learned
 
 ## Agent Launch
 
-Agents are launched via `launch_agent(name)` which opens a new iTerm window with the agent's profile. Each agent runs as its own Claude CLI session.
+On macOS: agents are launched via `scripts/mac/launch-agent-iterm.sh <name>` which opens a new iTerm2 window with the agent's profile. Each agent runs as its own Claude CLI session.
+
+On Windows: agents are launched as Claude Code subagents via the `Task` tool using the agent's `.claude/agents/<name>.md` definition. No iTerm, no separate terminal window.
