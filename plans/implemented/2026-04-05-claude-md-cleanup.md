@@ -1,6 +1,8 @@
 ---
 status: implemented
 owner: syndra
+gdoc_id: 1l8dbaLKGcGCioyHVpFB88_p14Yio2CHvubVxa7M5XNc
+gdoc_url: https://docs.google.com/document/d/1l8dbaLKGcGCioyHVpFB88_p14Yio2CHvubVxa7M5XNc/edit
 ---
 
 # CLAUDE.md Cleanup — Self-Contained Systems
