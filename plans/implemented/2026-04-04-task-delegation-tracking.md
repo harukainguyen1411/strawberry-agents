@@ -1,8 +1,6 @@
 ---
 status: implemented
 owner: syndra
-gdoc_id: 18CPKJBDHYvpa3b0XV6WfARTE4TbgLz1yWhVgwQkhp5Y
-gdoc_url: https://docs.google.com/document/d/18CPKJBDHYvpa3b0XV6WfARTE4TbgLz1yWhVgwQkhp5Y/edit
 ---
 
 # Task Delegation Tracking — Design Proposal
