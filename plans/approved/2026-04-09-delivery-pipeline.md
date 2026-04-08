@@ -18,6 +18,17 @@ has been updated end-to-end to reflect that; `auto-merge.yml` is removed,
 `firebase-hosting-pull-request` and `firebase-hosting-merge` Google
 actions replace the custom deploy workflows for MyApps.
 
+**Revision 2026-04-09 v2 (Max-plan coder worker pivot):** Coder agent
+moves **out of GitHub Actions** and into a long-running Windows worker
+on Duong's always-on computer. GitHub Actions runners are cloud
+infrastructure, and running `claude -p` there under Duong's Max OAuth
+violates Anthropic's ToS for Max (personal-use only). The worker polls
+GitHub for `ready`-labeled issues, invokes `claude -p` locally under
+Duong's Max login, pushes a branch, and opens a PR. `ANTHROPIC_API_KEY`
+is no longer needed and removed from the escalation list. Firebase
+Hosting preview/prod workflows, label workflow, and discord-relay Cloud
+Run deploy all unchanged.
+
 ## 0. Tonight's Success Criterion
 
 A gated loop works unattended until the human gate:
@@ -59,16 +70,30 @@ self-contained workflow.
                             |  - stamps `ready` label|
                             +-----------+------------+
                                         |
-                                        v (workflow: issues.labeled == ready)
+                                        v (polled every 60s by local worker)
                             +------------------------+
-                            | .github/workflows/     |
-                            | coder-agent.yml        |   [task 11]
-                            |  - claude-code-action  |
-                            |    (Anthropic API key) |
-                            |  - creates branch      |
-                            |  - opens PR w/ label   |
+                            | apps/coder-worker/     |   [task 11 v2]
+                            | (Windows, NSSM)        |
+                            |  - polls GH for issues |
+                            |    labeled `ready`     |
+                            |    && `myapps` &&      |
+                            |    !`bot-in-progress`  |
+                            |  - atomic label swap:  |
+                            |    ready→bot-in-       |
+                            |    progress            |
+                            |  - acquires shared     |
+                            |    runlock             |
+                            |    (~/.claude-runlock/ |
+                            |     claude.lock)       |
+                            |  - `claude -p` under   |
+                            |    Duong's Max OAuth   |
+                            |    (local, NOT cloud)  |
+                            |  - git commit + push   |
+                            |  - gh pr create, label |
                             |    `bot-authored`      |
-                            |  - NO auto-merge       |
+                            |  - label swap on issue:|
+                            |    bot-in-progress →   |
+                            |    bot-pr-opened       |
                             +-----------+------------+
                                         |
                                         v (workflow: pull_request)
@@ -168,20 +193,78 @@ No long-lived keys for the relay path.
   `google-github-actions/auth@v2` with `workload_identity_provider` +
   `service_account`. Zero secrets in CI for the relay deploy.
 
-### 2.3 Coder agent: `anthropics/claude-code-action` vs custom
+### 2.3 Coder agent: local Windows worker under Max OAuth
 
-**Decision: use `anthropics/claude-code-action` if it is published and
-maintained on the GitHub Marketplace.** Rationale: reproduces the Claude Code
-semantics Duong is already aligned with, supports `ANTHROPIC_API_KEY` out of
-the box, handles sandboxing. **Fallback** (if the action is unpublished,
-archived, or has open security CVEs at pickup time): custom workflow that
-`npx @anthropic-ai/claude-code@latest -p "<prompt>" --permission-mode=accept`
-inside an Ubuntu runner with a checked-out repo, then `gh pr create`.
+**Decision: the coder agent is a long-running local process on Duong's
+always-on Windows computer, NSSM-supervised, invoking `claude -p`
+interactively under Duong's own Max login.** It is NOT a GitHub Action.
 
-- **Never route through Duong's Claude Max OAuth.** The coder agent uses a
-  **separate pay-as-you-go Anthropic API key**, stored as GitHub Actions
-  secret `ANTHROPIC_API_KEY` on the `Duongntd/strawberry` repository.
-- Duong creates the key (escalation §5).
+Why: GitHub Actions runners are cloud infrastructure. Running `claude
+-p` there under Duong's Max OAuth violates Anthropic ToS for Max plan
+(personal-use only, not server-shaped automation). Running the same
+command on Duong's own hardware under Duong's own login is exactly the
+personal-automation pattern the Max plan is designed for. `claude-code-
+action` + `ANTHROPIC_API_KEY` is also a valid path but Duong has chosen
+to avoid API billing; Max-plan-on-own-hardware is the path.
+
+**Shape of the worker** (`apps/coder-worker/`):
+
+- Long-running Node TS process, NSSM service on Windows — same
+  supervision pattern as discord-relay / Bee worker.
+- Polls GitHub every `POLL_INTERVAL_SECONDS` (default 60) for open
+  issues in `Duongntd/strawberry` where labels include `myapps` AND
+  `ready` AND NOT `bot-in-progress`.
+- Per matching issue, serialized via a local semaphore (`MAX_
+  CONCURRENT_JOBS=1`):
+  1. Atomic label swap via GitHub REST API: remove `ready`, add
+     `bot-in-progress`. If the swap 409s because another worker got
+     there first, skip the issue.
+  2. `git fetch origin && git worktree add ... bot/issue-{number}`
+     from latest `origin/main` (worktree, not raw checkout — matches
+     strawberry's branch discipline).
+  3. Acquire shared runlock at
+     `%USERPROFILE%\.claude-runlock\claude.lock` via
+     `proper-lockfile`. Same lock path Bee worker uses, so the two
+     serialize against each other rather than racing Duong's own
+     Claude Code sessions.
+  4. Assemble prompt: `.github/coder-agent/system.md` (scope rules) +
+     issue title + issue body, injected as `claude -p` arg.
+  5. `execa('claude', ['-p', prompt, '--output-format', 'stream-json',
+     '--max-turns', '25'])`. Stream output to a per-job log file under
+     `var/jobs/{issue}.log`.
+  6. `git add -A && git commit -m "chore: {title} (#${number})" &&
+     git push origin bot/issue-{number}`.
+  7. `gh pr create --label bot-authored --body "closes #${number}"`
+     targeting `main`.
+  8. Label swap on issue: remove `bot-in-progress`, add
+     `bot-pr-opened`, post a comment with the PR URL.
+  9. Release runlock and worktree, loop.
+
+- Env:
+  - `GITHUB_TOKEN` loaded from `secrets/github-triage-pat.txt` (same
+    token discord-relay uses for issue filing).
+  - `TRIAGE_TARGET_REPO=Duongntd/strawberry`
+  - `POLL_INTERVAL_SECONDS=60`
+  - `MAX_CONCURRENT_JOBS=1`
+- Code is POSIX-portable per CLAUDE.md Rule 17; Windows-specific install
+  helpers (NSSM registration) live under `scripts/windows/`.
+- Reuse the `apps/discord-relay/` scaffolding shape wholesale — same
+  TS project layout, same `config.ts`/`github.ts`/`log.ts` pattern,
+  just swap the discord.js listener for a `setInterval` poll.
+
+**Hard scope guardrail in the system prompt**
+(`.github/coder-agent/system.md`): the prompt MUST include a literal
+clause: "You may only modify files under `apps/myapps/`. You must NEVER
+modify `.github/`, `.mcp.json`, `secrets/`, `scripts/`, `architecture/`,
+`plans/`, or `agents/`." Prompt-layer guardrail, not a sandbox — the
+worker runs as Duong's user and can theoretically touch anything, so the
+system prompt is the only line of defense short of a separate OS user
+account. Pyke's security assessment should weigh this.
+
+**What is NOT needed anymore:**
+- `ANTHROPIC_API_KEY` GitHub secret — gone.
+- `anthropics/claude-code-action` marketplace action — gone.
+- `.github/workflows/coder-agent.yml` — delete.
 
 ### 2.4 Secrets topology
 
@@ -190,7 +273,7 @@ inside an Ubuntu runner with a checked-out repo, then `gh pr create`.
 | `DISCORD_BOT_TOKEN` | GCP Secret Manager (`discord-bot-token`) | discord-relay runtime |
 | `GEMINI_API_KEY` | GCP Secret Manager (`gemini-api-key`) | discord-relay runtime |
 | `GITHUB_TOKEN` (issue filing) | GCP Secret Manager (`gh-issue-bot-token`) | discord-relay runtime |
-| `ANTHROPIC_API_KEY` | GitHub Actions Secret | coder-agent.yml |
+| `GITHUB_TOKEN` (coder worker PAT) | `secrets/github-triage-pat.txt` on Windows box (NTFS ACL to Duong's user only) | coder-worker |
 | `FIREBASE_SERVICE_ACCOUNT` | GitHub Actions Secret (JSON) | myapps-pr-preview.yml, myapps-prod-deploy.yml |
 | Cloud Run deploy auth | OIDC (WIF), no secret | deploy-relay.yml |
 
@@ -278,17 +361,18 @@ Tasks 2–12 form a dependency graph. Execution waves:
   github.repository` so the secret never leaks to a forked PR. Also
   configure branch protection (§2.5) via `gh api` from
   `.github/branch-protection.json`.
-- **Task 11** — `coder-agent.yml`. Trigger:
-  `issues.labeled where label.name == 'ready'`. Steps:
-  1. `actions/checkout@v4`
-  2. `anthropics/claude-code-action@v<latest>` with prompt assembled from
-     issue title + body + a system prompt living at
-     `.github/coder-agent/system.md` (scope: "you may only modify files
-     under `apps/myapps/` or `apps/discord-relay/`; write tests; commit
-     with `chore:` prefix").
-  3. `peter-evans/create-pull-request@v7` (if the action doesn't open the
-     PR itself) targeting `main`, label `bot-authored`. **Do not call
-     `gh pr merge`.** The PR waits for Duong.
+- **Task 11 (v2)** — Scaffold `apps/coder-worker/` per §2.3. TS Node
+  project modeled on `apps/discord-relay/`. Entry point polls GitHub,
+  serializes via local semaphore, acquires shared runlock, runs
+  `claude -p`, commits, pushes, opens PR, swaps labels. NSSM install
+  helper under `scripts/windows/install-coder-worker.ps1`. Duong
+  registers and starts the service on his Windows box.
+- **Task 13 (new)** — Delete `.github/workflows/coder-agent.yml` (née
+  `issue-to-pr.yml`) and any associated `.github/coder-agent/` assets
+  from the GitHub Actions side. Move `.github/coder-agent/system.md`
+  into `apps/coder-worker/prompts/system.md` so it lives with the
+  thing that actually consumes it. Commit message: `chore: drop
+  issue-to-pr github action — coder agent runs locally on max plan`.
   - Concurrency group keyed on issue number so re-labeling doesn't spawn
     duplicates.
 - **Task 12** — `auto-label-ready.yml`. Trigger: `issues.opened`. Action:
@@ -337,11 +421,14 @@ beyond this list without flagging:
 | `.github/workflows/myapps-pr-preview.yml` | Firebase Hosting preview channel on PR | 7 |
 | `.github/workflows/myapps-prod-deploy.yml` | Firebase Hosting live channel on merge-to-main | 6, 8 |
 | `.github/workflows/deploy-relay.yml` | Cloud Run deploy on main | 4, 8 |
-| `.github/workflows/coder-agent.yml` | Claude issue → PR (no auto-merge) | 11 |
 | `.github/workflows/auto-label-ready.yml` | Stamp `ready` on new issues | 12 |
 | `.github/branch-protection.json` | Source-of-truth protection config | 7 |
-| `.github/coder-agent/system.md` | System prompt for the coder agent | 11 |
+| `apps/coder-worker/` | Local Windows coder worker (TS Node, NSSM) | 11 v2 |
+| `apps/coder-worker/prompts/system.md` | Hard-scoped system prompt for the worker | 11 v2 |
+| `scripts/windows/install-coder-worker.ps1` | NSSM registration helper | 11 v2 |
 | `apps/myapps/.firebaserc` | Pin Firebase project ID | 6 |
+| *(deleted)* `.github/workflows/coder-agent.yml` | — | 13 |
+| *(deleted)* `.github/coder-agent/system.md` | moved into coder-worker | 13 |
 | `infra/gcp/enable-apis.sh` | Idempotent API enablement script | 2 |
 | `infra/gcp/wif-bootstrap.sh` | One-shot WIF pool/provider/SA script | B |
 | `infra/gcp/secrets-bootstrap.sh` | Seed Secret Manager from local env | 3 |
@@ -353,8 +440,8 @@ one is ever torn down. Architecture before expedience.
 
 ## 5. Escalations (needs Duong's hands)
 
-1. **Anthropic API key** — new pay-as-you-go key, separate from Claude
-   Max OAuth. Added to GitHub repo secrets as `ANTHROPIC_API_KEY`.
+1. ~~**Anthropic API key**~~ — **CANCELLED (revision v2).** Coder agent
+   runs locally on Duong's Max plan. No API key needed.
 2. **GCP billing confirmation** — Cloud Run `min-instances=1` is
    outside free tier. Estimated cost at 512Mi / 1 vCPU / always-on in
    `asia-southeast1`: ~USD 10–15/month. Confirm acceptable.
@@ -385,7 +472,10 @@ and wait**. Do not work around by hard-coding a value.
 | Discord gateway dies on Cloud Run cold start | Low | High | `min-instances=1` already addresses. If Cloud Run still kills the gateway on revision rollout, switch to Cloud Run **Jobs** running `forever`, or fall back to the Hetzner VPS already hosting Evelynn's relay. |
 | Auto-merge races coder-agent's commits | Low | Medium | Concurrency group on coder-agent workflow keyed by issue number, and auto-merge waits for required checks anyway. |
 | Secret Manager IAM lag after creation | Low | Low | `sleep 10` after IAM binding before first Cloud Run deploy, or retry loop. |
-| `ANTHROPIC_API_KEY` rate-limited or billing runs out | Medium | Medium | Coder agent logs and no-ops. A failed coder run leaves the issue in `ready` state; Duong can retrigger by flipping the label. |
+| Windows coder worker box is off / rebooting when issue arrives | Medium | Low | Polling loop picks up the issue on next boot. Issues live in GitHub indefinitely. NSSM auto-restarts the service on crash. |
+| Coder worker races Duong's own Claude Code session | Medium | Medium | Shared runlock at `~/.claude-runlock/claude.lock` serializes all `claude -p` invocations on the box. Same lock Bee worker uses. |
+| Coder worker writes outside `apps/myapps/` scope | Medium | High | System prompt has hard scope clause (§2.3). Branch protection + Duong's PR review are the final defense. No OS-level sandbox — accepted risk. |
+| Prompt injection via GitHub issue body | Medium | Medium | Issue body is attacker-controllable in theory but the repo is personal-scoped and the issue filer is Gemini triage + Duong. Pyke's assessment covers this. |
 | Gemini triage files garbage issues | High | Low | Issues live in GitHub and are cheap to close. Coder agent fails cleanly on unintelligible input. Add a `needs-human` label path for Gemini-triage low-confidence outputs (follow-up, not tonight). |
 | Forked-PR attack vector leaks `FIREBASE_SERVICE_ACCOUNT` | Low | High | `myapps-pr-preview.yml` uses `pull_request` (not `pull_request_target`) and guards with `if: github.event.pull_request.head.repo.full_name == github.repository`. External contributors' PRs will not get preview URLs — acceptable for a personal repo. |
 | Bot opens PR and forgets to include the preview check, Duong merges blind | Low | Medium | Branch protection requires `myapps-pr-preview` as a mandatory check; merge button stays grey without it. |
@@ -398,9 +488,9 @@ Every stage has a one-command rollback:
   previous `dist/`).
 - **Relay bad deploy:** `gcloud run services update-traffic
   discord-relay --region=asia-southeast1 --to-revisions=PREVIOUS=100`.
-- **Coder agent runaway:** remove `ANTHROPIC_API_KEY` from GitHub
-  secrets; workflow no-ops immediately. Or `gh workflow disable
-  coder-agent.yml`.
+- **Coder worker runaway:** `nssm stop coder-worker` on the Windows
+  box. Or flip the `ready` label off the offending issue. Or disable
+  `auto-label-ready.yml` so no new issues get `ready`.
 - **Preview channel runaway:** `gh workflow disable
   myapps-pr-preview.yml`. Existing preview channels auto-expire in 7
   days.
