@@ -3,6 +3,8 @@ title: Cafe-from-Home — Driving the Windows Agent Stack from Off-LAN
 status: proposed
 owner: pyke
 created: 2026-04-08
+gdoc_id: 1PDrMCBK2GZ5Tya1jiwK-JpQHr5FIZ0YSZNYjMVlVNXQ
+gdoc_url: https://docs.google.com/document/d/1PDrMCBK2GZ5Tya1jiwK-JpQHr5FIZ0YSZNYjMVlVNXQ/edit
 ---
 
 # Cafe-from-Home — Driving the Windows Agent Stack from Off-LAN
