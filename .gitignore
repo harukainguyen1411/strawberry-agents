@@ -24,8 +24,13 @@ settings.local.json
 usage/
 *.db
 
-# Transcripts (large, auto-generated)
+# Transcripts (large, auto-generated at project root — NOT agent transcripts)
 transcripts/
+
+# Agent cleaned-transcript archives ARE committed (see /end-session skill)
+!agents/*/transcripts/
+!agents/*/transcripts/*.md
+!agents/*/transcripts/.gitkeep
 
 # Node / Python
 node_modules/

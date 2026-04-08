@@ -73,15 +73,24 @@ On startup: `check_delegations(agent=<self>, status=pending)`.
 
 **When to close:** Only when Duong or Evelynn explicitly says to end your session (e.g., "end session", "shut down", "close"). Completing a task is NOT a trigger to close. After task completion, stay open and wait.
 
-Before signing off, complete in order:
+**Mechanical wrapper (mandatory, CLAUDE.md rule 14):**
 
-1. **Log session** — call `log_session` MCP tool with: `agent` (your name), `platform` (cli/cursor/chatgpt), `model` (model you ran on), `notes` (one-line summary + turn count)
-2. **Journal** — append to `journal/<platform>-YYYY-MM-DD.md` (your reflection, not a transcript copy)
-3. **Handoff note** — overwrite `memory/last-session.md` (~5-10 lines: date, what happened, open threads)
-4. **Memory update** — rewrite `memory/<name>.md` (under 50 lines, living summary, prune stale info)
-5. **Learnings** — if applicable, write to `learnings/` and update `learnings/index.md`
+- Top-level Claude Code sessions: invoke `/end-session [agent-name]`.
+- Sonnet subagent sessions: invoke `/end-subagent-session <agent-name>`.
 
-Steps 1-4 mandatory. Step 5 only when applicable.
+The skill walks the full close protocol deterministically (cleaned-transcript archive for top-level sessions, journal, handoff, memory, learnings, commit, log_session). Do not execute the protocol steps manually — the skill is the source of truth and guarantees step ordering, commit format, and secret-denylist checks.
+
+**What the skill does under the hood** (for reference; you do not execute these steps yourself):
+
+1. **Clean transcript** (top-level only) — `scripts/clean-jsonl.py` produces `agents/<agent>/transcripts/<date>-<uuid>.md`.
+2. **Journal append** — your first-person reflection goes to `journal/cli-YYYY-MM-DD.md`.
+3. **Handoff note** — `memory/last-session.md` (5–10 lines, force-staged because gitignored).
+4. **Memory refresh** — `memory/<name>.md` updated if material changed, pruned to under 50 lines.
+5. **Learnings** — optional, written to `learnings/<date>-<topic>.md` and indexed.
+6. **Commit + push** — single commit with `chore:` prefix, single push.
+7. **log_session** — MCP call on Mac, skipped on Windows.
+
+**If the skill refuses or aborts** (dirty working tree, secret denylist hit, commit rejected, etc.): stop, do not bypass the skill, escalate to Evelynn via inbox or direct report. Closing a session by any mechanism other than the skill is a rule 14 violation.
 
 ## Restricted Tools (evelynn MCP server)
 
