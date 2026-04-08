@@ -3,8 +3,6 @@ status: proposed
 owner: syndra
 date: 2026-04-08
 title: Rules Ecosystem Restructure for the Subagent Network
-gdoc_id: 1ZtESkjsYXnfS4qU11twSk8WUUXsJANNlylnizuCZ7ZM
-gdoc_url: https://docs.google.com/document/d/1ZtESkjsYXnfS4qU11twSk8WUUXsJANNlylnizuCZ7ZM/edit
 ---
 
 # Rules Ecosystem Restructure
