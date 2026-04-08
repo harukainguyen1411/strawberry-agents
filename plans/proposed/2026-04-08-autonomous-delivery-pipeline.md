@@ -252,6 +252,116 @@ These are the ones where Duong's preference genuinely shifts the design, not the
 
 ---
 
+## Duong Review Feedback — 2026-04-08 (Drive comments)
+
+Duong left a batch of inline `//` comments on the Drive mirror of this plan during a review pass. Recorded here verbatim with the section they attached to and a plain-English interpretation for each. These are review feedback, not decisions — they interact with and in several places reinforce or extend the cafe-session decisions in the section below. Detailed phase must reconcile both.
+
+### On "Concurrency discipline" bullet (Problem, item 3)
+
+Original text commented on: "multiple issues may be in flight, and the host running agents is finite (Duong's Windows box, possibly the Hetzner VPS). Without a scheduler, this turns into a fork bomb of Claude processes."
+
+> // everything on google infra for me
+
+Interpretation: Duong rejects the Windows/Hetzner framing in the problem statement itself. The host assumption should be Google infrastructure end-to-end, not a Windows box or a VPS. Reinforces the cafe-session Q3 answer (control plane on GCP) and pushes it further — the problem statement, not just the solution, should be rewritten around GCP as the default runtime.
+
+### On Problem section (after kill-switch bullet)
+
+> // I need to be able to see the process on discord of each step as well, if there is any error, it should be easily traceable and fixable on the go
+
+Interpretation: Discord is not just the intake surface and the approval gate — it is also the observability surface. Every pipeline step must emit a Discord status update (with enough context to trace and act on errors) so Duong can watch and intervene from his phone. Detailed phase must spec per-step Discord notifications, error traces posted inline, and a lightweight "fix on the go" affordance (reply to retry, reply to skip, etc.). This is a new requirement not previously captured.
+
+### On "Windows box is the agent runtime" context bullet
+
+Original text: "Windows box is the agent runtime. Claude Code instances, MCP servers, secrets, worktrees — all on Windows."
+
+> // Use google infra instead
+
+Interpretation: Second vote, same direction — strike the Windows-as-agent-runtime assumption. Agent runtime should be Google infrastructure. Note this is in tension with the cafe-session dual-mode runtime decision (local Windows/Mac + GCE VM); Duong appears to be walking back the "local mode interactive" half and saying cloud-only. Detailed phase must explicitly reconcile: is local-mode still in, or is this Drive comment superseding the cafe-session dual-mode bullet? See also comment on Q3 below which says "either Window or cloud" — the signals are mixed, lean on the newer Drive comments as the clarifying pass.
+
+### On Subsystem 1 "Intake" parsing paragraph
+
+Original text: "Parsing: intentionally dumb at the bot layer. The bot extracts prefix, title, body, author_handle. A classifier step can later refine label and priority using an LLM call, but the bot itself does not call Claude; it just files the issue."
+
+> // There should be a dedicated agent with knowledge about the app to question the users on the issue right away, like talking with the dev directly to understand the requirement, then create the issue
+
+Interpretation: New subsystem request. Rather than a dumb bot filing issues from raw intake text, there should be a dedicated "intake interviewer" agent that knows the target app and conducts a Discord conversation with the reporter (Duong or a contributor) to clarify requirements before the issue is filed. Think requirements-elicitation bot. The issue body then captures the refined, clarified spec rather than the one-liner Duong typed. This materially changes subsystem 1 and adds a new agent role. Detailed phase must spec the interviewer agent, its knowledge-of-app source (memory file? repo embedding?), and the handoff from Discord conversation to issue creation.
+
+### On Subsystem 1 rate-limiting paragraph
+
+Original text: "the intake channel should be a single-user channel (Duong only) for MVP. Later, a role-gate for trusted contributors."
+
+> // Not needed for now, contributors can also create issues
+
+Interpretation: Drop the Duong-only MVP restriction. Contributors can file issues from day one. This relaxes the intake gate and means the classifier and interviewer agent have to handle untrusted input from the start. Note this contradicts the cafe-session Q8 absorption ("deferred to phase 2+") and the later Drive comment on Q8 which says "Duong and coordinator can intake" — the signals on multi-user intake are inconsistent. Detailed phase must pick one; Evelynn should clarify with Duong which reading wins.
+
+### On Subsystem 3 Dispatcher option (A) Standing Evelynn
+
+Original text: "A long-running Evelynn Claude Code process on Windows watches the event bus, and when an issue.created lands, she delegates the rough plan to the appropriate Opus..."
+
+> **// Evelynn would need to know when to end session (context bloated) and start fresh**
+
+Interpretation: Long-running Evelynn will accumulate context until she can't function. She needs a self-monitoring session-hygiene capability: detect when her context is bloated, gracefully close the current session, and start fresh. This ties directly into the evelynn-continuity-and-purity plan (Zilean + session condenser). Detailed phase must spec the trigger (turn count? token estimate? heuristic?), the handoff (what state condenses into the next session's boot?), and the restart path. This is a hard constraint on the standing-Evelynn recommendation — option (A) is only viable if the session-rotation story is solved.
+
+### On Subsystem 6 approval-timeout paragraph
+
+Original text: "Approval timeout: if no reply within T (default 24 hours, configurable), the pipeline pauses the issue in an awaiting-approval state, preview is torn down..."
+
+> // Need a change requested stage where user can feedback and agent would work on it immediately on the same PR
+
+Interpretation: New state needed in the review/approval loop. In addition to `approved` and `reject: <reason>`, there should be a `change requested` / feedback stage where Duong comments on what needs changing and the executor agent immediately picks up the feedback and pushes new commits to the same PR — without closing and reopening the issue or creating a new PR. This is the interactive iteration loop that was missing from the rough design. Detailed phase must spec: the Discord command/grammar for feedback, how feedback gets handed back to the executor agent, concurrency with the preview environment (does the preview auto-refresh on new commits?), and how this differs from the existing `reject: <reason>` path.
+
+### On Subsystem 7 G1 (rough plan approval) gate
+
+Original text: "G1: rough plan approval. plans/proposed/ -> plans/approved/. Today: manual file move by Duong."
+
+> // No need, autonomously approve plans, only one approval at discord preview and deployment
+
+Interpretation: Collapse G1 entirely. Plans auto-approve without any human gate. The only human touchpoints in the pipeline are (a) the Discord preview approval and (b) the deployment approval — and per cafe-session Q2 the deployment approval is itself auto-unless-canary-fails. Effectively the pipeline has a single human checkpoint: the Discord preview reply. This is stronger than the cafe-session Q1 answer (which was "label-gated auto-approve"). Detailed phase must reconcile: is the label still needed as an opt-in, or does everything auto-approve by default? Lean on this later Drive comment as the clarifying signal — default is full auto-approve of plans.
+
+### On Open Question 1 (auto-approve G1)
+
+> // yes
+
+Interpretation: Confirms the auto-approve direction. Combined with the later "no need, autonomously approve plans" comment above, the answer is unambiguously yes and no label gate is needed.
+
+### On Open Question 2 (autonomous production deploy on approval)
+
+> // Yes
+
+Interpretation: Confirmed yes. Reinforces the cafe-session Q2 canary-with-auto-rollback answer.
+
+### On Open Question 3 (VPS vs Windows subsystem placement)
+
+> // All on either Window or cloud. Dispatcher on discord is an agent with memory
+
+Interpretation: Two parts. (1) Runtime placement: everything runs either on a local Windows box or in the cloud, not split between a VPS and Windows — no more Hetzner VPS in the architecture. Note the "either/or" phrasing here conflicts with the earlier "google infra only" comments; detailed phase should read this as "pick one runtime per deployment, not a hybrid VPS+Windows split" and default to Google cloud per the stronger earlier comments. (2) Dispatcher architecture: the dispatcher is not a daemon or a service — it's an **agent** that lives in Discord and has persistent memory across issues. This reframes subsystem 3 substantially: the dispatcher is a first-class agent in the roster (not a Python process), with its own memory file, own session lifecycle, and own skills. Detailed phase must spec the dispatcher agent's profile, memory, and how it composes with Evelynn (is it Evelynn? a new agent? Yuumi with a new hat?).
+
+### On Open Question 4 (preview auth tolerance)
+
+> // It's ok
+
+Interpretation: Confirmed — unguessable URL only is acceptable for MVP. Matches cafe-session Q4 absorption.
+
+### On Open Question 5 (cost budget circuit breaker)
+
+> // No API. only claude subscription is used. No cap
+
+Interpretation: No cost cap because no API billing exists — the pipeline runs on Claude subscription only, same constraint as cafe-session Q5. The circuit breaker primitive is not a dollar cap, it's a hard "no Anthropic API calls" preflight check at the agent-spawn layer. Detailed phase must design that preflight, not a budget monitor.
+
+### On Open Question 7 (agent team shape — spawn vs standing pool)
+
+> // Use the best approach. Make sure agents save learnings and memories. Use agent team on complex tasks. Default: 1 main implementer, 1 architect, 1 reviewer and 1 qc for simple task, double that for complex task
+
+Interpretation: Explicit team composition spec. Duong wants fixed team shapes based on task complexity, not ad-hoc delegation. Simple-task team: 1 implementer + 1 architect + 1 reviewer + 1 QC (4 agents). Complex-task team: double that — 2 implementers + 2 architects + 2 reviewers + 2 QCs (8 agents). Every agent in the team must save learnings and memories across issues so the pipeline compounds knowledge over time. This significantly expands on the rough plan's "Evelynn delegates per-issue" framing and gives the dispatcher a concrete scheduling policy. Detailed phase must spec: which concrete agents fill each slot from today's roster (implementer = Katarina/Ornn/Fiora? architect = Swain/Syndra? reviewer = Lissandra/Rek'Sai? QC = Caitlyn?), the complexity classifier (who decides simple vs complex?), and the learnings/memory write-path enforcement per agent.
+
+### On Open Question 8 (multi-user intake)
+
+> // No, Duong and coordinator can intake.
+
+Interpretation: Only Duong and the coordinator (Evelynn, or whichever agent plays coordinator) can file intake into the pipeline. Contributors cannot. Note this directly contradicts the earlier Drive comment on the rate-limiting paragraph ("contributors can also create issues"). The two comments are inconsistent. Detailed phase must pick one; Evelynn should surface both to Duong and get a definitive answer. Best guess: this later Q8 comment is the clarifying pass and contributors are **out**, but don't proceed without confirmation.
+
+---
+
 ## Duong Decisions — 2026-04-08 cafe session
 
 Duong answered four of the open questions directly and one is absorbed by Evelynn. Detailed phase must reflect these decisions.
