@@ -1,8 +1,6 @@
 ---
 status: implemented
 owner: syndra
-gdoc_id: 12dle-8isM3Y6DTMO9Q6LTicDEUZyDcHBojfNJMJPzFY
-gdoc_url: https://docs.google.com/document/d/12dle-8isM3Y6DTMO9Q6LTicDEUZyDcHBojfNJMJPzFY/edit
 ---
 
 # Turn-Based Multi-Agent Conversation System
