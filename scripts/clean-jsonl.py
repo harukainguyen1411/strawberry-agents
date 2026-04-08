@@ -25,9 +25,45 @@ import sys
 
 CHAIN_GAP_SECONDS = 30 * 60  # 30 minutes — see Section 2.4
 
-DEFAULT_PROJECT_DIR_WINDOWS = pathlib.Path(
-    "C:/Users/AD/.claude/projects/C--Users-AD-Duong-strawberry/"
-)
+def _default_project_dir() -> pathlib.Path:
+    """Return the Claude Code project dir for this repo on the current platform.
+
+    On macOS and Linux, Claude Code stores session jsonl under
+    ``~/.claude/projects/<slugified-repo-path>/``. The slug is produced by
+    replacing every filesystem separator in the absolute repo path with a
+    dash and prefixing a dash — e.g. ``/Users/duongntd99/Documents/Personal/strawberry``
+    becomes ``-Users-duongntd99-Documents-Personal-strawberry``.
+
+    On Windows, Claude Code uses the drive-letter + dash convention under
+    ``%USERPROFILE%\\.claude\\projects\\``.
+
+    The function resolves the repo root via ``git rev-parse --show-toplevel``
+    and constructs the slug from that. Falls back to the current working
+    directory if git is unavailable.
+    """
+    try:
+        import subprocess
+        repo_root = subprocess.check_output(
+            ["git", "rev-parse", "--show-toplevel"],
+            stderr=subprocess.DEVNULL,
+        ).decode().strip()
+        repo_path = pathlib.Path(repo_root)
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        repo_path = pathlib.Path.cwd()
+
+    home = pathlib.Path.home()
+    projects_root = home / ".claude" / "projects"
+
+    if sys.platform == "win32":
+        # Windows: drive letter + dashes, e.g. C--Users-AD-Duong-strawberry
+        drive = repo_path.drive.rstrip(":")  # "C:" -> "C"
+        tail = str(repo_path)[len(repo_path.drive):].replace("\\", "-").replace("/", "-")
+        slug = f"{drive}-{tail}" if tail.startswith("-") else f"{drive}--{tail}"
+        return projects_root / slug
+
+    # macOS / Linux: leading dash + dash-separated path
+    slug = "-" + str(repo_path).lstrip("/").replace("/", "-")
+    return projects_root / slug
 
 # Secret denylist patterns (Section 2.9).
 SECRET_PATTERNS = [
@@ -510,7 +546,7 @@ def main() -> int:
     parser.add_argument("--agent", required=True)
     parser.add_argument("--session", default="auto")
     parser.add_argument("--out", default=None)
-    parser.add_argument("--project-dir", default=str(DEFAULT_PROJECT_DIR_WINDOWS))
+    parser.add_argument("--project-dir", default=str(_default_project_dir()))
     args = parser.parse_args()
 
     agent = args.agent.strip().lower()
