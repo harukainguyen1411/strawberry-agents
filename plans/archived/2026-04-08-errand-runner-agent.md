@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: archived
 owner: syndra
 date: 2026-04-08
 title: Errand Runner Agent (Tibbers) — Haiku-tier one-shot executor

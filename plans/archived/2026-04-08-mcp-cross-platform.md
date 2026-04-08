@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: archived
 owner: evelynn
 created: 2026-04-08
 ---
