@@ -1,7 +1,7 @@
 ---
 name: end-session
 description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / handoff / memory / learnings / commit / log_session protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 
