@@ -61,7 +61,7 @@ Strawberry's operating protocol is a stack of layers. Each layer has exactly one
 Layer 0 — Platform invariants         (this plan §"Cross-platform parity")
 Layer 1 — Identity + tiers            (this plan §"Agent model-tier declaration" + §"Roster as single source of truth")
 Layer 2 — Rules (CLAUDE.md)           (this plan §"CLAUDE.md rule updates", all existing in-flight plans)
-Layer 3 — Coordination primitives     (skills, SendMessage, inbox, task board) — mcp-restructure + skills-integration
+Layer 3 — Coordination primitives     (this plan §"Evelynn's delegation stack" + mcp-restructure + skills-integration)
 Layer 4 — Plan lifecycle              (plan-lifecycle-protocol-v2)
 Layer 5 — Session lifecycle           (end-session skills, continuity-and-purity)
 Layer 6 — Execution                   (Sonnet agents, always reading a plan file)
@@ -186,6 +186,57 @@ Onboarding is done via `scripts/new-agent.sh` (Phase 1 MCP restructure). The scr
 **Rationale for hard delete over archive directory:** an archive directory reintroduces the fossil problem this plan is trying to solve. Once a dir exists, it gets scanned, listed, and occasionally read — which means "retired" silently becomes "half-retired." Git history is a better archive than a working-tree directory because it is immutable and does not pollute filesystem scans. Rollback if a retirement turns out to be premature: `git revert <retirement-commit>` restores every file atomically.
 
 **Pyke §8.3 cleanup targets on retirement procedure adoption:** Irelia is the first use of this procedure. Task #3 (pyke's migration plan) executes the retirement as the canonical example.
+
+---
+
+## Layer 3 — Coordination primitives: Evelynn's delegation stack
+
+New directive from Duong, 2026-04-09: **the legacy `agent-manager` MCP surface is retired.** Not "being retired" — actually retired. The `agent-manager` and `evelynn` MCPs disconnected mid-session tonight while this plan was being drafted. The retirement is real, not theoretical. v2 must bake the replacement into the Layer 3 spec so no agent reaches for the legacy surface even when tool loading happens to surface the old names.
+
+### 3.1 Evelynn's canonical delegation stack (ordered by primary use)
+
+Evelynn delegates through exactly three channels, in this order:
+
+1. **Agent teams** — the primary surface for **multi-agent collaborative work**. `TeamCreate` sets up a team with a shared task list and routing; the `Agent` tool with `team_name` / `name` parameters spawns teammates into it; `SendMessage` moves information between them; `TaskCreate` / `TaskUpdate` / `TaskList` coordinate the work. This is the surface you are reading in this session right now — the protocol-audit team is structured this way. Teams are the correct surface whenever two or more agents need to see each other's output, claim different parts of a problem, or route around each other's blockers.
+
+2. **Native Claude Code subagents** — the primary surface for **single-agent focused delegation**. The `Agent` tool with `subagent_type: <name>` spawns a named subagent for a bounded task, the subagent reports back, and the conversation resumes. This is the right surface when Evelynn needs one agent to do one thing and return a result. No shared task list, no teammates to coordinate with. Narrower surface than a team, lower overhead, appropriate for the majority of single-shot delegations.
+
+3. **Yuumi** — Evelynn's personal errand-runner. A specific Sonnet-tier subagent whose role is bounded mechanical admin: lookups, file moves, running existing scripts and reporting the output, light multi-step chores Evelynn would otherwise be tempted to do herself. Yuumi is not a tier above or below the other two — she is a *named instance* of surface #2 with a profile that makes her the default pick for that class of work. Reaching for Yuumi is how Evelynn preserves Rule 7 purity on routine admin without spinning up a full team or picking a specialist.
+
+### 3.2 What is deprecated (exact retirement scope)
+
+Everything on this list is gone. Evelynn, Syndra, Swain, Pyke, and Bard must not reach for any of the following, even if tool loading surfaces them:
+
+- `agent-manager` MCP tools: `list_agents`, `get_agent`, `create_agent`, `launch_agent`, `message_agent`, `start_turn_conversation`, `speak_in_turn`, `pass_turn`, `end_turn_conversation`, `read_new_messages`, `get_turn_status`, `invite_to_conversation`, `escalate_conversation`, `resolve_escalation`, `delegate_task`, `complete_task`, `check_delegations`, `report_context_health`.
+- Legacy iTerm launch flow: spawning agents by writing iTerm profile blobs, grid positioning, `scripts/launch-evelynn.sh` top-level (Mac-only; moves to `scripts/mac/` per Layer 0).
+- Inbox-based peer-to-peer messaging as the primary channel. Inbox writes remain legal as a fallback notification surface (useful when a teammate isn't in the current session), but they are not the canonical delegation path — teams and subagents are.
+- Turn-based conversations entirely. The 33 `.turn.md` files under `agents/conversations/` are fossils per pyke §8.4 and are archived/deleted in Task #3.
+- `delegate_task` / `complete_task` / `check_delegations`. Delegation state lives in the shared TaskList (TaskCreate / TaskUpdate / TaskList) and in SendMessage summaries. The JSON files under `agents/delegations/` are fossils, also swept by Task #3.
+
+Cross-reference: `plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md` is the execution path for the deprecation. That plan's Step 7 handles the call-site sweep; v2 pins the *directive* here so that any site the phase-1 sweep misses (in-flight plans, new work written during the transition) is still governed.
+
+### 3.3 Teams and subagents REPLACE the legacy surface — they are not additions
+
+This is the load-bearing clarification Duong asked for explicitly. The ban on the legacy tools is not "prefer the new surface but fall back to the old one if the new one is inconvenient." It is: the new surface *is* how delegation works now. Reaching for `message_agent` or `launch_agent` because "it still happens to be loaded" is a protocol violation on the same level as an Opus agent running `Edit` directly.
+
+Two implications:
+
+- **No parallel channels.** There is no legitimate workflow that requires both the new and the old surface simultaneously. If an agent finds themselves thinking "I'll use the team for X and `message_agent` for Y," the answer is: use the team for both. If the team surface doesn't support Y, that is a bug in the team surface worth raising, not a reason to reach backward.
+- **Discipline lives at the reach-for moment.** Rule 7 already bans Opus agents from executing; this Layer 3 directive extends the same discipline to *delegation surface choice*. When the Rule 7 tripwire hook (§2.2) ships, it can be extended to refuse legacy MCP tool calls on `opus`-tier agents as a second enforcement class — same hook, same pattern.
+
+### 3.4 Other Opus agents delegate the same way
+
+Syndra, Swain, Pyke, and Bard follow the same three-channel stack when they need teammates. The distinction between Evelynn and the rest is that Evelynn is the **top-level coordinator** — she receives Duong's requests and decides whether to spawn a team, a single subagent, or Yuumi. The other Opus agents are typically operating *inside* a team Evelynn created, but they have full authority to spawn their own subagents for their own research or multi-step work within that team, and to use Yuumi for errands. They do not spawn sub-teams (the "subagents cannot spawn subagents" rule from skills-integration applies), so "delegation" from a non-Evelynn Opus agent is bounded to surface #2 (subagents) and #3 (Yuumi). Surface #1 (new teams) is Evelynn's call.
+
+### 3.5 Layer 1 × Layer 3 linkage — why Rule 15 became urgent
+
+Duong asked to surface this explicitly: the model-tier rule (CLAUDE.md Rule 15, Layer 1) is **load-bearing for teams and subagents specifically because they amplify the silent-inheritance risk**. Here is the failure mode the rule is guarding against:
+
+- Before teams, silent inheritance was a single-session problem. An Opus agent spawning without an explicit `model:` would pick up the parent session's model. At worst, one agent ran on the wrong tier for one session.
+- With teams, every teammate Evelynn spawns without an explicit `model:` inherits Evelynn's tier. A full Opus team costs 5–10× a correctly-tiered team, degrades specialists who should be Sonnet, and does it silently — nothing in the UI says "this Sonnet teammate is actually running on Opus because you forgot the frontmatter."
+- Subagents have the same risk but in reverse: an Opus planner spawning a subagent without `model:` might silently downgrade to Sonnet, and suddenly the planner is making planning decisions on the wrong tier. Component A of continuity-and-purity already flagged this risk for Ionia.
+
+Rule 15 is the fix: **every `.claude/agents/<name>.md` MUST declare `model:`, no inheritance.** Teams made the problem urgent because teams multiply it. v2 pins this linkage so that anyone reading §1.2 in isolation understands why the rule exists and why it is not "just a hygiene nicety" — it is the thing standing between Evelynn and an accidental all-Opus team on her next spawn.
 
 ---
 
