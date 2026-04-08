@@ -49,7 +49,7 @@ strawberry/
 ├── scripts/          # Bridge scripts, deploy, health checks
 ├── plans/            # Execution plans (transient)
 ├── .mcp.json         # MCP server configuration
-└── GIT_WORKFLOW.md   # Git policy reference
+└── architecture/git-workflow.md   # Git policy reference
 ```
 
 ## Design Principles
