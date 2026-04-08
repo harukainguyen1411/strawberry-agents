@@ -395,3 +395,14 @@ Flag this as an open question for the skills plan to address once it lands. This
 - Building a pre-tool-use hook to block Evelynn's Read/Edit/Write (rules-restructure plan or v2 follow-up).
 - Any skills conversion (skills-integration plan).
 - Metrics/instrumentation for invocation count and cost (nice-to-have, not blocking).
+
+## Decisions
+
+Blanket approval from Duong on 2026-04-08 ("all good, proceed as proposed"). Each open question resolved as follows:
+
+1. **Confirm Yuumi Sonnet tier.** Approved as proposed by Duong 2026-04-08 — Yuumi runs at the Sonnet tier as originally specified.
+2. **Confirm Poppy as the edit-minion name.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — Poppy is the chosen name.
+3. **Confirm Poppy at Haiku tier.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — Poppy ships at Haiku; raise to Sonnet only if misfire rate proves material.
+4. **Who calls the commit step after Poppy edits?** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — option (a): Evelynn delegates the commit to Tibbers as a separate invocation; Poppy does not get `Bash`.
+5. **Skills-integration interaction.** Approved as proposed by Duong 2026-04-08 — flagged as a follow-up coordination point with the skills-integration plan; not a blocker for this plan.
+6. **Harness Explore vs Yuumi default.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — Yuumi is Evelynn's default reader for Strawberry-framed tasks; harness Explore remains the fallback for generic/web.

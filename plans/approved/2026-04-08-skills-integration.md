@@ -464,3 +464,15 @@ No hard blocker. The plans are compatible. Sequence: rules-restructure lands fir
 - Any change to CLAUDE.md rules (coordinated with the rules-restructure plan).
 - Building `/bootstrap` (explicitly deferred to phase 5 pending research).
 - Metrics/telemetry for skill invocation counts (nice-to-have, not blocking).
+
+## Decisions
+
+Blanket approval from Duong on 2026-04-08 ("all good, proceed as proposed"). Each open question resolved as follows:
+
+1. **Tibbers supersession.** Approved as proposed by Duong 2026-04-08 — withdraw the Tibbers errand-runner plan in favor of the `/run` skill. The Tibbers plan is being archived as part of this approval batch.
+2. **Initial skill set.** Approved as proposed by Duong 2026-04-08 — ship the six skills (`run`, `checkout`, `close-session`, `secret-needed`, `plan-propose`, `agent-brief`) as v1.
+3. **External plugin skills.** Approved as proposed by Duong 2026-04-08 — zero external plugin skills in v1; Bard evaluates the telegram plugin for v2.
+4. **`/bootstrap` experiment.** Approved as proposed by Duong 2026-04-08 — explore in phase 5 as proposed.
+5. **Preload list size cap.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — cap preloaded skills at 6 per agent.
+6. **Nested delegation workaround.** Approved as proposed by Duong 2026-04-08 — accepted that skills paper over the procedural half of the nested-delegation gap; rules-restructure does not need to resolve the iTerm-vs-subagent split as a blocker for this plan.
+7. **Timing relative to rules-restructure plan.** Approved as proposed by Duong 2026-04-08 — rules-restructure lands first, then skills migration.

@@ -314,6 +314,17 @@ The rule of thumb: **when a rule is written in the tier-agnostic voice ("every a
 - An agent spawned cold (no prior context) can read CLAUDE.md + the relevant profile + agent-network.md and derive every binding rule that applies to them, without needing to consult feedback memory for binding rules (only for evolving nuance).
 - Walking any rule to its source-of-truth is a single-step lookup.
 
+## Decisions
+
+Partial approval from Duong on 2026-04-08. Q1, Q3, Q4, Q5 resolved via blanket approval at the end of the architectural session. Q2 and Q6 are still pending Duong's answer and this plan stays in `plans/proposed/` until they land.
+
+1. **Roster canonicalization (`agents/roster.md` vs. `agents/memory/agent-network.md`).** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — canonicalize in `agents/roster.md`; `agent-network.md` references it.
+2. **Numbering of the Evelynn-delegates rule (append as 11 vs. reorder).** PENDING — awaiting Duong's answer.
+3. **Harness-level enforcement of the Evelynn rule.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — documentation + peer enforcement first; reassess harness-level soft guard later as a follow-up plan if needed.
+4. **Session-closing rule wording for subagents.** Approved as proposed by Duong 2026-04-08 — scope/rewrite the rule so it does not require subagents to stay open after task completion (the implementer picks the cleaner of the two phrasings sketched in the plan).
+5. **Profiles gain Operating sections now vs. incrementally.** Approved as proposed by Duong 2026-04-08, per the recommendation in the plan — do the migration now in one clean pass for consistency.
+6. **Promotion of `feedback_secrets_handling.md` to a durable surface.** PENDING — awaiting Duong's answer.
+
 ## Out of Scope for This Plan
 
 - Writing the actual CLAUDE.md, profile, and `agent-network.md` edits. Those are the implementation, delegated after approval.

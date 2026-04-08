@@ -5,6 +5,8 @@ date: 2026-04-08
 title: Errand Runner Agent (Tibbers) — Haiku-tier one-shot executor
 ---
 
+> **SUPERSEDED 2026-04-08** — This agent design is replaced by the `/run` skill described in `plans/proposed/2026-04-08-skills-integration.md`. Subagent overhead dominated the Haiku savings for one-shot shell calls; a skill body in Evelynn's context is cheaper with the same discipline.
+
 # Errand Runner Agent — Tibbers
 
 ## Problem
