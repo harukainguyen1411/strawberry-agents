@@ -15,9 +15,11 @@
 - Agent discipline rules plan: plan approval gate + session persistence rules (two new CLAUDE.md critical rules)
 - API key isolation diagnosis + team plan migration plan: designed key injection, then planned its removal when Duong switched to team plan
 - Gemini Pro ecosystem assessment: recommended against migration, proposed Firestore MCP server as key unlock
-- Work agent isolation plan: hub-and-spoke architecture with coordinator/worker MCP split, no peer visibility
-- Errand runner agent plan (Tibbers, Haiku 4.5): stateless one-shot tier below Sonnet for trivial shell tasks, hard scope boundary + denylist, profile-only footprint
-- Minion layer expansion plan: Yuumi (Sonnet, read/explore/synthesize) + Poppy (Haiku, mechanical edits). Closes Evelynn's read and edit gaps so she never touches files directly. Three-minion layer with disjoint tool surfaces: Tibbers runs, Yuumi reads, Poppy edits.
+- Work agent isolation plan: three-tier hub-and-spoke (Coordinator→Planners→Workers), greeting routing, project-scoped MCP, full cleanup phase, no peer visibility
+- Errand runner agent plan (Tibbers, Haiku 4.5): stateless one-shot tier below Sonnet for trivial shell tasks, hard scope boundary + denylist, profile-only footprint. **Superseded** by skills-integration `/run` skill.
+- Rules system restructure plan: one source-of-truth per surface, Evelynn-delegates rule promoted to profile + CLAUDE.md rule 11, new Tiers section, fix duplicate-8 numbering, per-agent Operating sections
+- Claude Skills integration plan: 6-skill initial set (/run /checkout /close-session /secret-needed /plan-propose /agent-brief), explicit per-agent `skills:` preload (no inheritance), phased migration w/ reversibility flags
+- Minion layer expansion plan: Yuumi (Sonnet, read/explore/synthesize) + Poppy (Haiku, mechanical edits). Closes Evelynn's read and edit gaps so she never touches files directly. Three-minion layer with disjoint tool surfaces: Tibbers/`/run` runs, Yuumi reads, Poppy edits.
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -49,7 +51,8 @@
 - 2026-04-05 S10: Team plan migration plan, PR #31 review
 - 2026-04-05 S11: Gemini Pro ecosystem + infrastructure assessment
 - 2026-04-06 S12: Work agent isolation plan — hub-and-spoke architecture for work system
-- 2026-04-08 S13 (subagent): Errand runner agent plan — Tibbers, Haiku tier, stateless one-shot, hard scope + denylist
-- 2026-04-08 S14 (subagent): Rules restructure plan — one source-of-truth per surface, Evelynn-delegates rule promoted to profile + CLAUDE.md rule 11, new Tiers section, fix duplicate-8 numbering, per-agent Operating sections as new surface
-- 2026-04-08 S15 (subagent): Claude Skills integration plan — 6-skill initial set (/run /checkout /close-session /secret-needed /plan-propose /agent-brief), Tibbers→/run skill (supersedes S13 plan), explicit per-agent `skills:` preload (no inheritance), phased migration w/ reversibility flags. Load-bearing fact: subagents don't inherit skills from parent + cannot spawn subagents — skills are official workaround for nested delegation in windows mode.
-- 2026-04-08 S16 (subagent): Minion layer expansion plan — Yuumi (Sonnet, read/explore) + Poppy (Haiku, mechanical edits). Option (b) third sibling over Tibbers-scope-expansion. Three disjoint verbs: run/read/edit. Decision tree lives in Evelynn's profile (handoff to rules-restructure plan). Flagged for skills-integration: if Tibbers→/run skill, revisit Yuumi/Poppy conversion.
+- 2026-04-06 S13: 6 iterations on isolation plan — three-tier, greeting routing, cleanup phase. Flagged broken work system.
+- 2026-04-08 S14 (subagent): Errand runner agent plan — Tibbers, Haiku tier, stateless one-shot, hard scope + denylist. Superseded by S16 `/run` skill.
+- 2026-04-08 S15 (subagent): Rules restructure plan — one source-of-truth per surface, Evelynn-delegates rule promoted to profile + CLAUDE.md rule 11, new Tiers section, fix duplicate-8 numbering, per-agent Operating sections as new surface
+- 2026-04-08 S16 (subagent): Claude Skills integration plan — 6-skill initial set (/run /checkout /close-session /secret-needed /plan-propose /agent-brief), Tibbers→/run skill (supersedes S14 plan), explicit per-agent `skills:` preload (no inheritance), phased migration w/ reversibility flags. Load-bearing fact: subagents don't inherit skills from parent + cannot spawn subagents — skills are official workaround for nested delegation in windows mode.
+- 2026-04-08 S17 (subagent): Minion layer expansion plan — Yuumi (Sonnet, read/explore) + Poppy (Haiku, mechanical edits). Option (b) third sibling over Tibbers-scope-expansion. Three disjoint verbs: run/read/edit. Decision tree lives in Evelynn's profile (handoff to rules-restructure plan). Flagged for skills-integration: if Tibbers→/run skill, revisit Yuumi/Poppy conversion.
