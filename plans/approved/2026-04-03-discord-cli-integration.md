@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: bard
 revised: 2026-04-08
 supersedes_shape: 2026-04-03 Discord-CLI (Claude-on-VPS) revision
