@@ -64,4 +64,8 @@ gdoc::frontmatter_unset "$TARGET" gdoc_url
 git -C "$REPO_ROOT" add -- "$TARGET"
 git -C "$REPO_ROOT" commit -m "chore: unpublish gdoc for $(basename "$TARGET")" >&2
 
+# Push (matches plan-promote.sh — the plan-lifecycle script family auto-pushes
+# so the Drive mirror and origin/main stay in lockstep).
+git -C "$REPO_ROOT" push >&2
+
 gdoc::log "done"

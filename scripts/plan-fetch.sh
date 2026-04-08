@@ -91,5 +91,9 @@ git -C "$REPO_ROOT" rm -- "$TARGET" >/dev/null
 git -C "$REPO_ROOT" add -- "$APPROVED_PATH"
 git -C "$REPO_ROOT" commit -m "chore: approve $BASENAME via gdoc fetch" >&2
 
+# Push (matches plan-promote.sh — the plan-lifecycle script family auto-pushes
+# so the Drive mirror and origin/main stay in lockstep).
+git -C "$REPO_ROOT" push >&2
+
 gdoc::log "done. $TARGET -> $APPROVED_PATH"
 gdoc::log "drive doc $GDOC_ID still exists; run plan-unpublish.sh when ready"

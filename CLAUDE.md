@@ -14,7 +14,7 @@
 10. **Use `chore:` prefix for all commits** — All commits must use `chore:` or `ops:` prefix. Never use `fix:`, `feat:`, `docs:`, `plan:` or other prefixes. The pre-push hook enforces this on main.
 11. **Never run raw `age -d` or read decrypted secret values into context** — Decryption must go through `tools/decrypt.sh` exclusively, which uses `exec env KEY=val -- cmd...` so plaintext lives only in the child process env. Never `cat`, `type`, `Get-Content`, or pipe `secrets/age-key.txt`. The pre-commit hook (`scripts/pre-commit-secrets-guard.sh`) blocks raw `age -d` outside the helper and scans staged files for known decrypted values.
 12. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. The Drive mirror is proposed-only (per plan `2026-04-08-gdoc-mirror-revision`); `plan-promote.sh` automatically unpublishes the Drive doc on the way out, then moves and rewrites the `status:` field. Raw `git mv` skips the unpublish step and leaves orphan Drive docs. `plan-publish.sh` enforces the proposed-only invariant on the publish side.
-8. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
+13. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 
 ## Scope
 
