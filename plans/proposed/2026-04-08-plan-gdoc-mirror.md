@@ -335,10 +335,19 @@ If implementation discovers bash makes any of this measurably worse, the impleme
 
 ## Open Questions for Duong
 
+*Answered 2026-04-08. Decisions recorded below; questions retained for audit.*
+
 1. **Drive folder name and location.** Recommendation: top-level "Strawberry Plans (transient)" in My Drive. Acceptable, or do you want it nested under an existing folder?
 2. **Doc deletion vs trash.** When `plan-unpublish.sh` runs, should it `drive.files.delete` (immediate, permanent) or `drive.files.update(trashed=true)` (recoverable for 30 days)? Recommendation: trash. Slightly more forgiving, no real downside since Duong's Drive isn't space-constrained.
 3. **Bootstrap timing vs encrypted-secrets.** Do you want this plan implemented *before* encrypted-secrets lands (using gitignored credential files), or do you want to wait until encrypted-secrets is done so this plan ships clean? Both work; the second is cleaner.
 4. **OAuth account.** Personal Google account, or a workspace/MMP one? Recommendation: personal — keeps work and personal completely isolated, and the test-mode consent screen flow is fine for a single-user app.
+
+## Decisions (2026-04-08)
+
+1. **Drive folder: pre-existing folder provided by Duong.** Folder ID `1ygXvAK2mP-JnCs5Mq3jiszho64MuKrdU` (in Duong's personal My Drive). The implementer should store this as `GDRIVE_PLANS_FOLDER_ID` and reference it from publish/fetch/unpublish scripts. Folder ID is not a secret (access is gated by OAuth scope), but the implementer should still source it from config rather than hardcoding it in scripts so it's swappable.
+2. **Trashed, not hard-deleted.** `plan-unpublish.sh` uses `drive.files.update(trashed=true)`. Duong gets the 30-day recovery window for free.
+3. **Sequencing: this plan ships *after* encrypted-secrets lands.** Google OAuth refresh token is stored in `secrets/encrypted/google.age` from day one. No gitignored-credential interim phase. The success criterion "refresh token stored in encrypted form" becomes a hard requirement, not a fallback.
+4. **Personal Google account, always.** Not workspace, not MMP. Reinforced as a standing rule for any Strawberry-side Google integration: personal account only. Work-side Google integrations live in `~/Documents/Work/mmp/workspace/` and are out of scope for this repo.
 
 ## Risks & Mitigations
 
