@@ -1,6 +1,8 @@
 ---
 status: draft
 owner: pyke
+gdoc_id: 1tp49ByEtMXURBPnQj1TuetyOV6OxPb55GI5Iej7yvIA
+gdoc_url: https://docs.google.com/document/d/1tp49ByEtMXURBPnQj1TuetyOV6OxPb55GI5Iej7yvIA/edit
 ---
 
 # Myapps → Strawberry Monorepo Migration
