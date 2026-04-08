@@ -213,11 +213,13 @@ Each commit is independently revertible. The executor lands them in order. If an
 
 ---
 
-## Commit 3 — Archive turn-based conversation and delegation fossils
+## Commit 3 — Hard-delete turn-conversation and delegation fossils
 
-**Scope:** 33 `.md` files under `agents/conversations/` (turn-based conversation artifacts from the old MCP tool set) and 6 `d-*.json` files under `agents/delegations/` (old `delegate_task`/`complete_task` MCP state). Both directories are fossils from the pre-Phase-1 coordination model. Per audit §8 item 4 and Operating Protocol v2 Protocol Violation Triage §4, fossil sweeps happen alongside the rule changes that retire them.
+**Scope:** 33 `.md` files under `agents/conversations/` (turn-based conversation artifacts from the old MCP tool set) and 6 `d-*.json` files under `agents/delegations/` (old `delegate_task`/`complete_task` MCP state). Both directories are fossils from the pre-Phase-1 coordination model.
 
-**Phase 1 MCP restructure does NOT delete these directories.** Phase 1 updates the tool-name references in agent memory/profile files but leaves `agents/conversations/` and `agents/delegations/` in place. This migration plan handles the fossils themselves.
+**Same rationale as Commit 1's hard-delete retirement:** git history is the archive. `agents/.archive/` would reintroduce the shadow-dir fossil pattern Duong's Q4 decision explicitly retired. Anyone who needs the content can `git log --all --diff-filter=D --name-only` to find the delete commit, or `git show <hash>:<path>` to read a specific file.
+
+**Phase 1 MCP restructure does NOT delete these directories.** Phase 1 updates the tool-name references in agent memory/profile/plan files but leaves `agents/conversations/` and `agents/delegations/` in place. This migration plan handles the fossils themselves.
 
 **Parity note:** both directories are platform-neutral; no parity concern.
 
@@ -226,96 +228,55 @@ Each commit is independently revertible. The executor lands them in order. If an
 - [ ] `git status --short` empty.
 - [ ] Confirm `agents/conversations/` exists and contains `.md` files: `ls agents/conversations/*.md 2>/dev/null | head -3` prints at least one file.
 - [ ] Confirm `agents/delegations/` exists and contains `d-*.json` files: `ls agents/delegations/d-*.json 2>/dev/null | head -3` prints at least one file.
-
-### Step 3.2 — Create archive directory
-
-- [ ] `mkdir -p agents/.archive/conversations`
-- [ ] `mkdir -p agents/.archive/delegations`
-- [ ] `touch agents/.archive/.gitkeep`
-
-### Step 3.3 — Move conversation files
-
-- [ ] Run this exact command to move ALL tracked files from `agents/conversations/` into `agents/.archive/conversations/`:
+- [ ] Record counts for the commit body:
   ```
-  git mv agents/conversations/* agents/.archive/conversations/
-  ```
-  Note: globbing `*` under git-mv requires shell expansion; if the shell balks, use a loop:
-  ```
-  for f in agents/conversations/*.md; do git mv "$f" "agents/.archive/conversations/$(basename "$f")"; done
-  ```
-- [ ] Verify `ls agents/conversations/ 2>/dev/null` is empty.
-- [ ] `rmdir agents/conversations` (directory should be empty now). If there are hidden files, stop and escalate.
-
-### Step 3.4 — Move delegation JSONs
-
-- [ ] ```
-  for f in agents/delegations/d-*.json; do git mv "$f" "agents/.archive/delegations/$(basename "$f")"; done
-  ```
-- [ ] Verify `ls agents/delegations/ 2>/dev/null` is empty.
-- [ ] `rmdir agents/delegations`.
-
-### Step 3.5 — Create archive README
-
-- [ ] Write `agents/.archive/README.md` with exact content:
-  ```markdown
-  # Archived Coordination Artifacts
-
-  This directory contains fossils from the pre-Phase-1 MCP coordination model.
-
-  ## conversations/
-
-  Turn-based conversation transcripts from the `start_turn_conversation`,
-  `speak_in_turn`, `pass_turn`, `end_turn_conversation` tool set that shipped
-  with the `agent-manager` MCP. Phase 1 of the MCP restructure retired that
-  tool set in favor of `/agent-ops send` + inbox + SendMessage. These
-  transcripts are preserved as history.
-
-  ## delegations/
-
-  State files from the `delegate_task` / `complete_task` / `check_delegations`
-  MCP tool set. Same retirement story.
-
-  Do not edit these files. If you need the content for context, read it. If
-  you need it for active work, copy the relevant bits into a new plan or
-  learning file.
-
-  Refs:
-  - plans/proposed/2026-04-08-mcp-restructure.md
-  - plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md
-  - plans/proposed/2026-04-09-protocol-migration-detailed.md commit 3
+  ls agents/conversations/*.md 2>/dev/null | wc -l
+  ls agents/delegations/d-*.json 2>/dev/null | wc -l
   ```
 
-### Step 3.6 — Smoke test
+### Step 3.2 — Hard-delete both directories
 
-- [ ] `ls agents/.archive/conversations/*.md | wc -l` — record the count; expected around 33.
-- [ ] `ls agents/.archive/delegations/d-*.json | wc -l` — record the count; expected 6.
-- [ ] `ls agents/conversations 2>/dev/null; echo $?` — non-zero.
-- [ ] `ls agents/delegations 2>/dev/null; echo $?` — non-zero.
+- [ ] `git rm -r agents/conversations`
+- [ ] `git rm -r agents/delegations`
 
-### Step 3.7 — Commit
+### Step 3.3 — Smoke test
 
-- [ ] `git add agents/.archive`
-- [ ] `git status --short` — verify every conversation and delegation file shows as `R` (rename) and the archive README + `.gitkeep` show as `A` (add).
+- [ ] `ls agents/conversations 2>/dev/null; echo $?` — expect non-zero.
+- [ ] `ls agents/delegations 2>/dev/null; echo $?` — expect non-zero.
+- [ ] `git ls-files agents/conversations/ agents/delegations/ | wc -l` — expect `0`.
+- [ ] `git status --short` shows only `D` (delete) entries for these paths; no `R` (rename) or `A` (add) entries.
+
+### Step 3.4 — Commit
+
 - [ ] Commit message:
   ```
-  chore: archive turn-conversation and delegation fossils (protocol migration commit 3 of 9)
+  chore: delete turn-conversation and delegation fossils — pre-restructure MCP artifacts
 
-  Moved agents/conversations/ (turn-based conversation transcripts from the
-  retired MCP tool set) and agents/delegations/ (delegate_task state JSONs)
-  into agents/.archive/. Added README explaining provenance.
+  Hard-deleted agents/conversations/ (turn-based conversation transcripts
+  from the retired start_turn_conversation / speak_in_turn / pass_turn /
+  end_turn_conversation tool set) and agents/delegations/ (delegate_task /
+  complete_task / check_delegations state JSONs). Both directories were
+  fossils from the pre-Phase-1 MCP coordination model that the restructure
+  is retiring.
 
-  These directories were fossils from the pre-Phase-1 MCP coordination model.
-  The tool names they reference (start_turn_conversation, delegate_task, etc.)
-  are being retired by the Phase 1 MCP restructure. This commit handles the
-  filesystem fossils that the restructure's call-site sweep does not cover.
+  Git history is the archive. Anyone who needs the content can reach it via
+  git log / git show against this commit.
 
-  Conversation files moved: <COUNT from Step 3.6>.
-  Delegation JSONs moved: <COUNT from Step 3.6>.
+  No agents/.archive/ shadow directory — that pattern was explicitly
+  rejected by Duong's Q4 decision (operating-protocol-v2 commit 5bd1ea3,
+  §1.3) because shadow archive directories reintroduce the fossil problem
+  the audit is trying to solve.
+
+  Conversation files deleted: <COUNT from Step 3.1>.
+  Delegation JSONs deleted: <COUNT from Step 3.1>.
+
+  Commit 3 of 9 in the protocol migration sequence.
 
   Refs: plans/proposed/2026-04-09-protocol-migration-detailed.md commit 3
+        plans/proposed/2026-04-09-operating-protocol-v2.md §1.3
         assessments/2026-04-08-protocol-leftover-audit.md §1, §8.4
   ```
-  Replace `<COUNT ...>` with the actual numbers from Step 3.6.
+  Replace `<COUNT ...>` with the actual numbers from Step 3.1.
 
 ---
 
@@ -683,8 +644,7 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 - [ ] Confirm both files exist: `test -f agents/roster.md && test -f agents/memory/agent-network.md && echo OK`.
 - [ ] Search for any code or scripts that reference `agents/roster.md` by path:
   ```
-  grep -rn "agents/roster.md" --include='*.sh' --include='*.py' --include='*.md' . 2>/dev/null | grep -v '^\./plans/' | grep -v '^\./assessments/' | grep -v '^\./agents/.archive/'
-  ```
+  grep -rn "agents/roster.md" --include='*.sh' --include='*.py' --include='*.md' . 2>/dev/null | grep -v '^\./plans/' | grep -v '^\./assessments/'  ```
   Record the result. If there are non-doc references (shell/Python scripts), they need a pointer file; if matches are doc-only, a full delete is fine.
 
 ### Step 7.2 — Read current `agent-network.md` roster section
@@ -920,7 +880,7 @@ After all nine commits have landed locally:
 - [ ] `git push origin main` — single push for the whole sequence. If the push fails (pre-push hook rejects `chore:` prefix check, branch-protection block, etc.), STOP and escalate — do NOT force-push or amend.
 - [ ] Report to Evelynn via SendMessage. Include:
   - The nine commit hashes (from `git log --oneline -n 9 --format='%h %s'`).
-  - The counts captured during smoke tests: `agents/.archive/conversations/*.md | wc -l`, delegation JSON count, iterm background count.
+  - The counts captured during smoke tests: conversation-file delete count (Commit 3 Step 3.1), delegation JSON delete count, iterm background move count (Commit 6 Step 6.1).
   - The Scenario (A or B) result from Step 9.1.
   - The list of outstanding items from Commit 9's body (as a checklist for Evelynn to route).
   - Any deviations from this plan.
