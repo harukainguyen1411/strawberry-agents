@@ -60,12 +60,12 @@ Going forward every new tool addition must pass this tree. If nothing above cate
 
 ### 2.1 What the server does today
 
-From `mcps/agent-manager/`:
+From `mcps/agent-manager/` (retired, see v2 §3.2):
 
-- `list_agents()` / `get_agent(name)` — scans `agents/*/` for metadata.
-- `create_agent(...)` — scaffolds `agents/<name>/{profile.md,memory/,journal/,learnings/,inbox/}` plus an iTerm profile.
-- `launch_agent(name, task)` — spawns an agent in a new iTerm window at a grid position.
-- `message_agent(name, message, ...)` — writes an inbox file + triggers an iTerm notification.
+- `list_agents()` / `get_agent(name)` (retired, see v2 §3.2) — scans `agents/*/` for metadata.
+- `create_agent(...)` (retired, see v2 §3.2) — scaffolds `agents/<name>/{profile.md,memory/,journal/,learnings/,inbox/}` plus an iTerm profile.
+- `launch_agent(name, task)` (retired, see v2 §3.2) — spawns an agent in a new iTerm window at a grid position.
+- `message_agent(name, message, ...)` (retired, see v2 §3.2) — writes an inbox file + triggers an iTerm notification.
 - Grid positioning / iTerm profile helpers.
 - Turn-based conversations, delegations, health registry, context-health reporting (read the full tool list from `mcps/agent-manager/server.py` during detailed phase — this rough plan captures the structural shape, not the exhaustive inventory).
 
@@ -73,10 +73,10 @@ From `mcps/agent-manager/`:
 
 | Cluster | Shape | Landing spot |
 |---|---|---|
-| **Agent metadata lookup** (`list_agents`, `get_agent`) | Rule + script | A concise CLAUDE.md section "Agent Roster" pointing at `agents/memory/agent-network.md` (already exists) plus a `scripts/list-agents.sh` that reads the filesystem. No LLM judgment needed — deterministic. |
-| **Agent creation** (`create_agent`) | Skill wrapping a script | `/new-agent <name>` skill with `allowed-tools: Bash Write`. The skill handles natural-language input ("create an agent named X who specializes in Y"), scaffolds the dirs by calling `scripts/new-agent.sh`, and stops short of anything iTerm-specific. iTerm profile generation splits into a macOS-only step. |
-| **Agent launch** (`launch_agent`) | macOS-only shell script | `scripts/launch-agent-iterm.sh` (macOS only). Not under Claude's control on Windows. Windows mode has no iTerm; Windows mode uses subagents (`Task` tool) instead, and that path does not go through `agent-manager` anyway. |
-| **Agent messaging** (`message_agent`, inbox writes) | Skill (`agent-ops`) | `/agent-ops send <agent> <message>` — a project skill at `.claude/skills/agent-ops/SKILL.md`. Wraps inbox file writes. No MCP process needed; the skill has `allowed-tools: Write Read Bash` and does the work inline in the caller's context. Inherits identity intrinsically. |
+| **Agent metadata lookup** (`list_agents`, `get_agent` — retired, see v2 §3.2) | Rule + script | A concise CLAUDE.md section "Agent Roster" pointing at `agents/memory/agent-network.md` (already exists) plus a `scripts/list-agents.sh` that reads the filesystem. No LLM judgment needed — deterministic. |
+| **Agent creation** (`create_agent` — retired, see v2 §3.2) | Skill wrapping a script | `/new-agent <name>` skill with `allowed-tools: Bash Write`. The skill handles natural-language input ("create an agent named X who specializes in Y"), scaffolds the dirs by calling `scripts/new-agent.sh`, and stops short of anything iTerm-specific. iTerm profile generation splits into a macOS-only step. |
+| **Agent launch** (`launch_agent` — retired, see v2 §3.2) | macOS-only shell script | `scripts/launch-agent-iterm.sh` (macOS only). Not under Claude's control on Windows. Windows mode has no iTerm; Windows mode uses subagents (`Task` tool) instead, and that path does not go through `agent-manager` anyway. |
+| **Agent messaging** (`message_agent` — retired, see v2 §3.2, inbox writes) | Skill (`agent-ops`) | `/agent-ops send <agent> <message>` — a project skill at `.claude/skills/agent-ops/SKILL.md`. Wraps inbox file writes. No MCP process needed; the skill has `allowed-tools: Write Read Bash` and does the work inline in the caller's context. Inherits identity intrinsically. |
 | **Turn-based conversations, delegations, health registry, context-health** | Mixed | Needs per-tool analysis in the detailed phase. First pass: turn-based conversations and delegations are local state (JSON files under `agents/conversations/`, `agents/delegations/`), so they become scripts + a `/delegate` and `/converse` skill. Health registry is already partly in `agents/health/heartbeat.sh`; keep the script, add a thin `/health` skill that reads the registry. |
 | **iTerm grid positioning** | Delete from Claude's surface | Pure macOS window management. Lives as a bash helper invoked by `scripts/launch-agent-iterm.sh`. Claude never calls it directly. |
 
@@ -91,7 +91,7 @@ Recommendation: **(a) for Phase 1, with (b) scheduled in Phase 3 cleanup** once 
 
 ### 2.4 Call-site updates
 
-Every agent profile and every plan currently mentioning `list_agents`, `message_agent`, `launch_agent`, `start_turn_conversation`, `delegate_task`, `check_delegations`, `complete_task`, etc., needs updating — these tool names are referenced across `agents/memory/agent-network.md`, most agent profiles, and several plans. The detailed phase enumerates the grep. Rough-plan shape: a single sweep replaces MCP tool calls with skill invocations or script calls, all in one commit so no agent is left pointing at a dead tool mid-migration.
+Every agent profile and every plan currently mentioning `list_agents`, `message_agent`, `launch_agent`, `start_turn_conversation`, `delegate_task`, `check_delegations`, `complete_task`, etc. (all retired, see v2 §3.2), needs updating — these tool names are referenced across `agents/memory/agent-network.md`, most agent profiles, and several plans. The detailed phase enumerates the grep. Rough-plan shape: a single sweep replaces MCP tool calls with skill invocations or script calls, all in one commit so no agent is left pointing at a dead tool mid-migration.
 
 **Ordering constraint:** call sites MUST be updated in the same commit that removes the MCP registration. Otherwise agents will try to call missing tools and fail. This is a mandatory failure-mode guard (see §7).
 
@@ -265,7 +265,7 @@ Genuinely gating, not trivia.
 
 1. **One external-comms MCP or two?** Telegram + Firestore as one process (`external-comms`) or two (`telegram` + `task-board`)? Bard's lean is two — cleaner separation, independently restartable, neither blocks the other. But two processes means two entries in `/mcp`, which is mild UX noise.
 2. **Delete old MCP directories on migration, or archive them?** (a) archive-in-place with a README pointing at this plan, reversible; (b) delete in the landing commit, cleaner but harder to revert. Bard's lean is archive for Phase 1-2, delete in Phase 3.
-3. **Any MCP tools you personally muscle-memory-use that you do NOT want renamed or moved?** If Duong types `message_agent` by hand ever, the skill surface will feel alien. Flag any that matter.
+3. **Any MCP tools you personally muscle-memory-use that you do NOT want renamed or moved?** If Duong types `message_agent` (retired, see v2 §3.2) by hand ever, the skill surface will feel alien. Flag any that matter.
 4. **`restart_evelynn` — keep as a macOS-only script, or delete entirely?** It never worked reliably (always returned "uncertain"). In subagent/Windows mode it has no meaning. Bard's lean is delete entirely, leave a `scripts/restart-evelynn-iterm.sh` stub only if Duong actually uses it.
 5. **Adopt marketplace `telegram` and `firebase` plugins, or bespoke refactor?** Unknown until Phase 2 proof-of-concept. Flag this now so Duong knows a switch is on the table.
 6. **Skill count cap — soft or hard?** Skills-integration caps v1 at six. This plan exceeds it. Fold into umbrella skills (`/agent-ops send|list|new|delegate|converse`, `/agent-lifecycle shutdown-all|commit-state`) to stay at two new skills? Bard's lean is fold — fewer top-level slash entries, subcommand discovery via `/agent-ops` with no args.

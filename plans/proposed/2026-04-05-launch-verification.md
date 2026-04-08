@@ -9,7 +9,7 @@ gdoc_url: https://docs.google.com/document/d/1fgOFYmF73Aq6m5OpUO_syDKyVQa9RqvgKX
 
 # Problem
 
-`launch_agent` returns `"launched"` immediately after creating the iTerm window and sending the startup command. It doesn't verify Claude Code actually started. Today Ornn was launched 5 times — each time the tool reported success, but Claude crashed immediately (likely a zsh error). No feedback reached the caller.
+`launch_agent` (retired, see v2 §3.2) returns `"launched"` immediately after creating the iTerm window and sending the startup command. It doesn't verify Claude Code actually started. Today Ornn was launched 5 times — each time the tool reported success, but Claude crashed immediately (likely a zsh error). No feedback reached the caller.
 
 # Solution
 
@@ -17,7 +17,7 @@ Five improvements, ordered by impact:
 
 ## 1. Launch verification — poll for heartbeat after launch
 
-After sending the startup greeting, `launch_agent` polls the registry for a heartbeat from the launched agent. Agents call `heartbeat.sh` in their startup sequence, so a heartbeat appearing within ~30s confirms Claude Code is running and the agent loaded.
+After sending the startup greeting, `launch_agent` (retired, see v2 §3.2) polls the registry for a heartbeat from the launched agent. Agents call `heartbeat.sh` in their startup sequence, so a heartbeat appearing within ~30s confirms Claude Code is running and the agent loaded.
 
 ```python
 # After sending startup greeting, poll for heartbeat confirmation
@@ -203,7 +203,7 @@ This is the local fallback — works when Duong is at his Mac but doesn't requir
 # Files changed
 
 - `mcps/agent-manager/server.py`:
-  - `launch_agent` — add heartbeat polling loop + iTerm error check after launch
+  - `launch_agent` (retired, see v2 §3.2) — add heartbeat polling loop + iTerm error check after launch
   - `agent_status` — add `heartbeat_age` field
   - New helper: `_check_session_for_errors(window_id)`
 - `scripts/evelynn-watchdog.sh` — cron-based liveness check, alerts via Telegram
@@ -212,4 +212,4 @@ This is the local fallback — works when Duong is at his Mac but doesn't requir
 
 # Risk
 
-Low. The heartbeat poll adds up to 30s to `launch_agent` — but only when the agent fails to start (happy path confirms in ~5-10s). The iTerm content read is a fallback, not a hot path.
+Low. The heartbeat poll adds up to 30s to `launch_agent` (retired, see v2 §3.2) — but only when the agent fails to start (happy path confirms in ~5-10s). The iTerm content read is a fallback, not a hot path.
