@@ -69,7 +69,7 @@ done
 # ---------------------------------------------------------------------------
 # Guard 2: raw `age -d` outside the sanctioned helpers
 # ---------------------------------------------------------------------------
-allowed_decrypt_pattern='^(tools/decrypt\.|scripts/secret-|scripts/pre-commit-secrets-guard\.sh|plans/|architecture/|secrets/README\.md|CLAUDE\.md$|agents/.*/learnings/|agents/.*/journal/|agents/.*/memory/.*\.md$|tools/age-bundle\.js$)'
+allowed_decrypt_pattern='^(tools/decrypt\.|scripts/secret-|scripts/pre-commit-secrets-guard\.sh|plans/|architecture/|secrets/README\.md|CLAUDE\.md$|agents/.*/learnings/|agents/.*/journal/|agents/.*/memory/.*\.md$|agents/.*/transcripts/|tools/age-bundle\.js$)'
 for f in "${staged[@]}"; do
     if [[ "$f" =~ $allowed_decrypt_pattern ]]; then continue; fi
     case "$f" in
