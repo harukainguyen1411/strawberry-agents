@@ -227,3 +227,11 @@ That's the MVP. No new dependencies. No new MCP server. Reuses the existing Play
 - This plan sits downstream of Syndra's autonomous-delivery-pipeline plan. If that plan lands first and already scopes a verification step, merge this into it rather than running parallel. If this plan lands first, Syndra's plan should reference it at the "self-verify before tunnel" step.
 - The MVP (§8 steps 1-5) can ship without waiting for Syndra's plan — it's purely additive to myapps and delivers value even in the current manual-PR workflow.
 - No implementer assignment. Evelynn decides after approval.
+
+## Duong Decisions — 2026-04-08 cafe session
+
+- **Verification auth → use the staging Firebase project.** This decision was folded with the staging-data-isolation decision in `2026-04-08-myapps-gcp-direction.md` — Duong chose a separate staging Firebase project. Bard's Q4 (local-mode vs test Firebase project) resolves to: use the staging Firebase project for any agent verification run that needs authenticated views. The `auth-local-mode` Playwright pattern stays available for purely-unauthenticated checks.
+- **Open questions absorbed by Evelynn per autonomy mandate:**
+  - Q1 (published Playwright MCP vs custom `mcps/browser-inspect/`) → default: use published if mature at detail-phase time, else build custom. Detail-phase investigation.
+  - Q2 (local + preview gates vs local-only for MVP) → keep (c) both, matches the autonomous-delivery-pipeline's preview subsystem.
+  - Q3 (Storybook/Histoire for MVP) → skip, revisit later per Bard's recommendation.
