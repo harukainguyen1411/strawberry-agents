@@ -16,6 +16,7 @@
 - 2026-04-05 PM (CLI, opus-4.6): Resolved harukainguyen1411 write access.
 - 2026-04-05 Late PM (CLI, opus-4.6): GH auth lockdown (PR #33), main divergence plan, Telegram token audit, zsh fix.
 - 2026-04-08 (subagent, opus-4.6[1m]): Reviewed Evelynn's age-based encrypted-secrets plan. Approve-with-changes. 8 required edits, key ones: argv leak in `secret-use.sh @SECRET@` → use env-into-child-only; gitleaks allowlist for `.age`; NTFS icacls (chmod is no-op on Windows); compromise = rotate at provider not just re-encrypt (git history forever); pre-commit guards for plaintext leaks into agent memory.
+- 2026-04-08 (subagent, opus-4.6[1m]): Bridge clarification — no Claude Desktop↔Claude Code bridge; transport is Remote Control (`claude --remote-control`). Revised encrypted-secrets Required Change 1 (bootstrap discipline) to name Remote Control and flag its logging/persistence/auth as research follow-up (open question, non-blocking). Authored `plans/proposed/2026-04-08-cafe-from-home.md` — recommends Cloudflare Tunnel + Access over ZeroTier/Twingate, Tailscale explicitly ruled out (work Mac). Restart wrapper deferred to follow-up plan.
 
 ## Key decisions made
 - Branching strategy: feature/, fix/, chore/, docs/ prefixes. Never commit to main (except agent state).
