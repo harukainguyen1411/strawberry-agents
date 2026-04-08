@@ -3,6 +3,8 @@ title: Restart safeguards — auto-exclude caller & prevent end/restart confusio
 status: approved
 owner: bard
 created: 2026-04-05
+gdoc_id: 1bjetfB05808NFPgyrMnFlFsOsjbi9iJhupRR4k9jjjc
+gdoc_url: https://docs.google.com/document/d/1bjetfB05808NFPgyrMnFlFsOsjbi9iJhupRR4k9jjjc/edit
 ---
 
 # Problem
