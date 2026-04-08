@@ -23,7 +23,7 @@ cross-refs:
 
 ## What this plan does
 
-Walks the leftover-audit (`assessments/2026-04-08-protocol-leftover-audit.md`) and the operating-protocol-v2 target (`plans/proposed/2026-04-09-operating-protocol-v2.md`), and produces a mechanical cleanup of the strawberry repo in **nine reversible atomic commits**, each with `chore:` prefix. The cleanup closes Layer 0 (parity) and Layer 1 (roster + retirement) debts, archives the fossils of the old MCP-coordination world, and backfills CLAUDE.md rule numbering to match what the in-flight plans will collectively land.
+Walks the leftover-audit (`assessments/2026-04-08-protocol-leftover-audit.md`) and the operating-protocol-v2 target (`plans/proposed/2026-04-09-operating-protocol-v2.md`), and produces a mechanical cleanup of the strawberry repo in **ten reversible atomic commits**, each with `chore:` prefix. The cleanup closes Layer 0 (parity) and Layer 1 (roster + retirement) debts, archives the fossils of the old MCP-coordination world, and backfills CLAUDE.md rule numbering to match what the in-flight plans will collectively land.
 
 ## What this plan does NOT do
 
@@ -62,7 +62,7 @@ Multiple in-flight plans all claim to add new CLAUDE.md rules. At the time this 
 
 If this plan lands *before* phase-1-detailed or operating-protocol-v2 (execution order is Evelynn's call), the executor must STOP at Commit 9, note the mismatch in the commit message body, and escalate. Do not improvise rule numbering.
 
-## Commit inventory (nine atomic commits)
+## Commit inventory (ten atomic commits)
 
 Every commit uses `chore:` prefix, lands directly on main (this is protocol cleanup — per Rule 9, it's not implementation work through a PR, though Evelynn may choose to PR it anyway for reviewability; default is direct-to-main in a single push at the end).
 
@@ -75,6 +75,7 @@ Every commit uses `chore:` prefix, lands directly on main (this is protocol clea
 7. **Commit 7** — Roster consolidation: collapse `agents/roster.md` into `agents/memory/agent-network.md`.
 8. **Commit 8** — Delete one-shot migration artifact + collapse duplicate git-workflow doc.
 9. **Commit 9** — Rule-numbering verification, stale `plans/proposed/` triage flag, audit cross-reference.
+10. **Commit 10** — Post-phase-1 legacy-tool-name drift sweep (catches references added to files after phase-1-detailed's grep baseline).
 
 Each commit is independently revertible. The executor lands them in order. If any commit fails its smoke test, the executor stops and escalates rather than rolling forward into the next commit.
 
@@ -219,6 +220,8 @@ Each commit is independently revertible. The executor lands them in order. If an
 
 **Same rationale as Commit 1's hard-delete retirement:** git history is the archive. `agents/.archive/` would reintroduce the shadow-dir fossil pattern Duong's Q4 decision explicitly retired. Anyone who needs the content can `git log --all --diff-filter=D --name-only` to find the delete commit, or `git show <hash>:<path>` to read a specific file.
 
+**Why both directories must go together (operating-protocol-v2 §3.3 "no parallel channels"):** v2 Layer 3 §3.3 is the load-bearing clause that forbids running the old MCP coordination surface in parallel with the new Teams/subagent/Yuumi stack. Leaving `agents/conversations/` or `agents/delegations/` tracked preserves a readable record of the old workflow next to the new one, which is exactly the parallel-channel pattern §3.3 rules out. Deletion (not archival) is the correct implementation of the §3.3 invariant.
+
 **Phase 1 MCP restructure does NOT delete these directories.** Phase 1 updates the tool-name references in agent memory/profile/plan files but leaves `agents/conversations/` and `agents/delegations/` in place. This migration plan handles the fossils themselves.
 
 **Parity note:** both directories are platform-neutral; no parity concern.
@@ -272,8 +275,13 @@ Each commit is independently revertible. The executor lands them in order. If an
 
   Commit 3 of 9 in the protocol migration sequence.
 
+  Implements the operating-protocol-v2 §3.3 "no parallel channels" clause:
+  keeping these fossil directories tracked would preserve a readable record
+  of the retired MCP coordination surface next to the new Teams/subagent/
+  Yuumi stack, which is the parallel-channel pattern §3.3 forbids.
+
   Refs: plans/proposed/2026-04-09-protocol-migration-detailed.md commit 3
-        plans/proposed/2026-04-09-operating-protocol-v2.md §1.3
+        plans/proposed/2026-04-09-operating-protocol-v2.md §1.3, §3.3
         assessments/2026-04-08-protocol-leftover-audit.md §1, §8.4
   ```
   Replace `<COUNT ...>` with the actual numbers from Step 3.1.
@@ -636,7 +644,9 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 
 **Shen handling:** CLAUDE.md Rule 15 lists Shen as an active Sonnet agent. He is currently in `agents/roster.md` but NOT in `agents/memory/agent-network.md`. This commit adds him to `agents/memory/agent-network.md`'s roster. It does NOT create `.claude/agents/shen.md` (out of scope per "What this plan does NOT do").
 
-**Rakan handling:** Rakan is NOT in Rule 15 and is Operating Protocol v2 §"Open questions" item 5. Unresolved. This commit leaves Rakan's `agents/rakan/` directory alone, does NOT add him to the consolidated roster, and flags him in the commit body for Duong. If Rakan is mentioned in `agents/roster.md`, remove the row (roster.md itself is being deleted anyway).
+**Rakan handling (updated per Swain 2026-04-09 amendment — v2 Q5 resolved as "aspirational, not wired"):** Rakan stays in `agents/memory/agent-network.md` with an explicit `(aspirational)` status marker so the row is clearly non-invokable. Same treatment applies to Ornn and Fiora, which are currently listed without any status marker but are equally aspirational — neither has a `.claude/agents/<name>.md` harness profile, neither is wired as a subagent, neither is part of the actual Sonnet executor pool (katarina + yuumi per the model-tier memory). Rakan's `agents/rakan/` directory is left alone by this commit (its disposition is a separate question for Duong).
+
+The aspirational marker is a column addition: the table gains a `Status` column. Wired agents get `active`. Ornn, Fiora, and Rakan get `aspirational — not wired`. This is the smallest-blast-radius form of the marker (no row deletion, no body text change).
 
 ### Step 7.1 — Preflight
 
@@ -651,17 +661,27 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 
 - [ ] Read `agents/memory/agent-network.md` lines 1-30 to confirm the current roster table. The current table (as of audit) lists: Evelynn, Katarina, Ornn, Fiora, Lissandra, Rek'Sai, Pyke, Bard, Syndra, Swain, Neeko, Zoe, Caitlyn, Yuumi, Poppy. Shen is missing.
 
-### Step 7.3 — Add Shen row to `agent-network.md`
+### Step 7.3 — Add `Status` column to the roster table and backfill every row
 
-- [ ] Find the existing roster table in `agents/memory/agent-network.md`.
-- [ ] Find the exact line (the Pyke row):
+- [ ] Read the existing roster table header in `agents/memory/agent-network.md`. It currently has four columns: `Agent | Role | Domain |`.
+- [ ] Rewrite the header row to add a `Status` column as the final column:
   ```
-  | **Pyke** | Git & IT Security | Git workflows, security audits |
+  | Agent | Role | Domain | Status |
+  |---|---|---|---|
   ```
-- [ ] Immediately after that line, insert the new Shen row:
+- [ ] For every existing row, append `| active |` as the trailing cell EXCEPT for the Ornn and Fiora rows, which get `| aspirational — not wired |`. Exact edits:
+  - Ornn row: old `| **Ornn** | Fullstack — New Features | Greenfield builds |` → new `| **Ornn** | Fullstack — New Features | Greenfield builds | aspirational — not wired |`
+  - Fiora row: old `| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring |` → new `| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring | aspirational — not wired |`
+  - All other existing rows (Evelynn, Katarina, Lissandra, Rek'Sai, Pyke, Bard, Syndra, Swain, Neeko, Zoe, Caitlyn, Yuumi, Poppy): append `| active |`.
+- [ ] Immediately after the Pyke row, insert the new Shen row with the Status column:
   ```
-  | **Shen** | Git & IT Security — Implementation | Sonnet executor for Pyke's git/security plans |
+  | **Shen** | Git & IT Security — Implementation | Sonnet executor for Pyke's git/security plans | active |
   ```
+- [ ] Add a new Rakan row immediately after the Shen row (Rakan is currently absent from `agent-network.md` entirely; per Swain's v2 Q5 resolution, he belongs in the roster with the aspirational marker so readers know the `agents/rakan/` directory is intentional-but-inert):
+  ```
+  | **Rakan** | Fullstack — pair partner (planned) | TBD | aspirational — not wired |
+  ```
+  If Rakan is ALREADY present in `agents/memory/agent-network.md` at the time of execution (state drift since audit), do not insert a duplicate row — instead, append the `aspirational — not wired |` cell to the existing row and skip this step.
 
 ### Step 7.4 — Delete `agents/roster.md`
 
@@ -673,6 +693,8 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 - [ ] `test ! -f agents/roster.md && echo OK` prints OK.
 - [ ] `grep -c "Shen" agents/memory/agent-network.md` — expect at least 1.
 - [ ] `grep -c "Irelia" agents/memory/agent-network.md` — expect 0 (Irelia was already absent per Commit 1 Step 1.6).
+- [ ] `grep -c "aspirational — not wired" agents/memory/agent-network.md` — expect exactly 3 (Ornn, Fiora, Rakan).
+- [ ] `grep -c "| active |" agents/memory/agent-network.md` — expect at least 12 (all other roster rows).
 
 ### Step 7.6 — Commit
 
@@ -694,9 +716,12 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
     phase-1 MCP restructure Step 10.
   - This commit does NOT create .claude/agents/shen.md. Creating a subagent
     profile is design work owned by Evelynn and/or the agent's lead.
-  - Rakan is NOT added to the consolidated roster. He is Operating Protocol
-    v2 §open-questions item 5 (unresolved). agents/rakan/ directory is
-    untouched. Duong's classification is needed before any further action.
+  - Added a Status column to the roster table. All wired agents are marked
+    "active"; Ornn, Fiora, and Rakan are marked "aspirational — not wired"
+    per Swain's v2 Q5 resolution on 2026-04-09 (they stay in the roster as
+    intentional-but-inert rows so readers know the agents/<name>/ directories
+    are not bugs but deferred work). agents/rakan/ directory itself is
+    untouched by this commit.
 
   Refs: plans/proposed/2026-04-09-protocol-migration-detailed.md commit 7
         plans/proposed/2026-04-09-operating-protocol-v2.md §1.1, §2.9
@@ -845,7 +870,8 @@ Four plans from 2026-04-03 to 2026-04-05 are sitting in `plans/proposed/` with n
   Added cross-reference row to architecture/platform-parity.md linking to
   this migration plan.
 
-  This commit closes the nine-commit protocol migration sequence.
+  This commit is the verification gate before Commit 10 (post-phase-1
+  drift sweep).
 
   Outstanding work after this plan lands:
     1. Rakan classification (Operating Protocol v2 §open-questions item 5).
@@ -872,15 +898,111 @@ Four plans from 2026-04-03 to 2026-04-05 are sitting in `plans/proposed/` with n
 
 ---
 
-## Step 10 — Final push + report
+## Commit 10 — Post-phase-1 legacy-tool-name drift sweep
 
-After all nine commits have landed locally:
+**Scope:** Phase-1-detailed MCP restructure Step 6/7 performs a repo-wide grep for the legacy `agent-manager` MCP tool names and replaces them with `/agent-ops` skill forms or the Teams/subagent vocabulary. That sweep has a baseline of ~53 files enumerated at the time Bard wrote phase-1. But any file *added or modified* after Bard's baseline — including the operating-protocol-v2 plan itself, evelynn-continuity-and-purity, this migration plan, any new agent profiles under `.claude/agents/`, and any learnings written during the transition window — can quietly reintroduce legacy tool names. Swain flagged this on 2026-04-09: the retirement of the legacy surface is absolute (v2 §3.3 "no parallel channels"), so a second sweep scoped to the drift window is required.
 
-- [ ] `git log --oneline -n 10` — verify the nine commits are present in the expected order and each uses `chore:` prefix.
+**Why this is a separate commit, not an extension of phase-1 Step 7:** phase-1 Step 7 lands together with the MCP deregistration in a single atomic commit (per phase-1 Step 14 ordering guarantee). This migration plan lands *after* phase-1. Any drift that slipped in between phase-1's grep and this plan's execution is by definition invisible to phase-1 Step 7 and can only be caught by a second sweep done at *this* plan's execution time. The sweep is informational/cleanup, not part of the phase-1 atomic bundle.
+
+**Relationship to v2 §3.3:** v2 Layer 3 §3.3 "no parallel channels" is the load-bearing clause. This commit is the enforcement arm for §3.3 against drift: every caught reference is either a documentation fossil (replaced with the new vocabulary) or an intentional historical citation in a plan body (left alone with an inline `(retired, see v2 §3.2)` annotation). The executor does NOT invent new replacement text — use the exact replacement table from phase-1 Step 7.
+
+**Scope boundary — do NOT touch:**
+
+- `plans/implemented/`, `plans/archived/` — historical record, out of Task #3 scope.
+- `agents/*/journal/`, `agents/*/transcripts/`, `agents/*/learnings/*` older than 2026-04-08 — historical record.
+- `mcps/agent-manager/` — the archived MCP source itself; its own tool names are expected.
+- `plans/proposed/2026-04-09-operating-protocol-v2.md` §3.2 — that section is the *definitional* retirement list; its use of the tool names is the point, not a leak. Leave every occurrence in §3.2 alone.
+- Any occurrence inside a fenced code block that is quoting a historical tool call for illustration (pattern: preceded by "e.g.", "previously:", "retired:", or similar). Leave alone with an inline annotation if the context isn't already clear.
+
+### Step 10.1 — Preflight
+
+- [ ] `git status --short` empty (Commit 9 just landed).
+- [ ] Confirm phase-1-detailed has landed (Scenario A from Commit 9 Step 9.1). If it has NOT, STOP — this sweep is meaningless before phase-1's own sweep. Escalate to Evelynn.
+- [ ] Record the current HEAD commit: `git rev-parse HEAD`.
+
+### Step 10.2 — Run the drift sweep
+
+- [ ] Run the same grep set phase-1 Step 6 uses, but scoped explicitly to files that are candidates for drift (added or modified since phase-1's grep baseline). Use a file-list-then-grep two-step so the executor can see which files are candidates first:
+  ```
+  # Files changed since 2026-04-09 (the phase-1 landing date — executor adjusts if needed)
+  git log --since=2026-04-09 --name-only --format= | sort -u > /tmp/drift-candidates.txt
+  # Filter to documentation-class files only
+  grep -E '\.(md|MD)$' /tmp/drift-candidates.txt > /tmp/drift-candidates-docs.txt
+  ```
+- [ ] Grep those candidates for every deprecated tool name (exact list from operating-protocol-v2 §3.2):
+  ```
+  xargs -a /tmp/drift-candidates-docs.txt grep -nE '\b(list_agents|get_agent|create_agent|launch_agent|message_agent|start_turn_conversation|speak_in_turn|pass_turn|end_turn_conversation|read_new_messages|get_turn_status|invite_to_conversation|escalate_conversation|resolve_escalation|delegate_task|complete_task|check_delegations|report_context_health)\b' 2>/dev/null > /tmp/drift-hits.txt
+  ```
+- [ ] Additionally, grep the full `plans/proposed/`, `.claude/agents/`, `agents/memory/`, and `agents/*/learnings/` trees unconditionally — these are the locations most likely to have drift regardless of modification date:
+  ```
+  grep -rnE '\b(list_agents|get_agent|create_agent|launch_agent|message_agent|start_turn_conversation|speak_in_turn|pass_turn|end_turn_conversation|read_new_messages|get_turn_status|invite_to_conversation|escalate_conversation|resolve_escalation|delegate_task|complete_task|check_delegations|report_context_health)\b' plans/proposed/ .claude/agents/ agents/memory/ 2>/dev/null >> /tmp/drift-hits.txt
+  ```
+- [ ] De-duplicate: `sort -u /tmp/drift-hits.txt > /tmp/drift-hits-unique.txt`.
+- [ ] Read `/tmp/drift-hits-unique.txt`. For every line:
+  - Determine whether the file is in the do-not-touch list above. If so, skip.
+  - Determine whether the match is inside operating-protocol-v2 §3.2 specifically. If so, skip.
+  - Determine whether the match is in a historical citation / illustration (fenced code block preceded by "retired:", "e.g.", "previously:", "was:", or in an explicit `##` heading named "Deprecated" or "Retired"). If so, leave the tool name but, if the annotation is missing, insert an inline `(retired, see v2 §3.2)` immediately after the tool name via `Edit`.
+  - Otherwise, it is a live reference. Replace it using the exact replacement table from phase-1-detailed Step 7 (do NOT invent new replacement text).
+
+### Step 10.3 — Expected match set (pre-execution sanity check)
+
+At the time this plan was written, the known-drift files and counts were:
+
+- `plans/proposed/2026-04-09-operating-protocol-v2.md` — 4 references, all inside §3.2's deprecation list. Expected to be SKIPPED by Step 10.2's §3.2 filter.
+- `plans/proposed/2026-04-08-evelynn-continuity-and-purity.md` — 0 references (verified 2026-04-09).
+- `plans/proposed/2026-04-09-protocol-migration-detailed.md` (this plan) — this plan itself references the tool names only in Commit 10's own text and in this sanity check. Those occurrences are historical / meta and should be SKIPPED by the "illustration" filter; no edits to this plan needed.
+- `.claude/agents/*.md` — 0 references (none of the 8 existing harness profiles reference legacy MCP tool names).
+- `agents/memory/agent-network.md` — this file was already rewritten by phase-1 Step 10, so any remaining references are expected to be in the **Phase 1 deferral note** about delegation tracking, which is intentional. SKIP if the match is inside the phase-1-authored deferral block.
+
+If the actual grep output substantially exceeds this expected set (more than ~5 unexpected live references), STOP and escalate. A large drift count means either phase-1 didn't land cleanly or new plans/profiles were written without following v2 §3.3 — both are governance issues for Evelynn, not mechanical edits for the executor.
+
+### Step 10.4 — Smoke test
+
+- [ ] Re-run the grep from Step 10.2. Remaining hits must all be in the allowlist (do-not-touch list, §3.2, annotated historical citations).
+- [ ] `git status --short` — list of modified files must match the set the executor edited in Step 10.2. No unexpected modifications.
+
+### Step 10.5 — Commit
+
+- [ ] Stage only the files modified by this step: `git add <paths>` (do NOT `git add -A`).
+- [ ] Commit message:
+  ```
+  chore: post-phase-1 legacy-tool drift sweep (protocol migration commit 10 of 10)
+
+  Second grep pass for legacy agent-manager MCP tool names, scoped to files
+  added or modified after Bard's phase-1-detailed grep baseline. Enforces
+  the operating-protocol-v2 §3.3 "no parallel channels" clause against any
+  drift that slipped in during the transition window.
+
+  Files swept: <N> documentation files (git-log-since-2026-04-09 filter +
+  unconditional sweep of plans/proposed/, .claude/agents/, agents/memory/).
+
+  Live references replaced: <M>
+  Historical citations annotated with "(retired, see v2 §3.2)": <K>
+  Allowlisted skips (v2 §3.2 deprecation list, phase-1 deferral blocks,
+  illustration blocks): <L>
+
+  No new CLAUDE.md rules added. This commit is enforcement of v2 §3.3,
+  not a new governance surface.
+
+  Commit 10 of 10 in the protocol migration sequence. Closes the sequence.
+
+  Refs: plans/proposed/2026-04-09-protocol-migration-detailed.md commit 10
+        plans/proposed/2026-04-09-operating-protocol-v2.md §3.2, §3.3
+        plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md Step 6, Step 7
+  ```
+  Replace `<N>`, `<M>`, `<K>`, `<L>` with actual counts.
+
+---
+
+## Step 11 — Final push + report
+
+After all ten commits have landed locally:
+
+- [ ] `git log --oneline -n 12` — verify the ten commits are present in the expected order and each uses `chore:` prefix.
 - [ ] `git push origin main` — single push for the whole sequence. If the push fails (pre-push hook rejects `chore:` prefix check, branch-protection block, etc.), STOP and escalate — do NOT force-push or amend.
 - [ ] Report to Evelynn via SendMessage. Include:
-  - The nine commit hashes (from `git log --oneline -n 9 --format='%h %s'`).
-  - The counts captured during smoke tests: conversation-file delete count (Commit 3 Step 3.1), delegation JSON delete count, iterm background move count (Commit 6 Step 6.1).
+  - The ten commit hashes (from `git log --oneline -n 10 --format='%h %s'`).
+  - The counts captured during smoke tests: conversation-file delete count (Commit 3 Step 3.1), delegation JSON delete count, iterm background move count (Commit 6 Step 6.1), drift-sweep counts (Commit 10 Step 10.5).
   - The Scenario (A or B) result from Step 9.1.
   - The list of outstanding items from Commit 9's body (as a checklist for Evelynn to route).
   - Any deviations from this plan.
@@ -888,7 +1010,7 @@ After all nine commits have landed locally:
 
 ## Rollback
 
-Each commit is independently revertible by `git revert <hash>` because each commit is atomic over its own scope. To roll back the entire nine-commit sequence, revert commits in **reverse order**: 9, 8, 7, 6, 5, 4, 3, 2, 1. Each revert produces its own `chore: revert ...` commit; do not force-push.
+Each commit is independently revertible by `git revert <hash>` because each commit is atomic over its own scope. To roll back the entire ten-commit sequence, revert commits in **reverse order**: 10, 9, 8, 7, 6, 5, 4, 3, 2, 1. Each revert produces its own `chore: revert ...` commit; do not force-push.
 
 Partial rollback is safe because the commits are independent:
 - Commit 1 (Irelia retire) does not depend on any other commit.
@@ -900,6 +1022,7 @@ Partial rollback is safe because the commits are independent:
 - Commit 7 (roster consolidation) is independent.
 - Commit 8 (git-workflow merge) is independent.
 - Commit 9 (verification) is documentation-only and always safe to revert alone.
+- Commit 10 (drift sweep) is documentation-only (tool-name replacements in markdown files); safe to revert alone, though reverting without reverting phase-1-detailed leaves the repo in a consistent state (phase-1 Step 7's replacements remain in effect).
 
 ## Open questions for Duong
 
