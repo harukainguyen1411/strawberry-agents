@@ -3,6 +3,8 @@ status: proposed
 owner: syndra
 created: 2026-04-08
 title: Evelynn Continuity and Coordinator Purity — Condenser, Zilean, Purity Audit, Restart Path
+gdoc_id: 1SupJMUdydBN5DDcHm1qHp6rwtqJvxvWY9enhTx3u3k0
+gdoc_url: https://docs.google.com/document/d/1SupJMUdydBN5DDcHm1qHp6rwtqJvxvWY9enhTx3u3k0/edit
 ---
 
 # Evelynn Continuity and Coordinator Purity
