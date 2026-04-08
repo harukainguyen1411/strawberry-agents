@@ -2,8 +2,6 @@
 status: in-progress
 owner: pyke
 date: 2026-04-04
-gdoc_id: 1CIoVy_FHMfhuG1B8l0ckR5d2SRdZ0Hi0irD_J0o5iT4
-gdoc_url: https://docs.google.com/document/d/1CIoVy_FHMfhuG1B8l0ckR5d2SRdZ0Hi0irD_J0o5iT4/edit
 ---
 
 # Branch Protection — Two-Account Setup
