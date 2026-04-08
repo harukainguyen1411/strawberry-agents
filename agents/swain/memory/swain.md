@@ -11,6 +11,7 @@
 - 2026-04-05 (s1): Audited myapps TaskList codebase (~90% built). Wrote B3 implementation plan. PR #27.
 - 2026-04-05 (s2): Telegram bridge investigation (Claude Code timeout issue). Plan viewer design. PR #54 architecture review.
 - 2026-04-08 (subagent): Designed plan-gdoc-mirror review workflow. Coexists with plan-viewer. Plan: `plans/proposed/2026-04-08-plan-gdoc-mirror.md`. Depends on encrypted-secrets plan.
+- 2026-04-08 (subagent, revision): gdoc-mirror Decision 8 failed reality contact after bulk publish — Drive was "very disorganized, all in one place." Duong chose proposed-only mirror. Wrote `plans/proposed/2026-04-08-gdoc-mirror-revision.md`. Key design call: new `plan-promote.sh` wrapper as the single choke point for plans leaving `proposed/` (unpublish + git mv + commit), chosen over git hook or pure agent-convention.
 
 ## Active Architecture Decisions
 
