@@ -16,5 +16,22 @@ duong/
 │   ├── health/       # Agent heartbeats
 │   └── transcripts/  # Session transcripts (gitignored)
 ├── plans/            # Implementation plans
+├── scripts/          # Utility scripts
+│   └── launch-evelynn.sh  # Launch Evelynn on Mac
+├── windows-mode/     # Windows launch scripts
 └── CLAUDE.md         # Agent instructions
 ```
+
+## Quick Start
+
+**Mac:**
+```bash
+./scripts/launch-evelynn.sh
+```
+
+**Windows:**
+```cmd
+windows-mode\launch-evelynn.bat
+```
+
+Both launch Evelynn with `--dangerously-skip-permissions` and `--remote-control`.
