@@ -3,8 +3,6 @@ status: proposed
 owner: syndra
 date: 2026-04-08
 title: Minion Layer Expansion — Yuumi (read/explore) + Poppy (edit/write)
-gdoc_id: 1v2SEys7jSOHxLR8_I5dfZn0_MeYE3P-RCxCI9TP7R8Y
-gdoc_url: https://docs.google.com/document/d/1v2SEys7jSOHxLR8_I5dfZn0_MeYE3P-RCxCI9TP7R8Y/edit
 ---
 
 # Minion Layer Expansion — Yuumi and Poppy
