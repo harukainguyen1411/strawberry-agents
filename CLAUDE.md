@@ -17,6 +17,8 @@
 13. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 14. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level Claude Code sessions use `/end-session`; Sonnet subagent sessions use `/end-subagent-session`. These skills produce the cleaned-transcript archive (top-level only), handoff note, memory refresh, learnings, and commit. Closing without running the appropriate skill is a protocol violation. The skills are `disable-model-invocation: true` — Duong or Evelynn must explicitly trigger them.
 
+15. **Every agent definition must declare its model** — every `.claude/agents/<name>.md` file MUST include a `model:` frontmatter field. Use `opus` for planners (evelynn, syndra, swain, pyke, bard), `sonnet` for executors/reviewers (katarina, lissandra, yuumi, ornn, fiora, reksai, neeko, zoe, caitlyn, shen), `haiku` for minions (poppy). Use the short alias names, not pinned version IDs, so agents auto-upgrade when Anthropic ships new tiers. Agents must NEVER silently inherit the parent session's model. Spawning with an explicit `model:` parameter override is allowed only with a deliberate reason.
+
 ## Scope
 
 Personal system only. Work tasks go through `~/Documents/Work/mmp/workspace/agents/`.

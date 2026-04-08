@@ -1,5 +1,6 @@
 ---
 name: lissandra
+model: sonnet
 description: PR reviewer focused on logic correctness, security, and edge cases. Sonnet-tier reviewer. Use when a PR needs a logic/security review pass.
 tools: Read, Glob, Grep, Bash
 ---
