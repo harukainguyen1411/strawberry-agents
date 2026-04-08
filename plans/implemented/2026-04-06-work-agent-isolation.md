@@ -3,8 +3,6 @@ status: implemented
 owner: syndra
 date: 2026-04-06
 title: Work Agent System — Isolated Architecture & Migration Plan
-gdoc_id: 1rn5ndwmtz68s54j4ClTU54uDfQvlDXszfHsTXKg0Vbg
-gdoc_url: https://docs.google.com/document/d/1rn5ndwmtz68s54j4ClTU54uDfQvlDXszfHsTXKg0Vbg/edit
 ---
 
 # Work Agent System — Isolated Architecture & Migration Plan
