@@ -4,3 +4,4 @@
 - 2026-04-08-windows-mode-architecture.md — When a stack is OS-coupled, build a lean parallel mode for the other OS, don't port. | last_used: 2026-04-08
 - 2026-04-08-agent-commit-identity.md — On a fresh machine, agent commits use the agent account (harukainguyen1411), never Duong's personal/work email. | last_used: 2026-04-08
 - 2026-04-08-roster-vs-harness-reality.md — agents/roster.md is mostly aspirational; only ~6 champions are actually wired as Windows-mode subagents. Real Sonnet pool is katarina + general-purpose. Route accordingly. | last_used: 2026-04-08
+- 2026-04-08-bootstrap-loop-validation.md — for self-applying tools (session-close skills, memory cleaners, state archivers), build inside the session that then uses it. Real input surfaces gaps no synthetic test fixture would. | last_used: 2026-04-08
