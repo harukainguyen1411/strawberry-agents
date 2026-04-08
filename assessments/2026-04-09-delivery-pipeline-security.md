@@ -3,11 +3,22 @@ title: Delivery Pipeline Security Assessment
 date: 2026-04-09
 owner: pyke
 status: assessment
-scope: approval-gate pipeline for myapps (Firebase Hosting) + discord-relay (Cloud Run) + **local Windows coder worker** (Claude Max plan)
+scope: approval-gate pipeline for myapps (Firebase Hosting) + **all long-running services local on Duong's Windows box** (discord-relay, coder-worker, bee-worker under NSSM)
 ---
 
 # Delivery Pipeline Security Assessment
 
+> **REVISION 3 — 2026-04-09 (even later)** — Cloud Run is **gone**. discord-relay moves to Duong's Windows computer alongside the coder worker and (future) bee worker. All three are NSSM-supervised, run under Duong's user, share the same secrets directory. Firebase Hosting is the only cloud surface for MyApps. GitHub Actions only runs build/deploy/label workflows — no Claude, no Gemini, no long-running processes.
+>
+> Consequences for this assessment:
+> - **Entire IAM / WIF / Cloud Run runtime SA section (§2) is obsolete.** No Cloud Run, no runtime SA to scope, no WIF pool for discord-relay. The only GCP identity left in the pipeline is the **Firebase Hosting service account** consumed by `preview-myapps.yml` and `deploy-myapps-prod.yml` via a GitHub Actions repo secret — scoped to Firebase Hosting admin only (see §2-bis below).
+> - **GCP Secret Manager usage shrinks to zero** for the agent stack. Discord-relay reads its secrets from local `secrets/*.txt` files on the Windows box, same pattern as coder-worker. If Katarina provisioned any SM entries for discord-relay, they should be deleted as part of the Cloud Run teardown.
+> - The "dual-storage of the same secret" finding (1.2) is resolved by construction: one source of truth per secret, living in `%USERPROFILE%\...\secrets\` with NTFS ACLs.
+> - The local-Windows-host attack surface (§11) now applies to **three** long-running services, not one. Shared secrets directory, shared NSSM supervision, shared user account. Risks compound; mitigations apply once and cover all three. New sub-sections §11.8–§11.10.
+> - `ANTHROPIC_API_KEY` and the entire "GCP billing escalation" concern are permanently cancelled. Free tier all the way down. GCP billing alerts on `strawberry-agents-discord` should be left in place as a tripwire — any unexpected charge means something survived the teardown.
+>
+> **Read order for the final pipeline:** §0.1 (inventory, now authoritative) → §2-bis (what little GCP is left) → **§11 (local-host threat model)** → §9-ter (final must-haves) → §10-ter (ship call). Treat §1 (secret table), §2 (Cloud Run IAM), §3, §4, §7 as historical.
+>
 > **REVISION 2 — 2026-04-09 (later)** — Duong reversed the Anthropic API direction. The coder agent **no longer runs in GitHub Actions**. It runs as a **long-running local worker on Duong's always-on Windows computer** (same box as Bee worker), invoking `claude -p` under Duong's own Max OAuth session. Cloud-infra invocation under Max plan hits the Anthropic ToS wall — local personal-use is the only path.
 >
 > Consequences for this assessment:
@@ -40,7 +51,42 @@ Bottom line with the approval gate **and** the local Windows worker: the pipelin
 
 Notably absent right now: **there is no auto-merge workflow in the repo yet.** The current `contributor-pipeline.yml` opens a PR and stops. Someone (Fiora or Katarina) still has to add the merge step. That means my recommendations on auto-merge scope are guardrails for code that hasn't shipped yet — easier to get right on the first draft than to bolt on after.
 
-### 0.1 — Inventory update after REVISION 2
+### 0.1 — Inventory update after REVISION 3 (authoritative)
+
+The final pipeline surface, for real this time:
+
+**On Duong's Windows box (NSSM-supervised, free tier):**
+- `apps/discord-relay/` — Gemini triage bot. Reads `GEMINI_API_KEY`, `DISCORD_BOT_TOKEN`, `GITHUB_TOKEN` from local `secrets/*.txt` via `scripts/start-windows.sh`. Does **not** touch Claude or the runlock.
+- `apps/coder-worker/` — Claude Max issue-to-PR worker. Reads `GITHUB_TRIAGE_PAT` from local `secrets/*.txt`. Holds the runlock while `claude -p` runs. Not scaffolded yet at time of writing; Katarina owns.
+- `apps/bee-worker/` — future, per existing approved plan. Same host, same supervision pattern, same secrets dir, shares the runlock with coder-worker.
+
+**In GitHub Actions (cloud, no Claude/Gemini):**
+- `preview-myapps.yml` — build + Firebase Hosting preview channel on PR
+- `deploy-myapps-prod.yml` — build + Firebase Hosting live channel on merge to main
+- `label-new-issues.yml` — `gh api` label patch
+
+**In Firebase Hosting (free tier):**
+- `apps/myapps/` — static SPA, live + per-PR preview channels
+
+**Decommissioned as of REV 3:**
+- Cloud Run `discord-relay` service (was task #4). Katarina runs `gcloud run services delete discord-relay --region asia-southeast1 --quiet`.
+- Any Secret Manager entries created for discord-relay (`GEMINI_API_KEY`, `DISCORD_BOT_TOKEN`, `GITHUB_TRIAGE_PAT` — if mirrored there). `gcloud secrets delete <NAME> --quiet`. One source of truth now.
+- WIF pool binding for discord-relay Cloud Run deploy (if Fiora started it). Not needed. The only WIF review I had pending in REV 2 is moot.
+- `ANTHROPIC_API_KEY` — cancelled, permanently.
+- Self-hosted Hetzner runner reliance for Claude — obsolete since REV 2, fully obsolete now.
+
+**Confirm-clean checklist for Katarina** (run after Cloud Run delete):
+```
+gcloud run services list --project strawberry-agents-discord
+gcloud secrets list --project strawberry-agents-discord
+gcloud artifacts repositories list --project strawberry-agents-discord
+gcloud iam service-accounts list --project strawberry-agents-discord --filter="NOT email:*firebase*"
+```
+Anything that comes back other than the Firebase Hosting SA + the default compute SA is residual and should be deleted. Leaves the project GCP-empty except for Firebase. Bonus: set a $1/month billing alert as a tripwire — if that ever fires, something survived.
+
+---
+
+### 0.1-historical — Inventory update after REVISION 2
 
 What changed in the surface since the original audit:
 - **`contributor-pipeline.yml` / `issue-to-pr.yml`**: being deleted by Fiora. Claude no longer runs in GitHub Actions.
@@ -518,3 +564,157 @@ My overall comfort level: **higher than REV 1**. Local personal-use is the shape
 Names get crossed off. But only after the job's done.
 
 — Pyke
+
+---
+
+## 2-bis. GCP identity inventory (REV 3, authoritative)
+
+After Cloud Run teardown, the only GCP identity in the entire pipeline is:
+
+**Firebase Hosting service account** (consumed by `preview-myapps.yml` + `deploy-myapps-prod.yml` via the `FIREBASE_SERVICE_ACCOUNT` GitHub Actions repo secret)
+
+Required scope: `roles/firebasehosting.admin` on the Firebase project only. Must NOT have:
+- `roles/editor` or `roles/owner` (catastrophic)
+- `roles/iam.*` (can escalate itself)
+- `roles/secretmanager.*` (no reason to touch SM — SM is decommissioned for this project)
+- `roles/run.*` (Cloud Run is gone)
+- `roles/artifactregistry.*` (no container registry in use)
+- Any cross-project bindings
+
+**Action for Katarina** (overlaps with the Firebase Hosting setup already in her queue): when you create the Firebase SA key, use `gcloud iam service-accounts create` with a named account like `github-firebase-deploy@strawberry-agents-discord.iam.gserviceaccount.com`, grant **only** `roles/firebasehosting.admin` via `gcloud projects add-iam-policy-binding`, download the JSON key, paste it into the `FIREBASE_SERVICE_ACCOUNT` repo secret, then **delete the local JSON key file** from disk. Do not commit the JSON anywhere. Do not email it. Do not store it in `secrets/` — that's Windows-box local-secrets territory and this key belongs to GitHub Actions, different boundary.
+
+**Pyke audit item**: after Katarina ships, I'll run `gcloud projects get-iam-policy strawberry-agents-discord` and verify the only non-default bindings are `roles/firebasehosting.admin` on the named SA. Anything else is either a residual from Cloud Run teardown or a mistake.
+
+**Key rotation**: Firebase SA keys are long-lived JSON files. The rotation story is "generate new key, paste into repo secret, delete old key in console." Put a 90-day calendar reminder on this — or better, v2: migrate to WIF for GitHub Actions → Firebase. WIF for Firebase Hosting deploys is supported via the `google-github-actions/auth` action. Not required tonight; file under S9 below.
+
+---
+
+## §11.8 — Shared Windows host: three services, one blast radius
+
+With discord-relay joining coder-worker (and eventually bee-worker) on the same Windows box under the same user, the "single compromise → three services" scenario needs explicit handling.
+
+**Shared state:**
+- Same Windows user account (`Duong`)
+- Same secrets directory (wherever Katarina decides — likely `%USERPROFILE%\.strawberry\secrets\` or `%USERPROFILE%\bee\secrets\` — **pick one and stick with it across all three**)
+- NSSM service registrations all visible to each other (`sc query`, `Get-Service`)
+- Any one of them reading its own secret file from a shared directory with permissive ACLs gives that process read access to every other secret in the directory
+
+**Required (L1)**: **one secrets directory, locked down as a unit**. Whichever path Katarina picks (I recommend `%USERPROFILE%\.strawberry\secrets\`), apply NTFS ACLs at the **directory** level, not per-file:
+
+```powershell
+$secretsDir = "$env:USERPROFILE\.strawberry\secrets"
+New-Item -ItemType Directory -Path $secretsDir -Force | Out-Null
+icacls $secretsDir /inheritance:r
+icacls $secretsDir /grant:r "${env:USERNAME}:(OI)(CI)(F)"
+# Then: each secret file inherits the locked-down ACL by default.
+```
+
+`(OI)(CI)` = object inherit + container inherit, so every file placed in the directory picks up the same ACL without having to re-icacls each one. This is much less error-prone than per-file lockdown. Any future secret added to the directory is automatically protected.
+
+**Required (L2)**: **per-service env-var scoping, not shared-globals**. Each NSSM service should load **only its own** secrets into its env, not read the whole directory. If discord-relay is compromised, it should have `GEMINI_API_KEY` + `DISCORD_BOT_TOKEN` + `GITHUB_TOKEN` in its process env — but not `GITHUB_TRIAGE_PAT` (that belongs to coder-worker). The ACL protects against unrelated processes; the env-var scoping protects against one service exfiltrating another's secrets through its own process memory.
+
+The practical way to do this: each service's `scripts/start-windows.sh` explicitly names the secrets it cares about:
+```bash
+export GEMINI_API_KEY=$(cat "$SECRETS_DIR/gemini-api-key.txt")
+export DISCORD_BOT_TOKEN=$(cat "$SECRETS_DIR/discord-bot-token.txt")
+# does NOT export GITHUB_TRIAGE_PAT even though the file exists in the same dir
+```
+
+**Note**: the `GITHUB_TOKEN` that discord-relay uses for filing issues **may be the same token** as coder-worker's `GITHUB_TRIAGE_PAT`. Confirm with Katarina. If they're the same, that's OK — it's one secret with two consumers, and the blast radius is the same either way. But document it clearly so a future rotation hits both consumers.
+
+**Should-have**: run each NSSM service under a **distinct service account** (`NT SERVICE\discord-relay`, `NT SERVICE\coder-worker`, etc.), and `icacls /grant:r` only the needed per-service read on per-service secret files. This is the real defense-in-depth answer and is the pattern I'd push for if this were work infrastructure. For a personal free-tier setup on Duong's own PC, running under his user account with directory-level ACLs is acceptable. Revisit if the list grows past three services.
+
+---
+
+## §11.9 — Kill-switch and audit trail for the local stack
+
+Three always-on long-running services on a personal PC means Duong needs a way to **stop everything** in one command when something goes wrong. Without it, incident response is "what service is which NSSM entry again, which log file do I tail."
+
+**Required (L1)**: a `scripts/windows/stop-all.ps1` that does:
+```powershell
+Stop-Service -Name discord-relay, coder-worker, bee-worker -Force -ErrorAction SilentlyContinue
+Get-Process -Name claude, node -ErrorAction SilentlyContinue | Stop-Process -Force
+```
+Named kill-switch. Duong should know about it before the pipeline goes live. Call it out in the discord-relay + coder-worker READMEs under a "panic" section.
+
+**Should-have**: a matching `status.ps1` that prints NSSM status + last 20 log lines from each service. Shortens the time-to-triage when something's wrong.
+
+**Required (L2)**: **append-only audit log** for coder-worker's Claude invocations. Every call to `claude -p` should log: timestamp, issue number, issue title, list of files changed, final git SHA. Written to an append-only log file in a directory Duong owns and can review. This is the "what did Claude do yesterday" log — critical for post-incident analysis when a malicious PR slips through review fatigue. Without it, the only record is the git history, which Claude can in principle manipulate (`git commit --amend`, `git rebase`) before pushing.
+
+The audit log should live **outside** the `apps/coder-worker/` directory (so Claude cannot write to it) — suggest `%USERPROFILE%\.strawberry\audit\coder-worker.log`, ACL'd the same as the secrets directory.
+
+---
+
+## §11.10 — Discord-relay on Windows: threat model delta vs. Cloud Run
+
+discord-relay moving from Cloud Run to Windows changes its security profile in non-obvious ways. Summary:
+
+**Safer on Windows:**
+- No public HTTP endpoint (Cloud Run services have a `*.run.app` URL by default, even if unused — attack surface exists if auth is misconfigured). On Windows, discord-relay opens an **outbound** Discord websocket and an outbound Gemini HTTPS connection. No inbound listener.
+- No container image in Artifact Registry to worry about keeping scanned.
+- No runtime SA to misconfigure.
+- Secrets live in local files, not Secret Manager — simpler auth model, one less service to screw up.
+
+**More dangerous on Windows:**
+- Runs as Duong's user, not a dedicated service account. Same local privilege as the coder worker. A compromise in the Gemini SDK or Discord.js dependency now has direct access to the Windows box and shared secrets directory.
+- No automatic restart on host reboot unless NSSM is configured correctly (it should be, per the `Start-Service` auto-start pattern — Katarina should verify).
+- Logs end up on local disk under `%USERPROFILE%`, not in Cloud Logging. Rotation and archival are Duong's problem now. Add log rotation to the NSSM config (NSSM supports `AppRotateFiles` + `AppRotateBytes`).
+- The `GEMINI_API_KEY` is now a plaintext file on a personal PC rather than behind IAM. This is a real downgrade in theoretical terms, but practical only if Duong's Windows account is compromised — at which point everything is lost anyway.
+
+**No change either way:**
+- Discord bot token scope and rotation story
+- Gemini quota / abuse story (bot still calls out from Duong's identity)
+- Prompt-injection surface in `triage.js` (still `sanitizeInput` = markdown stripper, still should-have S6 to switch to structured-output mode)
+
+**Recommendation**: treat discord-relay-on-Windows as a **Gemini credential holder** more than as a bot service. Its highest-value target is `GEMINI_API_KEY`, which can be rotated quickly in Google AI Studio. If discord-relay misbehaves, the immediate action is: stop the NSSM service, rotate the key in AI Studio, investigate the logs, rewrite the secret file with the new value, restart.
+
+---
+
+## 9-ter. Final must-haves for tonight (REVISION 3)
+
+The must-have list is **4 items**, same count as REV 2, with M3/M4'/M5 unchanged and M6 expanded to cover the shared-host shape.
+
+| ID | Guardrail | Why | Owner |
+|---|---|---|---|
+| **M3** | Dependabot + secret scanning + push protection on `Duongntd/strawberry`. Dependabot config must cover `apps/myapps/`, `apps/contributor-bot/`, `apps/discord-relay/`, `apps/coder-worker/`, and `github-actions`. | Hygiene; covers the whole Node dep tree across all three local services | Fiora |
+| **M4'** | Branch protection on main: `required_approving_review_count: 1`, required status checks = `myapps-tests` + Firebase preview deploy success, `enforce_admins: false` | Turns Duong's manual review into an enforced control | Fiora |
+| **M5** | Rotate `GITHUB_TRIAGE_PAT` to `repo` scope only (drop `workflow`), set 90-day expiry. The PAT now lives in plaintext on Duong's Windows box — blast radius is higher than REV 1. | Shrinks the nuclear key | Duong (+ Pyke verifies) |
+| **M6 (expanded)** | **Three-part guardrail for the local Windows stack:** (a) hard-scoped system prompt for coder-worker per §11.3; (b) **directory-level NTFS ACL lockdown** on the shared secrets dir per §11.8 (`icacls /inheritance:r` + `(OI)(CI)(F)` on the dir, not per-file); (c) per-service env-var scoping — each `start-windows.sh` exports only its own secrets. | The compound guardrail for the shared-host shape. All three pieces are cheap; together they prevent one compromised service from reading another's secrets. | Katarina |
+
+**Dropped from must-have by REV 3:**
+- WIF attribute_condition review for discord-relay — **obsolete**, no Cloud Run
+- Cloud Run runtime SA scoping — **obsolete**, no Cloud Run
+
+**Kept as should-have (S1, S3, S4, S5, S6, S7, S8 unchanged). New should-haves for REV 3:**
+- **S9 (new)** — migrate Firebase Hosting deploys from long-lived SA JSON key to WIF. Supported by `google-github-actions/auth`. Rotation story for a long-lived JSON key is fragile; WIF removes the need. Not blocking tonight.
+- **S10 (new)** — `scripts/windows/stop-all.ps1` kill-switch + `status.ps1` + append-only audit log per §11.9. Ship within a week of go-live. The kill-switch specifically should ship as soon as all three services are running — incident response without one is too slow.
+- **S11 (new)** — GCP billing alert at $1/month on `strawberry-agents-discord` as a residual-detection tripwire. Should be a 2-minute job for Katarina as part of the teardown confirmation.
+
+---
+
+## 10-ter. Final ship/no-ship call (REVISION 3)
+
+**Ship tonight with M3 + M4' + M5 + M6 in place.** Same shape as REV 2, with M6 now carrying the three-part shared-host guardrail.
+
+**My comfort level with the final architecture: highest of the three revisions.**
+
+Reasons, in order:
+1. The free-tier-only all-local shape **removes every class of cloud-misconfiguration risk** from the picture. No Cloud Run runtime SA to scope wrong. No WIF `attribute_condition` to fat-finger. No Secret Manager IAM drift. No unexpected billing. The entire attack surface in cloud is now three GitHub Actions workflows that build Node code and one Firebase SA key. That's an assessment I can actually fit in my head.
+2. The host-layer risks on the Windows box are **real but contained**. They end at Duong's own computer, which is a defensive boundary he controls directly. There's no shared tenant, no noisy neighbor, no cross-customer lateral movement concern.
+3. The approval gate (REV 1) + the hard-scoped system prompt (REV 2) + the directory-level secrets ACL (REV 3) are a layered defense that actually makes sense together. Each layer catches a different class of attack: approval gate catches Duong's eyeballs, system prompt catches Claude-obedience attacks, ACL catches cross-service lateral movement.
+4. The things that could still go wrong are **operational**, not architectural: review fatigue, stolen laptop, forgotten rotation, a dependency that gets backdoored upstream. Those are the same risks every personal-automation stack has. They're manageable with habits, not with more code.
+
+**What I'd still flag to Duong as an open concern** (no change since REV 2, restating for completeness):
+- Review fatigue — the approval gate is only as strong as actually looking at the diffs
+- Host-level exfil via Claude's filesystem access (§11.6 mitigation D) — Katarina needs to verify `claude -p` read-scope flags when scaffolding
+- BitLocker + real login password on the Windows box — now carries **three** services' worth of secrets, not one
+
+No other open concerns. The pipeline is ready to ship with the four must-haves.
+
+---
+
+## Team-lead apology note — receipt and filing
+
+Acknowledged. No hard feelings; the iteration took three revisions because Duong's direction genuinely moved, not because anybody failed twice. REV 1 → REV 2 → REV 3 is actually a textbook security-review arc — each pivot cut risk, each revision was shorter to write. The fact that the final architecture lines up exactly with `feedback_google_claude_free_default.md` is the goal, not a rebuke. I'll add a note to my own memory about always asking "is there a free-tier path" **first** on any cloud-adjacent architecture review, before auditing the cloud path.
+
+— Pyke (still)
