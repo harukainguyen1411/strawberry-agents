@@ -31,6 +31,7 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 | `scripts/plan-fetch.sh` | supported | supported | POSIX. Drive mirror fetch path. |
 | `scripts/clean-jsonl.py` | supported | supported | Python. Used by /end-session. |
 | `scripts/pre-commit-secrets-guard.sh` | supported | supported | POSIX. Required by CLAUDE.md Rule 11. |
+| `scripts/mac/iterm-backgrounds/*.jpg` | supported | NOT SUPPORTED | Per-agent iTerm2 background images. Used by the Mac iTerm launcher. Not relevant on Windows. |
 
 (Other `scripts/*` files are pending a classification audit. They remain at the top level until the audit confirms portability or moves them.)
 
