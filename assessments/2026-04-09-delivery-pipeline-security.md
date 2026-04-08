@@ -3,14 +3,18 @@ title: Delivery Pipeline Security Assessment
 date: 2026-04-09
 owner: pyke
 status: assessment
-scope: auto-approve + auto-deploy pipeline for myapps and discord-relay
+scope: human-approval + auto-deploy pipeline for myapps (Firebase Hosting) and discord-relay (Cloud Run)
 ---
 
 # Delivery Pipeline Security Assessment
 
-A dead man's notes on a pipeline that runs without a human at the helm. Duong wants the line paid out tonight. My job is to tell him where the sharks are before the blood hits the water — not to pull him back onto the dock.
+> **REVISION 2026-04-09 (late)** — Duong reversed direction: **approval gate is back**. No auto-merge. PRs open, Firebase Hosting preview channel deploys, Duong reviews the preview URL and merges manually. Merge to main triggers Firebase Hosting prod deploy.
+>
+> This dramatically reduces blast radius. The sections below on auto-merge guardrails (§3) and the worst-case walkthrough (§7) are preserved as a paper trail of what we'd need **if** auto-merge ever comes back — but most of those items drop from **must-have** to **nice-to-have**. The recommended tonight list in §9 has been rewritten. Read §9 and §10 for the current shipping decision; treat §3/§7 as historical threat modeling.
 
-Bottom line: the pipeline **can** ship tonight, but it should ship with **four must-have guardrails** welded on. Everything else is v2.
+A dead man's notes on a pipeline that used to run without a human at the helm. Duong put a hand back on the wheel — smart call. My job is the same: tell him where the sharks still are.
+
+Bottom line with the approval gate restored: the pipeline is **substantially safer** by construction. The must-have list shrinks from five items to **three**, and none of them are the auto-merge-specific ones. The remaining three are hygiene items that matter regardless of pipeline shape.
 
 ---
 
