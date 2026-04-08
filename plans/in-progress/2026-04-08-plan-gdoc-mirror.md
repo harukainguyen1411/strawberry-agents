@@ -1,6 +1,6 @@
 ---
 title: Plan ↔ Google Doc Mirror (Review Workflow)
-status: proposed
+status: in-progress
 owner: swain
 created: 2026-04-08
 ---
@@ -374,6 +374,22 @@ If implementation discovers bash makes any of this measurably worse, the impleme
 - The "gdoc wins during review window" rule is documented in the architecture doc and in the implementing PR description.
 - Refresh token is stored in encrypted form (or in the documented gitignored fallback if encrypted-secrets has not yet landed).
 - Plaintext credentials never appear in chat, agent context, shell history, or commit history.
+
+## Ship-Now Defaults (recorded by katarina, 2026-04-08)
+
+What landed in the first cut and what's deferred:
+
+- **Shipped:** all four scripts (`plan-publish.sh`, `plan-fetch.sh`, `plan-unpublish.sh`, `google-oauth-bootstrap.sh`), shared library (`_lib_gdoc.sh`), offline test suite (`test_plan_gdoc_offline.sh`), architecture doc (`architecture/plan-gdoc-mirror.md`).
+- **Shipped:** frontmatter wrap/unwrap with `yaml plan-frontmatter` sentinel; round-trip is byte-identical (covered by offline test).
+- **Shipped:** idempotent publish (re-runs update the existing doc, recreate if 404).
+- **Shipped:** require-clean check on the target file before any operation (no silent clobbering).
+- **Shipped:** trash (not hard-delete) on unpublish per Decision 2.
+- **Shipped:** OAuth refresh-flow inside a process-isolated subshell — credentials never leak to caller globals.
+- **Shipped:** integration with the sibling encrypted-secrets pipeline. The plan-gdoc-mirror scripts source four single-key plaintext files from `secrets/` (`google-client-id.env`, `google-client-secret.env`, `google-refresh-token.env`, `google-drive-plans-folder-id.env`), each populated by `tools/decrypt.sh`. The scripts deliberately do not call `age` directly; that's `tools/decrypt.sh`'s exclusive job per the encrypted-secrets discipline.
+- **Deferred — credentials:** the four `secrets/encrypted/google-*.age` blobs do not yet exist (waiting on Duong's Google Cloud Console bootstrap + the encrypted-secrets pipeline being usable). The plan-gdoc-mirror scripts will fail with a clear "missing credential file" error until they exist.
+- **Deferred — end-to-end verification:** the publish → fetch → unpublish round trip against the live Drive API has NOT been executed because credentials are not yet provisioned. Offline tests pass. Re-test required after credentials land.
+- **Deferred — fidelity test fixture:** the success criterion "a known plan with all of headings, lists, code blocks, tables, and links round-trips" needs to be run against real Drive once credentials exist. The test plan file should be checked in under `tests/fixtures/` at that time.
+- **Deferred — automatic cleanup hook:** Decision 5 says `plan-unpublish.sh` should be invoked automatically as part of the agent routine that moves a plan into `plans/implemented/`. The script exists and is callable, but no agent routine wires it up yet. Follow-up for whoever adds the move-to-implemented helper.
 
 ## Out-of-Scope (Future Work)
 
