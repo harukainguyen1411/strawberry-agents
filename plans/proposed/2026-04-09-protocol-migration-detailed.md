@@ -93,36 +93,19 @@ Each commit is independently revertible. The executor lands them in order. If an
 - [ ] `ls agents/irelia/` shows `inbox/ journal/ learnings/ memory/ profile.md transcripts/` (or similar; the exact contents don't matter — the directory exists).
 - [ ] `.claude/agents/irelia.md` does NOT exist (confirm with `ls .claude/agents/irelia.md 2>/dev/null; echo $?` returns `2` from ls and `0` or `1` from `echo`). Irelia has no harness profile because she was never a subagent.
 
-### Step 1.2 — Create `agents/.retired/` if missing
+**Retirement procedure (updated per operating-protocol-v2 commit `5bd1ea3`, Duong's Q4 decision 2026-04-09):** hard `git rm -r`, no `.retired/` archive directory. Git history is the archive. Rationale: archive directories reintroduce the fossil problem the audit is trying to solve.
 
-- [ ] `mkdir -p agents/.retired`
-- [ ] `touch agents/.retired/.gitkeep`
+### Step 1.2 — Hard-delete Irelia's directory
 
-### Step 1.3 — Add retirement frontmatter to Irelia's profile
+- [ ] Run: `git rm -r agents/irelia`
+- [ ] Verify with `git status --short` that every file under `agents/irelia/` shows as `D` (delete).
 
-- [ ] Read `agents/irelia/profile.md`.
-- [ ] If the file already has YAML frontmatter (starts with `---`), add these two fields at the end of the frontmatter block, before the closing `---`:
-  ```
-  retired: 2026-04-09
-  retirement-reason: Retired when Evelynn took over as head agent. Archived as part of protocol migration.
-  ```
-- [ ] If the file has no frontmatter, prepend a new frontmatter block at the top of the file:
-  ```
-  ---
-  retired: 2026-04-09
-  retirement-reason: Retired when Evelynn took over as head agent. Archived as part of protocol migration.
-  ---
+### Step 1.3 — Delete harness profile if present
 
-  ```
-  (Note the blank line after the closing `---`.)
-- [ ] Do NOT edit any other content in `profile.md`.
+- [ ] `.claude/agents/irelia.md` was confirmed absent in Step 1.1. If Step 1.1 somehow saw it as present (state drift), run: `git rm .claude/agents/irelia.md`
+- [ ] Otherwise skip.
 
-### Step 1.4 — Move Irelia's directory to `agents/.retired/irelia/`
-
-- [ ] Run: `git mv agents/irelia agents/.retired/irelia`
-- [ ] Verify with `git status --short` that the moves are registered as renames (R100 entries, not delete + add).
-
-### Step 1.5 — Update `agents/roster.md` — remove Irelia row
+### Step 1.4 — Update `agents/roster.md` — remove Irelia row, add Retired footnote
 
 - [ ] Edit `agents/roster.md`.
 - [ ] Find the exact line:
@@ -130,44 +113,52 @@ Each commit is independently revertible. The executor lands them in order. If an
   | Irelia (retired) | Former head agent | `irelia/` |
   ```
 - [ ] Delete that entire line from the table.
-- [ ] Find the section header `## Infrastructure (minions)` and, immediately BEFORE it, add a new section:
+- [ ] Find the section header `## Infrastructure (minions)` and, immediately BEFORE it, add a new section (one-line footnote entry, NOT a table):
   ```
   ## Retired
 
-  | Agent | Retired | Reason |
-  |---|---|---|
-  | Irelia | 2026-04-09 | Retired when Evelynn took over as head agent. |
+  - **Irelia** — 2026-04-09 — retired when Evelynn took over as head agent.
 
   ```
-  (Note the blank line after the table.)
+  (Note the blank line after the bullet.)
 
-### Step 1.6 — Update `agents/memory/agent-network.md` — confirm Irelia not listed
+  Note: this section will be short-lived — `agents/roster.md` itself is deleted in Commit 7 (roster consolidation). Commit 7 carries the Retired footnote forward into `agents/memory/agent-network.md`.
+
+### Step 1.5 — Update `agents/memory/agent-network.md` — confirm Irelia not listed
 
 - [ ] `grep -n "Irelia" agents/memory/agent-network.md` — expect zero matches. If there are matches, stop and escalate (the file drift is larger than expected).
 
+### Step 1.6 — Update `architecture/platform-parity.md` if present
+
+- [ ] `test -f architecture/platform-parity.md && grep -n "Irelia" architecture/platform-parity.md || echo "no parity file or no Irelia row"`
+- [ ] If the file exists AND contains an Irelia row, remove that row via `Edit`. Otherwise skip.
+
 ### Step 1.7 — Smoke test
 
-- [ ] `ls agents/.retired/irelia/profile.md` — file exists.
 - [ ] `ls agents/irelia/ 2>/dev/null; echo $?` — expect non-zero (directory gone).
-- [ ] `grep -c "^| Irelia" agents/roster.md` — expect `0`.
-- [ ] `grep -c "^| Irelia" agents/roster.md || true` handles the zero-match case without failing the script.
+- [ ] `git ls-files agents/irelia/ | wc -l` — expect `0`.
+- [ ] `grep -c "^| Irelia" agents/roster.md || true` — expect `0`.
+- [ ] `grep -c "^- \*\*Irelia\*\*" agents/roster.md || true` — expect `1` (the new retired footnote).
 
 ### Step 1.8 — Commit
 
-- [ ] Stage: `git add agents/.retired agents/irelia agents/roster.md`
-  - Note: `git mv` already staged the renames; this `git add` picks up the roster edit and any untracked `.gitkeep`.
+- [ ] Stage: `git add agents/roster.md` (the `git rm -r` in Step 1.2 already staged the deletions).
 - [ ] Commit message (exact, via heredoc):
   ```
-  chore: retire irelia agent (protocol migration commit 1 of 9)
+  chore: retire irelia agent — replaced by Evelynn as head agent
 
-  First use of the Operating Protocol v2 §1.3 retirement procedure.
+  First use of the Operating Protocol v2 §1.3 retirement procedure
+  (hard-delete form, per Duong's Q4 decision in commit 5bd1ea3).
 
-  - Added retired: 2026-04-09 and retirement-reason to profile.md frontmatter.
-  - git mv agents/irelia → agents/.retired/irelia (preserves history).
+  - git rm -r agents/irelia (git history is the archive).
   - Removed Irelia row from agents/roster.md live table.
-  - Added Retired section to agents/roster.md with retirement row.
+  - Added one-line Retired footnote entry to agents/roster.md.
 
-  No .claude/agents/irelia.md existed, so no harness profile deletion required.
+  No .claude/agents/irelia.md existed, so no harness profile deletion
+  required. No architecture/platform-parity.md row existed, so no
+  parity-file edit required.
+
+  Commit 1 of 9 in the protocol migration sequence.
 
   Refs: plans/proposed/2026-04-09-protocol-migration-detailed.md commit 1
         plans/proposed/2026-04-09-operating-protocol-v2.md §1.3
@@ -692,7 +683,7 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 - [ ] Confirm both files exist: `test -f agents/roster.md && test -f agents/memory/agent-network.md && echo OK`.
 - [ ] Search for any code or scripts that reference `agents/roster.md` by path:
   ```
-  grep -rn "agents/roster.md" --include='*.sh' --include='*.py' --include='*.md' . 2>/dev/null | grep -v '^\./plans/' | grep -v '^\./assessments/' | grep -v '^\./agents/.archive/' | grep -v '^\./agents/.retired/'
+  grep -rn "agents/roster.md" --include='*.sh' --include='*.py' --include='*.md' . 2>/dev/null | grep -v '^\./plans/' | grep -v '^\./assessments/' | grep -v '^\./agents/.archive/'
   ```
   Record the result. If there are non-doc references (shell/Python scripts), they need a pointer file; if matches are doc-only, a full delete is fine.
 
@@ -786,13 +777,13 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 
 ### Step 8.4 — Check for references to the deleted paths
 
-- [ ] `grep -rn "GIT_WORKFLOW.md\|scripts/migrate-ops.sh" --include='*.md' --include='*.sh' . 2>/dev/null | grep -v '^\./agents/.archive/' | grep -v '^\./agents/.retired/' | grep -v '^\./plans/implemented/' | grep -v '^\./plans/archived/' | grep -v '^\./assessments/'`
+- [ ] `grep -rn "GIT_WORKFLOW.md\|scripts/migrate-ops.sh" --include='*.md' --include='*.sh' . 2>/dev/null | grep -v '^\./agents/.archive/' | grep -v '^\./plans/implemented/' | grep -v '^\./plans/archived/' | grep -v '^\./assessments/'`
 - [ ] If there are matches under agent memory files, active plans, or architecture docs, edit each to point at `architecture/git-workflow.md` instead (for GIT_WORKFLOW.md) or remove the reference entirely (for migrate-ops.sh). Use `Edit` per file.
 
 ### Step 8.5 — Smoke test
 
 - [ ] `test ! -f GIT_WORKFLOW.md && test ! -f scripts/migrate-ops.sh && test -f architecture/git-workflow.md && echo OK`.
-- [ ] `grep -rn "GIT_WORKFLOW.md" --include='*.md' --include='*.sh' . 2>/dev/null | grep -v '^\./agents/.archive/' | grep -v '^\./agents/.retired/' | grep -v '^\./plans/implemented/' | grep -v '^\./plans/archived/' | grep -v '^\./assessments/'` — expect empty output.
+- [ ] `grep -rn "GIT_WORKFLOW.md" --include='*.md' --include='*.sh' . 2>/dev/null | grep -v '^\./agents/.archive/' | grep -v '^\./plans/implemented/' | grep -v '^\./plans/archived/' | grep -v '^\./assessments/'` — expect empty output.
 
 ### Step 8.6 — Commit
 
