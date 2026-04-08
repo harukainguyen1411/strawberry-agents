@@ -1,5 +1,6 @@
 ---
 name: katarina
+model: sonnet
 description: Fullstack engineer for quick tasks — small fixes, scripts, minor features, focused refactors. Sonnet-tier executor. Always works from an approved plan in plans/approved/ or plans/in-progress/.
 tools: Read, Write, Edit, Glob, Grep, Bash
 ---
