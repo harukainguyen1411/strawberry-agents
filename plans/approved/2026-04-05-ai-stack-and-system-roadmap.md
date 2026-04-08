@@ -26,7 +26,7 @@ Per-agent API keys are already in place. Remaining action: verify model assignme
 
 **Rationale:** Opus for planning, architecture, security, and coordination. Sonnet for execution — following plans, building features, reviewing code.
 
-**Can Evelynn launch agents with a specific model?** No — `launch_agent` doesn't accept a model parameter. Model is set per-agent in `settings.local.json`, which is the correct design. Model assignment is a configuration decision, not a runtime decision. Evelynn doesn't need to override it — each agent's role determines its model tier, and that's set once.
+**Can Evelynn launch agents with a specific model?** The launcher script (`scripts/mac/launch-agent-iterm.sh`) uses a built-in tier map (Opus for planners, Sonnet otherwise). Model is also set in `.claude/agents/<name>.md` `model:` frontmatter per CLAUDE.md rule 15. Model assignment is a configuration decision, not a runtime decision. Evelynn doesn't need to override it — each agent's role determines its model tier, and that's set once.
 
 **Who:** Bard — verify all `settings.local.json` files have correct model set per table above.
 

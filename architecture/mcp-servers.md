@@ -1,45 +1,6 @@
 # MCP Servers
 
-Two MCP servers, both Python (FastMCP), configured in `.mcp.json`.
-
-## agent-manager
-
-**Location:** `mcps/agent-manager/server.py`
-**Start script:** `mcps/agent-manager/scripts/start.sh`
-
-General-purpose agent management. Available to all agents.
-
-### Tools
-
-| Tool | Purpose |
-|---|---|
-| `list_agents` | List available agents |
-| `get_agent` | Look up agent details |
-| `create_agent` | Create a new agent |
-| `launch_agent` | Spin up agent in iTerm window |
-| `restart_agents` | Restart agent sessions |
-| `agent_status` | Check agent running status |
-| `message_agent` | Send inbox message (fire-and-forget) |
-| `check_inbox_status` | Check for pending inbox messages |
-| `acknowledge_message` | Mark inbox message as read |
-| `start_turn_conversation` | Start multi-agent conversation |
-| `speak_in_turn` | Post message in conversation |
-| `pass_turn` | Yield turn |
-| `end_turn_conversation` | Propose ending conversation |
-| `read_new_messages` | Read new messages since cursor |
-| `get_turn_status` | Check conversation status |
-| `invite_to_conversation` | Add agent to conversation |
-| `escalate_conversation` | Escalate to Evelynn |
-| `resolve_escalation` | Resolve escalation |
-
-### Environment Variables
-
-| Var | Purpose |
-|---|---|
-| `AGENTS_PATH` | Path to `agents/` directory |
-| `WORKSPACE_PATH` | Path to repo root |
-| `ITERM_PROFILES_PATH` | Path to iTerm2 dynamic profiles |
-| `OPS_PATH` | (Optional) Path for runtime state; defaults to in-repo paths |
+One active MCP server, Python (FastMCP), configured in `.mcp.json`. The `agent-manager` MCP server is archived as of Phase 1 of the MCP restructure — see `mcps/agent-manager/README.md`.
 
 ## evelynn
 
@@ -59,12 +20,31 @@ Evelynn-restricted tools. Sender enforcement is honor-system — the server chec
 
 ### Environment Variables
 
-Same as agent-manager, plus:
-
 | Var | Purpose |
 |---|---|
+| `AGENTS_PATH` | Path to `agents/` directory |
+| `WORKSPACE_PATH` | Path to repo root |
+| `ITERM_PROFILES_PATH` | Path to iTerm2 dynamic profiles |
 | `TELEGRAM_BOT_TOKEN` | Bot token from @BotFather |
 | `TELEGRAM_CHAT_ID` | Duong's Telegram chat ID |
+
+## agent-manager (archived — Phase 1)
+
+**Status:** Archived. Source preserved at `mcps/agent-manager/` per Phase 1 plan (D2). Deletion scheduled for Phase 3.
+
+**Replacement surface (Phase 1):**
+
+| Old tool | New surface |
+|---|---|
+| `list_agents` | `/agent-ops list` |
+| `create_agent` | `/agent-ops new <name>` |
+| `message_agent` | `/agent-ops send <agent> <message>` |
+| `launch_agent` | macOS: `scripts/mac/launch-agent-iterm.sh`. Windows: Task subagent. |
+| Turn-based conversation tools | Deferred to Phase 2. Use `/agent-ops send` + Evelynn escalation for now. |
+| `delegate_task` / `complete_task` / `check_delegations` | Tracked via `agents/delegations/*.json` directly. Phase 2 will add `/agent-ops delegate` if needed. |
+| `report_context_health` | Deferred to Phase 2. Report conversationally in turn reply to Evelynn. |
+
+See `plans/approved/2026-04-09-mcp-restructure-phase-1-detailed.md` for the full migration spec.
 
 ## Shared Helpers
 

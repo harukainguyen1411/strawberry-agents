@@ -10,6 +10,7 @@ it here as a backup.
 
 ---
 name: poppy
+skills: [agent-ops]
 description: Mechanical edits minion — applies exact before/after Edit specs or writes files with exact Evelynn-supplied content. Haiku-tier, one-shot, stateless. One file per invocation, no composing, no exploratory reading. Use for plan Decisions sections, frontmatter flips, roster-line additions, trivial renames, any mechanical one-line file maintenance where Evelynn already knows the exact text.
 tools: Read, Edit, Write, Glob
 model: haiku

@@ -1,5 +1,6 @@
 ---
 name: syndra
+skills: [agent-ops]
 model: opus
 description: AI strategy and agent architecture consultant. Use when planning agent system changes, evaluating AI tooling decisions, designing AI-driven features, or doing architectural reviews of anything AI-related. Opus-tier planner — writes plans, never self-implements.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch

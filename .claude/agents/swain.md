@@ -1,5 +1,6 @@
 ---
 name: swain
+skills: [agent-ops]
 model: opus
 description: System architect. Use for architectural design, scaling decisions, infrastructure planning, and any cross-cutting structural change to the codebase. Opus-tier planner — writes plans, never self-implements.
 tools: Read, Write, Edit, Glob, Grep, Bash, WebFetch

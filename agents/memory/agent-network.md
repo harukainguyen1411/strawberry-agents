@@ -1,6 +1,6 @@
 # Agent Network — Personal System
 
-You are part of Duong's personal agent network. Communicate with each other using the `agent-manager` MCP tools.
+You are part of Duong's personal agent network. Coordinate using `/agent-ops` and the Claude Code subagent (`Task` tool) surface.
 
 ## Agent Roster
 
@@ -9,7 +9,7 @@ You are part of Duong's personal agent network. Communicate with each other usin
 | **Evelynn** | Head agent, coordinator | Task delegation, Duong relay | active |
 | **Katarina** | Fullstack — Quick Tasks | Small fixes, scripts | active |
 | **Ornn** | Fullstack — New Features | Greenfield builds | aspirational — not wired |
-| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring | aspirational — not wired |
+| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring | active |
 | **Lissandra** | PR Reviewer | Logic, security, edge cases | active |
 | **Rek'Sai** | PR Reviewer | Performance, concurrency, data flow | active |
 | **Pyke** | Git & IT Security | Git workflows, security audits | active |
@@ -33,43 +33,36 @@ Evelynn is the hub, but not a bottleneck. Duong talks to Evelynn. Agents can col
 - Decision needing Duong's input
 - Priority conflict between agents
 
-**Path:** Agent → Evelynn → Duong (two-tier). Use `escalate_conversation` during your turn, or `message_agent` to Evelynn outside conversations.
+**Path:** Agent → Evelynn → Duong (two-tier). Use `/agent-ops send evelynn <message>` outside conversations, or reply directly if in a shared session.
 
 ## Communication Tools
 
-- `launch_agent(name)` — start agent in new iTerm window
-- `message_agent(name, message)` — fire-and-forget inbox message
-- `list_agents()` — see available agents
-- `start_turn_conversation(title, sender, participants, turn_order, message, mode?)` — structured discussion (ordered or flexible)
-- `speak_in_turn` / `pass_turn` / `end_turn_conversation` — conversation participation
-- `read_new_messages(title, agent)` — read since last cursor
-- `get_turn_status(title)` — check status (flexible mode: `suggested_next`, `spoken_this_round`)
-- `invite_to_conversation(title, sender, agent, position?)` — add agent mid-conversation
-- `escalate_conversation` / `resolve_escalation` — pause + notify Evelynn
-- `delegate_task` / `complete_task` / `check_delegations` — task tracking
+- `/agent-ops send <agent> <message>` — fire-and-forget inbox message
+- `/agent-ops list` — see available agents
+- `/agent-ops new <name>` — scaffold a new agent (macOS or Windows)
+- macOS only: `scripts/mac/launch-agent-iterm.sh <name>` — launch agent in iTerm2 window
+- Windows: launch via Task subagent (Claude Code `Agent` tool); no launch script
 
-**Conversation modes:**
-- **Ordered**: strict round-robin — reviews, sequential decisions
-- **Flexible**: anyone speaks anytime — brainstorming, async collaboration
+**Turn-based conversations** are deferred to Phase 2. During Phase 1, use `/agent-ops send` for peer-to-peer messages and escalate to Evelynn via inbox for multi-agent discussions.
 
 ## Protocol
 
-1. Check who's running: `list_agents()`
-2. Quick one-offs: `message_agent`
-3. Multi-agent discussions: `start_turn_conversation`
-4. Your turn: `read_new_messages` → `speak_in_turn` or `pass_turn`
-5. Blocker: `escalate_conversation`
-6. **Task complete → report to Evelynn** (message_agent or inbox)
-7. **Delegated task → call `complete_task` when done** (mandatory)
-8. **Context health:** report every ~10 turns via `report_context_health`
-9. **Plan approval gate:** After writing a plan to `plans/proposed/`, your task is done. Call `complete_task` and report to Evelynn. Do NOT proceed to implementation. Duong approves plans by moving them to `plans/approved/`. Evelynn then delegates execution (possibly to a different agent).
+1. Check who's running: `/agent-ops list`
+2. Quick one-offs: `/agent-ops send <agent> <message>`
+3. Multi-agent discussions: escalate to Evelynn via `/agent-ops send evelynn <message>`
+4. Subagent delegation: Evelynn invokes via Claude Code `Task` tool with agent name
+5. Blocker: report to Evelynn via inbox
+6. **Task complete → report to Evelynn** (inbox or direct session reply)
+7. **Delegated task → report completion to Evelynn and update the delegation JSON file directly.** (Delegations are tracked via `agents/delegations/*.json` files. Phase 1 has no skill wrapper; Evelynn manages delegation state directly. Phase 2 will introduce `/agent-ops delegate` if needed.)
+8. **Context health:** Phase 1: context health reporting is deferred. Report context health conversationally in your turn reply to Evelynn.
+9. **Plan approval gate:** After writing a plan to `plans/proposed/`, your task is done. Report to Evelynn. Do NOT proceed to implementation. Duong approves plans by moving them to `plans/approved/`. Evelynn then delegates execution (possibly to a different agent).
 10. **Promoting plans out of `proposed/`:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Valid target statuses: `approved | in-progress | implemented | archived`. `plan-publish.sh` will refuse anything outside `plans/proposed/`.
 
 ## Inbox
 
 `[inbox]` → read file → update status `pending` → `read` → respond.
-Delegated tasks have `delegation_id` — call `complete_task` when finished.
-On startup: `check_delegations(agent=<self>, status=pending)`.
+Delegated tasks have `delegation_id` — update `agents/delegations/<id>.json` when finished.
+On startup: check `agents/<self>/inbox/` for pending messages.
 
 ## Session Closing Protocol
 

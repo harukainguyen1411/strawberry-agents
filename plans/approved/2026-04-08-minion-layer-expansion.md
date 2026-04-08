@@ -329,7 +329,7 @@ Evelynn rereads this on every delegation decision. Lives in Evelynn's profile af
    Examples: "add this Decisions section to `plans/proposed/X.md`," "append this line to `agents/memory/duong.md`," "create `agents/poppy/profile.md` with this exact content."
 
 4. **Is it an implementation task following an approved plan?** → **Katarina (or another Sonnet executor).**
-   Not a minion task. Use the full delegate_task flow with a plan file.
+   Not a minion task. Delegate via Task subagent with a plan file; update `agents/delegations/*.json` directly.
 
 5. **None of the above, and you as Evelynn need judgment to decide what to do?** → **Talk to Duong.**
    Minions do not replace the Duong-Evelynn loop. They replace Evelynn's direct file-touching while leaving her judgment intact.
