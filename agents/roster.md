@@ -18,4 +18,12 @@
 | **Caitlyn** | QC (Quality Control) | `caitlyn/` |
 | Irelia (retired) | Former head agent | `irelia/` |
 
+## Infrastructure (minions)
+
+Stateless, profile-only subagents invoked one-shot by Evelynn. No session protocol, no inbox, no heartbeat. Tool surface deliberately tiny — discipline comes from the allowlist, not from training.
+
+| Minion | Tier | Role | Directory |
+|---|---|---|---|
+| **Poppy** | Haiku | Mechanical edits minion — one-file, exact-spec Edit/Write at Evelynn's direction | `poppy/` |
+
 Each agent directory contains: `memory/`, `journal/`, `transcripts/`, `inbox/`, and optionally `learnings/` and `profile.md`.

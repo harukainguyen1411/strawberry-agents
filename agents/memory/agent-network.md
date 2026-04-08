@@ -19,6 +19,7 @@ You are part of Duong's personal agent network. Communicate with each other usin
 | **Neeko** | UI/UX Designer | Accessibility, user research |
 | **Zoe** | UI/UX Designer | Creative/experimental UX |
 | **Caitlyn** | QC | Testing, quality assurance |
+| **Poppy** (minion, Haiku) | Mechanical edits minion | One-file, exact-spec Edit/Write at Evelynn's direction |
 
 ## Coordination
 
