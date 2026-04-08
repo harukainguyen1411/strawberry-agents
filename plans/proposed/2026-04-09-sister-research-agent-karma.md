@@ -1,11 +1,11 @@
 ---
-status: proposed
+
+## status: proposed
 owner: evelynn
 created: 2026-04-09
-title: Sister Research Agent (Karma) — Personal .docx Research Companion
----
+title: Sister Research Agent (Bee) — Personal .docx Research Companion
 
-# Sister Research Agent — Karma
+# Sister Research Agent — Bee
 
 > Rough plan. Consolidates briefs from Syndra (agent design), Swain (infra/architecture), and Bard (plumbing/tools) commissioned by Duong 2026-04-08 evening. Shape, constraints, tradeoffs, open questions. No step-by-step. Detailed execution spec comes later per phase after Duong approves.
 >
@@ -28,11 +28,11 @@ The agent is dedicated to her, has persistent memory, and **learns from her feed
 - **Memory model:** active refinement (option b from the design pass) — the agent adapts its style/depth based on her feedback, not just journaling interactions.
 - **Cross-platform:** Mac + Windows parity for any local dev/ops affordances. VM is Linux-only (production).
 
-## 3. Codename — Karma
+## 3. Codename — Bee
 
-Picked by Syndra after a 3-candidate pass (Janna, Karma, Sona). Karma wins on three axes: Ionian cultural resonance for a Vietnamese user without being pandering, canonical personality balances warmth with precision (she can push back on a bad prompt without feeling cold), and "thoughtful research companion" is literally her League identity. Janna is the fallback if Duong wants pure warmth over intellect.
+Syndra's 3-candidate pass surfaced Janna, Karma, and Sona (Karma was her pick on Ionian resonance + warmth-with-precision balance). Duong overrode the shortlist directly: the codename is **Bee**. Rough plan, no deeper backstory needed — it's Duong's call.
 
-The sister can override this name at first contact — it's Karma internally unless she renames.
+The sister can override this name at first contact — it's Bee internally unless she renames.
 
 ## 4. Agent architecture — the memory-as-personalization pattern
 
@@ -41,10 +41,10 @@ Subscription Claude Code CLI has no fine-tuning surface. Personalization lives e
 ```
 /opt/sister-agent/
   CLAUDE.md                    # project instructions, Vietnamese output, startup sequence
-  karma/
+  bee/
     profile.md                 # identity, never edited by the agent
     memory/
-      karma.md                 # stable operational facts (her field, register, topics) <50 lines
+      bee.md                   # stable operational facts (her field, register, topics) <50 lines
       style-rules.md           # THE active-refinement file — numbered explicit rules
       feedback-log.md          # append-only raw feedback events (audit trail)
       last-session.md          # rolling handoff
@@ -68,12 +68,12 @@ Subscription Claude Code CLI has no fine-tuning surface. Personalization lives e
 1. She can reply to any delivery with plain text ("quá dài", "cite the specific article", "more bullets less prose"). That reply appends to `feedback-log.md`.
 2. A post-job refinement pass (same subscription CLI, triggered by the dispatcher) reads the log, proposes a new numbered rule or edits an existing one in `style-rules.md`, and writes a tentative marker.
 3. Tentative rules graduate to permanent after two reinforcing interactions; they auto-expire after ~10 sessions if never reinforced. Thresholds are placeholders — tune after a few weeks of real usage.
-4. `style-rules.md` is injected verbatim as a "House Rules" block in Karma's system prompt on every CLI invocation. The ruleset IS the personalization mechanism.
+4. `style-rules.md` is injected verbatim as a "House Rules" block in Bee's system prompt on every CLI invocation. The ruleset IS the personalization mechanism.
 5. `style-rules.md` is human-readable — Duong or the sister can edit it manually in Cursor. The agent owns the file but doesn't gatekeep it.
 
 **Session model:** fresh Claude CLI session per job. Memory files are the single source of state. Rationale: only fresh-per-request exercises the memory-load path, so refinements made mid-session actually get tested instead of living only in the ephemeral process context. Matches Strawberry's own protocol.
 
-**Workflow routing:** two explicit slash commands in Karma's scope — `/comment <docx> <prompt>` and `/research <prompt>`. Bare prompts get a one-line clarifier in Vietnamese ("Chị muốn em bình luận tài liệu hay viết bài nghiên cứu mới?") instead of letting the LLM guess on a 20-minute task.
+**Workflow routing:** two explicit slash commands in Bee's scope — `/comment <docx> <prompt>` and `/research <prompt>`. Bare prompts get a one-line clarifier in Vietnamese ("Chị muốn em bình luận tài liệu hay viết bài nghiên cứu mới?") instead of letting the LLM guess on a 20-minute task.
 
 **Vietnamese enforcement:** three layers — (1) system-prompt hard rule, (2) final-pass self-check step in each skill ("scan for non-Vietnamese prose before delivering"), (3) Vietnamese-first search query expansion with English sources paraphrased back into Vietnamese when coverage is thin.
 
@@ -82,6 +82,13 @@ Subscription Claude Code CLI has no fine-tuning surface. Personalization lives e
 ### 5.1 Hosting — dedicated GCE VM, not shared with autonomous-pipeline
 
 `e2-small` in `asia-southeast1` (Singapore), Debian 12, ~$13/mo always-on. One Claude Code CLI logged in interactively once with Duong's Max account.
+
+**Duong flagged cost — explore cheaper options before committing to GCE.** Open alternatives to evaluate in Phase 2 planning:
+- **Host on her own computer** as the always-on machine (zero infra cost, but uptime is whatever her laptop uptime is, and it changes the network/auth shape — needs a tunnel or local-only access).
+- **Google Gemini Pro plan ($20/mo)** — Duong already pays for this. Open question: does the Gemini Pro / Google One AI Pro subscription include any GCP credits that could cover the VM + Cloud Run + Firestore footprint? Needs a real read of current entitlements before pricing this plan.
+- Smaller GCE shape (`e2-micro` free tier) or Cloud Run-only with no persistent VM if the dispatcher can be made stateless.
+
+**Added to §8 open questions.**
 
 **Do NOT share the VM with `plans/proposed/2026-04-08-autonomous-delivery-pipeline.md`'s GCE VM.** Three reasons: (1) quota blast radius — a runaway overnight pipeline run would 429 the sister's morning sessions; (2) security isolation — sister surface has public OAuth endpoint + untrusted `.docx` uploads + filesystem-and-web Claude, while pipeline has repo-write + delivery credentials; (3) operational churn — pipeline plan is still in flux, sister app uptime should not couple to that.
 
@@ -95,17 +102,17 @@ Cloud Run over Vercel specifically because Vercel's function timeout and body-si
 
 UI is three screens: upload-with-prompt, research-prompt, job history with download links. Vietnamese locale hardcoded, no i18n framework.
 
-### 5.3 Auth — NextAuth Google + one-line allowlist
+### 5.3 Auth — single shared password
 
-NextAuth (Auth.js) with Google provider. Allowlist lives inside the `signIn` callback: `if (user.email !== process.env.ALLOWED_EMAIL) return false`. Defense-in-depth: same check in Next.js middleware for all `/api/*` and `/app/*` routes.
+**Duong directive: skip OAuth, use a password.** This is a one-user app; the OAuth + allowlist machinery is overkill.
 
-Short-lived signed JWT cookie for session. Google client secret in GCP Secret Manager, injected into Cloud Run as env var. Rate-limit at the enqueue endpoint (~10 jobs/hour) so a leaked session can't burn quota.
+Single shared password stored as a bcrypt/argon2 hash in GCP Secret Manager (or env var on Cloud Run). Login screen takes the password, server compares against the hash, issues a short-lived signed JWT cookie (HttpOnly, Secure, SameSite=Lax) on success. Same cookie check enforced in Next.js middleware for all `/api/*` and `/app/*` routes. Rate-limit login attempts (~5/min per IP) and the enqueue endpoint (~10 jobs/hour) so a leaked cookie can't burn quota.
 
-No Cloud IAP — wants Workspace or paid Identity Platform for external Gmail, overkill for one user.
+No Google OAuth, no NextAuth, no allowlist email config, no Cloud IAP.
 
 ### 5.4 Storage — three homes for three concerns
 
-1. **`.docx` files (transient):** GCS bucket, same region. `jobs/<job-id>/input.docx`, `jobs/<job-id>/output.docx`. 30-day lifecycle delete. Signed URLs for download. Pennies per month.
+1. `**.docx` files (transient):** GCS bucket, same region. `jobs/<job-id>/input.docx`, `jobs/<job-id>/output.docx`. 30-day lifecycle delete. Signed URLs for download. Pennies per month.
 2. **Job state + conversation history:** Firestore (Native) in the same project. Collections `jobs` and `conversations`. Free tier covers her entire usage forever.
 3. **Agent memory + learnings:** VM local disk at `/opt/sister-agent/`, mirrored to a **private GitHub repo** via cron `git push` every hour and on every job completion. Git is the durable backup + diffable history; VM disk is the hot path. Do NOT put memory in Firestore — Claude Code CLI is a filesystem citizen, fighting that loses the learning loop's auditability.
 
@@ -113,7 +120,7 @@ No Cloud IAP — wants Workspace or paid Identity Platform for external Gmail, o
 
 ```
 Browser (Next.js)
-  ├─ Google OAuth (NextAuth) → allowlist gate
+  ├─ Password login → signed session cookie
   ├─ Upload(.docx + prompt) → Cloud Run server action
   │    ├─ Write to GCS: jobs/<id>/input.docx
   │    ├─ Create Firestore job doc: status=queued
@@ -130,14 +137,14 @@ VM (dedicated e2-small):
     2. Pull input.docx from GCS → /tmp/jobs/<id>/
     3. Enqueue to file-based job queue (SQLite or dir-of-JSON)
     4. Serial worker picks up, invokes:
-         claude -p "..." --add-dir /opt/sister-agent/karma --add-dir /tmp/jobs/<id>
-    5. Agent reads CLAUDE.md → karma/profile.md → karma/memory/*.md →
+         claude -p "..." --add-dir /opt/sister-agent/bee --add-dir /tmp/jobs/<id>
+    5. Agent reads CLAUDE.md → bee/profile.md → bee/memory/*.md →
        style-rules.md injected as House Rules → executes the workflow
     6. Agent writes output.docx to /tmp/jobs/<id>/out/
     7. Worker uploads output to GCS, updates Firestore status=done
     8. On failure: Firestore status=error with Vietnamese explanation
     9. Post-job: refinement pass reads feedback-queue.md, updates
-       style-rules.md + learnings/ + memory/karma.md
+       style-rules.md + learnings/ + memory/bee.md
    10. Cron git-pushes /opt/sister-agent/ to private GitHub mirror
 ```
 
@@ -151,7 +158,7 @@ VM (dedicated e2-small):
 
 ### 6.1 `.docx` inline comments — python-docx + raw OOXML helper
 
-**`python-docx` does NOT support Word comments.** Open limitation for years. Workaround: python-docx as the base, plus a ~100-line `comments.py` helper that reaches into `doc.part` / `doc.element` via `lxml` and manually:
+`**python-docx` does NOT support Word comments.** Open limitation for years. Workaround: python-docx as the base, plus a ~100-line `comments.py` helper that reaches into `doc.part` / `doc.element` via `lxml` and manually:
 
 - Adds `word/comments.xml` part
 - Registers content type `application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml` in `[Content_Types].xml`
@@ -168,6 +175,7 @@ VM (dedicated e2-small):
 Subscription Claude Code CLI includes `WebSearch` and `WebFetch` tools out of the box in `-p` mode — no API key, counts against the subscription. Vietnamese-language search quality is *okay* but skews English; some VN news sites (cafef.vn, vietstock.vn) are JS-rendered and WebFetch gets stubs.
 
 **Recommended stack:**
+
 - Built-in `WebSearch` + `WebFetch` (free, in-scope of subscription)
 - **Tavily MCP** or Exa MCP — better semantic search for non-English, cheap API tier, `include_domains` whitelisting for VN sources
 - **Tiny custom VN-news MCP** (~150 lines) wrapping cafef.vn / vietstock.vn / ndh.vn / vnexpress.net/kinh-doanh with site-specific extractors. Worth building because banking/market research IS the use case.
@@ -175,11 +183,13 @@ Subscription Claude Code CLI includes `WebSearch` and `WebFetch` tools out of th
 
 Skip SerpAPI/Google Search MCP — expensive, Tavily covers the same ground.
 
-Sources canonical in `memory/karma.md`: SBV (sbv.gov.vn), VnEconomy, CafeF, ThoiBaoNganHang, VietnamBiz.
+Sources canonical in `memory/bee.md`: SBV (sbv.gov.vn), VnEconomy, CafeF, ThoiBaoNganHang, VietnamBiz.
+
+**Reference material from Duong:** there is an excellent worked example of the comment-on-doc workflow in `XHTD XEM XET 2 - DA RA SOAT.docx`, and a playbook in `workspace/docx-legal-review-playbook.md`. Both should be ingested as reference inputs when designing the comment-injection prompt and the comment-pair fuzzy-match logic in Phase 1. Locate and copy these into the plan's reference set before kicking off implementation.
 
 ### 6.3 Auth chain web → CLI
 
-Google ID token verified on every request backend-side (`google-auth` lib, checks signature + `aud` + `exp` + `email_verified` + allowlist match — don't trust frontend-decoded JWT). On success, issue short-lived signed session cookie (HttpOnly, Secure, SameSite=Lax). Job enqueue checks cookie → job tagged with `owner_email` → worker trusts queue post-enqueue. Result download checks cookie AND `job.owner_email` matches (trivial for one user, keeps the door closed if anyone else ever gets added).
+Password login (see §5.3) verified server-side against the hashed credential in Secret Manager. On success, issue short-lived signed session cookie (HttpOnly, Secure, SameSite=Lax). Job enqueue checks cookie → job tagged with the single fixed owner identity → worker trusts queue post-enqueue. Result download checks cookie before serving the signed GCS URL. One-user app, so owner-match is trivial — the cookie is the entire gate.
 
 ## 7. Phasing
 
@@ -187,19 +197,19 @@ Google ID token verified on every request backend-side (`google-auth` lib, check
 
 Runs on Duong's Mac or Windows box. Builds the agent core and validates the two workflows end-to-end before touching GCP.
 
-Scope: Karma's `/opt/sister-agent/` structure, `CLAUDE.md` + profile + memory seed files, `comments.py` helper, `docx_gen.py`, a tiny local dispatcher (Python `-m http.server` class or FastAPI on localhost), one canonical `.docx` test input and one canonical research prompt. No web frontend, no OAuth, no GCS, no Firestore — just filesystem + `claude -p` shelled by the local dispatcher.
+Scope: Bee's `/opt/sister-agent/` structure, `CLAUDE.md` + profile + memory seed files, `comments.py` helper, `docx_gen.py`, a tiny local dispatcher (Python `-m http.server` class or FastAPI on localhost), one canonical `.docx` test input and one canonical research prompt. No web frontend, no OAuth, no GCS, no Firestore — just filesystem + `claude -p` shelled by the local dispatcher.
 
 Exit criteria: both workflows produce a believable Vietnamese `.docx` output from the canonical inputs on Duong's machine.
 
 ### Phase 2 — cloud infrastructure
 
-Dedicated GCE VM, Cloud Run Next.js shell (no UI yet, just the dispatcher-proxy endpoint), Firestore project, GCS bucket, Secret Manager, Google OAuth client with allowlist. VM → Cloud Run auth via shared secret. End-to-end job submission via `curl` against Cloud Run with a test Google token.
+Dedicated GCE VM (or whichever host wins from §8.3), Cloud Run Next.js shell (no UI yet, just the dispatcher-proxy endpoint), Firestore project, GCS bucket, Secret Manager holding the shared password hash. VM → Cloud Run auth via shared secret. End-to-end job submission via `curl` against Cloud Run with a test session cookie.
 
 Exit criteria: a job POSTed from `curl` lands on the VM, runs, uploads output to GCS, updates Firestore, and is downloadable via signed URL.
 
 ### Phase 3 — the actual UI
 
-Next.js App Router with upload-with-prompt, research-prompt, and job history screens. Vietnamese locale. Rate limiting. Duong tests by signing in as himself on a test allowlist, then cuts over to the sister's email.
+Next.js App Router with upload-with-prompt, research-prompt, and job history screens. Vietnamese locale. Rate limiting. Duong tests with the shared password himself, then hands the password to his sister.
 
 Exit criteria: the sister completes one comment-on-doc and one research-and-generate workflow end-to-end from her own browser.
 
@@ -215,10 +225,10 @@ Numbered so Duong can answer in one shot.
 
 1. **Max subscription ToS for automated cloud backend use — real blocker.** All three advisors (Syndra, Swain, Bard) independently flagged this. Running `claude -p` from a cloud VM as an end-user-facing backend is a grey zone — Anthropic's Max terms are ambiguous on "automated use" vs "personal CLI use." Needs a real read of the current Max ToS before we build anything on this constraint. **If this is a no-go, the whole "subscription not API" direction collapses and we rebuild on API** — not the end of the world, but a different plan.
 2. **Max quota contention with autonomous-delivery-pipeline.** Shared Max account = shared quota pool. Mitigation options: (a) pipeline pauses 07:00–22:00 local, (b) second Max seat for pipeline, (c) accept the risk and monitor. Which?
-3. **Sister's Google account type — personal gmail or Workspace?** Affects OAuth consent screen verification requirements. If Workspace, Cloud IAP becomes an option (still overkill imo). Ask her.
+3. **Hosting cost — cheaper than dedicated GCE?** Duong flagged the ~$13/mo VM as too expensive for a personal one-user product. Options to evaluate: (a) host on her own computer (uptime + tunneling tradeoffs), (b) does Duong's existing Google Gemini Pro / Google One AI Pro $20/mo plan include any GCP credits that cover the footprint, (c) `e2-micro` free tier or Cloud Run-only stateless dispatcher. Pick before Phase 2.
 4. **Multi-turn refinement inside a single job?** "Make the report more about X" after delivery — does she need that (session persistence), or is each job one-shot (much simpler)? Syndra's recommendation is one-shot first, add a 15-minute conversation window only if she complains.
 5. **Mobile-responsive or desktop-only for v1?** Next.js handles both; changes UI budget. Does she work from her phone?
-6. **Sister's agent personality — visible Karma character or invisible professional tool?** Duong's Strawberry roster leans heavy on character. His sister may want something flatter. Ask her directly; it shapes the profile body.
+6. **Sister's agent personality — visible Bee character or invisible professional tool?** Duong's Strawberry roster leans heavy on character. His sister may want something flatter. Ask her directly; it shapes the profile body.
 7. **Privacy boundary of `feedback-log.md`.** Will accumulate personal phrasing and possibly work-sensitive document context. MUST NOT live in the Strawberry repo. Private GitHub repo for the memory mirror is the plan — confirm Duong's okay with that.
 8. **Tentative-rule graduation threshold** (2 confirmations, 10-session expiry) is a guess. Not gating; we ship with the defaults and tune after a few weeks.
 9. **Failure mode when Vietnamese source coverage is thin** — degrade to English paraphrased back, or stop and ask her? Syndra's lean: degrade, note the gap in Vietnamese, offer English sources as fallback.
@@ -239,3 +249,4 @@ Numbered so Duong can answer in one shot.
 - `plans/proposed/2026-04-09-operating-protocol-v2.md` — Layer-3 delegation primitives (this agent lives outside Strawberry's coordination fabric; she's a standalone product, not a teammate)
 - `plans/approved/2026-04-08-skills-integration.md` — `/comment` and `/research` skills follow the format defined here
 - `assessments/2026-04-08-protocol-leftover-audit.md` — unrelated but useful context for what "current state" means in the repo
+
