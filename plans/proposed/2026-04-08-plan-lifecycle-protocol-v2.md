@@ -3,6 +3,8 @@ status: proposed
 owner: syndra
 created: 2026-04-08
 title: Plan Lifecycle Protocol v2 — Two-Phase Planning, Canonical Frontmatter, draft-plan/detailed-plan Skills
+gdoc_id: 1cYrwq7uvuVIHA89mzWYKvI_20CqPa_wZZ4wFpF7aJC4
+gdoc_url: https://docs.google.com/document/d/1cYrwq7uvuVIHA89mzWYKvI_20CqPa_wZZ4wFpF7aJC4/edit
 ---
 
 # Plan Lifecycle Protocol v2
