@@ -3,6 +3,8 @@ title: Fix heartbeat system — piggyback on MCP tool calls
 status: approved
 owner: bard
 created: 2026-04-05
+gdoc_id: 1GMUlrSyE2kByueULz6b3u_Se3uzHah2P_RwO8rCA11U
+gdoc_url: https://docs.google.com/document/d/1GMUlrSyE2kByueULz6b3u_Se3uzHah2P_RwO8rCA11U/edit
 ---
 
 # Problem
