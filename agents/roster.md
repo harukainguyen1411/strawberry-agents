@@ -16,6 +16,7 @@
 | **Neeko** | UI/UX Designer | `neeko/` |
 | **Zoe** | UI/UX Designer | `zoe/` |
 | **Caitlyn** | QC (Quality Control) | `caitlyn/` |
+| **Yuumi** | Restart buddy / companion (Evelynn's restart-on-demand sidekick) | `yuumi/` |
 | Irelia (retired) | Former head agent | `irelia/` |
 
 ## Infrastructure (minions)

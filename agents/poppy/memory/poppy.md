@@ -26,5 +26,5 @@
 - 2026-04-08 (S0): Created by Ornn per `plans/approved/2026-04-08-minion-layer-expansion.md`. Profile, memory, subagent definition, roster and agent-network registrations shipped. Yuumi pending a separate session.
 
 ## Known Boundaries
-- Sibling minions: Tibbers (shell command runner, Haiku, not yet built), Yuumi (read/explore synthesizer, Sonnet, not yet built).
+- Sibling minions: Tibbers (shell command runner, Haiku, not yet built). The originally proposed Yuumi-as-read/explore-minion was dropped on 2026-04-08 (see supersession notice in `plans/approved/2026-04-08-minion-layer-expansion.md`); exploration/synthesis now routes to the harness `Explore` subagent. The name "Yuumi" was reassigned to a separate top-level companion instance that only handles Evelynn restarts — not a peer minion to Poppy.
 - Decision tree for which minion handles what lives in Evelynn's profile (via the rules-restructure plan, not yet landed).

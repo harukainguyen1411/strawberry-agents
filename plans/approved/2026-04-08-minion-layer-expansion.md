@@ -9,6 +9,12 @@ gdoc_url: https://docs.google.com/document/d/1v2SEys7jSOHxLR8_I5dfZn0_MeYE3P-RCx
 
 # Minion Layer Expansion — Yuumi and Poppy
 
+> **SUPERSESSION NOTICE (2026-04-08):** The "Yuumi as read/explore minion" portion of this plan has been **dropped**. Yuumi's name has been reassigned to a new role: **Evelynn's restart buddy** — a parallel top-level Claude Code instance whose only job is to kill and relaunch the Evelynn process on request. See `agents/yuumi/profile.md` and `scripts/restart-evelynn.ps1` (shipped 2026-04-08 by Ornn) for the replacement role.
+>
+> Reasoning: the research/reads gap can stay with the harness-provided `Explore` subagent (generic, cheap, Haiku-tier), and the "cat that attaches to a champion and supports them" thematic fits the restart-buddy companion role far better than a research role. The Yuumi sections below (Identity, Profile sketch, Model Tier, Scope, Tool Allowlist, Relationship to Explore, Delegation Pattern, Reporting Format, Memory Footprint, Heartbeat, Roster Placement) are **superseded** and left in place only as historical context. Do not implement them.
+>
+> The **Poppy** portions of this plan are unaffected and have already shipped. Any references in the Poppy sections to "Yuumi reads and explores" should be read as "the harness `Explore` subagent reads and explores, or Evelynn reads for herself when absolutely necessary."
+
 ## Problem
 
 Tibbers closed the "run a trivial shell command" gap for Evelynn. Duong has since escalated the orchestration rule three times. Final form, verbatim:
@@ -46,7 +52,9 @@ So the read gap is answered: **Yuumi, Sonnet, read/explore only.** The edit gap 
 
 ---
 
-## Yuumi — Read and Explore
+## Yuumi — Read and Explore [SUPERSEDED 2026-04-08]
+
+> This entire Yuumi section is superseded. Yuumi's name was reassigned to the restart-buddy role on 2026-04-08. Do not implement anything below this header. See the supersession notice at the top of this file. Sections left in place for historical context only.
 
 ### Identity
 
@@ -413,3 +421,4 @@ Blanket approval from Duong on 2026-04-08 ("all good, proceed as proposed"). Eac
 
 - **2026-04-08 — Poppy shipped (Windows Mode).** Ornn implemented Poppy per this plan: `agents/poppy/profile.md`, `agents/poppy/memory/poppy.md`, `agents/poppy/memory/last-session.md`, roster registration in `agents/roster.md` under a new "Infrastructure (minions)" section, network registration in `agents/memory/agent-network.md`. The `.claude/agents/poppy.md` subagent definition (YAML frontmatter with `model: haiku`, tools `Read, Edit, Write, Glob`) could NOT be written from this session — the harness denied writes to `.claude/agents/`. Duong needs to either create that file manually from the spec Ornn drafted or relax the permission and have a follow-up session write it. Without that file, Poppy cannot actually be invoked as a subagent yet. Mac-side follow-ups (iTerm launcher, MCP agent-manager registration, Firebase task-board entry, decision-tree insertion into Evelynn's profile) intentionally skipped — those belong to the rules-restructure plan and a Mac session.
 - **Yuumi pending.** Still unbuilt. Leave the plan in `approved/` until Yuumi ships.
+- **2026-04-08 — Yuumi role reassigned (supersession).** The "Yuumi as read/explore minion" role has been dropped. Yuumi's name has been reassigned to a new role: Evelynn's restart buddy, a parallel top-level Claude Code instance that kills and relaunches the Evelynn process on demand. Ornn shipped the new Yuumi in the same day: `agents/yuumi/profile.md`, `agents/yuumi/memory/yuumi.md`, `agents/yuumi/memory/last-session.md`, `windows-mode/launch-yuumi.bat`, `scripts/restart-evelynn.ps1`, roster and network registrations. The read/explore gap this plan originally identified is resolved by the harness-provided `Explore` subagent rather than a Strawberry-custom minion. Poppy's sections in this plan are unaffected.
