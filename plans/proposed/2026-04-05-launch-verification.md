@@ -3,6 +3,8 @@ title: Launch verification & heartbeat visibility
 status: proposed
 owner: bard
 created: 2026-04-05
+gdoc_id: 1fgOFYmF73Aq6m5OpUO_syDKyVQa9RqvgKXx0Mh9ccBQ
+gdoc_url: https://docs.google.com/document/d/1fgOFYmF73Aq6m5OpUO_syDKyVQa9RqvgKXx0Mh9ccBQ/edit
 ---
 
 # Problem
