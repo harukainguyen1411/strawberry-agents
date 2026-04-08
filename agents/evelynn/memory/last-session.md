@@ -1,45 +1,46 @@
-# Last Session — 2026-04-08 (cafe → home, evening, Direct mode, Windows)
+# Last Session — 2026-04-08 (Mac evening, Direct mode, S28, post-restart)
 
-**Mode:** Direct, all day. Three slices: morning (Windows-mode setup), cafe afternoon (encrypted-secrets + gdoc-mirror + Poppy + Yuumi), evening (six rough plans + /end-session skill shipped). Closed via the new `/end-session` skill — first real use.
+**Mode:** Direct mode all the way. Restarted into a fresh Evelynn around 7:46 PM on Mac, worked until ~10:15 PM. First real Mac-side `/end-session` skill test.
 
 ## Critical for next session — read first
 
-1. **Six rough plans in `plans/proposed/` waiting for Duong's approval review** — he reads them on his Mac and moves to `approved/` whichever he wants. None blocked on me. Order of importance: autonomous-delivery-pipeline (carries 4 cafe decisions + 15 Drive comments + dual-mode runtime resolution), then end-session skill (already implemented Phase 1, plan still in proposed because the rough was never formally approved), then continuity-and-purity, plan-lifecycle-protocol-v2, myapps-gcp-direction, agent-visible-frontend-testing, mcp-restructure.
-2. **PR #54 is one Firebase CLI command from mergeable.** Duong needs to run `npx firebase login && npx firebase deploy --only firestore:indexes --project myapps-b31ea` from `C:/Users/AD/Duong/myapps-tasklist-board/`. After that, Lissandra reviews and merges.
-3. **Yuumi-as-subagent loads next restart.** `.claude/agents/yuumi.md` is on disk but wasn't in this session's startup registry. Restart-buddy role retired (one successful live test, no longer needed). She's now an errand-runner subagent.
-4. **First /end-session skill close** — verify the artifacts (`agents/evelynn/transcripts/2026-04-08-08881199.md`, this handoff, journal, memory, learning) all landed. The skill was built and used in the same session, so this is also the bootstrap proof.
+1. **Every agent's `model:` frontmatter takes effect THIS session** — you're fresh, definitions loaded cleanly at startup. Katarina spawns as Sonnet by default. Verify by watching the Max plan dashboard's Sonnet-only bar move above 0% after the first Sonnet spawn.
+2. **Protocol migration paused at Commits 8 and 10** — plan lives at `plans/in-progress/2026-04-09-protocol-migration-detailed.md`. Duong gave three "yes" decisions ("1 sure, 2 now, 3 now"): (1) Commit 8 merge direction is port-then-delete (port missing sections from `GIT_WORKFLOW.md` into `architecture/git-workflow.md`, then `git rm` the root file); (2) push commits 6/7/9 — already done; (3) approve mcp-restructure phase-1 now to unblock Commit 10.
+3. **Phase-1-detailed plan needs promotion** — `plans/proposed/2026-04-09-mcp-restructure-phase-1-detailed.md` is verbally approved, run `scripts/plan-promote.sh` on it before spawning anyone to execute it.
+4. **Shen and Fiora profiles are NOT wired** — seven aspirational specialists total (Ornn, Fiora, Reksai, Neeko, Zoe, Caitlyn, Shen) with no `.claude/agents/<name>.md`. Duong's rule: wire them, don't fake with general-purpose. Author Shen + Fiora profiles tonight BEFORE spawning them for Commit 8 and phase-1 execution. The other five can be folded into a dedicated wiring plan.
+5. **Sister research agent plan — codename Bee** — `plans/proposed/2026-04-09-sister-research-agent-karma.md` (filename still says karma, content is Bee throughout). 9 open questions; the biggest is whether Claude Max subscription ToS allows automated cloud-backend use. Personal product for Duong's sister. Vietnamese .docx research companion. Every one of Syndra/Swain/Bard flagged the ToS question independently — don't move on infrastructure until it's answered.
 
-## What shipped this session (third slice — evening)
+## What shipped this session (slice 3 of 2026-04-08)
 
-- **`/end-session` skill Phase 1** — full implementation. `scripts/clean-jsonl.py` (Python stdlib jsonl cleaner with secret denylist), `.claude/skills/end-session/SKILL.md`, `.claude/skills/end-subagent-session/SKILL.md`, CLAUDE.md rule 14 (mandatory invocation), `.gitignore` negation for `agents/*/transcripts/*.md`, 18 `.gitkeep` files for agent transcript dirs. Single revertible commit `9ae0d11`. Smoke test passed at +8.1% drift (strict superset, zero leaks).
-- **Six rough plans committed + published to Drive:** continuity-and-purity, plan-lifecycle-protocol-v2, myapps-gcp-direction, autonomous-delivery-pipeline, agent-visible-frontend-testing, mcp-restructure. All 10 plans in `proposed/` mirror to Drive correctly via `plan-publish.sh`.
-- **Decision-recording on plans:** Duong's 5 cafe-session decisions appended to autonomous-pipeline (auto-approve, canary deploy, GCP infra, no-API subscription, dual-mode runtime). His 15 Drive comments folded into the same plan. Bard's recommendations on testing/GCP plans absorbed.
-- **myapps snapshot:** `assessments/2026-04-08-myapps-snapshot.md` (Explore agent). Vue 3 + Firebase, three apps inside, PR #54 task list mostly done.
-- **PR #54 unblocked:** the missing one-line `firebase.json` `indexes` registration was added (`1af0ad3` on `Duongntd/myapps feature/tasklist-board-view`). Plan moved through approved → in-progress → implemented.
-- **gdoc-mirror revision migration:** completed. 30 unpublishes + 2 orphans trashed + 5 republishes + script changes (proposed-only enforcement, `plan-promote.sh` wrapper). Plus a third undocumented orphan Katarina found and cleaned. Drive is now exactly proposed-only.
-- **Yuumi role transition:** retired separate-Claude restart-buddy after one successful live test. Converted to harness subagent. `windows-mode/launch-yuumi.bat` and `scripts/restart-evelynn.ps1` kept on disk for emergency manual restart but unused.
+- **Sister research agent rough plan (Bee)** committed `dfcfe19` + revised `ac921d2`. Karma → Bee rename, NextAuth Google → shared password, cost concerns absorbed, playbook reference folded in. 4 inline `// ` directives from Duong applied by a general-purpose subagent that ran on Opus (should have been Poppy or Sonnet — flagged).
+- **First real agent-team session** using `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. Three teammates (Pyke, Swain, Bard), three tasks with dependency chain. Delivered: protocol-leftover audit (`assessments/2026-04-08-protocol-leftover-audit.md`, 625f789), operating-protocol-v2 (2cbc80e → 5bd1ea3 → 6c6e27e through revisions), protocol-migration-detailed 10-commit plan (a078979 → 06a9b5b → 9a33a80 → 7f64f52).
+- **Rule 15 landed** — every `.claude/agents/<name>.md` must declare `model:`. CLAUDE.md updated. 7 existing definitions got frontmatter (opus/sonnet/haiku per tier). Commit `eb6c0a9`.
+- **Katarina migration execution** — promoted plan to approved (`0e6eba1`) → in-progress (`96ddb72`) → executed Commits 1, 3, 4, 5, 6, 7, 9. Commit 2 was no-op (Zilean already absent). Stopped at 8 (merge-direction blocker) and 10 (phase-1 dependency).
+- **clean-jsonl.py platform resolver fix** — detailed plan (`0b22cd3`), Katarina executed with explicit `model: "sonnet"` override, commit `0a0a52d`, plan to implemented. Unblocked this very `/end-session` close. First Sonnet spawn of the session (all earlier Katarina runs were Opus because of the cached-definition bug).
+- **Five new feedback memories** — model-explicit (tightened for session-startup caching), evelynn-primary-tools (teams/subagents/Yuumi, not legacy MCP), subagents-background (always run_in_background), no-git-while-subagent-running (shared tree hazard), no-general-purpose-fallback (wire or use wired, never pretend).
 
 ## Open threads (priority order)
 
-1. **Six plan approvals** — Duong's review pass on his Mac. Each plan has Duong-decision sections baked in; he just needs to read and move proposed → approved.
-2. **PR #54 Firebase index deploy** — one-shot Duong action on his Mac with Firebase auth.
-3. **Two real contradictions in autonomous-pipeline plan** for Duong to resolve when he reviews:
-   - Contributor intake: comment #5 says contributors CAN file issues, comment #15 says only Duong + coordinator. Pick one.
-   - Runtime location: cafe-session said dual-mode (local + GCE), but Drive comments #1, #3, #11 lean cloud-only. Resolve.
-4. **`agent-discipline-rules.md` malformed frontmatter** in `plans/implemented/` — `## title:` instead of `title:`, no closing `---`. Hygiene one-liner. Same goes for the two other malformed plans flagged by Swain originally.
-5. **`plan-publish.sh` idempotent-republish bug** — exits non-zero with "nothing to commit" after a successful Drive update. 2-line fix (short-circuit when `git diff --cached --quiet`). Hygiene.
-6. **`/end-session` Phase 2 refinements** Katarina flagged: chain-walk threshold (30min too narrow for long sessions), age pubkey false positive in secret denylist, `<local-command-caveat>` tag denylist canonicalization, sandbox-policy workaround for `.claude/skills/` Write blocks.
-7. **Google account ownership audit** — Duong directive: `harukainguyen1411` is the canonical Google account for everything. He needs to verify Firebase project `myapps-b31ea` owner at `console.firebase.google.com/project/myapps-b31ea/settings/general`, and the gdoc-mirror Drive folder owner. If either is on a different account, migration plan needed.
+1. **Wire Shen and Fiora profiles** — blocker for the migration finish.
+2. **Promote phase-1-detailed to approved/** — needed before Commit 10 can run.
+3. **Execute migration Commit 8** — Shen (once wired) with a port-then-delete mini-spec.
+4. **Execute phase-1-detailed end-to-end** — Fiora (once wired). 16 steps. Her own drift sweep is embedded.
+5. **Execute migration Commit 10** — Katarina. Unblocked after phase-1 lands.
+6. **Final migration promotion** — Katarina moves the migration plan to implemented/ after Commit 10.
+7. **CLAUDE.md line 28 stale `agents/roster.md` reference** — tiny follow-up, `agents/roster.md` was deleted by migration Commit 7 but line 28 still points at it.
+8. **Plan Step 4 defect in `2026-04-09-clean-jsonl-platform-resolver.md`** — the Windows-simulation smoke test can't run on Mac pathlib. Post-mortem cleanup, not urgent.
+9. **Wiring debt plan** — propose a dedicated plan to author Ornn, Reksai, Neeko, Zoe, Caitlyn profiles alongside Shen + Fiora.
+10. **Sister-agent plan 9 open questions** — especially Max ToS for automated backend use (blocking), quota contention with autonomous pipeline, and whether the sister wants a character-forward Bee or a flat tool.
+11. **Max plan quota** — this session ran at ~52% of current-session quota pre-restart. All Opus burn. Next session should show Sonnet usage >0% as soon as any Sonnet subagent runs.
 
-## Lessons saved
+## Lessons saved (cross-reference for memory hygiene)
 
-- `~/.claude/projects/.../memory/feedback_decide_trivial.md` — coordinator absorbs trivial decisions; only escalate real tradeoffs
-- `~/.claude/projects/.../memory/user_autonomous_team_vision.md` — orchestrate don't relay; dispatch in background; escalate only critical
-- `~/.claude/projects/.../memory/project_harukainguyen1411_main_account.md` — canonical Google account for everything
-- `~/.claude/projects/.../memory/project_agent_runtime_dual_mode.md` — local + GCE VM, Max plan single-account no-seat
-- `~/.claude/projects/.../memory/project_end_session_skill_universal.md` — every agent gets the skill, mandatory by rule
-- `~/.claude/projects/.../memory/feedback_sonnet_never_rough_plans.md` — Sonnet executors only from detailed plans in ready/in-progress; Poppy for trivial mechanical work without a plan
+- `feedback_agent_model_explicit.md` (tightened — now covers session-startup caching + first-failure case)
+- `feedback_evelynn_primary_tools.md`
+- `feedback_subagents_background.md`
+- `feedback_no_git_while_subagent_running.md`
+- `feedback_no_general_purpose_fallback.md` (tightened — now covers general-purpose model override + first-failure case)
 
 ## Ended cleanly
 
-First close via `/end-session` skill. Two transcripts on disk for today (manual cafe-to-home from this morning, skill-generated post-restart from this slice). Working tree clean after close. All commits pushed.
+First successful Mac-side `/end-session evelynn` invocation after the cleaner fix. Working tree empty going in. Single session-close commit + push at the end.

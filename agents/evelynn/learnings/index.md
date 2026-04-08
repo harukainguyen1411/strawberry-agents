@@ -5,3 +5,4 @@
 - 2026-04-08-agent-commit-identity.md — On a fresh machine, agent commits use the agent account (harukainguyen1411), never Duong's personal/work email. | last_used: 2026-04-08
 - 2026-04-08-roster-vs-harness-reality.md — agents/roster.md is mostly aspirational; only ~6 champions are actually wired as Windows-mode subagents. Real Sonnet pool is katarina + general-purpose. Route accordingly. | last_used: 2026-04-08
 - 2026-04-08-bootstrap-loop-validation.md — for self-applying tools (session-close skills, memory cleaners, state archivers), build inside the session that then uses it. Real input surfaces gaps no synthetic test fixture would. | last_used: 2026-04-08
+- 2026-04-08-subagent-definition-caching.md — Claude Code loads `.claude/agents/*.md` at session startup and caches them. Mid-session edits don't take effect. Fix: explicit model/tools overrides per spawn, or restart the session. | last_used: 2026-04-08
