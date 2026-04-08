@@ -10,6 +10,7 @@
 - 2026-04-04 (s3): Created `architecture/` living docs (9 files). Designed shared task board architecture.
 - 2026-04-05 (s1): Audited myapps TaskList codebase (~90% built). Wrote B3 implementation plan. PR #27.
 - 2026-04-05 (s2): Telegram bridge investigation (Claude Code timeout issue). Plan viewer design. PR #54 architecture review.
+- 2026-04-08 (subagent): Designed plan-gdoc-mirror review workflow. Coexists with plan-viewer. Plan: `plans/proposed/2026-04-08-plan-gdoc-mirror.md`. Depends on encrypted-secrets plan.
 
 ## Active Architecture Decisions
 
