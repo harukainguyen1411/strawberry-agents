@@ -3,8 +3,6 @@ title: Fix Main Branch Divergence on PR Merge
 status: approved
 owner: pyke
 created: 2026-04-05
-gdoc_id: 1Y-Tc_u43-WjJJWqteD8rb8KSkyxILPQ5Ai7ZHMrMpPs
-gdoc_url: https://docs.google.com/document/d/1Y-Tc_u43-WjJJWqteD8rb8KSkyxILPQ5Ai7ZHMrMpPs/edit
 ---
 
 # Fix Main Branch Divergence on PR Merge
