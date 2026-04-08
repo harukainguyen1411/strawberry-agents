@@ -1,8 +1,6 @@
 ---
 status: proposed
 owner: pyke
-gdoc_id: 1CJrjK10xi4HiPngJVJYg_1d_KTz1Zhf_rK_E_kGdMyU
-gdoc_url: https://docs.google.com/document/d/1CJrjK10xi4HiPngJVJYg_1d_KTz1Zhf_rK_E_kGdMyU/edit
 ---
 
 # Fix: GH_TOKEN Not Reaching Agent Sessions
