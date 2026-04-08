@@ -1,6 +1,8 @@
 ---
 status: active
 owner: bard
+gdoc_id: 1QyZZCgAtWm054-Qx-sKmKKisc_W2tCpGWvAbRi0fCgs
+gdoc_url: https://docs.google.com/document/d/1QyZZCgAtWm054-Qx-sKmKKisc_W2tCpGWvAbRi0fCgs/edit
 ---
 
 # Discord Setup Guide — myapps Collaboration Hub
