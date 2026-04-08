@@ -1,8 +1,6 @@
 ---
 status: implemented
 owner: syndra
-gdoc_id: 1ja2_3b2gtQxtgF2yq7keAut8jLFC8xJJ_7fVwW5XVZU
-gdoc_url: https://docs.google.com/document/d/1ja2_3b2gtQxtgF2yq7keAut8jLFC8xJJ_7fVwW5XVZU/edit
 ---
 
 # Agent Context/Token Monitoring — Design Proposal
