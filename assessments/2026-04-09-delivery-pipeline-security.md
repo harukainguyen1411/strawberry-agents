@@ -306,52 +306,77 @@ Right now none of those is true. The runner has PM2 processes and durable state 
 
 ---
 
-## 9. Recommended guardrails — prioritized
+## 9. Recommended guardrails — prioritized (REVISED for approval-gate pipeline)
 
-### Must-have before going live tonight
+The approval gate changes the calculus. With Duong's eyeballs between "PR opens" and "code hits prod," the attacker's path to impact is much narrower:
+- Hostile issue → Claude writes code → PR opens → **Duong clicks the preview URL, sees something weird, closes the PR without merging**. Done. Attack dies at the human gate.
+- For this to work, Duong must actually look at the preview and at the diff. The failure mode is not technical — it's fatigue. Duong rubber-stamping 20 PRs at 2am will re-create the auto-merge blast radius by hand.
+
+With that in mind:
+
+### Must-have before going live tonight (revised: 3 items)
 
 | ID | Guardrail | Why | Who implements |
 |---|---|---|---|
-| **M1** | **Issue author allowlist** — contributor-bot rejects messages from non-allowlisted Discord user IDs (G2) | Kills 99% of attacks at entry. Cheapest, highest-value control. | Katarina (contributor-bot code) |
-| **M2** | **Server-side scope check job** — `validate-scope` job in pipeline fails the workflow if any changed file is outside `apps/myapps/` (G1) | Makes the scope rule enforced, not advisory. Separate job so it cannot be self-modified by Claude. | Fiora (pipeline yaml) |
-| **M3** | **Enable Dependabot alerts + secret scanning + push protection** on `Duongntd/strawberry` | Zero-code, one API call each. No reason not to. | Fiora |
-| **M4** | **Branch protection**: required status checks (validate-scope, tests, diff-review); CODEOWNERS on `.github/`, `secrets/`, `agents/`, `apps/contributor-bot/`, `apps/discord-relay/` with `@Duongntd` as owner; `require_code_owner_reviews: true` | Defense in depth — auto-merge cannot ship code into sensitive paths without human review | Fiora |
-| **M5** | **Remove the `workflow` scope from `GITHUB_TRIAGE_PAT`** if the bot does not actually need to create workflows at runtime. Audit actual usage in `github.js` — I saw `actions.createWorkflowDispatch`, which only needs `repo` scope, **not** `workflow`. | Shrinks blast radius on the nuclear key. | Pyke (me) + Duong (token rotation in GH UI) |
+| **M3** | **Enable Dependabot alerts + secret scanning + push protection** on `Duongntd/strawberry` | Zero-code, one API call each. Pipeline-shape-independent. Dependabot is currently **disabled**. | Fiora |
+| **M4'** | **Branch protection on main (minimal version)**: required status checks = `myapps-tests` + Firebase preview deploy success; `required_pull_request_reviews.required_approving_review_count: 1`; `enforce_admins: false` (Duong keeps breakglass) | Makes Duong's manual review a **cryptographic precondition** for merge, not a social contract. Without this, a stray `git push origin main` from any agent session bypasses the approval gate. | Fiora |
+| **M5** | **Remove `workflow` scope from `GITHUB_TRIAGE_PAT`** — classic PAT is overprivileged. `createWorkflowDispatch` only needs `repo`, not the separate `workflow` scope. | Shrinks blast radius on the nuclear key. Bot with `workflow` scope can rewrite `.github/workflows/*.yml` and quietly remove the branch protection requirement in a future PR. Approval gate helps but does not eliminate this — Duong might miss a one-line workflow tweak in a large PR. | Duong (GH UI) + Pyke verifies after |
 
-### Should-have, can ship within 48h
+### Should-have — ship this week
 
 | ID | Guardrail | Why |
 |---|---|---|
-| S1 | LLM diff review (G4) — Gemini Flash-Lite reviews diff before merge | Catches sophisticated in-scope attacks |
-| S2 | Move pipeline `implement` job from self-hosted to GitHub-hosted runner | Isolates attacker-controlled code from the VPS |
-| S3 | Auto-merge workflow separated from coder workflow, branch-scoped to `contrib/*` | Permission separation |
-| S4 | Rotation calendar on all secrets, 90-day PAT expiry enforced at token creation | Bounds damage on credential leak |
-| S5 | CODEOWNERS also covers `apps/myapps/package.json` and `apps/myapps/package-lock.json` | Stops dependency-injection attacks |
+| **S1** | **Issue author allowlist** in contributor-bot (was M1) | Even with approval gate, prevents random Discord users from spamming Claude-driven PRs. Runner cost + Duong review-queue cost. |
+| **S2** | **Move `implement` job to a GitHub-hosted runner** | Biggest structural risk: attacker-controlled Claude code running on the Hetzner VPS with persistent state and creds in the env. Approval gate does nothing to protect the runner itself. |
+| **S3** | **Path-scope CI check** (was M2) | Enforced scope reduces what Duong has to manually verify in each PR review. Small PRs where he can see the whole diff benefit less; larger PRs benefit more. |
+| **S4** | **CODEOWNERS** on `.github/`, `secrets/`, `agents/`, `apps/contributor-bot/`, `apps/discord-relay/`, `apps/myapps/package.json`, `apps/myapps/package-lock.json`, with `@Duongntd` as owner and `require_code_owner_reviews: true` | Forces a stronger review signal when the bot touches sensitive paths. Duong still approves, but the UI makes it obvious something unusual is happening. |
+| **S5** | Rotation calendar + 90-day PAT expiry at creation time | Bounds damage on credential leak. Pipeline-independent. |
+| **S6** | Switch Gemini triage to structured output mode (`responseMimeType: "application/json"` with a `responseSchema`) | Cheap prompt-injection mitigation at the triage layer. |
 
-### V2 — after the first two weeks running live
+### V2
 
-- Signed commits from the bot
-- Threat modeling workshop with Syndra once we have real attack telemetry
-- Canary deploy stage (Firebase channel → traffic shift) rather than direct prod
+- Signed commits from the bot (GPG key in Secret Manager)
 - Audit the context-loader prompt-injection surface once it exists in-repo
-- WIF attribute_condition review on every new workflow binding
+- WIF `attribute_condition` review on every new workflow binding
+- Canary stage for Firebase Hosting prod deploys (gradual channel promotion)
 
 ---
 
-## 10. Ship/no-ship call
+## 10. Ship/no-ship call (revised)
 
-**Ship with M1 + M2 + M3 + M4 + M5 in place.** Without those five, I am not comfortable auto-merging to main. With them, the pipeline has real enforcement at three layers (entry, scope, deploy) and the blast radius is bounded.
+**Ship tonight with M3 + M4' + M5 in place.** That's the minimum viable guardrail set for a human-in-the-loop pipeline.
 
-I am **not** blocking on S1–S5 or the v2 items. Duong wants motion tonight, and a perfect pipeline in three weeks is worse than a good pipeline tonight with a followup list.
+The approval gate does most of the work. What I cared about in the original assessment — server-side scope checks, issue author allowlist, LLM diff review — all move from must-have to should-have because **Duong's preview-URL review is now the backstop** for all of those attack classes.
+
+What did **not** move:
+- **M3** (Dependabot / secret scanning): has nothing to do with pipeline shape. Still disabled today. Enable it.
+- **M4'** (branch protection with required reviews): this is what turns the approval gate from a handshake into an enforced control. Without it, "Duong reviews before merge" is a procedural norm, not a technical guarantee. Any agent session with push access to main can bypass it. **Must have.**
+- **M5** (PAT scope reduction): `workflow` scope lets the bot rewrite the very workflows that implement the approval gate. Approval gate is only as strong as the policy-as-code it depends on. Shrink the PAT.
+
+### The new failure mode I actually worry about
+
+With auto-merge, the risk was "Claude writes evil code, it ships." With the approval gate, the risk is **review fatigue**:
+
+1. Duong approves 15 boring dark-mode PRs in a row over a week
+2. On PR #16, Claude writes something subtle — a `postinstall` script buried in a lockfile update, an innocent-looking `fetch()` call that exfils an env var at build time
+3. Duong clicks the preview URL, sees a dark-mode toggle working, merges
+
+The defenses against this are (in priority order):
+- **S3** (path-scope CI check) — reduces what Duong has to eyeball
+- **S4** (CODEOWNERS on package.json, lockfile, CI) — surfaces structural changes louder in the PR UI
+- **S6** (structured triage output) — kills the upstream prompt injection
+- Operational: Duong personally commits to reviewing the **diff**, not just the **preview**, for every bot PR. This is the single most important habit and I cannot enforce it with code.
+
+**I'll raise the fatigue concern with Duong directly via team-lead.** It's not a blocker for tonight, but it's the thing that will kill this pipeline in week three if we don't set expectations now.
 
 ---
 
-## Coordination notes
+## Coordination notes (revised)
 
-- **Fiora**: you own M2, M3, M4, and S2–S3. Ping me with the WIF `attribute_condition` and the branch-protection JSON payload before you apply them — I want a second look. M3 is a one-liner you can ship right now.
-- **Katarina**: you own M1. `TRUSTED_AUTHORS` env var + check in the Discord message handler in `apps/contributor-bot/src/index.js`. At minimum Duong's Discord user ID.
-- **Duong**: M5 requires you to rotate `GITHUB_TRIAGE_PAT` in the GitHub UI with scope = `repo` only (no `workflow`). I'll verify afterwards that the bot still works — `createWorkflowDispatch` only needs `repo:actions:write` which is part of `repo`, not the separate `workflow` scope.
-- I'll update my list at `agents/pyke/memory/pyke.md` with the new findings and add the pipeline to my regular audit cycle.
+- **Fiora**: your must-have list drops to **M3 + M4'**. Scrap any WIF-to-Cloud-Run work for MyApps — Katarina is using Firebase Hosting via the official `firebase-hosting-pull-request` + `firebase-hosting-merge` actions. You'll need `FIREBASE_SERVICE_ACCOUNT` as a repo secret (Katarina generates it). WIF review still applies to the **discord-relay** Cloud Run deploy — send me the `attribute_condition` before you apply. M4' is simpler than what I asked for originally — just required reviews + required status checks, no restrictions-by-app, no elaborate CODEOWNERS (CODEOWNERS moves to S4).
+- **Katarina**: your must-have (the author allowlist) drops to should-have. Please still ship it this week — it saves runner cycles and Duong's review queue. The triage.js structured-output switch (S6) is also should-have now. No must-have items on you tonight from the security side. Firebase Hosting service account: when you generate it, scope it to **Firebase Hosting admin only**, not full project editor.
+- **Duong**: M5 is on you — rotate `GITHUB_TRIAGE_PAT` to `repo` scope only, drop `workflow`. I'll verify after. Also, **operational ask**: please commit to reviewing the **diff tab** in every bot PR, not just the Firebase preview URL. The preview shows you what the app does when rendered; the diff shows you what the app does at **build time and install time**. Those are different attack surfaces.
+- I'll re-audit after Fiora ships M3+M4' and after the first bot-authored PR lands end-to-end.
 
 ---
 
