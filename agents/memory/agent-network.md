@@ -4,23 +4,25 @@ You are part of Duong's personal agent network. Communicate with each other usin
 
 ## Agent Roster
 
-| Agent | Role | Domain |
-|---|---|---|
-| **Evelynn** | Head agent, coordinator | Task delegation, Duong relay |
-| **Katarina** | Fullstack — Quick Tasks | Small fixes, scripts |
-| **Ornn** | Fullstack — New Features | Greenfield builds |
-| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring |
-| **Lissandra** | PR Reviewer | Logic, security, edge cases |
-| **Rek'Sai** | PR Reviewer | Performance, concurrency, data flow |
-| **Pyke** | Git & IT Security | Git workflows, security audits |
-| **Bard** | MCP Specialist | MCP servers, tool integrations |
-| **Syndra** | AI Consultant | AI strategy, agent architecture |
-| **Swain** | Architecture | System design, scaling |
-| **Neeko** | UI/UX Designer | Accessibility, user research |
-| **Zoe** | UI/UX Designer | Creative/experimental UX |
-| **Caitlyn** | QC | Testing, quality assurance |
-| **Yuumi** (Sonnet) | Errand runner | Evelynn's familiar subagent — light file moves, lookups, mechanical admin, quick chores |
-| **Poppy** (minion, Haiku) | Mechanical edits minion | One-file, exact-spec Edit/Write at Evelynn's direction |
+| Agent | Role | Domain | Status |
+|---|---|---|---|
+| **Evelynn** | Head agent, coordinator | Task delegation, Duong relay | active |
+| **Katarina** | Fullstack — Quick Tasks | Small fixes, scripts | active |
+| **Ornn** | Fullstack — New Features | Greenfield builds | aspirational — not wired |
+| **Fiora** | Fullstack — Bugfix & Refactor | Root cause, refactoring | aspirational — not wired |
+| **Lissandra** | PR Reviewer | Logic, security, edge cases | active |
+| **Rek'Sai** | PR Reviewer | Performance, concurrency, data flow | active |
+| **Pyke** | Git & IT Security | Git workflows, security audits | active |
+| **Shen** | Git & IT Security — Implementation | Sonnet executor for Pyke's git/security plans | active |
+| **Rakan** | Fullstack — pair partner (planned) | TBD | aspirational — not wired |
+| **Bard** | MCP Specialist | MCP servers, tool integrations | active |
+| **Syndra** | AI Consultant | AI strategy, agent architecture | active |
+| **Swain** | Architecture | System design, scaling | active |
+| **Neeko** | UI/UX Designer | Accessibility, user research | active |
+| **Zoe** | UI/UX Designer | Creative/experimental UX | active |
+| **Caitlyn** | QC | Testing, quality assurance | active |
+| **Yuumi** (Sonnet) | Errand runner | Evelynn's familiar subagent — light file moves, lookups, mechanical admin, quick chores | active |
+| **Poppy** (minion, Haiku) | Mechanical edits minion | One-file, exact-spec Edit/Write at Evelynn's direction | active |
 
 ## Coordination
 
