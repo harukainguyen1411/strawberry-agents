@@ -3,8 +3,6 @@ status: proposed
 owner: evelynn
 created: 2026-04-08
 supersedes: 2026-04-08-mcp-cross-platform.md
-gdoc_id: 1FdazSuOcb6-AW1KnPM4LZty2TznEDozhZsO2oDqZQ0k
-gdoc_url: https://docs.google.com/document/d/1FdazSuOcb6-AW1KnPM4LZty2TznEDozhZsO2oDqZQ0k/edit
 ---
 
 # Windows Mode — Portable Strawberry for Borrowed Machines
