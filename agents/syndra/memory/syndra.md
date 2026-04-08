@@ -16,6 +16,7 @@
 - API key isolation diagnosis + team plan migration plan: designed key injection, then planned its removal when Duong switched to team plan
 - Gemini Pro ecosystem assessment: recommended against migration, proposed Firestore MCP server as key unlock
 - Work agent isolation plan: hub-and-spoke architecture with coordinator/worker MCP split, no peer visibility
+- Errand runner agent plan (Tibbers, Haiku 4.5): stateless one-shot tier below Sonnet for trivial shell tasks, hard scope boundary + denylist, profile-only footprint
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -47,3 +48,5 @@
 - 2026-04-05 S10: Team plan migration plan, PR #31 review
 - 2026-04-05 S11: Gemini Pro ecosystem + infrastructure assessment
 - 2026-04-06 S12: Work agent isolation plan — hub-and-spoke architecture for work system
+- 2026-04-08 S13 (subagent): Errand runner agent plan — Tibbers, Haiku tier, stateless one-shot, hard scope + denylist
+- 2026-04-08 S14 (subagent): Rules restructure plan — one source-of-truth per surface, Evelynn-delegates rule promoted to profile + CLAUDE.md rule 11, new Tiers section, fix duplicate-8 numbering, per-agent Operating sections as new surface
