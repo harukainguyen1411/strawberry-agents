@@ -12,6 +12,7 @@
 - 2026-04-05 (s2): Telegram bridge investigation (Claude Code timeout issue). Plan viewer design. PR #54 architecture review.
 - 2026-04-08 (subagent): Designed plan-gdoc-mirror review workflow. Coexists with plan-viewer. Plan: `plans/proposed/2026-04-08-plan-gdoc-mirror.md`. Depends on encrypted-secrets plan.
 - 2026-04-08 (subagent, revision): gdoc-mirror Decision 8 failed reality contact after bulk publish — Drive was "very disorganized, all in one place." Duong chose proposed-only mirror. Wrote `plans/proposed/2026-04-08-gdoc-mirror-revision.md`. Key design call: new `plan-promote.sh` wrapper as the single choke point for plans leaving `proposed/` (unpublish + git mv + commit), chosen over git hook or pure agent-convention.
+- 2026-04-08 (subagent): myapps "move to Google" rough plan. Framed ambiguity: Firebase IS GCP, so question has 4 readings. Recommended A (mental model correction) + light B (GCP project governance) + targeted D (preview channels, observability, Secret Manager maybe, index automation, runbook). Rejected (C) raw-GCP migration as architectural malpractice for a solo personal app. Plan: `plans/proposed/2026-04-08-myapps-gcp-direction.md`. Cross-refs Syndra's parallel autonomous-delivery-pipeline plan as the layer above. Commit efa07d2.
 
 ## Active Architecture Decisions
 
