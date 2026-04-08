@@ -17,7 +17,10 @@
 | **Zoe** | UI/UX Designer | `zoe/` |
 | **Caitlyn** | QC (Quality Control) | `caitlyn/` |
 | **Yuumi** | Restart buddy / companion (Evelynn's restart-on-demand sidekick) | `yuumi/` |
-| Irelia (retired) | Former head agent | `irelia/` |
+
+## Retired
+
+- **Irelia** — 2026-04-09 — retired when Evelynn took over as head agent.
 
 ## Infrastructure (minions)
 
