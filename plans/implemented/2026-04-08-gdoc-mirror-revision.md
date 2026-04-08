@@ -1,6 +1,6 @@
 ---
 title: Plan ↔ Google Doc Mirror — Scope Revision (Proposed-Only)
-status: proposed
+status: implemented
 owner: swain
 created: 2026-04-08
 ---
