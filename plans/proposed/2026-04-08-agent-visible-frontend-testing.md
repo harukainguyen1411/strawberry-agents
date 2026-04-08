@@ -230,6 +230,45 @@ That's the MVP. No new dependencies. No new MCP server. Reuses the existing Play
 - The MVP (§8 steps 1-5) can ship without waiting for Syndra's plan — it's purely additive to myapps and delivers value even in the current manual-PR workflow.
 - No implementer assignment. Evelynn decides after approval.
 
+## Duong Review Feedback — 2026-04-08 (Drive comments)
+
+Duong reviewed the Drive mirror and left four `//` comments. Recorded verbatim here for git-side preservation and detailed-phase guidance.
+
+**1. Section `## 2. MCP servers to evaluate`:**
+
+> `// Have them all for me`
+
+**Interpretation:** Do not pick a single MCP candidate and discard the rest. The detailed phase must evaluate *all* surveyed candidates (Playwright MCP, Chromium/Puppeteer MCP, Storybook/Histoire MCP, browser-use MCP, custom `mcps/browser-inspect/`) and produce a matrix, not a winner. If multiple are viable, carry multiple through to implementation in phases.
+
+**2. Section `## 3. Reusing myapps Playwright install — three tactics`, under "does the existing Playwright config already produce traces on failure?":**
+
+> `// I'm not sure, check it and add it if needed`
+
+**Interpretation:** Detailed phase: check `apps/myapps/playwright.config.ts` (or the standalone `Duongntd/myapps` equivalent — see caveat on repo duplication elsewhere in session memory). If `trace: 'retain-on-failure'` (or equivalent) is missing, add it as part of the detailed-phase implementation.
+
+**3. Section `## 6. Storybook / Histoire — add or skip?`:**
+
+> `// Add, have everything worth adding implemented for me. Can be drafted in separated phases`
+
+**Interpretation:** **Overrides Bard's "skip for MVP" recommendation.** Duong wants Storybook/Histoire added. It's allowed to be phased (not part of Phase 1), but it is no longer out of scope. Detailed phase must include a Storybook/Histoire implementation in whichever phase it naturally fits. Bard's cost/benefit analysis in that section remains useful context but its conclusion is superseded.
+
+**4. Section `## Open questions for Duong`, blanket answer to all 5 questions:**
+
+> `// Answer above: in conclusion: have them all drafted in phases and then implement in phases for me`
+
+**Interpretation:** The "MVP-cut" framing is out. Every question in the Open Questions section should be answered by the detailed-phase author as "draft all viable options, implement in phases." This covers:
+- Q1 (published Playwright MCP vs custom): draft and evaluate both, pick the winner at detailed-phase time, but keep the loser as a Phase 2+ fallback.
+- Q2 (local vs both gates): keep both, per cafe-session decision.
+- Q3 (Storybook now or later): add it, phased — see comment 3.
+- Q4 (verification auth): already resolved via staging Firebase project per cafe-session decisions.
+- Q5 (any MCPs that need auth): evaluate all and document auth story for each.
+
+## Scope impact for the detailed phase
+
+The net change is a philosophical flip from "build the smallest thing that proves it works" to "build the full capability matrix in phases." The detailed phase author should treat Bard's Phase 1/Phase 2/Phase 3 structure as the *minimum* depth, and expand scope to include every MCP candidate and Storybook/Histoire as first-class deliverables rather than deferred maybes.
+
+**Plan stays in `plans/proposed/` until Duong moves it to `approved/` formally.** Duong's comments are input, not a ship signal.
+
 ## Duong Decisions — 2026-04-08 cafe session
 
 - **Verification auth → use the staging Firebase project.** This decision was folded with the staging-data-isolation decision in `2026-04-08-myapps-gcp-direction.md` — Duong chose a separate staging Firebase project. Bard's Q4 (local-mode vs test Firebase project) resolves to: use the staging Firebase project for any agent verification run that needs authenticated views. The `auth-local-mode` Playwright pattern stays available for purely-unauthenticated checks.
