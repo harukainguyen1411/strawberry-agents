@@ -12,6 +12,7 @@
 8. **Plan writers never assign implementers** — Plans must not specify who will implement them. Evelynn decides delegation after approval. Use `owner` in frontmatter for the plan author only, not the executor.
 9. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
 10. **Use `chore:` prefix for all commits** — All commits must use `chore:` or `ops:` prefix. Never use `fix:`, `feat:`, `docs:`, `plan:` or other prefixes. The pre-push hook enforces this on main.
+11. **Never run raw `age -d` or read decrypted secret values into context** — Decryption must go through `tools/decrypt.sh` exclusively, which uses `exec env KEY=val -- cmd...` so plaintext lives only in the child process env. Never `cat`, `type`, `Get-Content`, or pipe `secrets/age-key.txt`. The pre-commit hook (`scripts/pre-commit-secrets-guard.sh`) blocks raw `age -d` outside the helper and scans staged files for known decrypted values.
 8. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 
 ## Scope
