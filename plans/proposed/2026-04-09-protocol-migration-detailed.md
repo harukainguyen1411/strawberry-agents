@@ -25,6 +25,10 @@ cross-refs:
 
 Walks the leftover-audit (`assessments/2026-04-08-protocol-leftover-audit.md`) and the operating-protocol-v2 target (`plans/proposed/2026-04-09-operating-protocol-v2.md`), and produces a mechanical cleanup of the strawberry repo in **ten reversible atomic commits**, each with `chore:` prefix. The cleanup closes Layer 0 (parity) and Layer 1 (roster + retirement) debts, archives the fossils of the old MCP-coordination world, and backfills CLAUDE.md rule numbering to match what the in-flight plans will collectively land.
 
+## Pre-audit reality check — Rule 15 already satisfied at the filesystem level
+
+Operating Protocol v2 contained a note that Task #3 might need to backfill `model:` frontmatter across `.claude/agents/*.md`. Verified 2026-04-09: all 8 existing harness profiles already declare `model:` as of commit `eb6c0a9` ("chore: declare model per agent + rule 15 (no silent Opus inherit)"). No backfill is required. Rule 15 is satisfied at the filesystem level for every wired agent. Future readers: do not re-chase this; the v2 line was predicated on a stale assumption.
+
 ## What this plan does NOT do
 
 Strict non-goals. If the executor is tempted to do any of these, STOP:
