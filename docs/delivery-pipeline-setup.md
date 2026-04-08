@@ -173,6 +173,20 @@ Once the pipeline is live, when you review PRs authored by the coder-worker:
 - **Always review the diff tab**, not just the Firebase preview URL. Preview shows runtime behavior; diff shows install-time (package.json, lockfile) and build-time (scripts, configs) changes — different attack surfaces.
 - **Be extra cautious with PRs that touch `package.json`, `package-lock.json`, or anything outside `apps/myapps/`.** The `validate-scope` workflow blocks out-of-scope paths, but lockfile poisoning via a dependency update is a known supply-chain vector worth eyeballing.
 - **If Claude's PR looks dense or weird, reject and re-run.** You're the gate.
+- **Watch for prompt-injection exfil patterns.** Pyke REV 2 §11.6: a malicious issue body could try to steer Claude into `Read`ing files outside `apps/myapps/` (like `secrets/*.txt`) and exfiltrating their content via a commit body or a file written into `apps/myapps/`. Katarina's coder-worker scaffold locks this down at the tool level (drop `Bash` from allowed tools, restrict read paths where possible, log every tool call), but be alert if a PR has suspicious string literals in a commit message or contains base64-looking blobs in the diff.
+
+---
+
+## 12. Physical security on the Windows box (Pyke operational ask)
+
+The Windows computer now holds long-lived production secrets (GitHub PAT, Discord bot token, Gemini API key) in plaintext and runs partly-untrusted AI-generated code. If the machine is stolen or compromised, those tokens go with it.
+
+- [ ] **Enable BitLocker** on the system drive. `manage-bde -status C:` to check; Control Panel → BitLocker Drive Encryption if not already on. Recovery key: back up somewhere safe (NOT in the strawberry repo).
+- [ ] **Real Windows login password** — no blank password, no PIN-only
+- [ ] **Disable auto-login** — Settings → Accounts → Sign-in options → require sign-in "Every time"
+- [ ] **Lock the screen when you walk away** — Win+L habit, or auto-lock after 5 minutes idle
+- [ ] **Windows Defender real-time scanning** enabled (default, verify)
+- [ ] **Automatic Windows Updates** enabled so kernel patches land without you thinking about it
 
 ---
 
