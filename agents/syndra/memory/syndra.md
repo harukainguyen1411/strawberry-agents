@@ -17,6 +17,7 @@
 - Gemini Pro ecosystem assessment: recommended against migration, proposed Firestore MCP server as key unlock
 - Work agent isolation plan: hub-and-spoke architecture with coordinator/worker MCP split, no peer visibility
 - Errand runner agent plan (Tibbers, Haiku 4.5): stateless one-shot tier below Sonnet for trivial shell tasks, hard scope boundary + denylist, profile-only footprint
+- Minion layer expansion plan: Yuumi (Sonnet, read/explore/synthesize) + Poppy (Haiku, mechanical edits). Closes Evelynn's read and edit gaps so she never touches files directly. Three-minion layer with disjoint tool surfaces: Tibbers runs, Yuumi reads, Poppy edits.
 
 ## Relationships
 - Works well with Evelynn (delegation flow is clean)
@@ -51,3 +52,4 @@
 - 2026-04-08 S13 (subagent): Errand runner agent plan — Tibbers, Haiku tier, stateless one-shot, hard scope + denylist
 - 2026-04-08 S14 (subagent): Rules restructure plan — one source-of-truth per surface, Evelynn-delegates rule promoted to profile + CLAUDE.md rule 11, new Tiers section, fix duplicate-8 numbering, per-agent Operating sections as new surface
 - 2026-04-08 S15 (subagent): Claude Skills integration plan — 6-skill initial set (/run /checkout /close-session /secret-needed /plan-propose /agent-brief), Tibbers→/run skill (supersedes S13 plan), explicit per-agent `skills:` preload (no inheritance), phased migration w/ reversibility flags. Load-bearing fact: subagents don't inherit skills from parent + cannot spawn subagents — skills are official workaround for nested delegation in windows mode.
+- 2026-04-08 S16 (subagent): Minion layer expansion plan — Yuumi (Sonnet, read/explore) + Poppy (Haiku, mechanical edits). Option (b) third sibling over Tibbers-scope-expansion. Three disjoint verbs: run/read/edit. Decision tree lives in Evelynn's profile (handoff to rules-restructure plan). Flagged for skills-integration: if Tibbers→/run skill, revisit Yuumi/Poppy conversion.
