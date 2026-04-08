@@ -1,6 +1,8 @@
 ---
 status: approved
 owner: swain
+gdoc_id: 11nuz4XYBS1uy1acptqbmvzKBxNPbpVXcXkwDrP85qMk
+gdoc_url: https://docs.google.com/document/d/11nuz4XYBS1uy1acptqbmvzKBxNPbpVXcXkwDrP85qMk/edit
 ---
 
 # B3: Myapps Task List — Implementation Plan
