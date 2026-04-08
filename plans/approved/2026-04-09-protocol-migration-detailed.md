@@ -1,6 +1,6 @@
 ---
 title: Protocol Migration — Katarina-Executable Repo Cleanup for Operating Protocol v2
-status: proposed
+status: approved
 owner: pyke
 created: 2026-04-09
 supersedes:
