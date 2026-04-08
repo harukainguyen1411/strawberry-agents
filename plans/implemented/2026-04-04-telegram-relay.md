@@ -2,8 +2,6 @@
 status: implemented
 owner: rakan
 implementer: bard
-gdoc_id: 1OIYJFjO4DXTNUmfeiD97hq8Hx62hfoY1qRoUeiU0ZHU
-gdoc_url: https://docs.google.com/document/d/1OIYJFjO4DXTNUmfeiD97hq8Hx62hfoY1qRoUeiU0ZHU/edit
 ---
 
 # Telegram Relay — Two-Way Messaging for Evelynn (Revised)
