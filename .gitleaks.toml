@@ -15,4 +15,13 @@ paths = [
     '''agents/.*/journal/.*''',
     '''scripts/setup-branch-protection\.sh''',
     '''plans/.*''',
+    # Encrypted secrets are ASCII-armored age blobs (high-entropy base64 inside
+    # BEGIN AGE ENCRYPTED FILE markers) — gitleaks default heuristics flag them
+    # as generic secrets. Ciphertext is safe to commit by definition.
+    '''secrets/encrypted/.*\.age''',
+    '''secrets/encrypted/.*\.age\.sha256''',
+    '''secrets/recipients\.txt''',
+    '''tools/encrypt\.html''',
+    '''tools/encrypt\.html\.sha256''',
+    '''tools/age-bundle\.js''',
 ]

@@ -1,8 +1,10 @@
 ---
 title: Encrypted Secrets in Repo (age-based)
-status: proposed
+status: implemented
 owner: evelynn
 created: 2026-04-08
+implemented: 2026-04-08
+implementer: katarina
 ---
 
 # Encrypted Secrets in Repo (age-based)
@@ -440,3 +442,34 @@ tools/
 The discipline this plan demands — never let plaintext touch a printable variable — is the kind of rule that holds for six weeks and then breaks the first time something is "urgent." The guards in Required Change 8 are the only reason this design is safe long-term. Don't ship without them. The cryptography is the easy part. The discipline is the hard part. Build the fence before you need it.
 
 — Pyke
+
+## Ship-Now Defaults (katarina, 2026-04-08)
+
+Recorded for the ship-now implementation. Each entry is a defaulted answer to a Pyke open question or to an ambiguity in the plan body. Reasonable conservative defaults; revisit any of these as a follow-up.
+
+- **Private-key location.** Stored at `secrets/age-key.txt` (in-repo, gitignored) rather than `%USERPROFILE%\.config\age\key.txt`. Rationale: keeps the entire system co-located in one repo and one ACL boundary; the existing `secrets/` gitignore already protects it; Duong has no other Strawberry processes that would expect a system-wide age identity. Trade-off: not the conventional age install location, so a future Mac/CLI user looking for `~/.config/age` would be confused. Documented in `secrets/README.md` and the in-tool helper.
+- **Helper script language.** Bash (`tools/decrypt.sh`) over Python or PowerShell. Rationale: git-bash is already a hard dependency for the rest of the agent infra (per Pyke Open Question 1 recommendation); zero added runtime; matches existing `scripts/*.sh` style; the script is short.
+- **Recipient embedding in `tools/encrypt.html`.** Baked in at write-time directly into the HTML `<input value="...">`. No build step. Rationale: Mac/phone use case is "open the file, paste, encrypt" — pulling recipients dynamically would require a fetch which violates the no-network rule. The recipient field is editable in case Duong needs to override it. When the Windows keypair is rotated, both `secrets/recipients.txt` *and* the value in `tools/encrypt.html` must be updated together (and `encrypt.html.sha256` regenerated).
+- **Vendored age JS.** `age-encryption@0.2.4` from npm, bundled with esbuild as IIFE (`tools/age-bundle.js`, 73KB), exposing `window.age`. SHA256 sidecar in `tools/encrypt.html.sha256` covers both files. No CDN, no remote fetch.
+- **Decrypt entry point.** `tools/decrypt.sh` is the single sanctioned path. Reads ciphertext from stdin only (never argv); refuses targets outside `secrets/`; uses `age -d -i secrets/age-key.txt -o <atomic-tmp>`; writes `KEY=value` atomically to the target via `mv`; wipes plaintext temp files immediately before any optional `exec env KEY=val cmd...` so the trap-after-exec gap is closed.
+- **`exec env` form.** `exec env "$varname=$pt_value" "${exec_args[@]}"` (no `--` end-of-options marker). Rationale: msys-env on git-bash does not accept `--`; the `KEY=val` token already disambiguates from the command name because a real command path cannot contain `=` before the first slash. Documented in the script comment.
+- **Long-lived encrypted blobs are committable.** `secrets/encrypted/*.age` and `*.age.sha256` are gitignore-excepted and committed. Ciphertext is safe by definition.
+- **Permanent canary blob.** `secrets/encrypted/canary.age` ships with the system, encrypts a known string (`TEST_VALUE=guard4-canary-...`), and exists so Guard 4 of the pre-commit hook always has at least one decryptable blob to scan against. Removing it disables the leak-detection scan.
+- **Pre-commit hook installation.** `.git/hooks/pre-commit` is a one-line shim that execs `scripts/pre-commit-secrets-guard.sh`. The shim is per-clone (not in-tree), so any new clone of the repo must reinstall it. Documented as a follow-up follow-up: write a one-liner `scripts/install-hooks.sh` later.
+- **`core.autocrlf`.** Set to `false` repo-locally via `git config --local core.autocrlf false`. Rationale: ASCII-armored age blobs are line-sensitive; CRLF translation would corrupt them. Local-only because we cannot enforce remote clone settings without `.gitattributes`; consider adding `.gitattributes` with `* -text` for `secrets/encrypted/` as a follow-up.
+- **Windows ACL on `secrets/age-key.txt`.** `icacls /inheritance:r` plus `icacls /grant:r "${USERNAME}:(R,W)"`. Verified: only `LAPTOP-M2G924A5\AD` has access. Re-run after any clone/restore that would reset the ACL.
+- **Rotation cadence.** Manual, on-demand. No automated rotation. To rotate: regenerate the secret value at the upstream provider (the load-bearing step per Pyke Required Change 2), then re-encrypt the new value with `tools/encrypt.html`, paste through `tools/decrypt.sh`, commit the new blob, force-overwrite the old one. Re-encrypting the same value is theater. **Follow-up:** consider a calendar reminder or `secret-age.sh` helper that prints "this blob is older than N days" — out of scope here.
+- **Phase 2 backup design (passphrase-encrypted private-key escrow).** Out of scope for ship-now. **Follow-up.**
+- **Windows account hardening / BitLocker.** Out of scope. Logged in `architecture/security-debt.md`.
+- **Detached signatures for `.age` blobs.** Not implemented. SHA256 sidecar covers `tools/encrypt.html` and `tools/age-bundle.js`. Detached signatures on each `.age` blob are tamper-evidence on top of authenticated encryption — overkill for a single-operator system, per Pyke Open Question 6. **Follow-up if multi-operator becomes a thing.**
+- **Tools and dependencies installed.** `age` v1.2.0 + `age-keygen` v1.2.0 dropped into `/c/Users/AD/bin/` (already on PATH). Bundled `age-encryption@0.2.4` JS via npx esbuild. No persistent npm dependency added to the repo.
+
+### Known follow-ups (deferred)
+
+1. Automated rotation cadence and reminders.
+2. Phase 2 passphrase-encrypted private-key escrow design.
+3. Windows host hardening (BitLocker, standard-user account, lock timeout) — see `architecture/security-debt.md`.
+4. `scripts/install-hooks.sh` to make the pre-commit shim installation per-clone-automatic.
+5. `.gitattributes` entry forcing `-text` on `secrets/encrypted/` and `tools/age-bundle.js` so CRLF discipline is enforced for any future clone (not just this one).
+6. Remote Control transport investigation (Pyke Required Change 1 research follow-up).
+7. Migrate any plaintext secrets currently in `secrets/*.env` to encrypted blobs once the system has a few days of stable operation.

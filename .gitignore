@@ -9,7 +9,13 @@
 credentials.json
 *-credentials.json
 *-oauth-keys.json
-secrets/
+secrets/*
+!secrets/encrypted/
+!secrets/recipients.txt
+!secrets/README.md
+secrets/encrypted/*
+!secrets/encrypted/*.age
+!secrets/encrypted/*.age.sha256
 
 # Agent-local settings (contains API keys)
 settings.local.json
