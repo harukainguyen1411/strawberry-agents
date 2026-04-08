@@ -4,6 +4,8 @@
 - Fullstack Engineer — Quick Tasks
 
 ## Sessions
+- 2026-04-09 (S30, subagent): delivery-pipeline team tasks. GCP APIs enabled on strawberry-agents-discord. Secrets GEMINI_API_KEY/DISCORD_BOT_TOKEN/GITHUB_TRIAGE_PAT pushed to Secret Manager, SA `940853599091-compute@developer.gserviceaccount.com` granted secretAccessor. discord-relay deployed to Cloud Run (https://discord-relay-940853599091.asia-southeast1.run.app), health 200, local process killed. MyApps (Vue3+Vite SPA) built + deployed to Firebase Hosting (https://myapps-b31ea.web.app, 200). Smoke test PR #55 opened + CI (lint/typecheck/build/e2e) all pass + merged. Firebase Hosting deployer SA created (firebase-hosting-deployer@myapps-b31ea.iam.gserviceaccount.com, role: firebasehosting.admin only), key pushed to GitHub as FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA secret in Duongntd/myapps for Fiora's preview/prod deploy workflows.
+
 - 2026-04-03 (S1): Verified HTML tasklist UI, ported 4 features to Vue migration (myapps PR #53), fixed touch drag regression.
 - 2026-04-03 (S2): Built contributor pipeline Discord bot (`apps/contributor-bot/`), applied Swain's review fixes.
 - 2026-04-03 (S3): Set up GitHub webhook for Discord #pr-and-issues notifications.
