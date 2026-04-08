@@ -3,6 +3,8 @@ title: Plan ↔ Google Doc Mirror (Review Workflow)
 status: implemented
 owner: swain
 created: 2026-04-08
+gdoc_id: 1ctfzOHUFqDA38zIHtT03qcD8-AsOSwBNqJ3hKolQcII
+gdoc_url: https://docs.google.com/document/d/1ctfzOHUFqDA38zIHtT03qcD8-AsOSwBNqJ3hKolQcII/edit
 ---
 
 # Plan ↔ Google Doc Mirror (Review Workflow)
