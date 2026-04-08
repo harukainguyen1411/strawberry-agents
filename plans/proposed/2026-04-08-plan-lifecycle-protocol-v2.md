@@ -196,5 +196,5 @@ Worst failure mode: the discipline does not hold and Opus agents keep writing on
 - Detailed rewrites of individual existing plans. Migration is frontmatter-only.
 - Any change to the Drive mirror publish/unpublish flow beyond "ready/ is not mirrored."
 - Any change to the commit prefix rules, the PR rules, or the worktree rules.
-- Any change to how Sonnet agents are delegated to — Evelynn still picks, still assigns, still tracks via `delegate_task`.
+- Any change to how Sonnet agents are delegated to — Evelynn still picks, still assigns, still tracks delegation state directly via `agents/delegations/*.json` files and SendMessage summaries.
 - Implementation of the linter, the migration script, or the skill files. This rough plan names them; the detailed phase specs them.
