@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: syndra
 revised: 2026-04-08
 created: 2026-04-09
