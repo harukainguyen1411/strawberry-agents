@@ -1,6 +1,6 @@
 ---
 title: Plan ↔ Google Doc Mirror (Review Workflow)
-status: in-progress
+status: implemented
 owner: swain
 created: 2026-04-08
 ---
