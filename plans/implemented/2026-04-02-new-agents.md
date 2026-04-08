@@ -1,8 +1,6 @@
 ---
 status: done
 owner: evelynn
-gdoc_id: 1edyTHQ8TM957M5ipKNRjjXOD8kfcs6JpBhu9YucZE1k
-gdoc_url: https://docs.google.com/document/d/1edyTHQ8TM957M5ipKNRjjXOD8kfcs6JpBhu9YucZE1k/edit
 ---
 
 # New Agent Selection
