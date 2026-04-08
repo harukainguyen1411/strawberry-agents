@@ -1,5 +1,5 @@
 ---
-status: approved
+status: implemented
 owner: bard
 created: 2026-04-09
 supersedes-phase-1: 2026-04-08-mcp-restructure.md
