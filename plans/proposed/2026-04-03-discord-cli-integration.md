@@ -2,6 +2,8 @@
 status: approved
 owner: evelynn
 architects: [swain, pyke]
+gdoc_id: 1RG-ilyBSP6-SVtktaBVi-CS2O4_ZKONfKAruUQf0oxU
+gdoc_url: https://docs.google.com/document/d/1RG-ilyBSP6-SVtktaBVi-CS2O4_ZKONfKAruUQf0oxU/edit
 ---
 
 # Discord-CLI Integration — Replace Contributor Pipeline
