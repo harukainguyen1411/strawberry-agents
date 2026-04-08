@@ -25,9 +25,5 @@
 - Operational config (.mcp.json, agent-network.md) goes to main; feature code goes to feature branches
 
 ## Sessions
-- 2026-04-03: Roster fix, 6-phase network optimization, OPS_PATH, QC follow-up, usage-tracker investigation, removed /cost from protocol
-- 2026-04-04 AM: invite_to_conversation, evelynn MCP server, flexible conversations, shared helpers
-- 2026-04-04 PM: Telegram bridge v2, restart_evelynn, context health monitoring, task delegation tracking, GH token injection, restart detection fix plan
-- 2026-04-04 Eve: restart_evelynn detection fix (PR #25) — merged
-- 2026-04-05 AM: Heartbeat fix — touch_heartbeat() piggybacked on MCP tools (PR #28)
-- 2026-04-05 PM: Reviewed PR #32 (heartbeat) & PR #34 (restart safeguards). Wrote restart safeguards plan & launch verification plan (5 sections incl. Evelynn liveness/revival)
+- 2026-04-04/05: evelynn MCP server, telegram bridge, heartbeat fix, restart safeguards, launch verification plan
+- 2026-04-08: Wrote agent-visible-frontend-testing plan (proposed) — MVP reuses existing Playwright, new e2e/agent-verify.spec.ts + npm run verify:frontend; Phase 2 adopts/builds Playwright MCP; recommended pipeline gate placement (c) both local pre-PR and preview pre-Discord; skip Storybook for MVP. Slots into Syndra's autonomous-delivery-pipeline plan.
