@@ -3,8 +3,6 @@ title: Fix Agent API Key Isolation
 status: superseded
 owner: syndra
 date: 2026-04-05
-gdoc_id: 1GmCF2QTf43MxuhPYhk9vptedDyZVJGPLUWJp6Z2n4DY
-gdoc_url: https://docs.google.com/document/d/1GmCF2QTf43MxuhPYhk9vptedDyZVJGPLUWJp6Z2n4DY/edit
 ---
 
 # Fix Agent API Key Isolation
