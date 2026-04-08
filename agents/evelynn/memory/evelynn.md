@@ -24,10 +24,11 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Branch protection:** two-account model: Duongntd (bypass) + harukainguyen1411 (agents, no bypass). GH_TOKEN injected at launch. Auth lockdown hooks active (PR #33).
 - **Auto-rebase:** GitHub Actions workflow auto-rebases open PRs when main updates.
 - **Session closing order:** all agents first → Evelynn closes last with `commit_agent_state_to_main`.
-- **MCP servers:** evelynn (shutdown_all_agents, commit, telegram, task board), agent-manager (conversations, delegation, health).
-- **Telegram:** new bot (rotated 2026-04-05), token in secrets/telegram-bot-token. Bridge runs in separate iTerm window.
+- **MCP servers (Mac only):** evelynn (shutdown_all_agents, commit, telegram, task board), agent-manager (conversations, delegation, health).
+- **Telegram (Mac only):** new bot (rotated 2026-04-05), token in secrets/telegram-bot-token. Bridge runs in separate iTerm window.
 - **Discord:** relay bot, VPS Hetzner CX22.
-- **Task board:** Firebase/Firestore, shared Vue app + MCP tools.
+- **Task board (Mac only):** Firebase/Firestore, shared Vue app + MCP tools.
+- **Windows Mode (2026-04-08):** parallel isolated setup for non-Mac machines. Subagents in `.claude/agents/` replace iTerm windows; Remote Control replaces Telegram relay. Launch via `windows-mode\launch-evelynn.bat` (runs `claude --dangerously-skip-permissions --remote-control "Evelynn"`). 6 subagents available: Syndra, Swain, Pyke, Bard, Katarina, Lissandra. Memory continuity preserved through shared files. Mac stack untouched.
 
 ## Protocols
 - Every PR must have exactly two reviewers: (1) a code reviewer (Lissandra or Rek'Sai), and (2) the agent who wrote the plan. Evelynn auto-assigns both without asking.
@@ -43,9 +44,11 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Personal:** Agents run on Duong's work team plan (Claude Max/Team). API keys disabled for agent ops (2026-04-05). API reserved for app development only.
 
 ## Open Threads
+- Windows Mode plan (`plans/in-progress/2026-04-08-windows-mode.md`) — implemented but not yet validated end-to-end. Move to `implemented/` once Duong tests subagent invocation. Commit `a161190` not yet pushed.
 - PR #54 (myapps) — task list, reviewed, ready to merge. Needs firestore index deploy.
 - Bard's launch-verification + Evelynn liveness plan — proposed, awaiting approval
 - Swain's plan viewer plan — proposed, needs manual setup
+- Syndra's work-agent-isolation plan (`plans/proposed/2026-04-06-work-agent-isolation.md`) — awaiting approval
 - Work CLAUDE.md — verify self-contained after global cleanup
 - E2E Discord test plan — not started
 - Delete old contributor-bot from PM2 on VPS
