@@ -119,6 +119,20 @@ rm -f "$WRAPPED.id"
 gdoc::frontmatter_set "$TARGET" gdoc_id "$NEW_ID"
 gdoc::frontmatter_set "$TARGET" gdoc_url "https://docs.google.com/document/d/$NEW_ID/edit"
 
+# Verify the frontmatter writes actually landed. gdoc::frontmatter_set will
+# silently no-op if it can't find the line-1 `---` opener (e.g. a stray byte
+# before it), which would otherwise leave an orphan Drive doc + unchanged
+# local markdown. Hard-fail here so the caller has to manually clean up.
+if ! grep -qF "gdoc_id: $NEW_ID" "$TARGET" || ! grep -qF "gdoc_url: https://docs.google.com/document/d/$NEW_ID/edit" "$TARGET"; then
+  {
+    printf '[plan-gdoc-mirror] ERROR: failed to write gdoc_id back to %s\n' "$TARGET"
+    printf '  The Drive doc was created (id: %s) but the local markdown was not updated.\n' "$NEW_ID"
+    printf "  This usually means the file's frontmatter is malformed (no leading '---' on line 1).\n"
+    printf '  Manual cleanup needed: delete the Drive doc, fix the file, re-run.\n'
+  } >&2
+  exit 1
+fi
+
 git -C "$REPO_ROOT" add -- "$TARGET"
 git -C "$REPO_ROOT" commit -m "chore: link gdoc for $(basename "$TARGET")" >&2
 
