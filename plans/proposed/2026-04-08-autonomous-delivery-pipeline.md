@@ -250,6 +250,29 @@ These are the ones where Duong's preference genuinely shifts the design, not the
 
 ---
 
+## Duong Decisions — 2026-04-08 cafe session
+
+Duong answered four of the open questions directly and one is absorbed by Evelynn. Detailed phase must reflect these decisions.
+
+- **Q1 — Auto-approve planning gate → YES, label-gated.** Duong explicit: "It should be auto-approved. Or have a tag with auto-able, something like that." Introduce a GitHub label (exact name is detail-phase — candidates: `auto-ok`, `autonomous`, `auto:safe`) that marks an issue as eligible for autonomous pickup end-to-end. Unlabeled issues still go through manual planning gates. The label can be applied manually by Duong on the issue, or automatically by a classifier on intake (detail-phase decides which).
+- **Q2 — Deploy pipeline shape → full canary with auto-rollback.** Duong explicit spec:
+  1. Merge PR → deploy to staging
+  2. Run full test suite on staging
+  3. If staging green → deploy to production
+  4. Run production smoke tests
+  5. If production tests green → mark task complete and notify Discord
+  6. **At any step, if anything fails → revert immediately** (automatic rollback of the failing environment, no human in the loop for the revert itself)
+
+  This replaces the earlier "merge + deploy" simplification. Detail phase must specify: what "all tests" means on staging (Playwright E2E? unit? both?), what "production smoke tests" means (subset of E2E hitting the live URL? synthetic health checks?), and the exact rollback mechanism per environment (Firebase Hosting rollback via `firebase hosting:rollback`, Firestore rollback via... what? flag for open question).
+- **Q3 — Control plane location → GCP.** Duong explicit: "have everything on Google infrastructure." Control plane runs on GCP (Cloud Run / Cloud Functions / Cloud Build — detail phase picks the specific services). VPS option rejected. Windows-only option rejected. See Q5 for how this interacts with agent execution.
+- **Q5 — Billing → subscription plan only, never Claude API.** Duong explicit: "everything should run on the subscription plan, no API for claude." Agent work runs through Claude Code CLI against his Team plan seats, never via API keys. Dollar-cap circuit breaker is therefore not the right primitive — the constraint is a hard "no API calls" rule enforced at the agent-spawn layer. Detail phase must design a preflight check that blocks any agent that would call an Anthropic API endpoint.
+
+  **Tension with Q3 flagged and absorbed by Evelynn:** "Everything on GCP" + "subscription-only" creates a structural conflict — subscription-plan Claude runs via the `claude` CLI which requires a machine logged into an Anthropic seat. Evelynn's absorbed resolution: **control plane on GCP, agent execution on the Windows box for MVP, burst to a GCE VM (counting as an additional seat on the Team plan) later if parallelism becomes the bottleneck.** Detail phase may revisit.
+- **Q4 — Preview auth → absorbed by Evelynn.** Unguessable tunnel URL only for MVP; revisit if the Discord channel ever has non-Duong members.
+- **Q6 — myapps snapshot → resolved.** Snapshot exists at `assessments/2026-04-08-myapps-snapshot.md`. Note caveat: snapshot incorrectly claimed myapps lives in `apps/myapps/` inside strawberry. Actual source of truth is standalone `github.com/Duongntd/myapps`; the strawberry copy is a divergent duplicate that needs its own investigation plan (out of scope here).
+- **Q7 — standing Evelynn vs per-issue team → absorbed by Evelynn.** Standing-Evelynn for MVP per Syndra's cost recommendation. Revisit if state coupling to Evelynn's restart story becomes painful.
+- **Q8 — multi-user intake → absorbed by Evelynn.** Deferred to phase 2+.
+
 ## Rollback / failure-mode sketch
 
 **Failure modes the design must survive:**

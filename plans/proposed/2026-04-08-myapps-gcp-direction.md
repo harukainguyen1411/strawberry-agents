@@ -172,3 +172,9 @@ Only the ones that genuinely need his judgment. Evelynn absorbs the trivial stuf
 - Not a monorepo split proposal
 - Not a replacement for Syndra's autonomous-delivery-pipeline plan
 - Not an implementation spec — rough-phase only, detailed-phase comes after approval
+
+## Duong Decisions — 2026-04-08 cafe session
+
+- **Staging data isolation → separate Firebase project.** Duong explicit: "Of course it should not hit the environment. We should have a professional set up." Previews and agent-generated PRs must run against a dedicated staging Firebase project, not production Firestore. Detailed phase must stand up the staging project as a prerequisite and wire it into the autonomous-delivery-pipeline's preview subsystem.
+- **Direction → everything on Google infrastructure.** Duong explicit: "have everything on Google infrastructure, please." Control plane, staging, production, monitoring all on GCP. Subsumes Swain's original A/B/D recommendation — skip (A "do nothing") interpretation, proceed with light (B) governance + targeted (D) infra expansion. (C) "rip out Firebase primitives" remains rejected.
+- **Open infra questions absorbed by Evelynn per autonomy mandate:** governance depth (Workspace/Org restructure — deferred, not urgent per Swain); agent-execution-on-GCP question tracked separately as a tension with the subscription-only billing constraint (see autonomous-delivery-pipeline plan).
