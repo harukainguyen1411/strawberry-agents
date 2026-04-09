@@ -63,6 +63,47 @@ Add more pairs as new public-use apps are onboarded.
 
 ---
 
+## 1b. Automated Channel Setup Script
+
+A one-time setup script creates the category and channels via the Discord MCP tools (`discord_create_category`, `discord_create_text_channel`), which are already wired in `.mcp.json`.
+
+**Script:** `scripts/setup-discord-channels.sh` (POSIX bash, runs on macOS and Git Bash)
+
+The script:
+
+1. Calls `discord_get_server_info` to get the guild ID and list existing categories/channels.
+2. **Idempotency check:** If a category named "App Feedback" already exists, uses its ID instead of creating a new one. Same for each channel -- if `#myapps-requests` already exists under that category, skips it.
+3. Creates the "App Feedback" category via `discord_create_category`.
+4. Creates each channel under the category via `discord_create_text_channel`:
+   - `#myapps-requests`
+   - `#myapps-issues`
+   - `#new-app-requests`
+5. Outputs the channel IDs in a format that can be directly pasted into `apps/discord-relay/channel-map.json`:
+
+```
+Created/found channels:
+  category "App Feedback": 123456789
+  #myapps-requests: 234567890
+  #myapps-issues: 345678901
+  #new-app-requests: 456789012
+
+channel-map.json snippet:
+{
+  "channels": {
+    "234567890": { "app": "myapps", "type": "feature" },
+    "345678901": { "app": "myapps", "type": "bug" },
+    "456789012": { "app": null, "type": "new-app" }
+  },
+  "categoryId": "123456789"
+}
+```
+
+**Implementation note:** Because the Discord MCP tools are accessed via Claude MCP (not a REST API callable from raw bash), this script is a Claude-assisted script -- it is designed to be run within a Claude session that has the Discord MCP wired. The script body is a structured prompt/checklist that the executing agent follows using the MCP tools. Alternatively, it can be implemented as a Node script using discord.js REST directly (reading the bot token from `secrets/discord-bot-token.txt`), which would be fully autonomous. The implementer should choose the approach that fits best.
+
+**When to run:** Once at initial setup. Re-run if adding a new app (the script is idempotent -- existing channels are skipped).
+
+---
+
 ## 2. Discord-Relay Code Changes
 
 ### 2a. Channel routing config
@@ -148,7 +189,7 @@ When a new-app request is approved and the app is created, the implementer adds 
 ## 5. Migration Path
 
 **Phase 1 -- Parallel operation (no downtime):**
-1. Create the "App Feedback" category and all channels in Discord.
+1. Run `scripts/setup-discord-channels.sh` to create the "App Feedback" category and all channels. Copy the output channel IDs into `apps/discord-relay/channel-map.json`.
 2. Deploy updated bot code with `channel-map.json` that includes both the old `#suggestions` channel (mapped to `app:myapps`, `type:feature` as default) and the new per-app channels.
 3. Post an announcement in `#suggestions` directing friends to use the new channels.
 
@@ -164,7 +205,8 @@ When a new-app request is approved and the app is created, the implementer adds 
 
 | Change | File/Location | Notes |
 |--------|--------------|-------|
-| New file | `apps/discord-relay/channel-map.json` | Channel ID to app+type mapping |
+| New script | `scripts/setup-discord-channels.sh` | Idempotent channel creation via Discord MCP or discord.js REST |
+| New file | `apps/discord-relay/channel-map.json` | Channel ID to app+type mapping (populated by setup script output) |
 | New env var | `CHANNEL_MAP_PATH` | Optional, defaults to `./channel-map.json` |
 | Deprecated env var | `TRIAGE_DISCORD_CHANNEL_ID` | Keep during Phase 1, remove at Phase 2 |
 | New env var (optional) | `TRIAGE_CATEGORY_ID` | Used if bot auto-discovers channels in category instead of explicit map |
