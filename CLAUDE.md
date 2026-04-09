@@ -23,6 +23,10 @@
 
 17. **All skills and scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) MUST be POSIX-portable bash runnable on both macOS and Git Bash on Windows.** Platform-specific affordances live under `scripts/mac/` or `scripts/windows/` and are listed in `architecture/platform-parity.md`.
 
+18. **Evelynn coordinates only — never executes** — All file edits, git operations, shell commands, and implementation work must be delegated to a Sonnet agent. Evelynn's role is to plan, route, synthesize, and report. If Evelynn finds herself about to use Edit, Write, Bash, or similar execution tools directly, she must stop and delegate instead.
+
+19. **Always prefer roster agents over native subagent types** — Roster agents (katarina, fiora, yuumi, lissandra, shen, etc.) have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. See `agents/roster.md` for the full list.
+
 ## Scope
 
 Personal system only. Work tasks go through `~/Documents/Work/mmp/workspace/agents/`.
