@@ -1,6 +1,6 @@
 ---
 title: Discord per-app channel triage
-status: proposed
+status: approved
 owner: bard
 date: 2026-04-09
 ---
