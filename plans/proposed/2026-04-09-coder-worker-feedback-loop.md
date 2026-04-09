@@ -121,9 +121,9 @@ Add to `coder-worker`'s config file (e.g. `config/reviewers.yaml` or env):
 ```yaml
 reviewers:
   default: ["Duongntd"]
-  by_label:
-    "app:myapps": ["Duongntd"]
 ```
+
+Single monorepo (`strawberry`), single user — no per-label reviewer overrides needed. `resolveReviewers` just returns the default list (minus the PR author).
 
 ### Env var
 
@@ -203,15 +203,15 @@ New route `POST /hooks/github` on the existing HTTP server (discord-relay alread
 
 1. Verify HMAC header using `DISCORD_RELAY_WEBHOOK_SECRET` (constant-time compare). Reject 401 on mismatch.
 2. Switch on `kind`:
-   - `preview_ready` → post an embed to `discord_channel_id`:
+   - `preview_ready` → post an embed to `discord_channel_id` **as a reply to the original suggestion message** (`message_reference: { message_id: discord_message_id, channel_id: discord_channel_id, fail_if_not_exists: false }`):
      ```
      **PR #{pr_number}: {pr_title}**
      Preview: {preview_url}
      PR: {pr_url}
      React ✅ to merge, ❌ to close.
      ```
-     Store `{message_id → {pr_number, repo, channel_id, requester: discord_user_id}}` in a small JSON file (`state/pending-prs.json`) or sqlite — pick the simpler one, JSON file keyed by discord message ID is fine for v1.
-   - `shipped` → "Shipped 🚀 <prod_url>" reply in same channel.
+     Store `{message_id → {pr_number, repo, channel_id, requester: discord_user_id, source_message_id}}` in `state/pending-prs.json` (JSON file keyed by discord message ID, guarded by `proper-lockfile`).
+   - `shipped` → "Shipped 🚀 <prod_url>" **also posted as a reply to the original suggestion message** (`message_reference` to `source_message_id`), so both the preview notification and the ship confirmation thread under the source suggestion.
 
 ### Exposing the webhook
 
@@ -237,7 +237,7 @@ Algorithm:
 2. Look up `reaction.message.id` in `state/pending-prs.json`. If miss → ignore.
 3. Check `reaction.user.id === process.env.APPROVER_DISCORD_ID`. If mismatch → optionally react with ⛔ and bail.
 4. If emoji is ✅:
-   - Use an `octokit` instance authed with a fine-grained PAT (`GITHUB_TOKEN` env, repo:write scope on target repos).
+   - Use an `octokit` instance authed with a classic PAT (`GITHUB_TOKEN` env, `repo` scope on the `strawberry` monorepo).
    - Call `octokit.pulls.merge({ owner, repo, pull_number, merge_method: 'squash' })`.
    - On success: react ✅ back on the message, post reply "Merging → prod deploy in flight".
    - Remove entry from `pending-prs.json`.
@@ -251,7 +251,7 @@ Algorithm:
 
 - **Only `APPROVER_DISCORD_ID` can approve.** Hard-coded check, no role-based fanciness. Env var, not config file.
 - **HMAC on inbound webhook** prevents randoms calling `/hooks/github` to spoof preview URLs (which would poison `pending-prs.json` and let them trick Duong into merging).
-- **Fine-grained GitHub PAT** scoped only to target repos, not org-wide.
+- **Classic GitHub PAT** with `repo` scope on the `strawberry` monorepo (single private repo, single user — fine-grained buys nothing).
 - **Rate limit** the reaction handler: max 1 merge per 30s to prevent runaway loops if the state file gets corrupted.
 - **Audit log**: append every merge/close decision to `state/approval-audit.log` (JSONL, timestamp + pr + actor + action).
 
@@ -293,7 +293,7 @@ To carry the Discord channel ID across merge commits, encode it in the squash-me
 | `test/webhook.test.ts` (new) | HMAC verify happy path + tamper path |
 | `test/reaction.test.ts` (new) | Approver gate, merge path mocked |
 
-### GitHub Actions (per app repo — start with `myapps`)
+### GitHub Actions (`strawberry` monorepo — single repo, covers `myapps`)
 
 | File | Change |
 |------|--------|
@@ -315,7 +315,7 @@ To carry the Discord channel ID across merge commits, encode it in the squash-me
 | Var | Purpose |
 |-----|---------|
 | `APPROVER_DISCORD_ID` | Duong's Discord user ID, gates merge reactions |
-| `GITHUB_TOKEN` | Fine-grained PAT, `pull_request: write` on target repos |
+| `GITHUB_TOKEN` | Classic PAT with `repo` scope on the `strawberry` monorepo |
 | `DISCORD_RELAY_WEBHOOK_SECRET` | Shared HMAC secret with GitHub Actions |
 | `HTTP_PORT` | Already exists, confirm it's distinct from the health port |
 
@@ -327,7 +327,7 @@ Stored in `secrets/discord-relay.env` (gitignored), loaded by the NSSM wrapper.
 |-----|---------|
 | `CODER_WORKER_DEFAULT_REVIEWERS` | Comma-separated GH usernames |
 
-### GitHub repo secrets (per app repo)
+### GitHub repo secrets (`strawberry` monorepo)
 
 | Secret | Value |
 |--------|-------|
@@ -346,7 +346,7 @@ Stored in `secrets/discord-relay.env` (gitignored), loaded by the NSSM wrapper.
 3. **Phase C — Preview link back to Discord:**
    - Stand up Cloudflare Tunnel + relay HTTP endpoint (no auth yet, test local).
    - Wire HMAC + GitHub secret.
-   - Add Actions step in `myapps` repo only.
+   - Add Actions step in `strawberry` repo (covers `myapps` — it's the only repo).
    - End-to-end test: file issue via Discord → wait for PR → expect preview message in Discord.
 4. **Phase D — Reaction approval:**
    - Ship reaction handler behind `APPROVER_ONLY_MODE=true` safety flag (rejects all by default).
@@ -356,15 +356,15 @@ Stored in `secrets/discord-relay.env` (gitignored), loaded by the NSSM wrapper.
    - Add merge-workflow notify step.
    - Verify "Shipped 🚀" lands in channel.
 
-## Open questions for Duong
+## Resolved decisions
 
-1. **Cloudflare Tunnel vs Tailscale Funnel** — preference? Plan assumes Cloudflare.
-2. **GitHub PAT scope** — fine-grained per-repo, or classic with `repo`? Recommend fine-grained.
-3. **Merge strategy** — squash, merge commit, or rebase? Plan assumes squash (cleanest history, preserves PR body in commit message for meta passthrough).
-4. **`pending-prs.json` persistence** — home dir or inside the discord-relay install dir? Plan assumes `state/` alongside the app.
-5. **Multi-repo support today, or `myapps` only?** — Plan wires `myapps` first; other repos join in Phase C iteration 2.
-6. **What happens to the Discord message after merge?** — Plan says "post reply, keep original". Alternative: edit the original to strike-through. Ask Duong.
-7. **Auto-close on ❌** — is that the right semantic, or should ❌ just dismiss the notification without closing the PR?
+1. **Tunnel: Cloudflare Tunnel.** Free, runs as a second NSSM daemon on the Windows box alongside discord-relay. No router config. Stable DNS via `relay.strawberry.<duong-domain>`.
+2. **GitHub PAT: classic PAT with `repo` scope.** Strawberry is a single private monorepo with one user — fine-grained PAT's per-repo scoping buys nothing here. Classic is simpler to rotate and debug. Stored in `secrets/discord-relay.env` as `GITHUB_TOKEN`.
+3. **Merge strategy: squash.** Cleanest history, and GitHub's squash merge concatenates the PR body into the commit message by default — the `strawberry-meta` block survives into `head_commit.message` for the merge workflow's `kind: shipped` notify step. Reaction handler calls `octokit.pulls.merge({ merge_method: 'squash' })`.
+4. **`pending-prs.json` persistence:** `state/` alongside the discord-relay install dir, guarded by `proper-lockfile`.
+5. **Repo scope: monorepo (`strawberry`) only.** `myapps` is the public apps collection *within* `strawberry`, not a separate repo. All PRs, Actions workflows, and GitHub secrets live in `strawberry`. No multi-repo plumbing needed — drop the per-label `reviewers.by_label` split and the "other repos join in Phase C iteration 2" rollout note. `notify-discord-preview.js` lives at `strawberry/.github/scripts/notify-discord-preview.js`.
+6. **❌ reaction: close the PR.** Confirmed. `octokit.pulls.update({ state: 'closed' })`, reply "Closed PR #N.", remove from `pending-prs.json`. No separate "dismiss without closing" path.
+7. **Discord message after merge: reply to the original.** discord-relay posts a new message in the same channel as a reply (Discord message reference) to the original suggestion message (`discord_message_id` from the meta block). No edit/strike-through on the original. Applies to both the preview notification and the "Shipped 🚀" confirmation — both use Discord's `message_reference` so they thread under the source suggestion.
 
 ## Non-goals
 
