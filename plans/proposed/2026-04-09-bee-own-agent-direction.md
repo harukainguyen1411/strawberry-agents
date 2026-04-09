@@ -2,260 +2,265 @@
 status: proposed
 owner: syndra
 created: 2026-04-09
-title: Bee Direction — Build Own Agent with Anthropic SDK
+title: Bee Direction Assessment — Fully Open-Source AI Agent Stack
 ---
 
-# Bee Direction — Build Own Agent with Anthropic SDK
+# Bee Direction Assessment — Fully Open-Source AI Agent Stack
 
-> Strategic assessment. Duong has ruled out Gemini (Vietnamese quality gap is a dealbreaker) and the `claude -p` CLI wrapper (no loop control, opaque). The direction is: build a real agent using the Anthropic SDK, with Claude as the LLM backbone and Duong owning everything around it.
+> Strategic assessment. Evaluates building a fully independent AI agent using open-source models — no Claude API, no Gemini API, no proprietary LLM. Duong wants to own the entire stack. Use case unchanged: Vietnamese-language research companion for his sister (upload .docx + Vietnamese prompt, get back .docx with inline comments citing sources).
 
-## 1. What this actually means
+## 1. Open-source model landscape for Vietnamese
 
-You are building a program — Python or TypeScript — that runs an agent loop:
+The use case demands three capabilities simultaneously: Vietnamese language quality (comprehension + generation in formal/banking register), instruction following (structured JSON output for comments.py), and tool use / function calling (web search integration). Here is the honest landscape as of early 2026.
 
+### Qwen 2.5 (72B, 32B, 14B, 7B) — STRONGEST CANDIDATE
+
+Alibaba's Qwen family is the standout for Asian languages. Qwen 2.5 72B was trained on multilingual data with heavy CJK and Southeast Asian representation. Vietnamese is not a first-class training language like Chinese, but Qwen consistently outperforms other open models on Vietnamese benchmarks. The 72B variant approaches GPT-4-class on Vietnamese comprehension. The 32B is the practical sweet spot — strong Vietnamese, fits on a single A100/L4 GPU with quantization.
+
+- **Vietnamese quality:** Best-in-class among open models. Formal register is competent. Banking/legal terminology handling is acceptable but noticeably below Claude.
+- **Instruction following:** Strong. Supports structured output and function calling natively via Qwen's chat template.
+- **Tool use:** Qwen 2.5 has native tool/function calling support. Works with standard agent frameworks.
+- **Quantization:** GGUF available. 32B Q4 runs in ~20GB VRAM. 72B Q4 needs ~40GB.
+
+### LLaMA 3.3 (70B) and LLaMA 3.1 (8B, 70B, 405B)
+
+Meta's LLaMA 3.x is the most broadly supported open model. Vietnamese capability exists but is weaker than Qwen — LLaMA's training data skews heavily English/European. The 70B handles Vietnamese reasonably for comprehension but generation quality (especially formal Vietnamese prose) is noticeably rougher than Qwen 72B.
+
+- **Vietnamese quality:** Adequate for comprehension. Generation is serviceable but reads as "translated" — lacks natural Vietnamese flow in formal registers.
+- **Instruction following:** Excellent. Best ecosystem support (every framework, every quantization format).
+- **Tool use:** Native function calling in LLaMA 3.1+.
+- **Practical note:** If you want maximum community support and tooling compatibility, LLaMA is the safe choice. If you want the best Vietnamese output, Qwen wins.
+
+### Mistral Large (123B) and Mistral Nemo (12B)
+
+Mistral models are strong on European languages and code. Vietnamese is a secondary language — performance is below both Qwen and LLaMA 3.x 70B on Vietnamese tasks. Mistral Nemo 12B is impressively efficient but Vietnamese quality is not competitive for this use case.
+
+- **Vietnamese quality:** Below Qwen and LLaMA for this domain. Not recommended as primary.
+- **Tool use:** Good function calling support in Mistral Large.
+
+### Gemma 2 (27B, 9B, 2B)
+
+Google's Gemma 2 is efficient and well-suited for on-device deployment. Vietnamese support exists (Google trains on multilingual data) but the 27B ceiling limits its analytical depth compared to 70B+ models. Gemma 2 27B is competitive with LLaMA 3.1 8B on Vietnamese but far below the 70B class.
+
+- **Vietnamese quality:** Acceptable for simple tasks. Insufficient for formal banking document analysis.
+- **Best use:** Could serve as a lightweight classifier or router, not the primary reasoning model.
+
+### Phi-4 (14B)
+
+Microsoft's Phi-4 is impressive for its size on English reasoning benchmarks. Vietnamese support is minimal — Phi models are heavily English-centric. Not viable for this use case.
+
+### Summary ranking for Vietnamese banking document analysis
+
+| Model | Vietnamese Quality | Tool Use | Practical Size | Verdict |
+|---|---|---|---|---|
+| Qwen 2.5 72B | Best open-source | Native | 40GB Q4 | Top pick if GPU budget allows |
+| Qwen 2.5 32B | Very good | Native | 20GB Q4 | Best cost/quality ratio |
+| LLaMA 3.3 70B | Good | Native | 38GB Q4 | Safe fallback, huge ecosystem |
+| Mistral Large 123B | Adequate | Good | 65GB Q4 | Overkill, Vietnamese not strong enough |
+| Gemma 2 27B | Weak for domain | Basic | 16GB Q4 | Not recommended as primary |
+| Phi-4 14B | Poor | Limited | 8GB Q4 | Not viable |
+
+**Recommendation: Qwen 2.5 32B** as the primary model. Best Vietnamese quality at a practical VRAM footprint. Fall back to Qwen 72B if quality is insufficient.
+
+## 2. Local vs hosted — infrastructure options
+
+### Local development: Ollama
+
+Ollama is the right tool for local dev and testing. Run `ollama pull qwen2.5:32b` and you have a local inference server with an OpenAI-compatible API. Duong's Windows machine needs a GPU with at least 24GB VRAM for 32B Q4 (RTX 3090/4090). If he only has 8-16GB VRAM, he is limited to 7B-14B models locally, which are not sufficient quality for this use case.
+
+**Local is for development only.** For production (sister using it anytime), cloud hosting is necessary unless Duong's machine is always-on with sufficient GPU.
+
+### GCP hosting options
+
+#### Option A — GCE with GPU (cheapest for always-on)
+
+A single GCE VM with an NVIDIA L4 GPU (24GB VRAM, enough for Qwen 2.5 32B Q4):
+- **Cost:** L4 GPU on GCE = ~$0.24/hr spot, ~$0.70/hr on-demand. **Always-on: ~$500/month on-demand, ~$175/month spot.** This is not free or near-free.
+- **Setup:** Ubuntu VM, install vLLM or text-generation-inference (TGI), load model, expose API behind a Cloud Run proxy or direct.
+- **Pros:** Full control, persistent model in memory, fast inference (no cold start).
+- **Cons:** Expensive for a single-user app. Spot instances can be preempted.
+
+#### Option B — Cloud Run with GPU (pay-per-request, sort of)
+
+Cloud Run now supports GPU instances (L4). You can set min-instances=0 for scale-to-zero.
+- **Cost:** Same GPU rate while running (~$0.70/hr), but only billed while processing requests. Cold start: 2-5 minutes to load a 32B model from disk. For a single user doing 5 jobs/day, maybe 1-2 hours of GPU time = ~$1-1.40/day = **~$30-42/month.**
+- **Pros:** Pay only for usage. No VM management.
+- **Cons:** Cold starts are brutal (minutes). The sister submits a job and waits 5+ minutes for the first response of the day. Subsequent requests within the keepalive window are fast.
+
+#### Option C — Vertex AI Model Garden
+
+Vertex AI hosts open models (LLaMA, Gemma) with managed endpoints. Qwen availability on Vertex varies. If available:
+- **Cost:** Similar to GCE GPU pricing but with managed infrastructure markup.
+- **Pros:** No infrastructure management.
+- **Cons:** Less model choice, still expensive, vendor lock-in to Google's serving stack.
+
+#### Option D — External GPU cloud (RunPod, Vast.ai, Lambda)
+
+- **RunPod serverless:** Pay per second of GPU time. L4 at ~$0.20/hr. Supports vLLM. Cold starts exist but are managed.
+- **Vast.ai:** Community GPU marketplace. Cheapest option (~$0.10-0.20/hr for L4-class). Less reliable.
+- **Lambda Labs:** On-demand A10G at ~$0.60/hr.
+- **Cost for single user:** Similar to Cloud Run — ~$20-40/month depending on usage patterns.
+
+#### Is there a free path?
+
+**No.** There is no free GPU inference tier on any major cloud provider that can run a 32B model. Google Cloud free tier has no GPU. The smallest viable GPU (T4, 16GB) can run Qwen 14B but quality drops significantly. Even T4 spot on GCE is ~$0.12/hr = ~$87/month always-on.
+
+The only "free" paths are:
+1. Run on Duong's own GPU hardware (RTX 3090/4090) — but re-introduces the always-on Windows dependency.
+2. Use a smaller model (7B-14B) that fits on free-tier CPU instances — but Vietnamese quality becomes unacceptable for banking document analysis.
+3. Use Hugging Face Inference API free tier — severely rate-limited (a few requests per hour), not viable for real usage.
+
+**Bottom line: open-source inference costs $20-50/month minimum for usable quality on this task.** This must be escalated to Duong as a paid line item. Compare with Gemini API free tier ($0) or Claude API ($9-112/month).
+
+## 3. Agent framework — build vs adopt
+
+### Build from scratch
+
+The "agent loop" for Bee is simple: receive job -> load document -> construct prompt -> call LLM with tools -> parse tool calls -> execute tools (web search) -> collect results -> call LLM again -> repeat until done -> format output as structured JSON -> pass to comments.py.
+
+This is 200-400 lines of Python. The loop is:
 ```
-while task_not_done:
-    response = anthropic.messages.create(
-        model="claude-sonnet-4-20250514",
-        system=system_prompt,
-        messages=conversation,
-        tools=tool_definitions,
-    )
-    for block in response.content:
-        if block.type == "tool_use":
-            result = execute_tool(block)
-            conversation.append(tool_result)
-        elif block.type == "text":
-            collect_output(block)
+while not done:
+    response = llm.chat(messages, tools=tool_definitions)
+    for tool_call in response.tool_calls:
+        result = execute_tool(tool_call)
+        messages.append(tool_result(result))
+    if response.stop_reason == "end_turn":
+        done = True
 ```
 
-That is the entire core. Everything else — tool definitions, memory injection, output formatting, error handling, multi-step research strategies — is your code. The LLM is a function call inside your loop.
+For a single-developer, single-use-case agent, **building from scratch is the right call.** The LLM client (Ollama's OpenAI-compatible API or vLLM) handles the inference. You just need the orchestration loop.
 
-**Two SDK options:**
+### Framework options if you want one
 
-### Anthropic Messages API (Python `anthropic` / TypeScript `@anthropic-ai/sdk`)
+- **LangChain:** Massive ecosystem, but heavy abstraction overhead. Adds complexity without proportional value for a focused single-agent use case. Not recommended.
+- **LlamaIndex:** Best for RAG-heavy applications. If document understanding becomes complex (multi-document cross-referencing), LlamaIndex's document ingestion pipeline is valuable. Overkill for v1.
+- **AutoGen / CrewAI:** Multi-agent orchestration frameworks. Complete overkill for a single-agent use case.
+- **Haystack (deepset):** Clean pipeline-based architecture. Good for search + LLM workflows. Worth considering if the web search integration becomes complex.
 
-Raw access to `messages.create()`. You define tools as JSON schemas, handle `tool_use` blocks, feed `tool_result` blocks back. Full control, minimal abstraction. This is what most production agent systems use.
+**Recommendation: build from scratch for v1.** The agent loop is trivial. Use the OpenAI-compatible client library (which works with Ollama, vLLM, and any OpenAI-compatible server). If complexity grows, adopt LlamaIndex for document processing or Haystack for search pipelines. Do not start with LangChain.
 
-### Anthropic Agent SDK (`claude-agent-sdk`, Python)
+## 4. Web search — free options
 
-Higher-level wrapper. Provides `Agent` class with tool registration, `@tool` decorators, built-in multi-turn loop, guardrails, handoffs between agents. Still calls the same API underneath. Adds structure but also opinions — tool execution model, agent-to-agent handoffs, tracing. Good for multi-agent orchestration; slightly over-built for a single-purpose document reviewer.
+Even with a free LLM, web search is a dependency. The agent needs to find Vietnamese-language sources to cite.
 
-**Recommendation: Start with the raw Messages API.** The agent loop is ~50 lines of code. The Agent SDK adds complexity that is not justified until you need multi-agent routing. You can always migrate later — the tool definitions are the same JSON schema either way.
+### Free or near-free options
 
-## 2. Cost reality check
+| Option | Cost | Quality | Vietnamese Coverage | Notes |
+|---|---|---|---|---|
+| **SearXNG (self-hosted)** | $0 (self-host) | Good | Good (aggregates Google, Bing, etc.) | Best free option. Meta-search engine you host yourself. Aggregates results from multiple engines without API keys. Deploy on same GCE VM as the model. |
+| **DuckDuckGo Instant Answer API** | $0 | Limited | Weak | Only instant answers, not full web search. Insufficient. |
+| **Google Custom Search JSON API** | Free: 100 queries/day | Excellent | Excellent | 100/day is tight for research jobs (each job might need 5-10 searches = 10-20 jobs/day max). Paid: $5/1000 queries. |
+| **Brave Search API** | Free: 2000 queries/month | Good | Adequate | ~66/day. Decent free tier. Vietnamese coverage is weaker than Google. |
+| **Serper** | Free: 2500 queries on signup | Good | Good (Google results) | One-time free credits, then paid. Not sustainable. |
+| **Tavily** | Free: 1000 queries/month | Excellent | Good | ~33/day. Best quality for AI agent use but limited free tier. |
+| **Direct scraping** | $0 | Varies | Full | Use `httpx` + `BeautifulSoup` to scrape Google search results directly. Fragile (Google blocks scrapers) but free. |
 
-Claude API is paid. Separate from the Max subscription. No overlap.
+**Recommendation: SearXNG self-hosted** as primary (unlimited, free, good Vietnamese coverage). Supplement with Brave Search API free tier for backup. If Duong enables GCE for the model server, SearXNG runs on the same VM at zero marginal cost.
 
-### Pricing (as of April 2026)
+## 5. Vietnamese quality reality check
 
-| Model | Input | Output | Context |
-|-------|-------|--------|---------|
-| Claude Sonnet 4 | $3/M tokens | $15/M tokens | 200k |
-| Claude Haiku 3.5 | $0.25/M tokens | $1.25/M tokens | 200k |
+This is the section that matters most. Honest assessment.
 
-### What a typical Bee job costs
+### What Claude/GPT do well on Vietnamese banking documents
 
-A "comment on this document" job involves:
-- System prompt + style rules + instructions: ~2k tokens input
-- Document content (typical 5-10 page banking/legal doc): ~3-8k tokens input
-- Web search results (3-5 searches, summaries injected): ~5-15k tokens input
-- Model reasoning + comments output: ~3-8k tokens output
-- Multi-turn tool calls (2-4 rounds): multiply above by ~1.5x for accumulated context
+- Natural, fluent formal Vietnamese that reads like it was written by a Vietnamese banking professional.
+- Correct use of specialized terminology (e.g., "lai suat co ban", "ty le an toan von", "no xau nhom 3-5") without awkward phrasing.
+- Nuanced analytical comments that demonstrate understanding of regulatory context (NHNN circulars, Basel III adaptation in Vietnam).
+- Consistent register — does not randomly switch between formal and colloquial Vietnamese.
+- Accurate citation integration — weaves source references naturally into Vietnamese prose.
 
-**Estimated per-job token usage:**
-- Input: 15-40k tokens
-- Output: 5-10k tokens
+### What open-source models actually do
 
-**Per-job cost (Sonnet):** $0.05 - $0.27
+- **Qwen 2.5 72B:** Competent Vietnamese. Formal register is mostly correct. Occasionally produces Chinese-influenced phrasing or uses less natural Vietnamese constructions. Banking terminology is handled but sometimes with explanatory circumlocutions rather than direct professional usage. **Gap vs Claude: noticeable but workable. Maybe 75-80% of Claude's Vietnamese quality.**
+- **Qwen 2.5 32B:** Similar to 72B but with more frequent register breaks. May occasionally generate a sentence that sounds translated. Banking terminology coverage is slightly thinner. **Gap vs Claude: significant. Maybe 65-70%.**
+- **LLaMA 3.3 70B:** Vietnamese generation reads like competent but non-native writing. The "translated from English" feel is persistent in formal documents. Banking terminology is often rendered in English or with awkward Vietnamese equivalents. **Gap vs Claude: large. Maybe 55-60%.**
+- **14B and smaller models:** Not viable for formal Vietnamese banking analysis. Output quality drops sharply.
 
-**Monthly at 5 jobs/day:** $7.50 - $40.50/month
+### The honest verdict
 
-**Monthly at 2 jobs/day:** $3.00 - $16.20/month
+Open-source models cannot match Claude or GPT-4 on Vietnamese banking document analysis today. The gap is real and meaningful:
 
-**Monthly at 10 jobs/day:** $15.00 - $81.00/month
+1. **For simple comment-on-doc** (highlight a clause, add a short analytical comment): Qwen 32B-72B is adequate. The comments are short enough that quality issues are manageable.
+2. **For research-mode reports** (multi-page Vietnamese analysis with citations): The quality gap becomes painful. The sister will notice.
+3. **For casual Vietnamese** (non-domain-specific): Open models are fine.
 
-### Can costs approach zero?
-
-**Haiku path:** If Haiku 3.5 quality is acceptable for Vietnamese document commenting, costs drop 12x. Same 5 jobs/day = $0.60 - $3.40/month. But Haiku is meaningfully weaker on nuanced Vietnamese analytical writing — the exact thing that killed Gemini.
-
-**Prompt caching:** Anthropic's prompt caching gives 90% discount on cached input tokens. The system prompt + style rules + tool definitions are identical across jobs — these cache. Document content does not (unique per job). Realistically saves 10-20% on total input cost.
-
-**Batches API:** For non-urgent jobs, the Batches API gives 50% discount. Jobs complete within 24 hours, not real-time. Could work for overnight batch processing but not interactive use.
-
-**Bottom line:** At single-user research-companion volume, expect $5-25/month with Sonnet. This is a paid line item. There is no path to zero cost with Claude API at Sonnet quality. The free tier (Haiku-only, 5 RPM, 20k tokens/min) is insufficient for document analysis.
-
-**This must be a conscious decision by Duong.** The tradeoff is: $10-25/month buys full Vietnamese quality + full loop control + cloud deployment + no Windows dependency. That is the price of owning the product.
-
-## 3. Architecture options
-
-### Option A — Firebase Cloud Functions + Anthropic API (recommended)
-
-```
-Browser → Firebase Hosting → Firestore queue
-                                    ↓
-                          Cloud Function (2nd gen, Python)
-                                    ↓
-                          Anthropic Messages API (agent loop)
-                                    ↓
-                          Tool calls: web search, citation check
-                                    ↓
-                          Structured JSON output
-                                    ↓
-                          comments.py → .docx → Firebase Storage
-```
-
-**Pros:**
-- Cloud-native. Works 24/7. Sister is never blocked by Duong's PC being off.
-- Cloud Functions 2nd gen: up to 60 min timeout, 32GB RAM. Plenty for an agent loop.
-- Free tier: 2M invocations/month, 400k GB-seconds. A 60-second Bee job at 1GB = 60 GB-seconds. At 5 jobs/day = 9,000 GB-seconds/month. Well within free tier.
-- Python runtime — `anthropic` SDK, `python-docx`, `comments.py` all run natively.
-- Firestore listener triggers the function — no polling, no NSSM, no runlock.
-
-**Cons:**
-- Requires Blaze plan (pay-as-you-go billing account). Even if actual spend is $0 on Cloud Functions, the billing account must exist. Anthropic API spend is separate.
-- Cold starts: first invocation after idle may take 5-10 seconds. Acceptable for document processing.
-- Must bundle `comments.py` and dependencies into the function deployment.
-
-### Option B — Windows-local Python process + Anthropic API
-
-```
-Browser → Firebase Hosting → Firestore queue
-                                    ↓
-                          Windows Python service (NSSM)
-                                    ↓
-                          Anthropic Messages API (agent loop)
-                                    ↓
-                          comments.py → .docx → Firebase Storage
-```
-
-**Pros:**
-- No Blaze plan needed. Firestore client library polls the queue.
-- Same topology as the old `claude -p` design — familiar.
-- Can run heavier local tools (large PDFs, local file access).
-
-**Cons:**
-- Windows dependency returns. Sister gets nothing when PC is off.
-- NSSM, runlock, service management overhead — the exact infrastructure the pivot was meant to eliminate.
-- API key must be stored on the Windows machine.
-
-### Option C — Hybrid (Cloud Function primary + Windows fallback)
-
-Cloud Function handles normal jobs. Windows worker handles overflow or specialized tasks. Routing logic in Firestore (job field `prefer_local: true`).
-
-**Not recommended for v1.** Adds complexity without clear benefit. If Cloud Functions work (and they will for this workload), there is no reason to maintain the Windows path.
-
-### Recommendation: Option A (Cloud Functions)
-
-The entire motivation for "build our own agent" is to escape the Windows single-point-of-failure and own the reasoning loop. Option A delivers both. The Blaze plan is the only friction — but Blaze with budget alerts set to $1 is effectively free with a safety net.
-
-## 4. What survives from old Bee plans
-
-### Survives intact
-- **Firebase frontend** (MyApps route or standalone `bee.web.app`) — UI is backend-agnostic.
-- **Firebase Auth** (Google sign-in, UID allowlist) — unchanged.
-- **Firestore job queue** (`jobs/{jobId}` schema: status, input doc URL, output doc URL, timestamps) — unchanged.
-- **Firebase Storage** (docx upload/download) — unchanged.
-- **Firestore security rules** — unchanged.
-- **`comments.py` OOXML helper** — survives and gets simpler. Now receives structured JSON directly from the agent loop instead of parsing unstructured LLM text.
-- **`style-rules.md` personalization concept** — survives. Injected into the system prompt.
-- **Vietnamese locale, mobile-responsive design, .docx workflow** — all unchanged.
-
-### Gets replaced
-- **`claude -p` invocation** — replaced by `anthropic.messages.create()` in a proper agent loop.
-- **Windows NSSM worker** — replaced by Firebase Cloud Function.
-- **Runlock mechanism** — not needed. Cloud Functions handle concurrency natively.
-- **MCP servers for custom tools** — tools are just Python functions with JSON schema definitions.
-
-### Gets simplified
-- **Output parsing.** Old: Claude outputs free text, fragile regex extracts JSON for comments.py. New: Agent loop requests structured JSON via tool_use or explicit JSON output instructions. The model returns `[{quote, comment, source_url}, ...]` directly.
-- **Web search.** Old: hope `claude -p`'s opaque WebSearch finds good Vietnamese sources. New: you define a `web_search` tool, call Tavily or Google Custom Search API, control the query, filter results, inject only relevant content.
-- **Error handling.** Old: 25-minute timeout, no partial progress. New: each tool call round-trip is independently retryable. Can checkpoint progress in Firestore.
-
-## 5. What is new
-
-### The agent loop
-The core innovation. A Python function (~50-100 lines) that:
-1. Receives a job from Firestore (document URL, task type, user preferences).
-2. Downloads the document, extracts text.
-3. Constructs a system prompt with style rules and task instructions.
-4. Enters a multi-turn loop with Claude: sends the document, receives tool calls (web search, citation check), executes them, feeds results back.
-5. Collects structured output (comment array as JSON).
-6. Passes to `comments.py` for OOXML injection.
-7. Uploads the annotated .docx to Firebase Storage.
-8. Updates job status in Firestore.
-
-### Tool definitions
-You define tools as JSON schemas that Claude can call:
-
-- **`web_search(query: str, num_results: int)`** — calls Tavily, Google Custom Search, or a custom Vietnamese news scraper. Returns titles + snippets + URLs.
-- **`read_webpage(url: str)`** — fetches and extracts main content from a URL. For deep-diving into search results.
-- **`submit_comments(comments: [{quote, comment, source_url}])`** — the "finish" tool. Structured output that feeds directly into `comments.py`.
-
-Claude decides when and how to use these tools. You control what they do.
-
-### Memory injection
-System prompt includes:
-- `style-rules.md` — the sister's preferences (formality level, citation style, focus areas).
-- Past job summaries — "in previous reviews, you noted X about this document type."
-- User corrections — if the sister edits a comment, that feedback feeds into future prompts.
-
-This is not RAG. It is simple prompt injection of a curated context window. Start here. RAG is premature optimization.
-
-### Web search integration
-Unlike `claude -p` where web search is opaque, you control:
-- Which search provider to use (Tavily: $0, 1000 free searches/month; Google Custom Search: $0, 100 queries/day free).
-- What queries to construct (can pre-process the document to extract key terms in Vietnamese).
-- What results to inject (filter by relevance, recency, source quality).
-- Whether to deep-dive (fetch full page content for promising results).
-
-### Structured output
-The agent loop can enforce output structure at the tool level. Define a `submit_comments` tool with a strict JSON schema. Claude must call this tool to "finish" — guaranteeing the output is valid JSON that `comments.py` can consume without parsing.
+The question is whether "adequate" is enough for the sister's actual workflow. If she is comparing against Claude-quality output she has already seen, she will perceive the downgrade.
 
 ## 6. Recommendation
 
-**Build with the raw Anthropic Messages API (Python), deployed as a Firebase Cloud Function.**
+### Is this direction viable?
 
-Rationale:
+**Partially.** The technical stack works — you can build a functional open-source agent that does the job. The problems are economic and qualitative:
 
-1. **Vietnamese quality is non-negotiable.** Duong ruled out Gemini for exactly this reason. Claude Sonnet is best-in-class for Vietnamese analytical writing. Owning the API call means owning the quality.
+1. **It is not free.** GPU inference costs $20-50/month minimum for usable quality (32B+ model). This negates the primary advantage over Gemini API (which is genuinely free) and is comparable to Claude API costs for this usage volume.
 
-2. **$10-25/month is the real cost of ownership.** There is no free path to Claude-quality Vietnamese at API volume. But this buys: 24/7 cloud availability, full loop control, structured output, custom tools, real personalization, and no Windows dependency. That is a genuine product, not a CLI wrapper.
+2. **Vietnamese quality is measurably worse.** Qwen 32B is the best open option and it is still noticeably below Claude on formal Vietnamese. The sister will perceive this.
 
-3. **The agent loop is the product.** The LLM is a commodity input. The value is in: how you orchestrate tool calls, how you structure output for `comments.py`, how you inject personalization, how you handle multi-step research. This code is yours, portable, and improvable independent of any LLM provider.
+3. **Complexity is highest.** You are now responsible for model serving infrastructure, GPU provisioning, model updates, quantization tuning, and search infrastructure — on top of the agent logic and frontend. Single-developer overhead is substantial.
 
-4. **Cloud Functions eliminate the biggest UX problem.** The sister's experience currently degrades to zero when Duong's PC is off. A Cloud Function works always. This alone justifies the architecture change.
+4. **The "own the stack" benefit is real but premature.** Owning the full stack matters when you are at scale, when you need custom fine-tuning, or when you have privacy constraints. For a single-user family tool, the operational burden outweighs the sovereignty benefit.
 
-5. **Start simple, own the complexity curve.** Raw Messages API + 3 tools + `comments.py` + Cloud Function. That is the v1. No Agent SDK, no multi-agent, no RAG, no fine-tuning. Add complexity only when the sister's usage reveals what is actually needed.
+### If Duong proceeds anyway — recommended stack
 
-### Cost management strategy
-- Set Anthropic API budget alerts at $25/month and $50/month.
-- Log per-job token usage to Firestore for monitoring.
-- Use prompt caching (system prompt + style rules cached across jobs).
-- Consider Haiku for simple tasks (quick summaries) and Sonnet for complex analysis (document review with citations). Router logic is trivial — a field on the job document.
-- Batches API for non-urgent batch processing at 50% discount.
+```
+Frontend:  Firebase Hosting (existing MyApps route)
+Auth:      Firebase Auth (Google sign-in, unchanged)
+Queue:     Firestore (job documents, unchanged)
+Storage:   Firebase Storage (docx upload/download, unchanged)
 
-## 7. Open questions for Duong
+Model:     Qwen 2.5 32B-Q4 via vLLM on GCE (L4 GPU, spot instance)
+           OR Qwen 2.5 32B on RunPod serverless
+Agent:     Custom Python loop (no framework), OpenAI-compatible client
+Search:    SearXNG self-hosted (same VM) + Brave Search API free tier
+Docx:      comments.py (unchanged, receives structured JSON)
 
-1. **Budget confirmation.** Are you comfortable with $10-25/month for Anthropic API at Sonnet quality? This is the minimum viable cost for the direction you want.
-2. **Blaze plan.** Firebase Cloud Functions require the Blaze (pay-as-you-go) plan. Cloud Function compute itself will be free-tier, but a billing account must be attached. Acceptable?
-3. **Python or TypeScript?** Python has better ecosystem for document processing (`python-docx`, existing `comments.py`). TypeScript aligns with the existing MyApps codebase. Recommendation: Python for the Cloud Function worker, keep TypeScript for the frontend.
-4. **Web search provider.** Tavily (1000 free searches/month, good quality) vs Google Custom Search (100/day free, good Vietnamese coverage) vs both?
-5. **Anthropic API key provisioning.** Need to create an Anthropic API account and load initial credits. Separate from the Max subscription.
+Worker:    Cloud Run service that receives Firestore trigger,
+           calls vLLM endpoint + SearXNG, returns structured comments
+```
 
-## 8. Build plan impact
+**Estimated monthly cost: $25-50** (GPU instance, spot pricing, usage-dependent).
 
-The existing B1-B10 PR sequence from the approved Bee MVP build plan needs revision:
+### Alternative recommendation
 
-- **B1 (scaffold)** — rewrite for Cloud Function structure instead of Windows worker.
-- **B2 (Firestore wiring)** — rewrite for Cloud Function trigger instead of long-poll.
-- **B3 (comments.py)** — survives. Input contract simplifies (structured JSON guaranteed).
-- **B4 (claude.ts)** — replaced entirely by Python agent loop module using `anthropic` SDK.
-- **B5 (worker orchestration)** — replaced by Cloud Function handler + Anthropic agent loop.
-- **B6 (NSSM install)** — eliminated. Cloud Functions handle deployment.
-- **B7 (security rules)** — survives unchanged.
-- **B8 (frontend upload)** — survives unchanged.
-- **B9 (frontend status)** — survives unchanged.
-- **B10 (smoke test)** — survives, execution environment changes.
+If the goal is independence from proprietary APIs specifically (rather than open-source ideology), consider this middle ground:
 
-A revised detailed build plan should be written once Duong confirms this direction and the open questions above.
+- **Gemini API free tier** for v1 (ships fast, zero cost, good Vietnamese, the sister gets a working tool immediately).
+- **Parallel experimentation** with Qwen 32B locally on Duong's GPU to evaluate Vietnamese quality firsthand.
+- **Migration to open-source** only if: (a) Duong confirms the quality is acceptable after hands-on testing, and (b) the cost of GPU hosting is acceptable as an ongoing expense.
+
+This gives the sister a working tool NOW while Duong validates the open-source path on his own timeline. The agent loop code is identical — only the LLM backend URL changes.
+
+## 7. What survives from Bee plans
+
+### Survives intact
+- **Firebase frontend** (bee.web.app or MyApps route) — UI is backend-agnostic.
+- **Firebase Auth** (Google sign-in, UID allowlist) — unchanged.
+- **Firestore job queue** (`jobs/{jobId}` schema) — unchanged. Worker location changes but queue contract doesn't.
+- **Firebase Storage** (docx upload/download) — unchanged.
+- **Firestore security rules** — unchanged.
+- **`comments.py` OOXML helper** — unchanged. Now receives structured JSON from whatever LLM backend.
+- **`style-rules.md` personalization concept** — unchanged, injected into whatever model's system prompt.
+- **Vietnamese locale, mobile-responsive, .docx workflow** — all unchanged.
+- **B7 (security rules), B8 (frontend upload), B9 (frontend status)** — survive unchanged.
+- **B3 (comments.py)** — survives, input contract simplifies.
+
+### Gets replaced
+- **Windows NSSM worker** — replaced by Cloud Run or GCE-hosted worker calling self-hosted LLM.
+- **`claude -p` invocation** — replaced by OpenAI-compatible API call to vLLM/Ollama endpoint.
+- **Runlock infrastructure** — not needed for cloud-hosted model endpoint.
+- **Claude CLI dependency entirely** — no proprietary LLM in the loop.
+
+### Gets added (new infrastructure)
+- **GPU VM or serverless GPU** — model serving infrastructure (vLLM + Qwen).
+- **SearXNG instance** — self-hosted search aggregator.
+- **Model management** — downloading, quantizing, updating open models.
+- **Monitoring** — GPU utilization, model health, inference latency tracking.
+
+## 8. Open questions for Duong
+
+1. **GPU budget.** Is $25-50/month acceptable for GPU inference? If not, the open-source path is not viable at acceptable quality — Gemini free tier is the only $0 option.
+2. **Quality test.** Has Duong tested Qwen 2.5 on Vietnamese banking documents? Before committing to this direction, run a side-by-side comparison: same prompt + same document through Claude, Gemini Flash, and Qwen 32B. Compare output quality. This takes 30 minutes and prevents a multi-week build on a foundation that does not meet the sister's expectations.
+3. **Local GPU.** What GPU does Duong's Windows machine have? If RTX 3090/4090 (24GB VRAM), local serving is viable for development and potentially production (if always-on is acceptable). If less than 24GB, local is dev-only with smaller models.
+4. **Timeline priority.** Does Duong want the sister to have a working tool soon (favors Gemini free tier now, open-source later) or is he willing to spend weeks on infrastructure before she gets anything (favors open-source first)?
+5. **Fine-tuning interest.** One genuine advantage of open-source: you can fine-tune Qwen on Vietnamese banking documents to close the quality gap. Is Duong interested in this path? It adds significant complexity but could eventually exceed proprietary model quality for this narrow domain.
