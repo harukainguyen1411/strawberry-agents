@@ -454,10 +454,15 @@ def scan_for_secrets(lines: list, out_path: pathlib.Path) -> None:
     for lineno, line in enumerate(lines, start=1):
         for name, pat in SECRET_PATTERNS:
             if pat.search(line):
-                die(
-                    3,
-                    f"CLEANER: secret pattern matched — refusing to write {out_path}. pattern={name}. line={lineno}",
-                )
+                if name == "age-pubkey":
+                    log_stderr(
+                        f"CLEANER: WARNING — age public key found in output (not a secret, continuing). pattern={name}. line={lineno}"
+                    )
+                else:
+                    die(
+                        3,
+                        f"CLEANER: secret pattern matched — refusing to write {out_path}. pattern={name}. line={lineno}",
+                    )
 
 
 # ---------------------------------------------------------------------------
