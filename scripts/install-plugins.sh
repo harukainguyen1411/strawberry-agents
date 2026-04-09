@@ -18,5 +18,6 @@ claude plugin install "figma@claude-plugins-official" 2>/dev/null || true
 claude plugin install "coderabbit@claude-plugins-official" 2>/dev/null || true
 claude plugin install "superpowers@claude-plugins-official" 2>/dev/null || true
 claude plugin install "goodmem@claude-plugins-official" 2>/dev/null || true
+claude plugin install "remember@claude-plugins-official" 2>/dev/null || true
 
 echo "install-plugins: done"
