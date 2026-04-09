@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: swain
 created: 2026-04-08
 title: MyApps on Google Infrastructure — Direction, Not Migration
