@@ -42,6 +42,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Use `scripts/plan-promote.sh` for plans leaving `proposed/` — never raw `git mv` (Rule 12).
 - Use `/end-session` to close any session — Rule 14, mandatory.
 - **Restart ≠ End.** "Restart" = restart_agents. "End/close/shut down" = shutdown_all_agents.
+- **Delegate reads to Yuumi** — Evelynn must not use Read/Grep/Glob/Bash for file exploration directly. Delegate all lookups to Yuumi (run_in_background: true) to avoid burning top-level context.
 
 ## Billing
 - **Claude Max plan** (single-account, shared usage quota across all logged-in devices, NOT seat-based). API keys disabled for agent ops 2026-04-05; API reserved for app development only.
