@@ -46,7 +46,7 @@ A **session-close condenser** that runs exactly once at end-of-session, reads th
 
 #### Who runs the condensation
 
-A dedicated Sonnet-tier subagent named **Ionia** (placeholder — see open question Q-A1). Reasoning:
+A dedicated Sonnet-tier subagent named **Soraka** (resolved). Reasoning:
 
 - **Not Evelynn.** She is biased toward glossing her own violations and her context is already maxed at close.
 - **Not a skill / hook.** Skills execute deterministic shell logic; condensation is judgment work (distinguishing load-bearing from incidental, preserving verbatim quotes at correction points, detecting "Duong restated this three times"). That is model work.
@@ -110,9 +110,9 @@ Evelynn is the worst person to write her own handoff. A bounded, structured, jud
 
 ### Open questions for Duong
 
-- **Q-A1.** Name: `Ionia` placeholder (Syndra's home region, "place of balance, compressed wisdom"). Duong may want a different champion. Candidates: `Janna` (gentle keeper, wind that carries memory), `Soraka` (cosmic scribe), `Nami` (tidewise). Duong picks.
-- **Q-A2.** Should the condenser also update `agents/memory/agent-network.md` or other global memory on detected cross-agent events? Default: no, it writes only `last-session-condensed.md`. Updating global memory is a separate follow-up plan if desired.
-- **Q-A3.** Does this subagent apply only to Evelynn, or also to Syndra/Swain/Pyke/Bard? Default: Evelynn only. Other Opus agents run short subagent sessions where the hand-written memory update is sufficient. Can extend later per-agent.
+- **Q-A1.** ~~Name: `Soraka` placeholder.~~ **Resolved: Soraka.**
+- **Q-A2.** Should the condenser also update `agents/memory/agent-network.md` or other global memory on detected cross-agent events? **Resolved: No. Evelynn-only; it writes only `last-session-condensed.md`.**
+- **Q-A3.** Does this subagent apply only to Evelynn, or also to Syndra/Swain/Pyke/Bard? **Resolved: Evelynn only. Ship Zilean and Soraka together.**
 
 ---
 
@@ -297,9 +297,9 @@ He is her reference desk. She asks; he cites. He does not resent being used as a
 
 ### Open questions for Duong
 
-- **Q-B1.** Haiku or Sonnet to start? Plan proposes Haiku with Sonnet as fallback. Acceptable to start Sonnet and downgrade later if cost matters; safer but wastes tier.
-- **Q-B2.** Should Zilean's scope include `learnings/**` at the repo root (not per-agent) and any `journals/**` that live outside `agents/*/journal/`? Propose yes — add any directory Duong names. Plan codifies the final list on approval.
-- **Q-B3.** Should Zilean's `.claude/agents/zilean.md` be committed as part of this plan's shipping commit, or held back and introduced after Component A ships? Propose ship together — the two components reinforce each other and delay adds no safety.
+- **Q-B1.** Haiku or Sonnet to start? **Resolved: Start with Haiku.**
+- **Q-B2.** Should Zilean's scope include `learnings/**` at the repo root (not per-agent) and any `journals/**` that live outside `agents/*/journal/`? **Resolved: Yes — include repo-root `learnings/` and all journals.**
+- **Q-B3.** Should Zilean's `.claude/agents/zilean.md` be committed as part of this plan's shipping commit, or held back and introduced after Component A ships? **Resolved: Ship together with Component A (Soraka).**
 
 ---
 
@@ -317,7 +317,7 @@ A structured audit pass, then a disposition for each identified gap. Deliverable
 
 #### Audit method
 
-The audit runs as a one-shot invocation of the condenser subagent (Component A, `Ionia`) **or** Zilean (Component B), against this session's transcript, with a fixed prompt: "list every distinct action Evelynn took in this session, classify it by type (Read / Edit / Write / Bash / git / Task-dispatch / Message / Plan-write), and cite the transcript line where she took it." This replaces Syndra-from-memory guessing at what Evelynn did.
+The audit runs as a one-shot invocation of the condenser subagent (Component A, `Soraka`) **or** Zilean (Component B), against this session's transcript, with a fixed prompt: "list every distinct action Evelynn took in this session, classify it by type (Read / Edit / Write / Bash / git / Task-dispatch / Message / Plan-write), and cite the transcript line where she took it." This replaces Syndra-from-memory guessing at what Evelynn did.
 
 From that list, the audit then classifies each action against the current minion pool:
 
@@ -464,10 +464,12 @@ Either way: no separate Claude process, no babysitting, one existing minion (Pop
 
 ### Open questions for Duong
 
-- **Q-D1.** 10-second poll interval acceptable, or should it be tighter (5s) / looser (30s)? Trade-off: responsiveness vs. noise in Event Viewer / Task Scheduler history. Syndra proposes 10s.
-- **Q-D2.** Should the flag file live at the repo root (`.restart-evelynn.flag`) or in a dedicated `.strawberry/` control directory? Repo root is simpler; dedicated directory is cleaner long-term if more control files appear. Syndra proposes repo root with the option to migrate later.
-- **Q-D3.** Should `watch-restart-flag.ps1` also handle Yuumi-process restart (for the remaining separate-process Yuumi use cases, if any persist)? Syndra proposes: no — Yuumi is a subagent now; there is no Yuumi process to restart. If a separate Yuumi process ever returns for a specific workflow, add a second flag file then.
-- **Q-D4.** Does Duong want this wired into a `/restart` skill (post skills-integration) as a shortcut for Evelynn? Syndra proposes: yes, but out of scope for this plan — file a follow-up under the skills-integration surface.
+- **Q-D1.** 10-second poll interval acceptable? **Resolved: 10-second poll interval confirmed.**
+- **Q-D2.** Should the flag file live at the repo root or in a dedicated `.strawberry/` control directory? **Resolved: Repo root confirmed. Single flag file: `.restart-evelynn.flag`.**
+- **Q-D3.** Should `watch-restart-flag.ps1` also handle Yuumi-process restart? **Resolved: No. Yuumi is a subagent now; no Yuumi process to restart.**
+- **Q-D4.** Does Duong want a `/restart` skill? **Resolved: Yes, add as follow-up — out of scope here.**
+
+**Mechanism note (resolved):** Component D is graceful-only restart. Evelynn always runs `/end-session` before relaunching. Use case is controlled reload (new plugins, config changes), not emergency recovery. No hard-reset flag needed.
 
 ---
 
@@ -476,9 +478,8 @@ Either way: no separate Claude process, no babysitting, one existing minion (Pop
 The four components have weak dependencies; they can ship in any order but the best order is:
 
 1. **Component D first** (restart path). Highest operational urgency — Duong is remote today and the restart hole is live. Ship this in isolation; it has no dependencies and no risk to the other three.
-2. **Component B second** (Zilean). Low-risk addition — pure read agent, harmless. Validates the "minimal subagent" pattern one more time before Component A's more invasive change.
-3. **Component A third** (condenser). Touches Evelynn's startup sequence, which is the riskiest surface in the system. Ship after Zilean is live so Zilean can be used to verify the condenser's output against raw transcripts during the first few sessions ("Zilean, does the condensed handoff actually match the transcript?").
-4. **Component C fourth** (audit). Document only, zero implementation risk. Best done after A and B ship so the audit can cite their real behavior, not projected.
+2. **Components A + B together** (Soraka + Zilean). Resolved to ship together — they reinforce each other. Zilean validates Soraka's output during the first few sessions.
+3. **Component C — SKIPPED.** Syndra's analysis (section C above) is sufficient as-is. No audit document will be produced.
 
 Each component has its own rollback; the ordering is about de-risking, not dependency.
 
@@ -498,9 +499,8 @@ Each component has its own rollback; the ordering is about de-risking, not depen
 
 | Component | Deliverable | Surface |
 |---|---|---|
-| A — Condenser | New Sonnet subagent `.claude/agents/<name>.md` + `agents/<name>/profile.md` + `agents/<name>/memory/<name>.md`; `/close-session` skill updated to invoke it; `agents/evelynn/memory/last-session-condensed.md` + archive dir; Evelynn's startup sequence updated (profile or CLAUDE.md) | Subagent + skill + Evelynn startup |
+| A — Soraka (Condenser) | New Sonnet subagent `.claude/agents/soraka.md` + `agents/soraka/profile.md` + `agents/soraka/memory/soraka.md`; `/close-session` skill updated to invoke it; `agents/evelynn/memory/last-session-condensed.md` + archive dir; Evelynn's startup sequence updated (profile or CLAUDE.md) | Subagent + skill + Evelynn startup |
 | B — Zilean | `.claude/agents/zilean.md` (Haiku) + `agents/zilean/profile.md` + `agents/zilean/memory/zilean.md` | Subagent only |
-| C — Purity audit | Markdown document under `assessments/2026-04-<xx>-evelynn-purity-audit.md` (executor creates) + one tripwire recommendation handed off to rules-restructure plan | Document + cross-plan handoff |
 | D — Remote restart | `scripts/watch-restart-flag.ps1` + `scripts/install-restart-watch.ps1` + `.gitignore` entries + `architecture/remote-restart.md`; Scheduled Task installed on Windows | Scripts + scheduled task + docs |
 
 ---
