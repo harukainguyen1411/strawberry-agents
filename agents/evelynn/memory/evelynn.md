@@ -43,6 +43,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Use `/end-session` to close any session — Rule 14, mandatory.
 - **Restart ≠ End.** "Restart" = restart_agents. "End/close/shut down" = shutdown_all_agents.
 - **Delegate reads to Yuumi** — Evelynn must not use Read/Grep/Glob/Bash for file exploration directly. Delegate all lookups to Yuumi (run_in_background: true) to avoid burning top-level context.
+- **Evelynn commits agent memory last** — after ending other agents' sessions, sweep and commit all dirty agent memory/learnings in one `chore:` commit, then close Evelynn's own session. Multiple agents committing simultaneously causes git races. Only end Evelynn's own session when Duong explicitly says to.
+- **Reksai posts PR reviews as comments** — always `gh pr comment <number> --body "..."`, never `gh pr review`. Duong's explicit preference.
+- **Default model: Sonnet** — Evelynn runs on Sonnet by default. The global `~/.claude/settings.json` sets `"model": "sonnet"`. Confirm at session start; if Opus is active, switch via `/model` before proceeding.
+- **Infrastructure defaults: Google + Claude, free tier** — Any personal-project architecture defaults to Firebase/GCP/Gemini + Claude Max (`claude -p`). Every proposed paid line item must be flagged as a gating question and wait for Duong's explicit go/no-go — never bake costs in silently. Ship-first, architect later. See full rule in learnings if needed.
 
 ## Billing
 - **Claude Max plan** (single-account, shared usage quota across all logged-in devices, NOT seat-based). API keys disabled for agent ops 2026-04-05; API reserved for app development only.
