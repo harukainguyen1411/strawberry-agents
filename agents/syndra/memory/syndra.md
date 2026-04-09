@@ -39,6 +39,7 @@
 - Current infra: Firebase (Auth + Firestore + Hosting) on free tier. No GCP services.
 
 ## Sessions
+- 2026-04-09 S23 (subagent): Bee direction assessment — evaluated 5 options (CLI baseline, Claude API, Gemini API, hybrid, Agent SDK) for sister research companion. Recommended Gemini API primary (free, cloud-native, Google Search grounding) with hybrid Claude CLI fallback as evolution. Plan `plans/proposed/2026-04-09-bee-own-agent-direction.md`. Key insight: the value is owning the reasoning loop, not which LLM — that investment is backend-agnostic.
 - 2026-04-03 S1: Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
 - 2026-04-03 S2: Dual-account consulting — API billing, setup guide, alternatives eval
 - 2026-04-03 S3: Vanilla vs framework, Discord community hub recommendation
