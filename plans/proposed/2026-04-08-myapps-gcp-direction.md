@@ -158,6 +158,16 @@ Only the ones that genuinely need his judgment. Evelynn absorbs the trivial stuf
 
 ---
 
+## Resolved Decisions
+
+1. **GitHub Secrets vs Secret Manager** — RESOLVED: Keep GitHub Secrets. Secret Manager is not needed. The current approach is acceptable for a solo-dev workflow and adding Secret Manager introduces IAM surface complexity with no meaningful benefit at this scale.
+
+2. **Agent execution on GCP** — RESOLVED: NOT applicable. Running `claude -p` (or any Claude subscription binary) on a GCE VM violates Anthropic's Terms of Service — subscriptions are personal, not server-side. Agents stay on local machines only. Any references to GCP-hosted agent execution in this plan or dependent plans are removed.
+
+3. **GCP governance depth** — RESOLVED: Deferred indefinitely. Placing the GCP project under a proper Google Workspace Organization or Cloud Org is overkill for a personal solo project. The current personal-account-ownership model stays. Revisit only if myapps gains a second user, a team, or real compliance requirements.
+
+---
+
 ## Failure Modes of This Plan Itself
 
 - **We confirm (A) and do nothing.** That's fine. That's the right outcome if his mental model just needed alignment. Not a failure.
