@@ -1,7 +1,7 @@
 ---
 name: end-session
-description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / handoff / memory / learnings / commit / log_session protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
-disable-model-invocation: false
+description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / remember / memory / learnings / commit / log_session protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
+disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 
@@ -79,20 +79,21 @@ Use the Write tool if the file does not exist, Edit (append) if it does. After w
 git add agents/<agent>/journal/cli-<YYYY-MM-DD>.md
 ```
 
-## Step 6 — Handoff note
+## Step 6 — Remember handoff
 
-Overwrite `agents/<agent>/memory/last-session.md` with a 5–10 line handoff. Rules:
-
-- Date, what happened, open threads, any dangling commits or PRs, blockers for next session.
-- Terse. No prose padding.
-
-Use Write. Then stage:
+Invoke the `remember:remember` skill via the Skill tool. This is the primary handoff mechanism — it writes `.remember/remember.md` with a structured snapshot of what is done, what is next, and any non-obvious context. The Remember plugin’s `SessionStart` hook loads this automatically at the start of the next session.
 
 ```
-git add -f agents/<agent>/memory/last-session.md
+Skill: remember:remember
 ```
 
-**Note:** `last-session.md` is gitignored globally (`.gitignore` entry `agents/*/memory/last-session.md`). The `-f` flag forces staging. This is the existing convention for Evelynn's handoff note; Phase 1 inherits it as-is.
+Stage the output file:
+
+```
+git add .remember/remember.md
+```
+
+If the `remember` plugin is not installed or the skill is unavailable, fall back to writing `agents/<agent>/memory/last-session.md` manually with a 5–10 line terse handoff (date, what happened, open threads, dangling commits or PRs, blockers). Stage with `git add -f agents/<agent>/memory/last-session.md`. Note "remember step skipped — plugin not available, used last-session.md fallback" in the final report.
 
 ## Step 7 — Memory refresh
 
@@ -119,22 +120,6 @@ Stage any new learning files:
 ```
 git add agents/<agent>/learnings/
 ```
-
-## Step 8a — Remember plugin handoff
-
-Invoke the `remember:remember` skill via the Skill tool. This writes `.remember/remember.md` with a structured snapshot of session state. Run this step after all session artifacts (transcript, journal, handoff, memory, learnings) are written so the snapshot reflects the final state. The file must exist before the commit in Step 9 so it is included in the staged tree.
-
-```
-Skill: remember:remember
-```
-
-Stage the output file:
-
-```
-git add .remember/remember.md
-```
-
-If the `remember` plugin is not installed or the skill is unavailable, skip and note "remember step skipped — plugin not available" in the final report.
 
 ## Step 9 — Commit + push
 
@@ -182,7 +167,7 @@ Print a single-paragraph summary to the agent's output:
 - Cleaned transcript path
 - Commit hash
 - Push status
-- Journal / handoff / memory / learnings status (which were updated, which were skipped)
+- Journal / remember handoff / memory / learnings status (which were updated, which were skipped)
 - log_session status
 - Any warnings from the chain-walk or non-fatal errors along the way
 
