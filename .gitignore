@@ -51,5 +51,9 @@ agents/*/memory/last-session.md
 # Telegram bridge state
 .telegram-offset
 
-strawberry
-strawberry.pubapps/discord-relay/var/
+
+# Remember plugin runtime state
+.remember/
+
+# discord-relay runtime state
+apps/discord-relay/var/
