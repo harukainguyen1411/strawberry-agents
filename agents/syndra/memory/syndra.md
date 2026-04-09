@@ -39,7 +39,7 @@
 - Current infra: Firebase (Auth + Firestore + Hosting) on free tier. No GCP services.
 
 ## Sessions
-- 2026-04-09 S23-S25 (subagent): Bee direction assessment — evolved through 3 revisions. S23: Gemini API. S24: Claude API. S25: Duong wants fully open-source, no proprietary LLM. Revised plan covers Qwen 2.5 as top Vietnamese open model, GCP GPU costs ($25-50/mo min), SearXNG for free search, honest quality gap (Qwen 32B ~65-70% of Claude on formal Vietnamese). Recommended Gemini free tier for v1 with parallel Qwen experimentation as pragmatic middle ground. Plan `plans/proposed/2026-04-09-bee-own-agent-direction.md`.
+- 2026-04-09 S23-S26 (subagent): Bee direction — evolved through 4 revisions. S23: Gemini API. S24: Claude API. S25: open-source. S26: final pivot — Duong wants to build his own agent framework as a learning project. `claude -p` (Max 20x) is the execution layer, Duong writes the orchestrator (agent loop, tool defs, memory injection, structured output parsing) in Python. Plan rewritten from scratch. Plan `plans/proposed/2026-04-09-bee-own-agent-direction.md`.
 - 2026-04-03 S1: Network analysis, optimization plan, ops-separation design, PR reviews (#3, #5)
 - 2026-04-03 S2: Dual-account consulting — API billing, setup guide, alternatives eval
 - 2026-04-03 S3: Vanilla vs framework, Discord community hub recommendation
