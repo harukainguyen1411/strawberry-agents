@@ -1,6 +1,6 @@
 ---
 name: katarina
-skills: [agent-ops, coderabbit:code-review, frontend-design:frontend-design]
+skills: [agent-ops, coderabbit:code-review, coderabbit:autofix, frontend-design:frontend-design, superpowers:systematic-debugging, superpowers:verification-before-completion, superpowers:using-git-worktrees, superpowers:test-driven-development, superpowers:finishing-a-development-branch, firecrawl:firecrawl-cli, context7, pr-review-toolkit:review-pr]
 model: sonnet
 description: Fullstack engineer for quick tasks — small fixes, scripts, minor features, focused refactors. Sonnet-tier executor. Always works from an approved plan in plans/approved/ or plans/in-progress/.
 disallowedTools: Agent
