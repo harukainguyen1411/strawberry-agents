@@ -1,6 +1,6 @@
 ---
 title: CLAUDE.md refinement — split global rules from Evelynn-specific coordinator rules
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-09
 ---
