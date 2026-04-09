@@ -56,7 +56,7 @@ Evelynn is the hub, but not a bottleneck. Duong talks to Evelynn. Agents can col
 7. **Delegated task → report completion to Evelynn and update the delegation JSON file directly.** (Delegations are tracked via `agents/delegations/*.json` files. Phase 1 has no skill wrapper; Evelynn manages delegation state directly. Phase 2 will introduce `/agent-ops delegate` if needed.)
 8. **Context health:** Phase 1: context health reporting is deferred. Report context health conversationally in your turn reply to Evelynn.
 9. **Plan approval gate:** After writing a plan to `plans/proposed/`, your task is done. Report to Evelynn. Do NOT proceed to implementation. Duong approves plans by moving them to `plans/approved/`. Evelynn then delegates execution (possibly to a different agent).
-10. **Promoting plans out of `proposed/`:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Valid target statuses: `approved | in-progress | implemented | archived`. `plan-publish.sh` will refuse anything outside `plans/proposed/`.
+10. **Promoting plans out of `proposed/`:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Valid target statuses: `approved | in-progress | implemented | archived`. `plan-publish.sh` will refuse anything outside `plans/proposed/`. See `#rule-plan-promote-sh` in root `CLAUDE.md`.
 
 ## Inbox
 
@@ -68,7 +68,7 @@ On startup: check `agents/<self>/inbox/` for pending messages.
 
 **When to close:** Only when Duong or Evelynn explicitly says to end your session (e.g., "end session", "shut down", "close"). Completing a task is NOT a trigger to close. After task completion, stay open and wait.
 
-**Mechanical wrapper (mandatory, CLAUDE.md rule 14):**
+**Mechanical wrapper (mandatory, `#rule-end-session-skill` in root `CLAUDE.md`):**
 
 - Top-level Claude Code sessions: invoke `/end-session [agent-name]`.
 - Sonnet subagent sessions: invoke `/end-subagent-session <agent-name>`.
@@ -85,10 +85,19 @@ The skill walks the full close protocol deterministically (cleaned-transcript ar
 6. **Commit + push** — single commit with `chore:` prefix, single push.
 7. **log_session** — MCP call on Mac, skipped on Windows.
 
-**If the skill refuses or aborts** (dirty working tree, secret denylist hit, commit rejected, etc.): stop, do not bypass the skill, escalate to Evelynn via inbox or direct report. Closing a session by any mechanism other than the skill is a rule 14 violation.
+**If the skill refuses or aborts** (dirty working tree, secret denylist hit, commit rejected, etc.): stop, do not bypass the skill, escalate to Evelynn via inbox or direct report. Closing a session by any mechanism other than the skill is a `#rule-end-session-skill` violation.
 
 ## Restricted Tools (evelynn MCP server)
 
 Only Evelynn can call:
 - `end_all_sessions(sender, exclude?)`
 - `commit_agent_state_to_main(sender)`
+
+## File Structure Reference
+
+Key architecture docs:
+- `architecture/key-scripts.md` — all operational scripts with usage
+- `architecture/plugins.md` — installed plugins and sub-agent access rules
+- `architecture/pr-rules.md` — PR requirements, author line, documentation checklist
+- `architecture/platform-parity.md` — macOS vs Windows support matrix
+- `architecture/git-workflow.md` — branch strategy, commit rules, worktree usage
