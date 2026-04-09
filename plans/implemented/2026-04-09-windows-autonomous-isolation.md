@@ -1,6 +1,6 @@
 ---
 title: Windows Autonomous Isolation — Mac/Windows Split Enforcement
-status: proposed
+status: implemented
 owner: pyke
 created: 2026-04-09
 ---
