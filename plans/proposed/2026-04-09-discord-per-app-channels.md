@@ -17,11 +17,21 @@ Restructure the Discord triage pipeline from a single `#suggestions` channel to 
 - Bot config: single `TRIAGE_DISCORD_CHANNEL_ID` env var.
 - Code at `apps/discord-relay/`, Node/TypeScript, discord.js Gateway, Gemini 2.0 Flash triage, Octokit issue filing.
 
+## Day-One App Set
+
+Day-one channels cover all public-use apps in `apps/myapps/`. Personal-use apps (coder-worker, contributor-bot, discord-relay) are internal tools and do not get public feedback channels.
+
+Currently `apps/myapps/` is the only public-use app, so the day-one set is:
+
+- **myapps** — the MyApps web application (`apps/myapps/`)
+
+As new public-use apps are added under `apps/myapps/` (or as sibling directories following the same pattern), they get onboarded with a channel pair and a `channel-map.json` entry.
+
 ## Target State
 
 - Discord category "App Feedback" containing per-app channel pairs plus one special channel.
 - Bot listens to all channels in the category, derives app name and issue type from channel ID.
-- GitHub issues carry labels like `app:myapps`, `app:blueberry`, `type:bug`, `type:feature`, `type:new-app`.
+- GitHub issues carry labels like `app:myapps`, `type:bug`, `type:feature`, `type:new-app`.
 
 ---
 
@@ -37,10 +47,8 @@ Create a Discord category named **App Feedback**. All triage channels live under
 |---------|---------|---------------|
 | `#myapps-requests` | Feature requests for MyApps | `app:myapps` + `type:feature` |
 | `#myapps-issues` | Bug reports for MyApps | `app:myapps` + `type:bug` |
-| `#blueberry-requests` | Feature requests for Blueberry | `app:blueberry` + `type:feature` |
-| `#blueberry-issues` | Bug reports for Blueberry | `app:blueberry` + `type:bug` |
 
-Add more pairs as new apps are onboarded.
+Add more pairs as new public-use apps are onboarded.
 
 **Special channel:**
 
@@ -66,9 +74,7 @@ Replace the single `TRIAGE_DISCORD_CHANNEL_ID` env var with a JSON config file a
   "channels": {
     "CHANNEL_ID_1": { "app": "myapps", "type": "feature" },
     "CHANNEL_ID_2": { "app": "myapps", "type": "bug" },
-    "CHANNEL_ID_3": { "app": "blueberry", "type": "feature" },
-    "CHANNEL_ID_4": { "app": "blueberry", "type": "bug" },
-    "CHANNEL_ID_5": { "app": null, "type": "new-app" }
+    "CHANNEL_ID_3": { "app": null, "type": "new-app" }
   },
   "categoryId": "CATEGORY_ID"
 }
@@ -111,7 +117,6 @@ In `src/github.ts`:
 
 **App labels** (green family):
 - `app:myapps`
-- `app:blueberry`
 - (add per app as onboarded)
 
 **Type labels** (blue family):
@@ -174,6 +179,4 @@ No changes to the Windows NSSM service configuration beyond updating env vars. T
 
 ## Open Questions
 
-1. **Auto-discovery vs explicit map:** Should the bot discover channels by scanning the category at startup (simpler config, but less control), or require explicit channel IDs in the JSON map (more control, manual update per new app)? Recommendation: explicit map -- it is safer and the add-a-channel cadence is low.
-2. **Per-app context caching:** Currently one monolithic context cache. Splitting to per-app means multiple Gemini context caches in memory. At current scale (2-3 apps) this is fine. Worth noting for future.
-3. **Blueberry triage context:** Does `apps/blueberry/` have or need a `triage-context.md`? If not, the bot falls back to README.md in the app dir.
+1. **Per-app context caching:** Currently one monolithic context cache. Splitting to per-app means multiple Gemini context caches in memory. At current scale (1 app) this is a non-issue. Worth noting for future scaling.
