@@ -9,10 +9,10 @@
 - s10: PR #32 (heartbeat fix) 1 blocker awaiting fix. PR #34 (restart safeguards) approved. PR #54 myapps (kanban board) 1 blocker awaiting fix.
 - s11: PR #61 (CLAUDE.md 4-tier restructure) — 2 blockers found, changes requested.
 - s12: PR #61 re-review — 2 blockers fixed (FIXED), 3 findings still open (MEDIUM+2 LOW), comment posted.
-- Total: 21 PRs reviewed across 12 sessions (s1–s12, 2026-04-03 to 2026-04-09).
+- s13: PR #62 re-review — all 6 findings fixed (1 blocker + 3 medium + 2 low). Approved (comment only, own-repo restriction on gh pr review --approve).
+- Total: 22 PRs reviewed across 13 sessions (s1–s13, 2026-04-03 to 2026-04-09).
 
 ## Review History (last 10)
-- PR #25: No-op window-existence detection, inconsistent exit-wait, silent exception. All fixed. Author: Bard.
 - PR #29: GH_TOKEN shell scoping (VAR=$(cmd) cmd2 bug). Clean. Author: Katarina.
 - PR #30: Per-agent ANTHROPIC_API_KEY injection. Blocker: no json.JSONDecodeError handling. Fixed. Author: Katarina.
 - PR #31: Team plan migration — removed API key injection from launch_agent entirely. Clean. Author: Katarina.
@@ -21,6 +21,8 @@
 - PR #54 (myapps): Kanban board view. Blocker: onSnapshot listener killed on view switch because BoardView conditionally skips load(). Author: Ornn.
 - PR #61: CLAUDE.md 4-tier restructure. Blockers: (1) #rule-never-end-after-task anchor in SONNET_REF dead; (2) #rule-plans-direct-to-main duplicate anchor. Author: Katarina.
 - PR #61 re-review: Both blockers fixed. Still open: Tier 2 pointer lacks section heading (MEDIUM); evelynn missing from OPUS_AGENTS without comment (LOW); startup item 7 self-referential (LOW, partially addressed). Comment posted 2026-04-09.
+- PR #62: Discord per-app channel triage. 1 blocker (loadChannelMap silenced errors), 3 medium, 2 low. Changes requested.
+- PR #62 re-review: All 6 findings fixed. Approved via comment (own-repo gh review restriction). 2026-04-09.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. Flag proactively in any PR involving Claude CLI invocation.
@@ -34,3 +36,4 @@
 
 ## Known Blockers
 - Cannot request-changes on own repo PRs via gh CLI — post as comment instead.
+- Cannot approve own repo PRs via `gh pr review --approve` — post approval as comment instead.
