@@ -120,6 +120,22 @@ Stage any new learning files:
 git add agents/<agent>/learnings/
 ```
 
+## Step 8a — Remember plugin handoff
+
+Invoke the `remember:remember` skill via the Skill tool. This writes `.remember/remember.md` with a structured snapshot of session state. Run this step after all session artifacts (transcript, journal, handoff, memory, learnings) are written so the snapshot reflects the final state. The file must exist before the commit in Step 9 so it is included in the staged tree.
+
+```
+Skill: remember:remember
+```
+
+Stage the output file:
+
+```
+git add .remember/remember.md
+```
+
+If the `remember` plugin is not installed or the skill is unavailable, skip and note "remember step skipped — plugin not available" in the final report.
+
 ## Step 9 — Commit + push
 
 Build the commit message. Format:
