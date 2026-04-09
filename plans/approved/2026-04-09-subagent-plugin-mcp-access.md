@@ -1,6 +1,6 @@
 ---
 name: subagent-plugin-mcp-access
-status: proposed
+status: approved
 owner: evelynn
 date: 2026-04-09
 ---
