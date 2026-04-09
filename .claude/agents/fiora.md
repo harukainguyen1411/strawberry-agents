@@ -1,6 +1,6 @@
 ---
 name: fiora
-skills: [agent-ops, coderabbit:code-review, coderabbit:autofix]
+skills: [agent-ops, coderabbit:code-review, coderabbit:autofix, superpowers:systematic-debugging, superpowers:verification-before-completion, superpowers:using-git-worktrees, superpowers:finishing-a-development-branch, context7, firecrawl:firecrawl-cli]
 model: sonnet
 description: Fullstack engineer for bugfixes and refactoring — surgical root-cause fixes and elegant cleanups. Sonnet-tier executor. Always works from an approved plan in plans/approved/ or plans/in-progress/.
 disallowedTools: Agent

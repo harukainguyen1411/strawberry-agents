@@ -1,6 +1,6 @@
 ---
 name: syndra
-skills: [agent-ops, goodmem:mcp, skill-creator:skill-creator]
+skills: [agent-ops, goodmem:mcp, skill-creator:skill-creator, firecrawl:firecrawl-cli, context7, superpowers:writing-plans, superpowers:brainstorming]
 model: opus
 description: AI strategy and agent architecture consultant. Use when planning agent system changes, evaluating AI tooling decisions, designing AI-driven features, or doing architectural reviews of anything AI-related. Opus-tier planner — writes plans, never self-implements.
 disallowedTools: Agent
