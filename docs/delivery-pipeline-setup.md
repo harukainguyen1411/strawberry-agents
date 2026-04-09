@@ -149,22 +149,77 @@ You should NOT need these (they were considered and rejected):
 
 ## 9. Windows worker installation (after §0 prerequisites)
 
-Once the Windows computer has the prereqs from §0, run the three NSSM installers:
+### 9a. Create .env files from secrets
 
-**discord-relay** (Gemini triage bot, no Claude):
-- [ ] Open Git Bash as Administrator
-- [ ] `cd` into the strawberry repo clone
-- [ ] Run `scripts/windows/install-discord-relay.ps1` (Katarina will scaffold this)
-- [ ] Verify: `nssm status discord-relay` shows **SERVICE_RUNNING**
-- [ ] Post a test message in the Discord `#suggestions` forum → verify a GitHub issue appears on `Duongntd/strawberry`
+The install scripts require `.env` files to exist before running. Create them from the secrets directory (run in Git Bash from the repo root):
 
-**coder-worker** (Claude Max local worker, writes code from issues):
-- [ ] Run `scripts/windows/install-coder-worker.ps1` (Katarina will scaffold this)
-- [ ] Verify: `nssm status coder-worker` shows **SERVICE_RUNNING**
-- [ ] Label an issue `ready` → verify a PR appears within ~1 minute
+```bash
+# discord-relay
+{
+  printf 'GEMINI_API_KEY='
+  tr -d '\r\n' < secrets/gemini-api-key.txt
+  printf '\nDISCORD_BOT_TOKEN='
+  tr -d '\r\n' < secrets/discord-bot-token.txt
+  printf '\nGITHUB_TOKEN='
+  tr -d '\r\n' < secrets/github-triage-pat.txt
+  printf '\nTRIAGE_DISCORD_CHANNEL_ID=1489570533103112375\nPORT=8080\n'
+} > apps/discord-relay/.env
 
-**bee-worker** (sister-agent Firebase queue worker, optional for tonight):
+# coder-worker
+{
+  printf 'GITHUB_TOKEN='
+  tr -d '\r\n' < secrets/github-triage-pat.txt
+  printf '\nTRIAGE_TARGET_REPO=Duongntd/strawberry\nPOLL_INTERVAL_SECONDS=60\nMAX_CONCURRENT_JOBS=1\n'
+} > apps/coder-worker/.env
+```
+
+### 9b. Grant SYSTEM read access to .env files
+
+NSSM runs services as the SYSTEM account by default. The `.env` files need to be readable by SYSTEM (run in elevated PowerShell):
+
+```powershell
+icacls "C:\Users\AD\Duong\strawberry\apps\discord-relay\.env" /grant "SYSTEM:(R)"
+icacls "C:\Users\AD\Duong\strawberry\apps\coder-worker\.env" /grant "SYSTEM:(R)"
+```
+
+### 9c. Add repo to git safe.directory for SYSTEM
+
+Git blocks SYSTEM from accessing repos owned by another user. Add an exception to the system-wide git config (run in elevated PowerShell):
+
+```powershell
+Add-Content "C:\Program Files\Git\etc\gitconfig" "`n[safe]`n`tdirectory = C:/Users/AD/Duong/strawberry"
+```
+
+### 9d. Run the install scripts (elevated PowerShell)
+
+Run each install script from an **elevated PowerShell** (right-click PowerShell → Run as administrator). Use `sc.exe` not `sc` — PowerShell aliases `sc` to `Set-Content`.
+
+**discord-relay:**
+- [ ] `powershell -ExecutionPolicy Bypass -File apps\discord-relay\scripts\windows\install-discord-relay.ps1`
+- [ ] `Start-Sleep 8; sc.exe query StrawberryDiscordRelay` — verify `STATE: 4 RUNNING`
+
+**coder-worker:**
+- [ ] `powershell -ExecutionPolicy Bypass -File apps\coder-worker\scripts\windows\install-service.ps1`
+- [ ] `Start-Sleep 8; sc.exe query StrawberryCoderWorker` — verify `STATE: 4 RUNNING`
+
+**bee-worker** (sister-agent Firebase queue worker):
 - [ ] Deferred — ship after the MyApps pipeline is proven
+
+### 9e. Keep the computer on
+
+The services run on this machine, not in the cloud. The computer must stay on (not sleep). Go to **Settings → System → Power & sleep** and set sleep to **Never** when plugged in.
+
+To check service health at any time:
+```powershell
+sc.exe query StrawberryDiscordRelay
+sc.exe query StrawberryCoderWorker
+```
+
+To tail logs:
+```powershell
+Get-Content "C:\Users\AD\Duong\strawberry\apps\discord-relay\logs\stdout.log" -Tail 20 -Wait
+Get-Content "C:\Users\AD\Duong\strawberry\apps\coder-worker\logs\stdout.log" -Tail 20 -Wait
+```
 
 ---
 
