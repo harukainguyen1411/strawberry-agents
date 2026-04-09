@@ -162,9 +162,9 @@ No plan file is rewritten content-wise — only frontmatter. Body is untouched.
 
 1. **Skill file location.** The skills-integration plan (approved, `plans/approved/2026-04-08-skills-integration.md`) is the source of truth for where skills live. **Recommended default:** whichever directory that plan settled on, referenced not re-decided here. Detailed phase reads that plan and inherits.
 
-2. **Does `ready/` get a Drive mirror?** Duong's direction said no — `ready/` is Sonnet-consumption, not human review. **Recommended default:** no mirror, matching Duong's call. Confirmed unless you want review visibility in the Docs app for the detailed spec too.
+2. ~~**Does `ready/` get a Drive mirror?**~~ **RESOLVED: No — proposed-only.** `ready/` is Sonnet-consumption, not human review. No Drive mirror for `ready/`.
 
-3. **Migration cutoff for currently-approved plans.** Do the 9 plans currently in `approved/` get a retroactive detailed phase, or do they skip to `in-progress/` under the old model? **Recommended default:** skip — option (b) above. Retrofitting is a time-sink with no clear payoff, and the current approved plans were written by Opus agents who knew they were going to Sonnet — they are already thicker than a v2 rough plan would be.
+3. ~~**Migration cutoff for currently-approved plans.**~~ **RESOLVED: Yes — retrofit the 9 existing approved plans through the new detailed phase.** All 9 plans currently in `approved/` will go through the `detailed-plan` skill before being promoted to `ready/`. No skip-to-`in-progress/` shortcut.
 
 4. **Who enforces the "Opus reassignment" call for detailed phase?** Default is same author. Evelynn reassigns explicitly when cross-domain. **Recommended default:** bake into the `detailed-plan` skill: "If you believe this detailed phase needs a different Opus than the rough-plan owner, escalate to Evelynn before starting. Evelynn's call is final." Evelynn then writes the reassignment into `detailed_owner` in the frontmatter before handing off.
 
@@ -172,7 +172,7 @@ No plan file is rewritten content-wise — only frontmatter. Body is untouched.
 
 6. **Frontmatter linter: where does the agent-name authority list live?** Options: `agents/roster.md`, a dedicated `agents/known-agents.txt`, or the directory listing of `agents/`. **Recommended default:** parse `agents/roster.md` — it is already the authoritative roster and the linter can grep agent names out of the table. No new file to maintain.
 
-7. **Skill naming.** `draft-plan` vs `rough-plan` vs `plan-rough`. `detailed-plan` vs `exec-plan` vs `plan-detailed`. **Recommended default:** `draft-plan` and `detailed-plan` — those are the names Duong used in the task description, and they are the clearest phase labels.
+7. ~~**Skill naming.**~~ **RESOLVED: `draft-plan` and `detailed-plan`.** These are the names Duong used in the task description and the clearest phase labels.
 
 8. **Do rough plans themselves get to commit to main, or do they need their own gate?** Today rough plans commit directly to main (Rule 9). Under v2 the same commit-direct-to-main rule should hold for both phases — neither rough nor detailed plans go through a PR. Detailed phase expansion is committed in place in `approved/`, then promoted to `ready/` with another commit. **Recommended default:** keep Rule 9 as-is, both phases commit direct to main.
 
