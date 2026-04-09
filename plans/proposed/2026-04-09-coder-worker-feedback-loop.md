@@ -105,6 +105,15 @@ The `notify-discord` step (Component 3) reads `${{ github.event.pull_request.bod
 
 ## Component 2 — Auto-assign reviewers on coder-worker PRs
 
+### Reviewers
+
+Standard two-reviewer pattern for all coder-worker PRs:
+
+| Role | Reviewer | Responsibility |
+|------|----------|----------------|
+| Reviewer 1 | **Lissandra** | Logic and security review |
+| Reviewer 2 | **Bard** (plan `owner:`) | Plan author — implementation correctness |
+
 ### Config
 
 Add to `coder-worker`'s config file (e.g. `config/reviewers.yaml` or env):
