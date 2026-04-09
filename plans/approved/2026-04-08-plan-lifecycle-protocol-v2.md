@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-08
 title: Plan Lifecycle Protocol v2 — Two-Phase Planning, Canonical Frontmatter, draft-plan/detailed-plan Skills
@@ -83,7 +83,7 @@ Every plan file, at every lifecycle stage, carries this exact shape:
 ```yaml
 ---
 title: <human-readable plan title>
-status: proposed | approved | ready | in-progress | implemented | archived
+status: approved | approved | ready | in-progress | implemented | archived
 owner: <agent-name>              # rough-plan author. Never changes after creation.
 detailed_owner: <agent-name>     # Opus who wrote the detailed phase. null/omitted until detailed phase.
 created: YYYY-MM-DD              # rough-plan creation date
