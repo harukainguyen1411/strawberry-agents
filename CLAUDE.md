@@ -12,7 +12,7 @@
 8. **Plan writers never assign implementers** — Plans must not specify who will implement them. Evelynn decides delegation after approval. Use `owner` in frontmatter for the plan author only, not the executor.
 9. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
 10. **Use `chore:` prefix for all commits** — All commits must use `chore:` or `ops:` prefix. Never use `fix:`, `feat:`, `docs:`, `plan:` or other prefixes. The pre-push hook enforces this on main.
-11. **Never run raw `age -d` or read decrypted secret values into context** — Decryption must go through `tools/decrypt.sh` exclusively, which uses `exec env KEY=val -- cmd...` so plaintext lives only in the child process env. Never `cat`, `type`, `Get-Content`, or pipe `secrets/age-key.txt`. The pre-commit hook (`scripts/pre-commit-secrets-guard.sh`) blocks raw `age -d` outside the helper and scans staged files for known decrypted values.
+11. **Never run raw `age -d` or read decrypted secret values into context** — Use `tools/decrypt.sh` exclusively; it keeps plaintext in the child process env only. Never `cat`/`type`/pipe `secrets/age-key.txt`. The pre-commit hook blocks violations.
 12. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. The Drive mirror is proposed-only (per plan `2026-04-08-gdoc-mirror-revision`); `plan-promote.sh` automatically unpublishes the Drive doc on the way out, then moves and rewrites the `status:` field. Raw `git mv` skips the unpublish step and leaves orphan Drive docs. `plan-publish.sh` enforces the proposed-only invariant on the publish side.
 13. **Never end your session after completing a task** — Complete the task, report to Evelynn, then wait for further instructions. Only close your session when Duong or Evelynn explicitly tells you to.
 14. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level Claude Code sessions use `/end-session`; Sonnet subagent sessions use `/end-subagent-session`. These skills produce the cleaned-transcript archive (top-level only), handoff note, memory refresh, learnings, and commit. Closing without running the appropriate skill is a protocol violation. The skills are `disable-model-invocation: true` — Duong or Evelynn must explicitly trigger them.
@@ -87,4 +87,36 @@ Never write secrets (tokens, API keys, passwords) into any committed file. Use e
   - `plans/archived/` — abandoned or superseded plans
 - `assessments/` — analyses, recommendations, evaluations (typically by Syndra)
 - `agents/` — profiles, memory, journals, learnings per agent
+- `scripts/` — shell scripts for operations (`plan-promote.sh`, `safe-checkout.sh`, `decrypt.sh`, `heartbeat.sh`); POSIX-portable except `scripts/mac/` and `scripts/windows/`
+- `tools/` — helper binaries and wrappers (e.g. `tools/decrypt.sh` for secret decryption)
+- `secrets/` — gitignored local secrets (`.env` files, `age-key.txt`); never committed
+- `.claude/agents/` — agent definition files (`.md` with frontmatter: name, model, skills, disallowedTools)
 - `learnings/` — session learnings per agent folder, named `YYYY-MM-DD-<topic>.md`
+
+## Key Scripts
+
+| Script | Usage | Purpose |
+|--------|-------|---------|
+| `scripts/plan-promote.sh <file> <stage>` | `bash scripts/plan-promote.sh plans/proposed/foo.md approved` | Move a plan out of `proposed/` (unpublishes Drive doc automatically) |
+| `scripts/safe-checkout.sh <branch>` | `bash scripts/safe-checkout.sh my-branch` | Safe branch switch via git worktree |
+| `tools/decrypt.sh` | Called internally | Decrypt age-encrypted secrets; never call `age -d` directly |
+| `agents/health/heartbeat.sh <name> <platform>` | `bash agents/health/heartbeat.sh evelynn windows` | Register agent liveness at session start |
+
+## Plugins
+
+19 plugins are installed at user scope. Key ones:
+
+| Plugin | Purpose |
+|--------|---------|
+| `context7` | Fetch live library/framework docs |
+| `firecrawl` | Web scraping and search |
+| `playwright` | Browser automation |
+| `figma` | Design-to-code workflows |
+| `firebase` | Firebase project management |
+| `coderabbit` | AI code review |
+| `pr-review-toolkit` | PR analysis (tests, types, silent failures) |
+| `superpowers` | Core skills (TDD, debugging, planning workflows) |
+| `frontend-design` | High-fidelity UI implementation |
+| `goodmem` | Memory/embedder management |
+
+**Sub-agent access:** Plugin MCP tools are available to sub-agents as deferred tools. Sub-agents must call `ToolSearch` to load the schema before invoking any MCP tool — calling without schema load fails with `InputValidationError`.
