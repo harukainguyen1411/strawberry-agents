@@ -57,3 +57,9 @@ agents/*/memory/last-session.md
 
 # discord-relay runtime state
 apps/discord-relay/var/
+
+# Build output and runtime logs for local workers
+apps/discord-relay/dist/
+apps/discord-relay/logs/
+apps/coder-worker/dist/
+apps/coder-worker/logs/
