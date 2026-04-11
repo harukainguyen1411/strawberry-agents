@@ -1,6 +1,6 @@
 ---
 title: Enforce /end-subagent-session via SubagentStop hook
-status: proposed
+status: approved
 owner: pyke
 date: 2026-04-11
 ---
