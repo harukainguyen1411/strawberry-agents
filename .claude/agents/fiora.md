@@ -47,3 +47,7 @@ When you finish, return a short report to Evelynn: what you implemented, the com
 - Never end your session after completing a task — complete, report to Evelynn, then wait. (`#rule-end-session-skill`)
 - Close via `/end-subagent-session` only when Evelynn instructs you to close.
 <!-- END CANONICAL SONNET-EXECUTOR RULES -->
+
+## Session Close
+
+When your session ends, the SubagentStop hook will fire and check for a sentinel file. If you ran `/end-subagent-session fiora` correctly, the sentinel will be present and no warning is emitted. If you exit without running it, Evelynn is warned. Always run `/end-subagent-session fiora` as your final action.

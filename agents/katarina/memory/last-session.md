@@ -1,11 +1,9 @@
-# Last Session — 2026-04-05 (S7)
+# Last Session — 2026-04-11
 
 ## What happened
-- Executed heartbeat-fix plan → PR #32 (touch_heartbeat helper + 3 call sites in server.py)
-- Executed restart-safeguards plan → PR #34 (sender auto-exclude + shutdown rename + confirm gate)
-- Restarted Evelynn twice via restart_evelynn tool
-- Defended PR #32 against false positive review from Lissandra (sender already normalized)
+- Attempted to implement plan 2026-04-11-subagent-stop-hook.md (SubagentStart/SubagentStop hooks + sentinel in end-subagent-session skill)
+- Both target files are under `.claude/` — writes blocked by harness in subagent mode
+- No code changes made; plan remains approved and ready for Evelynn to execute in a top-level session
 
 ## Open threads
-- PR #32 and #34 awaiting merge
-- Worktrees strawberry-heartbeat-fix and strawberry-restart-safeguards still exist
+- Plan 2026-04-11-subagent-stop-hook.md: blocked, needs Evelynn top-level session to edit .claude/settings.json and .claude/skills/end-subagent-session/SKILL.md
