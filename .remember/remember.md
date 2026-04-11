@@ -1,14 +1,15 @@
 # Handoff
 
 ## State
-Delivery pipeline fully live. Four NSSM services running: StrawberryDiscordRelay, StrawberryCoderWorker, deploy-webhook (port 9000), cloudflared-tunnel (named tunnel, `webhook.darkstrawberry.com` -> localhost:9000). GitHub webhook configured and verified 200. Runbook complete at `docs/delivery-pipeline-setup.md`.
+Autodeploy pipeline fully live — push to main rebuilds all 4 Windows services via webhook.darkstrawberry.com (GitHub webhook verified 200). PR #89 merged. SubagentStop sentinel in settings.json. Three-agent PR review team protocol in architecture/pr-rules.md. Vex wired as Windows head agent. darkstrawberry.com purchased on Cloudflare.
 
 ## Next
-1. Run smoke test (runbook §10): post in Discord forum, verify full pipeline fires end to end.
-2. Monitor first real coder-worker PR — review diff carefully before merging.
+1. B10 Bee smoke test — blocked on Duong: sister's Firebase UID, style-rules.md content, Firebase service account JSON
+2. Issues #92/#93/#94 queued for coder-worker (2 LOWs from PR #89 + auto-review team feature)
+3. SubagentStop sentinel needs empirical testing — session_id field name in hook stdin is unverified
 
 ## Context
-- Named Cloudflare tunnel live: `strawberry-webhook` (UUID 0853c7c1-7da2-4a28-8fc4-12d5130bfb63), routes `webhook.darkstrawberry.com` to localhost:9000. Config at `C:\Users\AD\.cloudflared\config.yml`.
-- All NSSM .env files need `icacls /grant "SYSTEM:(R)"` — services run as LocalSystem; already done for all three apps.
-- Em dashes in PS1 strings break Windows PowerShell 5.1 parsing — replace with hyphens in any new scripts.
-- deploy-services.json uses full NSSM service names (StrawberryDiscordRelay, StrawberryCoderWorker).
+- Vex is Windows head agent — route all Windows tasks to her. Her agent folder is agents/vex/
+- .claude/ files can only be written by Evelynn directly — subagents are blocked by harness
+- darkstrawberry.com on Cloudflare; webhook tunnel is webhook.darkstrawberry.com -> port 9000
+- SendMessage can reach running background agents mid-flight — use it instead of kill+respawn
