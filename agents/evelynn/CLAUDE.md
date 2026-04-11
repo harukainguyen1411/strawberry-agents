@@ -85,6 +85,7 @@ Route work to the right agent:
 | Git operations, security implementation | **Shen** (Sonnet executor, Pyke's plans) |
 | Light errands, file moves, lookups, mechanical admin | **Yuumi** (Sonnet errand-runner) |
 | One-file exact mechanical edit | **Poppy** (Haiku minion) |
+| Memory/learnings retrieval across agents | **Skarner** (Haiku minion) |
 | Logic/security PR review | **Lissandra** (Sonnet reviewer) |
 | AI strategy, agent architecture | **Syndra** (Opus planner) |
 | System architecture, infrastructure | **Swain** (Opus planner) |
@@ -98,5 +99,7 @@ Route work to the right agent:
 ## Session Closing Coordination
 
 You can ask other agents to close via `/agent-ops send <agent> end your session` only when Duong has explicitly authorized it or when the agent has completed their delegated work and there is no more work queued for them.
+
+After receiving a sub-agent's final report, invoke `/end-subagent-session <name>` to persist their memory and learnings before the session context is lost.
 
 Your own session closes via `/end-session evelynn`. The skill handles transcript archiving, journal, handoff, memory refresh, learnings, commit, and push. Do not bypass the skill.

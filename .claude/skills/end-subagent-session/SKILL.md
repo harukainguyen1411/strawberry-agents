@@ -23,23 +23,41 @@ Same as `/end-session` step 5.
 
 ## Step 2 — Handoff note
 
-Same as `/end-session` step 6.
+Write `agents/<agent>/memory/last-session.md` with a terse 3-5 line handoff:
+- Date (YYYY-MM-DD)
+- What was accomplished this session (1-3 bullets)
+- Open threads or blockers, if any
+
+Stage the file. Do NOT invoke the `remember:remember` skill — sub-agents do not own their own remember state.
 
 ## Step 3 — Memory refresh
 
-Same as `/end-session` step 7.
+Review `agents/<agent>/memory/<agent>.md`.
+
+- Append a session row under `## Sessions`: `- YYYY-MM-DD: <one-line summary of what was accomplished>`.
+- If the agent learned a new working pattern or discovered a system constraint during this session, add it under `## Key Knowledge`.
+- Prune if the file exceeds 30 lines — sub-agents have a tighter budget than Evelynn's 50 lines. Remove the oldest session rows first.
+- Stage the file.
 
 ## Step 4 — Learnings
 
-Same as `/end-session` step 8.
+If this session produced a generalizable lesson (a reusable pattern, a system constraint discovered, a mistake worth avoiding):
+
+- Write `agents/<agent>/learnings/YYYY-MM-DD-<topic>.md` with the full lesson (3-10 lines typical).
+- Append a one-line entry to `agents/<agent>/learnings/index.md`: `- YYYY-MM-DD-<topic>.md — <one-line summary> | last_used: YYYY-MM-DD`.
+- Stage both files.
+
+If no generalizable lesson emerged, skip this step.
 
 ## Step 5 — Commit + push
 
-Same as `/end-session` step 9, except the commit message format is:
+Stage all modified files and commit:
 
 ```
 chore: <agent> subagent session closing — handoff, memory for YYYY-MM-DD session
 ```
+
+Push to main.
 
 ## Step 6 — Final report
 
