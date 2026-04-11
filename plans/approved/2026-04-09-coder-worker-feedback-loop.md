@@ -1,6 +1,6 @@
 ---
 title: Coder-worker delivery feedback loop
-status: proposed
+status: approved
 owner: bard
 date: 2026-04-09
 ---
