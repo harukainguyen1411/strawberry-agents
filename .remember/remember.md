@@ -1,15 +1,18 @@
 # Handoff
 
 ## State
-Autodeploy pipeline fully live — push to main rebuilds all 4 Windows services via webhook.darkstrawberry.com (GitHub webhook verified 200). PR #89 merged. SubagentStop sentinel in settings.json. Three-agent PR review team protocol in architecture/pr-rules.md. Vex wired as Windows head agent. darkstrawberry.com purchased on Cloudflare.
+- MyApps CI fixed (7 VITE_FIREBASE_* secrets added to GitHub, deploy-release.yml patched, commit 050359d) — needs a push to apps/myapps/** to trigger and verify the blank page is resolved.
+- apps.darkstrawberry.com CNAME live in Cloudflare (DNS-only), Firebase verification still pending — check console.firebase.google.com > myapps-b31ea > Hosting.
+- darkstrawberry.com → apps.darkstrawberry.com redirect live via Cloudflare Page Rules.
+- Cloudflare + GCP MCPs wired in .mcp.json (commit a811065) — needs session restart to load. Smoke test: list DNS zones (Cloudflare) and GCP projects (gcloud).
+- Two plans in proposed awaiting approval: plans/proposed/2026-04-11-bee-github-issue-rearchitect.md, plans/proposed/2026-04-11-bee-worker-gce-deployment.md.
 
 ## Next
-1. B10 Bee smoke test — blocked on Duong: sister's Firebase UID, style-rules.md content, Firebase service account JSON
-2. Issues #92/#93/#94 queued for coder-worker (2 LOWs from PR #89 + auto-review team feature)
-3. SubagentStop sentinel needs empirical testing — session_id field name in hook stdin is unverified
+1. Approve the two Bee plans (rearchitect + GCE deployment).
+2. Trigger a deploy to verify MyApps CI fix — push any change to apps/myapps/** or manually run the workflow.
+3. Smoke-test Cloudflare + GCP MCPs after session restart.
 
 ## Context
-- Vex is Windows head agent — route all Windows tasks to her. Her agent folder is agents/vex/
-- .claude/ files can only be written by Evelynn directly — subagents are blocked by harness
-- darkstrawberry.com on Cloudflare; webhook tunnel is webhook.darkstrawberry.com -> port 9000
-- SendMessage can reach running background agents mid-flight — use it instead of kill+respawn
+- Firebase domain verification can take up to 24h — don't chase it, just check.
+- Bee ToS: routing through GitHub issues (like coder-worker) makes it structurally Duong's own automation — that's the whole point of the rearchitect plan.
+- Subagent memory files (bard, swain, syndra) are dirty — commit them in the session close sweep.
