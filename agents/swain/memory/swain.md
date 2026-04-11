@@ -3,17 +3,11 @@
 ## Role
 - Architecture Specialist in Duong's personal agent system
 
-## Sessions
-- 2026-04-03: First session. Designed contributor pipeline architecture, reviewed 3 agents' implementations.
-- 2026-04-04 (s1): Designed Discord-CLI integration (replacing contributor pipeline), two-pass bridge architecture, rewrote myapps README.
-- 2026-04-04 (s2): Wrote E2E test plan for Discord relay system (12 steps). Posted for Pyke review.
-- 2026-04-04 (s3): Created `architecture/` living docs (9 files). Designed shared task board architecture.
-- 2026-04-05 (s1): Audited myapps TaskList codebase (~90% built). Wrote B3 implementation plan. PR #27.
-- 2026-04-05 (s2): Telegram bridge investigation (Claude Code timeout issue). Plan viewer design. PR #54 architecture review.
-- 2026-04-08 (subagent): Designed plan-gdoc-mirror review workflow. Coexists with plan-viewer. Plan: `plans/proposed/2026-04-08-plan-gdoc-mirror.md`. Depends on encrypted-secrets plan.
-- 2026-04-08 (subagent, revision): gdoc-mirror Decision 8 failed reality contact after bulk publish — Drive was "very disorganized, all in one place." Duong chose proposed-only mirror. Wrote `plans/proposed/2026-04-08-gdoc-mirror-revision.md`. Key design call: new `plan-promote.sh` wrapper as the single choke point for plans leaving `proposed/` (unpublish + git mv + commit), chosen over git hook or pure agent-convention.
-- 2026-04-08 (subagent): myapps "move to Google" rough plan. Framed ambiguity: Firebase IS GCP, so question has 4 readings. Recommended A (mental model correction) + light B (GCP project governance) + targeted D (preview channels, observability, Secret Manager maybe, index automation, runbook). Rejected (C) raw-GCP migration as architectural malpractice for a solo personal app. Plan: `plans/proposed/2026-04-08-myapps-gcp-direction.md`. Commit efa07d2.
-- 2026-04-09 (subagent, protocol-audit team): Task #2 — Operating Protocol v2 rough plan. Governance spec, not execution. Protocol stack layers 0–6 (platform, identity/tiers, rules, coordination, plan lifecycle, session lifecycle, execution). Inherits from four in-flight plans rather than re-designing. First-class cross-platform parity. Reconfirms Duong's Rule 15 (model tier on every subagent, landed mid-session). Drafts onboarding/retirement procedures, roster SSOT (agent-network.md), universal parity rule. Plan: `plans/proposed/2026-04-09-operating-protocol-v2.md`. Commit 2cbc80e. Team: Evelynn lead, Pyke (audit + migration), Bard (tool-layer).
+## Sessions (recent only)
+- 2026-04-08 (subagent): gdoc-mirror revision — proposed-only mirror, plan-promote.sh choke point.
+- 2026-04-08 (subagent): myapps GCP direction — recommended mental model correction, not raw migration.
+- 2026-04-09 (subagent): Operating Protocol v2 rough plan — governance spec, protocol stack layers 0-6.
+- 2026-04-11 (subagent): Windows push webhook auto-deploy plan. Fourth NSSM service receives GitHub push events, runs deploy-service.ps1 per affected app. Plan: `plans/proposed/2026-04-11-windows-push-autodeploy.md`.
 
 ## Active Architecture Decisions
 
