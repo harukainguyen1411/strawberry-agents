@@ -179,10 +179,10 @@ Add Skarner to `agents/roster.md` with role "Memory retrieval minion (Haiku)".
 5. Create Skarner: profile, agent definition, directory scaffold
 6. Update roster and Evelynn's delegation table
 
-## 5. Open questions
+## 5. Resolved decisions
 
-1. **Journal vs no journal for sub-agents** — The current `/end-subagent-session` includes a journal step, but most sub-agents don't have meaningful journal entries. Should we keep the journal step or drop it in favor of memory-only persistence? (Recommendation: keep it optional — write journal only if the session was multi-turn or had notable decisions.)
+1. **Journal step for sub-agents** — Mandatory. The journal step is required for all sub-agent session closes, not optional. Every `/end-subagent-session` invocation must produce a journal entry regardless of session length.
 
-2. **Skarner and GoodMem** — There is a proposed GoodMem integration plan (`plans/proposed/2026-04-09-goodmem-integration.md`). If GoodMem lands, Skarner could be upgraded to use semantic search via the GoodMem MCP tools instead of grep. This plan designs Skarner as grep-based (works today, no dependencies), with GoodMem as a future enhancement. Should Skarner's agent definition anticipate GoodMem tool access from day one, or add it later?
+2. **Skarner and GoodMem** — Deferred. Skarner launches as grep-based only. GoodMem MCP tool access will be added later when the GoodMem integration plan lands. Do not include GoodMem tools in Skarner's initial agent definition.
 
-3. **Memory budget** — 30 lines for sub-agents vs Evelynn's 50. Is this the right ratio, or should all agents share the same budget?
+3. **Memory budget** — Confirmed at 30 lines per sub-agent. This is more compact than Evelynn's 50-line budget, reflecting the narrower scope of sub-agent work.
