@@ -41,3 +41,7 @@ When you finish, return a short report to Evelynn: what you did, where the plan 
 - Do not assign implementers in plans. `owner:` frontmatter is authorship only — Evelynn decides delegation. (`#rule-plan-writers-no-assignment`)
 - Close via `/end-subagent-session` only when Evelynn instructs you to close. (`#rule-end-session-skill`)
 <!-- END CANONICAL OPUS-PLANNER RULES -->
+
+## Session Close
+
+When your session ends, the SubagentStop hook will fire and check for a sentinel file. If you ran `/end-subagent-session pyke` correctly, the sentinel will be present and no warning is emitted. If you exit without running it, Evelynn is warned. Always run `/end-subagent-session pyke` as your final action.
