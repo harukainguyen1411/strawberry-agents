@@ -64,3 +64,6 @@
 - 2026-04-09 S21 (subagent): Bee MVP build plan written (`plans/approved/2026-04-09-bee-mvp-build.md`). Sister-agent workstream parked behind delivery-pipeline; this unblocks parallel prep. V1 = comment-mode only, Google sign-in, static style-rules, lives as 4th route in `apps/myapps/` + new sibling worker `apps/bee-worker/` mirroring coder-worker. 10 PRs (B1-B10), ~34h sequential / ~3 days parallel. Pyke REV 3 §11 guardrails baked in. 6 open questions for Duong (project reuse, sister email, nav visibility, starter rules content, rules file paths, SA reuse).
 - 2026-04-08 S18 (subagent): Evelynn continuity + coordinator-purity plan (4 components). Plan `plans/proposed/2026-04-08-evelynn-continuity-and-purity.md`.
 - 2026-04-11 (subagent): Sub-agent memory persistence + Skarner retrieval minion plan. Plan `plans/proposed/2026-04-11-subagent-memory-and-skarner.md`.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

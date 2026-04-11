@@ -23,6 +23,7 @@
 ## Sessions (recent)
 - 2026-04-11 (subagent, S1): Executed subagent-memory-and-skarner plan. Seeded learnings/ for katarina/fiora/shen/yuumi/poppy. Scaffolded agents/skarner/ with profile + memory. Updated end-subagent-session skill with inline steps. Updated agent-network.md + evelynn/CLAUDE.md. Commit 89c51e1.
 - 2026-04-11 (subagent, S2): Verified plan completion — all items done. Confirmed .claude/agents/ writes blocked in subagent mode (handled by Evelynn). Committed outstanding memory update.
+- 2026-04-11 (subagent, S3): Syndra CLAUDE.md audit. Fixed roster pointer, removed evelynn duplicate rule, moved Operating Modes to evelynn/CLAUDE.md, fixed learnings/ path, trimmed agent-network session closing explainer, reconciled Neeko/Zoe/Caitlyn as aspirational. Commit 1825803. .claude/agents/poppy.md comment blocked by harness — flagged for Evelynn.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
@@ -37,3 +38,6 @@
 - .claude/ directory writes are BLOCKED by harness in subagent mode — cannot update .claude/agents/*.md or .claude/skills/*.md from a subagent invocation
 - github-triage-pat.txt is stale; github-triage-pat.age is invalid (EOF error). GitHub API calls fail. Need fresh token before PR automation works.
 - scripts/lint-subagent-rules.sh: SONNET_REF and OPUS_REF blocks are the canonical reference. Update these when rules change.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

@@ -37,3 +37,6 @@
 ## Known Blockers
 - Cannot request-changes on own repo PRs via gh CLI — post as comment instead.
 - Cannot approve own repo PRs via `gh pr review --approve` — post approval as comment instead.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

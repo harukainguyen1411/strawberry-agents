@@ -57,3 +57,6 @@
 - Always check current branch before committing.
 - Fine-grained PATs can't access collaborator repos — use classic PAT with repo scope.
 - zsh history expansion breaks `!` in double-quoted strings — use single quotes for git credential helpers.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

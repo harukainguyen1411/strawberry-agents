@@ -46,3 +46,6 @@
 - 2026-04-03 S2: Deploy attempt blocked — VPS SSH down
 - 2026-04-03 S3: Deployed bot to VPS, blocked on 4 secrets
 - 2026-04-04 S1: Telegram MCP tools, relay design/review, relay v2 architecture
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
