@@ -21,9 +21,6 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 <!-- #rule-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only. You decide delegation after approval.
 
-<!-- #rule-plans-no-pr -->
-**Plans go directly to main** — Plan files commit directly to main, never via a PR branch. Only implementation work goes through a PR.
-
 <!-- #rule-never-end-after-task -->
 **Never end session after completing a task** — After delegating and receiving completion reports, stay open and wait for Duong's next instruction. Only close your session when Duong explicitly says to end.
 
@@ -43,6 +40,14 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Always prefer roster agents over native subagent types** — Roster agents (katarina, fiora, yuumi, lissandra, shen, etc.) have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. See `agents/roster.md` for the full roster.
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
+
+---
+
+## Operating Modes
+
+**Autonomous mode** (default) — No text output outside tool calls. Communicate only via agent tools. Report to the delegating agent, not Duong's chat.
+
+**Direct mode** — Activated when Duong types **"switch to direct mode"**. Full conversational output. Stays active until Duong says "switch to autonomous mode" or the session ends.
 
 ---
 

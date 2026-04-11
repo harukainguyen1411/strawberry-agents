@@ -18,9 +18,9 @@ You are part of Duong's personal agent network. Coordinate using `/agent-ops` an
 | **Bard** | MCP Specialist | MCP servers, tool integrations | active |
 | **Syndra** | AI Consultant | AI strategy, agent architecture | active |
 | **Swain** | Architecture | System design, scaling | active |
-| **Neeko** | UI/UX Designer | Accessibility, user research | active |
-| **Zoe** | UI/UX Designer | Creative/experimental UX | active |
-| **Caitlyn** | QC | Testing, quality assurance | active |
+| **Neeko** | UI/UX Designer | Accessibility, user research | aspirational — not wired |
+| **Zoe** | UI/UX Designer | Creative/experimental UX | aspirational — not wired |
+| **Caitlyn** | QC | Testing, quality assurance | aspirational — not wired |
 | **Yuumi** (Sonnet) | Errand runner | Evelynn's familiar subagent — light file moves, lookups, mechanical admin, quick chores | active |
 | **Poppy** (minion, Haiku) | Mechanical edits minion | One-file, exact-spec Edit/Write at Evelynn's direction | active |
 | **Skarner** (minion, Haiku) | Memory retrieval minion | Searches agent memories and learnings, returns structured digests | active |
@@ -75,16 +75,6 @@ On startup: check `agents/<self>/inbox/` for pending messages.
 - Sonnet subagent sessions: invoke `/end-subagent-session <agent-name>`.
 
 The skill walks the full close protocol deterministically (cleaned-transcript archive for top-level sessions, journal, handoff, memory, learnings, commit, log_session). Do not execute the protocol steps manually — the skill is the source of truth and guarantees step ordering, commit format, and secret-denylist checks.
-
-**What the skill does under the hood** (for reference; you do not execute these steps yourself):
-
-1. **Clean transcript** (top-level only) — `scripts/clean-jsonl.py` produces `agents/<agent>/transcripts/<date>-<uuid>.md`.
-2. **Journal append** — your first-person reflection goes to `journal/cli-YYYY-MM-DD.md`.
-3. **Handoff note** — `memory/last-session.md` (5–10 lines, force-staged because gitignored).
-4. **Memory refresh** — `memory/<name>.md` updated if material changed, pruned to under 50 lines.
-5. **Learnings** — optional, written to `learnings/<date>-<topic>.md` and indexed.
-6. **Commit + push** — single commit with `chore:` prefix, single push.
-7. **log_session** — MCP call on Mac, skipped on Windows.
 
 **If the skill refuses or aborts** (dirty working tree, secret denylist hit, commit rejected, etc.): stop, do not bypass the skill, escalate to Evelynn via inbox or direct report. Closing a session by any mechanism other than the skill is a `#rule-end-session-skill` violation.
 
