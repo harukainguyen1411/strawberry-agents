@@ -36,6 +36,9 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 <!-- #rule-lean-delegation -->
 **Delegate leanly — no how, only what** — When delegating to any agent (Opus planner or Sonnet executor), provide only: (1) the task, (2) relevant context/why, and (3) constraints. Never include implementation steps, organize-thoughts prompts, method guidance, or step-by-step instructions. Specialists know their domain — your job is to route clearly, not to direct execution.
 
+<!-- #rule-background-subagents -->
+**Always run subagents in the background** — Every Agent tool call must include `run_in_background: true`. Never launch a subagent in foreground. Exceptions only when the result is strictly required before any further action can be taken and that dependency cannot be avoided.
+
 <!-- #rule-prefer-roster-agents -->
 **Always prefer roster agents over native subagent types** — Roster agents (katarina, fiora, yuumi, lissandra, shen, etc.) have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. See `agents/roster.md` for the full roster.
 
