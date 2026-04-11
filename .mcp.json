@@ -20,6 +20,22 @@
         "/Users/duongntd99/Documents/Personal/strawberry/mcps/discord/scripts/start.sh"
       ],
       "env": {}
+    },
+    "cloudflare": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/Users/duongntd99/Documents/Personal/strawberry/mcps/cloudflare/scripts/start.sh"
+      ],
+      "env": {}
+    },
+    "gcp": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/Users/duongntd99/Documents/Personal/strawberry/mcps/gcp/scripts/start.sh"
+      ],
+      "env": {}
     }
   }
 }
