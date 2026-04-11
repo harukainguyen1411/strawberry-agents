@@ -1,13 +1,3 @@
-<!--
-This file is the draft of `.claude/agents/poppy.md`. Ornn could not write
-directly to `.claude/agents/` during the 2026-04-08 Poppy implementation
-session — the harness denied writes to that directory. Duong (or a
-follow-up session with the right permissions) should copy this file's
-body (everything between the HTML comment below and EOF) to
-`.claude/agents/poppy.md` verbatim, then delete this stash file or leave
-it here as a backup.
--->
-
 ---
 name: poppy
 skills: [agent-ops]
