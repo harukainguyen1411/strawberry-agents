@@ -2,6 +2,7 @@
 name: shen
 skills: [agent-ops, superpowers:using-git-worktrees, superpowers:verification-before-completion, superpowers:systematic-debugging]
 model: sonnet
+thinking: disabled
 description: Git & IT security implementer — executes Pyke's security plans with ritual precision. Sonnet-tier executor. Always works from an approved plan in plans/approved/ or plans/in-progress/.
 disallowedTools: Agent
 ---

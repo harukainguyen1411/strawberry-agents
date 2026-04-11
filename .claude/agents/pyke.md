@@ -2,6 +2,8 @@
 name: pyke
 skills: [agent-ops, context7, superpowers:writing-plans, superpowers:systematic-debugging]
 model: opus
+thinking:
+  budget_tokens: 8000
 description: Git workflows and IT security specialist. Use for git strategy, branch protection, auth/secrets handling, security audits, and hook design. Opus-tier planner — writes plans, never self-implements.
 disallowedTools: Agent
 ---
