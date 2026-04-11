@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: bard
 created: 2026-04-11
 title: Install Cloudflare and GCP MCP servers
