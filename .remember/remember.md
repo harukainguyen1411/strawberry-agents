@@ -1,12 +1,14 @@
 # Handoff
 
 ## State
-S35 complete. Syndra's CLAUDE.md audit fully executed (7/7 items, commits `1825803` + `51c7e8f`). Lean-delegation feedback propagated to all 17 sub-agent memory files (`0589d29`), with Yuumi/Skarner corrected to expect detailed instructions (`3b5594f`). PR #62 (Discord per-app channels) still open on `feat/discord-per-app-channels` — was ready to merge but not actioned this session.
+PR #62 merged. 5 open PRs: #66 (Bee B1+B7 scaffold/rules), #67 (feedback loop A+B), #68 (Bee B3 comments.py), #69 (feedback loop C preview), #70 (feedback loop D+E reaction/shipped). Full Discord feedback loop implemented across #67/#69/#70. 5 new agents wired: Ornn, Reksai, Neeko, Zoe, Caitlyn. 2 plans promoted to approved.
 
 ## Next
-1. Merge PR #62 (`feat/discord-per-app-channels`) — Lissandra-approved, ready.
-2. Review Syndra's proposed plan `plans/proposed/2026-04-09-wire-remaining-sonnet-specialists.md` — Neeko, Zoe, Caitlyn, Ornn still aspirational.
-3. Coder-worker feedback loop plan `plans/proposed/2026-04-09-coder-worker-feedback-loop.md` — decisions resolved, needs approval + promote.
+1. Merge the 5 open PRs (#66-#70) — all need review but are functionally complete
+2. Bee MVP remaining: B2 (Firestore wiring), B4 (claude.ts), B5 (worker.ts), B6 (install script), B8+B9 (Vue frontend)
+3. `apps/bee-worker/src/firestore.ts` and `storage.ts` were partially written on disk (main branch) but NOT committed — check and use or rewrite
 
 ## Context
-Git push is working. Lean-delegation rule: specialists get what+why only; Yuumi/Skarner get detailed explicit instructions.
+- This session ran from a nested worktree — caused subagent Write/Bash blocks. ALWAYS start Evelynn from repo root `~/Documents/Personal/strawberry/`, never from a worktree.
+- Duong authorized direct execution when subagents are blocked — override coordinator-only rule.
+- `isolation: "worktree"` on Agent tool causes triple-nesting when session is already in a worktree. Don't use it from worktree sessions.

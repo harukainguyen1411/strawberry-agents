@@ -59,8 +59,9 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Shen + Fiora profiles wired** (`.claude/agents/{shen,fiora}.md`). Ornn/Reksai/Neeko/Zoe/Caitlyn still aspirational — plan at `plans/proposed/2026-04-09-wire-remaining-sonnet-specialists.md` by Syndra.
 - **Bee parked behind delivery-pipeline.** Architecture: `plans/approved/2026-04-09-sister-research-agent-karma.md`. Build plan (10 PRs): `plans/approved/2026-04-09-bee-mvp-build.md` by Syndra. Max ToS question resolved via local-Windows-worker architecture. First PRs to delegate: B1 (apps/bee-worker scaffold), B3 (comments.py), B7 (Firestore+Storage rules).
 - **Plans still awaiting approval:** agent-visible-frontend-testing, mcp-restructure rough, operating-protocol-v2. (plan-lifecycle-v2, myapps-gcp-direction, continuity-and-purity now approved. Feedback loop plan in proposed, ready to approve.)
-- **PR #62** (Discord per-app channel triage) — approved by Lissandra, ready to merge. Branch: `feat/discord-per-app-channels`.
-- **Coder-worker feedback loop plan** — `plans/proposed/2026-04-09-coder-worker-feedback-loop.md`. All decisions resolved. Needs approval + promote.
+- **PR #62 MERGED** (Discord per-app channel triage).
+- **Coder-worker feedback loop IMPLEMENTED** — PRs #67 (A+B), #69 (C), #70 (D+E). All open, awaiting merge.
+- **Bee MVP in progress** — PRs #66 (B1+B7), #68 (B3). B2/B4/B5/B6/B8/B9 remain.
 - **E2E delivery pipeline LIVE** — discord-relay + coder-worker installed on Windows. Discord → Gemini → GitHub issue → Claude → PR → Firebase deploy. Full loop running.
 - **bypassPermissions** set in `.claude/settings.json` — subagents no longer prompt for Bash approval.
 - **Branch protection is LIVE on main** — 1 approval + required checks `Validate Scope / validate-scope` + `Firebase Hosting PR Preview / preview`. `enforce_admins: false`.
@@ -78,6 +79,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - 2026-04-09 (S33, direct mode, Mac evening/night): Discord-relay + coder-worker live on Windows. E2E pipeline running. plan-lifecycle-v2, myapps-gcp-direction, continuity-and-purity promoted to approved. Discord per-app channels PR #62 implemented + Lissandra-approved. Feedback loop plan fully resolved (proposed). Memory migrated from local auto-memory to repo. bypassPermissions set. age-pubkey cleaner false positive fixed. Soraka/Zilean named as continuity agents.
 - 2026-04-11 (S34, direct mode, Mac morning): Agent system hardened. Thinking budgets set on all agents (Syndra's recommendation). Skarner wired as stateless memory minion. All agents (executors + planners) can spawn Skarner+Yuumi only — enforced by instruction + background-only PreToolUse hook. Yuumi made stateless. Sub-agent memory scaffolding complete. lean-delegation + background-subagents rules added to Evelynn CLAUDE.md. Syndra's CLAUDE.md audit returned (not yet executed). log_session removed from end-session skill.
 - 2026-04-11 (S35, direct mode, Mac morning): Syndra's CLAUDE.md audit fully executed via Katarina (7/7 items). Lean-delegation feedback propagated to all 17 sub-agent memory files; Yuumi/Skarner corrected to expect detailed instructions. PR #62 still open.
+- 2026-04-11 (S36, direct mode, Mac, remote control): Big execution session. Merged PR #62. Promoted 2 plans. Wired 5 agents (Ornn/Reksai/Neeko/Zoe/Caitlyn). Full feedback loop implemented (PRs #67/#69/#70). Bee MVP B1+B7+B3 (PRs #66/#68). Subagent permissions broken by nested worktree — executed Phase C/D/E directly. Duong authorized coordinator direct execution as override.
 
 ## Feedback
 
