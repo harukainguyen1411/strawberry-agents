@@ -59,6 +59,12 @@ chore: <agent> subagent session closing — handoff, memory for YYYY-MM-DD sessi
 
 Push to main.
 
+Then touch the sentinel file so the `SubagentStop` hook knows the closing protocol ran:
+
+```bash
+bash -c 'touch "/tmp/claude-subagent-${CLAUDE_SESSION_ID}-closed"'
+```
+
 ## Step 6 — Final report
 
 Same as `/end-session` step 11, minus the transcript and log_session lines.

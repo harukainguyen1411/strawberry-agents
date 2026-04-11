@@ -35,6 +35,26 @@
           }
         ]
       }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.session_id' | { read -r sid; touch \"/tmp/claude-subagent-${sid}-started\"; }"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.session_id' | { read -r sid; if [ ! -f \"/tmp/claude-subagent-${sid}-closed\" ]; then echo '{\"systemMessage\":\"WARNING: Subagent closed without running /end-subagent-session. Run the closing protocol manually.\"}'; fi; rm -f \"/tmp/claude-subagent-${sid}-started\" \"/tmp/claude-subagent-${sid}-closed\"; }"
+          }
+        ]
+      }
     ]
   }
 }
