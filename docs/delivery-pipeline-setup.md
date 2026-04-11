@@ -205,7 +205,49 @@ Run each install script from an **elevated PowerShell** (right-click PowerShell 
 **bee-worker** (sister-agent Firebase queue worker):
 - [ ] Deferred — ship after the MyApps pipeline is proven
 
-### 9e. Keep the computer on
+### 9e. Cloudflare Tunnel (permanent webhook URL)
+
+Install cloudflared and create a named tunnel so the webhook URL survives reboots.
+
+```powershell
+# Install cloudflared
+winget install --id Cloudflare.cloudflared --accept-source-agreements --accept-package-agreements
+
+# Log in (opens browser — authorize darkstrawberry.com)
+cloudflared login
+
+# Create the tunnel
+cloudflared tunnel create strawberry-webhook
+
+# Route webhook.darkstrawberry.com to this tunnel
+cloudflared tunnel route dns strawberry-webhook webhook.darkstrawberry.com
+```
+
+Write `C:\Users\AD\.cloudflared\config.yml`:
+```yaml
+tunnel: <tunnel-uuid>
+credentials-file: C:\Users\AD\.cloudflared\<tunnel-uuid>.json
+
+ingress:
+  - hostname: webhook.darkstrawberry.com
+    service: http://localhost:9000
+  - service: http_status:404
+```
+
+Install and start as NSSM service (elevated PowerShell):
+```powershell
+$cf = (Get-Command cloudflared).Source
+nssm install cloudflared-tunnel $cf "tunnel run"
+nssm set cloudflared-tunnel AppStdout "C:\Users\AD\Duong\strawberry\apps\deploy-webhook\logs\cloudflared-stdout.log"
+nssm set cloudflared-tunnel AppStderr "C:\Users\AD\Duong\strawberry\apps\deploy-webhook\logs\cloudflared-stderr.log"
+nssm set cloudflared-tunnel AppRestartDelay 5000
+nssm set cloudflared-tunnel Start SERVICE_AUTO_START
+sc.exe start cloudflared-tunnel
+```
+
+GitHub webhook payload URL: `https://webhook.darkstrawberry.com/webhook`
+
+### 9f. Keep the computer on
 
 The services run on this machine, not in the cloud. The computer must stay on (not sleep). Go to **Settings → System → Power & sleep** and set sleep to **Never** when plugged in.
 
