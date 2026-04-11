@@ -1,12 +1,12 @@
 # Handoff
 
 ## State
-S34 complete. Agent system significantly upgraded: thinking budgets set on all agents, Skarner wired as memory minion, all agents can spawn Skarner+Yuumi only, Yuumi made stateless, lean-delegation + background-subagents rules + hook added. Sub-agent memory scaffolding done (plan `plans/approved/2026-04-11-subagent-memory-and-skarner.md` fully implemented). Syndra's CLAUDE.md audit report returned — not yet executed. All commits local only; push failing due to HTTPS auth issue on this machine.
+S35 complete. Syndra's CLAUDE.md audit fully executed (7/7 items, commits `1825803` + `51c7e8f`). Lean-delegation feedback propagated to all 17 sub-agent memory files (`0589d29`), with Yuumi/Skarner corrected to expect detailed instructions (`3b5594f`). PR #62 (Discord per-app channels) still open on `feat/discord-per-app-channels` — was ready to merge but not actioned this session.
 
 ## Next
-1. Fix git push — HTTPS remote auth broken (`https://github.com/Duongntd/strawberry.git` returning 404). Run `gh auth login` or switch remote to SSH.
-2. Execute Syndra's CLAUDE.md audit recommendations (priority order in her report, top items: remove `#rule-plans-no-pr` duplicate, fix roster.md pointer, strip stale HTML from poppy.md).
-3. PR #62 (Discord per-app channels) still ready to merge — approve when push is restored.
+1. Merge PR #62 (`feat/discord-per-app-channels`) — Lissandra-approved, ready.
+2. Review Syndra's proposed plan `plans/proposed/2026-04-09-wire-remaining-sonnet-specialists.md` — Neeko, Zoe, Caitlyn, Ornn still aspirational.
+3. Coder-worker feedback loop plan `plans/proposed/2026-04-09-coder-worker-feedback-loop.md` — decisions resolved, needs approval + promote.
 
 ## Context
-.claude/agents/ writes are blocked in subagent mode — I handle these directly in top-level session. This is a known gap in the coordinator-only rule, not a discipline failure. Skarner and Yuumi are stateless leaf nodes; all other agents retain memory.
+Git push is working. Lean-delegation rule: specialists get what+why only; Yuumi/Skarner get detailed explicit instructions.
