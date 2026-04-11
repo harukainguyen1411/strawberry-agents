@@ -1,14 +1,15 @@
 # Handoff
 
 ## State
-PR #62 merged. 5 open PRs: #66 (Bee B1+B7 scaffold/rules), #67 (feedback loop A+B), #68 (Bee B3 comments.py), #69 (feedback loop C preview), #70 (feedback loop D+E reaction/shipped). Full Discord feedback loop implemented across #67/#69/#70. 5 new agents wired: Ornn, Reksai, Neeko, Zoe, Caitlyn. 2 plans promoted to approved.
+Bee MVP B1-B9 all merged to main (PRs #66-#75). validate-scope CI now informational. 9 improvement issues (#76-#84) filed with `myapps`+`ready` labels — Windows coder-worker should be processing them autonomously. 5 earlier PRs (#66-#70) also merged this session.
 
 ## Next
-1. Merge the 5 open PRs (#66-#70) — all need review but are functionally complete
-2. Bee MVP remaining: B2 (Firestore wiring), B4 (claude.ts), B5 (worker.ts), B6 (install script), B8+B9 (Vue frontend)
-3. `apps/bee-worker/src/firestore.ts` and `storage.ts` were partially written on disk (main branch) but NOT committed — check and use or rewrite
+1. B10 E2E smoke test — blocked on Duong: sister's Firebase UID, `style-rules.md` Vietnamese content, `install-bee-worker.ps1` run on Windows, service account creation
+2. Check coder-worker output — it should be producing PRs for issues #76-#84 autonomously
+3. Review and merge whatever the worker produced
 
 ## Context
-- This session ran from a nested worktree — caused subagent Write/Bash blocks. ALWAYS start Evelynn from repo root `~/Documents/Personal/strawberry/`, never from a worktree.
-- Duong authorized direct execution when subagents are blocked — override coordinator-only rule.
-- `isolation: "worktree"` on Agent tool causes triple-nesting when session is already in a worktree. Don't use it from worktree sessions.
+- Started from repo root this session — no worktree nesting issues. Keep doing this.
+- Stale worktrees exist under `.worktrees/` from previous sessions — safe to clean up.
+- Agent memory files (katarina, lissandra, neeko) modified by subagents but unstaged — will be committed with this session close.
+- PR #73 (B4) was initially targeting wrong base branch (feat/bee-mvp-b1-b7), fixed to main via `gh pr edit`.

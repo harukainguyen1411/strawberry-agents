@@ -57,7 +57,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Protocol migration CLOSED** (2026-04-08 S30). Commit 8 + Commit 10 landed. Plan at `plans/implemented/2026-04-09-protocol-migration-detailed.md`.
 - **MCP restructure phase-1 CLOSED.** agent-manager archived, `/agent-ops` skill wired. Plan implemented.
 - **Shen + Fiora profiles wired** (`.claude/agents/{shen,fiora}.md`). Ornn/Reksai/Neeko/Zoe/Caitlyn still aspirational — plan at `plans/proposed/2026-04-09-wire-remaining-sonnet-specialists.md` by Syndra.
-- **Bee parked behind delivery-pipeline.** Architecture: `plans/approved/2026-04-09-sister-research-agent-karma.md`. Build plan (10 PRs): `plans/approved/2026-04-09-bee-mvp-build.md` by Syndra. Max ToS question resolved via local-Windows-worker architecture. First PRs to delegate: B1 (apps/bee-worker scaffold), B3 (comments.py), B7 (Firestore+Storage rules).
+- **Bee MVP B1-B9 MERGED.** All implementation PRs (#66-#75) on main. B10 (E2E smoke test) blocked on Duong: sister's Firebase UID, style-rules.md content, install-bee-worker.ps1 on Windows, service account. 9 improvement issues (#76-#84) filed for autonomous coder-worker processing.
 - **Plans still awaiting approval:** agent-visible-frontend-testing, mcp-restructure rough, operating-protocol-v2. (plan-lifecycle-v2, myapps-gcp-direction, continuity-and-purity now approved. Feedback loop plan in proposed, ready to approve.)
 - **PR #62 MERGED** (Discord per-app channel triage).
 - **Coder-worker feedback loop IMPLEMENTED** — PRs #67 (A+B), #69 (C), #70 (D+E). All open, awaiting merge.
@@ -80,6 +80,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - 2026-04-11 (S34, direct mode, Mac morning): Agent system hardened. Thinking budgets set on all agents (Syndra's recommendation). Skarner wired as stateless memory minion. All agents (executors + planners) can spawn Skarner+Yuumi only — enforced by instruction + background-only PreToolUse hook. Yuumi made stateless. Sub-agent memory scaffolding complete. lean-delegation + background-subagents rules added to Evelynn CLAUDE.md. Syndra's CLAUDE.md audit returned (not yet executed). log_session removed from end-session skill.
 - 2026-04-11 (S35, direct mode, Mac morning): Syndra's CLAUDE.md audit fully executed via Katarina (7/7 items). Lean-delegation feedback propagated to all 17 sub-agent memory files; Yuumi/Skarner corrected to expect detailed instructions. PR #62 still open.
 - 2026-04-11 (S36, direct mode, Mac, remote control): Big execution session. Merged PR #62. Promoted 2 plans. Wired 5 agents (Ornn/Reksai/Neeko/Zoe/Caitlyn). Full feedback loop implemented (PRs #67/#69/#70). Bee MVP B1+B7+B3 (PRs #66/#68). Subagent permissions broken by nested worktree — executed Phase C/D/E directly. Duong authorized coordinator direct execution as override.
+- 2026-04-11 (S37, direct mode, Mac, remote control): Bee MVP sprint — merged 9 PRs (#66-#75), completing B1-B9. Fixed validate-scope CI (Katarina). Parallel execution: B2 (Katarina), B4 (Fiora), B6 (Ornn), B8+B9 (Neeko) in isolated worktrees. Lissandra reviewed all batches. Filed 9 improvement issues (#76-#84) labeled for autonomous coder-worker processing. B10 smoke test blocked on Duong. Clean session — started from repo root, no permission issues.
 
 ## Feedback
 

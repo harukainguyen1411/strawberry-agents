@@ -5,6 +5,14 @@
 
 ## Sessions
 - 2026-04-03: First session. Tasklist app UI/UX review + implementation (11 changes).
+- 2026-04-11: Bee B8 — Vue frontend /bee route + upload flow. PR #74.
+
+## apps/myapps patterns
+- Firebase initialized at `apps/myapps/src/firebase/config.ts` — exports `auth`, `db`, `storage` (storage added in B8).
+- Auth state lives in `useAuthStore` (Pinia). Use `authStore.user` for the Firebase User object and `authStore.login()` to trigger Google sign-in.
+- No `useFirebase.ts` composable exists — auth helpers are in `firebase/auth.ts` consumed by the store.
+- Routes use lazy imports `() => import(...)`. Bee routes have no `meta.requiresAuth` — sign-in gate is in the component.
+- `crypto.randomUUID()` is available (Vite targets modern browsers); no uuid package needed.
 
 ## Key Context
 - Duong doesn't need accessibility work on personal tools — they're just for him. **Why:** He explicitly marked the entire accessibility section "no need."
