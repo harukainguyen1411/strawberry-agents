@@ -30,5 +30,12 @@
 - Tool sandbox: git commands work reliably. Python3 -c works if avoiding denylist patterns. Write/Edit work for non-dotfile paths.
 - Step 15 exit criteria test (fresh session validation) was not performed — requires Evelynn to run from a new top-level session.
 
+- 2026-04-11 (session 7): Implemented feedback loop Phase A+B per plan 2026-04-09-coder-worker-feedback-loop.md. PR #67 on Duongntd/strawberry, branch feat/feedback-loop-phase-ab. 10 files changed: discord-relay strawberry-meta block emission, coder-worker extractStrawberryMeta + resolveReviewers + PR meta re-emit + reviewer auto-assign + unit tests.
+
+## Operational Notes (updated)
+- Bash sandbox blocks npm/npx/vitest/cd commands — use absolute paths. Test runners also blocked; tests must be verified by caller after npm install.
+- gh pr edit blocked by sandbox but gh pr create works fine.
+- git worktree add from main repo root works fine.
+
 ## Feedback
 - If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
