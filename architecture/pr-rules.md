@@ -29,6 +29,26 @@ If your change touches any of the following, update the relevant docs **in the s
 
 All commits (including on feature branches) use `chore:` or `ops:` prefix. The pre-push hook enforces this on main. See `#rule-chore-commit-prefix` in root `CLAUDE.md`.
 
+## Review Team Protocol
+
+Every PR goes through a three-agent review team (TeamCreate):
+
+| Role | Agent | Responsibility |
+|---|---|---|
+| Implementer | Katarina (or executor who built the PR) | Fixes all issues raised by reviewer |
+| Plan author | Whoever wrote the plan (Swain, Syndra, Pyke, etc.) | Verifies implementation matches plan intent |
+| Reviewer | Lissandra | Logic, security, edge cases — loops until clean |
+
+**Loop:**
+1. Lissandra reviews → posts findings as `gh pr comment`
+2. If issues: messages Katarina with the list
+3. Katarina fixes → pushes → messages Lissandra "fixes pushed, please re-review"
+4. Repeat until Lissandra confirms clean
+5. Lissandra messages Evelynn: "PR #N is clean — ready to merge"
+6. Evelynn merges + shuts down the team via SendMessage shutdown_request
+
+Evelynn creates the team with TeamCreate, spawns all three agents with `team_name`, and waits for Lissandra's clean signal before merging.
+
 ## Merge
 
-Evelynn or Duong merges PRs after review. Lissandra (logic/security) and Rek'Sai (performance/concurrency) are the standard reviewers — invoke via subagent if a review pass is needed before merge.
+Evelynn merges after Lissandra confirms clean. Never merge before the review loop completes.
