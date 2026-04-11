@@ -26,6 +26,7 @@
 - 2026-04-11 (subagent, S3): Syndra CLAUDE.md audit. Fixed roster pointer, removed evelynn duplicate rule, moved Operating Modes to evelynn/CLAUDE.md, fixed learnings/ path, trimmed agent-network session closing explainer, reconciled Neeko/Zoe/Caitlyn as aspirational. Commit 1825803. .claude/agents/poppy.md comment blocked by harness — flagged for Evelynn.
 - 2026-04-11 (subagent, B5): Bee MVP task B5. Implemented worker.ts (orchestration loop), docx.ts (execa wrapper around comments.py), index.ts (boot + SIGTERM/SIGINT shutdown). Branch feat/bee-mvp-b5, commit 825e54a, PR #75. tsc clean.
 - 2026-04-11 (subagent, S4): windows-push-autodeploy plan. apps/deploy-webhook (HMAC webhook + health + file-lock detached spawn), scripts/windows/deploy-services.json + deploy-all.ps1 + deploy-service.ps1 + install-deploy-webhook.ps1. Branch feat/windows-push-autodeploy, commit ea87964, PR #89. tsc clean.
+- 2026-04-11 (subagent, S5): subagent-stop-hook plan blocked — .claude/ writes denied by harness in subagent mode. Needs Evelynn top-level session.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
