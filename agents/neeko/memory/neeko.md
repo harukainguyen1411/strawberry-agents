@@ -16,3 +16,6 @@
 ## Working Style
 - Duong gives feedback via inline `//` comments in files — check inbox files for annotated plans/reviews.
 - He prefers action over discussion. Review + implement in one session when possible.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

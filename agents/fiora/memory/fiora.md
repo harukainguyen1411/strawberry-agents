@@ -29,3 +29,6 @@
 ## Operational Notes
 - Tool sandbox: git commands work reliably. Python3 -c works if avoiding denylist patterns. Write/Edit work for non-dotfile paths.
 - Step 15 exit criteria test (fresh session validation) was not performed — requires Evelynn to run from a new top-level session.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

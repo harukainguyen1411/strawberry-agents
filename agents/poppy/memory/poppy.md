@@ -28,3 +28,6 @@
 ## Known Boundaries
 - Sibling minions: Tibbers (shell command runner, Haiku, not yet built). The originally proposed Yuumi-as-read/explore-minion was dropped on 2026-04-08 (see supersession notice in `plans/approved/2026-04-08-minion-layer-expansion.md`); exploration/synthesis now routes to the harness `Explore` subagent. The name "Yuumi" was reassigned to a separate top-level companion instance that only handles Evelynn restarts — not a peer minion to Poppy.
 - Decision tree for which minion handles what lives in Evelynn's profile (via the rules-restructure plan, not yet landed).
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

@@ -37,3 +37,6 @@
 - Firestore composite index required for queries with inequality + equality on different fields.
 - Firebase Admin SDK task tools: validate status/priority/date before write; call _assert_doc_exists before update/delete.
 - Firestore listener lifecycle: own load()/cleanup() in the layout component that wraps router-view, NOT in child views. Child views unmount on navigation; the layout persists. **Why:** Dashboard.onUnmounted killed listener before Board could use it — Board's guard skipped re-subscribe and showed stale data.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.

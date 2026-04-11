@@ -18,3 +18,6 @@ Implementation agent for git workflows, security hardening, credential managemen
 - System hooks (PreToolUse) are now active in .claude/settings.json — gh-auth-guard.sh blocks auth switching patterns.
 - Writing CI workflow files containing `git rebase` or `--force-with-lease` triggers the system's own write protection hook. Need explicit approval for such files.
 - Use `scripts/safe-checkout.sh` for existing branches; use `git worktree add -b` for new branches.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
