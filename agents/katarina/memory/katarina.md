@@ -27,6 +27,8 @@
 - 2026-04-11 (subagent, B5): Bee MVP task B5. Implemented worker.ts (orchestration loop), docx.ts (execa wrapper around comments.py), index.ts (boot + SIGTERM/SIGINT shutdown). Branch feat/bee-mvp-b5, commit 825e54a, PR #75. tsc clean.
 - 2026-04-11 (subagent, S4): windows-push-autodeploy plan. apps/deploy-webhook (HMAC webhook + health + file-lock detached spawn), scripts/windows/deploy-services.json + deploy-all.ps1 + deploy-service.ps1 + install-deploy-webhook.ps1. Branch feat/windows-push-autodeploy, commit ea87964, PR #89. tsc clean.
 - 2026-04-11 (subagent, S5): subagent-stop-hook plan blocked — .claude/ writes denied by harness in subagent mode. Needs Evelynn top-level session.
+- 2026-04-11 (subagent, S6): PR #89 review fixes. Restored agents/pyke/memory/pyke.md to main state. Added npm ci before npm run build in deploy-service.ps1. Added stale lock detection (10 min) with timestamp in lock file to index.ts. Commit d85507a pushed.
+- 2026-04-11 (subagent, S7): PR #89 review loop complete. Fixed DEPLOY_REPO_ROOT guard (exit(1) + no cwd fallback), removed ObjectName from NSSM install, npm ci in install-deploy-webhook.ps1, merged origin/main. Commits 9514791/40ddb8f/2ea1435/e04a478. PR approved by Lissandra.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
