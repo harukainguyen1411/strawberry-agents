@@ -1,6 +1,6 @@
 ---
 title: Sub-agent memory/learnings persistence + Skarner memory-retrieval minion
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-11
 ---
