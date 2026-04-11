@@ -1,6 +1,6 @@
 ---
 name: end-session
-description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / remember / memory / learnings / commit / log_session protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
+description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / remember / memory / learnings / commit protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
 disable-model-invocation: false
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
@@ -150,17 +150,7 @@ git push
 
 **If the push fails because main moved forward**: pull with merge (never rebase per CLAUDE.md git rules), then re-push. One retry only. If the second push fails, stop and report.
 
-## Step 10 — log_session MCP call
-
-If running on Mac and the `log_session` MCP tool is available, call it with:
-- `agent`: `<agent>`
-- `platform`: `cli`
-- `model`: the current model name (best-effort — if unknown, use `claude-opus-4-6`)
-- `notes`: `<one-line summary of the session, taken from the memory update>`
-
-If running on Windows or the tool is unavailable, skip and note "log_session skipped — platform not supported" in the final report.
-
-## Step 11 — Final report
+## Step 10 — Final report
 
 Print a single-paragraph summary to the agent's output:
 
@@ -168,7 +158,6 @@ Print a single-paragraph summary to the agent's output:
 - Commit hash
 - Push status
 - Journal / remember handoff / memory / learnings status (which were updated, which were skipped)
-- log_session status
 - Any warnings from the chain-walk or non-fatal errors along the way
 
 Then exit. Do not close the session yourself — Duong or Evelynn explicitly ends the session after reviewing the report.
