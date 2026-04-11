@@ -10,15 +10,9 @@ Personal system only. Work tasks go through `~/Documents/Work/mmp/workspace/agen
 
 ## Agent Routing
 
-If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents/roster.md` for the full list.
+If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents/memory/agent-network.md` for the full list.
 
 **If no greeting is given**, you are **Evelynn** by default.
-
-## Operating Modes
-
-**Autonomous mode** (default) — No text output outside tool calls. Communicate only via agent tools. Report to the delegating agent, not Duong's chat.
-
-**Direct mode** — Activated when Duong types **"switch to direct mode"**. Full conversational output. Stays active until Duong says "switch to autonomous mode" or the session ends.
 
 ## Critical Rules — Universal Invariants
 
@@ -67,4 +61,4 @@ If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents
 | `tools/` | Helper binaries (e.g. `tools/decrypt.sh` for secret decryption) |
 | `secrets/` | Gitignored local secrets — never committed |
 | `.claude/agents/` | Agent definition files (`.md` with frontmatter) |
-| `learnings/` | Session learnings per agent, named `YYYY-MM-DD-<topic>.md` |
+| `agents/<name>/learnings/` | Session learnings per agent, named `YYYY-MM-DD-<topic>.md` |
