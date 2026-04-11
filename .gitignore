@@ -63,3 +63,5 @@ apps/discord-relay/dist/
 apps/discord-relay/logs/
 apps/coder-worker/dist/
 apps/coder-worker/logs/
+apps/deploy-webhook/dist/
+apps/deploy-webhook/logs/
