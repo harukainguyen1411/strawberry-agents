@@ -1,11 +1,11 @@
 # Handoff
 
 ## State
-Delivery pipeline is live on Windows. Four NSSM services running: StrawberryDiscordRelay, StrawberryCoderWorker, deploy-webhook (port 9000), cloudflared-tunnel. All committed to main. Setup runbook updated at `docs/delivery-pipeline-setup.md`.
+Delivery pipeline fully live. Four NSSM services running: StrawberryDiscordRelay, StrawberryCoderWorker, deploy-webhook (port 9000), cloudflared-tunnel (named tunnel, `webhook.darkstrawberry.com` -> localhost:9000). GitHub webhook configured and verified 200. Runbook complete at `docs/delivery-pipeline-setup.md`.
 
 ## Next
-1. Configure GitHub webhook on Mac: `https://github.com/Duongntd/strawberry/settings/hooks/new` — Payload URL `https://webhook.darkstrawberry.com/webhook`, secret from `secrets/deploy-webhook-secret.txt`.
-2. Run smoke test (runbook §10): post in Discord forum, verify full pipeline fires.
+1. Run smoke test (runbook §10): post in Discord forum, verify full pipeline fires end to end.
+2. Monitor first real coder-worker PR — review diff carefully before merging.
 
 ## Context
 - Named Cloudflare tunnel live: `strawberry-webhook` (UUID 0853c7c1-7da2-4a28-8fc4-12d5130bfb63), routes `webhook.darkstrawberry.com` to localhost:9000. Config at `C:\Users\AD\.cloudflared\config.yml`.
