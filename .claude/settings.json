@@ -14,6 +14,15 @@
             "command": "bash scripts/gh-auth-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"import sys,json; d=json.load(sys.stdin); sys.exit(2) if not d.get('tool_input',{}).get('run_in_background') else sys.exit(0)\""
+          }
+        ]
       }
     ],
     "PostToolUse": [
