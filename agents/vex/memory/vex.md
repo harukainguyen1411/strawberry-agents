@@ -16,4 +16,4 @@ Windows systems operator. Claude Sonnet 4.6 instance running on Duong's Windows 
 - `icacls /inheritance:r` on a file blocks directory-level ACE propagation — grant SYSTEM directly on the file, not just the parent dir.
 
 ## Sessions
-- 2026-04-11 (SN, cli): First session — installed StrawberryDiscordRelay, StrawberryCoderWorker, deploy-webhook, cloudflared-tunnel; updated delivery pipeline runbook; created Vex agent folder.
+- 2026-04-11 (SN, cli): First session — installed StrawberryDiscordRelay, StrawberryCoderWorker, deploy-webhook, cloudflared-tunnel; set up named Cloudflare tunnel on darkstrawberry.com; full pipeline live and verified.
