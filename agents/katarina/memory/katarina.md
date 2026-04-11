@@ -20,6 +20,10 @@
 - 2026-04-08 (S15, subagent): Executed Swain's gdoc-mirror-revision plan. Committed in-flight state, migrated 30 plans (unpublish/republish), wrote plan-promote.sh, added CLAUDE rule 12 + agent-network step 10.
 - 2026-04-08 (S17, subagent): myapps PR #54 unblock. Fixed firebase.json missing firestore.indexes.json registration (1af0ad3). Strawberry housekeeping — memory + plan promoted.
 
+## Sessions (recent)
+- 2026-04-11 (subagent, S1): Executed subagent-memory-and-skarner plan. Seeded learnings/ for katarina/fiora/shen/yuumi/poppy. Scaffolded agents/skarner/ with profile + memory. Updated end-subagent-session skill with inline steps. Updated agent-network.md + evelynn/CLAUDE.md. Commit 89c51e1.
+- 2026-04-11 (subagent, S2): Verified plan completion — all items done. Confirmed .claude/agents/ writes blocked in subagent mode (handled by Evelynn). Committed outstanding memory update.
+
 ## Known Repos
 - strawberry: Personal agent system (this repo)
 - myapps (github.com/Duongntd/myapps): Vue 3 + Vite + Firebase + Tailwind. Strict pre-commit hooks (typecheck + tests + lint).
