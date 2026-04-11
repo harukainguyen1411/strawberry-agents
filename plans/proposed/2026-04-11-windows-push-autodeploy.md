@@ -13,11 +13,11 @@ Three NSSM-supervised Node.js services on Duong's Windows box (discord-relay, co
 
 ## Goal
 
-A push to main on GitHub automatically triggers pull, build, and restart of affected services on the Windows box. Zero manual steps after initial setup.
+A push to main on GitHub automatically triggers pull, build, and restart of all three services on the Windows box. Zero manual steps after initial setup.
 
 ## Architecture
 
-A lightweight Node.js webhook receiver (`apps/deploy-webhook`) runs as a fourth NSSM service on Windows. GitHub sends a push event; the receiver validates the HMAC signature, determines which apps changed, and runs a deploy script for each affected service sequentially. The deploy script is a PowerShell script under `scripts/windows/` that handles git pull, npm run build, and nssm restart.
+A lightweight Node.js webhook receiver (`apps/deploy-webhook`) runs as a fourth NSSM service on Windows. GitHub sends a push event; the receiver validates the HMAC signature and unconditionally deploys all three services (discord-relay, coder-worker, bee-worker). Since this is a monorepo with shared code, any push to main rebuilds and restarts everything. The deploy script is a PowerShell script under `scripts/windows/` that handles git pull, npm run build, and nssm restart.
 
 ### Why Node.js for the receiver
 
@@ -27,8 +27,9 @@ Consistent with the existing stack (all three services are Node.js). No new runt
 
 | Component | Path | Purpose |
 |-----------|------|---------|
-| Webhook receiver | `apps/deploy-webhook/` | HTTP server, signature validation, change detection, invokes deploy script |
-| Deploy script | `scripts/windows/deploy-service.ps1` | Per-service: git pull, npm run build, nssm restart. Called by receiver. |
+| Webhook receiver | `apps/deploy-webhook/` | HTTP server, signature validation, invokes deploy script |
+| Deploy script | `scripts/windows/deploy-service.ps1` | Per-service: npm run build, nssm restart. Called once per service. |
+| Deploy-all wrapper | `scripts/windows/deploy-all.ps1` | git pull once, then calls deploy-service.ps1 for each of the three services sequentially. |
 | Install script | `scripts/windows/install-deploy-webhook.ps1` | NSSM service registration, follows install-bee-worker.ps1 pattern |
 
 ### Request flow
@@ -36,24 +37,18 @@ Consistent with the existing stack (all three services are Node.js). No new runt
 ```
 GitHub push event (POST /webhook)
   -> deploy-webhook validates HMAC-SHA256 signature
-  -> parses commit list, extracts changed file paths
-  -> determines affected apps (any file under apps/<name>/ or shared root files like package.json)
-  -> for each affected service, spawns: powershell deploy-service.ps1 -ServiceName <name>
-  -> deploy-service.ps1: git pull origin main, npm run build (in app dir), nssm restart <name>
-  -> webhook responds 200 immediately; deploys run async in background
+  -> responds 200 immediately
+  -> spawns: powershell deploy-all.ps1
+  -> deploy-all.ps1: git pull --ff-only origin main
+  -> for each service (discord-relay, coder-worker, bee-worker):
+       deploy-service.ps1 -ServiceName <name>: npm run build (in app dir), nssm restart <name>
 ```
 
 ## Design Decisions
 
-### D1: Change detection strategy
+### D1: Unconditional full deploy
 
-Map changed file paths to services:
-- `apps/discord-relay/**` -> discord-relay
-- `apps/coder-worker/**` -> coder-worker
-- `apps/bee-worker/**` -> bee-worker
-- Any file outside `apps/` (e.g. root tsconfig, shared packages) -> rebuild ALL three services
-
-This is a simple prefix match. The mapping is a config object in the receiver, not a separate config file.
+Every push to main rebuilds and restarts all three services. No change detection. This is a monorepo with shared TypeScript config, shared dependencies, and potential shared code between apps. Selective rebuild would add complexity for negligible benefit on a personal system with three small services. A full deploy takes under two minutes.
 
 ### D2: Sequential deploys, not parallel
 
@@ -77,7 +72,7 @@ A file lock (`deploy.lock` in the repo root or a temp dir) prevents concurrent d
 
 ### D7: Logging
 
-NSSM handles stdout/stderr log rotation (same pattern as bee-worker). The receiver logs each webhook receipt, validation result, detected changes, and deploy outcomes. Deploy script logs each step (pull, build, restart) with timestamps.
+NSSM handles stdout/stderr log rotation (same pattern as bee-worker). The receiver logs each webhook receipt, validation result, and deploy outcomes. Deploy script logs each step (pull, build, restart) with timestamps.
 
 ### D8: Health check
 
@@ -88,7 +83,7 @@ GET `/health` returns 200 with uptime and last deploy timestamp. Useful for manu
 | Failure | Behavior |
 |---------|----------|
 | Invalid signature | 401, logged, no deploy |
-| git pull fails | Service not restarted, error logged, other services still attempted |
+| git pull fails | No services restarted, entire deploy aborted, error logged |
 | npm run build fails | Service not restarted for that app, error logged |
 | nssm restart fails | Error logged |
 | Webhook receiver crashes | NSSM auto-restarts it (AppRestartDelay) |
@@ -102,7 +97,8 @@ GET `/health` returns 200 with uptime and last deploy timestamp. Useful for manu
 - `apps/deploy-webhook/package.json` -- minimal: express, dotenv
 - `apps/deploy-webhook/src/index.ts` -- webhook server (~100 lines)
 - `apps/deploy-webhook/tsconfig.json`
-- `scripts/windows/deploy-service.ps1` -- per-service deploy logic
+- `scripts/windows/deploy-all.ps1` -- git pull + iterate all three services
+- `scripts/windows/deploy-service.ps1` -- per-service build + restart logic
 - `scripts/windows/install-deploy-webhook.ps1` -- NSSM install script
 
 ### Network setup (manual, documented)
