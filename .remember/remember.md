@@ -1,12 +1,12 @@
 # Handoff
 
 ## State
-PR #62 (Discord per-app channel triage, branch `feat/discord-per-app-channels`) approved by Lissandra — ready to merge. Coder-worker feedback loop plan at `plans/proposed/2026-04-09-coder-worker-feedback-loop.md` fully resolved, needs approval + promote. bypassPermissions active in `.claude/settings.json`. Discord-relay + coder-worker running on Windows — E2E pipeline live.
+S34 complete. Agent system significantly upgraded: thinking budgets set on all agents, Skarner wired as memory minion, all agents can spawn Skarner+Yuumi only, Yuumi made stateless, lean-delegation + background-subagents rules + hook added. Sub-agent memory scaffolding done (plan `plans/approved/2026-04-11-subagent-memory-and-skarner.md` fully implemented). Syndra's CLAUDE.md audit report returned — not yet executed. All commits local only; push failing due to HTTPS auth issue on this machine.
 
 ## Next
-1. Merge PR #62
-2. Approve + promote `plans/proposed/2026-04-09-coder-worker-feedback-loop.md`
-3. Review operating-protocol-v2 and MCP restructure rough plan (both in `plans/proposed/`)
+1. Fix git push — HTTPS remote auth broken (`https://github.com/Duongntd/strawberry.git` returning 404). Run `gh auth login` or switch remote to SSH.
+2. Execute Syndra's CLAUDE.md audit recommendations (priority order in her report, top items: remove `#rule-plans-no-pr` duplicate, fix roster.md pointer, strip stale HTML from poppy.md).
+3. PR #62 (Discord per-app channels) still ready to merge — approve when push is restored.
 
 ## Context
-Push as `Duongntd` (bypass), not `harukainguyen1411` (no bypass). `duong.nguyen.thai` is work account — never for Strawberry. Plan-promote requires sourcing 4 Google env files first or Drive unpublish fails. age-pubkey cleaner false positive fixed (now warning only).
+.claude/agents/ writes are blocked in subagent mode — I handle these directly in top-level session. This is a known gap in the coordinator-only rule, not a discipline failure. Skarner and Yuumi are stateless leaf nodes; all other agents retain memory.
