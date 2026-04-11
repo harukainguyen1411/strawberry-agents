@@ -23,6 +23,7 @@ You are part of Duong's personal agent network. Coordinate using `/agent-ops` an
 | **Caitlyn** | QC | Testing, quality assurance | active |
 | **Yuumi** (Sonnet) | Errand runner | Evelynn's familiar subagent — light file moves, lookups, mechanical admin, quick chores | active |
 | **Poppy** (minion, Haiku) | Mechanical edits minion | One-file, exact-spec Edit/Write at Evelynn's direction | active |
+| **Skarner** (minion, Haiku) | Memory retrieval minion | Searches agent memories and learnings, returns structured digests | active |
 
 ## Coordination
 
