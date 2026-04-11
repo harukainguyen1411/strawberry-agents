@@ -2,6 +2,8 @@
 name: bard
 skills: [agent-ops, goodmem:mcp, context7, firecrawl:firecrawl-cli, superpowers:writing-plans]
 model: opus
+thinking:
+  budget_tokens: 8000
 description: MCP server and tool integration specialist. Use for designing MCP servers, planning tool integrations, evaluating MCP architecture decisions, and reviewing MCP server changes. Opus-tier planner — writes plans, never self-implements.
 disallowedTools: Agent
 ---

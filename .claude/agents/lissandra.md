@@ -2,6 +2,8 @@
 name: lissandra
 skills: [agent-ops, coderabbit:code-review, pr-review-toolkit:review-pr, superpowers:requesting-code-review, superpowers:receiving-code-review, context7]
 model: sonnet
+thinking:
+  budget_tokens: 8000
 description: PR reviewer focused on logic correctness, security, and edge cases. Sonnet-tier reviewer. Use when a PR needs a logic/security review pass.
 disallowedTools: Agent, Write, Edit
 ---

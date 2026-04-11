@@ -2,6 +2,8 @@
 name: swain
 skills: [agent-ops, context7, superpowers:writing-plans, superpowers:brainstorming, firecrawl:firecrawl-cli]
 model: opus
+thinking:
+  budget_tokens: 10000
 description: System architect. Use for architectural design, scaling decisions, infrastructure planning, and any cross-cutting structural change to the codebase. Opus-tier planner — writes plans, never self-implements.
 disallowedTools: Agent
 ---
