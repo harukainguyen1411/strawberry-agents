@@ -1,6 +1,6 @@
 ---
 title: GitHub Push Webhook Auto-Deploy for Windows Services
-status: proposed
+status: approved
 owner: swain
 created: 2026-04-11
 ---
