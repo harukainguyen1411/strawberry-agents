@@ -1,6 +1,6 @@
 ---
 title: Wire remaining Sonnet specialists (Ornn, Reksai, Neeko, Zoe, Caitlyn)
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-09
 ---
