@@ -17,7 +17,7 @@ A push to main on GitHub automatically triggers pull, build, and restart of all 
 
 ## Architecture
 
-A lightweight Node.js webhook receiver (`apps/deploy-webhook`) runs as a fourth NSSM service on Windows. GitHub sends a push event; the receiver validates the HMAC signature and unconditionally deploys all three services (discord-relay, coder-worker, bee-worker). Since this is a monorepo with shared code, any push to main rebuilds and restarts everything. The deploy script is a PowerShell script under `scripts/windows/` that handles git pull, npm run build, and nssm restart.
+A lightweight Node.js webhook receiver (`apps/deploy-webhook`) runs as a fourth NSSM service on Windows. GitHub sends a push event; the receiver validates the HMAC signature and unconditionally deploys every service listed in a config file. Since this is a monorepo with shared code, any push to main rebuilds and restarts everything. The deploy script is a PowerShell script under `scripts/windows/` that handles git pull, npm run build, and nssm restart. Adding a new service requires only one new line in the config file.
 
 ### Why Node.js for the receiver
 
@@ -28,8 +28,9 @@ Consistent with the existing stack (all three services are Node.js). No new runt
 | Component | Path | Purpose |
 |-----------|------|---------|
 | Webhook receiver | `apps/deploy-webhook/` | HTTP server, signature validation, invokes deploy script |
+| Service config | `scripts/windows/deploy-services.json` | Lists all services to deploy (single source of truth) |
 | Deploy script | `scripts/windows/deploy-service.ps1` | Per-service: npm run build, nssm restart. Called once per service. |
-| Deploy-all wrapper | `scripts/windows/deploy-all.ps1` | git pull once, then calls deploy-service.ps1 for each of the three services sequentially. |
+| Deploy-all wrapper | `scripts/windows/deploy-all.ps1` | git pull once, reads config, calls deploy-service.ps1 for each service sequentially. |
 | Install script | `scripts/windows/install-deploy-webhook.ps1` | NSSM service registration, follows install-bee-worker.ps1 pattern |
 
 ### Request flow
@@ -40,15 +41,34 @@ GitHub push event (POST /webhook)
   -> responds 200 immediately
   -> spawns: powershell deploy-all.ps1
   -> deploy-all.ps1: git pull --ff-only origin main
-  -> for each service (discord-relay, coder-worker, bee-worker):
-       deploy-service.ps1 -ServiceName <name>: npm run build (in app dir), nssm restart <name>
+  -> reads scripts/windows/deploy-services.json
+  -> for each service in config:
+       deploy-service.ps1 -ServiceName <name> -AppDir <appDir>: npm run build, nssm restart
 ```
 
 ## Design Decisions
 
-### D1: Unconditional full deploy
+### D1: Unconditional full deploy, config-driven service list
 
-Every push to main rebuilds and restarts all three services. No change detection. This is a monorepo with shared TypeScript config, shared dependencies, and potential shared code between apps. Selective rebuild would add complexity for negligible benefit on a personal system with three small services. A full deploy takes under two minutes.
+Every push to main rebuilds and restarts all services listed in `scripts/windows/deploy-services.json`. No change detection. This is a monorepo with shared TypeScript config, shared dependencies, and potential shared code between apps. Selective rebuild would add complexity for negligible benefit on a personal system.
+
+The config file is the single source of truth for which services get deployed. Adding a new NSSM service requires only appending one entry -- no script edits.
+
+**Config format** (`scripts/windows/deploy-services.json`):
+
+```json
+[
+  { "name": "discord-relay",  "appDir": "apps/discord-relay" },
+  { "name": "coder-worker",   "appDir": "apps/coder-worker" },
+  { "name": "bee-worker",     "appDir": "apps/bee-worker" }
+]
+```
+
+Each entry has two fields:
+- `name` -- the NSSM service name (used for `nssm restart <name>`)
+- `appDir` -- path relative to repo root where `npm run build` is executed
+
+JSON was chosen over YAML or plain text because PowerShell has native `ConvertFrom-Json` and Node.js has native `JSON.parse` -- no extra dependencies for either consumer. The file is committed to the repo so it deploys with everything else.
 
 ### D2: Sequential deploys, not parallel
 
@@ -97,7 +117,8 @@ GET `/health` returns 200 with uptime and last deploy timestamp. Useful for manu
 - `apps/deploy-webhook/package.json` -- minimal: express, dotenv
 - `apps/deploy-webhook/src/index.ts` -- webhook server (~100 lines)
 - `apps/deploy-webhook/tsconfig.json`
-- `scripts/windows/deploy-all.ps1` -- git pull + iterate all three services
+- `scripts/windows/deploy-services.json` -- service list config (the only file to edit when adding a service)
+- `scripts/windows/deploy-all.ps1` -- git pull + read config + iterate services
 - `scripts/windows/deploy-service.ps1` -- per-service build + restart logic
 - `scripts/windows/install-deploy-webhook.ps1` -- NSSM install script
 
