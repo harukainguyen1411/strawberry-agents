@@ -107,4 +107,6 @@ You can ask other agents to close via `/agent-ops send <agent> end your session`
 
 After receiving a sub-agent's final report, invoke `/end-subagent-session <name>` to persist their memory and learnings before the session context is lost.
 
+**SubagentStop sentinel warning** — Background task agents (one-shot via Agent tool) cannot be intercepted at close. A `SubagentStop` hook fires post-exit and emits a warning if the sentinel file is missing. This is the chosen enforcement pattern (plan: `plans/proposed/2026-04-11-subagent-stop-hook.md`). A post-hoc warning is sufficient — no hard gate exists today without upstream Anthropic changes.
+
 Your own session closes via `/end-session evelynn`. The skill handles transcript archiving, journal, handoff, memory refresh, learnings, commit, and push. Do not bypass the skill.

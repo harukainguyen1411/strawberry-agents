@@ -13,16 +13,15 @@
 - s14: PRs #66, #67, #68, #69, #70 (feedback loop + bee-worker). All approved via comment.
 - s15: PRs #71, #72, #73, #74 (bee-worker B2/B4/B6/B8+B9). All approved via comment. #74 has 1 HIGH blocker (missing requiresAuth meta).
 - s16: PR #75 (B5 worker.ts orchestration loop). 2 MEDIUM, 3 LOW. Approved with M1 pre-production blocker noted.
+- s17: PR #89 (windows push autodeploy). 3 MEDIUM, 3 LOW. Changes requested. Round 3: all 3 MEDIUMs fixed + npm ci added. 2 LOWs remain (unused imports; no exit-code check in install script). Approved.
 
 ## Review History (last 10)
-- PR #70: feedback loop Phase D+E. 4 LOW. Approved.
-- PR #66: bee-worker B1 scaffold + B7 security rules. 1 MEDIUM, 2 LOW. Approved.
-- PR #68: bee-worker comments.py OOXML injector B3. 2 MEDIUM, 3 LOW. Approved.
 - PR #71: B6 install-bee-worker.ps1. 1 MEDIUM, 4 LOW. Approved.
 - PR #72: B2 Firestore + Storage Admin SDK. 1 MEDIUM, 3 LOW. Approved.
 - PR #73: B4 claude.ts invocation wrapper. 2 MEDIUM, 3 LOW. Approved.
 - PR #74: B8+B9 Vue frontend /bee. 1 HIGH, 2 MEDIUM, 4 LOW. Approved with HIGH blocker noted.
 - PR #75: B5 orchestration loop. 2 MEDIUM (mkdir-after-claim gap; listener silent failure), 3 LOW. Approved.
+- PR #89: windows push autodeploy. 3 MEDIUM all fixed. 2 LOW remain (unused imports in index.ts; no exit-code check in install script build step). Approved.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. Flag proactively.
@@ -34,8 +33,12 @@
 - Router routes missing `requiresAuth` meta — global guard bypassed.
 - `claim` before resource setup (mkdir, etc.) — if setup throws, job stuck in `running`.
 - Large JSON passed as CLI argv — watch for ARG_MAX limits.
+- Lock files written by service — check stale-lock cleanup on process crash.
+- `detached: true` + `child.unref()` requires `stdio: "ignore"` to actually detach; piped stdio keeps event loop alive.
+- NSSM `ObjectName` set to interactive user requires password — stalls unattended installs.
 
 ## Protocol
+- On every PR review pass: run `coderabbit:code-review` and `simplify` skills first, then do the manual logic/security pass. Incorporate all findings into a single consolidated `gh pr comment`. This is standard protocol — do not skip.
 - After posting a PR review, always message Evelynn with the PR number and verdict.
 
 ## Known Blockers
