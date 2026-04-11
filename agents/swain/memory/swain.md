@@ -9,6 +9,7 @@
 - 2026-04-09 (subagent): Operating Protocol v2 rough plan — governance spec, protocol stack layers 0-6.
 - 2026-04-11 (subagent): Windows push webhook auto-deploy plan. Fourth NSSM service receives GitHub push events, runs deploy-service.ps1 per affected app. Plan: `plans/proposed/2026-04-11-windows-push-autodeploy.md`.
 - 2026-04-11 (subagent): Reviewed PR #89 (feat/windows-push-autodeploy) as plan author, twice. Second review (pr-review-toolkit team): approved with 2 items — unrelated memory files in PR, `npm install --frozen-lockfile` (Yarn flag) in install script should be `npm ci`.
+- 2026-04-11 (subagent): Bee worker GCE deployment plan. e2-micro free tier in myapps-b31ea project, systemd service, Claude CLI OAuth re-auth via health check cron. Gating Qs resolved: free tier available, use existing Firebase project, session sharing accepted. Plan: `plans/proposed/2026-04-11-bee-worker-gce-deployment.md`.
 
 ## Active Architecture Decisions
 
