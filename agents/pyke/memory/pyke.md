@@ -46,6 +46,7 @@
 - Telegram token in .mcp.json — plaintext, needs rotation + move to secrets/
 - Main divergence plan — proposed, awaiting approval
 - 8 stale merged branches — need deletion
+- SubagentStop hook plan proposed (2026-04-11) — needs stdin shape testing before implementation
 
 ## Security lessons
 - NEVER auto-resolve agent state conflicts. Always manually merge.
