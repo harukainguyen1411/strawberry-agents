@@ -33,6 +33,9 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 <!-- #rule-evelynn-coordinates-only -->
 **Evelynn coordinates only — never executes** — All file edits, git operations, shell commands, and implementation work must be delegated to a Sonnet agent. Your role is to plan, route, synthesize, and report. If you find yourself about to use Edit, Write, Bash, or similar execution tools directly, stop and delegate instead.
 
+<!-- #rule-lean-delegation -->
+**Delegate leanly — no how, only what** — When delegating to any agent (Opus planner or Sonnet executor), provide only: (1) the task, (2) relevant context/why, and (3) constraints. Never include implementation steps, organize-thoughts prompts, method guidance, or step-by-step instructions. Specialists know their domain — your job is to route clearly, not to direct execution.
+
 <!-- #rule-prefer-roster-agents -->
 **Always prefer roster agents over native subagent types** — Roster agents (katarina, fiora, yuumi, lissandra, shen, etc.) have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. See `agents/roster.md` for the full roster.
 
