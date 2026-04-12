@@ -48,6 +48,8 @@ apps/landing/         # Static HTML landing page (separate deploy)
 
 A change in **any** of `apps/myapps/`, `apps/platform/`, `apps/shared/`, `apps/myApps/`, `apps/yourApps/` affects the portal build. Changes in `apps/functions/` and `apps/landing/` are independent.
 
+**Important constraint**: The portal is a single Vite build — all apps are code-split chunks in one SPA deployed to one Firebase Hosting site. You cannot deploy Read Tracker's frontend independently of Portfolio Tracker's at the hosting level. However, each app can have its own **release workflow** that triggers independently, runs the full portal build, and tags the release with that app's version.
+
 ## Workflow Architecture
 
 ### Overview
@@ -55,38 +57,46 @@ A change in **any** of `apps/myapps/`, `apps/platform/`, `apps/shared/`, `apps/m
 ```
 PR opened/updated
   |
-  +--> [portal-test]      Unit + E2E tests (if portal paths changed)
-  +--> [portal-preview]   Preview channel deploy (if portal paths changed)
+  +--> [portal-test]      Unit + E2E tests (if any portal paths changed)
+  +--> [portal-preview]   Preview channel deploy (if any portal paths changed)
   +--> [functions-test]   Lint + build check (if functions paths changed)
   +--> [rules-validate]   firebase rules validate (if rules changed)
   |
   All checks pass -> merge to main
   |
-  +--> [portal-staging]   Deploy to staging channel, wait for manual approval
-  |      |
-  |      +--> [portal-prod]  Deploy to live (after approval)
+  +--> [app-release: read-tracker]       If apps/myApps/read-tracker/** changed
+  +--> [app-release: portfolio-tracker]  If apps/myApps/portfolio-tracker/** changed
+  +--> [app-release: task-list]          If apps/myApps/task-list/** changed
+  +--> [app-release: bee]                If apps/yourApps/bee/** changed
+  +--> [platform-release]                If apps/myapps/**, apps/platform/**, apps/shared/** changed
   |
-  +--> [landing-deploy]   Deploy landing page to prod (no staging — static HTML)
-  +--> [functions-deploy]  Deploy Cloud Functions to prod
-  +--> [rules-deploy]     Deploy Firestore + Storage rules to prod
+  |  (Each release: build portal -> staging -> approval -> production -> tag)
+  |
+  +--> [landing-deploy]    If apps/landing/** changed
+  +--> [functions-deploy]  If apps/functions/** changed
+  +--> [rules-deploy]      If apps/myapps/(firestore|storage).rules changed
 ```
 
-### 1. Portal Deploy Pipeline (`portal-deploy.yml`)
+### Design: Per-App Release via Reusable Workflow
 
-Replaces `myapps-prod-deploy.yml`. Two-stage: staging then production.
+Since every app release requires a full portal build (single SPA), the build/staging/production pipeline is identical across apps. We use a **reusable workflow** to avoid duplication: one shared build-stage-deploy pipeline, called by per-app trigger workflows.
+
+#### Reusable Workflow: `.github/workflows/portal-build-deploy.yml`
 
 ```yaml
-name: Portal — Deploy
+name: Portal — Build & Deploy (reusable)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/myapps/**'
-      - 'apps/platform/**'
-      - 'apps/shared/**'
-      - 'apps/myApps/**'
-      - 'apps/yourApps/**'
+  workflow_call:
+    inputs:
+      app_name:
+        description: 'App being released (e.g. read-tracker, bee, platform)'
+        required: true
+        type: string
+      app_version:
+        description: 'App version from manifest (e.g. 1.3.0)'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -106,7 +116,7 @@ jobs:
   staging:
     needs: build
     runs-on: ubuntu-latest
-    environment: staging          # GitHub Environment — no approval gate
+    environment: staging
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -120,21 +130,20 @@ jobs:
           channelId: staging
           entryPoint: apps/myapps
           expires: 7d
-      # Post staging URL to Discord for verification
       - name: Notify Discord — staging ready
         env:
           DISCORD_RELAY_WEBHOOK_URL: ${{ secrets.DISCORD_RELAY_WEBHOOK_URL }}
           DISCORD_RELAY_WEBHOOK_SECRET: ${{ secrets.DISCORD_RELAY_WEBHOOK_SECRET }}
           STAGING_URL: ${{ steps.staging_deploy.outputs.details_url }}
+          APP_NAME: ${{ inputs.app_name }}
+          APP_VERSION: ${{ inputs.app_version }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-        run: |
-          # Post staging notification (reuse existing notify script pattern)
-          echo "Staging deployed: $STAGING_URL"
+        run: echo "[$APP_NAME v$APP_VERSION] Staging deployed: $STAGING_URL"
 
   production:
     needs: staging
     runs-on: ubuntu-latest
-    environment: production       # GitHub Environment — requires manual approval
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -152,26 +161,102 @@ jobs:
         env:
           DISCORD_RELAY_WEBHOOK_URL: ${{ secrets.DISCORD_RELAY_WEBHOOK_URL }}
           DISCORD_RELAY_WEBHOOK_SECRET: ${{ secrets.DISCORD_RELAY_WEBHOOK_SECRET }}
+          APP_NAME: ${{ inputs.app_name }}
+          APP_VERSION: ${{ inputs.app_version }}
           COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
           REPO: ${{ github.repository }}
-          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: node .github/scripts/notify-discord-shipped.js
-      # Tag the deploy
-      - name: Tag deploy
+      - name: Tag release
         run: |
-          VERSION="deploy-portal-$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)"
-          git tag "$VERSION"
-          git push origin "$VERSION"
+          TAG="${{ inputs.app_name }}-v${{ inputs.app_version }}"
+          DEPLOY_TAG="deploy-portal-$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)"
+          git tag "$TAG" || echo "Tag $TAG already exists, skipping"
+          git tag "$DEPLOY_TAG"
+          git push origin "$TAG" "$DEPLOY_TAG" 2>/dev/null || true
 ```
 
-**Key design decisions:**
-- **Build once, deploy twice** — the `build` job uploads an artifact. Both staging and production deploy the same artifact. This eliminates "works in staging but not in prod" from environment differences.
-- **GitHub Environments** — `staging` has no approval gate (auto-deploys). `production` requires manual approval from Duong. This gives a window to verify staging before promoting.
-- **Staging channel** — uses Firebase Hosting preview channels. The `staging` channel name is fixed (not per-PR), so there's always one staging URL to bookmark.
+#### Per-App Trigger Workflows
 
-### 2. Landing Page Deploy (`landing-deploy.yml`)
+Each app gets a thin trigger workflow that detects changes, reads the app version from its manifest, and calls the reusable workflow.
 
-Replaces `landing-prod-deploy.yml`. Simplified — no staging needed for static HTML.
+**`app-release-read-tracker.yml`** (example — one per app):
+
+```yaml
+name: Release — Read Tracker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/myApps/read-tracker/**'
+
+jobs:
+  get-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version from manifest
+        id: version
+        run: |
+          VERSION=$(node -e "const m = require('./apps/myApps/read-tracker/index.ts'); console.log(m.version || '0.0.0')" 2>/dev/null \
+            || grep -oP "version:\s*['\"]?\K[0-9]+\.[0-9]+\.[0-9]+" apps/myApps/read-tracker/index.ts \
+            || echo "0.0.0")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  release:
+    needs: get-version
+    uses: ./.github/workflows/portal-build-deploy.yml
+    with:
+      app_name: read-tracker
+      app_version: ${{ needs.get-version.outputs.version }}
+    secrets: inherit
+```
+
+**Complete list of per-app workflows:**
+
+| Workflow | Path Trigger | App Name |
+|----------|-------------|----------|
+| `app-release-read-tracker.yml` | `apps/myApps/read-tracker/**` | `read-tracker` |
+| `app-release-portfolio-tracker.yml` | `apps/myApps/portfolio-tracker/**` | `portfolio-tracker` |
+| `app-release-task-list.yml` | `apps/myApps/task-list/**` | `task-list` |
+| `app-release-bee.yml` | `apps/yourApps/bee/**` | `bee` |
+| `platform-release.yml` | `apps/myapps/**`, `apps/platform/**`, `apps/shared/**` | `platform` |
+
+New apps get a new trigger workflow when created. The trigger workflow is a ~25 line file — trivial to scaffold.
+
+#### Concurrency Control
+
+Multiple app changes in one commit (e.g. shared component update) could trigger multiple release workflows simultaneously. Each would build and deploy the same portal — wasteful but safe (last one wins, all contain the same code). To avoid this:
+
+```yaml
+# Add to each per-app trigger workflow
+concurrency:
+  group: portal-deploy
+  cancel-in-progress: false    # Don't cancel — queue instead
+```
+
+This serializes portal deploys. If Read Tracker and Bee both trigger, one waits for the other. Both tag independently with their own app version.
+
+#### Shared/Platform Changes
+
+Changes to `apps/shared/` or `apps/platform/` affect all apps but don't belong to any single app. The `platform-release.yml` workflow handles these. It uses `app_name: platform` and reads the version from `apps/myapps/package.json`.
+
+If a commit touches both `apps/shared/` and `apps/myApps/read-tracker/`, both `platform-release.yml` and `app-release-read-tracker.yml` fire. The concurrency group serializes them. Both deploys contain the same code. Each tags independently.
+
+### Per-App Release Tags
+
+Two tags per production deploy:
+
+1. **App version tag**: `{app-name}-v{semver}` — e.g. `read-tracker-v2.1.0`, `bee-v1.0.3`, `platform-v1.1.0`
+2. **Deploy tag**: `deploy-portal-{YYYYMMDD}-{short-sha}` — infra-level, same as before
+
+App version tags are the user-facing release identifier. Deploy tags track the actual deployment event. A single deploy tag may correspond to multiple app version tags if multiple apps released in the same commit.
+
+### Non-Portal Workflows (unchanged from previous design)
+
+#### Landing Page Deploy (`landing-deploy.yml`)
 
 ```yaml
 name: Landing — Deploy
@@ -196,11 +281,7 @@ jobs:
           entryPoint: apps/landing
 ```
 
-Switches from raw `firebase-tools` CLI to `FirebaseExtended/action-hosting-deploy@v0` for consistency with the portal pipeline. The `site` field in `apps/landing/firebase.json` already targets `darkstrawberry-landing`.
-
-### 3. Cloud Functions Deploy (`functions-deploy.yml`)
-
-New workflow.
+#### Cloud Functions Deploy (`functions-deploy.yml`)
 
 ```yaml
 name: Functions — Deploy
@@ -233,9 +314,7 @@ jobs:
         run: npx firebase-tools@latest deploy --only functions --project ${{ vars.FIREBASE_PROJECT_ID }} --non-interactive
 ```
 
-### 4. Firestore & Storage Rules Deploy (`rules-deploy.yml`)
-
-New workflow.
+#### Firestore & Storage Rules Deploy (`rules-deploy.yml`)
 
 ```yaml
 name: Rules — Deploy
@@ -250,7 +329,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: production       # Requires approval — rules affect all users immediately
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - name: Write service account key
@@ -264,9 +343,7 @@ jobs:
         run: npx firebase-tools@latest deploy --only firestore:rules,storage --project ${{ vars.FIREBASE_PROJECT_ID }} --non-interactive
 ```
 
-### 5. PR Validation (`rules-validate.yml`)
-
-New workflow — validates rules on PRs before merge.
+#### PR Validation: Rules (`rules-validate.yml`)
 
 ```yaml
 name: Rules — Validate
@@ -293,9 +370,7 @@ jobs:
         run: npx firebase-tools@latest --project ${{ vars.FIREBASE_PROJECT_ID }} firestore:rules:validate apps/myapps/firestore.rules
 ```
 
-### 6. Functions Test (`functions-test.yml`)
-
-New workflow — validates functions build on PRs.
+#### PR Validation: Functions (`functions-test.yml`)
 
 ```yaml
 name: Functions — Test
@@ -358,10 +433,17 @@ deploy-functions-20260412-ghi9012
 deploy-rules-20260412-jkl3456
 ```
 
-Tags are created automatically by the production deploy jobs. This gives:
-- A clear record of what's deployed and when
-- Easy `git diff` between any two deploys: `git diff deploy-portal-20260411-xxx deploy-portal-20260412-yyy`
-- A rollback target (see below)
+Tags are created automatically by the production deploy jobs. Per-app release workflows also create app version tags:
+```
+read-tracker-v2.1.0
+bee-v1.0.3
+platform-v1.1.0
+```
+
+This gives:
+- Per-app release history: `git tag -l 'read-tracker-v*'` shows all Read Tracker releases
+- Deploy-level tracking: `git diff deploy-portal-20260411-xxx deploy-portal-20260412-yyy`
+- Rollback targets at both levels
 
 Deploy tags are orthogonal to app versions — a single portal deploy may include version bumps for multiple apps, or none at all (e.g. a platform-only change).
 
@@ -372,15 +454,21 @@ Deploy tags are orthogonal to app versions — a single portal deploy may includ
 Firebase Hosting keeps the last several deploys. Rollback options:
 
 1. **Firebase Console** — one-click rollback to any previous deploy in the Firebase Hosting console. Fastest option (< 1 minute).
-2. **Redeploy a tag** — trigger a manual workflow run that checks out a specific tag and deploys:
+2. **Redeploy a tag** — trigger a manual workflow run that checks out a specific tag and deploys. Add `workflow_dispatch` to the reusable workflow:
 
 ```yaml
-# Add to portal-deploy.yml
+# Manual trigger on portal-build-deploy.yml
 on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Git tag to deploy (e.g. deploy-portal-20260411-abc1234)'
+        description: 'Git tag to deploy (e.g. read-tracker-v2.0.0 or deploy-portal-20260411-abc1234)'
+        required: true
+      app_name:
+        description: 'App name for tagging'
+        required: true
+      app_version:
+        description: 'App version for tagging'
         required: true
 ```
 
@@ -407,16 +495,40 @@ Two environments need to be created in the repo settings:
 
 ## Workflow Summary
 
-| Workflow | Trigger | Path Filter | Environment Gate |
-|----------|---------|-------------|------------------|
-| `portal-test.yml` | PR | `apps/(myapps\|platform\|shared\|myApps\|yourApps)/` | none |
-| `portal-preview.yml` | PR | `apps/(myapps\|platform\|shared\|myApps\|yourApps)/` | none |
-| `portal-deploy.yml` | push to main | `apps/(myapps\|platform\|shared\|myApps\|yourApps)/` | staging -> production |
-| `landing-deploy.yml` | push to main | `apps/landing/` | none |
-| `functions-test.yml` | PR | `apps/functions/` | none |
-| `functions-deploy.yml` | push to main | `apps/functions/` | none |
-| `rules-validate.yml` | PR | `apps/myapps/(firestore\|storage).rules` | none |
-| `rules-deploy.yml` | push to main | `apps/myapps/(firestore\|storage).rules` | production |
+### PR Workflows (validation gates)
+
+| Workflow | Trigger | Path Filter |
+|----------|---------|-------------|
+| `portal-test.yml` | PR | `apps/(myapps\|platform\|shared\|myApps\|yourApps)/` |
+| `portal-preview.yml` | PR | `apps/(myapps\|platform\|shared\|myApps\|yourApps)/` |
+| `functions-test.yml` | PR | `apps/functions/` |
+| `rules-validate.yml` | PR | `apps/myapps/(firestore\|storage).rules` |
+
+### Per-App Release Workflows (push to main)
+
+| Workflow | Path Filter | App Name | Tags Created |
+|----------|-------------|----------|-------------|
+| `app-release-read-tracker.yml` | `apps/myApps/read-tracker/**` | `read-tracker` | `read-tracker-v{x.y.z}` + deploy tag |
+| `app-release-portfolio-tracker.yml` | `apps/myApps/portfolio-tracker/**` | `portfolio-tracker` | `portfolio-tracker-v{x.y.z}` + deploy tag |
+| `app-release-task-list.yml` | `apps/myApps/task-list/**` | `task-list` | `task-list-v{x.y.z}` + deploy tag |
+| `app-release-bee.yml` | `apps/yourApps/bee/**` | `bee` | `bee-v{x.y.z}` + deploy tag |
+| `platform-release.yml` | `apps/myapps/**`, `apps/platform/**`, `apps/shared/**` | `platform` | `platform-v{x.y.z}` + deploy tag |
+
+### Infrastructure Workflows (push to main)
+
+| Workflow | Path Filter | Environment Gate |
+|----------|-------------|------------------|
+| `landing-deploy.yml` | `apps/landing/` | none |
+| `functions-deploy.yml` | `apps/functions/` | none |
+| `rules-deploy.yml` | `apps/myapps/(firestore\|storage).rules` | production |
+
+### Reusable Workflow
+
+| Workflow | Called By | Purpose |
+|----------|----------|---------|
+| `portal-build-deploy.yml` | All per-app release workflows | Build portal, stage, approve, deploy, tag |
+
+**Total: 13 workflow files** (4 PR gates + 5 per-app releases + 3 infra deploys + 1 reusable)
 
 ## Migration Steps
 
