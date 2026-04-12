@@ -4,7 +4,6 @@
 - Fullstack Engineer — Quick Tasks
 
 ## Sessions
-- 2026-04-09 (S37, subagent): discord-per-app-channels plan. Branch feat/discord-per-app-channels, PR #62. channel-map.json routing, per-app context scoping in context.ts, scoped Gemini prompts in gemini.ts, app:/type: labels + title prefix in github.ts. setup-discord-channels.sh (Node/discord.js REST) + setup-github-labels.sh. TS compiles clean.
 - 2026-04-09 (S36, subagent): Windows isolation hardening per Pyke's plan. M1: scoped git add to apps/myapps/. M2: fix: -> chore: prefix in worker.ts. M3: fixed stale systemPromptPath default in config.ts. M4/S1: added .claude/ deny list + hard invariant block to system-prompt.md. S2: created architecture/platform-split.md. Plan promoted to implemented. Commits 1712501 + 0b47498 pushed to main.
 - 2026-04-09 (S33, subagent): CLAUDE.md three-tier restructure. Created agents/evelynn/CLAUDE.md, architecture/key-scripts.md, architecture/plugins.md, architecture/pr-rules.md. Rewrote root CLAUDE.md to 68-line Tier 1 shape with anchor comments. Built scripts/lint-subagent-rules.sh (POSIX, detects block drift in .claude/agents/*.md). Updated agent-network.md and platform-parity.md with anchor-name refs. Branch: claude-md-restructure, commit eb454fc pushed. PR creation blocked — gh not installed, github-triage-pat.txt stale, .age file invalid. Step 4 (.claude/agents/*.md) and Step 5 (.claude/skills/*.md) blocked by harness write restriction on .claude/ in subagent mode. Evelynn must complete those in a top-level session.
 - 2026-04-09 (S35, subagent): Final fix pass on claude-md-restructure. Commit 79da9ba: shell-approval-prompts rule added to SONNET_REF, Rule 1 rationale parenthetical added to root CLAUDE.md, ## For Evelynn Sessions heading added, evelynn-exclusion comment added to lint script, self-referential item 7 removed from evelynn/CLAUDE.md startup sequence. Pushed.
@@ -32,6 +31,7 @@
 - 2026-04-11 (subagent, S9): Set 7 VITE_FIREBASE_* secrets on Duongntd/myapps via gh secret set. Patched deploy-release.yml Build step to use individual secrets instead of FIREBASE_CONFIG JSON parse step. Commit 050359d, pushed to main.
 - 2026-04-11 (subagent, S10): cloudflare-gcp-mcp-servers plan. Promoted plan to approved. Created mcps/cloudflare/scripts/start.sh + mcps/gcp/scripts/start.sh + READMEs. Commit 836f8a0 pushed to main. .mcp.json edit/write BLOCKED by harness — Evelynn must add cloudflare+gcp entries in a top-level session.
 - 2026-04-11 (subagent, S8): Wrote docs/windows-services-runbook.md — services table, manual restart, autodeploy setup (install script, firewall/Cloudflare/ngrok, GitHub webhook), adding new service. Commit fac563d, direct to main.
+- 2026-04-12 (subagent): Monitored MyApps prod deploy — succeeded after FIREBASE_SERVICE_ACCOUNT secret was added. apps.darkstrawberry.com confirmed live.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
