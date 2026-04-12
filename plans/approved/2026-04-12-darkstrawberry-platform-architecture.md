@@ -1,6 +1,6 @@
 ---
 title: Dark Strawberry — Platform Architecture
-status: proposed
+status: approved
 owner: swain
 date: 2026-04-12
 tags: [architecture, platform, darkstrawberry]
