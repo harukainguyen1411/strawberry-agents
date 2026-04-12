@@ -81,6 +81,7 @@ This keeps deployment simple (one Firebase Hosting site) while still giving each
 /users/{userId}                      # User profiles
   displayName, email, photoURL
   role: 'admin' | 'collaborator' | 'user'   # Platform-wide role (default: 'user')
+  maxAppRequests: number                      # Admin-configurable per user (default: 1 for users, -1 = unlimited for collaborators)
   notificationChannel: 'email' | 'discord'   # User's preferred notification method
   discordUserId?: string                      # Required if notificationChannel == 'discord'
   createdAt, lastLoginAt
@@ -150,7 +151,7 @@ Migration script moves documents from old paths to new paths. Can run incrementa
 
 - **Admin** = Duong. Identified by a `role: 'admin'` field on his `/users/{userId}` document. Admin can view and manage all apps on the platform.
 - **Collaborator** = trusted users who can improve public apps and other people's apps (if collaboration is enabled). Can request new apps freely with no limit.
-- **User** = default role for new sign-ups. Can use public apps and any apps they've been granted access to. Can request only 1 app for now (enforced by counting their pending/approved requests).
+- **User** = default role for new sign-ups. Can use public apps and any apps they've been granted access to. App request limit controlled by `maxAppRequests` on their profile (default: 1). Admin can increase this per user.
 
 ### Per-App Owner Settings
 
@@ -199,7 +200,7 @@ Each owned app shows a settings panel where the owner can toggle `collaboration`
 
 1. User visits app catalog, sees a yourApp with `allowTryRequests: true`
 2. User sends access request -> `/apps/{appId}/accessRequests/{requestId}`
-3. **Rate limit**: users with role `user` can have at most 1 pending or approved request. Collaborators have no limit. Enforced in security rules via a count check or in app logic.
+3. **Rate limit**: enforced by comparing the user's current request count against their `maxAppRequests` field. Default: 1 for users, -1 (unlimited) for collaborators. Admin can raise a specific user's quota via the admin panel.
 4. Owner receives notification via their preferred channel (email or Discord — see Notifications below)
 5. Owner approves -> system writes `/users/{requesterId}/appAccess/{appId}` with role `user`
 
