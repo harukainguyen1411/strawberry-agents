@@ -220,15 +220,18 @@ Implementation note: a single Cloud Function watches `/notifications/{notifId}` 
 
 ### Forking
 
+Forking creates a **fully independent app** that starts as a copy of the original. The forked app has its own ID, its own data, and its own development trajectory. The owner of a fork can request feature changes, improvements, and customizations independently of the source app.
+
 1. User visits a forkable app in the catalog
 2. Clicks "Fork" -> system creates:
-   - New `/apps/{forkedAppId}` doc (category: `yourApps`, ownerId: forker)
+   - New `/apps/{forkedAppId}` doc (category: `yourApps`, ownerId: forker, `forkedFrom: sourceAppId`)
    - `/forks/{forkId}` linking source to fork
-   - `/users/{forkerId}/appAccess/{forkedAppId}` with role `fork-owner`
+   - `/users/{forkerId}/appAccess/{forkedAppId}` with role `owner`
 3. Fork gets its own `/appData/{forkedAppId}/` subtree — starts empty (no data copy)
-4. Fork uses the same codebase (same app module) but different appId for data isolation
+4. Initially the fork runs the same codebase as the source app. Over time, the owner can request changes (features, UX, behavior) that diverge from the original — Duong develops these as needed, and the fork's codebase evolves independently.
+5. The fork appears in the owner's "Your Apps" section with full owner controls (collaboration, forkable, personalMode settings).
 
-Note: forking creates data isolation, not code divergence. All forks of "Read Tracker" run the same Read Tracker code. This is "fork the instance" not "fork the repo."
+**Code divergence model**: Forks start from the same app module in the monorepo. When a fork owner requests changes that differ from the source, Duong creates a new app module under `apps/yourApps/{forkedAppSlug}/` (initially copied from the source). From that point, the source and fork are independent codebases. The `/forks/{forkId}` record preserves lineage for attribution ("forked from Read Tracker") but does not imply code synchronization.
 
 ## Security Rules
 
@@ -354,7 +357,7 @@ All of this runs on Firebase Spark (free) tier:
 
 1. **Admin identity**: Duong's Google account gets `role: 'admin'` in Firestore. Checked in security rules. No custom claims needed.
 
-2. **Fork semantics**: Instance-level forks confirmed (same code, separate data).
+2. **Fork semantics**: Forks create fully independent apps. Start from the same codebase but can diverge over time as the fork owner requests changes. New app ID, own data, own development trajectory.
 
 3. **Roles**: Three-tier model (admin / collaborator / user). Users limited to 1 app request; collaborators unlimited.
 
