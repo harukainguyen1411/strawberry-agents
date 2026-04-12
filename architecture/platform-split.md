@@ -21,11 +21,14 @@ Duong runs Strawberry across three environments with strictly separated roles. T
 
 ## GCE (Autonomous)
 
-- Runs bee-worker on an `e2-micro` VM (Debian 12) as a systemd service.
-- Polls Firestore job queue and invokes Claude Code headlessly (`claude -p`).
-- Same constraints as Windows: never writes to agent state, never pushes to main.
-- Claude Code authenticates via `claude login` (OAuth, Claude Max). Health check cron alerts on auth expiry.
-- Deployment scripts: `scripts/gce/`. Service unit: `scripts/gce/bee-worker.service`.
+Two VMs, each running one worker as a systemd service on Debian 12:
+
+- **bee-worker** (`e2-micro`): Polls GitHub issues labeled `bee` + `ready`, runs `claude -p` for document review, posts answers as issue comments. Does not push to git.
+- **coder-worker** (`e2-small`): Polls GitHub issues labeled `myapps` + `ready`, runs `claude -p` for implementation, creates branches `bot/issue-{number}` and opens PRs. Never pushes to `main`.
+
+Both VMs share the same constraints: never write to agent state (`agents/`, `plans/`, `architecture/`, `.claude/`). Claude Code authenticates via `claude login` (OAuth, Claude Max). Health check crons alert on auth expiry.
+
+Deployment scripts: `scripts/gce/`. Service units: `scripts/gce/bee-worker.service`, `scripts/gce/coder-worker.service`.
 
 ## Shared
 
