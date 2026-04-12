@@ -1,8 +1,8 @@
-# Mac / Windows Platform Split Contract
+# Mac / Windows / GCE Platform Split Contract
 
 ## Overview
 
-Duong runs Strawberry on two machines with strictly separated roles. This document defines the invariants that keep the shared git repository consistent.
+Duong runs Strawberry across three environments with strictly separated roles. This document defines the invariants that keep the shared git repository consistent.
 
 ## Mac (Interactive)
 
@@ -18,6 +18,14 @@ Duong runs Strawberry on two machines with strictly separated roles. This docume
 - Creates branches named `bot/issue-{number}` only. Never pushes to `main`.
 - Never writes to `agents/`, `plans/`, `architecture/`, or `.claude/`.
 - No interactive sessions; no session closing protocol; no transcript generation.
+
+## GCE (Autonomous)
+
+- Runs bee-worker on an `e2-micro` VM (Debian 12) as a systemd service.
+- Polls Firestore job queue and invokes Claude Code headlessly (`claude -p`).
+- Same constraints as Windows: never writes to agent state, never pushes to main.
+- Claude Code authenticates via `claude login` (OAuth, Claude Max). Health check cron alerts on auth expiry.
+- Deployment scripts: `scripts/gce/`. Service unit: `scripts/gce/bee-worker.service`.
 
 ## Shared
 
