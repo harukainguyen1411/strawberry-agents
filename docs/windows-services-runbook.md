@@ -10,7 +10,7 @@ Operational reference for the Node.js services running on the Windows box under 
 |---------|-----------|---------|--------------|
 | Discord relay | `discord-relay` | `apps/discord-relay` | Discord bot — bridges Discord messages to the CLI agent over file-based IPC |
 | Coder worker | `coder-worker` | `apps/coder-worker` | Local Windows worker that receives jobs from the agent system and runs Max/Claude Code |
-| Bee worker | `bee-worker` | `apps/bee-worker` | Worker that processes Bee MVP document jobs (DOCX annotation pipeline) |
+| Bee worker | `bee-worker` | `apps/private-apps/bee-worker` | Worker that processes Bee MVP document jobs (DOCX annotation pipeline) |
 | Deploy webhook | `deploy-webhook` | `apps/deploy-webhook` | Receives GitHub push webhooks and auto-deploys all services above |
 
 ---
