@@ -366,6 +366,30 @@ All of this runs on Firebase Spark (free) tier:
 
 4. **Notifications**: Per-user choice of email or Discord. Dispatched via a Cloud Function watching a `/notifications` queue.
 
-## Open Questions for Duong
+5. **URL structure**: `/app/{appId}/` prefix for all apps (Swain's call — see rationale below).
 
-1. **App discovery URL structure**: Should apps live at `/apps/read-tracker` or `/read-tracker`? The former is cleaner for a platform; the latter is shorter. Current structure uses `/read-tracker` directly.
+### URL Structure Decision
+
+All apps live under `/app/{appId}/`:
+
+```
+/app/read-tracker/dashboard
+/app/portfolio-tracker/transactions
+/app/bee/home
+```
+
+Platform pages use top-level routes:
+
+```
+/                        # Landing / app catalog
+/settings                # User settings (notification prefs, profile)
+/your-apps               # "Your Apps" section (owned + granted)
+```
+
+**Rationale**: A platform serves many apps from many authors. Flat top-level routes (`/read-tracker`, `/bee`) create a namespace collision risk — a new app slug could conflict with a platform route. The `/app/` prefix eliminates that entirely, makes the URL self-documenting ("this is an app on the platform"), and keeps the platform's own namespace clean. The singular `/app/` (not `/apps/`) reads naturally: "app slash read-tracker."
+
+Migration from current `/read-tracker` etc. is a one-time router change. Add redirects from old paths for bookmarked URLs.
+
+## All Questions Resolved
+
+No open questions remain. This plan is ready for review and approval.
