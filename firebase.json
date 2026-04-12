@@ -1,0 +1,37 @@
+{
+  "hosting": {
+    "public": "deploy",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/myApps/read-tracker/**", "destination": "/myApps/read-tracker/index.html" },
+      { "source": "/myApps/portfolio-tracker/**", "destination": "/myApps/portfolio-tracker/index.html" },
+      { "source": "/myApps/task-list/**", "destination": "/myApps/task-list/index.html" },
+      { "source": "/yourApps/bee/**", "destination": "/yourApps/bee/index.html" },
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [{ "key": "Cache-Control", "value": "max-age=31536000" }]
+      },
+      {
+        "source": "**/*.@(jpg|jpeg|gif|png|svg|webp|ico)",
+        "headers": [{ "key": "Cache-Control", "value": "max-age=31536000" }]
+      },
+      {
+        "source": "**",
+        "headers": [
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "X-Frame-Options", "value": "DENY" }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "apps/myapps/firestore.rules",
+    "indexes": "apps/myapps/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "apps/myapps/storage.rules"
+  }
+}
