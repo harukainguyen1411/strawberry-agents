@@ -160,9 +160,9 @@ Every app owner controls these settings on their app (via `/apps/{appId}.setting
 |---------|---------|--------|
 | `collaboration` | false | When enabled, collaborators can suggest improvements to this app |
 | `forkable` | false | When enabled, eligible users can fork this app |
-| `personalMode` | false | When enabled, **even admin cannot access this app's data** — full privacy for the owner |
+| `personalMode` | false | When enabled, admin can only fix bugs — no feature changes. Owner controls feature direction. |
 
-`personalMode` is enforced at the security rules level. When `personalMode: true`, only the owner's UID can read/write under `/appData/{appId}/users/{ownerId}/`. Admin access is explicitly denied.
+`personalMode` is an **operational constraint**, not a data access restriction. Admin retains full read/write access to app data for maintenance and bug fixing. What changes: when `personalMode` is on, admin commits to the app must be bug fixes only — no new features, no UX changes, no behavior modifications unless the owner requests them. This is enforced by convention and code review, not by security rules.
 
 ### Access Resolution
 
@@ -171,8 +171,8 @@ canAccess(userId, appId):
   user = /users/{userId}
   app = /apps/{appId}
 
-  # Admin can access everything UNLESS personalMode is on
-  if user.role == 'admin' and app.settings.personalMode == false:
+  # Admin can access everything (personalMode doesn't restrict data access)
+  if user.role == 'admin':
     return true
 
   # Public apps: any authenticated user
@@ -241,11 +241,6 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // Helper: is the app in personal mode?
-    function isPersonalMode(appId) {
-      return get(/databases/$(database)/documents/apps/$(appId)).data.settings.personalMode == true;
-    }
-
     // App registry: anyone authed can read; admin can write; owners can update their own app's settings
     match /apps/{appId} {
       allow read: if request.auth != null;
@@ -268,7 +263,6 @@ service cloud.firestore {
     }
 
     // App data: user's own data within an app they can access
-    // personalMode blocks even admin
     match /appData/{appId}/users/{userId}/{collection}/{docId} {
       allow read, write: if request.auth.uid == userId && (
         // User has explicit access
@@ -276,9 +270,8 @@ service cloud.firestore {
         // OR the app is public
         || get(/databases/$(database)/documents/apps/$(appId)).data.access.public == true
       );
-      // Admin can access other users' data ONLY if personalMode is off
-      allow read: if isAdmin()
-        && !isPersonalMode(appId);
+      // Admin can read/write all app data (for maintenance and bug fixes)
+      allow read, write: if isAdmin();
     }
 
     // Access requests
