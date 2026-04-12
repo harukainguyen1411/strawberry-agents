@@ -1,6 +1,6 @@
 ---
 title: Dark Strawberry Icon Picker System
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-12
 ---
