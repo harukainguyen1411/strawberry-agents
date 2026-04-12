@@ -156,10 +156,10 @@ jobs:
           REPO: ${{ github.repository }}
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
         run: node .github/scripts/notify-discord-shipped.js
-      # Tag the release
-      - name: Tag release
+      # Tag the deploy
+      - name: Tag deploy
         run: |
-          VERSION="portal-$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)"
+          VERSION="deploy-portal-$(date +%Y%m%d)-$(echo ${{ github.sha }} | cut -c1-7)"
           git tag "$VERSION"
           git push origin "$VERSION"
 ```
@@ -321,22 +321,49 @@ jobs:
 
 ## Versioning Strategy
 
-**Git tags** as the version source of truth. Format: `{target}-{YYYYMMDD}-{short-sha}`.
+Two layers of versioning: **per-app versions** (user-facing, semver) and **deploy tags** (infrastructure, date-based).
+
+### Per-App Versions (Semver)
+
+Each app has its own independent version number, stored in its manifest file (`index.ts`):
+
+```
+apps/myApps/read-tracker/index.ts      -> version: "1.3.0"
+apps/myApps/portfolio-tracker/index.ts  -> version: "1.1.2"
+apps/myApps/task-list/index.ts          -> version: "0.9.0"
+apps/yourApps/bee/index.ts              -> version: "2.0.1"
+```
+
+Format: **semver** (`major.minor.patch`). Bumped manually by the developer when making changes to that specific app. The version is:
+- Displayed in the app's UI (e.g. footer or settings page)
+- Stored in the Firestore app registry (`/apps/{appId}.version`)
+- Included in the portal's build output for debugging (`window.__DS_APP_VERSIONS__`)
+
+**When to bump:**
+- `patch` — bug fixes, minor tweaks
+- `minor` — new features, UX improvements
+- `major` — breaking changes, data migrations, major redesigns
+
+The platform shell itself also has a version in `apps/myapps/package.json` (the existing `"version": "1.0.1"`), bumped when platform-level changes ship (auth, routing, shared components).
+
+### Deploy Tags (Infrastructure)
+
+**Git tags** track what code is deployed. Format: `deploy-{target}-{YYYYMMDD}-{short-sha}`.
 
 Examples:
 ```
-portal-20260412-abc1234
-landing-20260412-def5678
-functions-20260412-ghi9012
-rules-20260412-jkl3456
+deploy-portal-20260412-abc1234
+deploy-landing-20260412-def5678
+deploy-functions-20260412-ghi9012
+deploy-rules-20260412-jkl3456
 ```
 
 Tags are created automatically by the production deploy jobs. This gives:
 - A clear record of what's deployed and when
-- Easy `git diff` between any two releases: `git diff portal-20260411-xxx portal-20260412-yyy`
+- Easy `git diff` between any two deploys: `git diff deploy-portal-20260411-xxx deploy-portal-20260412-yyy`
 - A rollback target (see below)
 
-No semver — this is a single-tenant platform, not a published package. Date-based tags are simpler and more informative.
+Deploy tags are orthogonal to app versions — a single portal deploy may include version bumps for multiple apps, or none at all (e.g. a platform-only change).
 
 ## Rollback Plan
 
@@ -353,7 +380,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Git tag to deploy (e.g. portal-20260411-abc1234)'
+        description: 'Git tag to deploy (e.g. deploy-portal-20260411-abc1234)'
         required: true
 ```
 
