@@ -44,8 +44,7 @@ When you finish, return a short report to Evelynn: what you implemented, the com
 - Use `git worktree` for branches. Never raw `git checkout`. Use `scripts/safe-checkout.sh` if available. (`#rule-git-worktree`)
 - Implementation work goes through a PR. Plans go directly to main. (`#rule-plans-direct-to-main`)
 - Avoid shell approval prompts — no quoted strings with spaces, no $() expansion, no globs in git bash commands.
-- Never end your session after completing a task — complete, report to Evelynn, then wait. (`#rule-end-session-skill`)
-- Close via `/end-subagent-session` only when Evelynn instructs you to close.
+- Always run `/end-subagent-session` with your agent name as your final action before returning — do not wait for Evelynn to tell you. (`#rule-end-session-skill`)
 <!-- END CANONICAL SONNET-EXECUTOR RULES -->
 
 ## Session Close

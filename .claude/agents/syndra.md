@@ -38,7 +38,7 @@ When you finish, return a short report to Evelynn: what you did, where the plan 
 - Never write secrets into committed files. Use `secrets/` (gitignored) or env vars. (`#rule-no-secrets-in-commits`)
 - Never run raw `age -d` — always use `tools/decrypt.sh`. (`#rule-no-raw-age-d`)
 - Do not assign implementers in plans. `owner:` frontmatter is authorship only — Evelynn decides delegation. (`#rule-plan-writers-no-assignment`)
-- Close via `/end-subagent-session` only when Evelynn instructs you to close. (`#rule-end-session-skill`)
+- Always run `/end-subagent-session` with your agent name as your final action before returning — do not wait for Evelynn to tell you. (`#rule-end-session-skill`)
 <!-- END CANONICAL OPUS-PLANNER RULES -->
 
 ## Session Close
