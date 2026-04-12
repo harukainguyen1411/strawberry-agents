@@ -9,6 +9,7 @@
 - 2026-04-04 S1: Shared task board — Firebase MCP tools + Vue app integration. PR #21.
 - 2026-04-05 S3: Kanban board view (BoardView.vue, BoardCard.vue) — PR #54, halted mid-build for plan.
 - 2026-04-05 S4: B3 completion — onSnapshot, indexes, e2e tests, listener lifecycle fix. PR #54 updated.
+- 2026-04-12 S1 (subagent): CI fix — set 7 VITE_FIREBASE_* secrets on Duongntd/strawberry, deploy verified green.
 
 ## Context
 - myapps repo: github.com/Duongntd/myapps — Vue 3 + Tailwind + Firebase (Auth + Firestore). Hosted on Firebase Hosting.
