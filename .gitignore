@@ -65,3 +65,6 @@ apps/coder-worker/dist/
 apps/coder-worker/logs/
 apps/deploy-webhook/dist/
 apps/deploy-webhook/logs/
+
+# Composite deploy assembly directory (gitignored — assembled at deploy time)
+deploy/
