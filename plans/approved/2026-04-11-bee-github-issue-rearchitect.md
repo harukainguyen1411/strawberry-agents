@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-11
 title: Bee Rearchitect — GitHub Issues Instead of Firestore Queue
