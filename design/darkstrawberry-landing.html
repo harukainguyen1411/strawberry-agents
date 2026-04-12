@@ -199,10 +199,14 @@
     .hero-tagline {
       font-family: var(--font-display);
       font-size: clamp(1.5rem, 4vw, 2.8rem);
-      font-weight: 400; font-style: italic;
-      color: var(--accent);
-      text-shadow: 0 0 30px rgba(224,64,160,0.4), 0 0 60px rgba(224,64,160,0.15);
+      font-weight: 400;
+      color: var(--text);
       margin-bottom: 1.5rem; position: relative; z-index: 1;
+    }
+    .hero-tagline .italic { font-style: italic; color: var(--accent-sec); }
+    .hero-tagline .glow {
+      color: var(--accent);
+      text-shadow: 0 0 30px rgba(224,64,160,0.5), 0 0 60px rgba(224,64,160,0.2);
     }
 
     .hero-sub {
@@ -467,18 +471,18 @@
   <div class="container">
     <div class="hero-eyebrow fade-up">
       <span class="dot"></span>
-      Bespoke software — not templates
+      Custom apps — built to order
     </div>
 
     <h1 class="hero-headline fade-up delay-1">
       Dark<span style="color: var(--accent);">Strawberry</span>
     </h1>
 
-    <p class="hero-tagline fade-up delay-2">Apps built for you. Literally.</p>
+    <p class="hero-tagline fade-up delay-2">Apps built for <span class="italic">you.</span> <span class="glow">Literally.</span></p>
 
     <p class="hero-sub fade-up delay-3">
-      Not a no-code platform. Not a template library. Custom apps,
-      designed for exactly how you think and work.
+      Describe what you need. We build a custom app — not a template, not a workaround.
+      Yours to keep, yours to use.
     </p>
 
     <div class="hero-actions fade-up delay-4">
@@ -508,40 +512,40 @@
 <section class="how-section" id="how">
   <div class="container">
     <p class="section-label">How it works</p>
-    <h2 class="section-heading">From idea to app, fast</h2>
+    <h2 class="section-heading">From idea to app</h2>
     <p class="section-sub">
-      Describe what you need. An AI agent team builds it. You get a custom tool
-      that fits your life — not a workaround.
+      Tell us what you need. Our AI agent team builds it. You get a custom tool
+      that fits exactly how you work.
     </p>
 
     <div class="steps-grid">
       <div class="step-card glass">
         <div class="step-number">01</div>
-        <div class="step-icon">💬</div>
-        <h3 class="step-title">Describe what you need</h3>
+        <div class="step-icon">💡</div>
+        <h3 class="step-title">Describe it</h3>
         <p class="step-desc">
-          Join the Discord and post in #app-requests. No forms, no briefs.
-          Just tell us what you want to track, manage, or automate.
+          Join our Discord and tell us what you need — a tracker, a dashboard,
+          a workflow tool. Plain language, no spec required.
         </p>
       </div>
 
       <div class="step-card glass">
         <div class="step-number">02</div>
         <div class="step-icon">⚙️</div>
-        <h3 class="step-title">We build it with AI + craft</h3>
+        <h3 class="step-title">We build it</h3>
         <p class="step-desc">
-          An AI agent team — directed by a human who actually listens —
-          designs and builds your app. Speed of AI. Quality of craft.
+          An AI agent team builds your app — custom code, not a template.
+          A real human reviews every detail before it ships.
         </p>
       </div>
 
       <div class="step-card glass">
         <div class="step-number">03</div>
-        <div class="step-icon">✦</div>
-        <h3 class="step-title">Your app appears in your portal</h3>
+        <div class="step-icon">🚀</div>
+        <h3 class="step-title">It is yours</h3>
         <p class="step-desc">
-          Sign into apps.darkstrawberry.com with Google. Your app shows up
-          in your personal dashboard — ready to use, yours to keep.
+          Sign in with Google, find your app in your personal dashboard.
+          Give feedback, request changes — we iterate until it fits.
         </p>
       </div>
     </div>
@@ -557,8 +561,8 @@
   <div class="container">
     <div class="apps-header">
       <div>
-        <p class="section-label">Live apps</p>
-        <h2 class="section-heading">Already <span style="color: var(--accent);">shipping</span></h2>
+        <p class="section-label">The collection</p>
+        <h2 class="section-heading">Apps built for <span style="color: var(--accent);">you</span></h2>
         <p class="section-sub" style="margin-top: 0.5rem;">
           These apps exist because someone described a need. Each one is a
           real tool — not a demo.
@@ -759,7 +763,7 @@
         <span class="footer-wordmark">Dark<span>Strawberry</span></span>
       </a>
 
-      <p class="footer-copy">Apps built for you. Literally.</p>
+      <p class="footer-copy">Your idea. Your app. No compromises.</p>
 
       <div class="footer-links">
         <a href="https://apps.darkstrawberry.com" class="footer-link">Apps portal</a>
