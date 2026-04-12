@@ -1,6 +1,6 @@
 ---
 title: Dark Strawberry — Deployment Architecture
-status: proposed
+status: approved
 owner: swain
 date: 2026-04-12
 tags: [architecture, deployment, ci-cd, darkstrawberry]
