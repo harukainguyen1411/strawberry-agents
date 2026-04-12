@@ -14,10 +14,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Team (harness reality, not aspirational roster.md)
 - **Opus planners (registered):** Evelynn, Syndra, Swain, Pyke, Bard
-- **Sonnet executors (registered):** Katarina, Lissandra
-- **Minions:** Poppy (Haiku, exact-spec mechanical edits — use her for trivial work without a plan). Yuumi (Sonnet errand-runner subagent — `.claude/agents/yuumi.md` written 2026-04-08 PM, loadable next restart).
-- **Aspirational only:** Ornn, Fiora, Rek'Sai, Neeko, Zoe, Caitlyn, Shen — in roster but no `.claude/agents/<name>.md`. **Never fall back to general-purpose pretending to be them** (feedback rule 2026-04-08). Wire the profile first, or use a wired agent that actually fits.
-- Rakan aspirational, Zilean pending continuity plan.
+- **Sonnet executors (registered):** Katarina, Fiora, Lissandra, Ornn, Reksai, Neeko, Zoe, Caitlyn, Shen — all fully wired as of 2026-04-11.
+- **Minions:** Poppy (Haiku, one-file exact edits), Yuumi (Sonnet errand-runner, stateless), Skarner (Haiku, read-only memory retrieval, stateless).
+- Yuumi and Skarner are stateless — they do NOT run `/end-subagent-session`. All other agents self-close.
+- Vex: Windows head agent (agents/vex/).
 
 ## Infrastructure
 - **Git:** chore:/ops: prefix only on main. Three-tier policy. Agent state on main only.
@@ -34,7 +34,9 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **`/end-session` skill (NEW 2026-04-08 PM):** Phase 1 shipped. `scripts/clean-jsonl.py` + `.claude/skills/end-session/SKILL.md` + `.claude/skills/end-subagent-session/SKILL.md`. CLAUDE.md rule 14 mandates invocation before any session close. `.gitignore` negates `agents/*/transcripts/*.md`.
 - **Agent runtime (decided 2026-04-08 PM):** dual-mode — local Windows/Mac box for interactive work + always-on GCE VM for autonomous overnight pipeline. Max plan single-account (no extra seat cost). Subscription-CLI only, never API.
 - **Subagent definition caching (discovered 2026-04-08 evening):** Claude Code loads `.claude/agents/<name>.md` at session startup and caches in-memory. Mid-session edits to those files (including `model:` frontmatter) do NOT take effect. Workaround: pass `model:` explicitly on every Agent tool spawn until next restart. Permanent fix: restart the session.
-- **Agent teams feature:** `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled. `TeamCreate`/`SendMessage`/shared TaskList workflow proven 2026-04-08 evening via protocol-audit team. This is now Evelynn's primary multi-agent coordination surface per the new feedback rule.
+- **Agent teams feature:** `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled. `TeamCreate`/`SendMessage`/shared TaskList workflow is Evelynn's **primary** multi-agent coordination surface. When Duong says "have a team work on this", ALWAYS use TeamCreate — never spawn independent background agents. Agents in a team share a task list and can communicate via SendMessage.
+- **.claude/agents/*.md writes blocked in subagent mode** — any edit to agent defs must be done by Evelynn in a top-level session. This is a harness restriction, not a bug.
+- **myapps-prod-deploy.yml secrets** — VITE_FIREBASE_* secrets must be in `Duongntd/strawberry` repo (where the workflow lives), not `Duongntd/myapps`. FIREBASE_SERVICE_ACCOUNT also lives in strawberry repo.
 
 ## Protocols
 - Every PR has exactly two reviewers: code reviewer (Lissandra/Rek'Sai) + plan author. Evelynn auto-assigns.
@@ -43,7 +45,8 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Use `scripts/plan-promote.sh` for plans leaving `proposed/` — never raw `git mv` (Rule 12).
 - Use `/end-session` to close any session — Rule 14, mandatory.
 - **Restart ≠ End.** "Restart" = restart_agents. "End/close/shut down" = shutdown_all_agents.
-- **Delegate reads to Yuumi** — Evelynn must not use Read/Grep/Glob/Bash for file exploration directly. Delegate all lookups to Yuumi (run_in_background: true) to avoid burning top-level context.
+- **Delegate reads to Yuumi** — Evelynn must not use Read/Grep/Glob/Bash for file exploration directly. Delegate all lookups to Yuumi (run_in_background: true) to avoid burning top-level context. Exception: when Yuumi herself needs to be audited or when the lookup is trivial (1-2 files already known).
+- **Agent self-close rule (2026-04-12):** All agents (except Yuumi and Skarner) run `/end-subagent-session <name>` as their FINAL action automatically — no instruction from Evelynn needed. The rule in all `.claude/agents/*.md` files was updated. Do NOT include session-close instructions in delegation prompts anymore.
 - **Evelynn commits agent memory last** — after ending other agents' sessions, sweep and commit all dirty agent memory/learnings in one `chore:` commit, then close Evelynn's own session. Multiple agents committing simultaneously causes git races. Only end Evelynn's own session when Duong explicitly says to.
 - **Reksai posts PR reviews as comments** — always `gh pr comment <number> --body "..."`, never `gh pr review`. Duong's explicit preference.
 - **Default model: Sonnet** — Evelynn runs on Sonnet by default. The global `~/.claude/settings.json` sets `"model": "sonnet"`. Confirm at session start; if Opus is active, switch via `/model` before proceeding.
