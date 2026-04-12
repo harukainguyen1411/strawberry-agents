@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: swain
 created: 2026-04-11
 title: Deploy Bee Worker on GCE VM (Replace Windows NSSM)
