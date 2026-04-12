@@ -115,21 +115,25 @@
       font-family: var(--font-sans); font-size: 0.95rem; font-weight: 500;
       border: none; border-radius: 12px; cursor: pointer;
       text-decoration: none;
-      box-shadow: 0 0 0 1px rgba(204,46,46,0.6), 0 0 16px rgba(204,46,46,0.4), 0 2px 12px rgba(204,46,46,0.25);
-      animation: btn-glow-pulse 2.5s ease-in-out infinite;
-      transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+      box-shadow: 0 0 0 1px rgba(204,46,46,0.7), 0 0 20px rgba(204,46,46,0.5), 0 0 40px rgba(204,46,46,0.2);
+      animation: btn-glow-pulse 1.8s ease-in-out infinite;
+      transition: background 0.2s ease, transform 0.15s ease;
     }
     .btn-primary:hover {
       background: var(--accent-soft);
-      box-shadow: 0 0 0 1px rgba(204,46,46,0.8), 0 0 28px rgba(204,46,46,0.6), 0 4px 20px rgba(204,46,46,0.3);
+      box-shadow: 0 0 0 2px rgba(204,46,46,0.9), 0 0 36px rgba(204,46,46,0.7), 0 0 64px rgba(204,46,46,0.35);
       transform: translateY(-2px);
       animation: none;
     }
     .btn-primary:active { transform: translateY(0); }
 
     @keyframes btn-glow-pulse {
-      0%, 100% { box-shadow: 0 0 0 1px rgba(204,46,46,0.5), 0 0 12px rgba(204,46,46,0.3), 0 2px 10px rgba(204,46,46,0.2); }
-      50%       { box-shadow: 0 0 0 1px rgba(204,46,46,0.75), 0 0 22px rgba(204,46,46,0.5), 0 2px 14px rgba(204,46,46,0.3); }
+      0%, 100% {
+        box-shadow: 0 0 0 1px rgba(204,46,46,0.55), 0 0 12px rgba(204,46,46,0.35), 0 0 28px rgba(204,46,46,0.12);
+      }
+      50% {
+        box-shadow: 0 0 0 1px rgba(204,46,46,0.85), 0 0 28px rgba(204,46,46,0.65), 0 0 52px rgba(204,46,46,0.28);
+      }
     }
 
     .btn-ghost {
@@ -137,15 +141,29 @@
       padding: 0.75rem 1.75rem;
       background: transparent; color: var(--muted);
       font-family: var(--font-sans); font-size: 0.95rem; font-weight: 400;
-      border: 1px solid rgba(204,46,46,0.35); border-radius: 12px;
+      border: 1px solid rgba(204,46,46,0.45); border-radius: 12px;
       cursor: pointer; text-decoration: none;
-      box-shadow: 0 0 10px rgba(204,46,46,0.12);
-      transition: color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 0 14px rgba(204,46,46,0.18), inset 0 0 12px rgba(204,46,46,0.04);
+      animation: btn-ghost-pulse 1.8s ease-in-out infinite;
+      transition: color 0.2s ease, transform 0.15s ease;
     }
     .btn-ghost:hover {
       color: var(--text);
-      border-color: rgba(204,46,46,0.65);
-      box-shadow: 0 0 18px rgba(204,46,46,0.28);
+      border-color: rgba(204,46,46,0.8);
+      box-shadow: 0 0 26px rgba(204,46,46,0.4), inset 0 0 16px rgba(204,46,46,0.08);
+      transform: translateY(-2px);
+      animation: none;
+    }
+
+    @keyframes btn-ghost-pulse {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(204,46,46,0.14), inset 0 0 8px rgba(204,46,46,0.03);
+        border-color: rgba(204,46,46,0.35);
+      }
+      50% {
+        box-shadow: 0 0 22px rgba(204,46,46,0.32), inset 0 0 14px rgba(204,46,46,0.07);
+        border-color: rgba(204,46,46,0.65);
+      }
     }
 
     .btn-discord {
@@ -677,7 +695,10 @@
           <svg class="discord-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.031.057a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
           Join the Discord
         </a>
-        <a href="https://apps.darkstrawberry.com" class="btn-ghost">Browse existing apps</a>
+        <a href="https://apps.darkstrawberry.com" class="btn-primary">
+          Browse Apps
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
       </div>
       <div class="request-flow">
         <span class="request-flow-step">💬 Describe it</span>
