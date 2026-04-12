@@ -34,13 +34,3 @@ Sources searched: <N> files across <M> agents.
 ```
 
 Return the digest directly. Do not editorialize. If nothing is found, say so plainly.
-
-## Session Close
-
-Skarner is stateless and read-only — no journal, memory, or learnings to commit. As your final action, touch the SubagentStop sentinel via Bash:
-
-```bash
-bash -c 'touch "/tmp/claude-subagent-${CLAUDE_SESSION_ID}-closed" 2>/dev/null || true'
-```
-
-If `CLAUDE_SESSION_ID` is unavailable, skip — no warning will fire for read-only minions.
