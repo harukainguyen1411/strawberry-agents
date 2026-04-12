@@ -33,7 +33,7 @@
 - 2026-04-11 (subagent, S8): Wrote docs/windows-services-runbook.md — services table, manual restart, autodeploy setup (install script, firewall/Cloudflare/ngrok, GitHub webhook), adding new service. Commit fac563d, direct to main.
 - 2026-04-12 (subagent): Monitored MyApps prod deploy — succeeded after FIREBASE_SERVICE_ACCOUNT secret was added. apps.darkstrawberry.com confirmed live.
 - 2026-04-12 (subagent, darkstrawberry-branding): DS icon rollout on feat/platform-monorepo. Copied DsIcon.vue + icons.ts + index.ts from apps/shared/ui/icons/ into worktree. Updated AppManifest.icon type to DsIconName. Updated all 4 app manifests (book/chart-line/checklist/bee). Replaced emoji in Home.vue, AccessDenied.vue, PlatformHeader.vue with DsIcon. Added Neeko footer credit (neeko icon) to PlatformLayout.vue. Commit 4920dd7 pushed.
-- 2026-04-12 (subagent, deployment-architecture): Phase 1 deployment architecture. Extracted Read Tracker, Portfolio Tracker, Task List, Bee into standalone Vite packages (apps/myapps/*, apps/yourApps/bee). Each app builds independently with Vite base set to path prefix. Root firebase.json + composite-deploy.sh + scaffold-app.sh. All 4 apps tsc+vite clean. Commits cfca63d/5af943a/0f7e8c0. PR #100 already existed.
+- 2026-04-12 (subagent, deployment-architecture): Phase 1 + Phase 5. Phase 1: standalone Vite packages for Read Tracker, Portfolio Tracker, Task List, Bee. Phase 5: portal conversion — stripped all app views/components/stores from apps/myapps, Home.vue uses window.location.href to standalone SPAs, router has no app subtrees. All builds clean. Commits cfca63d–f7eeba5, PR #100.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
