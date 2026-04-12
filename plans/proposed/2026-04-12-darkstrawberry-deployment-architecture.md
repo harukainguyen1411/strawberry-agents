@@ -66,9 +66,9 @@ export function ensureAuth(): Promise<User> {
 
 ```
 package.json                          # Root workspaces
+turbo.json                            # Turborepo pipeline config
 .changeset/                           # Changesets config
 scripts/
-  affected.sh                         # Dependency-aware affected detection
   scaffold-app.sh                     # Scaffold new app from template
 apps/
   portal/                             # @ds/portal — launcher, catalog, settings
@@ -95,17 +95,53 @@ Each app is self-contained: own `package.json` (own dependencies, own version), 
 
 `@ds/shared` contains Firebase init/auth, Firestore helpers, design system (Vue components, Tailwind preset), platform types. It's a build-time dependency only — never deployed directly.
 
+### Turborepo
+
+Turborepo orchestrates builds, tests, and linting across workspaces with dependency-aware affected detection and caching.
+
+**`turbo.json`:**
+```json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "test:run": {
+      "dependsOn": ["^build"]
+    },
+    "lint": {},
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false
+    }
+  }
+}
+```
+
+**Key commands:**
+- `turbo run build --filter=...[origin/main]` — build only packages affected since main (walks dependency graph: if `@ds/shared` changed, all dependents rebuild)
+- `turbo run build --filter=@ds/read-tracker` — build one app + its dependencies
+- `turbo run test --filter=...[HEAD~1]` — test only packages affected by the last commit
+- `turbo run build --dry-run=json --filter=...[HEAD~1]` — list affected packages without building (used to compute the deploy matrix)
+
 ## Deployment Pipeline
 
 ### Overview
 
 ```
 PR
-  +--> [ci.yml]       affected.sh -> lint/test/build per affected package + E2E per affected app
+  +--> [ci.yml]       turbo run lint test build --filter=...[origin/main]
+  |                   + E2E per affected app + rules validation
   +--> [preview.yml]  Per-app preview deploys (each app gets its own preview URL)
 
 Merge to main
-  +--> [release.yml]  Changesets version/tag -> matrix build+deploy per affected app (parallel)
+  +--> [release.yml]  Changesets version/tag -> turbo --filter=...[HEAD~1] to compute affected
+                      -> matrix build+deploy per affected app (parallel)
                       + functions + rules + Discord notification
 ```
 
@@ -153,10 +189,18 @@ jobs:
           if [ -n "${{ github.event.inputs.app }}" ]; then
             APPS="${{ github.event.inputs.app }}"
           else
-            APPS=$(bash scripts/affected.sh HEAD~1 | grep -E '@ds/(read-tracker|portfolio-tracker|task-list|bee|portal|landing)' || true)
+            # Turborepo dry-run lists all affected packages
+            AFFECTED=$(npx turbo run build --filter=...[HEAD~1] --dry-run=json 2>/dev/null)
+            APPS=$(echo "$AFFECTED" | node -e "
+              const j=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));
+              const deployable=['read-tracker','portfolio-tracker','task-list','bee','portal','landing'];
+              const pkgs=[...new Set(j.tasks.map(t=>t.package))].filter(p=>deployable.some(d=>p==='@ds/'+d));
+              console.log(pkgs.join(' '));
+            ")
           fi
           echo "apps=$APPS" >> "$GITHUB_OUTPUT"
-          bash scripts/affected.sh HEAD~1 | grep -q '@ds/functions' && echo "functions=true" >> "$GITHUB_OUTPUT" || echo "functions=false" >> "$GITHUB_OUTPUT"
+          # Check functions and rules separately
+          npx turbo run build --filter=@ds/functions...[HEAD~1] --dry-run 2>/dev/null | grep -q '@ds/functions' && echo "functions=true" >> "$GITHUB_OUTPUT" || echo "functions=false" >> "$GITHUB_OUTPUT"
           git diff --name-only HEAD~1 | grep -q 'firestore.rules\|storage.rules' && echo "rules=true" >> "$GITHUB_OUTPUT" || echo "rules=false" >> "$GITHUB_OUTPUT"
 
       - name: Build deploy matrix
@@ -280,7 +324,7 @@ Rolling back Read Tracker does not affect any other app.
 bash scripts/scaffold-app.sh my-new-app myApps
 ```
 
-Creates standalone Vue app with auth, DS design system, `firebase.json` (targeting `ds-my-new-app`). Runs `firebase hosting:sites:create`. App is deployable immediately. No workflow changes needed — `affected.sh` picks it up automatically.
+Creates standalone Vue app with auth, DS design system, `firebase.json` (targeting `ds-my-new-app`). Runs `firebase hosting:sites:create`. App is deployable immediately. No workflow changes needed — Turborepo automatically includes it in the dependency graph.
 
 ## Summary
 
@@ -294,7 +338,7 @@ Creates standalone Vue app with auth, DS design system, `firebase.json` (targeti
 | **Dependencies** | All apps share one package.json | Each app has own dependencies |
 | **Workflows** | 1 workflow rebuilds everything | 3 workflows, matrix deploys in parallel |
 
-**3 workflow files. 2 helper scripts. 2 devDependencies (Changesets). Firebase multi-site (free tier).**
+**3 workflow files. 1 helper script (`scaffold-app.sh`). 3 devDependencies (Turborepo + Changesets). Firebase multi-site (free tier).**
 
 ## Migration Steps
 
@@ -313,11 +357,13 @@ Creates standalone Vue app with auth, DS design system, `firebase.json` (targeti
 1. Implement `ensureAuth()` in `@ds/shared`
 2. Test cross-subdomain sign-in
 
-### Phase 4: CI/CD
-1. Set up Changesets
-2. Write `affected.sh` and `scaffold-app.sh`
-3. Create 3 new workflows, delete old workflows
-4. Create `production` GitHub Environment
+### Phase 4: Turborepo + Changesets + CI/CD
+1. Install `turbo` at root, configure `turbo.json`
+2. Verify `turbo run build --filter=@ds/read-tracker` builds correctly (reads dependency graph from workspaces)
+3. Set up Changesets (`npx changeset init`)
+4. Write `scaffold-app.sh`
+5. Create 3 new workflows (`ci.yml`, `preview.yml`, `release.yml`), delete old workflows
+6. Create `production` GitHub Environment with Duong as reviewer
 
 ### Phase 5: Portal conversion
 1. Strip app code from portal — launcher/catalog only
