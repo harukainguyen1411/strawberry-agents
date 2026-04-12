@@ -11,3 +11,4 @@
 - 2026-04-11-rules-need-hooks.md — Written rules drift; wire PreToolUse hooks for hard behavioral constraints. Hooks are global — asymmetric subagent-only rules can't be hook-enforced without session context detection (not available in Claude Code today). | last_used: 2026-04-11
 - 2026-04-11-delegation-specialists-vs-minions.md — Lean-delegation (what+why only) applies to specialists. Minions (Yuumi, Skarner) need explicit step-by-step instructions — they don't fill gaps. | last_used: 2026-04-11
 - 2026-04-11-nested-worktree-permissions.md — Never run Evelynn from a worktree. Subagents spawned with isolation:worktree from a worktree session get triple-nested and lose Write/Bash. Always start from repo root. | last_used: 2026-04-11
+- 2026-04-12-team-vs-agent.md — "Team" = TeamCreate (shared task list, coordination). "Have someone" = background Agent (single task). Never confuse. | last_used: 2026-04-12
