@@ -81,6 +81,8 @@ This keeps deployment simple (one Firebase Hosting site) while still giving each
 /users/{userId}                      # User profiles
   displayName, email, photoURL
   role: 'admin' | 'collaborator' | 'user'   # Platform-wide role (default: 'user')
+  notificationChannel: 'email' | 'discord'   # User's preferred notification method
+  discordUserId?: string                      # Required if notificationChannel == 'discord'
   createdAt, lastLoginAt
 
 /users/{userId}/appAccess/{appId}    # Which apps this user can access
@@ -198,8 +200,22 @@ Each owned app shows a settings panel where the owner can toggle `collaboration`
 1. User visits app catalog, sees a yourApp with `allowTryRequests: true`
 2. User sends access request -> `/apps/{appId}/accessRequests/{requestId}`
 3. **Rate limit**: users with role `user` can have at most 1 pending or approved request. Collaborators have no limit. Enforced in security rules via a count check or in app logic.
-4. Owner receives notification (delivery method TBD — see open questions)
+4. Owner receives notification via their preferred channel (email or Discord — see Notifications below)
 5. Owner approves -> system writes `/users/{requesterId}/appAccess/{appId}` with role `user`
+
+### Notifications
+
+Users choose their notification channel in platform settings: **email** or **Discord**. Stored as `notificationChannel` on `/users/{userId}`.
+
+- **Email**: Firebase Extensions (Trigger Email from Firestore) — write a doc to a `/mail` collection, the extension sends it. Free tier compatible.
+- **Discord**: Post to the user via the existing Discord relay bot (`apps/discord-relay/`). Requires the user to link their Discord user ID in settings.
+
+Notification triggers (all via Firestore-triggered Cloud Function or Extensions):
+- Access request received (notify app owner)
+- Access request approved/denied (notify requester)
+- New suggestion on a collaborative app (notify app owner)
+
+Implementation note: a single Cloud Function watches `/notifications/{notifId}` (a write-ahead queue). Each notification doc specifies `recipientId`, `type`, and `payload`. The function reads the recipient's `notificationChannel` and dispatches accordingly.
 
 ### Forking
 
@@ -338,7 +354,7 @@ All of this runs on Firebase Spark (free) tier:
 - 1 GiB Firestore storage, 50K reads/day, 20K writes/day — more than sufficient for a personal platform with <100 users
 - Firebase Hosting: 10 GB/month transfer — fine for an SPA
 - Firebase Auth: free for email/password and Google sign-in
-- No Cloud Functions required for core flow (security rules handle access control). Cloud Functions only needed later for notifications or background jobs
+- No Cloud Functions required for core access control flow (security rules handle it). One Cloud Function needed for notification dispatch (email + Discord). Firebase Extensions "Trigger Email" is free on Spark plan.
 
 ## Resolved Questions
 
@@ -348,8 +364,8 @@ All of this runs on Firebase Spark (free) tier:
 
 3. **Roles**: Three-tier model (admin / collaborator / user). Users limited to 1 app request; collaborators unlimited.
 
+4. **Notifications**: Per-user choice of email or Discord. Dispatched via a Cloud Function watching a `/notifications` queue.
+
 ## Open Questions for Duong
 
-1. **Notification delivery**: When someone requests access to a yourApp, how should the owner be notified? Options: (a) in-app badge only, (b) email via Firebase Extensions, (c) Telegram bot notification. This plan assumes (a) for now.
-
-2. **App discovery URL structure**: Should apps live at `/apps/read-tracker` or `/read-tracker`? The former is cleaner for a platform; the latter is shorter. Current structure uses `/read-tracker` directly.
+1. **App discovery URL structure**: Should apps live at `/apps/read-tracker` or `/read-tracker`? The former is cleaner for a platform; the latter is shorter. Current structure uses `/read-tracker` directly.
