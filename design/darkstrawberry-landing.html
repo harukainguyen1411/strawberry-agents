@@ -204,10 +204,8 @@
       font-weight: 600; color: var(--text); letter-spacing: 0.02em;
       transition: color 0.2s ease;
     }
-    /* brand-adj = "Dark" (dark mode) or "White" (light mode) — always --text color */
+    /* brand-adj = "Dark" or "White" — always primary text color, same logic both modes */
     .brand-adj { color: var(--text); }
-    /* In dark mode, tint it with accent so "Dark" reads as a red hint */
-    [data-theme="dark"] .brand-adj { color: var(--accent); }
     .nav-actions { display: flex; align-items: center; gap: 10px; }
 
     /* ── Strawberry logo SVG ── */
@@ -736,10 +734,10 @@
     applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
   }
 
-  // Restore saved preference
+  // Restore saved preference — default is dark (HTML attr already set)
   try {
     const saved = localStorage.getItem('ds-theme');
-    if (saved && saved !== 'dark') applyTheme(saved);
+    if (saved) applyTheme(saved);
   } catch(e) {}
 </script>
 
