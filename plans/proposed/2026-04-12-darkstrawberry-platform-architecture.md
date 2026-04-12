@@ -366,16 +366,20 @@ All of this runs on Firebase Spark (free) tier:
 
 4. **Notifications**: Per-user choice of email or Discord. Dispatched via a Cloud Function watching a `/notifications` queue.
 
-5. **URL structure**: `/app/{appId}/` prefix for all apps (Swain's call — see rationale below).
+5. **URL structure**: Category-prefixed routes on `apps.darkstrawberry.com` (Duong's decision).
 
-### URL Structure Decision
+### URL Structure
 
-All apps live under `/app/{appId}/`:
+Domain: `apps.darkstrawberry.com`
 
 ```
-/app/read-tracker/dashboard
-/app/portfolio-tracker/transactions
-/app/bee/home
+/myApps/{app-slug}/...           # Public apps
+/myApps/read-tracker/dashboard
+/myApps/portfolio-tracker/transactions
+/myApps/task-list/dashboard
+
+/yourApps/{app-slug}/...         # Personal apps
+/yourApps/bee/home
 ```
 
 Platform pages use top-level routes:
@@ -386,7 +390,7 @@ Platform pages use top-level routes:
 /your-apps               # "Your Apps" section (owned + granted)
 ```
 
-**Rationale**: A platform serves many apps from many authors. Flat top-level routes (`/read-tracker`, `/bee`) create a namespace collision risk — a new app slug could conflict with a platform route. The `/app/` prefix eliminates that entirely, makes the URL self-documenting ("this is an app on the platform"), and keeps the platform's own namespace clean. The singular `/app/` (not `/apps/`) reads naturally: "app slash read-tracker."
+This mirrors the monorepo structure (`apps/myApps/`, `apps/yourApps/`) directly into the URL, making the category visible in every URL. No namespace collision risk since all app routes are scoped under their category prefix.
 
 Migration from current `/read-tracker` etc. is a one-time router change. Add redirects from old paths for bookmarked URLs.
 
