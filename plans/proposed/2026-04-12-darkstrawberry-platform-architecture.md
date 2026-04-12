@@ -51,10 +51,10 @@ export interface AppManifest {
   category: 'myApps' | 'yourApps'
   version: string
   routes: RouteRecordRaw[]      // Vue Router routes for this app
-  defaultAccess: AccessPolicy   // See access model below
-  capabilities: {
-    collaboration: boolean      // Can others suggest improvements?
-    forkable: boolean           // Can others fork this app?
+  defaultSettings: {             // Defaults seeded into Firestore on first deploy
+    collaboration: boolean
+    forkable: boolean
+    personalMode: boolean
   }
 }
 ```
@@ -74,11 +74,13 @@ This keeps deployment simple (one Firebase Hosting site) while still giving each
 ```
 /apps/{appId}                        # App registry
   name, description, icon, category, ownerId, version
-  access: { public: bool, allowTryRequests: bool, forkable: bool, collaborative: bool }
+  access: { public: bool, allowTryRequests: bool }
+  settings: { collaboration: bool, forkable: bool, personalMode: bool }
   createdAt, updatedAt
 
 /users/{userId}                      # User profiles
   displayName, email, photoURL
+  role: 'admin' | 'collaborator' | 'user'   # Platform-wide role (default: 'user')
   createdAt, lastLoginAt
 
 /users/{userId}/appAccess/{appId}    # Which apps this user can access
@@ -136,34 +138,68 @@ Migration script moves documents from old paths to new paths. Can run incrementa
 
 ## Access Model
 
-### Roles
+### Roles (3 Tiers)
 
-| Role | Can use app | Can suggest | Can fork | Can manage access |
-|------|-------------|-------------|----------|-------------------|
-| owner | yes | n/a | n/a | yes |
-| user | yes | if collaborative | if forkable | no |
-| collaborator | yes | yes | if forkable | no |
-| fork-owner | own fork only | on own fork | n/a | own fork |
+| Role | Scope | Can use apps | Can suggest improvements | Can fork | Can request new apps | Can manage all apps |
+|------|-------|-------------|------------------------|----------|---------------------|---------------------|
+| **admin** | Platform-wide | all apps | all apps | all forkable apps | n/a (creates apps directly) | yes |
+| **collaborator** | Per-app + platform | granted apps + public | public apps + collab-enabled apps | forkable apps | unlimited requests | no |
+| **user** (default) | Per-app | granted apps + public | no | no | 1 app request (for now) | no |
+
+- **Admin** = Duong. Identified by a `role: 'admin'` field on his `/users/{userId}` document. Admin can view and manage all apps on the platform.
+- **Collaborator** = trusted users who can improve public apps and other people's apps (if collaboration is enabled). Can request new apps freely with no limit.
+- **User** = default role for new sign-ups. Can use public apps and any apps they've been granted access to. Can request only 1 app for now (enforced by counting their pending/approved requests).
+
+### Per-App Owner Settings
+
+Every app owner controls these settings on their app (via `/apps/{appId}.settings`):
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `collaboration` | false | When enabled, collaborators can suggest improvements to this app |
+| `forkable` | false | When enabled, eligible users can fork this app |
+| `personalMode` | false | When enabled, **even admin cannot access this app's data** — full privacy for the owner |
+
+`personalMode` is enforced at the security rules level. When `personalMode: true`, only the owner's UID can read/write under `/appData/{appId}/users/{ownerId}/`. Admin access is explicitly denied.
 
 ### Access Resolution
 
 ```
 canAccess(userId, appId):
+  user = /users/{userId}
   app = /apps/{appId}
+
+  # Admin can access everything UNLESS personalMode is on
+  if user.role == 'admin' and app.settings.personalMode == false:
+    return true
+
+  # Public apps: any authenticated user
   if app.category == 'myApps' and app.access.public == true:
-    return true                          # Public apps: everyone
+    return true
+
+  # Check explicit access grant
   userAccess = /users/{userId}/appAccess/{appId}
   if userAccess exists and userAccess.role in ['owner', 'user', 'collaborator']:
     return true
+
   return false
 ```
+
+### "Your Apps" Section
+
+Every logged-in user sees a "Your Apps" section in the platform. This lists:
+- Apps they own (created for them or forked)
+- Apps they've been granted access to
+
+Each owned app shows a settings panel where the owner can toggle `collaboration`, `forkable`, and `personalMode`.
 
 ### Request-to-Try Flow
 
 1. User visits app catalog, sees a yourApp with `allowTryRequests: true`
 2. User sends access request -> `/apps/{appId}/accessRequests/{requestId}`
-3. Owner receives notification (in-app notification badge on Settings or a dedicated inbox)
-4. Owner approves -> system writes `/users/{requesterId}/appAccess/{appId}` with role `user`
+3. **Rate limit**: users with role `user` can have at most 1 pending or approved request. Collaborators have no limit. Enforced in security rules via a count check or in app logic.
+4. Owner receives notification (delivery method TBD — see open questions)
+5. Owner approves -> system writes `/users/{requesterId}/appAccess/{appId}` with role `user`
 
 ### Forking
 
@@ -184,41 +220,62 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // App registry: anyone can read, only Duong (admin) can write
-    match /apps/{appId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == 'DUONG_UID';
+    // Helper: is the caller an admin?
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
-    // User profiles: own profile only
+    // Helper: is the app in personal mode?
+    function isPersonalMode(appId) {
+      return get(/databases/$(database)/documents/apps/$(appId)).data.settings.personalMode == true;
+    }
+
+    // App registry: anyone authed can read; admin can write; owners can update their own app's settings
+    match /apps/{appId} {
+      allow read: if request.auth != null;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || request.auth.uid == resource.data.ownerId;
+    }
+
+    // User profiles: own profile; admin can read all
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow read: if request.auth.uid == userId || isAdmin();
+      allow write: if request.auth.uid == userId;
+      // role field is admin-writable only (enforce via a validate rule or Cloud Function)
 
       match /appAccess/{appId} {
-        allow read: if request.auth.uid == userId;
-        // Write controlled by Cloud Functions or admin
+        allow read: if request.auth.uid == userId || isAdmin();
+        allow write: if isAdmin()
+          || request.auth.uid == get(/databases/$(database)/documents/apps/$(appId)).data.ownerId;
       }
     }
 
-    // App data: user can access their own data within an app they have access to
+    // App data: user's own data within an app they can access
+    // personalMode blocks even admin
     match /appData/{appId}/users/{userId}/{collection}/{docId} {
-      allow read, write: if request.auth.uid == userId
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid)/appAccess/$(appId))
-        // OR the app is public (myApps)
-        || (request.auth.uid == userId
-            && get(/databases/$(database)/documents/apps/$(appId)).data.access.public == true);
+      allow read, write: if request.auth.uid == userId && (
+        // User has explicit access
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)/appAccess/$(appId))
+        // OR the app is public
+        || get(/databases/$(database)/documents/apps/$(appId)).data.access.public == true
+      );
+      // Admin can access other users' data ONLY if personalMode is off
+      allow read: if isAdmin()
+        && !isPersonalMode(appId);
     }
 
     // Access requests
     match /apps/{appId}/accessRequests/{requestId} {
       allow create: if request.auth != null;
-      allow read, update: if request.auth.uid == get(/databases/$(database)/documents/apps/$(appId)).data.ownerId;
+      allow read, update: if isAdmin()
+        || request.auth.uid == get(/databases/$(database)/documents/apps/$(appId)).data.ownerId;
     }
 
     // Suggestions (collaboration)
     match /apps/{appId}/suggestions/{suggestionId} {
       allow create: if request.auth != null
-        && get(/databases/$(database)/documents/apps/$(appId)).data.access.collaborative == true;
+        && get(/databases/$(database)/documents/apps/$(appId)).data.settings.collaboration == true;
       allow read: if request.auth != null;
     }
   }
@@ -229,7 +286,7 @@ service cloud.firestore {
 
 Keep Firebase Auth as-is. No changes needed. The platform shell handles sign-in/sign-up. Individual apps receive the authenticated user context from the platform.
 
-Add an `isAdmin` flag check (Duong's UID or a custom claim) for platform management operations (registering new apps, approving access on behalf of owners, etc.).
+**Admin identity**: Duong's Google account gets `role: 'admin'` in his `/users/{userId}` Firestore document. This is checked in security rules via the `isAdmin()` helper function. No custom claims or Cloud Functions needed — the role lives in Firestore alongside the user profile. Seeded manually (or via a one-time script) when the platform is first deployed.
 
 ## Firebase Helper Layer
 
@@ -283,12 +340,16 @@ All of this runs on Firebase Spark (free) tier:
 - Firebase Auth: free for email/password and Google sign-in
 - No Cloud Functions required for core flow (security rules handle access control). Cloud Functions only needed later for notifications or background jobs
 
+## Resolved Questions
+
+1. **Admin identity**: Duong's Google account gets `role: 'admin'` in Firestore. Checked in security rules. No custom claims needed.
+
+2. **Fork semantics**: Instance-level forks confirmed (same code, separate data).
+
+3. **Roles**: Three-tier model (admin / collaborator / user). Users limited to 1 app request; collaborators unlimited.
+
 ## Open Questions for Duong
 
-1. **Admin identity**: Should admin be determined by UID hardcode in security rules, or should we set up Firebase custom claims? Custom claims are cleaner but require a Cloud Function to set initially.
+1. **Notification delivery**: When someone requests access to a yourApp, how should the owner be notified? Options: (a) in-app badge only, (b) email via Firebase Extensions, (c) Telegram bot notification. This plan assumes (a) for now.
 
-2. **Fork semantics**: Confirmed that "fork" means "fork the instance" (same code, separate data). If Duong later wants code-level forks (user modifies the app itself), that's a fundamentally different architecture. This plan assumes instance-only forks.
-
-3. **Notification delivery**: When someone requests access to a yourApp, how should the owner be notified? Options: (a) in-app badge only, (b) email via Firebase Extensions, (c) Telegram bot notification. This plan assumes (a) for now.
-
-4. **App discovery URL structure**: Should apps live at `/apps/read-tracker` or `/read-tracker`? The former is cleaner for a platform; the latter is shorter. Current structure uses `/read-tracker` directly.
+2. **App discovery URL structure**: Should apps live at `/apps/read-tracker` or `/read-tracker`? The former is cleaner for a platform; the latter is shorter. Current structure uses `/read-tracker` directly.
