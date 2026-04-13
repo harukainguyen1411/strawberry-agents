@@ -38,7 +38,7 @@ If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents
 7. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Raw `git mv` leaves orphan Drive docs.
 
 <!-- #rule-end-session-skill -->
-8. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level sessions use `/end-session`; Sonnet subagent sessions use `/end-subagent-session`. The skills produce the cleaned-transcript archive, handoff note, memory refresh, learnings, and commit. They are `disable-model-invocation: true` — Duong or Evelynn must explicitly trigger them.
+8. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level sessions use `/end-session` (disable-model-invocation: true — Duong or Evelynn must explicitly trigger it). Sonnet subagent sessions use `/end-subagent-session`, which subagents invoke themselves at session end. Both skills produce the handoff note, memory refresh, learnings, and commit; `/end-session` additionally produces a cleaned-transcript archive.
 
 <!-- #rule-agent-model-declaration -->
 9. **Every agent definition must declare its model** — every `.claude/agents/<name>.md` MUST include a `model:` frontmatter field. Use `opus` for planners, `sonnet` for executors/reviewers, `haiku` for minions. Use short alias names, not pinned version IDs.
