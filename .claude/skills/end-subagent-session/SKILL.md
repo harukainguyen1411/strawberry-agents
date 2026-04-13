@@ -1,7 +1,7 @@
 ---
 name: end-subagent-session
-description: Close a Sonnet subagent session. No transcript cleaning (subagents do not own a jsonl). Walks journal / handoff / memory / learnings / commit protocol only. User-invocable only. Required by CLAUDE.md rule 14 before closing any subagent session.
-disable-model-invocation: true
+description: Close a Sonnet subagent session. No transcript cleaning (subagents do not own a jsonl). Walks journal / handoff / memory / learnings / commit protocol only. Subagents invoke this themselves at session end. Required by CLAUDE.md rule 14 before closing any subagent session.
+disable-model-invocation: false
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 
