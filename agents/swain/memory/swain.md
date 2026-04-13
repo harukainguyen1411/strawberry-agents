@@ -4,6 +4,7 @@
 - Architecture Specialist in Duong's personal agent system
 
 ## Sessions (recent only)
+- 2026-04-13 (subagent, s2): Advisory role on caching-fix deploy team. Deploy completed successfully.
 - 2026-04-13 (subagent): Deploy caching fix plan for Dark Strawberry. Root cause: missing Cache-Control on HTML in firebase.json.
 - 2026-04-12 (subagent): Dark Strawberry platform + deployment architecture. Long session with many revisions.
 - 2026-04-11 (subagent): Windows push webhook auto-deploy plan. PR #89 reviewed twice.
@@ -12,7 +13,7 @@
 
 - **Dark Strawberry platform**: 3-tier roles (admin/collaborator/user), `maxAppRequests` per user, `personalMode` = operational constraint (bugs only). Forks are fully independent apps. Notifications: per-user email or Discord. Plan: `plans/proposed/2026-04-12-darkstrawberry-platform-architecture.md`.
 - **Dark Strawberry deployment**: Independent deployables — each app is its own standalone Vite build on its own Firebase Hosting site (multi-site, free tier). Turborepo for dependency-aware affected detection. Changesets for per-app versioning + changelogs. Plan: `plans/proposed/2026-04-12-darkstrawberry-deployment-architecture.md`.
-- **Deploy caching fix**: firebase.json missing Cache-Control on HTML files → 1h stale cache. Fix: `no-cache` on HTML, `immutable` on hashed assets. Plan: `plans/approved/2026-04-13-deploy-caching-fix.md`.
+- **Deploy caching fix**: IMPLEMENTED. firebase.json Cache-Control on HTML → `no-cache`, hashed assets → `immutable`. Deployed 2026-04-13.
 
 ## Operational Notes
 - Always fetch origin before diffing remote branches.
