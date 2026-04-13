@@ -11,6 +11,8 @@
 
 ## Active Architecture Decisions
 
+- **Feature flags (Remote Config)**: Per-user app visibility via Firebase Remote Config + custom signals. Plan: `plans/approved/2026-04-13-feature-flags-firebase-remote-config.md`. First flag: `bee_visible` gated to Haruka's email.
+
 - **Dark Strawberry platform**: 3-tier roles, `maxAppRequests` per user, `personalMode`. Plan: `plans/proposed/2026-04-12-darkstrawberry-platform-architecture.md`.
 - **Dark Strawberry deployment**: Independent deployables, Turborepo, Changesets. Plan: `plans/proposed/2026-04-12-darkstrawberry-deployment-architecture.md`.
 - **Deploy pipeline hardening**: Post-incident patch plan. Plan: `plans/proposed/2026-04-13-deploy-pipeline-hardening.md`.
