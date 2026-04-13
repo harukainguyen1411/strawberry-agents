@@ -11,6 +11,7 @@
 - 2026-04-05 S4: B3 completion — onSnapshot, indexes, e2e tests, listener lifecycle fix. PR #54 updated.
 - 2026-04-12 S1 (subagent): CI fix — set 7 VITE_FIREBASE_* secrets on Duongntd/strawberry, deploy verified green.
 - 2026-04-13 S1 (subagent): Firebase Hosting caching fix — deployed to both myapps-b31ea and darkstrawberry-landing sites. Key learnings: **/*.html does not match SPA routes like /; use ** catch-all for no-cache and let JS/CSS rules override with immutable. darkstrawberry.com is a separate hosting site (darkstrawberry-landing) with its own apps/landing/firebase.json. Fixed missing packageManager in package.json (turbo was broken). No GitHub remote.
+- 2026-04-13 S2 (subagent): Firebase Storage CORS investigation. Root cause: Firebase Storage was never initialized for myapps-b31ea. Browser SDK gets 404 on v0 API — not a CORS header issue. Enabled firebasestorage.googleapis.com API. Requires Duong to visit Firebase Console > Storage > Get Started. See assessments/2026-04-13-firebase-storage-cors-investigation.md and architecture/firebase-storage-cors.md.
 
 ## Context
 - myapps repo: github.com/Duongntd/myapps — Vue 3 + Tailwind + Firebase (Auth + Firestore). Hosted on Firebase Hosting.
