@@ -4,10 +4,10 @@
 - Architecture Specialist in Duong's personal agent system
 
 ## Sessions (recent only)
+- 2026-04-13 (subagent, s5): Bee multi-format IO plan — xlsx/pptx/pdf input + output format selection.
 - 2026-04-13 (subagent, s4): Feature flags plan — Firebase Remote Config for per-user app visibility.
 - 2026-04-13 (subagent, s3): Deploy pipeline hardening plan after blank-page incident.
-- 2026-04-13 (subagent, s2): Advisory role on caching-fix deploy team. Deploy completed successfully.
-- 2026-04-13 (subagent): Deploy caching fix plan for Dark Strawberry.
+- 2026-04-13 (subagent, s2): Advisory role on caching-fix deploy team.
 
 ## Active Architecture Decisions
 
@@ -17,6 +17,7 @@
 - **Dark Strawberry deployment**: Independent deployables, Turborepo, Changesets. Plan: `plans/proposed/2026-04-12-darkstrawberry-deployment-architecture.md`.
 - **Deploy pipeline hardening**: Post-incident patch plan. Plan: `plans/proposed/2026-04-13-deploy-pipeline-hardening.md`.
 - **Deployment pipeline architecture**: Comprehensive pipeline plan. 12 components, 3 phases. Supersedes the hardening plan. Plan: `plans/proposed/2026-04-13-deployment-pipeline-architecture.md`. Key finding: existing CI/preview/release workflows are more advanced than initially reported (env vars in CI, preview channels, environment protection, deploy tags, changesets). Main gaps: no staging, no smoke tests, no env validation, turbo cache blind to env, duplicate conflicting workflows.
+- **Bee multi-format IO**: Input (docx/xlsx/pptx/pdf) + output format selection. Plan: `plans/proposed/2026-04-13-bee-multi-format-io.md`. 3 phases: P0=input parsers, P1=output rendering, P2=polish. Key design: Claude gets pre-extracted text (not raw files), returns intermediate JSON schemas per output type.
 - **Deploy caching fix**: IMPLEMENTED 2026-04-13.
 
 ## Operational Notes
