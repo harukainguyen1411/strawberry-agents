@@ -1,0 +1,83 @@
+{
+  "colors": {
+    "navy":        "223A5E",
+    "blue":        "00588F",
+    "blue_ubcs":   "005992",
+    "red":         "C91F3E",
+    "green":       "00B050",
+    "light_blue":  "E4F7FF",
+    "light_red":   "FFE0E0",
+    "light_green": "E0FFE8",
+    "white":       "FFFFFF",
+    "gray_text":   "555555"
+  },
+  "fonts": {
+    "title":  "Cambria",
+    "body":   "Arial",
+    "ubcs":   "Roboto"
+  },
+  "font_sizes": {
+    "slide_title":   22,
+    "section_label": 11,
+    "table_header":  11,
+    "table_body":    9,
+    "table_small":   8,
+    "chart_label":   9
+  },
+  "trang_thai_color": {
+    "Giữ nguyên":       null,
+    "SĐBS/Điều chỉnh":  "E4F7FF",
+    "Đã điều chỉnh":    "E0FFE8",
+    "Thay thế":         "E4F7FF",
+    "Đã thay thế":      "E0FFE8",
+    "Tuyên hủy":        "FFE0E0",
+    "Sẽ tuyên hủy":     "FFE0E0",
+    "Hết hiệu lực":     "FFE0E0",
+    "Xem xét lại":      "FFF4E0",
+    "VBSP (loại)":      "F0F0F0"
+  },
+  "chart_colors": [
+    "00588F", "C91F3E", "00B050", "223A5E", "27D5A4",
+    "4B7DC9", "E4A000", "7B2D8B", "E07020", "408080"
+  ],
+
+  "table_style": {
+    "header": { "bg": "223A5E", "fg": "FFFFFF", "font": "Cambria", "bold": true, "align": "center" },
+    "row_even": { "bg": "E4F7FF" },
+    "row_odd":  { "bg": "FFFFFF" },
+    "total_row": { "bg": "223A5E", "fg": "FFFFFF", "bold": true },
+    "cell_padding": { "top": 0.03, "bottom": 0.03, "left": 0.06, "right": 0.06 },
+    "row_height_pts": 18,
+    "header_height_pts": 24
+  },
+
+  "header_bar": {
+    "height_inches": 0.55,
+    "color": "223A5E",
+    "title": { "font": "Cambria", "size": 22, "bold": true, "color": "FFFFFF", "left": 0.7, "top": 0.08 },
+    "section_num": { "font": "Cambria", "size": 18, "bold": true, "color": "FFFFFF", "left": 0.2, "top": 0.1 }
+  },
+
+  "slide_layouts": {
+    "slide_width_inches": 10.0,
+    "slide_height_inches": 5.625,
+    "table_slide": {
+      "table_left": 0.4, "table_top": 0.9,
+      "table_width": 9.2, "table_height_per_row": 0.25
+    },
+    "chart_slide": {
+      "chart_left": 0.4, "chart_top": 0.65,
+      "chart_width": 9.2, "chart_height": 4.7
+    },
+    "detail_slide": {
+      "table_left": 0.2, "table_top": 0.9,
+      "table_width": 9.6, "rows_per_page": 8
+    }
+  },
+
+  "delta": {
+    "positive_color": "00B050",
+    "negative_color": "C91F3E",
+    "zero_color": "555555"
+  }
+}
