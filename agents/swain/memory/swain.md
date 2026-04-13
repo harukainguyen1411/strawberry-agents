@@ -13,7 +13,8 @@
 
 - **Dark Strawberry platform**: 3-tier roles, `maxAppRequests` per user, `personalMode`. Plan: `plans/proposed/2026-04-12-darkstrawberry-platform-architecture.md`.
 - **Dark Strawberry deployment**: Independent deployables, Turborepo, Changesets. Plan: `plans/proposed/2026-04-12-darkstrawberry-deployment-architecture.md`.
-- **Deploy pipeline hardening**: Post-incident plan covering smoke tests (P0), env validation (P0), turbo cache keys (P1), rollback playbook (P1), clean builds (P2). Plan: `plans/proposed/2026-04-13-deploy-pipeline-hardening.md`.
+- **Deploy pipeline hardening**: Post-incident patch plan. Plan: `plans/proposed/2026-04-13-deploy-pipeline-hardening.md`.
+- **Deployment pipeline architecture**: Comprehensive pipeline plan. 12 components, 3 phases. Supersedes the hardening plan. Plan: `plans/proposed/2026-04-13-deployment-pipeline-architecture.md`. Key finding: existing CI/preview/release workflows are more advanced than initially reported (env vars in CI, preview channels, environment protection, deploy tags, changesets). Main gaps: no staging, no smoke tests, no env validation, turbo cache blind to env, duplicate conflicting workflows.
 - **Deploy caching fix**: IMPLEMENTED 2026-04-13.
 
 ## Operational Notes
