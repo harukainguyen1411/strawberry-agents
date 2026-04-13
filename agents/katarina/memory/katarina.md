@@ -35,6 +35,7 @@
 - 2026-04-12 (subagent, darkstrawberry-branding): DS icon rollout on feat/platform-monorepo. Copied DsIcon.vue + icons.ts + index.ts from apps/shared/ui/icons/ into worktree. Updated AppManifest.icon type to DsIconName. Updated all 4 app manifests (book/chart-line/checklist/bee). Replaced emoji in Home.vue, AccessDenied.vue, PlatformHeader.vue with DsIcon. Added Neeko footer credit (neeko icon) to PlatformLayout.vue. Commit 4920dd7 pushed.
 - 2026-04-12 (subagent, deployment-architecture): Phase 1 + Phase 5. Phase 1: standalone Vite packages for Read Tracker, Portfolio Tracker, Task List, Bee. Phase 5: portal conversion — stripped all app views/components/stores from apps/myapps, Home.vue uses window.location.href to standalone SPAs, router has no app subtrees. All builds clean. Commits cfca63d–f7eeba5, PR #100.
 - 2026-04-13 (subagent, retro-skill-body-strip): Wrote scripts/strip-skill-body-retroactive.py. Stripped 810 KB of skill-body leaks from 18 transcripts across caitlyn/evelynn/katarina/lissandra/ornn/pyke/vex. Merged to main. No remote repo — PR not possible.
+- 2026-04-13 (subagent, fix-bee-storage-rules): Fixed apps/myapps/storage.rules — corrected path bee->bee-temp, replaced placeholder UID with 0DJzc86i5MP74jAwwT4YjvbcAub2. Gitleaks false-positive on UID; suppressed with inline gitleaks:allow. PR #104. CI rules-deploy job triggers on storage.rules path filter.
 
 ## Known Repos
 - strawberry: Personal agent system (this repo)
