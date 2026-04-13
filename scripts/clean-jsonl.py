@@ -185,12 +185,26 @@ def strip_assistant_text(text: str) -> str:
     return normalize_whitespace(text)
 
 
+def looks_like_skill_body(text: str) -> bool:
+    """Detect harness-injected skill body markdown that slips past envelope
+    stripping — long markdown docs starting with an H1 and several H2s."""
+    if not text.startswith("# "):
+        return False
+    if len(text) < 500:
+        return False
+    head = text[:5000]
+    h2_count = sum(1 for line in head.split("\n") if line.startswith("## "))
+    return h2_count >= 3
+
+
 def extract_user_content(message: dict) -> str:
     """Return cleaned user text (may be empty)."""
     content = message.get("content")
     if content is None:
         return ""
     if isinstance(content, str):
+        if looks_like_skill_body(content):
+            return ""
         return strip_user_text(content)
     if isinstance(content, list):
         parts = []
@@ -199,7 +213,10 @@ def extract_user_content(message: dict) -> str:
                 continue
             btype = block.get("type")
             if btype == "text":
-                t = strip_user_text(block.get("text", ""))
+                raw = block.get("text", "")
+                if looks_like_skill_body(raw):
+                    continue
+                t = strip_user_text(raw)
                 if t:
                     parts.append(t)
             # tool_result and other block types ignored
