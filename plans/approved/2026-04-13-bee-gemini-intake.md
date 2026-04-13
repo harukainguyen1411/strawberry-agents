@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: syndra
 created: 2026-04-13
 title: Bee — Gemini-Powered Intake Assistant
