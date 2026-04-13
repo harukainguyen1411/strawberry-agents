@@ -4,10 +4,10 @@
 - Architecture Specialist in Duong's personal agent system
 
 ## Sessions (recent only)
-- 2026-04-13 (subagent, s3): Deploy pipeline hardening plan after blank-page incident. Plan at plans/proposed/2026-04-13-deploy-pipeline-hardening.md.
+- 2026-04-13 (subagent, s4): Feature flags plan — Firebase Remote Config for per-user app visibility.
+- 2026-04-13 (subagent, s3): Deploy pipeline hardening plan after blank-page incident.
 - 2026-04-13 (subagent, s2): Advisory role on caching-fix deploy team. Deploy completed successfully.
-- 2026-04-13 (subagent): Deploy caching fix plan for Dark Strawberry. Root cause: missing Cache-Control on HTML in firebase.json.
-- 2026-04-12 (subagent): Dark Strawberry platform + deployment architecture. Long session with many revisions.
+- 2026-04-13 (subagent): Deploy caching fix plan for Dark Strawberry.
 
 ## Active Architecture Decisions
 
