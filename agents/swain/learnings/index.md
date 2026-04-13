@@ -1,3 +1,4 @@
 - 2026-04-03-gha-injection.md — GitHub Actions workflow input injection via ${{ }} in run blocks | last_used: 2026-04-03
 - 2026-04-04-inbox-delivery-over-ephemeral-sessions.md — Prefer inbox delivery to existing agent sessions over spawning claude -p for external message bridges | last_used: 2026-04-04
 - 2026-04-13-turbo-cache-env-blindness.md — Turborepo cache does not hash env vars by default; use env/dotEnv in turbo.json | last_used: 2026-04-13
+- 2026-04-13-audit-before-planning.md — Always read actual infra files before accepting stated-state assumptions into a plan | last_used: 2026-04-13
