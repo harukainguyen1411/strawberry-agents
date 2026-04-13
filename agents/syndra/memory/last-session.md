@@ -1,17 +1,8 @@
-# Last Session — 2026-04-06, CLI (Session 13)
+# Last Session — 2026-04-13 (subagent)
 
 ## What happened
-- 6 iterations on work agent isolation plan based on Duong's feedback
-- Final design: three-tier (Coordinator → Planners → Workers), greeting routing, project-scoped MCP
-- Decisions resolved: Coordinator (no champion name), Opus planners, Sonnet workers, plan approval gate kept
-- Added full cleanup phase (remove all 16 old agent dirs + old infra)
-- Flagged broken work system to Evelynn — plan was prematurely marked implemented
+- Wrote architecture plan for Bee Gemini-powered intake assistant (`plans/proposed/2026-04-13-bee-gemini-intake.md`)
+- Covers: Cloud Function proxy to Gemini 2.5 Flash, Firestore session state, mammoth docx extraction, BeeIntake.vue chat UI, rubric-based system prompt, cost guardrails, 3-phase rollout
 
 ## Open threads
-- Work isolation plan approved but NOT implemented — needs delegation
-- Work system currently broken (MCP server missing, old agents still loaded)
-- Firestore MCP server (from S11) still not built
-- First product sprint (myapps) still pending
-
-## Context
-Autonomous session, launched by Evelynn. High iteration count — plan evolved from two-tier to three-tier, from separate profile to greeting routing.
+- 4 open questions in plan: Gemini API key ownership, Firebase billing plan (Blaze needed), bee-worker issue body parser compatibility, Haruka UX awareness
