@@ -1,6 +1,6 @@
 # Last Session — 2026-04-13
 
-- Wrote feature flags plan using Firebase Remote Config for per-user app visibility in Dark Strawberry portal
-- Plan at `plans/approved/2026-04-13-feature-flags-firebase-remote-config.md` — 7 implementation steps, MCP template payload included
-- First flag: `bee_visible` gated to Haruka's email via custom signals
-- No blockers — plan is approved, ready for implementation delegation
+- Wrote Bee multi-format IO plan: xlsx/pptx/pdf input parsers + output format selection + rendering pipelines
+- Plan at `plans/proposed/2026-04-13-bee-multi-format-io.md` — 11 sections, 3 phases (P0 input, P1 output, P2 polish)
+- Key design decision: Claude receives pre-extracted text (not raw files), returns intermediate JSON schemas per output type
+- 5 open questions for Duong (formula preservation, shared extraction package, PDF quality, storage rules PR status, worker instance sizing)
