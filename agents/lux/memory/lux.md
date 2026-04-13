@@ -3,6 +3,9 @@
 ## Last Active
 2026-04-13
 
+## Sessions
+- 2026-04-13: Implemented Firebase Remote Config feature flags for apps/myapps; PR #103 open
+
 ## Current Work
 - PR #103 open: feat-feature-flags-remote-config — Firebase Remote Config + Bee feature flag
 
