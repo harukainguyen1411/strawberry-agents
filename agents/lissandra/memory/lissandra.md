@@ -18,12 +18,14 @@
 - s19: PR #96 (darkstrawberry phase 2+3). 1 MEDIUM, 4 LOW. Comment-only. Merged to main (caveats accepted). Known follow-ups: fork slug collision (M1), Cloud Function idempotency (L1), admin role check (L4).
 - s20: PR #97 (bee GitHub rearchitect). 2 MEDIUM, 3 LOW. Comment-only. Merged. M2: docxUrl from issue body passed to GCS downloader without prefix validation.
 - s21: PR #100 (deployment architecture — Turborepo + Changesets + CI). 2 MEDIUM, 3 LOW. Comment-only. Merged. M1: SA JSON written to /tmp without chmod. M2: PR_BODY env var to Discord script.
+- s22: PR #102 (deploy lockdown — delete local SA keys, add runbook). 1 MEDIUM, 3 LOW. Fix-then-ship. M1: runbook omits bee-worker SA at /opt/bee-worker/secrets/firebase-sa.json — naive rotation breaks bee-worker jobs.
 
 ## Review History (last 10)
 - PR #95: darkstrawberry platform monorepo phase 1. 2 MEDIUM (migration cert() guard; loadRegistry idempotency), 4 LOW. Approved R2.
 - PR #96: darkstrawberry phase 2+3 (registry, access control, collab, forking, notifications). 1 MEDIUM (fork slug collision), 4 LOW. Comment-only. Merged.
 - PR #97: bee GitHub rearchitect (Firestore→GitHub issues). 2 MEDIUM (label swap race; docxUrl prefix not validated), 3 LOW. Comment-only. Merged.
 - PR #100: deployment architecture (Turborepo, Changesets, 3 CI workflows, composite deploy). 2 MEDIUM (SA file perms; PR_BODY injection surface), 3 LOW. Comment-only. Merged.
+- PR #102: deploy lockdown (delete local SA keys, add runbook). 1 MEDIUM (runbook omits GCE bee-worker SA — rotation as documented breaks bee-worker), 3 LOW. Fix-then-ship.
 
 ## Recurring patterns
 - `--dangerously-skip-permissions` / unrestricted tool access keeps appearing. Flag proactively.
@@ -48,6 +50,7 @@
 - GitHub Actions: SA JSON written via `echo '...' > /tmp/sa.json` should be followed by `chmod 600` — debug logging can expose the file otherwise.
 - CI path filters using `contains(toJson(head_commit.modified))` are unreliable on squash merges — only the merge commit diff is visible, not all commits in the PR. Use `dorny/paths-filter` for reliable path-based job gating.
 - workflow_dispatch with a `ref` input deploying to production: validate the ref format or restrict to deploy tags — any git ref can be deployed.
+- When a "delete local SA" PR is reviewed: check for secondary SA consumers (GCE workers, migration scripts) that hold the same key — rotation of the Firebase SA will break them if not updated in lockstep.
 
 ## Protocol
 - On every PR review pass: run `coderabbit:code-review` and `simplify` skills first, then do the manual logic/security pass. Incorporate all findings into a single consolidated `gh pr comment`. This is standard protocol — do not skip.
