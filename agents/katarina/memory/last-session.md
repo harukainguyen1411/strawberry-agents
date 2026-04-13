@@ -1,12 +1,12 @@
 # Last Session Handoff — 2026-04-13
 
 ## Accomplished
-- Wrote `scripts/strip-skill-body-retroactive.py` — reusable skill-body leak audit/strip tool
-- Stripped 810 KB of injected skill markdown from 18 transcripts across 6 agents
-- Merged branch `retro-skill-body-strip` directly to main (strawberry has no remote GitHub repo)
+- Fixed `apps/myapps/storage.rules`: corrected upload path to `bee-temp/{uid}/{timestamp}/{file}` and replaced `SISTER_UID_PLACEHOLDER` with Haruka's real UID `0DJzc86i5MP74jAwwT4YjvbcAub2`
+- Suppressed gitleaks false-positive on Firebase UID using inline `// gitleaks:allow` comments
+- PR #104 open at https://github.com/Duongntd/strawberry/pull/104 — CI `rules-deploy` job will deploy on merge
 
 ## Open threads
-- None. Plan `2026-04-13-retroactive-skill-body-strip.md` fully executed.
+- Duong needs to merge PR #104 and then retry the Bee upload to verify the 403 is resolved
 
 ## Notes
-- strawberry repo remote (github.com/Duongntd/strawberry) doesn't exist — push/PR impossible. Merge to local main only.
+- gitleaks flags Firebase UIDs as `generic-api-key` by entropy — inline suppress is the right fix, not allowlist path
