@@ -1,12 +1,10 @@
 # Last Session Handoff — 2026-04-13
 
 ## Accomplished
-- Fixed `apps/myapps/storage.rules`: corrected upload path to `bee-temp/{uid}/{timestamp}/{file}` and replaced `SISTER_UID_PLACEHOLDER` with Haruka's real UID `0DJzc86i5MP74jAwwT4YjvbcAub2`
-- Suppressed gitleaks false-positive on Firebase UID using inline `// gitleaks:allow` comments
-- PR #104 open at https://github.com/Duongntd/strawberry/pull/104 — CI `rules-deploy` job will deploy on merge
+- ubcs-slide-team Task #2: completed ubcs-slide-builder.py
+- Added style-guide-driven constants: HEADER_HEIGHT, ROWS_PER_PAGE, DELTA_POS_COLOR, DELTA_NEG_COLOR — no hardcoded values remain
+- Updated add_header() to read font/size/position from header_bar.* in style guide with fallbacks
+- Script verified: no errors, outputs 14-slide PPTX to ~/Downloads/
 
 ## Open threads
-- Duong needs to merge PR #104 and then retry the Bee upload to verify the 403 is resolved
-
-## Notes
-- gitleaks flags Firebase UIDs as `generic-api-key` by entropy — inline suppress is the right fix, not allowlist path
+- None. No commit made (task spec said no commit).
