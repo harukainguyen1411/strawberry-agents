@@ -26,3 +26,12 @@ if command -v jq >/dev/null 2>&1; then
        '.[$name] = {status: $status, last_heartbeat: $ts, platform: $platform, current_task: (if $task == "null" then null else $task end)}' \
        "${REGISTRY}" > "${REGISTRY}.tmp" && mv "${REGISTRY}.tmp" "${REGISTRY}"
 fi
+
+# Stale worktree hygiene check (informational only — does not auto-prune)
+PRUNE_SCRIPT="$(cd "$(dirname "$0")/../.." && pwd)/scripts/prune-worktrees.sh"
+if [ -f "${PRUNE_SCRIPT}" ]; then
+    STALE_COUNT="$(bash "${PRUNE_SCRIPT}" 2>/dev/null | grep -c '^\s*STALE:' || true)"
+    if [ "${STALE_COUNT}" -gt 0 ]; then
+        echo "WARNING: ${STALE_COUNT} stale worktrees detected. Run 'bash scripts/prune-worktrees.sh --prune' to clean up."
+    fi
+fi
