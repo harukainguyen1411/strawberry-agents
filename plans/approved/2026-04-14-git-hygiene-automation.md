@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: pyke
 date: 2026-04-14
 title: Git hygiene automation — worktree cleanup, gitignore enforcement, periodic sweep
