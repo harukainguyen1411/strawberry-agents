@@ -37,5 +37,7 @@
 - gh pr edit blocked by sandbox but gh pr create works fine.
 - git worktree add from main repo root works fine.
 
+- 2026-04-14 (session 8): Fixed two blockers on PR #105 (feat-bee-gemini-intake). M1: path traversal — added fileRef.startsWith check before bucket.file(). M2: idempotency — early return in beeIntakeSubmit if session.issueNumber already set. Commit 34b1c38 pushed to remote.
+
 ## Feedback
 - If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
