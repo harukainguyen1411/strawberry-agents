@@ -21,6 +21,7 @@
 - PR #33 (gh-auth-lockdown), PR #26 (commit-ratio) — open, awaiting merge
 - Telegram token in .mcp.json — plaintext, needs rotation
 - SubagentStop hook plan (2026-04-11) — needs stdin shape testing
+- 2026-04-14: git-status-cleanup plan proposed — 10 merged worktrees to prune, gitignore gaps, uncommitted UBCS work
 
 ## Security lessons
 - Never use ${{ inputs }} directly in GHA run: blocks — pass through env: vars.
