@@ -68,3 +68,21 @@ apps/deploy-webhook/logs/
 
 # Composite deploy assembly directory (gitignored — assembled at deploy time)
 deploy/
+
+# Build artifacts
+.turbo/
+.firebase/
+.playwright-mcp/
+apps/functions/lib/
+
+# Claude session sentinels
+.claude/*.sentinel
+
+# Claude agent worktrees
+.claude/worktrees/
+
+# User worktrees
+.worktrees/
+
+# Stray logs
+firebase-debug.log
