@@ -261,8 +261,87 @@ def build_title_slide(src_prs, dest_prs, data):
                         run.text = f"Quý {quy}/{nam}"
     return s
 
-def build_muc_luc(src_prs, dest_prs):
-    return clone_slide(src_prs, 1, dest_prs)
+def build_muc_luc(src_prs, dest_prs, data, SW, SH):
+    """Slide danh mục 3 phần, clone từ slide 2 rồi thêm nội dung."""
+    s = clone_slide(src_prs, 1, dest_prs)
+    has_phan3 = bool(data.get("phan3"))
+
+    muc = [
+        ("1", "Cây Văn Bản Chính Sách",
+         f"Tổng {data['phan1']['tong_q1']} VBCS còn hiệu lực theo {len(data['phan1']['theo_khoi'])} Khối"),
+        ("2", "Văn Bản Chính Sách Trên 5 Năm",
+         f"Tổng {data['phan2']['tong']} VB — Giữ nguyên / SĐBS / Tuyên hủy theo Khối"),
+    ]
+    if has_phan3:
+        muc.append(("3", "VBCS Điều Chỉnh Theo QĐPL Quý 1/2026",
+                    f"{data['phan3']['tong']} văn bản pháp luật có tác động đến VBCS"))
+
+    # Vị trí các mục — căn giữa dọc
+    total_h = len(muc) * 1.35
+    start_top = (SH / 914400 - total_h) / 2 + 0.2
+
+    for i, (num, title, subtitle) in enumerate(muc):
+        top = start_top + i * 1.35
+
+        # Số mục — hình tròn navy
+        circle = s.shapes.add_shape(9, int(Inches(0.5)), int(Inches(top)),
+                                     int(Inches(0.7)), int(Inches(0.7)))
+        circle.fill.solid(); circle.fill.fore_color.rgb = C["navy"]
+        circle.line.fill.background()
+        tf = circle.text_frame; tf.margin_top = 0; tf.margin_bottom = 0
+        p = tf.paragraphs[0]; p.alignment = PP_ALIGN.CENTER
+        r = p.add_run(); r.text = num
+        r.font.size = Pt(22); r.font.bold = True
+        r.font.color.rgb = C["white"]; r.font.name = TITLE_FONT
+
+        # Tiêu đề mục
+        tb = s.shapes.add_textbox(int(Inches(1.35)), int(Inches(top - 0.03)),
+                                   int(SW - Inches(1.6)), int(Inches(0.45)))
+        tf = tb.text_frame; p = tf.paragraphs[0]
+        r = p.add_run(); r.text = title
+        r.font.size = Pt(20); r.font.bold = True
+        r.font.color.rgb = C["navy"]; r.font.name = TITLE_FONT
+
+        # Subtitle mô tả
+        tb2 = s.shapes.add_textbox(int(Inches(1.35)), int(Inches(top + 0.42)),
+                                    int(SW - Inches(1.6)), int(Inches(0.4)))
+        tf2 = tb2.text_frame; p2 = tf2.paragraphs[0]
+        r2 = p2.add_run(); r2.text = subtitle
+        r2.font.size = Pt(11); r2.font.color.rgb = C["gray_text"]
+        r2.font.name = BODY_FONT; r2.font.italic = True
+
+        # Đường kẻ phân cách (trừ mục cuối)
+        if i < len(muc) - 1:
+            line = s.shapes.add_shape(1,
+                int(Inches(0.4)), int(Inches(top + 0.95)),
+                int(SW - Inches(0.8)), int(Pt(1)))
+            line.fill.solid(); line.fill.fore_color.rgb = C["light_blue"]
+            line.line.fill.background()
+
+    return s
+
+
+def build_section_divider(src_prs, dest_prs, num, title, SW, SH):
+    """Slide bìa phần — clone slide 2 template."""
+    s = clone_slide(src_prs, 1, dest_prs)
+    # Dải navy trái
+    bar = s.shapes.add_shape(1, 0, 0, int(Inches(0.2)), int(SH))
+    bar.fill.solid(); bar.fill.fore_color.rgb = C["navy"]
+    bar.line.fill.background()
+
+    tb = s.shapes.add_textbox(int(Inches(0.5)), int(SH/2 - Inches(0.8)),
+                               int(SW - Inches(0.8)), int(Inches(1.6)))
+    tf = tb.text_frame
+    p1 = tf.paragraphs[0]; p1.alignment = PP_ALIGN.LEFT
+    r1 = p1.add_run(); r1.text = f"PHẦN {num}"
+    r1.font.size = Pt(28); r1.font.bold = True
+    r1.font.color.rgb = C["blue"]; r1.font.name = TITLE_FONT
+
+    p2 = tf.add_paragraph(); p2.alignment = PP_ALIGN.LEFT
+    r2 = p2.add_run(); r2.text = title
+    r2.font.size = Pt(36); r2.font.bold = True
+    r2.font.color.rgb = C["navy"]; r2.font.name = TITLE_FONT
+    return s
 
 def build_phan1_bang(src_prs, dest_prs, data, SW):
     """Slide: bảng cây VBCS theo Khối"""
@@ -527,6 +606,80 @@ def build_phan2_detail(src_prs, dest_prs, data, SW, SH):
         slides.append(s)
     return slides
 
+
+def build_phan3(src_prs, dest_prs, data, SW, SH):
+    """Slides: VBCS điều chỉnh theo QĐPL — clone slide 26 (index 25) từ template."""
+    phan3 = data.get("phan3")
+    if not phan3: return []
+
+    rows = phan3["danh_sach"]
+    PER_PAGE = 6
+    pages = max(1, (len(rows) + PER_PAGE - 1) // PER_PAGE)
+    slides = []
+
+    # Clone slide 26 (index 25) — "Chi tiết các văn bản có tác động đến VBCS"
+    try:
+        src_slide_idx = 25
+        _ = src_prs.slides[src_slide_idx]
+    except IndexError:
+        src_slide_idx = 18  # fallback
+
+    for pi in range(pages):
+        chunk = rows[pi*PER_PAGE:(pi+1)*PER_PAGE]
+        s = clone_slide(src_prs, src_slide_idx, dest_prs)
+
+        # Cập nhật tiêu đề
+        for shape in s.shapes:
+            if shape.has_text_frame and not shape.has_table:
+                txt = shape.text_frame.text.strip()
+                if "chi tiết" in txt.lower() or "tác động" in txt.lower() or "điều chỉnh" in txt.lower():
+                    for para in shape.text_frame.paragraphs:
+                        if para.text.strip():
+                            for run in para.runs:
+                                if run.text.strip():
+                                    run.text = f"Chi tiết VBPL tác động đến VBCS — {pi+1}/{pages}"
+                                    break
+                            break
+
+        tbl, _ = get_table(s)
+        if tbl:
+            # Header cols: TT | Tên VB | Đơn vị đầu mối | VBCS chịu tác động | Kế hoạch điều chỉnh
+            set_cell_text_keep_format(tbl.cell(0, 0)._tc, "TT")
+            set_cell_text_keep_format(tbl.cell(0, 1)._tc, "Tên văn bản pháp luật")
+            set_cell_text_keep_format(tbl.cell(0, 2)._tc, "Đơn vị đầu mối")
+            set_cell_text_keep_format(tbl.cell(0, 3)._tc, "VBCS chịu tác động")
+            set_cell_text_keep_format(tbl.cell(0, 4)._tc, "Kế hoạch điều chỉnh VB")
+
+            add_rows_to_table(tbl, len(chunk))
+
+            for i, row in enumerate(chunk):
+                ri = i + 1
+                bg_tup = CT["light_blue"] if i % 2 == 0 else None
+                if bg_tup:
+                    for c in range(len(tbl.columns)):
+                        set_cell_bg(tbl.cell(ri, c)._tc, bg_tup)
+
+                ten = f"{row['so_vb']}\n{row['ten_vb']}" if row['so_vb'] else row['ten_vb']
+                ngay = f"HL: {row['ngay_hl']}" if row['ngay_hl'] else ""
+                if ngay: ten += f"\n{ngay}"
+
+                ke_hoach = row["ke_hoach"] or row["note"] or "—"
+
+                set_cell_text_keep_format(tbl.cell(ri, 0)._tc, pi*PER_PAGE + i + 1)
+                set_cell_text_keep_format(tbl.cell(ri, 1)._tc, ten)
+                set_cell_text_keep_format(tbl.cell(ri, 2)._tc, row["don_vi"])
+                set_cell_text_keep_format(tbl.cell(ri, 3)._tc, row["vb_ct"])
+                set_cell_text_keep_format(tbl.cell(ri, 4)._tc, ke_hoach)
+
+                # Tô đỏ nhạt nếu có kế hoạch điều chỉnh cụ thể
+                if row["ke_hoach"] and len(row["ke_hoach"]) > 5:
+                    for c in range(len(tbl.columns)):
+                        set_cell_bg(tbl.cell(ri, c)._tc, rgb_tuple("E8F4FF"))
+
+        slides.append(s)
+    return slides
+
+
 # ─────────────────────────────────────────────
 # Main
 # ─────────────────────────────────────────────
@@ -567,28 +720,45 @@ def main():
         except: pass
 
     # Build slides
-    print("  Slide 1: Tiêu đề")
+    n = 1
+    print(f"  Slide {n}: Tiêu đề"); n += 1
     build_title_slide(src_prs, dest_prs, data)
 
-    print("  Slide 2: Mục lục")
-    build_muc_luc(src_prs, dest_prs)
+    print(f"  Slide {n}: Danh mục"); n += 1
+    build_muc_luc(src_prs, dest_prs, data, SW, SH)
 
-    print("  Slide 3: Phần 1 — Bảng cây VBCS")
+    print(f"  Slide {n}: Phần 1 — Bìa"); n += 1
+    build_section_divider(src_prs, dest_prs, "1", "CÂY VĂN BẢN CHÍNH SÁCH", SW, SH)
+
+    print(f"  Slide {n}: Phần 1 — Bảng cây VBCS"); n += 1
     build_phan1_bang(src_prs, dest_prs, data, SW)
 
-    print("  Slide 4: Phần 1 — Donut chart")
+    print(f"  Slide {n}: Phần 1 — Donut chart"); n += 1
     build_phan1_chart(dest_prs, data, SW, SH)
 
-    print("  Slide 5: Phần 2 — Bảng tổng quan VB>5N")
+    print(f"  Slide {n}: Phần 2 — Bìa"); n += 1
+    build_section_divider(src_prs, dest_prs, "2", "VĂN BẢN CHÍNH SÁCH TRÊN 5 NĂM", SW, SH)
+
+    print(f"  Slide {n}: Phần 2 — Bảng tổng quan VB>5N"); n += 1
     build_phan2_bang(src_prs, dest_prs, data, SW, SH)
 
-    print("  Slide 6: Phần 2 — Stacked bar chart")
+    print(f"  Slide {n}: Phần 2 — Stacked bar chart"); n += 1
     build_phan2_chart(dest_prs, data, SW, SH)
 
-    rows = data["phan2"]["co_tien_do"]
-    pages = max(1, (len(rows) + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE)
-    print(f"  Slides 7–{6+pages}: Phần 2 — Chi tiết tiến độ ({len(rows)} VB, {pages} trang)")
+    rows2 = data["phan2"]["co_tien_do"]
+    pages2 = max(1, (len(rows2) + ROWS_PER_PAGE - 1) // ROWS_PER_PAGE)
+    print(f"  Slides {n}–{n+pages2-1}: Phần 2 — Chi tiết tiến độ ({len(rows2)} VB, {pages2} trang)")
+    n += pages2
     build_phan2_detail(src_prs, dest_prs, data, SW, SH)
+
+    if data.get("phan3"):
+        rows3 = data["phan3"]["danh_sach"]
+        pages3 = max(1, (len(rows3) + 5) // 6)
+        print(f"  Slide {n}: Phần 3 — Bìa"); n += 1
+        build_section_divider(src_prs, dest_prs, "3",
+                              "VBCS ĐIỀU CHỈNH THEO QĐPL QUÝ 1/2026", SW, SH)
+        print(f"  Slides {n}–{n+pages3-1}: Phần 3 — QĐPL ({len(rows3)} VB, {pages3} trang)")
+        build_phan3(src_prs, dest_prs, data, SW, SH)
 
     dest_prs.save(out_path)
     print(f"\n✓ Saved: {out_path}")
