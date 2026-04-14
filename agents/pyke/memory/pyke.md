@@ -9,6 +9,7 @@
 - 2026-04-09: Autonomous PR lifecycle plan, delivery pipeline security REV 3, windows autonomous isolation plan.
 - 2026-04-11: SubagentStop hook research — sentinel-file pattern.
 - 2026-04-13: Deploy lockdown plan authored + simplified. Advisory to Shen. Security-reviewed PR #102 (ship it, non-blocking: add firebase logout to runbook).
+- 2026-04-14: Git hygiene automation plan — worktree reaper, heartbeat check, end-subagent-session cleanup, pre-commit artifact guard.
 
 ## Key decisions made
 - Three-tier commit policy: agent state/ops → main direct; feature work → PR.
