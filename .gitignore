@@ -71,6 +71,7 @@ deploy/
 
 # Build artifacts
 .turbo/
+**/.turbo/
 .firebase/
 .playwright-mcp/
 apps/functions/lib/
