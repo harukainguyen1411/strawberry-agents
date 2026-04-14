@@ -20,8 +20,8 @@
 - PR #102 (deploy-lockdown) — reviewed, ship it, awaiting Duong manual steps (SA rotation, firebase logout)
 - PR #33 (gh-auth-lockdown), PR #26 (commit-ratio) — open, awaiting merge
 - Telegram token in .mcp.json — plaintext, needs rotation
-- SubagentStop hook plan (2026-04-11) — needs stdin shape testing
-- 2026-04-14: git-status-cleanup plan proposed — 10 merged worktrees to prune, gitignore gaps, uncommitted UBCS work
+- 2026-04-14: git-status-cleanup plan proposed — one-time cleanup of 10 merged worktrees, gitignore gaps, uncommitted UBCS work
+- 2026-04-14: git-hygiene-automation plan proposed — worktree reaper script, heartbeat integration, end-subagent-session cleanup, pre-commit artifact check, gitignore gaps
 
 ## Security lessons
 - Never use ${{ inputs }} directly in GHA run: blocks — pass through env: vars.
