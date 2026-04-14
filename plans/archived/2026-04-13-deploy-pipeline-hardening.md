@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: archived
 owner: swain
 created: 2026-04-13
 tags: [incident-response, deploy, dark-strawberry]
