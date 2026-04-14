@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: swain
 created: 2026-04-13
 tags: [architecture, deploy, dark-strawberry, pipeline, ci-cd]
