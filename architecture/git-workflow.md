@@ -42,6 +42,22 @@
 - No AI authoring references in commits
 - Avoid shell-unfriendly characters in commit commands
 - PRs with significant changes must update relevant READMEs
+- **Gitignore-on-first-use:** When creating a new tool or app directory, add its build output patterns to `.gitignore` in the same commit that creates the directory. Build artifacts (`.turbo/`, `dist/`, `lib/`, `node_modules/`, `__pycache__/`) must never appear in `git status`.
+
+## Build Artifact Guard (pre-commit hook)
+
+`scripts/pre-commit-artifact-guard.sh` blocks commits that include build artifact paths. It runs as part of the pre-commit hook.
+
+To install (if not already active):
+
+```bash
+# Append to .git/hooks/pre-commit
+echo '' >> .git/hooks/pre-commit
+echo '# Build artifact guard' >> .git/hooks/pre-commit
+echo 'bash scripts/pre-commit-artifact-guard.sh' >> .git/hooks/pre-commit
+```
+
+Patterns blocked: `node_modules/`, `.turbo/`, `.firebase/`, `__pycache__/`, `apps/functions/lib/`.
 
 ## Agent Attribution
 
