@@ -1,19 +1,26 @@
-# Last Session — 2026-04-09 (S32, Mac, Direct mode)
+# Last Session — 2026-04-13 (S41, Mac, Direct mode)
 
-Plugin wiring session + direction pivots on Bee + Windows isolation planning.
+Long incident-response + pipeline hardening session. Dark Strawberry went down (~1 hour blank-page incident from a local deploy), recovered, and came out with a deploy lockdown, feature flags, storage fix, Gemini intake, and a multi-format I/O plan.
 
 ## Critical for next session
 
-1. **Katarina mid-flight on Windows isolation fixes** (M1–M4 + S1–S2 in `plans/proposed/2026-04-09-windows-autonomous-isolation.md`). Check if her task completed — look for commit from `ae11e718a170227e4`. The critical fix is `git add apps/myapps/` scoping in `git.ts`. Once confirmed, plan can be promoted to implemented.
+1. **Deploy lockdown is complete** — Firebase SA key rotated, Firebase CLI logged out locally, CI-only deploy enforced via PR #102 (merged). Nobody can `npm run deploy` to prod anymore. Credential-removal approach, not a 6-layer gate.
 
-2. **Bee learning-project plan is settled** at `plans/proposed/2026-04-09-bee-own-agent-direction.md`. Syndra's final version: Python orchestrator (~500 lines) wrapping `claude -p`, 7-phase learning path, v1 is a CLI agent that takes a Vietnamese question and returns a cited answer. Three open questions: web search provider, repo location, Python version. Needs Duong approval before any implementation.
+2. **Feature flags via Remote Config wired** — PR #103 merged. Client-side email allowlist active (Haruka's email shows Bee). Remote Config is wired for future rollouts. MCP custom signals blocked by SDK version mismatch (v10 → needs v11 for `setCustomSignals`) — not a blocker, just a known limitation.
 
-3. **All 11 plugins installed on Mac**. Agent skill frontmatter patched in all 9 agents (committed `9687337`). ConfigChange hook + `scripts/sync-plugins.sh` live — future plugin installs auto-regenerate `scripts/install-plugins.sh`.
+3. **Firebase Storage initialized and rules fixed** — PR #104 merged. Storage was never initialized (the "CORS error" was a 404 misread). Katarina fixed wrong path prefix + placeholder UID. Storage is now live.
 
-4. **Workspace setup guide** at `docs/workspace-agent-setup-guide.md` — ready for Duong's workspace agent to follow.
+4. **Gemini intake bot** — Gemini API key set in Firebase Secret Manager. Ekko implemented PR #105 (local-testing ready, not merged). Check merge status next session. Syndra wrote the intake plan.
 
-5. **Discord relay + coder-worker still offline** — waiting on Duong to run `install-discord-relay.ps1` and `install-service.ps1` on Windows. Don't install coder-worker until isolation fixes are confirmed.
+5. **Multi-format I/O plan from Swain** — plan written, check `plans/` for status. May need Duong approval before implementation.
 
-6. **6 proposed plans** still awaiting Duong's approval (plan-lifecycle-v2, myapps-gcp-direction, continuity-and-purity, agent-visible-frontend-testing, mcp-restructure rough, operating-protocol-v2).
+6. **Skill-body stripping completed** — Katarina retroactively stripped leaked skill bodies from 18 historical transcripts (810 KB removed). Skill-body detector ported from workspace to strawberry's transcript cleaner.
 
-7. **Auto-compact cannot be disabled** — confirmed. 1M context Sonnet costs extra quota. Default model is Sonnet (already set in settings.json).
+7. **Lessons burned in this session:**
+   - Never claim "no CI/CD" without checking `.github/workflows/` first — 10 workflows already existed.
+   - Never run `npm run deploy` locally, bypassing CI. That was the blank-page incident.
+   - Pyke ignored scope-change messages twice — rewrite the plan directly rather than messaging opus planners.
+   - Ornn cannot respond in background subagent mode (no SendMessage). Route relay through Evelynn.
+   - Duong prefers architectural enforcement over rules: "If the pipeline is robust then you can't make mistakes."
+
+8. **PR #105 (Gemini intake)** — check merge/test status. Ekko had it local-testing ready at session close.
