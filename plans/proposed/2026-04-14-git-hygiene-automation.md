@@ -104,6 +104,8 @@ Add a section to `architecture/git-workflow.md` under Hard Rules:
 
 **Recommended:** Do both. The pre-commit hook catches mistakes; the doc rule sets expectations.
 
+**Decision (Duong, 2026-04-14):** Pre-commit hook approved. Implement both Approach A and B.
+
 **Files to create/modify:**
 - `.claude/hooks/` or `.git/hooks/pre-commit` — add artifact pattern check.
 - `architecture/git-workflow.md` — add the gitignore-on-first-use rule.
@@ -158,6 +160,6 @@ Each deliverable is independently committable and testable.
 
 ## What this does NOT cover
 
-- **GitHub Actions post-merge cleanup:** Not feasible in this system. PRs are merged via GitHub web UI, and there is no server-side hook that can reach the local machine to remove worktrees. The heartbeat check + end-subagent-session hook cover this gap instead.
+- **GitHub Actions post-merge cleanup:** Not feasible in this system. PRs are merged via GitHub web UI, and there is no server-side hook that can reach the local machine to remove worktrees. The heartbeat check + end-subagent-session hook cover this gap instead. **Decision (Duong, 2026-04-14):** Heartbeat + end-subagent-session integration is sufficient. No GitHub Actions needed.
 - **Automatic deletion of unmerged worktrees:** Intentionally excluded. Unmerged worktrees may contain active work. The script only touches merged/orphaned branches.
 - **Windows parity for `.claude/worktrees/`:** Claude Code manages `.claude/worktrees/` internally. The prune script handles them, but Claude Code may recreate them. This is acceptable — the script is idempotent.
