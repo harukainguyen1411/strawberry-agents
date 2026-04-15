@@ -61,13 +61,16 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Deployment architecture:** Turborepo + Changesets + per-app independent deploys. Merged via PR #100.
 - **Bee rearchitect MERGED** (PR #97). GitHub issue polling replaces Firestore queue.
 - **Follow-ups from reviews:** fork slug collision (M1), Cloud Function idempotency (L1), bee URL prefix validation (M2).
-- **Lux agent def needs fix** — keeps asking for plans on trivial tasks.
-- **81 Dependabot vulnerabilities** — backlog.
+- **Lux agent def FIXED** (2026-04-14) — trivial tasks no longer require plan files.
+- **96 Dependabot vulnerabilities** — backlog (1 critical, 40 high).
+- **Deployment pipeline architecture approved** — `plans/approved/2026-04-13-deployment-pipeline-architecture.md`. 12 components, 3 phases, 6 PRs. Not yet executed.
+- **Git hygiene automation approved + partially executed** — prune script, heartbeat, pre-commit guard delivered. D3 (skill update) and hook wiring still pending.
 - **Compute Engine billing enabled** on myapps-b31ea — monitor for charges.
 
 ## Sessions
 - 2026-04-11 (S37-S39): Bee MVP merged (9 PRs), autodeploy webhook, domain wiring, Cloudflare + GCP MCPs.
 - 2026-04-12 (S40, direct mode, Mac, massive session): Dark Strawberry platform built end-to-end. Branded landing page (Neeko design, "Midnight Garden" → "Warm Night"). Platform architecture 3 phases (monorepo, access control, collab/forking) designed by Swain, implemented by team. Deployment architecture (Turborepo + Changesets + per-app independent deploys) designed and implemented. 4 PRs merged (#95-#100). Bee rearchitect (GitHub issues). 3 new agents wired (Lux/Viktor/Ekko). Self-close rule updated across 14 agents. 83+ tests. CI gate. DS icon set (48 icons + Neeko chameleon). Discord configured. GCE VMs deployed (bee-worker + coder-worker). 11-agent team via TeamCreate. Biggest session to date.
+- 2026-04-14 (S42, Mac): Housekeeping + architecture. Finished incomplete Apr 13 session close. Git status cleanup (17 worktrees pruned, gitignore gaps fixed, stray files deleted). Git hygiene automation plan approved + executed (4/5 deliverables). PR #105 reviewed, fixed (all 6 findings), merged. Lux agent def fixed. Deployment pipeline architecture plan approved + visualized. Hardening plan archived.
 
 ## Feedback
 
