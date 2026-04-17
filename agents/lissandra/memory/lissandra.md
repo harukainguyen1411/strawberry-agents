@@ -15,3 +15,4 @@ Subagent only — no inbox, no MCP delegation. Uses `gh pr diff`, `gh pr view`, 
 
 ## Sessions
 - 2026-04-17: Reviewed PR #128 (A1 scaffold); request-changes verdict; two blockers found (commit prefix, secrets-guard collision)
+- 2026-04-17: Reviewed PR #127 (B2+A2 GCS bootstrap + release-please); request-changes; blockers: secrets-guard conflict with #126, IAM grant before SA existence check
