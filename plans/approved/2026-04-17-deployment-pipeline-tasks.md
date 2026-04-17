@@ -29,6 +29,10 @@ These must be done by Duong before the dependent agent tasks can proceed. Listed
 | D3 | Create prod + staging service accounts in GCP console, grant the three IAM roles, download key JSONs. | P2.4 (GH Actions secrets upload), P2.10, P2.11. |
 | D4 | Provide the four secret values (`GITHUB_TOKEN`, `BEE_GITHUB_REPO`, `BEE_SISTER_UIDS`, `DISCORD_WEBHOOK_URL`) into the ciphertext flow for P1.3. | P1.3, and therefore any local deploy of `myapps-b31ea` Functions. |
 | D5 | Sign off on the amended CLAUDE.md Rule 5 wording in P2.2 before it lands. | P2.2 merge, and therefore any `feat:`/`fix:` commit in `apps/**`. |
+| D6 | Create GCP Budgets (prod $20/mo, staging $5/mo; thresholds 50/90/100%) with Pub/Sub topic notification destinations, one topic per project. | P2.16 auto-disable function subscription wiring. |
+
+**Billing-safety prereqs already completed by Evelynn (2026-04-17):**
+- `billingbudgets.googleapis.com` enabled on both `myapps-b31ea` and `myapps-b31ea-staging`.
 
 ---
 
@@ -402,6 +406,44 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
   - Smoke config has staging entries for all four checks.
   - Audit log record on a staging deploy shows `project: "<staging-id>"`.
 
+### P2.15 — Per-function runtime quota caps + CI enforcement
+
+- **Executor:** Ornn
+- **Goal:** Enforce cost-safe defaults on every Firebase Function: `maxInstances: 3`, `timeoutSeconds: 60`, `memory: '256MB'`. One-time sweep of existing functions plus a lint rule / test that fails CI when a new function is added without the caps (override requires an inline documented reason).
+- **Files touched:** all Firebase Function definitions under `apps/functions/` (path confirmed by P1.0 audit — adjust if audit relocates them), plus a new lint/test file (Ornn picks location, e.g. `apps/functions/src/__tests__/runtime-caps.test.ts` or an eslint rule under `tooling/`).
+- **Dependencies:** P1.0 (audit confirms Function definitions' actual path), P1.4 (Vitest harness exists if using a test-based enforcement).
+- **Acceptance:**
+  - Every existing Function declaration includes the three caps, or has an inline comment `// runtime-caps-override: <reason>` that the lint/test allowlists.
+  - CI test / lint rule fails when a PR adds a new Function without the caps and without the override marker.
+  - `scripts/test-all.sh` (P1.7) picks up the enforcement so it also runs locally.
+  - Commit touches `apps/**` → uses `feat:` or `fix:` prefix per amended Rule 5.
+
+### P2.16 — Auto-disable-billing function on budget breach
+
+- **Executor:** Jayce
+- **Goal:** Deploy a Cloud Function that subscribes to GCP Budget Pub/Sub topics and detaches the billing account from the overspending project when `costAmount >= budgetAmount`. One function with project-aware logic, subscribing to two topics (prod + staging budgets).
+- **Files created:** `apps/functions/src/budget-kill-switch.ts` (or similar), unit + integration tests, `architecture/runbook-billing-recovery.md` (re-attach billing procedure after triage).
+- **Files touched:** `apps/functions/src/index.ts` to export the new function.
+- **Dependencies:** P1.4 (test harness), P2.15 (runtime caps apply to this function too), Duong prereq D6 (budgets + Pub/Sub topics exist).
+- **Acceptance:**
+  - Function subscribes to both prod and staging budget Pub/Sub topics.
+  - On message where `costAmount >= budgetAmount`, calls `cloudbilling.projects.updateBillingInfo` to set `billingAccountName: ''` on the overspending project (derived from the budget message's `budgetDisplayName` or `budgetId` mapping).
+  - Unit test covers the threshold comparison and project-selection logic.
+  - Manual integration test passes: publish a fake over-budget message to the Pub/Sub topic → billing detaches from the target project (test against staging only).
+  - Function's own service account has `roles/billing.admin` (or the narrower `roles/billing.projectManager`) on the billing account — document SA setup in the runbook.
+  - Runbook `architecture/runbook-billing-recovery.md` covers: (a) how to verify billing is detached, (b) how to re-attach billing via console after triage, (c) which project needs reactivation of paid services.
+  - Commit is `feat:` prefix (touches `apps/**`).
+
+### P2.0d — **Duong prereq:** create GCP Budgets + Pub/Sub topics
+
+- **Executor:** Duong (human).
+- **Goal:** Create two GCP Budgets (Console → Billing → Budgets & alerts → New budget): prod scoped to `myapps-b31ea` at $20/mo, staging scoped to `myapps-b31ea-staging` at $5/mo. Thresholds 50/90/100% for each. Each budget's notification destination is a Pub/Sub topic (one topic per budget). Revisit values once real usage data exists.
+- **Dependencies:** none (API already enabled by Evelynn).
+- **Acceptance:**
+  - Two budgets exist, each with its own Pub/Sub topic name recorded and handed off to Kayn/Jayce so P2.16 can subscribe.
+  - Thresholds 50/90/100% configured on both.
+- **Blocks:** P2.16 (function can't subscribe until topics exist).
+
 ### P2.14 — End-to-end Phase 2 verification
 
 - **Executor:** Vi
@@ -438,8 +480,8 @@ If an executor finds themselves about to do any of the above, stop and ping Evel
 ## Task count by phase
 
 - **Phase 1:** 14 tasks (P1.0 through P1.13).
-- **Phase 2:** 18 tasks (P2.0a, P2.0b, P2.0c, P2.1 through P2.14, with P2.7a as a subtask of P2.7).
-- **Total:** 32 tasks across the plan (3 are Duong-prereq human tasks, 29 are agent tasks).
+- **Phase 2:** 21 tasks (P2.0a, P2.0b, P2.0c, P2.0d, P2.1 through P2.16, with P2.7a as a subtask of P2.7).
+- **Total:** 35 tasks across the plan (4 are Duong-prereq human tasks, 31 are agent tasks).
 
 ## Dependency summary (critical path)
 
@@ -447,4 +489,6 @@ Phase 1 critical path: **P1.0 → P1.1 → P1.2 → P1.3 (Duong D4) → P1.8 →
 Parallel tracks in Phase 1: P1.4→P1.5 (testing track), P1.6, P1.13.
 
 Phase 2 critical path: **Duong D1/D2/D3/D5 → P2.1 → P2.2 → P2.3 → P2.4 → P2.7a → P2.9 → P2.14**.
-Parallel tracks in Phase 2: P2.5, P2.6, P2.7, P2.8, P2.10, P2.11, P2.12, P2.13.
+Parallel tracks in Phase 2: P2.5, P2.6, P2.7, P2.8, P2.10, P2.11, P2.12, P2.13, P2.15, P2.16 (after D6).
+
+Billing-safety subpath: **P2.0d (Duong D6) → P2.16** and independently **P2.15** (can run parallel to P2.0d, only depends on P1.0 + P1.4).
