@@ -70,6 +70,7 @@ dashboards/test-dashboard/dist/
 
 # Composite deploy assembly directory (gitignored — assembled at deploy time)
 deploy/
+!scripts/deploy/
 
 # Build artifacts
 .turbo/

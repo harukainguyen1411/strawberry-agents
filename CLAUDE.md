@@ -49,6 +49,13 @@ If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents
 <!-- #rule-never-rebase -->
 11. **Never use `git rebase`** — always merge.
 
+<!-- #rule-no-admin-merge -->
+18. **Agents must NOT use `gh pr merge --admin` or any branch-protection bypass**, and
+    must NOT merge a PR they authored. Every merge requires (a) all required status
+    checks green, (b) one approving review from an account other than the PR author,
+    and (c) no red required check. Break-glass admin merges are a human-only Duong
+    procedure (see `plans/approved/2026-04-17-branch-protection-enforcement.md` §3).
+
 ## File Structure
 
 | Path | Purpose |

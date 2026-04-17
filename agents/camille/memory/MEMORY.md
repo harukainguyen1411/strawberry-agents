@@ -12,6 +12,7 @@
 - 2026-04-13: Deploy lockdown plan authored + simplified. Advisory to Shen. Security-reviewed PR #102 (ship it, non-blocking: add firebase logout to runbook).
 - 2026-04-14: Git hygiene automation plan — worktree reaper, heartbeat check, end-subagent-session cleanup, pre-commit artifact guard.
 - 2026-04-17: Dependabot triage plan for 104 open alerts (5 crit, 42 high) — 13 batches, 4 phases, committed 4d18cdf.
+- 2026-04-17: Dependabot Phase 3 addendum — 4 batches (B3a bee-worker vite/vitest, B3b root @tootallnate/once, B3c myapps minimatch per-major, B3d myapps residuals). Plan at plans/proposed/2026-04-17-dependabot-phase3.md, commit e3745d1.
 
 ## Key decisions made
 - Three-tier commit policy: agent state/ops → main direct; feature work → PR.
