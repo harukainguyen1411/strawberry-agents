@@ -12,11 +12,12 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Duong sometimes uses voice prompts — interpret generously.
 - Check current time before greeting. Don't edit files when Duong is just asking a question.
 
-## Team (harness reality, not aspirational roster.md)
-- **Opus planners (registered):** Evelynn, Syndra, Swain, Pyke, Bard
-- **Sonnet executors (registered):** Katarina, Fiora, Lissandra, Ornn, Reksai, Neeko, Zoe, Caitlyn, Shen — all fully wired as of 2026-04-11.
-- **Minions:** Poppy (Haiku, one-file exact edits), Yuumi (Sonnet errand-runner, stateless), Skarner (Haiku, read-only memory retrieval, stateless).
+## Team (harness reality — mirrored from secretary roster 2026-04-17)
+- **Opus (advisors/planners + designer):** Evelynn, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux.
+- **Sonnet (executors):** Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, Yuumi.
+- **Haiku:** Skarner (read-only memory retrieval, stateless).
 - Yuumi and Skarner are stateless — they do NOT run `/end-subagent-session`. All other agents self-close.
+- **Retired 2026-04-17** (moved to `_retired/`, learnings migrated): Bard, Fiora, Katarina, Lissandra, Ornn, Poppy, Pyke, Reksai, Shen, Swain, Syndra, Zoe, old-Sonnet-Lux.
 - Vex: Windows head agent (agents/vex/).
 
 ## Infrastructure
@@ -71,10 +72,11 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - 2026-04-11 (S37-S39): Bee MVP merged (9 PRs), autodeploy webhook, domain wiring, Cloudflare + GCP MCPs.
 - 2026-04-12 (S40, direct mode, Mac, massive session): Dark Strawberry platform built end-to-end. Branded landing page (Neeko design, "Midnight Garden" → "Warm Night"). Platform architecture 3 phases (monorepo, access control, collab/forking) designed by Swain, implemented by team. Deployment architecture (Turborepo + Changesets + per-app independent deploys) designed and implemented. 4 PRs merged (#95-#100). Bee rearchitect (GitHub issues). 3 new agents wired (Lux/Viktor/Ekko). Self-close rule updated across 14 agents. 83+ tests. CI gate. DS icon set (48 icons + Neeko chameleon). Discord configured. GCE VMs deployed (bee-worker + coder-worker). 11-agent team via TeamCreate. Biggest session to date.
 - 2026-04-14 (S42, Mac): Housekeeping + architecture. Finished incomplete Apr 13 session close. Git status cleanup (17 worktrees pruned, gitignore gaps fixed, stray files deleted). Git hygiene automation plan approved + executed (4/5 deliverables). PR #105 reviewed, fixed (all 6 findings), merged. Lux agent def fixed. Deployment pipeline architecture plan approved + visualized. Hardening plan archived.
+- 2026-04-17 (S43, Mac, direct mode): Bee storage rules fixed ({timestamp}→{ts}) + deployed. Bee function CORS added for apps.darkstrawberry.com (functions deploy blocked on missing env vars — pending Duong). Vietnamese legal doc review for Haruka delivered via inline Word comments (16 anchored, 27 verified sources, blank author) after 4 refinement passes. **Full roster mirror of secretary system** — 19→17 subagents, Neeko promoted to Opus designer + Lulu added as Opus design advisor, 12 agents retired to `_retired/` with learnings migrated into new owners. Plan implemented (`dca4831`). Scripts patched for new roster; evelynn CLAUDE.md delegation table rewritten. Push broken — remote points to non-existent repo.
 
 ## Feedback
 
-- When delegating to specialist agents (Katarina, Fiora, Syndra, Swain, Pyke, Bard, Lissandra, Shen, etc.), provide only the task and context — not implementation steps or how-to guidance. Specialists have skills and docs; over-specifying wastes their judgment and violates the lean-delegation rule.
+- When delegating to specialist agents (Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, etc.), provide only the task and context — not implementation steps or how-to guidance. Specialists have skills and docs; over-specifying wastes their judgment and violates the lean-delegation rule.
 - Exception: Yuumi and Skarner are minions, not specialists. Give them detailed, explicit instructions — they don't have domain expertise to fill in gaps.
 - Before escalating any blocker to Duong, dispatch Skarner to search memory and learnings for how this problem was handled before. We have a long shared history — the answer is often already there. Only escalate if Skarner comes back empty or the situation is genuinely novel.
-- Use SendMessage to redirect or update a running background agent mid-flight rather than killing and respawning. Especially useful for long-running agents (Katarina, Fiora, etc.) when requirements change during execution.
+- Use SendMessage to redirect or update a running background agent mid-flight rather than killing and respawning. Especially useful for long-running agents (Jayce, Viktor, etc.) when requirements change during execution.
