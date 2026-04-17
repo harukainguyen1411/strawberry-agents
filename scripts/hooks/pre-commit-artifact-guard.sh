@@ -15,7 +15,7 @@ BUILD_ARTIFACT_PATTERNS=(
     ".turbo/"
     ".firebase/"
     "__pycache__/"
-    "apps/functions/lib/"
+    "apps/myapps/functions/lib/"
 )
 
 BLOCKED=0
