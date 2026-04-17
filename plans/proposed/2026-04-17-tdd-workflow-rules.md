@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: pyke
 date: 2026-04-17
 title: TDD Workflow Rules — codified in CLAUDE.md and git hooks
