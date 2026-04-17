@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/pre-commit-secrets-guard.sh
+# scripts/hooks/pre-commit-secrets-guard.sh
 #
 # Pyke Required Edit #8: tooling-level guards for the encrypted-secrets system.
 #
@@ -57,7 +57,7 @@ fi
 # ---------------------------------------------------------------------------
 # Self-meta paths that legitimately mention the armor header in comments,
 # vendored libraries, or policy files.
-header_allowlist_pattern='^(secrets/encrypted/|tools/age-bundle\.js$|scripts/pre-commit-secrets-guard\.sh$|\.gitleaks\.toml$|secrets/README\.md$|architecture/security-debt\.md$|plans/|agents/.*/learnings/|agents/.*/journal/|CLAUDE\.md$)'
+header_allowlist_pattern='^(secrets/encrypted/|tools/age-bundle\.js$|scripts/hooks/pre-commit-secrets-guard\.sh$|\.gitleaks\.toml$|secrets/README\.md$|architecture/security-debt\.md$|plans/|agents/.*/learnings/|agents/.*/journal/|CLAUDE\.md$)'
 for f in "${staged[@]}"; do
     if [[ "$f" =~ $header_allowlist_pattern ]]; then continue; fi
     # Use git show to read the staged blob, not the working tree.
@@ -69,7 +69,7 @@ done
 # ---------------------------------------------------------------------------
 # Guard 2: raw `age -d` outside the sanctioned helpers
 # ---------------------------------------------------------------------------
-allowed_decrypt_pattern='^(tools/decrypt\.|scripts/secret-|scripts/pre-commit-secrets-guard\.sh|plans/|architecture/|secrets/README\.md|CLAUDE\.md$|agents/.*/learnings/|agents/.*/journal/|agents/.*/memory/.*\.md$|agents/.*/transcripts/|tools/age-bundle\.js$)'
+allowed_decrypt_pattern='^(tools/decrypt\.|scripts/secret-|scripts/hooks/pre-commit-secrets-guard\.sh|plans/|architecture/|secrets/README\.md|CLAUDE\.md$|agents/.*/learnings/|agents/.*/journal/|agents/.*/memory/.*\.md$|agents/.*/transcripts/|tools/age-bundle\.js$)'
 for f in "${staged[@]}"; do
     if [[ "$f" =~ $allowed_decrypt_pattern ]]; then continue; fi
     case "$f" in
@@ -91,7 +91,7 @@ done
 # Patterns we explicitly look for. Cheap heuristic; gitleaks does the heavy
 # lifting in CI / standalone runs.
 token_patterns='(sk-[A-Za-z0-9_-]{20,}|ghp_[A-Za-z0-9]{30,}|gho_[A-Za-z0-9]{30,}|xox[bp]-[A-Za-z0-9-]{20,}|AKIA[0-9A-Z]{16})'
-allowlist_pattern='^(secrets/encrypted/|secrets/recipients\.txt$|tools/encrypt\.html$|tools/encrypt\.html\.sha256$|tools/age-bundle\.js$|plans/|agents/.*/journal/|agents/.*/learnings/|\.gitleaks\.toml$|scripts/pre-commit-secrets-guard\.sh$)'
+allowlist_pattern='^(secrets/encrypted/|secrets/recipients\.txt$|tools/encrypt\.html$|tools/encrypt\.html\.sha256$|tools/age-bundle\.js$|plans/|agents/.*/journal/|agents/.*/learnings/|\.gitleaks\.toml$|scripts/hooks/pre-commit-secrets-guard\.sh$)'
 for f in "${staged[@]}"; do
     if [[ "$f" =~ $allowlist_pattern ]]; then continue; fi
     if git show ":$f" 2>/dev/null | grep -Eq "$token_patterns"; then
