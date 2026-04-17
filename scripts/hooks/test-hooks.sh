@@ -118,5 +118,27 @@ fi
 rm -rf "$tmp_hooks"
 
 echo ""
+echo "=== sub-hook presence (B6 regression) ==="
+for _sh in pre-commit-secrets-guard.sh pre-commit-artifact-guard.sh pre-commit-unit-tests.sh pre-push-tdd.sh; do
+  if [ -f "$REPO_ROOT/scripts/hooks/$_sh" ]; then
+    echo "  PASS: scripts/hooks/$_sh present"
+    PASS=$((PASS+1))
+  else
+    echo "  FAIL: scripts/hooks/$_sh MISSING — dispatcher will not invoke it"
+    FAIL=$((FAIL+1))
+  fi
+done
+
+# Verify dispatcher glob matches at least 3 pre-commit sub-hooks
+_count=$(ls "$REPO_ROOT/scripts/hooks/pre-commit-"*.sh 2>/dev/null | wc -l | tr -d ' ')
+if [ "$_count" -ge 3 ]; then
+  echo "  PASS: dispatcher glob matches $_count pre-commit sub-hooks"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: expected >=3 pre-commit sub-hooks, found $_count"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
