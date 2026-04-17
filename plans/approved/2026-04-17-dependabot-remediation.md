@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: camille
 date: 2026-04-17
 title: Dependabot Vulnerability Remediation — 104 open alerts across monorepo
