@@ -12,6 +12,8 @@ Executable task list for the approved deployment-pipeline ADR (`plans/approved/2
 
 **Duong-resolved decisions applied** (all 18 open questions accepted per Azir's recommendations): Vitest; ciphertext-in-git under `secrets/env/<project>.env.age`; `main`-only deploy with `--allow-branch` escape; personal CLI auth locally / SA in CI; emulator-backed integration only; reconcile existing scripts up-front; release-please bot permitted on `main` under branch protection; first Bee version `0.1.0`; manual release-PR merge; new staging project `myapps-b31ea-staging`; staging on tag only; 4-check smoke; Duong-only prod approver; independent per-package versioning; SA IAM = firebase.admin + cloudfunctions.admin + iam.serviceAccountUser (self), storage.admin reactive; `auto_revert` default true.
 
+**Canonical Firebase layout applied (2026-04-17 amendment, Option 3).** Following Jayce's P1.0 audit (PR #120) confirming `apps/functions/` has no `firebase.json`, Functions source relocates into `apps/myapps/functions/` alongside the other Firebase surfaces for project `myapps-b31ea` (hosting, firestore, storage). All four surfaces share a single `apps/myapps/firebase.json`. This is the canonical Firebase layout — one `firebase.json` per Firebase project, not per surface. Deploy isolation remains enforced at invocation time via `--only <surface> --project <id>`. New tasks P1.1b (relocate source) and P1.1c (amend single firebase.json to cover all four surfaces) capture the work. Every downstream path reference to `apps/functions/**` is rewritten to `apps/myapps/functions/**`. Cross-reference: `assessments/2026-04-17-deploy-script-audit.md`.
+
 **Executor legend.** Jayce = new files / greenfield. Viktor = refactor / reconcile existing. Vi = test authoring + e2e verification. Seraphine = frontend (n/a this plan). Ornn = DevOps / repo-meta config (commit hooks, branch protection, CLAUDE.md edits, GH Actions YAML infra that is meta not app-logic). Where a task could be Jayce or Ornn, the rule is: YAML workflow files with non-trivial orchestration shape → Jayce (they're new greenfield artifacts); repo-meta infra like hooks, branch protection, rule rewrites → Ornn.
 
 Note: Seraphine (frontend) has no tasks in this plan — flagged explicitly so Evelynn doesn't expect a handoff there.
@@ -65,6 +67,36 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
   - `scripts/deploy.sh` path is free for the new dispatcher (P1.2).
   - Commit message is `chore:` prefix.
 
+### P1.1b — Relocate Functions into `apps/myapps/functions/`
+
+- **Executor:** Viktor
+- **Goal:** Move the existing Cloud Functions source from `apps/functions/` to `apps/myapps/functions/` so Functions live alongside the other Firebase surfaces for project `myapps-b31ea` (hosting, firestore rules, storage rules) under a single canonical Firebase app root. Merge any Functions-specific config fragments into the existing `apps/myapps/firebase.json` (P1.1c completes the full surface declaration).
+- **Files touched:** everything under `apps/functions/` → `apps/myapps/functions/` (git mv to preserve history); `apps/myapps/firebase.json` (merge `functions` block — full completion in P1.1c); `package.json` workspace globs at repo root if they name `apps/functions` explicitly; any `tsconfig.json` references; any `pnpm-workspace.yaml` entries; import paths inside Functions source if any were absolute to `apps/functions/*`.
+- **Dependencies:** P1.0 (audit identifies every caller/config touching `apps/functions/`), P1.1 (script path cleanup landed first so this move isn't entangled).
+- **Acceptance:**
+  - `apps/functions/` no longer exists; `apps/myapps/functions/` contains the relocated source with preserved git history.
+  - `pnpm install` at repo root succeeds; the `functions` workspace resolves from the new location.
+  - `pnpm --filter functions build` (or equivalent) succeeds from the new location.
+  - `firebase deploy --only functions --project myapps-b31ea --dry-run` succeeds when run from `apps/myapps/` WITHOUT a `--config` flag — proves the single `firebase.json` at that path is auto-detected for the Functions surface.
+  - All repo-wide grep hits for `apps/functions` are updated (plans in `proposed/`/`approved/` are left alone; in-flight tasks and code/config are rewritten).
+  - Commit is `chore:` prefix (move + config shuffle, no behavioural change to Functions runtime).
+- **Blocks:** P1.8, P1.4, P1.12, P2.15, P2.16.
+
+### P1.1c — Amend `apps/myapps/firebase.json` to declare all four surfaces
+
+- **Executor:** Jayce
+- **Goal:** Ensure the single `apps/myapps/firebase.json` declares all four surfaces for project `myapps-b31ea` as sibling JSON blocks: `hosting`, `functions`, `firestore`, `storage`. This is the canonical Firebase layout (one config per Firebase project, not per surface; isolation comes from `--only` at deploy time — ADR §1a.3/§1a.4).
+- **Files touched:** `apps/myapps/firebase.json` (add/verify all four blocks), possibly `apps/myapps/firestore.rules` and `apps/myapps/storage.rules` path references, emulator block if present.
+- **Dependencies:** P1.1b (Functions source must be in place so the `functions` block points at a real directory). May land in the same PR as P1.1b or immediately after.
+- **Acceptance:**
+  - `apps/myapps/firebase.json` contains `"functions": { "source": "functions", "runtime": "nodejs20", ... }` (runtime matches ADR §1 Node 20).
+  - `apps/myapps/firebase.json` also contains `"firestore"`, `"storage"`, and `"hosting"` blocks, each with valid paths/rules-file references.
+  - `firebase deploy --dry-run --project myapps-b31ea` run from `apps/myapps/` shows all four surfaces detected (functions, hosting, firestore, storage).
+  - `firebase deploy --only <surface> --project myapps-b31ea --dry-run` succeeds for each of the four surfaces individually — isolation contract holds (ADR §1a.4).
+  - No duplicate `firebase.json` anywhere else under `apps/myapps/**`.
+  - Commit is `chore:` prefix.
+- **Blocks:** P1.8 (deploy needs correct functions block), P1.9 (deploy needs correct storage block), P1.12 (e2e dry run), P2.9 (release workflow).
+
 ### P1.2 — Build `scripts/deploy/_lib.sh` shared helpers
 
 - **Executor:** Jayce
@@ -94,18 +126,18 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 ### P1.4 — First failing Vitest test against an existing Function (TDD proof-of-life)
 
 - **Executor:** Vi
-- **Goal:** Land one deliberately-failing Vitest test against an existing `apps/functions` export, verify it fails, then make it pass. Proves the test harness is wired end-to-end before the rest of Phase 1 builds on it.
-- **Files created:** `apps/functions/vitest.config.ts` (or equivalent), `apps/functions/src/__tests__/smoke.test.ts` (or chosen location), `apps/functions/package.json` changes if needed to add Vitest.
-- **Dependencies:** none (can run parallel to P1.0–P1.2; but sequence it after P1.1 if `apps/functions` build is in flux).
+- **Goal:** Land one deliberately-failing Vitest test against an existing `apps/myapps/functions` export, verify it fails, then make it pass. Proves the test harness is wired end-to-end before the rest of Phase 1 builds on it.
+- **Files created:** `apps/myapps/functions/vitest.config.ts` (or equivalent), `apps/myapps/functions/src/__tests__/smoke.test.ts` (or chosen location), `apps/myapps/functions/package.json` changes if needed to add Vitest.
+- **Dependencies:** P1.1b (Functions source must be at the new path before tests are authored against it). Can otherwise run parallel to P1.2.
 - **Acceptance:**
   - `pnpm --filter functions test` runs Vitest and exits non-zero initially (failing test committed), then exits zero after the fix commit.
   - Test asserts real behaviour of an existing function export, not a tautology.
-  - Two commits — both `chore:` (the failing test and the fix are in `apps/functions/__tests__/`, which is non-production test code; see Phase 2 scope validation for when `feat:` would apply).
+  - Two commits — both `chore:` (the failing test and the fix are in `apps/myapps/functions/__tests__/`, which is non-production test code; see Phase 2 scope validation for when `feat:` would apply).
 
 ### P1.5 — Build `scripts/test-functions.sh`
 
 - **Executor:** Jayce
-- **Goal:** Portable entrypoint that runs Vitest unit + emulator-backed integration tests for `apps/functions`; exits non-zero on any failure; same command local and (future) CI.
+- **Goal:** Portable entrypoint that runs Vitest unit + emulator-backed integration tests for `apps/myapps/functions`; exits non-zero on any failure; same command local and (future) CI.
 - **Files created:** `scripts/test-functions.sh`.
 - **Dependencies:** P1.4 (needs a Vitest baseline to invoke).
 - **Acceptance:**
@@ -141,7 +173,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 - **Executor:** Jayce
 - **Goal:** Surface script for Cloud Functions — runs test gate, decrypts env, invokes `firebase deploy --only functions --project <id>`, writes audit event.
 - **Files created:** `scripts/deploy/functions.sh`.
-- **Dependencies:** P1.2, P1.3, P1.5.
+- **Dependencies:** P1.1b, P1.1c, P1.2, P1.3, P1.5.
 - **Acceptance:**
   - Refuses to deploy if `scripts/test-functions.sh` fails.
   - Uses `_lib.sh` helpers throughout (no duplicated logic).
@@ -154,7 +186,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 - **Executor:** Jayce
 - **Goal:** Surface script for Firebase Storage rules — test gate, `firebase deploy --only storage --project <id>`, audit.
 - **Files created:** `scripts/deploy/storage-rules.sh`.
-- **Dependencies:** P1.2, P1.3, P1.6.
+- **Dependencies:** P1.1c (storage block in single firebase.json), P1.2, P1.3, P1.6.
 - **Acceptance:** symmetric to P1.8 but for storage rules surface.
 
 ### P1.10 — Build `scripts/deploy/project.sh`
@@ -186,7 +218,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 - **Executor:** Vi
 - **Goal:** Verify the full local pipeline works: `scripts/deploy.sh myapps-b31ea` runs tests, deploys Functions to the real prod project, audit log shows one success record.
 - **Files touched:** none (verification only); may create a short checklist in `architecture/deploy-script-audit.md` or a dedicated verification note if useful.
-- **Dependencies:** P1.3, P1.11 (and transitively all of Phase 1).
+- **Dependencies:** P1.1b, P1.1c, P1.3, P1.11 (and transitively all of Phase 1).
 - **Acceptance:**
   - Functions deploy to `myapps-b31ea` succeeds from Duong's laptop.
   - `logs/deploy-audit.jsonl` has a record with `project: "myapps-b31ea"`, `surface: "functions"`, `status: "success"`, non-null `git_sha`, `version: null` (no tag yet).
@@ -208,7 +240,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 
 ## Phase 2 — CI + release-please + staging + auto-revert
 
-Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge → tag → staging deploy + smoke → Duong approval → prod deploy + smoke → Discord notification. A forced bad prod deploy triggers auto-revert to the previous tag.
+Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → merge → tag → staging deploy + smoke → Duong approval → prod deploy + smoke → Discord notification. A forced bad prod deploy triggers auto-revert to the previous tag.
 
 ### P2.0a — **Duong prereq:** fix `origin` remote
 
@@ -257,7 +289,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 - **Files touched:** `scripts/pre-commit-*.sh` (add new file or extend existing), pre-push hook installer if one exists, `.git/hooks/` wiring via existing install flow.
 - **Dependencies:** P2.1 (rule must exist before the hook enforces it).
 - **Acceptance:**
-  - Commits to `apps/functions/src/**` with `chore:` prefix are rejected with a clear message.
+  - Commits to `apps/myapps/functions/src/**` with `chore:` prefix are rejected with a clear message.
   - Commits to `plans/**` with `feat:` prefix are rejected similarly.
   - Mixed diff (touches both `apps/**` and `plans/**`) with `feat:` prefix is allowed.
   - Hook is POSIX bash, runs on Git Bash on Windows.
@@ -266,12 +298,12 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 ### P2.3 — `release-please-config.json` + `.release-please-manifest.json`
 
 - **Executor:** Jayce
-- **Goal:** Configure release-please in manifest mode with `bee` as the first package pointing at `apps/functions`; tag format `bee-v1.2.3`; initial version `0.1.0`.
+- **Goal:** Configure release-please in manifest mode with `bee` as the first package pointing at `apps/myapps/functions`; tag format `bee-v1.2.3`; initial version `0.1.0`. `include-paths` for `bee` must be scoped to `apps/myapps/functions/**` (not all of `apps/myapps/**`) so that sibling surfaces (hosting, rules) under the same app root don't bump the Bee version — ADR §1a.5.
 - **Files created:** `release-please-config.json`, `.release-please-manifest.json` (both at repo root).
 - **Dependencies:** P2.1 (commit-convention aligned).
 - **Acceptance:**
-  - Config has one package: `apps/functions` → `bee`, `release-type: node`, `tag-separator: '-'`, `include-v-in-tag: true`.
-  - Manifest has `apps/functions: "0.1.0"`.
+  - Config has one package: `apps/myapps/functions` → `bee`, `release-type: node`, `tag-separator: '-'`, `include-v-in-tag: true`, with `include-paths: ["apps/myapps/functions"]` (scoped so hosting/rules changes under `apps/myapps/` don't trigger Bee version bumps).
+  - Manifest has `apps/myapps/functions: "0.1.0"`.
   - No `linked-versions`, no shared-package lockstep.
   - No changelog customization.
   - No pre-release channels.
@@ -324,7 +356,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 
 - **Executor:** Jayce
 - **Goal:** Implement a `/version` HTTPS function that returns `{ version, sha, builtAt }` reading from injected env vars `BEE_VERSION`, `BEE_GIT_SHA`, `BEE_BUILT_AT`.
-- **Files touched:** `apps/functions/src/` (new file or extension of existing index), tests in `apps/functions/src/__tests__/`.
+- **Files touched:** `apps/myapps/functions/src/` (new file or extension of existing index), tests in `apps/myapps/functions/src/__tests__/`.
 - **Dependencies:** P2.1 (this commit touches `apps/**` so needs the amended Rule 5 to allow a `feat:` prefix).
 - **Acceptance:**
   - Endpoint deployed and returns the three fields.
@@ -410,8 +442,8 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 
 - **Executor:** Ornn
 - **Goal:** Enforce cost-safe defaults on every Firebase Function: `maxInstances: 3`, `timeoutSeconds: 60`, `memory: '256MB'`. One-time sweep of existing functions plus a lint rule / test that fails CI when a new function is added without the caps (override requires an inline documented reason).
-- **Files touched:** all Firebase Function definitions under `apps/functions/` (path confirmed by P1.0 audit — adjust if audit relocates them), plus a new lint/test file (Ornn picks location, e.g. `apps/functions/src/__tests__/runtime-caps.test.ts` or an eslint rule under `tooling/`).
-- **Dependencies:** P1.0 (audit confirms Function definitions' actual path), P1.4 (Vitest harness exists if using a test-based enforcement).
+- **Files touched:** all Firebase Function definitions under `apps/myapps/functions/` (per the P1.1b relocation), plus a new lint/test file (Ornn picks location, e.g. `apps/myapps/functions/src/__tests__/runtime-caps.test.ts` or an eslint rule under `tooling/`).
+- **Dependencies:** P1.1b (Functions relocated to the new canonical path), P1.4 (Vitest harness exists if using a test-based enforcement).
 - **Acceptance:**
   - Every existing Function declaration includes the three caps, or has an inline comment `// runtime-caps-override: <reason>` that the lint/test allowlists.
   - CI test / lint rule fails when a PR adds a new Function without the caps and without the override marker.
@@ -422,9 +454,9 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 
 - **Executor:** Jayce
 - **Goal:** Deploy a Cloud Function that subscribes to GCP Budget Pub/Sub topics and detaches the billing account from the overspending project when `costAmount >= budgetAmount`. One function with project-aware logic, subscribing to two topics (prod + staging budgets).
-- **Files created:** `apps/functions/src/budget-kill-switch.ts` (or similar), unit + integration tests, `architecture/runbook-billing-recovery.md` (re-attach billing procedure after triage).
-- **Files touched:** `apps/functions/src/index.ts` to export the new function.
-- **Dependencies:** P1.4 (test harness), P2.15 (runtime caps apply to this function too), Duong prereq D6 (budgets + Pub/Sub topics exist).
+- **Files created:** `apps/myapps/functions/src/budget-kill-switch.ts` (or similar), unit + integration tests, `architecture/runbook-billing-recovery.md` (re-attach billing procedure after triage).
+- **Files touched:** `apps/myapps/functions/src/index.ts` to export the new function.
+- **Dependencies:** P1.1b (Functions at new path), P1.4 (test harness), P2.15 (runtime caps apply to this function too), Duong prereq D6 (budgets + Pub/Sub topics exist).
 - **Acceptance:**
   - Function subscribes to both prod and staging budget Pub/Sub topics (topic name `budget-alerts` in each project).
   - On message where `costAmount >= budgetAmount`, calls `cloudbilling.projects.updateBillingInfo` to set `billingAccountName: ''` on the overspending project (derived from the budget message's `budgetDisplayName` or `budgetId` mapping).
@@ -464,7 +496,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 
 - **Executor:** Vi
 - **Goal:** Push a real `feat:` commit to a throwaway branch, open PR, merge to main, verify release PR opens, merge release PR, verify tag → staging deploy → smoke → approval → prod deploy → smoke → audit entry → Discord notification. Then force a bad deploy and verify auto-revert.
-- **Files touched:** a throwaway test function in `apps/functions/src/` (reverted at end), a deliberate broken commit to trigger revert path.
+- **Files touched:** a throwaway test function in `apps/myapps/functions/src/` (reverted at end), a deliberate broken commit to trigger revert path.
 - **Dependencies:** P2.1 through P2.13 all merged; Duong available to approve the `production` environment prompt.
 - **Acceptance:**
   - Green path verified: tag triggers staging → gate → prod → smoke green.
@@ -495,14 +527,18 @@ If an executor finds themselves about to do any of the above, stop and ping Evel
 
 ## Task count by phase
 
-- **Phase 1:** 14 tasks (P1.0 through P1.13).
+- **Phase 1:** 16 tasks (P1.0, P1.1, P1.1b, P1.1c, P1.2 through P1.13).
 - **Phase 2:** 22 tasks (P2.0a, P2.0b, P2.0c, P2.0d, P2.1 through P2.17, with P2.7a as a subtask of P2.7).
-- **Total:** 36 tasks across the plan (4 are Duong-prereq human tasks, 32 are agent tasks).
+- **Total:** 38 tasks across the plan (4 are Duong-prereq human tasks, 34 are agent tasks).
 
 ## Dependency summary (critical path)
 
-Phase 1 critical path: **P1.0 → P1.1 → P1.2 → P1.3 (Duong D4) → P1.8 → P1.10 → P1.11 → P1.12**.
-Parallel tracks in Phase 1: P1.4→P1.5 (testing track), P1.6, P1.13.
+Phase 1 critical path: **P1.0 → P1.1 → P1.1b → P1.1c → P1.2 → P1.3 (Duong D4) → P1.8 → P1.10 → P1.11 → P1.12**.
+Parallel tracks in Phase 1: P1.4→P1.5 (testing track; P1.4 sits on P1.1b so it waits for the relocation), P1.6, P1.13.
+
+**Phase-1 tasks now sitting on P1.1b:** P1.4 (first failing Vitest), P1.5 (test-functions.sh, transitively via P1.4), P1.8 (deploy functions, also on P1.1c), P1.12 (e2e dry run).
+**Phase-2 tasks now sitting on P1.1b:** P2.15 (runtime caps sweep), P2.16 (auto-disable-billing function).
+**NOT blocked by P1.1b:** P1.1 (script renames), P1.2 (_lib.sh — path-agnostic), P1.6 (storage-rules tests), P1.7 (test-all aggregator), P1.9 (storage-rules deploy — on P1.1c only), P1.10, P1.11, P1.13, P2.0a–d (Duong prereqs), P2.17 (artifact cleanup — can run parallel).
 
 Phase 2 critical path: **Duong D1/D2/D3/D5 → P2.1 → P2.2 → P2.3 → P2.4 → P2.7a → P2.9 → P2.14**.
 Parallel tracks in Phase 2: P2.5, P2.6, P2.7, P2.8, P2.10, P2.11, P2.12, P2.13, P2.15, P2.16 (after D6).
