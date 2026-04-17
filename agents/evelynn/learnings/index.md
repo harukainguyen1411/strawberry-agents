@@ -12,3 +12,4 @@
 - 2026-04-11-delegation-specialists-vs-minions.md — Lean-delegation (what+why only) applies to specialists. Minions (Yuumi, Skarner) need explicit step-by-step instructions — they don't fill gaps. | last_used: 2026-04-11
 - 2026-04-11-nested-worktree-permissions.md — Never run Evelynn from a worktree. Subagents spawned with isolation:worktree from a worktree session get triple-nested and lose Write/Bash. Always start from repo root. | last_used: 2026-04-11
 - 2026-04-12-team-vs-agent.md — "Team" = TeamCreate (shared task list, coordination). "Have someone" = background Agent (single task). Never confuse. | last_used: 2026-04-12
+- 2026-04-17-firebase-and-plan-lifecycle-gotchas.md — Firebase rules {timestamp} is reserved; v2 CORS is per-function; plan-promote is proposed-only; safety hook scopes per-call; resume subagents via SendMessage for iterative refinement | last_used: 2026-04-17
