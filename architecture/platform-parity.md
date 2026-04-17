@@ -29,7 +29,7 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 | `scripts/plan-unpublish.sh` | supported | supported | POSIX. Drive mirror unpublish path. |
 | `scripts/plan-fetch.sh` | supported | supported | POSIX. Drive mirror fetch path. |
 | `scripts/clean-jsonl.py` | supported | supported | Python. Used by /end-session. |
-| `scripts/pre-commit-secrets-guard.sh` | supported | supported | POSIX. See `#rule-no-raw-age-d` in root `CLAUDE.md`. |
+| `scripts/hooks/pre-commit-secrets-guard.sh` | supported | supported | POSIX. See `#rule-no-raw-age-d` in root `CLAUDE.md`. Installed via `scripts/install-hooks.sh` dispatcher. |
 | `scripts/lint-subagent-rules.sh` | supported | supported | POSIX. Diffs canonical rule blocks in `.claude/agents/*.md` against reference sets. |
 | `scripts/mac/iterm-backgrounds/*.jpg` | supported | NOT SUPPORTED | Per-agent iTerm2 background images. Used by the Mac iTerm launcher. Not relevant on Windows. |
 | `scripts/mac/launch-agent-iterm.sh` | supported | NOT SUPPORTED | macOS iTerm2 launcher for any agent. Uses osascript + grid positioning. Windows counterpart: use Task subagent — no launch script. |

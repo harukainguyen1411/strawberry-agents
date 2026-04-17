@@ -46,15 +46,12 @@
 
 ## Build Artifact Guard (pre-commit hook)
 
-`scripts/pre-commit-artifact-guard.sh` blocks commits that include build artifact paths. It runs as part of the pre-commit hook.
+`scripts/hooks/pre-commit-artifact-guard.sh` blocks commits that include build artifact paths. It runs as part of the pre-commit hook dispatcher installed by `scripts/install-hooks.sh`.
 
 To install (if not already active):
 
 ```bash
-# Append to .git/hooks/pre-commit
-echo '' >> .git/hooks/pre-commit
-echo '# Build artifact guard' >> .git/hooks/pre-commit
-echo 'bash scripts/pre-commit-artifact-guard.sh' >> .git/hooks/pre-commit
+bash scripts/install-hooks.sh
 ```
 
 Patterns blocked: `node_modules/`, `.turbo/`, `.firebase/`, `__pycache__/`, `apps/functions/lib/`.
