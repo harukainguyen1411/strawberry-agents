@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 owner: kayn
 date: 2026-04-17
 title: Deployment Pipeline — Task Breakdown (Phases 1 & 2)
