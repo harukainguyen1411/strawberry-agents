@@ -3,7 +3,7 @@ status: in-progress
 owner: kayn
 date: 2026-04-17
 title: Deployment Pipeline — Task Breakdown (Phases 1 & 2)
-parent_adr: plans/approved/2026-04-17-deployment-pipeline.md
+parent_adr: plans/in-progress/2026-04-17-deployment-pipeline.md
 ---
 
 # Deployment Pipeline — Task Breakdown
