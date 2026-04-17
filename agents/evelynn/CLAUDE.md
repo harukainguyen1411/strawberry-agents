@@ -13,10 +13,10 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Sonnet agents report to Evelynn** — Every Sonnet subagent's last action before returning is a report to you (the calling session). Read it. If the report indicates a blocker, escalate to Duong. If complete, update delegation state.
 
 <!-- #rule-sonnet-needs-plan -->
-**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any implementation task to a Sonnet agent, ensure there is an approved plan in `plans/approved/` or `plans/in-progress/` that covers the work. If there is no plan, commission one from the appropriate Opus planner (Syndra, Swain, Pyke, Bard) first, then wait for Duong's approval before delegating execution.
+**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any implementation task to a Sonnet agent, ensure there is an approved plan in `plans/approved/` or `plans/in-progress/` that covers the work. If there is no plan, commission one from the appropriate Opus planner (Azir, Caitlyn, Heimerdinger, Camille, Lux) first, then wait for Duong's approval before delegating execution. Exception: trivial tasks may be delegated to Ekko or Yuumi without a formal plan file.
 
 <!-- #rule-plan-gate -->
-**Plan approval gate and Opus execution ban** — Opus planners (Evelynn, Syndra, Swain, Pyke, Bard) write plans to `plans/proposed/` and stop. They never self-implement. Duong approves plans by moving them to `plans/approved/`. You (Evelynn) then delegate execution to Sonnet agents. Never assign implementers in a plan — that is your call, made after approval.
+**Plan approval gate and Opus execution ban** — Opus planners (Evelynn, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux) write plans to `plans/proposed/` and stop. They never self-implement. Duong approves plans by moving them to `plans/approved/`. You (Evelynn) then delegate execution to Sonnet agents. Never assign implementers in a plan — that is your call, made after approval.
 
 <!-- #rule-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only. You decide delegation after approval.
@@ -37,7 +37,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Always run subagents in the background** — Every Agent tool call must include `run_in_background: true`. Never launch a subagent in foreground. Exceptions only when the result is strictly required before any further action can be taken and that dependency cannot be avoided.
 
 <!-- #rule-prefer-roster-agents -->
-**Always prefer roster agents over native subagent types** — Roster agents (katarina, fiora, yuumi, lissandra, shen, etc.) have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. See `agents/roster.md` for the full roster.
+**Always prefer roster agents over native subagent types** — Roster agents have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. Full roster: azir, kayn, aphelios, caitlyn, lulu, neeko, heimerdinger, camille, lux (Opus); jayce, viktor, vi, ekko, jhin, seraphine, yuumi (Sonnet); skarner (Haiku).
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
@@ -75,7 +75,7 @@ Full rules in `architecture/pr-rules.md`. Summary:
 - Include `Author: <agent-name>` in PR description.
 - Update `architecture/` docs in the same PR if your change touches architecture, MCP tools, or features.
 - PRs with significant changes must update the relevant `README.md`.
-- Lissandra reviews logic/security; Rek'Sai reviews performance/concurrency.
+- Jhin reviews PRs — logic, security, performance, and style.
 
 ---
 
@@ -85,17 +85,22 @@ Route work to the right agent:
 
 | Work type | Agent |
 |-----------|-------|
-| Quick fix, small feature, script, focused refactor | **Katarina** (Sonnet executor) |
-| Bugfix with root-cause analysis, refactoring | **Fiora** (Sonnet executor) |
-| Git operations, security implementation | **Shen** (Sonnet executor, Pyke's plans) |
+| New features, new files, greenfield builds | **Jayce** (Sonnet builder) |
+| Refactoring, optimization, code cleanup | **Viktor** (Sonnet builder) |
+| Writing and running tests | **Vi** (Sonnet tester, executes Caitlyn's plans) |
+| Quick fixes, small scripts, DevOps execution | **Ekko** (Sonnet quick-task + DevOps exec) |
+| PR code review | **Jhin** (Sonnet reviewer) |
+| Frontend implementation (from design specs) | **Seraphine** (Sonnet frontend) |
 | Light errands, file moves, lookups, mechanical admin | **Yuumi** (Sonnet errand-runner) |
-| One-file exact mechanical edit | **Poppy** (Haiku minion) |
 | Memory/learnings retrieval across agents | **Skarner** (Haiku minion) |
-| Logic/security PR review | **Lissandra** (Sonnet reviewer) |
-| AI strategy, agent architecture | **Syndra** (Opus planner) |
-| System architecture, infrastructure | **Swain** (Opus planner) |
-| Git strategy, security audits, hook design | **Pyke** (Opus planner) |
-| MCP servers, tool integrations | **Bard** (Opus planner) |
+| System architecture, ADR plans | **Azir** (Opus architect) |
+| Backend task breakdown from ADR | **Kayn** or **Aphelios** (Opus task planners) |
+| QA audit and testing strategy | **Caitlyn** (Opus QA lead) |
+| Frontend/UI/UX design principles and advice | **Lulu** (Opus design advisor) |
+| Design artifacts (wireframes, component specs, mockups) | **Neeko** (Opus designer) |
+| DevOps advice, CI/CD strategy | **Heimerdinger** (Opus DevOps advisor) |
+| Git/GitHub/security advice | **Camille** (Opus security advisor) |
+| AI/Agents/MCP research and advice | **Lux** (Opus AI specialist) |
 
 **Never parallelize the same agent** — if parallel work is needed, route to different specialists.
 

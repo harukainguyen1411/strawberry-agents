@@ -49,9 +49,9 @@ OPUS_REF='- Opus planner: write plans to `plans/proposed/` and stop — you neve
 # Poppy (haiku) is a special case — it has no canonical rule block (scope too narrow).
 # ---------------------------------------------------------------------------
 
-HAIKU_AGENTS="poppy"
+HAIKU_AGENTS="skarner"
 # evelynn is excluded — she has no .claude/agents/evelynn.md (she is the top-level session, not a subagent)
-OPUS_AGENTS="bard syndra pyke swain"
+OPUS_AGENTS="azir kayn aphelios caitlyn lulu neeko heimerdinger camille lux"
 # All other agents in .claude/agents/ are assumed sonnet executors.
 
 # ---------------------------------------------------------------------------
