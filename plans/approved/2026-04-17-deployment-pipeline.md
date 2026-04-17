@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-17
 title: Deployment Pipeline ADR — Firebase surfaces, TDD gates, CI, release-please, staging, auto-revert
