@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-17
 title: Test Dashboard Architecture ADR — service boundary, ingestion, artifacts, UI, monitoring seam
