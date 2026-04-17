@@ -11,6 +11,7 @@
 - 2026-04-11: SubagentStop hook research — sentinel-file pattern.
 - 2026-04-13: Deploy lockdown plan authored + simplified. Advisory to Shen. Security-reviewed PR #102 (ship it, non-blocking: add firebase logout to runbook).
 - 2026-04-14: Git hygiene automation plan — worktree reaper, heartbeat check, end-subagent-session cleanup, pre-commit artifact guard.
+- 2026-04-17: Dependabot triage plan for 104 open alerts (5 crit, 42 high) — 13 batches, 4 phases, committed 4d18cdf.
 
 ## Key decisions made
 - Three-tier commit policy: agent state/ops → main direct; feature work → PR.
