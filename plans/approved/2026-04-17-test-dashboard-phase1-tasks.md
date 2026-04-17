@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: kayn
 date: 2026-04-17
 title: Test Dashboard — Phase 1 Task Breakdown (ingestion + storage + minimal UI + unit + smoke)
