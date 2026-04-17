@@ -24,14 +24,14 @@ Note: Seraphine (frontend) has no tasks in this plan — flagged explicitly so E
 
 These must be done by Duong before the dependent agent tasks can proceed. Listed here for scheduling visibility; also embedded as numbered tasks below.
 
-| Ref | Blocker | Blocks |
-|-----|---------|--------|
-| D1 | Fix `origin` remote (account-switch 404). | All of Phase 2 that pushes/pulls from GitHub. |
-| D2 | Create staging Firebase project `myapps-b31ea-staging`, confirm final ID. | P2.6, P2.7, P2.10, P2.13. |
-| D3 | Create prod + staging service accounts in GCP console, grant the three IAM roles, download key JSONs. | P2.4 (GH Actions secrets upload), P2.10, P2.11. |
-| D4 | Provide the four secret values (`GITHUB_TOKEN`, `BEE_GITHUB_REPO`, `BEE_SISTER_UIDS`, `DISCORD_WEBHOOK_URL`) into the ciphertext flow for P1.3. | P1.3, and therefore any local deploy of `myapps-b31ea` Functions. |
-| D5 | Sign off on the amended CLAUDE.md Rule 5 wording in P2.2 before it lands. | P2.2 merge, and therefore any `feat:`/`fix:` commit in `apps/**`. |
-| D6 | Create GCP Budgets (prod $20/mo, staging $5/mo; thresholds 50/90/100%) with Pub/Sub topic notification destinations, one topic per project. | P2.16 auto-disable function subscription wiring. |
+| Ref | Blocker | Blocks | Status |
+|-----|---------|--------|--------|
+| D1 | Fix `origin` remote (account-switch 404). | All of Phase 2 that pushes/pulls from GitHub. | ✅ done (Evelynn — account switch resolved) |
+| D2 | Create staging Firebase project `myapps-b31ea-staging`, confirm final ID. | P2.6, P2.7, P2.10, P2.13. | ✅ done (Evelynn via MCP — project `myapps-b31ea-staging`) |
+| D3 | Create prod + staging service accounts in GCP console, grant the three IAM roles, download key JSONs. | P2.4 (GH Actions secrets upload), P2.10, P2.11. | ✅ done (Evelynn via MCP — SAs created, roles granted, GH secrets uploaded) |
+| D4 | Provide the four secret values (`GITHUB_TOKEN`, `BEE_GITHUB_REPO`, `BEE_SISTER_UIDS`, `DISCORD_WEBHOOK_URL`) into the ciphertext flow for P1.3. | P1.3, and therefore any local deploy of `myapps-b31ea` Functions. | 🟡 partial (Evelynn): `BEE_SISTER_UIDS` encrypted; `github-triage-pat` reused in place of a fresh `GITHUB_TOKEN`; `BEE_GITHUB_REPO` is non-secret and set directly; `DISCORD_WEBHOOK_URL` **deferred** pending Duong supplying a webhook. |
+| D5 | Sign off on the amended CLAUDE.md Rule 5 wording in P2.2 before it lands. | P2.2 merge, and therefore any `feat:`/`fix:` commit in `apps/**`. | ✅ done (Evelynn — CLAUDE.md Rule 5 amended, commit dc0ad92) |
+| D6 | Create GCP Budgets (prod $20/mo, staging $5/mo; thresholds 50/90/100%) with Pub/Sub topic notification destinations, one topic per project. | P2.16 auto-disable function subscription wiring. | ✅ done (Duong — Console, 2026-04-17; topic name is `budget-alerts` plural in both projects) |
 
 **Billing-safety prereqs already completed by Evelynn (2026-04-17):**
 - `billingbudgets.googleapis.com` enabled on both `myapps-b31ea` and `myapps-b31ea-staging`.
@@ -42,7 +42,7 @@ These must be done by Duong before the dependent agent tasks can proceed. Listed
 
 Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, Functions deploy succeeds, audit-log record written.
 
-### P1.0 — Audit existing `scripts/deploy.sh` + `scripts/composite-deploy.sh`
+### P1.0 — Audit existing `scripts/deploy.sh` + `scripts/composite-deploy.sh` ✅ merged 2f49240 (PR #120)
 
 - **Executor:** Jayce
 - **Goal:** Inventory current behaviour of both scripts, document which callers reference them, and produce a reconciliation plan (rename, absorb, or retire) before any new script overwrites them.
@@ -55,19 +55,22 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
   - `scripts/composite-deploy.sh` disposition is stated explicitly: delete (no Vite surfaces in Phase 1/2) vs carry forward as dormant.
   - No code changes in this task — it is an audit only. Execution of the rename/delete happens in P1.1.
 
-### P1.1 — Reconcile and rename existing scripts per audit
+### P1.1 — Reconcile and rename existing scripts per audit ✅ merged d9d2208 (PR #121)
 
 - **Executor:** Viktor
+- **Status:** **done** — PR #121, commit d9d2208. Old `scripts/deploy.sh` was renamed to `scripts/deploy-discord-relay-vps.sh`; `scripts/composite-deploy.sh` retained with a dormant-deprecation comment; `architecture/infrastructure.md:66` updated.
 - **Goal:** Execute the disposition decided in P1.0 — rename/retire the old `scripts/deploy.sh`, update all callers, land a clean namespace before P1.2 introduces the new dispatcher.
-- **Files touched:** `scripts/deploy.sh` (move), `scripts/composite-deploy.sh` (delete or leave), any caller files the audit identified.
+- **Files touched:** `scripts/deploy.sh` (moved to `scripts/deploy-discord-relay-vps.sh`), `scripts/composite-deploy.sh` (kept, deprecation comment added), caller files from the audit.
 - **Dependencies:** P1.0.
 - **Acceptance:**
-  - The old `scripts/deploy.sh` is renamed (or retained with a temporary wrapper-warning) per P1.0's disposition.
-  - All caller references updated.
-  - `scripts/deploy.sh` path is free for the new dispatcher (P1.2).
-  - Commit message is `chore:` prefix.
+  - The old `scripts/deploy.sh` was renamed to `scripts/deploy-discord-relay-vps.sh` per P1.0's disposition. ✅
+  - All caller references updated. ✅
+  - `scripts/deploy.sh` path is free for the new dispatcher (P1.2). ✅
+  - Commit message is `chore:` prefix. ✅
 
-### P1.1b — Relocate Functions into `apps/myapps/functions/`
+Cross-references: `assessments/2026-04-17-pr-120-121-architectural-review.md` (Azir's ADR-alignment review of PR #120 + #121) and `assessments/2026-04-17-pr-120-121-retroactive-review.md` (Jhin's correctness review). Jhin's two inbox nits (`agents/evelynn/inbox/20260403-2311-pyke-info.md:12`, `agents/evelynn/inbox/20260403-2318-pyke-info.md:33`) are historical non-executable references and are acknowledged without edit.
+
+### P1.1b — Relocate Functions into `apps/myapps/functions/` ✅ merged c5be66f (PR #124)
 
 - **Executor:** Viktor
 - **Goal:** Move the existing Cloud Functions source from `apps/functions/` to `apps/myapps/functions/` so Functions live alongside the other Firebase surfaces for project `myapps-b31ea` (hosting, firestore rules, storage rules) under a single canonical Firebase app root. Merge any Functions-specific config fragments into the existing `apps/myapps/firebase.json` (P1.1c completes the full surface declaration).
@@ -114,7 +117,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 ### P1.3 — Bootstrap `secrets/env/myapps-b31ea.env.age`
 
 - **Executor:** Jayce (scripting), Duong (provides values via D4)
-- **Goal:** Create the encrypted dotenv for the prod Firebase project using Duong's four known values (`GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=0DJzc86i5MP74jAwwT4YjvbcAub2`, `DISCORD_WEBHOOK_URL`), unblocking Functions deploy.
+- **Goal:** Create the encrypted dotenv for the prod Firebase project using Duong's four known values (`GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=<haruka-uid — see encrypted dotenv>`, `DISCORD_WEBHOOK_URL`), unblocking Functions deploy.
 - **Files created:** `secrets/env/myapps-b31ea.env.age` (ciphertext, committed), `secrets/env/myapps-b31ea.env.example` (template, committed, no values).
 - **Dependencies:** P1.2 (uses `_lib.sh`'s decrypt wiring indirectly); **Duong prereq D4** must supply the values into the ciphertext flow.
 - **Acceptance:**
@@ -233,7 +236,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 - **Dependencies:** P1.1, P1.11.
 - **Acceptance:**
   - Doc lists every new script with a one-line purpose.
-  - Old `scripts/deploy.sh` (if renamed) is listed under its new name.
+  - The renamed `scripts/deploy-discord-relay-vps.sh` (formerly `scripts/deploy.sh`, renamed in P1.1/PR #121) is listed under its new name.
   - Commit is `chore:`.
 
 ---
@@ -242,7 +245,7 @@ Exit criterion: `scripts/deploy.sh myapps-b31ea` runs locally, test gates fire, 
 
 Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → merge → tag → staging deploy + smoke → Duong approval → prod deploy + smoke → Discord notification. A forced bad prod deploy triggers auto-revert to the previous tag.
 
-### P2.0a — **Duong prereq:** fix `origin` remote
+### P2.0a — **Duong prereq:** fix `origin` remote ✅ done (Evelynn)
 
 - **Executor:** Duong (human).
 - **Goal:** Unbreak the GitHub remote that currently 404s due to account switch.
@@ -250,7 +253,7 @@ Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → 
 - **Acceptance:** `git fetch origin` and `git push origin main` both succeed from Duong's laptop.
 - **Blocks:** all Phase 2 GitHub-Actions tasks.
 
-### P2.0b — **Duong prereq:** create staging Firebase project
+### P2.0b — **Duong prereq:** create staging Firebase project ✅ done (Evelynn via MCP)
 
 - **Executor:** Duong (human).
 - **Goal:** Create `myapps-b31ea-staging` in the Firebase console with the Blaze plan matching prod; confirm final project ID to Kayn/Evelynn.
@@ -258,7 +261,7 @@ Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → 
 - **Acceptance:** Project exists; Duong confirms ID (may end up as `myapps-b31ea-staging` or similar if that ID is taken).
 - **Blocks:** P2.6, P2.10 staging wiring.
 
-### P2.0c — **Duong prereq:** create service accounts in GCP console
+### P2.0c — **Duong prereq:** create service accounts in GCP console ✅ done (Evelynn via MCP)
 
 - **Executor:** Duong (human).
 - **Goal:** For each of prod + staging: create a deploy service account, grant `roles/firebase.admin` + `roles/cloudfunctions.admin` + `roles/iam.serviceAccountUser` (on itself), download the key JSON, base64-encode, hand off to the age-encrypted store (or directly paste into GH Actions secret). Also upload the repo-level `AGE_KEY` secret.
@@ -482,7 +485,7 @@ Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → 
   - Script is POSIX bash, `shellcheck` clean (Rule 10).
   - Commit uses `chore:` prefix (no `apps/**` changes).
 
-### P2.0d — **Duong prereq:** create GCP Budgets + Pub/Sub topics
+### P2.0d — **Duong prereq:** create GCP Budgets + Pub/Sub topics ✅ done (Duong, 2026-04-17)
 
 - **Executor:** Duong (human).
 - **Goal:** Create two GCP Budgets (Console → Billing → Budgets & alerts → New budget): prod scoped to `myapps-b31ea` at $20/mo, staging scoped to `myapps-b31ea-staging` at $5/mo. Thresholds 50/90/100% for each. Each budget's notification destination is a Pub/Sub topic (one topic per budget). Revisit values once real usage data exists.

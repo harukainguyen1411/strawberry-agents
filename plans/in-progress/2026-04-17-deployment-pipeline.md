@@ -32,6 +32,7 @@ Architecture-level plan for how the strawberry monorepo deploys. Scope covers th
 - Non-Firebase targets (Cloud Run, GCE, static hosting).
 - A monitoring dashboard consuming the structured deploy audit log.
 - Preview channels / per-PR ephemeral environments.
+- Vite / Firebase Hosting assembly and deploy. Continues via the existing `scripts/composite-deploy.sh` + `release.yml`/`preview.yml` path until a dedicated web-surface ADR supersedes it. This pipeline does not touch the Hosting surface.
 
 **Deliberately out of scope:**
 
@@ -56,7 +57,7 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 
 ## 2. Environment and secrets strategy
 
-**Problem today.** `apps/myapps/functions/.env.myapps-b31ea` is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=0DJzc86i5MP74jAwwT4YjvbcAub2`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists.
+**Problem today.** `apps/myapps/functions/.env.myapps-b31ea` is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=<haruka-uid>`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists. (Actual UID value lives in the encrypted dotenv; see P1.3.)
 
 **Principle.** Encrypted ciphertext in git; plaintext only materialized at deploy time, into a child process env, never into a committed file and never into shell history.
 
@@ -153,6 +154,10 @@ scripts/
 
 **Interaction with existing `scripts/deploy.sh` and `scripts/composite-deploy.sh`.** Both exist today and their current semantics need to be reconciled. Kayn's breakdown must include an audit pass: keep, rename, or absorb. The names above reserve `scripts/deploy.sh` as the new canonical dispatcher — if the existing file does something incompatible, rename the old one first and do not silently overwrite. `composite-deploy.sh` was built for the Vite-app world of the superseded plan and is not invoked in this ADR's design; decide during breakdown whether to delete it or carry it forward for a future web-surface addition.
 
+**Phase-2 policy for `composite-deploy.sh` and Vite/Hosting assembly.** Phase 2 does **NOT** absorb Vite hosting assembly. `scripts/composite-deploy.sh` remains called by `.github/workflows/release.yml` and `.github/workflows/preview.yml` unchanged until a separate web-surface ADR supersedes it. The script stays dormant and carries its deprecation comment through Phase 2. Phase-2 `release.yml`/`preview.yml` rewrites MUST NOT take a dependency on `composite-deploy.sh` beyond the existing unchanged invocation; if those workflows still need Hosting deploys after the Phase-2 rewrite, they continue to call the existing `composite-deploy.sh` **unchanged** and the Hosting surface remains outside the new `scripts/deploy/` tree. The new pipeline does not absorb Vite assembly — attempting to do so violates §1 non-goals.
+
+**Note on top-level VPS scripts.** `scripts/deploy-discord-relay-vps.sh` (the Hetzner-VPS Discord-relay PM2 restart script, renamed in P1.1 from the previous `scripts/deploy.sh`) lives at top level but is **outside** this pipeline. Its body is POSIX-bash (Rule 10 satisfied) even though its runtime target is a Linux VPS. It deploys the Discord-relay VPS, not a Firebase surface, and does not participate in the test gate / audit log / smoke test contract. Flagged here to prevent reader confusion with the upcoming Firebase dispatcher at `scripts/deploy.sh`. A future reorg may move it under `scripts/vps/` — not required now.
+
 ---
 
 ## 5. CI workflows, service account, and branch protection
@@ -205,7 +210,7 @@ Duong picked release-please explicitly. This section specifies how.
 
 - `googleapis/release-please-action@v4` (or current stable major), **manifest mode**.
 - `release-please-config.json` and `.release-please-manifest.json` at repo root. Manifest mode is mandatory — it supports the per-app versioning axis required for deploy isolation (Section 1a.5).
-- **First app:** `apps/myapps/functions`, package name `bee`. Tag format `bee-v1.2.3`. release-please `include-paths` for `bee` must be scoped to `apps/myapps/functions/**` specifically (see §1a.5) so sibling surfaces under `apps/myapps/` don't bump the Bee version. Other apps added later follow the same pattern (e.g. `landing-v0.1.0`).
+- **First app:** `apps/myapps/functions`, package name `bee`. Tag format `bee-v1.2.3`. release-please `include-paths` for `bee` must be scoped to `apps/myapps/functions/**` specifically (see §1a.5) so sibling surfaces under `apps/myapps/` don't bump the Bee version. Other apps added later follow the same pattern (e.g. `landing-v0.1.0`). The release-please `package-name: bee` is independent of the npm `name` field in `apps/myapps/functions/package.json` (currently `darkstrawberry-functions`). release-please `include-paths` + `package-name` in the manifest are the binding; npm `name` is not renamed by this ADR. Both names coexist legitimately — release-please tags use `bee`, npm resolution uses `darkstrawberry-functions`.
 - First Bee version: see open questions (`0.1.0` vs `1.0.0`).
 
 **Commit convention — resolving the conflict with CLAUDE.md Rule 5.**

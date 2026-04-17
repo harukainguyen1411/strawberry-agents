@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: pyke
 date: 2026-04-17
 title: Branch protection enforcement — wire required checks, reviews, and admin guardrails
@@ -44,7 +44,7 @@ Reasoning:
 
 - **Option (b) "zero reviews, rely on status checks"** leaves no human (or agent) judgment gate. Status checks verify mechanical properties — plan-faithfulness, design-intent drift, and scope creep are not machine-detectable. PR #117 shows why: my own blockers B1 and B2 would never have been caught by any status check — they required a plan-faithfulness reader. Drop this option.
 - **Option (c) CODEOWNERS → bot account.** Adds infrastructure (bot account, PAT management, CODEOWNERS syntax drift) without changing the underlying "one human, blocked from self-approving" problem. Defer.
-- **Option (a) second-account approval.** Already half-wired in `scripts/setup-branch-protection.sh` step 2. Duong has a second GitHub account (name TBD — Shen to fill in when implementing). That account is granted `push` permission and holds a fine-grained PAT used by agent sessions. Every PR requires one approving review from the second account. When Evelynn or any agent opens a PR from the primary account, they must coordinate with an agent session running under the second account to review and approve. This creates a real independent-agent review gate that matches the existing agent-delegation model (reviewer subagent spawned via Evelynn).
+- **Option (a) second-account approval.** Already half-wired in `scripts/setup-branch-protection.sh` step 2. Duong's second GitHub account is `harukainguyen1411` (collaborator); `Duongntd` is the admin/primary. The `harukainguyen1411` account is granted `push` permission and holds a fine-grained PAT used by agent sessions. Every PR requires one approving review from `harukainguyen1411`. When Evelynn or any agent opens a PR from `Duongntd`, they must coordinate with an agent session running under `harukainguyen1411` to review and approve. This creates a real independent-agent review gate that matches the existing agent-delegation model (reviewer subagent spawned via Evelynn).
 
 Required-reviews configuration:
 
@@ -59,7 +59,7 @@ Required-reviews configuration:
 
 `require_last_push_approval: true` is important — it forces re-review after any new push, so a rubber-stamp approval followed by "just one more fix" does not slip through.
 
-Open question: which account is the second account? Shen's existing script uses the placeholder `SECOND_ACCOUNT`. If that account does not yet exist, creating it is a prerequisite. If it exists but has not been authenticated in agent sessions, `scripts/setup-agent-git-auth.sh` is the intended path (see `architecture/key-scripts.md`).
+Second account is `harukainguyen1411` (collaborator, confirmed). If that account has not been authenticated in agent sessions, `scripts/setup-agent-git-auth.sh` is the intended path (see `architecture/key-scripts.md`). Shen's existing script still references the placeholder `SECOND_ACCOUNT` in the echo lines — replace with `harukainguyen1411` during the rewrite.
 
 ---
 
@@ -173,7 +173,7 @@ Anchor: `#rule-no-admin-merge`. Rules 1–17 preserved.
 
 ## 9. Open questions
 
-- **Second-account username.** Script placeholder `SECOND_ACCOUNT` — Duong to fill in.
+- **Second-account username.** Resolved: `harukainguyen1411` (collaborator). Replace `SECOND_ACCOUNT` throughout `scripts/setup-branch-protection.sh` with this value during the rewrite.
 - **Bootstrap ordering for this PR's own merge.** This plan lands to main directly per rule 4, not via PR — so the protection record change does not block itself. The CLAUDE.md rule 18 edit is similarly a direct-to-main commit. No bootstrap loop.
 - **Existing open PRs.** Any PR already open when protection lands will need to satisfy the new required checks (re-push to trigger) and gather one approval before merge. Expected one-time friction; not a design issue.
 - **Agent session auth.** Review from the second account requires at least one agent session authenticated under that account. How Evelynn orchestrates "send this PR to the second-account session for review" is outside this plan's scope — likely a small addition to the agent-network protocol.
