@@ -46,7 +46,12 @@ warn() { printf 'pre-commit-secrets-guard: %s\n' "$*" >&2; }
 trip() { warn "BLOCK: $*"; fail=1; }
 
 # Collect staged file list (added/modified/copied/renamed). NUL-delimited.
-mapfile -d '' -t staged < <(git diff --cached --name-only --diff-filter=ACMR -z)
+# Use read loop for bash 3.2 compatibility (macOS ships bash 3.2; mapfile -d
+# requires bash 4+).
+staged=()
+while IFS= read -r -d '' f; do
+    staged+=("$f")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
 
 if [[ ${#staged[@]} -eq 0 ]]; then
     exit 0
