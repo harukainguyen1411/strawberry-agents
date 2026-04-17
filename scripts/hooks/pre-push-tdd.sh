@@ -63,15 +63,21 @@ while read local_ref local_sha remote_ref remote_sha; do
     *"TDD-Waiver:"*) echo "[pre-push] TDD-Waiver trailer detected — skipping TDD checks." ; continue ;;
   esac
 
-  # Rule 1: verify at least one xfail test commit exists before any impl commit
-  # We look for commits that add xfail markers (test.fail / it.failing / @pytest.mark.xfail)
-  xfail_found=$(git log "$range" --format="%H %s" | while read sha msg; do
-    git show "$sha" --unified=0 2>/dev/null | grep -qE '(test\.fail|it\.failing|@pytest\.mark\.xfail|# xfail:)' && echo "yes" && break
-  done)
+  # Rule 1: verify at least one xfail test commit exists before any impl commit.
+  # Write SHAs to a temp file so the loop runs in the current shell (no subshell exit swallowing).
+  _sha_list=$(mktemp)
+  git log "$range" --format="%H" 2>/dev/null > "$_sha_list"
+  xfail_found=""
+  while IFS= read -r sha; do
+    if git show "$sha" --unified=0 2>/dev/null | grep -qE '(test\.fail|it\.failing|@pytest\.mark\.xfail|# xfail:)'; then
+      xfail_found="yes"
+      break
+    fi
+  done < "$_sha_list"
+  rm -f "$_sha_list"
 
   if [ -z "$xfail_found" ]; then
-    # Only block if there are non-test implementation files changed
-    impl_files=$(echo "$changed_files" | grep -vE '(\.test\.|\.spec\.|_test\.|/tests?/)' | grep -vE '\.(md|json|yml|yaml|sh)$' || true)
+    impl_files=$(printf '%s\n' "$changed_files" | grep -vE '(\.test\.|\.spec\.|_test\.|/tests?/)' | grep -vE '\.(md|json|yml|yaml|sh)$' || true)
     if [ -n "$impl_files" ]; then
       echo "[pre-push] ERROR: Rule 1 violation — no xfail test commit found before implementation."
       echo "  Affected packages: $tdd_pkgs"
@@ -80,25 +86,36 @@ while read local_ref local_sha remote_ref remote_sha; do
     fi
   fi
 
-  # Rule 2: regression test required for bug-fix commits
-  git log "$range" --format="%H %s %b" | while read sha rest; do
+  # Rule 2: regression test required for bug-fix commits.
+  # Iterate via temp file so exit codes propagate in the current shell.
+  _sha_list2=$(mktemp)
+  git log "$range" --format="%H" 2>/dev/null > "$_sha_list2"
+  rule2_violation=""
+  rule2_sha=""
+  test_files_in_range=$(git diff --name-only "$range" 2>/dev/null | grep -E '(\.test\.|\.spec\.|_test\.|/tests?/)' || true)
+  while IFS= read -r sha; do
     commit_msg=$(git log -1 --format="%B" "$sha")
-    case "$commit_msg" in
-      *bug*|*bugfix*|*regression*|*hotfix*)
-        # Allow TDD-Trivial for docs-only
-        case "$commit_msg" in *"TDD-Trivial:"*) continue ;; esac
-        case "$commit_msg" in *"TDD-Waiver:"*) continue ;; esac
-        # Check if a test file was modified in this range before or at this commit
-        test_files=$(git diff --name-only "$range" 2>/dev/null | grep -E '(\.test\.|\.spec\.|_test\.|/tests?/)' || true)
-        if [ -z "$test_files" ]; then
-          echo "[pre-push] ERROR: Rule 2 violation — bug-fix commit lacks regression test."
-          echo "  Commit: $sha"
-          echo "  Add a regression test commit, or use TDD-Waiver: trailer (Duong only)."
-          exit 1
+    case "$commit_msg" in *"TDD-Trivial:"*|*"TDD-Waiver:"*) continue ;; esac
+    # Match bug keywords in subject line only to avoid false positives on "debugging" / "budget"
+    subject=$(printf '%s' "$commit_msg" | head -1)
+    case " $subject " in
+      *" bug "*|*" bugfix "*|*" regression "*|*" hotfix "*)
+        if [ -z "$test_files_in_range" ]; then
+          rule2_violation="yes"
+          rule2_sha="$sha"
+          break
         fi
         ;;
     esac
-  done || exit 1
+  done < "$_sha_list2"
+  rm -f "$_sha_list2"
+
+  if [ -n "$rule2_violation" ]; then
+    echo "[pre-push] ERROR: Rule 2 violation — bug-fix commit lacks regression test."
+    echo "  Commit: $rule2_sha"
+    echo "  Add a regression test commit, or use TDD-Waiver: trailer (Duong only)."
+    exit 1
+  fi
 
 done
 
