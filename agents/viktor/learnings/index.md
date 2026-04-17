@@ -1,0 +1,2 @@
+- 2026-04-17-dependabot-phase1-lockfile-patterns.md — npm overrides, workspace lockfile regen, drift prevention, surgical surgery guardrails | last_used: 2026-04-17
+- 2026-04-17-dependabot-phase2-surgical-patterns.md — major bump approval, nested scoped entries, multi-major alert scoping, dismissal auth, B4g code-change class | last_used: 2026-04-17
