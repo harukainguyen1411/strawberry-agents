@@ -1,13 +1,13 @@
 #!/bin/sh
-# Installs all strawberry git hooks into .git/hooks (or the configured core.hooksPath).
-# Safe to re-run — existing hooks are replaced.
+# Installs strawberry git hook dispatchers into .git/hooks.
+# Each dispatcher verb (pre-commit, pre-push) runs every scripts/hooks/<verb>-*.sh in order.
+# Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 HOOKS_SRC="$REPO_ROOT/scripts/hooks"
 HOOKS_DIR="$(git rev-parse --git-dir)/hooks"
 
-# Allow override via core.hooksPath
 configured=$(git config core.hooksPath 2>/dev/null || echo "")
 if [ -n "$configured" ]; then
   HOOKS_DIR="$configured"
@@ -15,38 +15,60 @@ fi
 
 mkdir -p "$HOOKS_DIR"
 
-install_hook() {
-  name="$1"
-  src="$HOOKS_SRC/$name.sh"
-  dst="$HOOKS_DIR/$name"
+# install_dispatcher <verb>
+# Writes .git/hooks/<verb> that:
+#   1. Runs any pre-existing non-managed hook content (preserved verbatim).
+#   2. Runs each scripts/hooks/<verb>-*.sh found at call-time, passing all args.
+# If a prior managed dispatcher exists it is replaced cleanly.
+install_dispatcher() {
+  verb="$1"
+  dst="$HOOKS_DIR/$verb"
+  tmp=$(mktemp)
 
-  if [ ! -f "$src" ]; then
-    echo "[install-hooks] WARNING: $src not found — skipping $name"
-    return
-  fi
+  cat > "$tmp" <<DISPATCHER
+#!/bin/sh
+# strawberry-managed dispatcher for $verb
+# Re-run install-hooks.sh to regenerate.
+set -e
+REPO_ROOT="\$(git rev-parse --show-toplevel)"
+HOOKS_SRC="\$REPO_ROOT/scripts/hooks"
+DISPATCHER
 
-  # If an existing hook is not ours, compose rather than overwrite
+  # Preserve existing non-managed hook body
   if [ -f "$dst" ] && ! grep -q "strawberry-managed" "$dst" 2>/dev/null; then
-    echo "[install-hooks] Composing with existing $name hook"
-    tmp=$(mktemp)
-    printf '#!/bin/sh\n# strawberry-managed\n' > "$tmp"
-    printf '# Existing hook preserved below\n' >> "$tmp"
-    cat "$dst" >> "$tmp"
-    printf '\n# Strawberry TDD hook\n' >> "$tmp"
-    cat "$src" >> "$tmp"
-    mv "$tmp" "$dst"
-  else
-    printf '#!/bin/sh\n# strawberry-managed\n' > "$dst"
-    cat "$src" >> "$dst"
+    echo "[install-hooks] Preserving existing $verb hook"
+    cat >> "$tmp" <<'PRESERVED'
+# --- existing hook preserved ---
+PRESERVED
+    # Strip the shebang from the existing file before inlining
+    tail -n +2 "$dst" >> "$tmp"
+    printf '\n# --- end existing hook ---\n' >> "$tmp"
   fi
 
+  # Dispatcher loop: run every <verb>-*.sh sub-hook in sorted order
+  cat >> "$tmp" <<'LOOP'
+_rc=0
+for _sub in $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | sort); do
+  _base=$(basename "$_sub")
+  case "$_base" in
+    VERB-*.sh)
+      sh "$_sub" "$@" || _rc=$?
+      ;;
+  esac
+done
+exit $_rc
+LOOP
+
+  # Substitute the actual verb into the pattern
+  sed -i.bak "s/VERB/$verb/g" "$tmp" && rm -f "$tmp.bak"
+
+  mv "$tmp" "$dst"
   chmod +x "$dst"
-  echo "[install-hooks] Installed $name"
+  echo "[install-hooks] Installed $verb dispatcher"
 }
 
-install_hook "pre-commit-secrets-guard"
-install_hook "pre-commit-artifact-guard"
-install_hook "pre-commit-unit-tests"
-install_hook "pre-push-tdd"
+install_dispatcher "pre-commit"
+install_dispatcher "pre-push"
 
-echo "[install-hooks] Done. Hooks installed to: $HOOKS_DIR"
+echo "[install-hooks] Done. Hook dispatchers installed to: $HOOKS_DIR"
+echo "[install-hooks] Sub-hooks active: $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"

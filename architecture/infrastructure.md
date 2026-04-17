@@ -63,7 +63,7 @@ Duong uses Claude subscription (not API billing). CLI on VPS authenticates via `
 
 ### Deploy
 
-`scripts/deploy.sh` — pull + install + PM2 restart.
+`scripts/deploy-discord-relay-vps.sh` — pull + install + PM2 restart.
 
 ### Data Directories
 
