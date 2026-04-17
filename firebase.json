@@ -35,13 +35,6 @@
   "storage": {
     "rules": "apps/myapps/storage.rules"
   },
-  "functions": [
-    {
-      "source": "apps/functions",
-      "codebase": "darkstrawberry-functions",
-      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"]
-    }
-  ],
   "emulators": {
     "functions": {
       "port": 5001
