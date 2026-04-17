@@ -8,6 +8,7 @@ Last updated: 2026-04-17
 - 2026-04-17: Fixed PR #117 B1-B5 — dispatcher, CI RCE, subshell exits, e2e deadlock, fetch-depth
 - 2026-04-17: Fixed B6 — moved legacy guard hooks into scripts/hooks/ so dispatcher glob captures them; 12/12 tests
 - 2026-04-17: PR #126 — bash 3.2 fix for secrets-guard; BASH_VERSINFO guard + artifact-guard audit; 15/15 tests
+- 2026-04-17: PR #143 — branch protection enforcement; unit-tests.yml, setup-branch-protection.sh rewrite, verify script, git-workflow.md; CLAUDE.md rule 18 direct to main
 
 ## Key Knowledge
 
@@ -23,6 +24,7 @@ Last updated: 2026-04-17
 
 ## Open
 
-- PR #117 merged; PR #126 (fix/secrets-guard-bash3) awaiting review
+- PR #126 (fix/secrets-guard-bash3) and PR #143 (branch-protection-enforcement) awaiting review
+- After PR #143 merges: Duong runs setup-branch-protection.sh then verify-branch-protection.sh
 - Rule 6 (smoke tests + deploy.yml) deferred — coordinates with deployment-pipeline ADR
 - `architecture/testing.md` not yet created
