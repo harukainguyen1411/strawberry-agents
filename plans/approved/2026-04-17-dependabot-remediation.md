@@ -107,7 +107,8 @@ gh api --paginate "/repos/Duongntd/strawberry/dependabot/alerts?state=open&per_p
 |---|---|---|---|---|
 | **B1** | root `package-lock.json` runtime critical/high | protobufjs → 7.5.5; undici → ≥6.24.0 | Low — all transitive, forced resolution via `overrides` if audit fix doesn't reach | S |
 | **B2** | `apps/functions/package-lock.json` | protobufjs → 7.5.5; @tootallnate/once → 3.0.1 (low, bundle) | Low — Cloud Functions runtime; smoke-test cold start | S |
-| **B3** | `apps/private-apps/bee-worker/package-lock.json` | protobufjs → 7.5.5; esbuild 0.25.0 (dev); @tootallnate/once; vite 6.4.2 | Low-Med | S-M |
+| **B3** | `apps/private-apps/bee-worker/package-lock.json` | protobufjs → 7.5.5; @tootallnate/once (**vite + esbuild split to B4g**) | Low | S |
+| **B4g** | `apps/private-apps/bee-worker/package-lock.json` — vite/vitest upgrade | vite 5→6.4.2 + vitest 2→3.x (code-change-required: vitest 3 has API changes) | **High** — requires vitest config/matcher review; Viktor stops and pings team-lead if test breakage found | M-L |
 | **B4a** | `apps/myapps/package-lock.json` — runtime criticals | protobufjs → 7.5.5; undici → ≥6.24.0 | Low | S |
 | **B4b** | `apps/myapps/package-lock.json` — `hono` family | hono + @hono/node-server bumps to latest patched | **Med-High** — hono has minor version churn; possible route/middleware API drift. Needs Vi to run full app test suite. | M |
 | **B4c** | `apps/myapps/package-lock.json` — `vite`+`rollup`+`esbuild` build toolchain | vite → patched, rollup → patched, esbuild → 0.25.0 | **Med** — build toolchain bump; watch for plugin compat. Dev-only, so runtime blast radius is zero. | M |
@@ -127,7 +128,7 @@ Phases run sequentially; batches inside a phase run in parallel.
 B1, B2, B3, B4a. Four parallel worktrees. Blocks all other work on same manifest.
 
 **Phase 2 — High dev + Med runtime.**
-B4b (hono), B4c (build toolchain), B4e (tar). B4b is the riskiest; Vi runs the full `apps/myapps` E2E suite.
+B4b (hono), B4c (build toolchain), B4e (tar), B4g (bee-worker vite/vitest). B4b is the riskiest; Vi runs the full `apps/myapps` E2E suite. B4g requires code-change review before execution.
 
 **Phase 3 — Medium & Low cleanup.**
 B4d, B4f, B5, B6, B7, B8. Parallel; low aggregate risk.
