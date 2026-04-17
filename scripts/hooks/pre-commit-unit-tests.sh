@@ -51,7 +51,8 @@ for pkg in $PKGS; do
       echo "[pre-commit] No test:unit script in $pkg/package.json — skipping"
       continue
     fi
-    (cd "$pkg" && sh -c "$test_cmd") || FAILED=1
+    # Run via npm run to avoid shell-injection from package.json content
+    (cd "$pkg" && npm run test:unit --if-present) || FAILED=1
   fi
 done
 IFS="$OLD_IFS"
