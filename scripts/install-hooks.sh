@@ -52,7 +52,7 @@ for _sub in $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | sort); do
   _base=$(basename "$_sub")
   case "$_base" in
     VERB-*.sh)
-      sh "$_sub" "$@" || _rc=$?
+      "$_sub" "$@" || _rc=$?
       ;;
   esac
 done
