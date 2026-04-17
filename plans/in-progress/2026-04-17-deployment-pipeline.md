@@ -17,11 +17,11 @@ Architecture-level plan for how the strawberry monorepo deploys. Scope covers th
 
 **In scope today:**
 
-- **Firebase Cloud Functions** under `apps/functions/` (TypeScript, Node 20, entry `lib/index.js`) targeting project `myapps-b31ea`.
+- **Firebase Cloud Functions** under `apps/myapps/functions/` (TypeScript, Node 20, entry `lib/index.js`) targeting project `myapps-b31ea`. Functions are co-located under `apps/myapps/` alongside the other Firebase surfaces for this project (hosting, Firestore rules, Storage rules), and all four surfaces share a single `apps/myapps/firebase.json` (see §1a and §4). See Jayce's audit at `assessments/2026-04-17-deploy-script-audit.md` (PR #120) for the source of this layout decision.
 - **Firebase Storage rules** (project `myapps-b31ea`).
 - **A staging Firebase project** (separate project ID — see open questions) mirroring the prod surface set.
 - **GitHub Actions workflows** (`.github/workflows/test.yml`, `.github/workflows/deploy.yml`, plus the release-please workflow) as thin triggers around the deploy scripts.
-- **release-please** monorepo manifest mode, per-app versioning, with `apps/functions` as the first versioned package (`bee`).
+- **release-please** monorepo manifest mode, per-app versioning, with `apps/myapps/functions` as the first versioned package (`bee`).
 - **Auto-revert** on prod smoke failure.
 - A single "deploy surface" abstraction so adding more surfaces later doesn't require redesigning the pipeline.
 
@@ -46,16 +46,17 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 
 1. **Deploy axis.** Every deploy is identified by a `<firebase-project> + <surface>` tuple. The monorepo's folder layout is irrelevant to Firebase.
 2. **Scope of a deploy.** `firebase deploy --only <surface> --project <id>` uploads only the artifacts of that surface. Sibling apps under `apps/**` are never packaged, uploaded, or touched.
-3. **Per-app config.** Each deployable app owns its own `firebase.json` and its own `secrets/env/<project>.env.age`. There is no monorepo-level `firebase.json` that fans out to every app.
-4. **Per-app tags fire per-app deploys.** release-please in per-package manifest mode means a `feat:` landing in `apps/functions/**` bumps only the `bee` package, produces only a `bee-vX.Y.Z` tag, and therefore triggers only the Bee deploy workflow. `apps/landing` (future) bumping does not touch Bee.
-5. **Shared-package trap (future, flagged not solved).** When `packages/shared/**` lands, a change there must open release PRs for every consumer of that shared package. release-please supports this via `linked-versions` or the `node-workspace` plugin; pick one when the first shared package lands. This ADR flags it and does not design it.
-6. **Hard contract in `_lib.sh`.** Every surface script MUST pass `--only <surface>` to `firebase deploy`. Bare `firebase deploy` is forbidden and fails a precondition check in `_lib.sh` (grep the invocation or wrap the CLI).
+3. **Per-Firebase-project config, not per-surface config.** Each Firebase project has **one** `firebase.json` at that project's app root (e.g. `apps/myapps/firebase.json` for project `myapps-b31ea`). That single file declares **all** surfaces for the project — `hosting`, `functions`, `firestore`, `storage` — as sibling blocks within the same JSON. There is NOT one `firebase.json` per surface, and there is NOT a monorepo-level `firebase.json` that fans out across multiple Firebase projects. If a future second Firebase project is added, it gets its own app root (e.g. `apps/<other>/`) with its own single `firebase.json` covering its own surfaces. Each encrypted env file (`secrets/env/<project>.env.age`) is likewise per Firebase project.
+4. **Surface isolation comes from `--only`, not from config splitting.** Even with all surfaces declared in a single `firebase.json`, each deploy invocation still passes `--only <surface>` + `--project <id>`, so only the named surface is uploaded. The single-config layout is how Firebase canonically expects a project's artifacts to live; isolation is enforced at deploy time.
+5. **Per-app tags fire per-app deploys.** release-please in per-package manifest mode means a `feat:` landing in `apps/myapps/functions/**` bumps only the `bee` package, produces only a `bee-vX.Y.Z` tag, and therefore triggers only the Bee deploy workflow. A future `apps/landing` bumping does not touch Bee. Note that because multiple surfaces live under one `apps/myapps/` root, release-please's `include-paths` for the `bee` package must scope to `apps/myapps/functions/**` specifically — not all of `apps/myapps/**` — so that hosting/rules edits don't bump the Bee version.
+6. **Shared-package trap (future, flagged not solved).** When `packages/shared/**` lands, a change there must open release PRs for every consumer of that shared package. release-please supports this via `linked-versions` or the `node-workspace` plugin; pick one when the first shared package lands. This ADR flags it and does not design it.
+7. **Hard contract in `_lib.sh`.** Every surface script MUST pass `--only <surface>` to `firebase deploy`. Bare `firebase deploy` is forbidden and fails a precondition check in `_lib.sh` (grep the invocation or wrap the CLI).
 
 ---
 
 ## 2. Environment and secrets strategy
 
-**Problem today.** `apps/functions/.env.myapps-b31ea` is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=0DJzc86i5MP74jAwwT4YjvbcAub2`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists.
+**Problem today.** `apps/myapps/functions/.env.myapps-b31ea` is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=0DJzc86i5MP74jAwwT4YjvbcAub2`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists.
 
 **Principle.** Encrypted ciphertext in git; plaintext only materialized at deploy time, into a child process env, never into a committed file and never into shell history.
 
@@ -65,13 +66,13 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 |------|---------|-----------|
 | `secrets/env/<project>.env.age` | Age-encrypted dotenv per Firebase project | yes (ciphertext) |
 | `secrets/env/<project>.env.example` | Template with keys, no values, doc-only | yes |
-| `apps/functions/.env.<project>` | Plaintext dotenv, decrypted on demand | no (gitignored) |
+| `apps/myapps/functions/.env.<project>` | Plaintext dotenv, decrypted on demand | no (gitignored) |
 | `secrets/age-key.txt` | Age private key | no (gitignored) |
 
 **Flow.**
 
 1. Duong edits ciphertext via the existing `tools/encrypt.html` flow (or a new `tools/edit-env.sh` that decrypts, opens `$EDITOR`, re-encrypts, and shreds the temp file).
-2. Deploy entrypoint invokes `tools/decrypt.sh` to materialize plaintext into the child process environment. It does **not** write `.env` to disk unless `firebase deploy` explicitly needs a file on disk — in which case the file is written to a path inside the gitignored `apps/functions/` tree, never committed, and removed on exit via a `trap`.
+2. Deploy entrypoint invokes `tools/decrypt.sh` to materialize plaintext into the child process environment. It does **not** write `.env` to disk unless `firebase deploy` explicitly needs a file on disk — in which case the file is written to a path inside the gitignored `apps/myapps/functions/` tree, never committed, and removed on exit via a `trap`.
 3. Rule 6 hard-enforced: no raw `age -d`, no `cat` on plaintext, no piping of the age key. Pre-commit hook already blocks this; deploy scripts must honor it too.
 
 **Project selection.** The Firebase project is the deploy-time axis. One encrypted env file per project, named by the Firebase project ID (not by environment semantics like "prod" / "staging"). Staging gets its own project ID, its own encrypted env, its own deploy invocation. No magic env-var toggles at deploy time.
@@ -88,7 +89,7 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 
 | Surface | Unit framework | Integration framework | Required before deploy |
 |---------|---------------|----------------------|------------------------|
-| Cloud Functions (`apps/functions/`) | Vitest (recommended) or Jest | `firebase-functions-test` + Firebase emulator suite | unit + integration both green |
+| Cloud Functions (`apps/myapps/functions/`) | Vitest (recommended) or Jest | `firebase-functions-test` + Firebase emulator suite | unit + integration both green |
 | Firebase Storage rules | `@firebase/rules-unit-testing` driving the Firebase emulator | (integration is the unit here) | rules-unit-testing suite green |
 
 Rationale for Vitest over Jest for Functions: faster, native TS, lighter config, and it composes cleanly with the existing `tsconfig.json`. Jest is acceptable if Kayn/Aphelios prefer it for ecosystem reasons — tradeoff is ~2x slower cold start and a heavier config surface. Pick one, do not mix.
@@ -108,7 +109,7 @@ Rationale for Vitest over Jest for Functions: faster, native TS, lighter config,
 
 **Non-negotiables.**
 
-- Tests run against the Firebase emulator, never against the live `myapps-b31ea` project. The emulator ports live in `firebase.json` (to be created/amended in the implementation phase).
+- Tests run against the Firebase emulator, never against the live `myapps-b31ea` project. The emulator ports live in `apps/myapps/firebase.json` (amended during P1.1c to cover all four surfaces).
 - No mocking of the Firebase Admin SDK in integration tests. Mocks are for unit tests only. Integration tests hit the emulator.
 - Flaky tests are bugs, not tolerances. A flaky test gets fixed or quarantined with an issue tracking it — it does not get an automatic retry in the gate.
 
@@ -137,7 +138,8 @@ scripts/
 
 - `scripts/deploy.sh <project> [<surface>] [--ref <git-ref>] [--skip-staging] [--yes]` — top-level. If surface omitted, deploys all surfaces for that project. `--ref` checks out a specific ref (used by auto-revert and `workflow_dispatch` hotfix). `--skip-staging` is for hotfixes and is audited (Section 6). Examples: `scripts/deploy.sh myapps-b31ea`, `scripts/deploy.sh myapps-b31ea functions --ref bee-v1.2.2`.
 - Each surface script takes exactly one positional arg: the Firebase project ID. Optional flags match the top-level flags that are relevant.
-- Each surface script is responsible for: (1) running its own test gate, (2) materializing env via `tools/decrypt.sh`, (3) invoking the Firebase CLI with `--project <id>` **and an explicit `--only` scope** (Section 1a.6), (4) emitting an audit event, (5) invoking `scripts/deploy/smoke.sh` after deploy.
+- Each surface script is responsible for: (1) running its own test gate, (2) materializing env via `tools/decrypt.sh`, (3) invoking the Firebase CLI with `--project <id>` **and an explicit `--only` scope** (Section 1a.7), (4) emitting an audit event, (5) invoking `scripts/deploy/smoke.sh` after deploy.
+- **Firebase CLI invocation context.** Scripts run from the repo root, but the Firebase CLI needs to resolve `firebase.json` for the target project. Surface scripts `cd "$REPO_ROOT/apps/myapps"` before invoking `firebase deploy`, then restore `cwd` on exit via a `trap`. The alternative — passing `--config apps/myapps/firebase.json` from the repo root — works for `firebase.json` itself but does not reliably handle relative paths *inside* firebase.json (e.g. `"source": "functions"` resolves relative to the config file's dir, which works either way; but `predeploy` scripts and `ignore` globs are more predictable when `cwd` matches the config dir). Choose `cd` + `trap`. Helper `dl_cd_firebase_root <project>` in `_lib.sh` encapsulates this so no surface script hardcodes the path.
 - **Every script is POSIX bash, works identically on macOS and Git Bash on Windows** (Rule 10). Platform-specific affordances live under `scripts/mac/` or `scripts/windows/` and are optional hooks, never required for deploy correctness.
 
 **Preconditions enforced by `_lib.sh`:**
@@ -147,6 +149,7 @@ scripts/
 - Required env keys present after decrypt.
 - Firebase CLI authenticated: service-account key file if `GOOGLE_APPLICATION_CREDENTIALS` is set (CI path), otherwise the user's logged-in CLI (local path).
 - `firebase deploy` invocations in this script tree include `--only <surface>`. Bare `firebase deploy` fails a static grep check.
+- Firebase CLI is invoked from `apps/myapps/` (per the `cd` + `trap` rule above) so the single `apps/myapps/firebase.json` is auto-detected; no `--config` flag needed.
 
 **Interaction with existing `scripts/deploy.sh` and `scripts/composite-deploy.sh`.** Both exist today and their current semantics need to be reconciled. Kayn's breakdown must include an audit pass: keep, rename, or absorb. The names above reserve `scripts/deploy.sh` as the new canonical dispatcher — if the existing file does something incompatible, rename the old one first and do not silently overwrite. `composite-deploy.sh` was built for the Vite-app world of the superseded plan and is not invoked in this ADR's design; decide during breakdown whether to delete it or carry it forward for a future web-surface addition.
 
@@ -201,8 +204,8 @@ Duong picked release-please explicitly. This section specifies how.
 **Tool and config.**
 
 - `googleapis/release-please-action@v4` (or current stable major), **manifest mode**.
-- `release-please-config.json` and `.release-please-manifest.json` at repo root. Manifest mode is mandatory — it supports the per-app versioning axis required for deploy isolation (Section 1a.4).
-- **First app:** `apps/functions`, package name `bee`. Tag format `bee-v1.2.3`. Other apps added later follow the same pattern (e.g. `landing-v0.1.0`).
+- `release-please-config.json` and `.release-please-manifest.json` at repo root. Manifest mode is mandatory — it supports the per-app versioning axis required for deploy isolation (Section 1a.5).
+- **First app:** `apps/myapps/functions`, package name `bee`. Tag format `bee-v1.2.3`. release-please `include-paths` for `bee` must be scoped to `apps/myapps/functions/**` specifically (see §1a.5) so sibling surfaces under `apps/myapps/` don't bump the Bee version. Other apps added later follow the same pattern (e.g. `landing-v0.1.0`).
 - First Bee version: see open questions (`0.1.0` vs `1.0.0`).
 
 **Commit convention — resolving the conflict with CLAUDE.md Rule 5.**
@@ -221,7 +224,7 @@ CLAUDE.md Rule 5 currently mandates `chore:` / `ops:` as the only allowed prefix
 
 **Flow.**
 
-1. A developer (or agent via PR) merges a `feat: …` commit that touches `apps/functions/` into `main`.
+1. A developer (or agent via PR) merges a `feat: …` commit that touches `apps/myapps/functions/` into `main`.
 2. `release-please.yml` opens or updates the Bee release PR, titled `chore(bee): release 1.3.0`, with an auto-generated CHANGELOG.
 3. Duong (or whoever has release authority — see open questions) reviews and merges the release PR.
 4. release-please pushes the tag `bee-v1.3.0` to `main`.
@@ -242,7 +245,7 @@ CLAUDE.md Rule 5 currently mandates `chore:` / `ops:` as the only allowed prefix
 - No npm publishing. Bee is deployed, not published.
 - No changelog customization beyond release-please defaults.
 - No pre-release / alpha / beta tag channels.
-- Per-app independent versioning only — no lockstep `linked-versions` for Phase 2. Revisit when the first shared package lands (Section 1a.5).
+- Per-app independent versioning only — no lockstep `linked-versions` for Phase 2. Revisit when the first shared package lands (Section 1a.6).
 
 ---
 
@@ -375,7 +378,7 @@ Phase-level only. Task-level breakdown is Kayn's job after approval.
 - TDD test gates per Section 3 (Vitest + emulator).
 - Deploy audit log writer in `_lib.sh` per Section 8.
 - Reconciliation of existing `scripts/deploy.sh` and `scripts/composite-deploy.sh`.
-- Monorepo deploy isolation contract in `_lib.sh` (Section 1a.6).
+- Monorepo deploy isolation contract in `_lib.sh` (Section 1a.7).
 
 Exit criterion: Duong can run `scripts/deploy.sh myapps-b31ea` on his laptop, tests run, deploy succeeds, audit log written.
 
@@ -394,7 +397,7 @@ Exit criterion: Duong can run `scripts/deploy.sh myapps-b31ea` on his laptop, te
 - `scripts/deploy/revert.sh` with guardrails per Section 7a.
 - Commit-scope validation hook (flagged work; not designed here).
 
-Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge → tag → staging deploy + smoke → approval → prod deploy + smoke → Discord notification. A forced bad deploy triggers auto-revert to the previous tag.
+Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → merge → tag → staging deploy + smoke → approval → prod deploy + smoke → Discord notification. A forced bad deploy triggers auto-revert to the previous tag.
 
 ---
 
@@ -417,7 +420,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 
 1. **Vitest or Jest for Cloud Functions tests?** Recommendation: Vitest (faster, native TS, lighter config). Confirm or override.
 2. **Encrypted dotenv vs. Firebase Functions "secret params" (`defineSecret`).** Recommendation: ciphertext-in-git for `GITHUB_TOKEN`, `DISCORD_WEBHOOK_URL`, and any value shared across surfaces; Firebase secret params only if a future surface specifically benefits from Google-managed rotation. Confirm.
-3. **Where does the encrypted env file live — `secrets/env/<project>.env.age` or `apps/functions/.env.<project>.age`?** Recommendation: centralize in `secrets/env/`.
+3. **Where does the encrypted env file live — `secrets/env/<project>.env.age` or `apps/myapps/functions/.env.<project>.age`?** Recommendation: centralize in `secrets/env/`.
 4. **Deploy from `main` only, or any branch with `--allow-branch`?** Recommendation: `main` only by default; `--allow-branch` for explicit hotfixes and experimental deploys, never in CI.
 5. **Audit log retention.** Recommendation: no rotation now; revisit when the dashboard lands.
 6. **Firebase CLI auth for local deploys — personal Google account, or a project-scoped service account stored encrypted?** Recommendation: personal account locally, service account in CI — the scripts detect which.
