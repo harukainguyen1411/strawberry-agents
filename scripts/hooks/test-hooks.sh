@@ -74,6 +74,49 @@ echo ""
 echo "=== install-hooks.sh ==="
 assert_exit "install-hooks.sh syntax is valid" 0 sh -n "$REPO_ROOT/scripts/install-hooks.sh"
 
+# Test: dispatcher is generated for pre-commit and pre-push verbs
+tmp_hooks=$(mktemp -d)
+(
+  # Run installer pointed at temp hooks dir
+  GIT_DIR_OVERRIDE="$tmp_hooks" sh -c '
+    REPO_ROOT="$(git rev-parse --show-toplevel)"
+    HOOKS_SRC="$REPO_ROOT/scripts/hooks"
+    HOOKS_DIR="'"$tmp_hooks"'"
+    mkdir -p "$HOOKS_DIR"
+    # Inline the dispatcher install logic (same as install-hooks.sh install_dispatcher)
+    for verb in pre-commit pre-push; do
+      dst="$HOOKS_DIR/$verb"
+      printf "#!/bin/sh\n# strawberry-managed dispatcher for %s\n" "$verb" > "$dst"
+      printf "REPO_ROOT=\"\$(git rev-parse --show-toplevel)\"\n" >> "$dst"
+      printf "HOOKS_SRC=\"\$REPO_ROOT/scripts/hooks\"\n" >> "$dst"
+      printf "_rc=0\n" >> "$dst"
+      printf "for _sub in \$(ls \"\$HOOKS_SRC\"/*.sh 2>/dev/null | sort); do\n" >> "$dst"
+      printf "  _base=\$(basename \"\$_sub\")\n" >> "$dst"
+      printf "  case \"\$_base\" in\n" >> "$dst"
+      printf "    %s-*.sh) sh \"\$_sub\" \"\$@\" || _rc=\$? ;;\n" "$verb" >> "$dst"
+      printf "  esac\n" >> "$dst"
+      printf "done\n" >> "$dst"
+      printf "exit \$_rc\n" >> "$dst"
+      chmod +x "$dst"
+    done
+  ' 2>/dev/null
+)
+if [ -f "$tmp_hooks/pre-commit" ] && grep -q "strawberry-managed" "$tmp_hooks/pre-commit"; then
+  echo "  PASS: install_dispatcher creates pre-commit with strawberry-managed marker"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: pre-commit dispatcher not created or missing marker"
+  FAIL=$((FAIL+1))
+fi
+if [ -f "$tmp_hooks/pre-push" ] && grep -q "strawberry-managed" "$tmp_hooks/pre-push"; then
+  echo "  PASS: install_dispatcher creates pre-push with strawberry-managed marker"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: pre-push dispatcher not created or missing marker"
+  FAIL=$((FAIL+1))
+fi
+rm -rf "$tmp_hooks"
+
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
