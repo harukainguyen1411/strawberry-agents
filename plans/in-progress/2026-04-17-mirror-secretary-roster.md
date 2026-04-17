@@ -1,6 +1,6 @@
 ---
 slug: mirror-secretary-roster
-status: proposed
+status: in-progress
 owner: evelynn
 created: 2026-04-17
 ---
