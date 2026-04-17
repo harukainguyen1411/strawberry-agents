@@ -426,7 +426,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 - **Files touched:** `apps/functions/src/index.ts` to export the new function.
 - **Dependencies:** P1.4 (test harness), P2.15 (runtime caps apply to this function too), Duong prereq D6 (budgets + Pub/Sub topics exist).
 - **Acceptance:**
-  - Function subscribes to both prod and staging budget Pub/Sub topics (topic name `budget-alert` — singular — in each project).
+  - Function subscribes to both prod and staging budget Pub/Sub topics (topic name `budget-alerts` in each project).
   - On message where `costAmount >= budgetAmount`, calls `cloudbilling.projects.updateBillingInfo` to set `billingAccountName: ''` on the overspending project (derived from the budget message's `budgetDisplayName` or `budgetId` mapping).
   - Unit test covers the threshold comparison and project-selection logic.
   - Manual integration test passes: publish a fake over-budget message to the Pub/Sub topic → billing detaches from the target project (test against staging only).
@@ -456,7 +456,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 - **Goal:** Create two GCP Budgets (Console → Billing → Budgets & alerts → New budget): prod scoped to `myapps-b31ea` at $20/mo, staging scoped to `myapps-b31ea-staging` at $5/mo. Thresholds 50/90/100% for each. Each budget's notification destination is a Pub/Sub topic (one topic per budget). Revisit values once real usage data exists.
 - **Dependencies:** none (API already enabled by Evelynn).
 - **Acceptance:**
-  - Two budgets exist, each with its own Pub/Sub topic named `budget-alert` (singular) in its respective project; topic names recorded and handed off to Kayn/Jayce so P2.16 can subscribe.
+  - Two budgets exist, each with its own Pub/Sub topic named `budget-alerts` in its respective project; topic names recorded and handed off to Kayn/Jayce so P2.16 can subscribe.
   - Thresholds 50/90/100% configured on both.
 - **Blocks:** P2.16 (function can't subscribe until topics exist).
 
