@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 # scripts/hooks/pre-commit-secrets-guard.sh
 #
+# Requires bash 4+ (mapfile, associative arrays). macOS ships bash 3.2 at
+# /bin/bash; install a newer bash via Homebrew and ensure it appears first
+# on PATH, or symlink /usr/local/bin/bash -> bash 4+.
+# The hook aborts with an actionable error rather than silently mis-firing.
+#
 # Pyke Required Edit #8: tooling-level guards for the encrypted-secrets system.
 #
 # Runs against the staged tree (NOT the working tree) and fails the commit if:
@@ -36,6 +41,16 @@
 set -uo pipefail
 LC_ALL=C
 export LC_ALL
+
+# Bash 4+ required for mapfile and associative arrays.
+# macOS ships /bin/bash 3.2 — install bash via Homebrew and ensure it is on PATH.
+if (( BASH_VERSINFO[0] < 4 )); then
+  printf 'pre-commit-secrets-guard: ERROR: bash 4+ required (found %s).\n' "$BASH_VERSION" >&2
+  printf '  Install: brew install bash\n' >&2
+  printf '  Then ensure /usr/local/bin or /opt/homebrew/bin precedes /bin on PATH.\n' >&2
+  printf '  Commit BLOCKED to prevent silent guard bypass.\n' >&2
+  exit 1
+fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
 
