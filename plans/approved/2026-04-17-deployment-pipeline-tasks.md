@@ -426,7 +426,7 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
 - **Files touched:** `apps/functions/src/index.ts` to export the new function.
 - **Dependencies:** P1.4 (test harness), P2.15 (runtime caps apply to this function too), Duong prereq D6 (budgets + Pub/Sub topics exist).
 - **Acceptance:**
-  - Function subscribes to both prod and staging budget Pub/Sub topics.
+  - Function subscribes to both prod and staging budget Pub/Sub topics (topic name `budget-alert` — singular — in each project).
   - On message where `costAmount >= budgetAmount`, calls `cloudbilling.projects.updateBillingInfo` to set `billingAccountName: ''` on the overspending project (derived from the budget message's `budgetDisplayName` or `budgetId` mapping).
   - Unit test covers the threshold comparison and project-selection logic.
   - Manual integration test passes: publish a fake over-budget message to the Pub/Sub topic → billing detaches from the target project (test against staging only).
@@ -434,13 +434,29 @@ Exit criterion: a `feat:` commit in `apps/functions/` → release PR → merge �
   - Runbook `architecture/runbook-billing-recovery.md` covers: (a) how to verify billing is detached, (b) how to re-attach billing via console after triage, (c) which project needs reactivation of paid services.
   - Commit is `feat:` prefix (touches `apps/**`).
 
+### P2.17 — Artifact Registry lifecycle cleanup
+
+- **Executor:** Ornn
+- **Goal:** Apply a lifecycle/cleanup policy to the `gcf-artifacts` Artifact Registry repo in both `myapps-b31ea` and `myapps-b31ea-staging` so old Cloud Functions v2 container revisions don't accumulate and bleed storage cost (~$0.10/GB/mo; unmanaged, a weekly deploy cadence reaches ~$1–5/mo/project within a year).
+- **Files created:** `scripts/apply-artifact-cleanup.sh` (wraps `gcloud artifacts repositories set-cleanup-policies` for both projects; idempotent). If P1.0 audit surfaces an existing `infra/` dir convention, prefer `infra/artifact-registry-cleanup.yaml` + a thin script that applies it. Ornn decides based on audit output.
+- **Files touched:** `architecture/runbook-billing-recovery.md` (extend with an "Artifact Registry cleanup" section covering how to re-apply the policy, how to tune retention, and how to verify current policy state via `gcloud artifacts repositories describe`).
+- **Dependencies:** P1.0 (audit — confirms `scripts/` vs `infra/` convention so the artifact lands in the right place); P2.16 (runbook exists to extend). Not blocked by any Duong prereq — cleanup policies are applied with Duong's personal gcloud auth or a scoped SA.
+- **Acceptance:**
+  - Cleanup policy applied to the `gcf-artifacts` repo in both `myapps-b31ea` and `myapps-b31ea-staging`.
+  - Policy keeps the 5 most recent images per function and deletes older revisions.
+  - Applied via `gcloud artifacts repositories set-cleanup-policies` (or equivalent Terraform config at `infra/artifact-registry-cleanup.yaml` if that convention lands per P1.0).
+  - Re-running `bash scripts/apply-artifact-cleanup.sh` is idempotent — no error on second invocation, no duplicate policy entries.
+  - `architecture/runbook-billing-recovery.md` documents: the policy, how to re-apply it, how to tune retention count, and how to inspect current state.
+  - Script is POSIX bash, `shellcheck` clean (Rule 10).
+  - Commit uses `chore:` prefix (no `apps/**` changes).
+
 ### P2.0d — **Duong prereq:** create GCP Budgets + Pub/Sub topics
 
 - **Executor:** Duong (human).
 - **Goal:** Create two GCP Budgets (Console → Billing → Budgets & alerts → New budget): prod scoped to `myapps-b31ea` at $20/mo, staging scoped to `myapps-b31ea-staging` at $5/mo. Thresholds 50/90/100% for each. Each budget's notification destination is a Pub/Sub topic (one topic per budget). Revisit values once real usage data exists.
 - **Dependencies:** none (API already enabled by Evelynn).
 - **Acceptance:**
-  - Two budgets exist, each with its own Pub/Sub topic name recorded and handed off to Kayn/Jayce so P2.16 can subscribe.
+  - Two budgets exist, each with its own Pub/Sub topic named `budget-alert` (singular) in its respective project; topic names recorded and handed off to Kayn/Jayce so P2.16 can subscribe.
   - Thresholds 50/90/100% configured on both.
 - **Blocks:** P2.16 (function can't subscribe until topics exist).
 
@@ -480,8 +496,8 @@ If an executor finds themselves about to do any of the above, stop and ping Evel
 ## Task count by phase
 
 - **Phase 1:** 14 tasks (P1.0 through P1.13).
-- **Phase 2:** 21 tasks (P2.0a, P2.0b, P2.0c, P2.0d, P2.1 through P2.16, with P2.7a as a subtask of P2.7).
-- **Total:** 35 tasks across the plan (4 are Duong-prereq human tasks, 31 are agent tasks).
+- **Phase 2:** 22 tasks (P2.0a, P2.0b, P2.0c, P2.0d, P2.1 through P2.17, with P2.7a as a subtask of P2.7).
+- **Total:** 36 tasks across the plan (4 are Duong-prereq human tasks, 32 are agent tasks).
 
 ## Dependency summary (critical path)
 
@@ -491,4 +507,4 @@ Parallel tracks in Phase 1: P1.4→P1.5 (testing track), P1.6, P1.13.
 Phase 2 critical path: **Duong D1/D2/D3/D5 → P2.1 → P2.2 → P2.3 → P2.4 → P2.7a → P2.9 → P2.14**.
 Parallel tracks in Phase 2: P2.5, P2.6, P2.7, P2.8, P2.10, P2.11, P2.12, P2.13, P2.15, P2.16 (after D6).
 
-Billing-safety subpath: **P2.0d (Duong D6) → P2.16** and independently **P2.15** (can run parallel to P2.0d, only depends on P1.0 + P1.4).
+Billing-safety subpath: **P2.0d (Duong D6) → P2.16 → P2.17** and independently **P2.15** (can run parallel to P2.0d, only depends on P1.0 + P1.4). P2.17 depends on P2.16 only for the runbook extension point; the gcloud policy application itself is independent.
