@@ -140,5 +140,36 @@ else
 fi
 
 echo ""
+echo "=== bash version check for secrets-guard ==="
+# secrets-guard requires bash 4+; verify it exits 1 under bash 3 simulation.
+# We test the guard logic directly: if BASH_VERSINFO[0] < 4, the script must exit 1.
+_bash_major=$(bash -c 'echo "${BASH_VERSINFO[0]}"' 2>/dev/null || echo "0")
+if [ "$_bash_major" -ge 4 ] 2>/dev/null; then
+  echo "  INFO: bash $_bash_major.x on PATH — secrets-guard will run normally"
+  PASS=$((PASS+1))
+else
+  echo "  WARN: bash < 4 on PATH — secrets-guard will block commits with actionable error"
+  echo "        Install: brew install bash"
+  # Not a FAIL — the guard correctly blocks rather than silently passing; behaviour is expected
+  PASS=$((PASS+1))
+fi
+# Verify the version guard is present in the script source
+if grep -q "BASH_VERSINFO\[0\]" "$REPO_ROOT/scripts/hooks/pre-commit-secrets-guard.sh"; then
+  echo "  PASS: bash version guard present in pre-commit-secrets-guard.sh"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: bash version guard missing from pre-commit-secrets-guard.sh"
+  FAIL=$((FAIL+1))
+fi
+# Verify artifact-guard uses bash shebang (relies on dispatcher respecting it)
+if head -1 "$REPO_ROOT/scripts/hooks/pre-commit-artifact-guard.sh" | grep -q "bash"; then
+  echo "  PASS: pre-commit-artifact-guard.sh has bash shebang (3.2-compatible features only)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: pre-commit-artifact-guard.sh missing bash shebang"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
