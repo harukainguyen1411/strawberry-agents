@@ -1,0 +1,54 @@
+## Migrated from old lux/frontend Sonnet (2026-04-17)
+# Lux Memory
+
+## Last Active
+2026-04-13
+
+## Sessions
+- 2026-04-13: Implemented Firebase Remote Config feature flags for apps/myapps; PR #103 open
+
+## Current Work
+- PR #103 open: feat-feature-flags-remote-config — Firebase Remote Config + Bee feature flag
+
+## Key Learnings
+- `setCustomSignals` requires firebase@11+. Dark Strawberry uses firebase@10.11.1. Per-user targeting works via server-side conditions in Remote Config console instead.
+- fetchAndActivate returns `Promise<boolean>`, need `.then(() => undefined)` to get `Promise<void>`
+- Home.vue uses `ref<App[]>` for the registry, `computed` for filtered view — pattern works cleanly with useFeatureFlag
+- plan-promote.sh only handles proposed → other states; for approved → in-progress use raw git mv
+
+## App Context
+- `apps/myapps` = Dark Strawberry portal (Vue 3 + Vite + Firebase)
+- Feature flags composable: `apps/myapps/src/composables/useFeatureFlag.ts`
+- Remote Config init: `apps/myapps/src/firebase/config.ts`
+## Migrated from neeko/frontend Sonnet (2026-04-17)
+# Neeko
+
+## Role
+- UI/UX Designer in Duong's personal agent system
+
+## Sessions
+- 2026-04-03: First session. Tasklist app UI/UX review + implementation (11 changes).
+- 2026-04-11: Bee B8 — Vue frontend /bee route + upload flow. PR #74.
+- 2026-04-13: ubcs-style-guide.json expansion — extracted PPTX reference data, added table_style/header_bar/slide_layouts/delta.
+- 2026-04-14: Dark Strawberry deploy pipeline viz — standalone HTML at tools/deploy-architecture-viz.html. Dark theme, 4 tabs (pipeline flow, component grid, migration timeline, current vs target), clickable nodes with detail panel. Committed directly to main.
+
+## apps/myapps patterns
+- Firebase initialized at `apps/myapps/src/firebase/config.ts` — exports `auth`, `db`, `storage` (storage added in B8).
+- Auth state lives in `useAuthStore` (Pinia). Use `authStore.user` for the Firebase User object and `authStore.login()` to trigger Google sign-in.
+- No `useFirebase.ts` composable exists — auth helpers are in `firebase/auth.ts` consumed by the store.
+- Routes use lazy imports `() => import(...)`. Bee routes have no `meta.requiresAuth` — sign-in gate is in the component.
+- `crypto.randomUUID()` is available (Vite targets modern browsers); no uuid package needed.
+
+## Key Context
+- Duong doesn't need accessibility work on personal tools — they're just for him. **Why:** He explicitly marked the entire accessibility section "no need."
+- Duong wants done tasks to stay in their day column, not a separate section. **Why:** He wants to see what he accomplished and when — the weekly view is a log, not just a planner.
+- The tasklist app uses Linear issue keys as tag titles (e.g. MMP-175). These are intentionally non-editable.
+- Duong's phone is Samsung S24 Ultra (6.8" display) — optimize mobile for this.
+- Practical, fast UX over polish. Whole-card drag > precise handles.
+
+## Working Style
+- Duong gives feedback via inline `//` comments in files — check inbox files for annotated plans/reviews.
+- He prefers action over discussion. Review + implement in one session when possible.
+
+## Feedback
+- If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
