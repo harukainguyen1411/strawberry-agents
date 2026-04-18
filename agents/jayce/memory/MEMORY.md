@@ -26,6 +26,7 @@
 - 2026-04-19 (P1.2-C): Implemented scripts/deploy/_lib.sh (7 helpers). 26/26 bats tests green on branch chore/p1-2-lib-sh-xfail, commit d52f1b9. PR creation deferred — Evelynn/Duong to open.
 - 2026-04-19 (P1.2 review I1+I4): PR #25 REQUEST_CHANGES from Jhin. Pushed missing d52f1b9 (C1). Hardened DL_REPO_ROOT detection — BASH_SOURCE[0] now authoritative, command-v fallback only when basename==tools (I1). Added 2 new bats tests. Deleted deploy script from apps/myapps/functions/package.json (I4). 28/28 tests green. Remote tip: 20c8c27.
 - 2026-04-19 (T5+T6): Built refresh-server.mjs (PR #35) and sbu.sh (PR #37) for strawberry-app. All 4 T5 tests + 3 T6 tests pass. Both PRs open against main, awaiting review.
+- 2026-04-19 (PR #35+#37 review fixes): Addressed Jhin REQUEST_CHANGES on both PRs. PR #35: added isLocalOrigin guard to GET /health, in-flight 409 guard, activeChild kill on SIGTERM, regression test 5. PR #37: replaced bare `open` with open_url() (open→xdg-open→start fallback), added liveness check after nohup, added test 4 (symlink-farm PATH isolation). Resolved merge conflict on t6 branch (force-pushed remote). Both pushed.
 
 ## Archive Note
 
