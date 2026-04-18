@@ -11,3 +11,4 @@
 - 2026-04-18-stale-branch-untracked-merge-fix.md — stale branches show spurious deletions in diff; untracked files block merge; fix: rm blockers, re-merge, explicitly git add restored files | last_used: 2026-04-18
 - 2026-04-19-discord-mcp-channel-webhook-setup.md — Discord MCP channel+webhook pattern: find guild via REST, create channel, restrict via permissions API, encrypt webhook URL with age -r | last_used: 2026-04-19
 - 2026-04-19-inbox-gitignored-use-assessments.md — agents/*/inbox/ is gitignored; use assessments/ for committed Duong-facing docs | last_used: 2026-04-19
+- 2026-04-19-ci-fix-pr-body-lint.md — QA-Waiver vs QA-Report URL pattern; Turbo sweeps siblings; no-unused-expressions ternary fix; secrets-guard false positive on branch names | last_used: 2026-04-19

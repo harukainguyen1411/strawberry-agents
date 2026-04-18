@@ -4,6 +4,7 @@
 Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead direction.
 
 ## Sessions
+- 2026-04-19 (subagent, CI-fix): Fixed QA-lint on PRs #29/#32/#33 (QA-Waiver); opened PR #38 to fix no-unused-expressions in task-list + read-tracker routers.
 - 2026-04-19 (subagent, ekko-dv0): Filed portfolio-v0 DV0 asks in assessments/; recommended reusing myapps-b31ea Firebase project; awaiting Duong on DV0-1/DV0-2/DV0-3/DV0-4.
 - 2026-04-19 (subagent, T9 Discord): Created #portfolio-digest channel + webhook on Strawberry server, restricted to Duong, encrypted webhook URL, committed + pushed.
 - 2026-04-18 (subagent, testing-process): TDD hooks + CI wiring (PR #149 merged), C2 pre-commit dashboards hook (PR #165), xfail docs (PR #175). Fixed stale-base Azir blocker on #165.
@@ -16,6 +17,7 @@ Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead
 - **Stale dependabot branches** — if a dependabot branch predates recent main bumps, direct merge can downgrade. Supersede via manual bumps on a new combined PR; close dependabot PRs on merge, not open.
 - **Shared GitHub account `harukainguyen1411`** — every agent operates here; GitHub collapses all reviews/authors as one account. Invariant #18's "approving review from other-than-author" is structurally unsatisfiable without a separate bot account.
 - **pr-lint QA-Report blocker** — even non-UI PRs need `QA-Waiver: non-UI — <why>` in body or the check fails. Precedent: commit 0dbd66f.
+- **pre-commit-secrets-guard false positive on branch names** — a branch slug containing `[word]-sk-[word20+]` (e.g. a router-fix branch) can match the `sk-<20+ chars>` token regex. Avoid embedding full branch names that follow this shape in committed files; use a short alias.
 - **safe-checkout.sh** requires interactive stdin for untracked warning and rejects foreign dirty files — use raw worktree instead.
 - **plan-promote.sh** only works for `plans/proposed/`; approved→in-progress requires manual `git mv` + status edit.
 - **Conventional commit prefixes** (invariant #5): `ops:` for infra outside apps/** (e.g. `.github/dependabot.yml`); `chore:` for devDeps or apps/** housekeeping; breaking changes as `feat!:` or `BREAKING CHANGE:` footer.
