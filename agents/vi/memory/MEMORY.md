@@ -14,9 +14,11 @@
 - 2026-04-18: Orianna v1 finalization — O6.5 pass; ADR dogfood pass; tasks plan blocked (2 blocks); promotion halted
 
 - [P1.2 bats xfail + P1.4 vitest](../learnings/2026-04-19-p1-2-p1-4-tdd-setup.md) — vacuous-pass trap for negative-assertion tests; pre-commit secrets guard false positive on `age -d` in grep patterns; G2 gate fixture collision; Firebase module mocking order for Vitest
+- [PR #25/#26 review fixes](../learnings/2026-04-19-pr25-pr26-review-fixes.md) — run --separate-stderr required for $stderr; age -d in test names triggers hook; multiline age detection via awk; bare-deploy gate false-positive filtering; onCall mock returning raw handler for real behavior tests
 
 ## Sessions
 - 2026-04-19: P1.2 bats xfail suite + P1.4 Vitest proof-of-life — wrote 26-test bats suite for _lib.sh (24/26 xfail correctly); landed 2-commit Vitest proof-of-life for BEE_INTRO_MESSAGE; both branches pushed (chore/p1-2-lib-sh-xfail SHA 40463a0, chore/p1-4-vitest-proof-of-life SHAs 43437dc + 4765882)
+- 2026-04-19: PR #25/#26 Jhin review fixes — addressed C2/C4/I2/I3 on #25 and C1/I2 on #26; 29/29 bats + 4/4 vitest; pushed SHAs 8c68ae5 (p1-2) and dad412f (p1-4)
 
 ## Archive Note
 
