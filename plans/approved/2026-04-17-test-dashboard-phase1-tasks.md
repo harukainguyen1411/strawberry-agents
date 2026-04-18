@@ -17,13 +17,13 @@ Executable task list derived from Azir's ADR (Phase 1 exit criterion: a unit tes
 ## Conventions
 
 - **xfail-first discipline** (Pyke rule 12, QA layer 1). Every implementation task below lists a preceding `xfail-*` sub-task owned by Vi. Vi commits the xfail test first; the implementation commit flips it. Hand-off between Vi and the implementer is per-task, documented below.
-- **Owners.** Jayce = new code/greenfield scaffolds. Viktor = refactors / cross-cutting edits. Vi = tests (and xfail seeding). Seraphine = React frontend. Shen = TDD hooks / CI wiring (from Pyke §5 — blocking for several tasks below).
+- **Owners.** Jayce = new code/greenfield scaffolds. Viktor = refactors / cross-cutting edits. Vi = tests (and xfail seeding). Seraphine = React frontend. Ekko = TDD hooks / CI wiring (from Pyke §5 — blocking for several tasks below).
 - **Commits.** All `chore:` prefix. No rebase. No raw `git checkout` — use `scripts/safe-checkout.sh` worktrees.
 - **Files.** All paths absolute from repo root.
 
-## Dependency on Shen (Pyke §5)
+## Dependency on Ekko (Pyke §5)
 
-Shen's hook work (`scripts/hooks/pre-commit-unit-tests.sh`, `scripts/hooks/pre-push-tdd.sh`, `scripts/install-hooks.sh` extension, `.github/workflows/tdd-gate.yml`) is a **prerequisite** for xfail enforcement. Tasks marked **[blocked-by-shen]** cannot push green until Shen lands. They can still proceed locally — builders commit xfail-first by convention; the hooks become authoritative once Shen ships.
+Ekko's hook work (`scripts/hooks/pre-commit-unit-tests.sh`, `scripts/hooks/pre-push-tdd.sh`, `scripts/install-hooks.sh` extension, `.github/workflows/tdd-gate.yml`) is a **prerequisite** for xfail enforcement. Tasks marked **[blocked-by-ekko]** cannot push green until Ekko lands. They can still proceed locally — builders commit xfail-first by convention; the hooks become authoritative once Ekko ships.
 
 Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-only) or can be completed with framework-native test runners without hook enforcement.
 
@@ -107,7 +107,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
 - **Files created:** `dashboards/server/src/storage/signed-urls.ts` — `createUploadUrl(runId, caseId, kind, mime, size)` (V4, 15min) and `createDownloadUrl(artifactId)` (V4, 15min)
 - **Acceptance criteria:** Given a service-account key, unit test generates a URL whose parsed expiry is ~15min out and whose path matches `runs/<run_id>/<case_id>/<filename>`.
 - **xfail-first:** Vi seeds `signed-urls.xfail.test.ts` asserting expiry ≤ 15min and correct path layout. Jayce flips.
-- **[blocked-by-shen]** for hook enforcement; code itself is **not-blocked**.
+- **[blocked-by-ekko]** for hook enforcement; code itself is **not-blocked**.
 
 ---
 
@@ -130,14 +130,14 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
 - **[not-blocked]**
 
 ### C2. Pre-commit hook wiring for unit tests
-- **Owner:** Shen (coordinate — Pyke rule 3 / §5 step 1)
+- **Owner:** Ekko (coordinate — Pyke rule 3 / §5 step 1)
 - **Depends:** C1
 - **ADR section:** §4 (unit: pre-commit, fire-and-forget ingestion)
 - **Files touched:**
-  - `scripts/hooks/pre-commit-unit-tests.sh` (Shen authors per Pyke plan)
+  - `scripts/hooks/pre-commit-unit-tests.sh` (Ekko authors per Pyke plan)
   - `scripts/install-hooks.sh` (extended to install the new hook alongside existing secrets/chore guards)
 - **Acceptance criteria:** Per Pyke rule 3 — staged change under `dashboards/server/src/**` causes `pnpm -C dashboards/server test:unit` to run on commit; non-zero exit blocks the commit; unchanged packages no-op.
-- **xfail-first:** Shen's own test per Pyke plan.
+- **xfail-first:** Ekko's own test per Pyke plan.
 - **Blocker note:** All downstream unit-ingestion tasks (D2) wait on this.
 
 ---
@@ -155,7 +155,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
   - Script soft-fails (exit 0 with stderr warning) when `<type>` is `e2e` (ADR §4 Playwright wiring — soft-fail per §13).
   - Runs on both macOS bash 3.2 and Git Bash on Windows.
 - **xfail-first:** Vi adds `scripts/__tests__/report-run.xfail.bats` (bats-core) asserting the three behaviors above. Jayce flips.
-- **[blocked-by-shen]** only for the CI invocation path; the script itself is **not-blocked**.
+- **[blocked-by-ekko]** only for the CI invocation path; the script itself is **not-blocked**.
 
 ### D2. `POST /api/runs` — create run + cases, return upload URLs
 - **Owner:** Jayce
@@ -170,7 +170,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
   - Returns 401 without the ingest token; 401 with a wrong token (constant-time compare per ADR §7).
   - Rejects unknown `type` values (400, error shape per ADR §6).
 - **xfail-first:** Vi adds `runs.create.xfail.test.ts` covering happy path + auth + validation. Jayce flips.
-- **[blocked-by-shen]** for pre-push TDD gate; code itself **not-blocked**.
+- **[blocked-by-ekko]** for pre-push TDD gate; code itself **not-blocked**.
 
 ### D3. `POST /api/runs/:id/finalize` — flip run to terminal status
 - **Owner:** Jayce
@@ -182,7 +182,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
   - Idempotent — second call with the same terminal status is a no-op 200.
   - 404 with error shape if run id is unknown.
 - **xfail-first:** Vi authors the xfail.
-- **[blocked-by-shen]** downstream; code **not-blocked**.
+- **[blocked-by-ekko]** downstream; code **not-blocked**.
 
 ### D4. `PATCH /api/runs/:id` — pin/unpin + metadata edits
 - **Owner:** Jayce
@@ -194,7 +194,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
   - Metadata merge semantics.
   - Requires Firebase user auth (Duong UID), not ingest token — this is a UI operation.
 - **xfail-first:** Vi authors.
-- **[blocked-by-shen]** downstream.
+- **[blocked-by-ekko]** downstream.
 
 ---
 
@@ -213,7 +213,7 @@ Tasks marked **[not-blocked]** do not touch TDD-enabled packages yet (scaffold-o
   - `GET /api/commits/:sha/runs` returns all runs for a git sha (PR view).
   - Requires Firebase ID token with UID in allowlist (ADR §7). 403 otherwise.
 - **xfail-first:** Vi authors per-endpoint xfail tests.
-- **[blocked-by-shen]** downstream.
+- **[blocked-by-ekko]** downstream.
 
 ### E2. Artifact redirect endpoint (`GET /api/runs/:id/artifacts/:aid`)
 - **Owner:** Jayce
@@ -356,7 +356,7 @@ All Seraphine tasks. Each xfail-first with Vi authoring React Testing Library sk
 
 ### H1. Unit test reporter wiring (pre-commit fire-and-forget)
 - **Owner:** Viktor
-- **Depends:** C2 (Shen's pre-commit hook), D1, D2
+- **Depends:** C2 (Ekko's pre-commit hook), D1, D2
 - **ADR section:** §4 (unit row)
 - **Files touched:**
   - Extend `scripts/hooks/pre-commit-unit-tests.sh` to invoke `scripts/report-run.sh .test-results/unit.json unit &` after the test run (backgrounded, 2s timeout on the initial POST)
@@ -365,7 +365,7 @@ All Seraphine tasks. Each xfail-first with Vi authoring React Testing Library sk
   - Successful test run on a staged commit produces a Firestore `runs` document with `trigger.source = "pre-commit"` and `environment = "local"` within 5s.
   - Dashboard unreachable → commit still succeeds; stderr warning logged; no hook blocking.
 - **xfail-first:** Vi authors a bats integration test with a mock HTTP listener.
-- **[blocked-by-shen]**
+- **[blocked-by-ekko]**
 
 ### H2. Smoke test reporter wiring (post-deploy)
 - **Owner:** Viktor
@@ -378,7 +378,7 @@ All Seraphine tasks. Each xfail-first with Vi authoring React Testing Library sk
   - After a `scripts/deploy/dashboards.sh` run against staging, a run with `type=smoke`, `environment=staging`, and matching `git_sha` appears in `/types/smoke` within 10s.
   - Smoke failure still reports the run (with `status=fail`) before the rollback step runs (ordering matters for forensics).
 - **xfail-first:** Vi authors a shell-level integration test against the emulator.
-- **[blocked-by-shen]** for TDD gate; script **not-blocked**.
+- **[blocked-by-ekko]** for TDD gate; script **not-blocked**.
 
 ---
 
@@ -424,7 +424,7 @@ All Seraphine tasks. Each xfail-first with Vi authoring React Testing Library sk
 - **Files touched:** `scripts/deploy/smoke.sh` entries for the dashboard (`/api/health`, `/api/version`, one list-runs round-trip using a test-only ingest token).
 - **Acceptance criteria:** `scripts/deploy/smoke.sh --surface test-dashboard --env staging` exits 0 against a healthy deploy, non-zero on any failed assertion.
 - **xfail-first:** covered by H2 xfail.
-- **[blocked-by-shen]** downstream, not code-blocked.
+- **[blocked-by-ekko]** downstream, not code-blocked.
 
 ---
 
@@ -437,7 +437,7 @@ All Seraphine tasks. Each xfail-first with Vi authoring React Testing Library sk
 - **Files created:**
   - `tests/regression/.gitkeep`
   - `.github/pull_request_template.md` — add Testing section with "Regression test linked: <path>" checkbox and xfail SHA fields per QA layer 1 + 2
-- **Acceptance criteria:** The PR template renders; `tests/regression/` exists and is documented in `architecture/testing.md` (to be created by Shen per Pyke §5 step 1).
+- **Acceptance criteria:** The PR template renders; `tests/regression/` exists and is documented in `architecture/testing.md` (to be created by Ekko per Pyke §5 step 1).
 - **xfail-first:** self-referential — Vi's own regression test reproducing a deliberately seeded no-op bug, proving the lane works.
 - **[not-blocked]**
 
@@ -454,13 +454,13 @@ These can run in parallel after scaffolding (A1):
 - Track 5 (tests/scripts): C1 → D1 → (H1 after C2, H2 after I1)
 - Track 6 (QA lanes): J1 independent
 
-Critical path: A1 → C1 → Shen's C2 → H1 (Phase 1 exit criterion's "unit run visible" hinges on this). Parallel critical path: A1 → I1 → H2 (smoke visible).
+Critical path: A1 → C1 → Ekko's C2 → H1 (Phase 1 exit criterion's "unit run visible" hinges on this). Parallel critical path: A1 → I1 → H2 (smoke visible).
 
 ## Explicit blockers summary
 
-**Blocked by Shen** (cannot fully close without hooks + `tdd-gate.yml`): C2, D1's CI path, D2, D3, D4, E1, E2, H1, H2, I4.
+**Blocked by Ekko** (cannot fully close without hooks + `tdd-gate.yml`): C2, D1's CI path, D2, D3, D4, E1, E2, H1, H2, I4.
 
-Work around: implementers proceed locally; Vi's xfails carry the discipline by convention; Shen's hooks become authoritative on arrival. Do not land a `main` PR with a TDD-enabled package until Shen's hooks are in place — the pre-push will fail once installed and we don't want a waiver-heavy history from the start.
+Work around: implementers proceed locally; Vi's xfails carry the discipline by convention; Ekko's hooks become authoritative on arrival. Do not land a `main` PR with a TDD-enabled package until Ekko's hooks are in place — the pre-push will fail once installed and we don't want a waiver-heavy history from the start.
 
 **Not blocked:** A1, A2, B1, B2, B3, C1, F1, F2, F3, F4, G1–G6 (under xfail discipline), I1, I2, I3, J1.
 
