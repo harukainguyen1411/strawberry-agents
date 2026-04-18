@@ -116,8 +116,6 @@ for (const suite of suites) {
       : null;
 
     cases.push({
-      id: `case_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      run_id: "",
       suite: suiteName,
       name: t.fullName || t.title || t.name || "unnamed",
       status,
