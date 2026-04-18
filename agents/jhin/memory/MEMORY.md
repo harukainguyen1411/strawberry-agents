@@ -30,6 +30,8 @@
 - 2026-04-18 R29: PR #177 (D2 POST /api/runs). IMPORTANT: no Firestore batch size guard (500-write cap); IMPORTANT: batch.commit() before signed-URL generation — partial-write hazard if GCS throws. Suggestion: required field validation. API drift check clean.
 - 2026-04-18 R30: PR #180 (I1 fix). CRITICAL resolved (gcr.io→AR). IMPORTANT: pipefail still present (rule 10); IMPORTANT: missing --service-account on gcloud run deploy (I2 IAM bindings won't apply).
 - 2026-04-18 R31: PR #154 re-review (459c5cb). it.fails fix confirmed on signed-urls.xfail. IMPORTANT: unit-tests.yml added out-of-scope with 2 bugs (CWD-relative require; npm instead of pnpm for dashboards).
+- 2026-04-18 R32 (fresh session): PR #154 re-review (2b452e9). LGTM. All B3 checklist items clean: V4 + 15min TTL + singleton storage + artifactId in path + valid ArtifactKind + it.fails + QA-Waiver. CI systemic failure (infra issue, not PR-specific).
+- 2026-04-18 R33 (fresh session): PR #180 re-review (74e31ce). LGTM. All I1-fix checklist items clean: #!/bin/sh + set -eu (no pipefail) + --service-account present + gcr.io removed + $REGION-docker.pkg.dev path + --allow-unauthenticated has ADR §7 F2 rationale comment. Minor: PR body understates path (missing strawberry-images segment) — non-blocking. CI systemic failure.
 
 ## Key learnings this session
 - it.failing is Playwright API; Vitest 4.x uses it.fails — wrong API silently registers 0 tests (saved to learnings/)
