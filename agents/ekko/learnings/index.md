@@ -5,3 +5,4 @@
 - 2026-04-18-tdd-hooks-ci-wiring.md — TDD hooks + CI wiring notes for P1.2-A | last_used: 2026-04-18
 - 2026-04-18-worktree-bypass-for-foreign-dirty-tree.md — raw `git worktree add` bypasses safe-checkout.sh's dirty-tree guard when foreign files block; invariant-#3 compliant | last_used: 2026-04-18
 - 2026-04-18-supersede-stale-dependabot-branches.md — when dependabot branches carry stale co-changes to package.json, supersede via a combined PR built on current main; don't merge branch directly | last_used: 2026-04-18
+- 2026-04-18-amend-exception-for-tool-error-recovery.md — `git commit --amend` + `--force-with-lease` is legitimate when recovering from a partial-Edit-tool commit BEFORE reviews land on feature branches; not for scope changes | last_used: 2026-04-18
