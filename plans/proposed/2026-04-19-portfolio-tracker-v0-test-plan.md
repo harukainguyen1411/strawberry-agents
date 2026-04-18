@@ -486,7 +486,7 @@ PR body must link to:
    dashboard).
 4. Figma diff: side-by-side image of the Figma frame ("Strawberry — Portfolio v0",
    T4b) vs the corresponding Playwright screenshot, for **each** keyframe. Diffs hosted
-   at `assessments/qa-reports/2026-04-DD-portfolio-v0/`.
+   at `assessments/qa-reports/2026-04-DD-portfolio-v0/`. <!-- orianna: ok -->
 
 ### E.2 — Diff acceptance criteria
 
@@ -504,7 +504,7 @@ For each keyframe, compare Figma frame (T4b) vs Playwright screenshot (C.1):
 
 ### E.3 — QA report shape
 
-`assessments/qa-reports/2026-04-DD-portfolio-v0/report.md`:
+`assessments/qa-reports/2026-04-DD-portfolio-v0/report.md`: <!-- orianna: ok -->
 
 ```markdown
 # Portfolio v0 — QA Gate Report
@@ -552,7 +552,7 @@ implementation commit. **Vi: this is your worklist.**
 | V0.16 | A.15 | |
 | V0.17 | B.4 | Integration via emulator. |
 | V0.18 | C.1 (+ C.2 + C.3) | C.1 is the must-have happy path. C.2 + C.3 land in same commit. |
-| V0.19 | E2E + tdd-gate self-test (`scripts/test-tdd-gate.sh` produces a synthetic two-commit branch and asserts CI verdict). | Documented in V0.19 acceptance already. |
+| V0.19 | E2E + tdd-gate self-test (`scripts/test-tdd-gate.sh` produces a synthetic two-commit branch and asserts CI verdict). <!-- orianna: ok --> | Documented in V0.19 acceptance already. |
 | V0.20 | None — exit sign-off; checks the matrix above is fully green. | Manual + Duong sign-off. |
 
 ---
