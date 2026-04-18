@@ -247,7 +247,7 @@ Referenced from R-agents-4. For `harukainguyen1411/strawberry-agents` main:
 
 - **D1 Visibility:** Private.
 - **D2 History strategy:** Preserve via `git filter-repo --invert-paths`. Caveat R-agents-1 accepted: SHAs in memory that reference dual-touch commits will rewrite; mitigated by 90-day archive (D5) + MEMORY.md footer.
-- **D3 Owner account:** harukainguyen1411.
+- **D3 Owner account:** harukainguyen1411 (Duong's HUMAN/personal identity — has admin bypass, reviewer on PRs). `Duongntd` is the AGENT account (collaborator, no bypass, canonical pusher). PATs for agent ops are minted from `Duongntd`, not harukainguyen1411. **Correction note (2026-04-18):** §4.0 step 2 references the PAT minted per app plan §4.4 step 3 — that step's account has been corrected: mint from `Duongntd`.
 - **D4 Timing:** Back-to-back with strawberry-app migration, same session. strawberry-app Phase 0 completes first; both migrations branch from that base SHA snapshot.
 - **D5 Duongntd/strawberry retention:** 90 days post-cutover, then archived (rename to `strawberry-archive` or delete — Duong decides at day-90 gate).
 - **D6 Secrets:** `secrets/age-key.txt` local-only (gitignored). `secrets/encrypted/*.age` migrates to strawberry-agents.

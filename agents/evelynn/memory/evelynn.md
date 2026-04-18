@@ -21,8 +21,9 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Infrastructure
 - **Git:** chore:/ops: prefix only on main. Three-tier policy. Agent state on main only.
-- **Branch protection:** Duongntd (bypass) + harukainguyen1411 (agents, no bypass).
-- **GitHub accounts:** `Duongntd` — repo owner account for Strawberry (has bypass). `harukainguyen1411` — personal contributor/agent account, canonical for ALL Google services, no bypass. `duong.nguyen.thai` — work account, NOT for Strawberry.
+- **Branch protection:** harukainguyen1411 (human owner, has admin bypass) + Duongntd (agent account, no bypass).
+- **GitHub accounts:** `harukainguyen1411` — HUMAN account, Duong's personal identity, owns strawberry-app + strawberry-agents, has admin bypass, reviewer identity on PRs, canonical for ALL Google services. `Duongntd` — AGENT account, invited collaborator with push permission, canonical pusher for all agent-driven commits, no bypass. `duong.nguyen.thai` — work account, NOT for Strawberry.
+- **PAT minting:** fine-grained PATs are minted from `Duongntd` (agent account). `harukainguyen1411` reviews PRs opened by Duongntd.
 - **Auto-rebase:** GitHub Actions on open PRs.
 - **MCP servers (Mac only — currently miscategorized, restructure plan in `proposed/`):** evelynn (telegram, firestore, agent control), agent-manager (agents, iTerm).
 - **Telegram (Mac only):** rotated bot 2026-04-05.
