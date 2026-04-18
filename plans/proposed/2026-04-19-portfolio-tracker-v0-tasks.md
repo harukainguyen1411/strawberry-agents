@@ -61,7 +61,7 @@ V0.1 (Firebase project bootstrap)
                     ├── V0.10 (BaseCurrencyPicker onboarding modal)
                     ├── V0.11 (CSV Import view — Step 1 + DropZone + PasteArea)
                     │     └── V0.12 (CSV Import view — Step 2 preview + commit)
-                    ├── V0.13 (AccountSelector — mobile + desktop variants)
+                    ├── V0.13 (useCurrentAccount — single-account context; AccountSelector deferred v1)
                     ├── V0.14 (SummaryCard + MoneyCell + PlCell)
                     ├── V0.15 (HoldingsTable desktop + HoldingRow mobile)
                     ├── V0.16 (Empty / Loading / Error states)
@@ -440,37 +440,32 @@ Commit body: `Refs V0.12`.
 
 ---
 
-### V0.13 — `AccountSelector` (mobile bottom-sheet + desktop radio list)
+### V0.13 — Single-account v0 (AccountSelector deferred to v1)
 
-**Goal:** Per design spec §4.3.1: mobile chip → bottom sheet; desktop
-radio list in left rail. Two-account hardcoded list pulled from the
-allowlist file (V0.2) — v0 does not need a runtime account-discovery
-mechanism beyond that.
+**Goal:** Wire the signed-in user as the sole account context for the
+v0 dashboard. No AccountSelector UI is shipped. `useAccountSwitcher`
+is replaced by a minimal `useCurrentAccount` composable that exposes
+`currentUid` as the signed-in user's UID — read-only, no switching.
 
-**Inputs:** Design spec §4.3.1, V0.2 allowlist, V0.9.
+**Inputs:** V0.9, V0.3 Security Rules (per-user isolation).
 
 **Outputs:**
-- `src/components/AccountSelector.vue` with mobile/desktop variant.
-- `src/composables/useAccountSwitcher.ts` exposing `currentUid`,
-  `accounts`, `switchTo(uid)`.
+- `src/composables/useCurrentAccount.ts` exposing `currentUid`
+  (derived from `useAuth().uid`). No `accounts` array, no `switchTo`.
+- Remove any reference to `AccountSelector.vue` or
+  `useAccountSwitcher.ts` from the codebase.
 
 **xfail-first:** Vue Test Utils:
-- bottom sheet traps focus on mobile.
-- Esc closes sheet.
-- `aria-checked` reflects `currentUid`.
+- `useCurrentAccount()` returns the UID of the signed-in user.
+- Attempting to import `AccountSelector` from the components barrel
+  throws (component does not exist).
 Commit body: `Refs V0.13`.
 
 **Acceptance criteria:**
-- `currentUid` defaults to the signed-in user's UID.
-- "Switching" state shows a holdings skeleton before re-fetch.
-- a11y: `role="radiogroup"`, `aria-modal="true"` on the sheet.
-
-> **v0 caveat:** "switch to friend" only works if the signed-in user is
-> Duong viewing his own data — cross-user data viewing is **not**
-> permitted by Security Rules (V0.3). The selector switches the *signed-in
-> account context* via Firebase Auth re-link. If this proves friction-y in
-> review, demote to "single-account v0, account selector deferred to v1"
-> as `V0.13a`.
+- Dashboard loads positions for the signed-in user only.
+- No multi-account affordance appears anywhere in the v0 UI.
+- `useCurrentAccount.currentUid` is reactive to auth state changes
+  (sign-out sets it to `null`).
 
 ---
 
@@ -707,6 +702,8 @@ sign-off.
 - **Window H (Handlers + CSV):** `V0.4 → V0.5 → V0.6 → V0.7 → V0.8`
 - **Window U (UI):** `V0.9 → (V0.10, V0.13, V0.14 in parallel) → V0.11 → V0.12 → V0.15 → V0.16 → V0.17`
 
+  Note: V0.13 is now a minimal composable task (no AccountSelector UI) — it can be unblocked by V0.9 alone (no dependency on V0.2 allowlist).
+
 **Independent (any time after V0.1):** `V0.19` (CI scoping).
 
 **Join point:** `V0.18` (E2E) requires the last commit of both windows.
@@ -730,6 +727,7 @@ Per ADR §10 v0 row + §12 handoff notes, the following are explicitly
   but no UI consumes it yet).
 - Trade ledger UI, intents UI, FX-override UI, manual refresh button
   (per design spec §1 out-of-scope list).
+- Multi-account view / `AccountSelector` (deferred to v1 — Security Rules enforce per-user isolation and cross-user data access is not permitted at v0).
 
 If a reviewer spots any of the above sneaking into a V0.x task spec,
 that task should be rejected and re-scoped before implementation begins.
