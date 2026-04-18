@@ -358,7 +358,9 @@ Adopted to avoid coupling drift between strawberry and strawberry-app.
 6. **`apps/private-apps/bee-worker` placement:** **moves to strawberry-app (public)**. Override of Azir's default. All apps ship from the public repo.
 7. **`architecture/` triage:** Azir's §2.5 table accepted as-is.
 
-8. **Owner account:** new public repo is owned by **harukainguyen1411** (Duong's personal/agent account), not Duongntd. Rationale: harukainguyen1411 is the canonical agent/contributor identity for public-facing work; Duongntd stays the private-infra owner.
+8. **Owner account:** new public repo is owned by **harukainguyen1411** — Duong's HUMAN/personal identity (has admin bypass, reviewer on PRs). `Duongntd` is the AGENT account (collaborator, no bypass, canonical pusher for agent-driven commits). The rationale in the original decision text ("harukainguyen1411 is the canonical agent/contributor identity") was incorrect — correction captured 2026-04-18: harukainguyen1411 is human, Duongntd is agent.
+
+**Correction note (2026-04-18):** §4.4 step 3 says "Re-issue fine-grained PAT minted from the `harukainguyen1411` account." This is backwards — PATs for agent ops must be minted from `Duongntd` (agent account), not harukainguyen1411 (human account). Executor should mint from Duongntd when running Phase 3.
 
 Additional decision: **skip formal TDD** for migration ops. Replace with Caitlyn-authored acceptance-criteria gate checklist (see §9), baked into Kayn's task gates.
 
