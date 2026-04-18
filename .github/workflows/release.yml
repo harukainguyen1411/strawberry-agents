@@ -1,0 +1,139 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref for rollback deploy (e.g. deploy-portal-20260411-abc1234)'
+        required: false
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  deploy-portal:
+    name: Deploy portal to Firebase Hosting
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.ref || github.sha }}
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Version packages (Changesets)
+        if: github.event_name == 'push'
+        run: |
+          npx changeset version
+          npx changeset tag
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: version packages"
+          git push --follow-tags
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build all apps (Turborepo — caches unchanged)
+        run: npx turbo run build
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+      - name: Composite deploy directory
+        run: bash scripts/composite-deploy.sh
+
+      - name: Stage firebase.json at repo root for action
+        run: cp apps/myapps/firebase.json firebase.json
+
+      - name: Deploy to Firebase Hosting (live)
+        id: firebase_deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+
+      - name: Tag deploy
+        if: github.event_name == 'push' && steps.firebase_deploy.outcome == 'success'
+        run: |
+          DEPLOY_TAG="deploy-portal-$(date +%Y%m%d)-$(echo '${{ github.sha }}' | cut -c1-7)"
+          git tag "$DEPLOY_TAG"
+          git push origin "$DEPLOY_TAG" 2>/dev/null || true
+
+      - name: Notify Discord — shipped
+        if: always() && steps.firebase_deploy.outcome == 'success'
+        env:
+          DISCORD_RELAY_WEBHOOK_URL: ${{ secrets.DISCORD_RELAY_WEBHOOK_URL }}
+          DISCORD_RELAY_WEBHOOK_SECRET: ${{ secrets.DISCORD_RELAY_WEBHOOK_SECRET }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+          REPO: ${{ github.repository }}
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+        run: node .github/scripts/notify-discord-shipped.js
+
+  functions-deploy:
+    name: Deploy Cloud Functions
+    runs-on: ubuntu-latest
+    if: |
+      contains(toJson(github.event.head_commit.modified), 'apps/myapps/functions/') ||
+      contains(toJson(github.event.head_commit.added), 'apps/myapps/functions/')
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build functions
+        run: npx turbo run build --filter=@ds/functions
+
+      - name: Deploy to Firebase Functions
+        working-directory: apps/myapps
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase-tools@latest deploy --only functions \
+            --project ${{ vars.FIREBASE_PROJECT_ID }} --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
+
+  rules-deploy:
+    name: Deploy Firestore + Storage rules
+    runs-on: ubuntu-latest
+    environment: production
+    if: |
+      contains(toJson(github.event.head_commit.modified), 'firestore.rules') ||
+      contains(toJson(github.event.head_commit.modified), 'storage.rules') ||
+      contains(toJson(github.event.head_commit.modified), 'apps/myapps/firestore.rules') ||
+      contains(toJson(github.event.head_commit.modified), 'apps/myapps/storage.rules')
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Deploy Firestore rules + Storage rules
+        working-directory: apps/myapps
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json \
+            npx firebase-tools@latest deploy --only firestore:rules,storage \
+            --project ${{ vars.FIREBASE_PROJECT_ID }} --non-interactive

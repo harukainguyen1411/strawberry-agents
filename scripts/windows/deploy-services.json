@@ -1,0 +1,4 @@
+[
+  { "name": "StrawberryDiscordRelay", "appDir": "apps/discord-relay" },
+  { "name": "StrawberryCoderWorker",  "appDir": "apps/coder-worker" }
+]

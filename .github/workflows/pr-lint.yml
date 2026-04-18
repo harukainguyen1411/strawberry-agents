@@ -1,0 +1,56 @@
+name: PR Body Linter
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  qa-report-present:
+    name: QA report present (UI PRs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check for UI changes
+        id: ui-check
+        shell: bash
+        run: |
+          changed=$(git diff --name-only origin/main...HEAD 2>/dev/null || true)
+          ui_changed=""
+          for f in $changed; do
+            case "$f" in
+              apps/*/src/*|dashboards/*/src/*) ui_changed="yes" ; break ;;
+            esac
+          done
+          echo "ui_changed=$ui_changed" >> "$GITHUB_OUTPUT"
+
+      - name: Skip — no UI changes
+        if: steps.ui-check.outputs.ui_changed != 'yes'
+        run: echo "No UI changes detected — QA report check skipped (green no-op)."
+
+      - name: Verify QA report in PR body
+        if: steps.ui-check.outputs.ui_changed == 'yes'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        shell: bash
+        run: |
+          if echo "$PR_BODY" | grep -q "QA-Waiver:"; then
+            echo "QA-Waiver present — skipping QA report check."
+            exit 0
+          fi
+          if echo "$PR_BODY" | grep -qE "QA-Report:[[:space:]]*https?://"; then
+            echo "QA report link found — check passed."
+            exit 0
+          fi
+          echo "ERROR: UI PR is missing a QA agent report."
+          echo "Add 'QA-Report: <url>' to the PR body, or use 'QA-Waiver: <reason>' if non-UI."
+          exit 1

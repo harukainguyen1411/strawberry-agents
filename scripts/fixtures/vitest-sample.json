@@ -1,0 +1,40 @@
+{
+  "numTotalTestSuites": 1,
+  "numPassedTestSuites": 1,
+  "numFailedTestSuites": 0,
+  "numTotalTests": 3,
+  "numPassedTests": 2,
+  "numFailedTests": 1,
+  "numPendingTests": 0,
+  "startTime": 1713430800000,
+  "endTime": 1713430801234,
+  "testResults": [
+    {
+      "testFilePath": "apps/functions/src/bee/handler.test.ts",
+      "status": "failed",
+      "startTime": 1713430800100,
+      "endTime": 1713430801200,
+      "assertionResults": [
+        {
+          "title": "returns 200 for valid request",
+          "fullName": "handler returns 200 for valid request",
+          "status": "passed",
+          "duration": 45
+        },
+        {
+          "title": "rejects unauthenticated writes",
+          "fullName": "handler rejects unauthenticated writes",
+          "status": "passed",
+          "duration": 23
+        },
+        {
+          "title": "handles malformed JSON",
+          "fullName": "handler handles malformed JSON",
+          "status": "failed",
+          "duration": 12,
+          "failureMessages": ["AssertionError: expected 400 but got 500"]
+        }
+      ]
+    }
+  ]
+}

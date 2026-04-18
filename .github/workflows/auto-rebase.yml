@@ -1,0 +1,34 @@
+name: Auto-rebase PR
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  rebase:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.AGENT_GITHUB_TOKEN }}
+
+      - name: Rebase open PRs onto main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for pr in $(gh pr list --json number --jq '.[].number'); do
+            branch=$(gh pr view "$pr" --json headRefName --jq '.headRefName')
+            echo "Rebasing PR #$pr ($branch)..."
+            git fetch origin "$branch"
+            git checkout "$branch"
+            if git rebase origin/main; then
+              git push --force-with-lease origin "$branch"
+              echo "PR #$pr rebased successfully"
+            else
+              git rebase --abort
+              echo "PR #$pr has real conflicts — skipping"
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_GITHUB_TOKEN }}
