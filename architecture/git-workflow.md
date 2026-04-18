@@ -44,6 +44,45 @@
 - PRs with significant changes must update relevant READMEs
 - **Gitignore-on-first-use:** When creating a new tool or app directory, add its build output patterns to `.gitignore` in the same commit that creates the directory. Build artifacts (`.turbo/`, `dist/`, `lib/`, `node_modules/`, `__pycache__/`) must never appear in `git status`.
 
+## Branch Protection — Required Checks and Review Enforcement
+
+`main` enforces the following gates (configured via `scripts/setup-branch-protection.sh`):
+
+| Gate | Source | Context string (exact) |
+|------|--------|------------------------|
+| xfail-first | `.github/workflows/tdd-gate.yml` | `xfail-first check` |
+| regression-test | `.github/workflows/tdd-gate.yml` | `regression-test check` |
+| unit-tests | `.github/workflows/unit-tests.yml` | `unit-tests` |
+| E2E | `.github/workflows/e2e.yml` | `Playwright E2E` |
+| QA report (UI PRs) | `.github/workflows/pr-lint.yml` | `QA report present (UI PRs)` |
+
+Additionally:
+- `strict: true` — branch must be up-to-date with `main` before merge.
+- `enforce_admins: true` — admin accounts are subject to the same gates; no bypass.
+- One approving review required from an account other than the PR author (`harukainguyen1411` is the designated reviewer account for agent-authored PRs).
+- `dismiss_stale_reviews: true` — any new push invalidates prior approvals; re-review required.
+- `require_last_push_approval: true` — the approving review must be on the current tip commit.
+- `required_conversation_resolution: true` — all reviewer-raised threads must be resolved.
+
+### No self-merge / no `--admin` bypass
+
+Agents must never run `gh pr merge --admin` and must never merge a PR they authored. This applies even when all checks are green. See `CLAUDE.md` rule 18.
+
+### Break-glass procedure (human-only, Duong)
+
+For documented emergencies only (production on fire, required check workflow itself broken):
+
+1. Temporarily disable `enforce_admins`:
+   ```bash
+   gh api repos/Duongntd/strawberry/branches/main/protection/enforce_admins \
+     -X DELETE -H "Accept: application/vnd.github+json"
+   ```
+2. Perform the emergency merge: `gh pr merge --admin <pr-number>`.
+3. Re-enable immediately: `bash scripts/setup-branch-protection.sh`.
+4. Write a post-incident note to `assessments/break-glass/YYYY-MM-DD-<slug>.md` covering what broke, why break-glass was the right call, and follow-up to prevent recurrence.
+
+Agents must not execute this procedure under any circumstance.
+
 ## Build Artifact Guard (pre-commit hook)
 
 `scripts/hooks/pre-commit-artifact-guard.sh` blocks commits that include build artifact paths. It runs as part of the pre-commit hook dispatcher installed by `scripts/install-hooks.sh`.
