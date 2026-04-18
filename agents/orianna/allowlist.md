@@ -51,6 +51,11 @@ Orianna passes them without requiring a file/line anchor.
 - Vertex AI
 - ccusage
 - Chart.js
+- Trading212
+- T212
+- Interactive Brokers
+- IB
+- vue-virtual-scroller
 
 ---
 
