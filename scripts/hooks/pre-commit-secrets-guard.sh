@@ -166,6 +166,7 @@ if command -v age >/dev/null 2>&1 && [[ -f "$KEY_FILE" ]]; then
                     agents/*/learnings/*) continue ;;
                     agents/*/transcripts/*) continue ;;
                     plans/*) continue ;;
+                    assessments/*) continue ;;
                 esac
                 # grep -F -f against the staged blob; tee /dev/null suppresses match output
                 if git show ":$f" 2>/dev/null | grep -Fqf "$scratch/.values.uniq"; then
