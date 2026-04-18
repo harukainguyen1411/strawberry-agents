@@ -243,22 +243,18 @@ Referenced from R-agents-4. For `harukainguyen1411/strawberry-agents` main:
 
 ---
 
-## 6. Open decisions (D1-D10) — for Duong
+## 6. Decisions (captured 2026-04-18 — yes to all Azir recommendations)
 
-Each of the brief's 8 assumptions is restated as a decision to confirm, plus 2 additional decisions surfaced during ADR drafting.
-
-| # | Decision | Azir's default | Confirm? |
-|---|----------|----------------|----------|
-| D1 | **Visibility: private.** agents/, plans/, secrets/encrypted/, CLAUDE.md must stay private. | Agree — non-negotiable. | [ ] Confirm private |
-| D2 | **History strategy: preserve via `--invert-paths`** (NOT squash). Agent memory SHA references get one-way-referenceable archive; new history starts clean. | Agree — but with a caveat: §3 R-agents-1 flags that `--invert-paths` still rewrites SHAs of commits whose content changes (any commit that touched both public and private paths). Old SHAs in memory files point at the `Duongntd/strawberry` archive, which is preserved for 90 days per R-agents-7. Squashing would be worse (zero SHA survivability). | [ ] Confirm preserve-via-invert |
-| D3 | **Owner account: `harukainguyen1411`.** Unified agent-account identity with strawberry-app. | Agree — unified identity is cleaner. | [ ] Confirm harukainguyen1411 |
-| D4 | **Timing: concurrent with strawberry-app migration.** Both derive from the same base SHA. Same session if feasible, back-to-back otherwise. | Agree — but §4 specifies **separate scratch clones** (`/tmp/strawberry-agents-filter.git` vs. `/tmp/strawberry-app-filter.git`). Concurrent filter-repo on one bare clone is unsafe. | [ ] Confirm concurrent + separate scratch |
-| D5 | **Post-cutover archive: 7 days read-only, then rename/delete.** | Partial disagreement — extend to **90 days**, not 7, for agent-memory SHA lookups (R-agents-7). Strawberry-app plan's §4.7 7-day window is for code; infra-archive serves a different purpose. | [ ] Confirm 90-day archive window [ ] Confirm rename (to `strawberry-archive`) vs. delete |
-| D6 | **Secrets: `secrets/age-key.txt` stays gitignored/local.** `secrets/encrypted/` moves to strawberry-agents. | Agree. §4.4 step 4 preserves age-key from archived local tree → new checkout. | [ ] Confirm |
-| D7 | **Hooks split: agent-infra hooks with strawberry-agents, app hooks with strawberry-app, secrets-guard + install-hooks dual-tracked.** | Agree. §2.1 and §2.3 enumerate. One additional hook to decide on: **heartbeat.sh** — does it ping from the agent-infra side or from wherever an agent runs? Default: strawberry-agents, since that's where sessions launch per §4.4. | [ ] Confirm heartbeat.sh in strawberry-agents |
-| D8 | **Three-repo model: dark-strawberry [now `strawberry-agents`] (private), strawberry-app (public), Duongntd/strawberry (archive).** Plans in agents-repo reference PRs in app-repo via absolute URL; PRs in app-repo reference plans in agents-repo via permalink. | Agree — §5 specifies the amendment to app plan §7 to make this explicit. | [ ] Confirm three-repo model |
-| D9 | **Minimal branch protection profile on strawberry-agents** — no force-push, no deletion, no PR requirement, optional `plan-frontmatter-lint` status check. | Default (§7.3). Alternative: require 1 approving review even for main commits — would force Duong to open a PR for every plan. Default: no, plans commit direct to main per CLAUDE.md rule 4. | [ ] Confirm minimal profile vs. require-review |
-| D10 | **`plan-frontmatter-lint` workflow** — create now as part of this migration, or defer? | Defer. Not in scope of this ADR. Add as a follow-up plan if D9 is confirmed. | [ ] Defer [ ] Add in-scope |
+- **D1 Visibility:** Private.
+- **D2 History strategy:** Preserve via `git filter-repo --invert-paths`. Caveat R-agents-1 accepted: SHAs in memory that reference dual-touch commits will rewrite; mitigated by 90-day archive (D5) + MEMORY.md footer.
+- **D3 Owner account:** harukainguyen1411.
+- **D4 Timing:** Back-to-back with strawberry-app migration, same session. strawberry-app Phase 0 completes first; both migrations branch from that base SHA snapshot.
+- **D5 Duongntd/strawberry retention:** 90 days post-cutover, then archived (rename to `strawberry-archive` or delete — Duong decides at day-90 gate).
+- **D6 Secrets:** `secrets/age-key.txt` local-only (gitignored). `secrets/encrypted/*.age` migrates to strawberry-agents.
+- **D7 Hooks:** split by concern. Agent-infra hooks (secrets-guard, plan-gdoc-mirror if present, heartbeat invocations, memory-consolidate) to strawberry-agents. Code hooks (pre-push-tdd, pre-commit-unit-tests, pre-commit-artifact-guard) to strawberry-app. `pre-commit-secrets-guard.sh` + `install-hooks.sh` dual-tracked; strawberry-agents is source-of-truth for secrets-guard.
+- **D8 Cross-repo convention:** 3-repo model. Plans in strawberry-agents, PRs in strawberry-app. Absolute URL permalinks both ways. Duongntd/strawberry archive gets a pinned README linking both active repos. Agent sessions scoped to one repo per session.
+- **D9 Branch protection:** minimal for strawberry-agents — no force-push, no delete, zero review requirement, zero required checks. Plans commit direct to main per CLAUDE.md Rule 4.
+- **D10 plan-frontmatter-lint:** DEFERRED. Not in migration scope. Ship strawberry-agents without it; add in a follow-up plan post-migration.
 
 ---
 
