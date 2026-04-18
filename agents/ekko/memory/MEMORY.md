@@ -9,6 +9,9 @@
 
 ## Completed Tasks
 
+- **2026-04-18 (ulid lockfile fix):** `dashboards/server/package.json` declares `ulid@^3.0.2`; root lockfile was missing it. `npm install --ignore-scripts` added 19 packages. `npm ci` now clean. Commit `dbc1be1`, pushed to main.
+
+
 - **2026-04-18 (migration dry-run):** Ran Phase 1+2 dry-run for public-app-repo migration. Bare clone → filter → squash → gitleaks → grep sweep → build sanity. Result: 0 gitleaks findings, 17 files need slug rewrite in Phase 2, `npm ci` lockfile desync is pre-existing. Report: `assessments/2026-04-18-migration-dryrun.md`. Commit: `e1e7417`.
 
 - **2026-04-18 (Guard 4 fix):** Patched pre-commit Guard 4 allowlist to add `agents/*/memory/*`, `agents/*/journal/*`, `agents/*/learnings/*`, `agents/*/transcripts/*`, `plans/*` — matching Guards 1-3. Also pruned 11 stale worktrees including `strawberry-b14/`. Commit SHA: `642c2db`.
