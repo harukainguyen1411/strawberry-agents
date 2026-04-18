@@ -9,6 +9,8 @@
 
 ## Completed Tasks
 
+- **2026-04-18 (migration dry-run):** Ran Phase 1+2 dry-run for public-app-repo migration. Bare clone → filter → squash → gitleaks → grep sweep → build sanity. Result: 0 gitleaks findings, 17 files need slug rewrite in Phase 2, `npm ci` lockfile desync is pre-existing. Report: `assessments/2026-04-18-migration-dryrun.md`. Commit: `e1e7417`.
+
 - **2026-04-18 (Guard 4 fix):** Patched pre-commit Guard 4 allowlist to add `agents/*/memory/*`, `agents/*/journal/*`, `agents/*/learnings/*`, `agents/*/transcripts/*`, `plans/*` — matching Guards 1-3. Also pruned 11 stale worktrees including `strawberry-b14/`. Commit SHA: `642c2db`.
 
 - **2026-04-18:** Lockfile sync check — `npm install` on main produced zero diff; `@types/node@25.6.0` already present in HEAD lockfile. No commit needed. CI failures on open PRs are branch-local, not a main issue.
