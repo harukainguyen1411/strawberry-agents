@@ -13,6 +13,11 @@
 - 2026-04-18: Orianna O6 smoke tests — ran O6.1-O6.8; found LLM CLI flag bugs; bash fallback solid; dogfood blocks on 1 real + 2 false positives
 - 2026-04-18: Orianna v1 finalization — O6.5 pass; ADR dogfood pass; tasks plan blocked (2 blocks); promotion halted
 
+- [P1.2 bats xfail + P1.4 vitest](../learnings/2026-04-19-p1-2-p1-4-tdd-setup.md) — vacuous-pass trap for negative-assertion tests; pre-commit secrets guard false positive on `age -d` in grep patterns; G2 gate fixture collision; Firebase module mocking order for Vitest
+
+## Sessions
+- 2026-04-19: P1.2 bats xfail suite + P1.4 Vitest proof-of-life — wrote 26-test bats suite for _lib.sh (24/26 xfail correctly); landed 2-commit Vitest proof-of-life for BEE_INTRO_MESSAGE; both branches pushed (chore/p1-2-lib-sh-xfail SHA 40463a0, chore/p1-4-vitest-proof-of-life SHAs 43437dc + 4765882)
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
