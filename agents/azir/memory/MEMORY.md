@@ -5,12 +5,15 @@
 - Architecture Specialist in Duong's personal agent system
 
 ## Sessions (recent only)
+- 2026-04-18 (azir): Public app-repo migration plan — strawberry/strawberry-app split for unlimited Actions minutes. `plans/proposed/2026-04-19-public-app-repo-migration.md` SHA `c1a0311`.
 - 2026-04-13 (subagent, s5): Bee multi-format IO plan — xlsx/pptx/pdf input + output format selection.
 - 2026-04-13 (subagent, s4): Feature flags plan — Firebase Remote Config for per-user app visibility.
 - 2026-04-13 (subagent, s3): Deploy pipeline hardening plan after blank-page incident.
 - 2026-04-13 (subagent, s2): Advisory role on caching-fix deploy team.
 
 ## Active Architecture Decisions
+
+- **Two-repo split (2026-04-18, proposed)**: strawberry (private agent-infra) + strawberry-app (public code). Driven by exhausted Actions minutes; Duong won't raise budget. Plan `plans/proposed/2026-04-19-public-app-repo-migration.md` has 7 open decisions in §8 that must be captured before approval. Cross-repo convention: plans stay in strawberry, PRs move to strawberry-app.
 
 - **Feature flags (Remote Config)**: Per-user app visibility via Firebase Remote Config + custom signals. Plan: `plans/approved/2026-04-13-feature-flags-firebase-remote-config.md`. First flag: `bee_visible` gated to Haruka's email.
 
