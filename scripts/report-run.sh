@@ -17,6 +17,14 @@
 #   unit type   — 2s POST timeout, fire-and-forget (exit 0 even on failure)
 #   e2e type    — soft-fail: exit 0 + stderr warning on POST failure
 #   other types — exit non-zero on POST failure
+#
+# PHASE 1 SCOPE (D1):
+#   - Artifact declaration + upload is a no-op for now.
+#   - Callers with artifacts (E2E Playwright, QA flows) will silently lose them.
+#   - Full artifact support lands in D1b (normaliser must emit artifact_uploads
+#     + a local_ref → file_path mapping). Tracked in phase-1-tasks.md.
+#
+# TODO(D1b): emit artifact_uploads in POST body; accept local_ref → path map.
 
 set -eu
 
