@@ -26,3 +26,4 @@
 - **2026-04-18 (it.fails fix):** Both xfail detectors (`tdd-gate.yml` line 74 + `pre-push-tdd.sh` line 72) updated to match `it\.fails|it\.failing`. Vitest uses `it.fails`; Playwright uses `it.failing`. Both now accepted. Pushed to main as `11d4566`.
 - **2026-04-18:** TDD hooks + CI wiring task completed
 - **2026-04-17:** Dependabot B5/B7 vitest3 upgrade
+- **2026-04-18 (P0.0 preflight):** Created harukainguyen1411/strawberry-app (public) and harukainguyen1411/strawberry-agents (private). Configured Actions permissions, workflow permissions, Dependabot alerts + auto-fixes on both. Commit fa6099a. Awaiting Duong Firebase GitHub App install before Phase 1.
