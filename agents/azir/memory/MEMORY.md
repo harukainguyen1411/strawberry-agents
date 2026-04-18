@@ -1,15 +1,16 @@
 # Azir (Architecture Specialist — migrated from swain 2026-04-17)
 
 ## Sessions
+- 2026-04-19 (azir): Companion ADR for strawberry-agents private-infra split — `plans/proposed/2026-04-19-strawberry-agents-companion-migration.md`. Mid-flight rename from dark-strawberry → strawberry-agents. Three-repo end state. D1-D10 open decisions for Duong. Only disagreement with brief: 90-day archive window (not 7).
 - 2026-04-18 (azir): Testing-dashboard Phase 1 review session — architecture-reviewed 16 PRs, self-amended ADR §9 (dropped firebaseauth.admin) + §7 (UID redaction + fail-closed) in `3c0dc77`. Zero open holds at close.
-- 2026-04-18 (azir): Public app-repo migration plan — `plans/proposed/2026-04-19-public-app-repo-migration.md` SHA `c1a0311`.
+- 2026-04-18 (azir): Public app-repo migration plan — `plans/proposed/2026-04-19-public-app-repo-migration.md` SHA `c1a0311`. Now promoted to approved/.
 - 2026-04-13 (s5): Bee multi-format IO plan.
 - 2026-04-13 (s4): Feature flags — Firebase Remote Config for per-user app visibility.
 - 2026-04-13 (s3): Deploy pipeline hardening post-incident.
 
 ## Active Architecture Decisions
 - **Test dashboard (approved, partially implemented)**: One Cloud Run service, two Vite+React frontends at `dashboards/server`, `/test-dashboard`, reserved `/dashboard` for monitoring. ADR: `plans/approved/2026-04-17-test-dashboard-architecture.md`. §9 amended 2026-04-18 to drop `firebaseauth.admin` (verifyIdToken is public-JWK). §7 fail-closed on empty ALLOWED_UIDS.
-- **Two-repo split (proposed)**: strawberry (private) + strawberry-app (public) for Actions minutes. 7 open §8 decisions. Plans stay in strawberry; PRs move to strawberry-app.
+- **Three-repo split (approved + proposed)**: `strawberry-agents` (private agent brain, proposed companion ADR 2026-04-19) + `strawberry-app` (public code, approved 2026-04-19) + `Duongntd/strawberry` (archive, 90-day retention). Plans live in strawberry-agents; PRs live in strawberry-app. All three under `harukainguyen1411` for unified agent-account identity except the archive.
 - **Feature flags (Remote Config, approved)**: Per-user via Firebase Remote Config + custom signals. First flag `bee_visible` gated to Haruka.
 - **Dark Strawberry platform (proposed)**: 3-tier roles, `maxAppRequests`, `personalMode`.
 - **Dark Strawberry deployment (proposed)**: Independent deployables, Turborepo, Changesets.
