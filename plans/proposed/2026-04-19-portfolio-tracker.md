@@ -85,6 +85,7 @@ Key properties:
 - **Tool-parity** is enforced at the code level: UI callable functions, MCP tool handlers, and Gemini function declarations all delegate to the same handler module (`functions/portfolio-tools/`). No parallel logic paths.
 - **Claude runs locally** on Duong's machine via Claude Code Routine with the `mcp-portfolio` server attached over stdio. It is not hosted on GCP. This keeps Claude usage on Duong's Max plan quota rather than per-call API billing.
 - **Gemini runs as a Cloud Function proxy** — the API key stays server-side, per-user throttling is enforced, and function-calling lets the model hit the same tool surface.
+- **Per-user base currency** — each user picks USD or EUR at onboarding (stored on `users/{uid}.baseCurrency`). All totals, snapshots, sparklines, digests, and chat responses render in that user's chosen base. FX conversion happens at the handler layer in `portfolio-tools/`, reading rates from `users/{uid}/meta/fx`. The two users may run on different bases simultaneously; no shared base assumption anywhere in the stack.
 
 ---
 
@@ -94,7 +95,7 @@ Key properties:
 users/{uid}
   email: string
   displayName: string
-  baseCurrency: "EUR"
+  baseCurrency: "USD" | "EUR"   // per-user choice, set at onboarding, mutable via settings
   brokerCredentials: { t212: {...}, ib: {...} }   // KMS-wrapped at rest
   createdAt, updatedAt
 
@@ -116,12 +117,13 @@ users/{uid}/intents/{intentId}
   createdAt, updatedAt
 
 users/{uid}/meta/fx
-  rates: { "USD->EUR": 0.92, ... },
+  rates: { "USD->EUR": 0.92, "EUR->USD": 1.087, ... },   // both directions cached
   overrides: { "USD->EUR": 0.93 }?,
   updatedAt
 
 users/{uid}/snapshots/{YYYY-MM-DD}
-  totalValueEUR, perBroker: {...}, perAsset: {...}, takenAt
+  baseCurrency: "USD" | "EUR",                  // snapshot of user's base at write-time
+  totalValueBase, perBroker: {...}, perAsset: {...}, takenAt
 
 users/{uid}/digests/{YYYY-MM-DD}
   kind: "morning" | "weekly",
@@ -134,6 +136,7 @@ Invariants:
 - **Positions are derived**, overwritten on every poll. Treat as a materialized view; trades are the ledger.
 - **Intents are mutable** but carry `createdAt` — never deleted silently; status transitions are the audit trail.
 - **Snapshots are write-once per date.** A late poll on day D only updates snapshot D if no snapshot D+1 exists yet.
+- **Base currency is per-user.** Trades and positions are stored in their native broker currency; only derived totals (snapshots, summary card, sparkline, digest amounts) are converted to the user's `baseCurrency`. Snapshots embed the base used at write-time so a later base-currency switch does not silently rewrite history.
 
 ---
 
@@ -213,11 +216,11 @@ Shared handler module: `strawberry-app/apps/portfolio/functions/portfolio-tools/
 
 Single Vue SPA, mobile-first responsive, Firebase Hosting. Layout top-to-bottom on mobile; three-column on desktop:
 
-1. **Summary card** — total value in EUR, per-broker breakdown, % day / % YTD.
+1. **Summary card** — total value in the user's `baseCurrency` (USD or EUR), per-broker breakdown, % day / % YTD.
 2. **Positions table** — sortable columns (ticker, qty, avg cost, last price, P&L %, sector), sector grouping toggle.
 3. **Trade ledger** — range picker (7/30/90/180/all), virtualized list (react-virtualized equivalent in Vue, e.g. `vue-virtual-scroller`).
 4. **Intents block** — editable cards, status badges (open/executed/stale), quick-create input.
-5. **Sparkline** — Chart.js line chart of `snapshots/*.totalValueEUR`, last 180 days.
+5. **Sparkline** — Chart.js line chart of `snapshots/*.totalValueBase`, last 180 days, rendered in the user's base currency.
 6. **Chat panel (v3)** — slide-in drawer on mobile, right column on desktop. Streaming responses from the Gemini proxy.
 
 Chart.js chosen over D3 for bundle size and the sparkline being the only chart. Reassess if we add heavier analytics.
@@ -244,7 +247,7 @@ Chart.js chosen over D3 for bundle size and the sparkline being the only chart. 
 
 | Phase | Scope | Exit criteria |
 |---|---|---|
-| **v0** | Skeleton: Firebase project, Auth + allowlist, Firestore schema, CSV import, empty dashboard shell. | Both users sign in; CSV import populates one `trades/` collection; dashboard renders zero-state. |
+| **v0** | Skeleton: Firebase project, Auth + allowlist, Firestore schema (incl. per-user `baseCurrency`), CSV import, empty dashboard shell, shared `portfolio-tools/` handler module stub, xfail test scaffold per task. No broker APIs. | Both users sign in and pick their base currency; CSV import populates one `trades/` collection; dashboard renders zero-state in the user's chosen base; `portfolio-tools/` module compiles with handler stubs + xfail tests; no T212/IB code shipped. |
 | **v1** | T212 adapter + dashboard positions/trades/intents/FX, manual refresh, mobile Vue. | 15-min poll green for 7 days on Duong's T212 account; positions/trades/intents render; manual refresh works. |
 | **v1.5** | IB Client Portal adapter (Option β) + human-in-the-loop re-auth flow. | 24h session renewal working end-to-end. |
 | **v2** | Claude Code Routine — morning digest → Discord. `mcp-portfolio` server shipped. | Daily digest lands in Discord for 7 consecutive mornings; archived to `digests/`. |
@@ -276,10 +279,10 @@ Architectural risks worth tracking:
 
 Open questions beyond the three above:
 
-4. **Figma file owner** — who designs the v0 dashboard? QA gate (rule 16) requires a Figma to diff against.
-5. **Discord webhook channel** — private channel exists? Needs to be stood up before v2.
-6. **FX source** — open-source (ECB daily reference rates) vs paid API? v1 defaults to ECB with a manual-override escape hatch (`portfolio_set_fx_override`).
-7. **Base currency per user** — schema says EUR for both; confirm the friend is also EUR-based.
+4. **Figma file owner** — RESOLVED (v0 kickoff, 2026-04-19): Neeko creates a fresh Figma file in Duong's workspace for the v0 dashboard and returns the file ID. QA gate (rule 16) diffs against that file.
+5. **Discord webhook channel** — RESOLVED (v0 kickoff, 2026-04-19): channel does not exist. Ekko stands up `#portfolio-digest` (private) and the webhook in parallel, tracked as a separate task. Required before v2.
+6. **FX source** — RESOLVED (v0 kickoff, 2026-04-19): ECB daily reference rates as the default source, with `portfolio_set_fx_override` as the manual escape hatch. No paid API for v1.
+7. **Base currency per user** — RESOLVED (v0 kickoff, 2026-04-19): per-user choice between USD and EUR, set at onboarding, stored on `users/{uid}.baseCurrency`. The two users may run on different bases. This is a schema change, applied above in §3, §4, §5, and §8 — not a footnote.
 
 ---
 
