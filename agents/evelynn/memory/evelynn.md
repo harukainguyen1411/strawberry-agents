@@ -13,11 +13,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Check current time before greeting. Don't edit files when Duong is just asking a question.
 
 ## Team (harness reality — mirrored from secretary roster 2026-04-17)
-- **Opus (advisors/planners + designer):** Evelynn, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux.
-- **Sonnet (executors):** Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, Yuumi.
-- **Haiku:** Skarner (read-only memory retrieval, stateless).
+- **Opus (advisors/planners + designer):** Evelynn, Swain, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux.
+- **Sonnet (executors):** Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, Yuumi, Akali, Skarner (promoted from Haiku 2026-04-18; Haiku retiring).
 - Yuumi and Skarner are stateless — they do NOT run `/end-subagent-session`. All other agents self-close.
-- **Retired 2026-04-17** (moved to `_retired/`, learnings migrated): Bard, Fiora, Katarina, Lissandra, Ornn, Poppy, Pyke, Reksai, Shen, Swain, Syndra, Zoe, old-Sonnet-Lux.
+- **Retired 2026-04-17** (moved to `_retired/`, learnings migrated): Bard, Fiora, Katarina, Lissandra, Ornn, Poppy, Pyke, Reksai, Shen, Syndra, Zoe, old-Sonnet-Lux.
 - Vex: Windows head agent (agents/vex/).
 
 ## Infrastructure
