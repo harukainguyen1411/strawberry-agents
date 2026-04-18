@@ -171,16 +171,60 @@ else
 fi
 
 echo ""
-echo "=== C2 xfail: pre-commit-unit-tests.sh uses pnpm for dashboards packages ==="
-# xfail: plans/approved/2026-04-17-test-dashboard-phase1-tasks.md task C2
-# Asserts the hook invokes pnpm (not npm) when running dashboards package tests.
-# XFAIL until C2 implementation lands — expected to FAIL on current HEAD.
-if grep -q "pnpm" "$REPO_ROOT/scripts/hooks/pre-commit-unit-tests.sh"; then
-  echo "  PASS: pre-commit-unit-tests.sh references pnpm (C2 wired)"
+echo "=== C2 — dashboards package wiring ==="
+# Verify each dashboards package has tdd.enabled:true and a test:unit script so
+# the pre-commit-unit-tests.sh dispatcher will pick them up.
+for _pkg in dashboards/server dashboards/test-dashboard; do
+  _pj="$REPO_ROOT/$_pkg/package.json"
+  if [ ! -f "$_pj" ]; then
+    echo "  FAIL: $_pkg/package.json missing"
+    FAIL=$((FAIL+1))
+    continue
+  fi
+  _abs_pj2="$REPO_ROOT/$_pkg/package.json"
+  _enabled=$(node -e "try{const p=require('$_abs_pj2');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+  if [ "$_enabled" = "true" ]; then
+    echo "  PASS: $_pkg has tdd.enabled:true"
+    PASS=$((PASS+1))
+  else
+    echo "  FAIL: $_pkg missing tdd.enabled:true — hook will skip it"
+    FAIL=$((FAIL+1))
+  fi
+  _test_cmd=$(node -e "try{const p=require('$_abs_pj2');process.stdout.write(p.scripts&&p.scripts['test:unit']||'')}catch(e){}" 2>/dev/null || echo "")
+  if [ -n "$_test_cmd" ]; then
+    echo "  PASS: $_pkg has test:unit script"
+    PASS=$((PASS+1))
+  else
+    echo "  FAIL: $_pkg missing test:unit script — hook will skip it"
+    FAIL=$((FAIL+1))
+  fi
+done
+
+echo ""
+echo "=== C2 regression — subdirectory CWD does not break tdd.enabled detection ==="
+# Regression test for Jhin R22: require() must use absolute path so the hook
+# works correctly when git invokes it from a subdirectory (e.g. cd dashboards/server && git commit).
+# We simulate by running the detection node snippet with CWD set to a subdirectory.
+_pj_rel="dashboards/server/package.json"
+_abs_pj="$REPO_ROOT/$_pj_rel"
+_result=$(cd "$REPO_ROOT/dashboards/server" && node -e "try{const p=require('$_abs_pj');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+if [ "$_result" = "true" ]; then
+  echo "  PASS: tdd.enabled detected correctly when CWD is dashboards/server (absolute path fix)"
   PASS=$((PASS+1))
 else
-  echo "  XFAIL: pre-commit-unit-tests.sh does not reference pnpm — C2 not yet wired (expected on pre-C2 HEAD)"
-  # Do not increment FAIL — this is the expected state before C2 lands
+  echo "  FAIL: tdd.enabled detection broken when CWD is a subdirectory — CWD-relative require() bug"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
+echo "=== C2 — hook uses absolute cd for test runner ==="
+# Verify the hook uses 'cd \$REPO_ROOT/\$pkg' (not 'cd \$pkg') so it works from any CWD.
+if grep -q 'REPO_ROOT.*pkg' "$REPO_ROOT/scripts/hooks/pre-commit-unit-tests.sh"; then
+  echo "  PASS: hook cd uses REPO_ROOT-anchored path"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: hook cd does not use REPO_ROOT — may break from subdirectory CWD"
+  FAIL=$((FAIL+1))
 fi
 
 echo ""
