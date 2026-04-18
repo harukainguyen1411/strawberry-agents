@@ -25,18 +25,20 @@ exit 0
 EOF
   chmod +x "$MOCK_DIR/gcloud"
 
-  # Stub docker
+  # Stub docker — writes to both per-tool log and shared ordered log
   cat > "$MOCK_DIR/docker" <<'EOF'
 #!/usr/bin/env bash
 echo "docker $*" >> "$MOCK_DIR/docker.calls"
+echo "docker $*" >> "$MOCK_DIR/calls.log"
 exit 0
 EOF
   chmod +x "$MOCK_DIR/docker"
 
-  # Stub pnpm
+  # Stub pnpm — writes to both per-tool log and shared ordered log
   cat > "$MOCK_DIR/pnpm" <<'EOF'
 #!/usr/bin/env bash
 echo "pnpm $*" >> "$MOCK_DIR/pnpm.calls"
+echo "pnpm $*" >> "$MOCK_DIR/calls.log"
 exit 0
 EOF
   chmod +x "$MOCK_DIR/pnpm"
@@ -89,10 +91,9 @@ teardown() {
 @test "builds test-dashboard frontend before server container" {
   # xfail: will fail until dashboards.sh is created
   bash "$SCRIPT" --project myapps-b31ea
-  pnpm_calls=$(cat "$MOCK_DIR/pnpm.calls")
-  # test-dashboard build must appear before docker build
-  td_line=$(grep -n "test-dashboard" "$MOCK_DIR/pnpm.calls" | head -1 | cut -d: -f1)
-  docker_line=$(grep -n "build" "$MOCK_DIR/docker.calls" | head -1 | cut -d: -f1)
+  # Use the shared ordered log to check that pnpm test-dashboard appears before docker build
+  td_line=$(grep -n "test-dashboard" "$MOCK_DIR/calls.log" | head -1 | cut -d: -f1)
+  docker_line=$(grep -n "docker build" "$MOCK_DIR/calls.log" | head -1 | cut -d: -f1)
   [ -n "$td_line" ]
   [ -n "$docker_line" ]
   [ "$td_line" -lt "$docker_line" ]
