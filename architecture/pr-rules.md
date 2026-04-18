@@ -1,6 +1,6 @@
 # PR Rules
 
-Rules for all pull requests in this repository.
+Rules for all pull requests. Implementation PRs live in `harukainguyen1411/strawberry-app` (code). Plans commit directly to `Duongntd/strawberry` main (never via PR).
 
 ## Required Fields
 
@@ -28,6 +28,15 @@ If your change touches any of the following, update the relevant docs **in the s
 ## Commit Prefix
 
 All commits (including on feature branches) use `chore:` or `ops:` prefix. The pre-push hook enforces this on main. See `#rule-chore-commit-prefix` in root `CLAUDE.md`.
+
+## Account Roles for PRs
+
+| Account | Role |
+|---------|------|
+| `Duongntd` | Agent pusher — opens PRs, pushes commits, manages branches in `strawberry-app` |
+| `harukainguyen1411` | Human reviewer — approves PRs, merges. Has admin bypass (break-glass only). |
+
+PRs are opened in `harukainguyen1411/strawberry-app`. The `harukainguyen1411` account is the designated approver for agent-authored PRs (per commit 80cd16f and plan §8 decision 8). Agents must not merge their own PRs — see `CLAUDE.md` rule 18.
 
 ## Review Team Protocol
 

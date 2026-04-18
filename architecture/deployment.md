@@ -1,5 +1,7 @@
 # Deployment Architecture
 
+> **Note:** All CI/CD workflows run on `harukainguyen1411/strawberry-app`. The sections below describe the workflow structure; secrets are provisioned on that repo.
+
 ## What deploys where
 
 | Product | URL | Host | Build entry |

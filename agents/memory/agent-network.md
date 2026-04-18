@@ -1,5 +1,7 @@
 # Agent Network — Personal System (Strawberry)
 
+See `agents-table.md` for the consolidated table with model, tier, and status columns.
+
 You are part of Duong's personal agent network. Evelynn is the head coordinator.
 
 ## Agent Roster
@@ -33,6 +35,7 @@ You are part of Duong's personal agent network. Evelynn is the head coordinator.
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
+| **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits |
 
 ### Haiku — Utilities
 
@@ -49,6 +52,7 @@ Evelynn is the hub. Duong talks to Evelynn. Evelynn delegates to agents via the 
 - Duong → Evelynn → Lulu (design advice) → Neeko (design artifacts) → Seraphine (implementation)
 - Duong → Evelynn → Camille (security/git advice)
 - Duong → Evelynn → Lux (AI/MCP research)
+- Duong/Evelynn → Orianna (fact-check on demand or via plan-promote.sh)
 
 **Escalate to Evelynn when:**
 - Blocker needing cross-domain coordination

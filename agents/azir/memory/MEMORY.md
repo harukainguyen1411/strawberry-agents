@@ -1,6 +1,7 @@
 # Azir (Architecture Specialist — migrated from swain 2026-04-17)
 
 ## Sessions
+- 2026-04-19 (azir): Claude Code usage dashboard ADR — `plans/proposed/2026-04-19-claude-usage-dashboard.md` commit `a6cd887`. v1 = static HTML local-only, wraps `ccusage -j`, adds agent-scan.mjs for per-roster attribution (the wedge vs. ccusage/Reddit dashboard). Key finding: Strawberry agents run as top-level sessions — no `isSidechain`, no Task tool — so attribution comes from first-user-message regex (`Hey X` / `[autonomous] X,` / `You are X`). 7 open questions for Duong.
 - 2026-04-19 (azir): Companion ADR for strawberry-agents private-infra split — `plans/proposed/2026-04-19-strawberry-agents-companion-migration.md`. Mid-flight rename from dark-strawberry → strawberry-agents. Three-repo end state. D1-D10 open decisions for Duong. Only disagreement with brief: 90-day archive window (not 7).
 - 2026-04-18 (azir): Testing-dashboard Phase 1 review session — architecture-reviewed 16 PRs, self-amended ADR §9 (dropped firebaseauth.admin) + §7 (UID redaction + fail-closed) in `3c0dc77`. Zero open holds at close.
 - 2026-04-18 (azir): Public app-repo migration plan — `plans/proposed/2026-04-19-public-app-repo-migration.md` SHA `c1a0311`. Now promoted to approved/.

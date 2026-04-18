@@ -28,29 +28,43 @@ MCP servers (agent-manager, evelynn)
 
 ## Repository Structure
 
+The system spans two repositories after the 2026-04-19 two-repo split:
+
+### `Duongntd/strawberry` (private — agent infrastructure)
+
 ```
 strawberry/
 ├── agents/           # Agent profiles, memory, journals, learnings
 │   ├── evelynn/      # Head agent
-│   ├── swain/        # Architecture
-│   ├── pyke/         # Security & infra
+│   ├── azir/         # Architecture
 │   ├── ...           # (see agent-system.md for full roster)
 │   ├── memory/       # Shared memory (agent-network, duong profile)
 │   ├── roster.md     # Agent directory
 │   └── health/       # Heartbeat script
 ├── architecture/     # This folder — living system docs
 ├── mcps/             # MCP server implementations
-│   ├── agent-manager/  # Agent lifecycle, messaging, conversations
-│   ├── evelynn/        # Evelynn-restricted tools + Telegram
-│   └── shared/         # Shared helpers
-├── apps/             # Applications
-│   ├── discord-relay/  # Discord bot (relay only)
-│   └── myapps/         # Duong's personal apps
-├── scripts/          # Bridge scripts, deploy, health checks
 ├── plans/            # Execution plans (transient)
+├── assessments/      # Analyses, recommendations
+├── scripts/          # Agent-infra scripts (plan lifecycle, hooks)
 ├── .mcp.json         # MCP server configuration
-└── architecture/git-workflow.md   # Git policy reference
+└── CLAUDE.md         # Agent invariants (private)
 ```
+
+### `harukainguyen1411/strawberry-app` (public — application code)
+
+```
+strawberry-app/
+├── apps/             # Applications (portal, myapps, landing, functions, discord-relay, bee-worker, ...)
+├── dashboards/       # Test and monitoring dashboards
+├── .github/
+│   └── workflows/    # All CI/CD workflows
+├── scripts/          # Deploy, setup, and maintenance scripts
+├── tools/            # Helper binaries (decrypt.sh, etc.)
+├── package.json      # Top-level workspace manifest
+└── turbo.json        # Monorepo build config
+```
+
+A third repo, `harukainguyen1411/strawberry-agents`, is planned as the long-term private home for agent infrastructure. See `plans/approved/2026-04-19-strawberry-agents-companion-migration.md`.
 
 ## Design Principles
 

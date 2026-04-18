@@ -29,6 +29,8 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
 
 ## Sessions
+- 2026-04-19 (S4): PR #19 chore/a7-add-cursor-skills. REQUEST CHANGES. reference.md blob SHA diverged from base af2edbc0 — 4 inline `# gitleaks:allow` comments added beyond verbatim scope. 3 other files exact match. CI failures pre-existing (Firebase secret missing, lint errors in unrelated router files). Rule 18 enforced — did not merge.
+- 2026-04-18 (S3): PR #183 Orianna gate bugfixes. APPROVED. Bug A ([0-9]* anchor) + Bug B (awk suppress_next). Merge blocked by GH Actions billing suspension (all checks fail in 2-3s, no compute). Posted advisory comment. Rule 18 enforced — did not merge red.
 - 2026-04-18 (S1): dependabot-cleanup team under Camille. Advisory-LGTM on #156/#157. Shared-account invariant-#18 blocker + GH Actions billing diagnosis surfaced.
 - 2026-04-18 (S2): test-dashboard Phase 1 workstream (R18–R40). LGTMs: #146–#148, #152–#154, #161, #165, #169–#170, #175, #177, #180, #182. Rule-18 violation caught on #159 (zero-review admin merge, bad AR host landed on main — escalated to Evelynn). Stale-view protocol established. Partial-write hazard + batch cap formula patterns added to knowledge base.
 

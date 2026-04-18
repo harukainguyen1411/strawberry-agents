@@ -7,7 +7,36 @@
 - `scripts/safe-checkout.sh` required for any branch work — never raw `git checkout`
 - `tools/decrypt.sh` required for decryption — never raw `age -d`
 
+## Persistent Context — strawberry-app
+
+- `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app` (HEAD `dc64379`, 2026-04-18).
+- `apps/` has 10 subdirs: `coder-worker`, `contributor-bot`, `deploy-webhook`, `discord-relay`, `landing`, `myapps`, `platform`, `private-apps`, `shared`, `yourApps`. No `bee` dir.
+
 ## Completed Tasks
+
+- **2026-04-18 (A3 strawberry-agents push):** Pushed filtered tree to `harukainguyen1411/strawberry-agents`. Final SHA: `650079a845f18e938d0c28f57eb6530911722d0d` (cherry-picked A2 commit onto main after detached HEAD divergence). Secrets set: `AGE_KEY` (from secrets/age-key.txt), `AGENT_GITHUB_TOKEN` (from secrets/github-triage-pat.txt). Branch protection BLOCKED — GitHub free plan does not allow branch protection on private repos (HTTP 403). Deviation noted; requires GitHub Pro upgrade or repo made public. Stopped at A3 per instructions.
+
+
+
+- **2026-04-18 (statusline ci/pr/quota strip):** Stripped `ci`, `prs`, and `quota` fields from `~/.claude/statusline-command.sh`, along with all cache helpers (`cache_read`, `cache_write`, `cache_refresh_bg`, `CACHE_DIR`). Remaining fields: `git`, `model`, `ctx`, `cost`, `todos`, `idle`. Backup at `~/.claude/statusline-command.sh.bak.20260418`. Stale cache files at `/tmp/claude-statusline-cache/{ci_main,pr_queue,quota}` should be manually removed.
+
+- **2026-04-18 (statusline ci/pr/quota add):** Originally added `ci:✓/✗/~/? ` (gh run list, branch-keyed cache), `prs:A/R` (gh pr list, omit if 0/0, review-requested via --search not --review-requested flag), `quota:N%` (ccusage blocks --json, time-based % of 5h window, skip if ccusage absent). All used 60s TTL disk cache at `/tmp/claude-statusline-cache/`. (These fields were later removed.)
+
+
+- **2026-04-18 (statusline idle-time):** Extended `~/.claude/statusline-command.sh` with idle-time field (section 6). Added `UserPromptSubmit` hook in `~/.claude/settings.json` writing `date +%s` to `/tmp/claude-last-prompt-<session_id>`. Colors: dim grey <1m, white 1-5m, yellow 5-30m, red 30m+. Format: `Ns`/`Nm`/`Nh Nm`. Hook reads `$CLAUDE_HOOK_INPUT` env var (not stdin).
+
+- **2026-04-18 (statusLine setup):** Created `~/.claude/statusline-command.sh` and added `statusLine` key to `~/.claude/settings.json`. Script shows: git branch+dirty+ahead/behind, worktree [wt], model, ctx % remaining (color-coded), cost (color-coded), pending todos from `~/.claude/todos/<session_id>.json`.
+
+
+- **2026-04-19 (O4.1-O4.3 orianna memory-audit):** Built three O4 deliverables:
+  `agents/orianna/prompts/memory-audit.md` (pinned audit prompt), `scripts/orianna-memory-audit.sh`
+  (POSIX script — exits 2 if claude CLI absent, fetches fresh SHAs, commits+pushes report),
+  `agents/orianna/runbook-reconciliation.md` (5-step ADR §4.4 runbook). TDD seed at
+  `agents/orianna/learnings/2026-04-19-o4-tdd-stale-seed.md` with two known-stale paths.
+  Commit: e66416f.
+
+- **2026-04-19 (A1 strawberry-agents filter):** Ran `git filter-repo --invert-paths` on fresh bare clone at `migration-base-2026-04-18`. Filtered tree at `/tmp/strawberry-agents-migration` — 914 commits preserved. 2 gitleaks findings (private paths, not blocking). secrets/encrypted/ verified. Report pre-committed by Viktor in `085b781`. Ready for Phase A2 (reference rewrite).
+
 
 - **2026-04-18 (P3.9 smoke test):** Smoke-tested strawberry-app post-migration. PR #18 opened at `harukainguyen1411/strawberry-app/pull/18`. 10 green workflows, 1 red (`Preview` — pre-existing composite-deploy no-dist error, not a migration regression). All critical checks pass. Report: `assessments/2026-04-18-p3-9-smoke-report.md`. Live strawberry commit: `184eb7f`. PR left open for Duong to merge.
 

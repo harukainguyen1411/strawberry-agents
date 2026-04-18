@@ -274,7 +274,7 @@ Use `git filter-repo --path apps/ --path dashboards/ --path .github/workflows/ -
 
 **Problems:**
 - Merge commits from strawberry main will land with one-parent-empty, cluttering history.
-- Some commits touched both private and public paths (e.g. a commit that modified both `agents/evelynn/memory/MEMORY.md` and `apps/myapps/...`). After filter, the commit message still references the agent change even though the agent file is gone. Confusing.
+- Some commits touched both private and public paths (e.g. a commit that modified both `agents/evelynn/memory/evelynn.md` and `apps/myapps/...`). After filter, the commit message still references the agent change even though the agent file is gone. Confusing.
 - gitleaks must scan full rewritten history, not just current state — slower, more false positives to triage.
 - Any past secret near-miss in `apps/`/`scripts/` becomes permanently part of public git history. If rotated but not scrubbed, a historical leak is recoverable.
 
