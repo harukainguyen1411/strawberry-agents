@@ -1,3 +1,13 @@
+## Sessions
+- 2026-04-18 R1: PR #144 (evelynn memory sharding). 2 CRITICAL (noclobber lock race + git add -A secret surface), 2 IMPORTANT (archive prune uses post-move mtime; last-sessions/ never pruned), 2 suggestions. Comment posted.
+- 2026-04-18 R2: PR #144 re-review (commit 8696583). All 5 findings fixed. One residual structural note (partial state on bounded-loop exit) flagged as suggestion, not blocker. Cleared for merge.
+- 2026-04-18 R3: PR #147 (A1 dashboards skeleton). LGTM — no blockers. it.todo correct pre-C1.
+- 2026-04-18 R4: PR #148 (I2 Cloud Run SA IAM). IMPORTANT: roles/firebaseauth.admin over-privileged for token verification (no IAM needed). Suggestion: quote bucket loop array. Storage bucket-scoped grant pattern correct.
+- 2026-04-18 R5: PR #146 (J1 regression lane). LGTM — xfail-flip discipline correct; PR template Testing section clean and reusable.
+- 2026-04-18 R6: PR #150 (B1 Firestore schema). Changes requested. CRITICAL: approved plan deleted instead of archived (rule 4). IMPORTANT: cert("") silent failure — use ADC on Cloud Run; started_at as string breaks Timestamp ordering. SUGGESTIONS: redundant single-field indexes; named app init.
+- 2026-04-18 R7: PR #151 (C1 Vitest setup). Changes requested. CRITICAL: same rule-4 violation from #150 carryover (commit 66fec7c still present). IMPORTANT: env-guard test is self-defeating (mocks own fetch, not real network); @vitest/runner explicit dep creates version-skew risk. SUGGESTION: @vitest/ui unused.
+- 2026-04-18 R8: PR #149 (Ekko TDD hooks + CI). LGTM with coordination needed. IMPORTANT: PR template Testing section conflicts with #146 (J1) — both add ## Testing with different formats; needs design merge before either lands. Smoke convention, hook table, bypass policy all correct vs plan.
+
 ## Migrated from lissandra (2026-04-17)
 # Lissandra
 
