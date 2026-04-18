@@ -1,6 +1,6 @@
 ---
 model: opus
-effort: high
+effort: medium
 thinking:
   budget_tokens: 8000
 permissionMode: bypassPermissions

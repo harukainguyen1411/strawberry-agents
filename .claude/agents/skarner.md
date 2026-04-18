@@ -1,5 +1,5 @@
 ---
-model: haiku
+model: sonnet
 permissionMode: bypassPermissions
 name: Skarner
 description: Memory excavator — searches past logs/journals/learnings on demand, and writes session summaries for agents to their memory log.
