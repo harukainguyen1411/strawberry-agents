@@ -323,7 +323,7 @@ GET    /api/version                     {version, sha, builtAt}
 
 - Firebase Auth on `myapps-b31ea` (already configured for Bee). Reuse.
 - The Cloud Run service validates ID tokens via Firebase Admin SDK.
-- A UID allowlist lives in the service's env (`ALLOWED_UIDS=0DJzc86i5MP74jAwwT4YjvbcAub2`). Anyone else — 403. Simple, boring, correct.
+- A UID allowlist lives in the service's env (`ALLOWED_UIDS=<see secrets/encrypted/dashboards.*.env.age>`). Anyone else — 403. Simple, boring, correct. Empty / unset allowlist **denies all** (fail-closed).
 
 **Service auth:**
 
@@ -384,7 +384,7 @@ The test dashboard is a new surface under the deployment pipeline defined in `pl
 
 - `roles/datastore.user` — Firestore read+write.
 - `roles/storage.objectAdmin` on the test-artifacts buckets only (scoped via IAM condition, not project-wide).
-- `roles/firebaseauth.admin` — verify ID tokens via Admin SDK.
+- No IAM role is required for Firebase ID token verification. `verifyIdToken()` in the Firebase Admin SDK performs local signature verification against Google's public JWK set (fetched from a well-known unauthenticated endpoint) and requires no IAM-gated call. An earlier revision of this ADR listed `roles/firebaseauth.admin` here; that role grants broad Auth user management (create/delete users, password resets, disable accounts) which this service never exercises and would expand blast radius on token compromise. Removed 2026-04-18 (Azir).
 
 ---
 
