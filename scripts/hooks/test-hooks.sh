@@ -171,5 +171,18 @@ else
 fi
 
 echo ""
+echo "=== C2 xfail: pre-commit-unit-tests.sh uses pnpm for dashboards packages ==="
+# xfail: plans/approved/2026-04-17-test-dashboard-phase1-tasks.md task C2
+# Asserts the hook invokes pnpm (not npm) when running dashboards package tests.
+# XFAIL until C2 implementation lands — expected to FAIL on current HEAD.
+if grep -q "pnpm" "$REPO_ROOT/scripts/hooks/pre-commit-unit-tests.sh"; then
+  echo "  PASS: pre-commit-unit-tests.sh references pnpm (C2 wired)"
+  PASS=$((PASS+1))
+else
+  echo "  XFAIL: pre-commit-unit-tests.sh does not reference pnpm — C2 not yet wired (expected on pre-C2 HEAD)"
+  # Do not increment FAIL — this is the expected state before C2 lands
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
