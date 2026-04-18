@@ -49,6 +49,38 @@ If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents
 <!-- #rule-never-rebase -->
 11. **Never use `git rebase`** — always merge.
 
+<!-- #rule-xfail-first -->
+12. **No task starts without an xfail test committed first** — for TDD-enabled services,
+    any implementation commit must be preceded on the same branch by a commit adding
+    an xfail test referencing the plan or task. Enforced by pre-push hook and CI
+    (`tdd-gate.yml`). Agents may never bypass.
+
+<!-- #rule-regression-test -->
+13. **No bug fix lands without a regression test** — commits tagged as bug/bugfix/
+    regression/hotfix must include or be preceded by a regression test in the same
+    branch. Enforced by pre-push hook, CI, and the PR template. Agents may never bypass.
+
+<!-- #rule-pre-commit-unit-tests -->
+14. **Pre-commit hook runs unit tests for changed packages; commit blocked on failure** —
+    installed via `scripts/install-hooks.sh` alongside the secret-scanning and
+    commit-prefix hooks. Agents may not pass `--no-verify`.
+
+<!-- #rule-e2e-required -->
+15. **PR creation triggers Playwright E2E; PR cannot merge red** — GitHub Actions
+    `e2e.yml` runs on every PR to main; required check via branch protection.
+    Agents may never merge a red PR.
+
+<!-- #rule-qa-agent-pre-pr -->
+16. **Before opening a UI PR, a QA agent must run the full Playwright flow with
+    video + screenshots and diff against the Figma design** — report lives under
+    `assessments/qa-reports/` and is linked in the PR body. Enforced by PR body
+    linter. Non-UI PRs exempt.
+
+<!-- #rule-smoke-tests -->
+17. **Post-deploy smoke tests run on stg and prod; rollback on prod failure** —
+    extends the deployment pipeline workflow. Prod smoke failures trigger auto-
+    revert via `scripts/deploy/rollback.sh`. No bypass for prod.
+
 <!-- #rule-no-admin-merge -->
 18. **Agents must NOT use `gh pr merge --admin` or any branch-protection bypass**, and
     must NOT merge a PR they authored. Every merge requires (a) all required status
