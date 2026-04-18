@@ -9,6 +9,9 @@
 
 ## Completed Tasks
 
+- **2026-04-18 (P1 migration real run):** Built filtered tree for `harukainguyen1411/strawberry-app` at `/tmp/strawberry-app-migration`. Tagged base SHA `af2edbc0` as `migration-base-2026-04-18`. Orphan commit `1b6865f` — 1 commit, 602 files, 0 gitleaks leaks on HEAD. Old origin history has 10 findings (not blocking — all in private paths, none in orphan). Telegram bot token in old private history flagged for rotation. Report: `assessments/2026-04-18-p1-filter-report.md`. Ready for Phase 2 (Viktor).
+
+
 - **2026-04-18 (phase-0 audit):** Audited all 13 plan PRs. 11 already MERGED (mix of dual-green and admin-bypass billing-blocked). 2 OPEN: #152 (real CI failures, needs fix), #161 (billing-hardstop CI, no review — needs APPROVED before merge). 0 admin-merge candidates. Audit file: `assessments/2026-04-18-phase-0-merge-queue.md`. Commit: `e0c4508`.
 
 - **2026-04-18 (ulid lockfile fix):** `dashboards/server/package.json` declares `ulid@^3.0.2`; root lockfile was missing it. `npm install --ignore-scripts` added 19 packages. `npm ci` now clean. Commit `dbc1be1`, pushed to main.
