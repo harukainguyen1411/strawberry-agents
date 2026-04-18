@@ -1,2 +1,4 @@
 - 2026-04-17-dependabot-triage.md — `gh api --paginate` for alerts; concentration analysis before batching; overrides over audit-fix-force | last_used: 2026-04-17
 - 2026-04-17-dependabot-phase3-addendum.md — pattern-table cross-ref to executor/verifier learnings; pre-flight re-query for auto-closed alerts; batch serialization by manifest; minimatch per-major override specificity | last_used: 2026-04-17
+- 2026-04-18-workstream-lead-communication-patterns.md — stale-state mutual fault, diagnostic vs prescriptive framing, messages-crossing latency, single-account invariant #18 structural block, escalate before branch surgery | last_used: 2026-04-18
+- 2026-04-18-billing-block-failure-signature.md — all-red-everywhere + log-not-found = billing, not workflows; stand-down playbook | last_used: 2026-04-18
