@@ -16,6 +16,28 @@
 - 2026-04-18 R15: PR #153 re-review (F1+F2 auth). LGTM. All criticals+importants resolved. timingSafeEqual-only compare correct; byte-length check present; xfail ordering fixed; allowlist fails closed; firebase-admin ^13.8.0. Residual: unnamed app (suggestion); commit prefix still chore: not feat:.
 - 2026-04-18 R16: PR #151 re-review (70c05fe). LGTM. All findings resolved: @vitest/runner removed, @vitest/ui removed, env-guard moved to setupFiles (vi.stubGlobal in beforeAll — actually enforces hermetic invariant now).
 - 2026-04-18 R17: PR #154 re-review (B3). LGTM. ArtifactKind fixed to "screenshot"; Storage singleton at module scope. Path format changed to <artifactId>-<kind>.<ext> — acceptable, ADR §3 unspecific on filename format.
+- 2026-04-18 R18: PR #154 re-review (R18 — artifactId path, singleton, xfail kind, rule 12). LGTM.
+- 2026-04-18 R19: PR #148 re-review (fe54233). LGTM. firebaseauth.admin removed; POSIX bucket iteration fixed (set --; for BUCKET do).
+- 2026-04-18 R20: PR #169 (D1 report-run.sh). IMPORTANT: pipe subshell drops artifact uploads (echo|while — wait is no-op); undeclared node dependency. Suggestions: Date.now()+random ID collision; bats skip ≠ it.fails semantics.
+- 2026-04-18 R21: PR #159 (I1 dashboards.sh). CRITICAL: AR_REPO="gcr.io" wrong (use <region>-docker.pkg.dev); IMPORTANT: #!/usr/bin/env bash + pipefail violates rule 10; IMPORTANT: --allow-unauthenticated undocumented.
+- 2026-04-18 R22: PR #165 (C2 pre-commit hook). IMPORTANT: require('./' + pkg_json) CWD-relative — silently skips TDD packages if git runs from subdirectory. Suggestion: grep fallback fragile for multiline JSON.
+- 2026-04-18 R23: PR #161 (C2 verify-only). LGTM. require uses absolute path (correct). Suggestion: staged-file simulation shallow.
+- 2026-04-18 R24: PR #169 re-review (5dfaa4cb). LGTM. Pipe subshell fixed (here-doc); node guard added.
+- 2026-04-18 R25: PR #146 re-review (J1 post-template-collision). LGTM. afa0eb2 drops Testing section; 2 files clean.
+- 2026-04-18 R26: PR #152 re-review (G1 xfail flip). LGTM. 6 passing RTL tests; /monitoring/* correct. Dead renderAt function (suggestion).
+- 2026-04-18 R27: PR #170 (xfail cluster item 1). LGTM. health flip + firestore-rules.xfail uses it.fails correctly.
+- 2026-04-18 R28: PR #153 re-review (1b6389f). LGTM. Viktor converted it.failing xfails to real passing supertest tests — correct.
+- 2026-04-18 R29: PR #177 (D2 POST /api/runs). IMPORTANT: no Firestore batch size guard (500-write cap); IMPORTANT: batch.commit() before signed-URL generation — partial-write hazard if GCS throws. Suggestion: required field validation. API drift check clean.
+- 2026-04-18 R30: PR #180 (I1 fix). CRITICAL resolved (gcr.io→AR). IMPORTANT: pipefail still present (rule 10); IMPORTANT: missing --service-account on gcloud run deploy (I2 IAM bindings won't apply).
+- 2026-04-18 R31: PR #154 re-review (459c5cb). it.fails fix confirmed on signed-urls.xfail. IMPORTANT: unit-tests.yml added out-of-scope with 2 bugs (CWD-relative require; npm instead of pnpm for dashboards).
+
+## Key learnings this session
+- it.failing is Playwright API; Vitest 4.x uses it.fails — wrong API silently registers 0 tests (saved to learnings/)
+- Vitest exclude: ["**/*.xfail.test.ts"] silently swallows xfail files — same silent-defeat pattern
+- Firestore batch cap is 500 writes; always guard casesInput.length before batch
+- gcloud run deploy needs --service-account to use the right SA — default compute SA has wrong IAM
+- gcr.io is Container Registry (deprecated); Artifact Registry uses <region>-docker.pkg.dev/<project>/<repo>/<image>
+- pipe subshell (echo|while) makes background jobs children of subshell; top-level wait is no-op
 
 ## Migrated from lissandra (2026-04-17)
 # Lissandra
