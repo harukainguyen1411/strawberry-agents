@@ -315,23 +315,54 @@ Centered vertically and horizontally. Card not used — flat on background.
 
 ---
 
-## 6. Currency Handling (PENDING swain confirmation)
+## 6. Currency Handling (RESOLVED — per amended ADR §3-§5, 2026-04-19)
 
-**Awaiting T1 amendment.** Two viable layouts; both work in this spec:
+**Per-user base currency** — each user picks USD or EUR at onboarding (`users/{uid}.baseCurrency`). Trades and positions are stored in **native broker currency**; only **derived totals** (summary, P/L, snapshots) are converted to the user's base via `portfolio-tools/` handler reading `users/{uid}/meta/fx`.
 
-- **Option A (single base currency per user):** ADR §4 currently says `baseCurrency: "EUR"` per user. If swain confirms a single per-user currency (USD or EUR), every monetary cell renders in that currency. `<HoldingsTable>` columns stay as specified in §4.3.3.
-- **Option B (native + converted):** if swain decides to show native asset currency alongside user-base, `<HoldingsTable>` desktop adds two columns: `Avg cost (native)` and `Market value (base)`. Mobile `<HoldingRow>` shows base only with a tap-expand to reveal native. `<SummaryCard>` total stays in base currency either way.
+**Holdings display rules:**
 
-**`Money` type (works for both):**
+- **Quantity:** unit count, no currency
+- **Avg cost:** **native currency** (per-position) — what the user actually paid
+- **Market value:** **base currency** — converted, comparable across positions
+- **P/L (abs + %):** **base currency** — comparable, color-coded
+
+This means most rows show **two currencies** (e.g. AAPL: avg cost $148.50 USD, market value €13,650 EUR for a EUR-base user). The currency code is rendered explicitly when it differs from base (e.g. `$148.50` shown subtly with `USD` badge, or styled with light-weight currency symbol).
+
+**Updated `<HoldingsTable>` columns (desktop):**
+| Ticker | Broker | Qty | Avg cost (native) | Market value (base) | P/L (base, %) |
+
+**Updated `<HoldingRow>` (mobile):**
+- Line 1: ticker · broker badge
+- Line 2: `qty · avg $148.50 USD` (--muted, currency suffix when ≠ base)
+- Line 3: market value (base) left, P/L (base) right
+
+**Onboarding currency picker:**
+First-run modal after sign-in if `baseCurrency` is unset:
+```
+┌─ Pick your base currency ──────────┐
+│  All totals and P/L will be shown  │
+│  in this currency.                 │
+│                                    │
+│   ⦿ USD ($)    ◯ EUR (€)          │
+│                                    │
+│  You can change this later in      │
+│  Settings.                         │
+│                                    │
+│         [ Continue → ]             │
+└────────────────────────────────────┘
+```
+- Component: `<BaseCurrencyPicker>` · props: `v-model: 'USD' | 'EUR'` · emits `confirm`
+- Cannot dismiss until selected (no Esc, no backdrop close) — required field
+
+**`Money` type:**
 ```ts
 type CurrencyCode = 'USD' | 'EUR';
 interface Money { amount: number; currency: CurrencyCode; }
 ```
 
-Formatter: `Intl.NumberFormat(locale, { style: 'currency', currency })` — composable
-`useMoneyFormat(money)`. Locale derived from user setting (default `en-US` for USD, `en-IE` for EUR).
+Formatter: `Intl.NumberFormat(locale, { style: 'currency', currency })` via composable `useMoneyFormat(money)`. Locale: `en-US` for USD, `en-IE` for EUR.
 
-**Update after swain replies:** finalize §4.3.3 column list and mobile expand behavior.
+**Visual treatment for native ≠ base:** use a small uppercase currency badge (e.g. `USD`, --muted, text-xs, ml-1) rather than a full `$` symbol overload. Reduces parsing load on rows where multiple currencies appear.
 
 ---
 
@@ -340,11 +371,13 @@ Formatter: `Intl.NumberFormat(locale, { style: 'currency', currency })` — comp
 ### 7.1 First-time user
 
 ```
-sign-in → /  (empty state) → tap "Import CSV"
+sign-in (Firebase email link)
+       → BaseCurrencyPicker modal (USD or EUR) → confirm
+       → /  (empty state) → tap "Import CSV"
        → /import (Step 1) → drop file
        → parse client-side → /import (Step 2 preview)
        → tap "Commit import" → loading → toast "Imported 47 trades"
-       → redirect /  (loaded state)
+       → redirect /  (loaded state, all totals in chosen base)
 ```
 
 ### 7.2 Account switch
@@ -398,8 +431,9 @@ New components to build (all in `apps/myapps/portfolio-tracker/src/components/`)
 | `WarnBanner.vue` | new | warn variant |
 | `ErrorBanner.vue` | new | error variant |
 | `EmptyState.vue` | new | reusable, props: `icon, title, body, ctaLabel, ctaTo` |
-| `MoneyCell.vue` | new | wraps `Intl.NumberFormat`; props: `Money` |
-| `PlCell.vue` | new | formats P/L abs + pct + arrow + color |
+| `MoneyCell.vue` | new | wraps `Intl.NumberFormat`; props: `Money`, optional `showCurrencyBadge` for native≠base |
+| `PlCell.vue` | new | formats P/L abs + pct + arrow + color (base currency only) |
+| `BaseCurrencyPicker.vue` | new | onboarding modal, undismissable until selected |
 
 Composables:
 
@@ -414,7 +448,7 @@ Existing tokens/utilities to reuse: `.ds-glass`, `.ds-btn-primary`, `.ds-btn-gho
 ## 10. Open Items for Duong / Team
 
 1. **Figma file standup** (Duong-only) — needed before T7/T8 (QA gate rule 16). Mirror this spec into "Strawberry — Portfolio v0" frame-by-frame.
-2. **Currency model** — pending swain T1 amendment (see §6).
+2. **Currency model** — RESOLVED per amended ADR (see §6); native cost + base totals.
 3. **Sector / asset class display** — schema has them (ADR §4); v0 spec hides them on mobile to keep rows scannable. Confirm OK to defer to v1.
 4. **Re-import diff calculation** — spec assumes idempotent merge (per ADR §5); if swain wants explicit "replace all" path, add a confirm dialog.
 5. **Empty-state imagery** — using strawberry emoji as placeholder; consider commissioning a small SVG illustration matching landing page style.
