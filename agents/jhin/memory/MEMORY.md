@@ -1,3 +1,7 @@
+## Sessions
+- 2026-04-18 R1: PR #144 (evelynn memory sharding). 2 CRITICAL (noclobber lock race + git add -A secret surface), 2 IMPORTANT (archive prune uses post-move mtime; last-sessions/ never pruned), 2 suggestions. Comment posted.
+- 2026-04-18 R2: PR #144 re-review (commit 8696583). All 5 findings fixed. One residual structural note (partial state on bounded-loop exit) flagged as suggestion, not blocker. Cleared for merge.
+
 ## Migrated from lissandra (2026-04-17)
 # Lissandra
 
