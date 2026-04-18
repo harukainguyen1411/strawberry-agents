@@ -12,15 +12,12 @@ setup() {
 
 # --- Test 1: unit type times out at 2s on POST ---
 @test "unit reporter: POST times out at 2s when service is unreachable" {
-  # xfail: report-run.sh not yet implemented
-  skip "xfail: D1 not yet implemented"
-
   # Start a listener that never responds (simulates hung service)
   nc -l "$MOCK_PORT" >/dev/null 2>&1 &
   NC_PID=$!
 
   start=$(date +%s)
-  run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" unit
+  DASHBOARD_URL="http://127.0.0.1:${MOCK_PORT}" run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" unit
   end=$(date +%s)
   elapsed=$(( end - start ))
 
@@ -33,27 +30,20 @@ setup() {
 
 # --- Test 2: e2e type soft-fails (exit 0 + stderr warning) when unreachable ---
 @test "e2e reporter: exits 0 with stderr warning when service unreachable" {
-  # xfail: report-run.sh not yet implemented
-  skip "xfail: D1 not yet implemented"
-
-  run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" e2e
+  DASHBOARD_URL="http://127.0.0.1:${MOCK_PORT}" run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" e2e
   [ "$status" -eq 0 ]
-  [[ "$output" =~ "warning" ]] || [[ "$stderr" =~ "warning" ]]
+  [[ "$output" =~ "warning" ]] || [[ "$output" =~ "warning" ]]
 }
 
 # --- Test 3: script POSTs correct body shape to /api/runs ---
 @test "report-run.sh: POSTs JSON body with required fields to /api/runs" {
-  # xfail: report-run.sh not yet implemented
-  skip "xfail: D1 not yet implemented"
-
-  # Start a mock HTTP server that captures the request body
+  # Start a mock HTTP server that captures the request body and replies 200
   CAPTURED=$(mktemp)
-  # Use nc to accept one connection and record what was sent
-  (nc -l "$MOCK_PORT" > "$CAPTURED" 2>/dev/null; echo "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n{}" ) &
+  (printf 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: 15\r\n\r\n{"run_id":"x1"}'; sleep 1) | nc -l "$MOCK_PORT" > "$CAPTURED" 2>/dev/null &
   NC_PID=$!
-  sleep 0.1  # give nc time to bind
+  sleep 0.2  # give nc time to bind
 
-  run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" unit
+  DASHBOARD_URL="http://127.0.0.1:${MOCK_PORT}" run bash scripts/report-run.sh "${FIXTURE_DIR}/vitest-sample.json" unit
   kill "$NC_PID" 2>/dev/null || true
 
   # Body must contain required top-level fields per ADR §6
