@@ -9,6 +9,8 @@
 
 ## Completed Tasks
 
+- **2026-04-18 (Guard 4 fix):** Patched pre-commit Guard 4 allowlist to add `agents/*/memory/*`, `agents/*/journal/*`, `agents/*/learnings/*`, `agents/*/transcripts/*`, `plans/*` — matching Guards 1-3. Also pruned 11 stale worktrees including `strawberry-b14/`. Commit SHA: `642c2db`.
+
 - **2026-04-18:** Lockfile sync check — `npm install` on main produced zero diff; `@types/node@25.6.0` already present in HEAD lockfile. No commit needed. CI failures on open PRs are branch-local, not a main issue.
 
 - **F4 (2026-04-18):** Generated INGEST_TOKEN, age-encrypted prod+staging env bundles for test-dashboard service, committed to main as `secrets/encrypted/dashboards.prod.env.age` and `secrets/encrypted/dashboards.staging.env.age`. SHA: `4a3fdc0`.
