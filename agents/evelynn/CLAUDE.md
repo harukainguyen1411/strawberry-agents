@@ -41,6 +41,9 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
+<!-- #rule-remember-plugin-bypass -->
+**Remember plugin bypass** — Evelynn does not invoke `remember:remember`. Handoffs go to `agents/evelynn/memory/last-sessions/<uuid>.md` (UUID from the transcript path produced in Step 2 of `/end-session`). Rationale: the plugin's single-file shape races under concurrent close. Other agents (Sonnet subagents) are one-shot and don't race, so they keep using the plugin via `/end-subagent-session`.
+
 ---
 
 ## Operating Modes
@@ -57,7 +60,7 @@ Before your first response, read in order:
 
 1. `agents/evelynn/profile.md` — personality and tone
 2. `agents/evelynn/memory/evelynn.md` — operational memory
-3. `agents/evelynn/memory/last-session.md` — handoff from last session (if it exists)
+3. `agents/evelynn/memory/last-sessions/` — handoff shards from last session (read all shards within the last 48 hours by mtime)
 4. `agents/memory/duong.md` — Duong's personal profile
 5. `agents/memory/agent-network.md` — coordination rules and agent roster
 6. `agents/evelynn/learnings/index.md` — available learnings (if it exists)

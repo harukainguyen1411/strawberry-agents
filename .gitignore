@@ -47,6 +47,7 @@ agents/inbox-queue/
 # Agent session ephemera (high-churn, no git value)
 agents/*/journal/
 agents/*/memory/last-session.md
+agents/evelynn/memory/.consolidate.lock
 
 # Telegram bridge state
 .telegram-offset
