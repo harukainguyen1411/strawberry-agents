@@ -19,7 +19,7 @@ Any implementation commit in a TDD-enabled package must be preceded on the same 
 - Bypass: `TDD-Waiver: <reason>` trailer on the tip commit (Duong only)
 
 **xfail annotations recognised:**
-- Vitest: `it.failing`
+- Vitest: `it.fails` (NOT `it.failing` — that is Playwright's API and throws in Vitest)
 - Playwright: `test.fail`
 - pytest: `@pytest.mark.xfail`
 - Shell/bats: `# xfail:` comment
