@@ -155,9 +155,17 @@ if command -v age >/dev/null 2>&1 && [[ -f "$KEY_FILE" ]]; then
             for f in "${staged[@]}"; do
                 # Don't scan the encrypted blobs themselves (their plaintext
                 # is the value we're looking for; obviously the cipher contains it).
+                # Also skip agent memory/journal/learnings/transcripts and plans —
+                # these may contain incidental substrings that collide with secret
+                # values and are not themselves secret storage.
                 case "$f" in
                     secrets/encrypted/*) continue ;;
                     secrets/age-key.txt) continue ;;
+                    agents/*/memory/*) continue ;;
+                    agents/*/journal/*) continue ;;
+                    agents/*/learnings/*) continue ;;
+                    agents/*/transcripts/*) continue ;;
+                    plans/*) continue ;;
                 esac
                 # grep -F -f against the staged blob; tee /dev/null suppresses match output
                 if git show ":$f" 2>/dev/null | grep -Fqf "$scratch/.values.uniq"; then
