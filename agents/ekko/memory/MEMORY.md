@@ -21,6 +21,13 @@
 - `apps/` has 10 subdirs: `coder-worker`, `contributor-bot`, `deploy-webhook`, `discord-relay`, `landing`, `myapps`, `platform`, `private-apps`, `shared`, `yourApps`. No `bee` dir.
 - PR #31 (`feat/usage-dashboard-build-sh`): lock file was out of sync after T4 build.sh work; fixed by Jhin (commit `12a817a`). Pattern: "fails in <10s at npm ci" = missing lock file entries for new workspace/dep.
 
+## Persistent Context — PRs #29/#32/#33/#38 (2026-04-19)
+
+- PRs #29, #32, #33 QA-lint now green — replaced `QA-Report: pending` with `QA-Waiver:` lines.
+- Lint failures on #29/#32/#33 remain red (pre-existing `no-unused-expressions` in task-list + read-tracker routers swept by Turbo).
+- PR #38 (`fix/router-lint-errors`): fixes both `apps/myapps/task-list/src/router/index.ts` (line 26) and `apps/myapps/read-tracker/src/router/index.ts` (line 31). Needs review + merge, then feature branches merge main to unblock.
+- Worktree for #38 at `/tmp/strawberry-app-lint-fix` — can be pruned after merge.
+
 ## Completed Tasks
 
 - **2026-04-19 (P1.3 env ciphertext):** Created `secrets/env/myapps-b31ea.env.age` in strawberry-app (branch `chore/p1-3-env-ciphertext`, commit `9942523`). Also updated `.gitignore` and `pre-commit-secrets-guard.sh` to allowlist `secrets/env/`. Four keys: GITHUB_TOKEN, BEE_GITHUB_REPO, BEE_SISTER_UIDS, DISCORD_WEBHOOK_URL. Re-encrypted `github-triage-pat.age` in strawberry-agents (branch `chore/refresh-triage-pat`, commit `8ba090f`).
