@@ -13,7 +13,7 @@
 - **Mid-session scope change from Evelynn:** Phase 2 shifted from sed-rewrite to parametrize-slug-everywhere. Replaced original P2.2 with P2.P1-P2.P6 (per file-category) + P2.Z regression-guard hook. Viktor owns parametrization; Ekko retains grep + build-verify + template fix. Four parallel windows now (A, B, C, D) — new Window B is Phase 2 fan-out.
 - Dispatch order: strict spine + 4 parallel windows (A Phase-1 cleanup, B Phase-2 parametrize fan-out, C Phase-3 post-push, D Phase-5 doc updates) + owner-concurrent clock table.
 
-## Conventions Kayn follows
+## Key Knowledge
 
 - Task IDs: `P<phase>.<step>` pattern (e.g. P1.3, P3.8); sub-letters (P1.1b, P1.1c) allowed for amendments inside a step.
 - Every task names: owner, inputs, outputs, acceptance gate, rollback point (ADR §6.3 row ref), blockers, Duong-in-loop flag.
