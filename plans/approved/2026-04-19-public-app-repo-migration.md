@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-19
 title: Public app-repo migration — split strawberry into private agent-infra + public apps for unlimited Actions minutes
