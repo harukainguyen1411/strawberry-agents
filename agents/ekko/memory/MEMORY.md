@@ -1,0 +1,16 @@
+# Ekko Memory
+
+## Persistent Context
+
+- Working tree is shared with other agents (Jhin, Viktor, Vi, etc.) — always use explicit `git add <specific-files>`, never `git add -A` or `git add .`
+- Commits from this agent: use `chore:` or `ops:` prefix for non-code infra work
+- `scripts/safe-checkout.sh` required for any branch work — never raw `git checkout`
+- `tools/decrypt.sh` required for decryption — never raw `age -d`
+
+## Completed Tasks
+
+- **F4 (2026-04-18):** Generated INGEST_TOKEN, age-encrypted prod+staging env bundles for test-dashboard service, committed to main as `secrets/encrypted/dashboards.prod.env.age` and `secrets/encrypted/dashboards.staging.env.age`. SHA: `4a3fdc0`.
+- **2026-04-18:** Git hygiene sweep — removed stale branches, pruned remotes
+- **C2 (2026-04-18):** Pre-commit hook wiring for dashboards pnpm — PR #165. Hook detects `dashboards/**` staged changes and runs `pnpm -C <pkg> test:unit`; non-dashboards TDD packages keep `npm run`. Xfail in `scripts/hooks/test-hooks.sh`.
+- **2026-04-18:** TDD hooks + CI wiring task completed
+- **2026-04-17:** Dependabot B5/B7 vitest3 upgrade
