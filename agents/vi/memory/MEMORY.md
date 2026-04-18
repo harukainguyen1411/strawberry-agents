@@ -26,6 +26,7 @@
 ## Sessions
 - 2026-04-19: PR #26 round 2 — fixed misnamed permission-denied test (now calls with real UID + asserts permission-denied/not_authorized_for_bee), fixed lockfile drift (deleted lockfile, added root override vitest=4.0.18, pinned apps/myapps workspace); tip SHA ef7c188
 - 2026-04-19: T10 Playwright smoke — wrote 11-test suite for usage-dashboard static-load path; 11/11 green; found CSS ordering bug (hidden+flex); QA report filed; PR #39 open (strawberry-app)
+- 2026-04-19: P1.4 CI fix — pushed 2 unpushed commits (dfb6f49 lockfile regen + ef7c188 vitest workspace pin) + lint fix (a5be709 remove unused beforeEach); PR #26 updated with QA-Waiver; Unit Tests/TDD Gate/PR Body Linter/E2E all green; remaining failures pre-existing (rollup linux binary, portfolio-tracker lint, Firebase hosting)
 
 ## Archive Note
 
