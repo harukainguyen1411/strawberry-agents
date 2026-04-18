@@ -14,5 +14,6 @@
 - **F4 (2026-04-18):** Generated INGEST_TOKEN, age-encrypted prod+staging env bundles for test-dashboard service, committed to main as `secrets/encrypted/dashboards.prod.env.age` and `secrets/encrypted/dashboards.staging.env.age`. SHA: `4a3fdc0`.
 - **2026-04-18:** Git hygiene sweep — removed stale branches, pruned remotes
 - **C2 (2026-04-18):** Pre-commit hook wiring for dashboards pnpm — PR #165. Hook detects `dashboards/**` staged changes and runs `pnpm -C <pkg> test:unit`; non-dashboards TDD packages keep `npm run`. Xfail in `scripts/hooks/test-hooks.sh`.
+- **2026-04-18 (it.fails fix):** Both xfail detectors (`tdd-gate.yml` line 74 + `pre-push-tdd.sh` line 72) updated to match `it\.fails|it\.failing`. Vitest uses `it.fails`; Playwright uses `it.failing`. Both now accepted. Pushed to main as `11d4566`.
 - **2026-04-18:** TDD hooks + CI wiring task completed
 - **2026-04-17:** Dependabot B5/B7 vitest3 upgrade
