@@ -7,7 +7,7 @@ title: TDD Workflow Rules — codified in CLAUDE.md and git hooks
 
 # TDD Workflow Rules
 
-Codify strict Test-Driven Development for the new test-dashboard service and all new services going forward. This plan specifies the **rules, enforcement mechanisms, file locations, bypass policies, and interactions** with existing strawberry invariants. Implementation (hook scripts, workflow YAML, PR template wording, branch protection config) is **out of scope** — that is Shen's job once this plan is approved.
+Codify strict Test-Driven Development for the new test-dashboard service and all new services going forward. This plan specifies the **rules, enforcement mechanisms, file locations, bypass policies, and interactions** with existing strawberry invariants. Implementation (hook scripts, workflow YAML, PR template wording, branch protection config) is **out of scope** — that is Ekko's job once this plan is approved.
 
 ---
 
@@ -22,7 +22,7 @@ Codify strict Test-Driven Development for the new test-dashboard service and all
 
 **Out of scope:**
 
-- Writing the hook scripts or CI workflows (Shen).
+- Writing the hook scripts or CI workflows (Ekko).
 - Choosing the unit test framework, Playwright config, or design-diff tooling (separate plan; this one references them abstractly).
 - Retrofitting existing services — rules apply to **new services** starting with the test-dashboard. Existing services are grandfathered until a separate migration plan lands.
 
@@ -125,7 +125,7 @@ Codify strict Test-Driven Development for the new test-dashboard service and all
 
 **Enforcement mechanism.**
 - **GitHub Actions workflow** `.github/workflows/e2e.yml` — triggers on `pull_request` to `main`, runs Playwright against a preview deploy (or ephemeral Firebase emulator, depending on surface). Uploads traces, videos, and the HTML report as workflow artifacts.
-- **Branch protection on `main`** — requires the `e2e` check to pass before merge. Configured via `gh api` in `scripts/setup-branch-protection.sh` (Shen to author).
+- **Branch protection on `main`** — requires the `e2e` check to pass before merge. Configured via `gh api` in `scripts/setup-branch-protection.sh` (Ekko to author).
 - **PR template** — links to artifact upload location and reminds the author to inspect before requesting review.
 - **CLAUDE.md invariant** (new rule 15).
 
@@ -189,7 +189,7 @@ Codify strict Test-Driven Development for the new test-dashboard service and all
 **File/location.**
 - Workflow: `.github/workflows/deploy.yml` (extends the deployment-pipeline ADR's spec — coordinate with Azir's plan at `plans/proposed/2026-04-17-deployment-pipeline.md`).
 - Rollback script: `scripts/deploy/rollback.sh`.
-- Smoke test tagging convention: documented in `architecture/testing.md` (to be created by Shen).
+- Smoke test tagging convention: documented in `architecture/testing.md` (to be created by Ekko).
 - Rule text: `CLAUDE.md` rule 17.
 
 **Bypass policy.**
@@ -197,7 +197,7 @@ Codify strict Test-Driven Development for the new test-dashboard service and all
 - Staging smoke failures can be overridden by Duong with a `SMOKE-WAIVER:` environment variable passed into the workflow dispatch, but prod smoke failures always trigger rollback.
 
 **Interaction.**
-- Directly extends the deployment-pipeline ADR (`2026-04-17-deployment-pipeline.md`) — this rule is the TDD-side contract for the auto-revert requirement that ADR already specifies. The two plans must be implemented together; Shen should read both before touching `deploy.yml`.
+- Directly extends the deployment-pipeline ADR (`2026-04-17-deployment-pipeline.md`) — this rule is the TDD-side contract for the auto-revert requirement that ADR already specifies. The two plans must be implemented together; Ekko should read both before touching `deploy.yml`.
 - `chore:` / `ops:` prefix (rule 5) unaffected — smoke runs on already-merged commits.
 - No rebase (rule 11) — rollback is a new commit on main (a `ops:` revert commit), not a history rewrite.
 
@@ -239,7 +239,7 @@ These additions leave rules 1–11 unchanged and preserve their numbering.
 
 ---
 
-## 5. Implementation Order (for Shen)
+## 5. Implementation Order (for Ekko)
 
 This plan does not assign implementers, but notes the natural ordering so Evelynn can sequence the follow-up work:
 
