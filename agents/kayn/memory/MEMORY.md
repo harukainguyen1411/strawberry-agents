@@ -19,3 +19,7 @@
 - Every task names: owner, inputs, outputs, acceptance gate, rollback point (ADR §6.3 row ref), blockers, Duong-in-loop flag.
 - Acceptance gates prefer named-gate references over prose ("Caitlyn gate 'xxx'"); fallback to ADR §X item N when no gate file yet exists.
 - Dispatch sections end every breakdown: critical-path spine, parallel windows, hard serial points, owner-concurrent clock.
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

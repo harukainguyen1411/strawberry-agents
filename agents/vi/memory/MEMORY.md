@@ -7,3 +7,7 @@
 
 ## Sessions
 - 2026-04-18: xfail cluster + TDD discipline — seeded 7-item xfail cluster across B1/B3/F1/F2/F3/G1; found and fixed it.failing→it.fails; fixed #170 CI (lockfile, QA-Waiver, workflow npm install); all cluster items closed
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

@@ -14,3 +14,7 @@ Opus planner / workstream lead. Authors plans and coordinates Sonnet executor te
 - **Billing-block failure signature**: when every required check across every PR goes red simultaneously and `gh run view --log-failed` returns "log not found", check GitHub Actions billing/spending limit BEFORE investigating workflows. Today's diagnosis took 30 min; next time should be under 2.
 - **Raw worktree bypass**: `safe-checkout.sh` refuses on foreign dirty files (other agents' uncommitted work in primary checkout). Raw `git worktree add -b <branch> <path> main` is the correct escape hatch — it's invariant-#3 compliant (uses worktree mechanism) and the new worktree sees a clean tree regardless of primary state.
 - **Plan promotion (approved→in-progress)**: `plan-promote.sh` only handles `proposed/→*`. Raw `git mv` with frontmatter status rewrite is the compliant path for approved→in-progress (no Drive doc past proposed/, so no unpublish needed).
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
