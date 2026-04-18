@@ -22,6 +22,7 @@
 - 2026-04-18 (O6 bugs): Fixed three bugs Vi caught in O6 smoke testing — invalid claude CLI flags in orianna-fact-check.sh + orianna-memory-audit.sh; brace-expansion false positives in fact-check-plan.sh.
 - 2026-04-18 (Bug-A Bug-B): Fixed report picker prefix collision ([0-9]* glob) and implemented orianna:ok suppression syntax. PR #183 pushed, awaiting review.
 - 2026-04-19 (P1.2-C): Implemented scripts/deploy/_lib.sh (7 helpers). 26/26 bats tests green on branch chore/p1-2-lib-sh-xfail, commit d52f1b9. PR creation deferred — Evelynn/Duong to open.
+- 2026-04-19 (P1.2 review I1+I4): PR #25 REQUEST_CHANGES from Jhin. Pushed missing d52f1b9 (C1). Hardened DL_REPO_ROOT detection — BASH_SOURCE[0] now authoritative, command-v fallback only when basename==tools (I1). Added 2 new bats tests. Deleted deploy script from apps/myapps/functions/package.json (I4). 28/28 tests green. Remote tip: 20c8c27.
 
 ## Archive Note
 
