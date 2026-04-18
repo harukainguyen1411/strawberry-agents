@@ -9,6 +9,8 @@
 
 ## Completed Tasks
 
+- **2026-04-18 (P3.9 smoke test):** Smoke-tested strawberry-app post-migration. PR #18 opened at `harukainguyen1411/strawberry-app/pull/18`. 10 green workflows, 1 red (`Preview` — pre-existing composite-deploy no-dist error, not a migration regression). All critical checks pass. Report: `assessments/2026-04-18-p3-9-smoke-report.md`. Live strawberry commit: `184eb7f`. PR left open for Duong to merge.
+
 - **2026-04-18 (P3.1 migration push):** Squashed 7 commits to 1 on `/tmp/strawberry-app-migration`, force-pushed to `harukainguyen1411/strawberry-app`. Remote SHA: `344267362ab469cd8fc947ef7d91c6cc935a8368`. Commit count = 1, 795 recursive tree objects (605 files). Gitleaks 0 findings. Report: `assessments/2026-04-18-p3-1-push-report.md`. Live strawberry commit: `f9df72c`.
 
 
