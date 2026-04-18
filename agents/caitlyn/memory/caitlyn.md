@@ -8,6 +8,7 @@
 - 2026-04-12: Forensic read-only investigation. Root-caused blank page at apps.darkstrawberry.com.
 - 2026-04-18: Phase 1 test-dashboard QA coordination. Seeded 32-task backlog, coordinated ~8 parallel agent sessions through 15 PRs to 11-PR dual-green pool. See learnings/2026-04-18-*.md for coordinator patterns.
 - 2026-04-18 (subagent): Authored acceptance-criteria gate checklist for public-repo migration — 57 gates across 7 phase sections (`assessments/2026-04-18-migration-acceptance-gates.md`). Replaces waived TDD discipline for migration ops.
+- 2026-04-19 (subagent): T5 — wrote Portfolio Tracker v0 test plan (`plans/proposed/2026-04-19-portfolio-tracker-v0-test-plan.md`). Unit + emulator integration + Playwright E2E + edge cases + rule-16 QA gate, xfail-aligned to Kayn's V0.1–V0.20.
 
 ## Working Notes
 - Agent-manager server.py is the core inter-agent communication layer — review with extra care.
