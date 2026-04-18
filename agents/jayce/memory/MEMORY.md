@@ -11,6 +11,8 @@
 - [2026-04-18 O6 smoke bug fixes](../learnings/2026-04-18-o6-smoke-bug-fixes.md) — correct claude CLI flags: --non-interactive→-p, --system→--system-prompt, --subagent→--agent, --prompt removed (positional); brace-expansion filter added to fact-check-plan.sh
 - [2026-04-18 Orianna gate Bug-A and Bug-B](../learnings/2026-04-18-orianna-gate-bug-a-b.md) — Bug-A: [0-9]* anchor in report picker glob prevents prefix-collision with plan variants; Bug-B: orianna:ok suppression implemented in awk extract_tokens + LLM prompt + claim-contract.md §8
 
+- [2026-04-19 P1.2-C _lib.sh](../learnings/2026-04-19-p1-2-lib-sh-implementation.md) — repo-root detection heuristic via decrypt.sh on PATH; comment text triggers static scanners; safe-to-source discipline; no cipher-existence check in dl_decrypt_env
+
 ## Sessions
 - 2026-04-18: Assigned B16 (task #8); B16a worktree created, recon surfaced PR #141 supersession path; stood down on GitHub Actions billing block before any commit/push.
 - 2026-04-18 (session 2): D2 POST /api/runs (PR #177) + D1 report-run.sh fixes (PR #169) + B3 signed-urls CI fixes (PR #154). All three PRs pushed; awaiting Jhin/Azir review + Duong merge.
@@ -19,6 +21,7 @@
 - 2026-04-19: Orianna O3.1-O3.4 — built fact-check gate scripts and plan-promote integration. O1.1 (.claude/agents/orianna.md) blocked by write-permission guard; Duong needs to create that file manually.
 - 2026-04-18 (O6 bugs): Fixed three bugs Vi caught in O6 smoke testing — invalid claude CLI flags in orianna-fact-check.sh + orianna-memory-audit.sh; brace-expansion false positives in fact-check-plan.sh.
 - 2026-04-18 (Bug-A Bug-B): Fixed report picker prefix collision ([0-9]* glob) and implemented orianna:ok suppression syntax. PR #183 pushed, awaiting review.
+- 2026-04-19 (P1.2-C): Implemented scripts/deploy/_lib.sh (7 helpers). 26/26 bats tests green on branch chore/p1-2-lib-sh-xfail, commit d52f1b9. PR creation deferred — Evelynn/Duong to open.
 
 ## Archive Note
 
