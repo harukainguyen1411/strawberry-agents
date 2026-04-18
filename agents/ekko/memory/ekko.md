@@ -4,6 +4,7 @@
 Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead direction.
 
 ## Sessions
+- 2026-04-19 (subagent, ekko-dv0): Filed portfolio-v0 DV0 asks in assessments/; recommended reusing myapps-b31ea Firebase project; awaiting Duong on DV0-1/DV0-2/DV0-3/DV0-4.
 - 2026-04-19 (subagent, T9 Discord): Created #portfolio-digest channel + webhook on Strawberry server, restricted to Duong, encrypted webhook URL, committed + pushed.
 - 2026-04-18 (subagent, testing-process): TDD hooks + CI wiring (PR #149 merged), C2 pre-commit dashboards hook (PR #165), xfail docs (PR #175). Fixed stale-base Azir blocker on #165.
 - 2026-04-18 (subagent, dependabot B10-B14): Shipped 6 PRs (#156 B14 merged, #157 B12, #158 B13 merged, #171 B11b, #174 B11a, #176 B11). Reviewed 4 B10 action-bump PRs.
