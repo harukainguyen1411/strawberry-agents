@@ -14,6 +14,7 @@
 - 2026-04-11 (s7): Feedback loop Phase A+B. PR #67. 10 files changed.
 - 2026-04-14 (s8): PR #105 blockers (M1/M2) + LOW findings (L1-L4). Commits 34b1c38, a8d8a7d.
 - 2026-04-17: Dependabot Phase 2. B4c/B4d/B4e/B4f/B4h/B9 — PRs #129/130/131/136/138/140 merged. apps/myapps audit clean (0 vulns). 104→25 open alerts.
+- 2026-04-18: Evelynn memory sharding. PR #144 open. Per-session UUID-keyed shards, consolidation script, SessionStart hook update, end-session SKILL.md rewrite. Smoke test passed.
 
 ## Key Knowledge
 - Bash sandbox denylist: `--format`, `>` redirects, heredocs blocked. Use python3 -c for workarounds.
