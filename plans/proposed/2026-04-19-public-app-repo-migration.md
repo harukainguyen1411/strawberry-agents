@@ -37,7 +37,7 @@ Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the
 
 | Path | Notes |
 |------|-------|
-| `apps/**` | Portal, myapps, landing, functions, shared, discord-relay, coder-worker, deploy-webhook, contributor-bot. **Exception:** `apps/private-apps/**` stays private — see §2.3. |
+| `apps/**` | Portal, myapps, landing, functions, shared, discord-relay, coder-worker, deploy-webhook, contributor-bot, **bee-worker** (apps/private-apps/bee-worker — moved to public per Duong 2026-04-18). |
 | `dashboards/**` | test-dashboard, dashboard, server, shared |
 | `.github/workflows/**` | All 14 workflows |
 | `.github/branch-protection.json` | Template; re-applied via `scripts/setup-branch-protection.sh` |
@@ -81,7 +81,6 @@ Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the
 | `design/**` | Figma mirrors, design artifacts. Private for now; case-by-case publish later. |
 | `mcps/**` | MCP server configs — may reference API keys in shape. Private until audited. |
 | `strawberry-b14/**`, `strawberry.pub/**` | Legacy worktrees or mirrors — delete before migration; not part of either repo. |
-| `apps/private-apps/**` | `bee-worker` (private-by-name). Stays in strawberry **or** moves into an `apps/private-apps/` path in a separate private repo; for this migration, stays in strawberry. |
 | `tests/` (root-level, if any) | Case-by-case; most test fixtures go with their apps. |
 
 ### 2.4 Dual-tracked files
@@ -348,17 +347,17 @@ Adopted to avoid coupling drift between strawberry and strawberry-app.
 
 ---
 
-## 8. Open decisions for Duong
+## 8. Decisions (captured 2026-04-18)
 
-These require Duong's explicit call before the migration session starts.
+1. **Repo name:** `strawberry-app`.
+2. **LICENSE:** none — source-available, all rights reserved.
+3. **History strategy:** single squashed commit (§5.1).
+4. **Marketing stance:** quiet launch — public repo exists, no announcement.
+5. **Phase 0 CI override:** one-time admin-merge of dual-green PRs is acceptable if minutes are still 0 at session start. Document as incident.
+6. **`apps/private-apps/bee-worker` placement:** **moves to strawberry-app (public)**. Override of Azir's default. All apps ship from the public repo.
+7. **`architecture/` triage:** Azir's §2.5 table accepted as-is.
 
-1. **Repo name.** Default: `strawberry-app`. Alternatives: `strawberry-code`, `darkstrawberry`, `mmp-app`, `dashboards`. Recommend `strawberry-app`.
-2. **LICENSE.** Default: **no LICENSE** — public repo with no license means "source-available, all rights reserved." Contributors understand they have no reuse rights. Alternatives: MIT (permissive, common for side projects), AGPL-3.0 (copyleft, prevents closed-source forks). Recommend **no LICENSE** until Duong has a clear opinion on contributions.
-3. **History strategy.** Default: **single squashed commit** (§5.1). Alternative: path-filter preserve (§5.2). Recommend squash.
-4. **Marketing stance.** Default: **quiet public launch** — public repo exists, no announcements, no pinned README tagline. Alternatives: hype the launch (pinned README, Twitter post, showhn). Recommend quiet.
-5. **Phase 0 CI-minute override.** If minutes are still 0 when Phase 0 starts, is it acceptable to disable required checks temporarily and admin-merge the dual-green PRs? Default: **yes, once, documented as incident**. Alternatives: wait 13 days for minute reset. Recommend one-time admin-merge (all PRs already dual-green, zero risk).
-6. **`apps/private-apps/bee-worker` placement.** Default: **stays in strawberry under `apps/private-apps/`**. Alternatives: third repo (`strawberry-private-apps`), delete and rebuild public. Recommend stays private, reconsider in a later plan.
-7. **`architecture/` triage disputes.** The §2.5 table is Azir's default classification. If Duong disagrees on any file, override in session.
+Additional decision: **skip formal TDD** for migration ops. Replace with Caitlyn-authored acceptance-criteria gate checklist (see §9), baked into Kayn's task gates.
 
 ---
 
@@ -388,4 +387,5 @@ After 7 days stable: Phase 6 executes, code paths deleted from strawberry.
 - **Caitlyn:** owns Phases 3, 5. Secrets, branch protection, Firebase binding, agent-memory update. Runs in parallel with Ekko where possible (Phase 3 step 1 needs Ekko's push first).
 - **Duong actions** (not delegable to agents): §4.0 preflight; §6.1 secret entry; Phase 3 step 8 Firebase binding cutover; Phase 6 purge commit confirmation.
 - **Azir (not this session):** if §7 cross-repo conventions need expansion, a follow-up ADR may be needed.
-- **Do not start** until §8 decisions are captured. Write decisions into this plan before promotion to `approved/`.
+- **Scope note:** all apps — including `apps/private-apps/bee-worker` — migrate to strawberry-app (public). No apps remain in strawberry after Phase 6. See §8 decision 6.
+- **Decisions captured 2026-04-18** — plan promoted to approved; ready to execute.
