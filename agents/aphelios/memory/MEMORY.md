@@ -1,5 +1,13 @@
 # aphelios Memory
 
+## Sessions
+- 2026-04-19: strawberry-agents companion task breakdown (26 tasks, AG-series gates) parallel to Kayn's strawberry-app plan.
+
+## Key Knowledge
+- When partnered with another planner on sibling plans, mirror their task-file shape exactly (same fields, same section order) — reviewers read both as one. Use orthogonal gate-ID prefixes (I used `A*/AGM-G`, Kayn used `P*/M-G`) to keep references clean.
+- For migration plans, always end with an orphan-path sentinel task (`comm -23` of base tree vs. union of destinations) — it's the only cross-plan correctness check that catches silent file loss.
+- `git filter-repo --invert-paths` preserves history but rewrites SHAs of touched commits; agent memory that cites those SHAs must be paired with a 90-day archive retention + MEMORY.md footer to stay resolvable.
+
 ## 2026-04-19 — three-repo migration companion breakdown
 
 Parallel partner to Kayn. Kayn owns strawberry-app (public code) task breakdown; I own strawberry-agents (private agent-infra). Azir's companion ADR at `plans/approved/2026-04-19-strawberry-agents-companion-migration.md` with D1-D10 decided.
