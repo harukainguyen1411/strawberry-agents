@@ -7,9 +7,6 @@
 ## Sessions
 - 2026-04-13: Implemented Firebase Remote Config feature flags for apps/myapps; PR #103 open
 
-## Current Work
-- PR #103 open: feat-feature-flags-remote-config — Firebase Remote Config + Bee feature flag
-
 ## Key Learnings
 - `setCustomSignals` requires firebase@11+. Dark Strawberry uses firebase@10.11.1. Per-user targeting works via server-side conditions in Remote Config console instead.
 - fetchAndActivate returns `Promise<boolean>`, need `.then(() => undefined)` to get `Promise<void>`
@@ -52,3 +49,36 @@
 
 ## Feedback
 - If Evelynn over-specifies a delegation with too many instructions, do not follow the instructions too tightly. Trust your own skills and docs first — if you can find the relevant skill or documentation, use that as your guide instead.
+
+---
+# Seraphine — 2026-04-18 Session
+
+## Role
+Frontend developer on the test-dashboard workstream (testing-process team).
+
+## Current Work
+- PR #152 open: `feat/g1-routing-skeleton` — G1 routing skeleton + layout for `dashboards/test-dashboard`
+- Stacked on A1 (PR #147, now merged). Awaiting Azir re-LGTM then batch merge.
+- G2 (login + Firebase Auth) is next pickup after #152 merges.
+
+## Test Dashboard Stack
+- `dashboards/test-dashboard/` — Vite + React + TypeScript + Tailwind + React Router v6
+- `@vitejs/plugin-react` pinned to `^4` (v4.7.0) — v6 requires Vite 6, incompatible with current Vite 5.x
+- Vitest 4.x installed (C1 merged). xfail API: `it.fails` NOT `it.failing` (Playwright API, wrong for Vitest)
+- RTL (`@testing-library/react`) installed for component tests
+- tsconfig `exclude` must include test file patterns to prevent tsc errors on test globals
+
+## Key Learnings — Shared Working Tree Hygiene
+- NEVER `git add -A` or `git add .` — always stage explicit file paths
+- Before every commit: `git status` + `git diff --staged --stat` — verify only your files
+- Other agents write to `agents/<name>/memory/` and `agents/<name>/learnings/` concurrently; their untracked files appear in `git status` and get swept in silently
+- `git merge origin/main` does NOT undo contamination already committed — requires `git restore --source=origin/main <path>` + new commit
+
+## ADR §10 Hard Constraint
+- `/monitoring/*` must NOT be claimed by the test-dashboard catch-all router
+- Implementation: explicit `<Route path="/monitoring/*" element={<MonitoringReserved />} />` placed before `<Route path="*" ...>`
+
+## Vitest xfail Pattern (Vitest 4.x)
+- Use `it.fails("xfail: ...", () => { throw new Error("not implemented") })` — NOT `it.failing`
+- `it.todo` is acceptable as placeholder when Vitest not yet installed (matches A1 precedent)
+- Verify xfail file appears in test count after committing; silent parse failure = wrong API
