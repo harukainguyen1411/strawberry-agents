@@ -21,9 +21,11 @@
 - 2026-04-19: PR #25/#26 Jhin review fixes — addressed C2/C4/I2/I3 on #25 and C1/I2 on #26; 29/29 bats + 4/4 vitest; pushed SHAs 8c68ae5 (p1-2) and dad412f (p1-4)
 
 - [PR #26 round 2 fixes](../learnings/2026-04-19-pr26-round2-fixes.md) — permission-denied test accessed wrong branch (makeRequest(undefined) hits unauthenticated, not permission-denied); lockfile drift requires deleting lockfile + overrides in root package.json; lint-staged can revert JSON edits during commit — use Write tool + verify staged diff before committing
+- [Playwright usage-dashboard E2E](../learnings/2026-04-19-playwright-usage-dashboard-e2e.md) — Tailwind flex overrides hidden attr (use toHaveAttribute not toBeHidden); health probe race (wait >300ms); fixture expiry horizon; npx serve for static webServer; worktree needs npm install
 
 ## Sessions
 - 2026-04-19: PR #26 round 2 — fixed misnamed permission-denied test (now calls with real UID + asserts permission-denied/not_authorized_for_bee), fixed lockfile drift (deleted lockfile, added root override vitest=4.0.18, pinned apps/myapps workspace); tip SHA ef7c188
+- 2026-04-19: T10 Playwright smoke — wrote 11-test suite for usage-dashboard static-load path; 11/11 green; found CSS ordering bug (hidden+flex); QA report filed; PR #39 open (strawberry-app)
 
 ## Archive Note
 
