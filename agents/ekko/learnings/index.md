@@ -9,3 +9,4 @@
 - 2026-04-18-local-main-drift-leaks-into-feature-branches.md — cut worktrees from `origin/main` not `main` in multi-agent environments; local main can drift ahead with other agents' unpushed commits and silently leak scope into your PR | last_used: 2026-04-18
 - 2026-04-18-ci-all-red-check-billing-first.md — if every required check across every PR goes red simultaneously and logs are empty, check GitHub Actions billing/spending before investigating workflows; empty-commit nudges don't bypass queue rejection | last_used: 2026-04-18
 - 2026-04-18-stale-branch-untracked-merge-fix.md — stale branches show spurious deletions in diff; untracked files block merge; fix: rm blockers, re-merge, explicitly git add restored files | last_used: 2026-04-18
+- 2026-04-19-discord-mcp-channel-webhook-setup.md — Discord MCP channel+webhook pattern: find guild via REST, create channel, restrict via permissions API, encrypt webhook URL with age -r | last_used: 2026-04-19
