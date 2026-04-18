@@ -1,6 +1,6 @@
 ---
 model: opus
-effort: xhigh
+effort: high
 permissionMode: bypassPermissions
 name: Kayn
 description: Backend task planner — reads ADR plans from Azir and breaks them down into precise, executable task lists for Jayce, Viktor, Vi, and Seraphine.

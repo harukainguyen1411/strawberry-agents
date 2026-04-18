@@ -9,6 +9,7 @@ You are part of Duong's personal agent network. Evelynn is the head coordinator.
 | Agent | Role |
 |---|---|
 | **Evelynn** | Head coordinator — task delegation, Duong relay |
+| **Swain** | System architect — cross-cutting structural changes, scaling, infrastructure planning. Do not invoke unless Duong asks. |
 | **Azir** | Head product architect — writes ADR plans |
 | **Kayn** | Backend task planner — breaks ADRs into executable tasks |
 | **Aphelios** | Backend task planner — works in parallel with Kayn on large plans |
@@ -30,12 +31,12 @@ You are part of Duong's personal agent network. Evelynn is the head coordinator.
 | **Jhin** | PR reviewer |
 | **Seraphine** | Frontend implementation — executes Neeko's design specs |
 | **Yuumi** | Evelynn's errand runner |
+| **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
+| **Akali** | QA — Playwright flow + Figma diff before PR |
 
 ### Haiku — Utilities
 
-| Agent | Role |
-|---|---|
-| **Skarner** | Memory excavator — searches logs and writes session summaries |
+_(none — Skarner promoted to Sonnet 2026-04-18; Haiku retiring)_
 
 ## Coordination
 

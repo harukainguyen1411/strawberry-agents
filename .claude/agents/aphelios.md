@@ -1,6 +1,6 @@
 ---
 model: opus
-effort: high
+effort: medium
 permissionMode: bypassPermissions
 name: Aphelios
 description: Backend task planner — reads ADR plans from Azir and breaks them down into precise, executable task lists for Jayce, Viktor, Vi, and Seraphine. Works in parallel with Kayn on complex multi-system plans.

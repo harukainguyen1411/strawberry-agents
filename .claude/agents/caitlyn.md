@@ -1,6 +1,6 @@
 ---
 model: opus
-effort: xhigh
+effort: high
 permissionMode: bypassPermissions
 name: Caitlyn
 description: QA audit lead — audits codebases and writes testing plans. Does not write tests or code. Vi executes the plans.
