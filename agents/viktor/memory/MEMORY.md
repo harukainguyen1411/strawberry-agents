@@ -5,6 +5,7 @@
 - Refactoring, optimization, code cleanup, dependency upgrades
 
 ## Sessions
+- 2026-04-18 (migration P2): Phase 2 parametrization on `/tmp/strawberry-app-migration`. 17 files parametrized across runtime TS, shell, LLM prompt, discord-relay, docs. Regression guard hook `check-no-hardcoded-slugs.sh` created + install-hooks wiring. npm ci + turbo dry-run both green. Zero non-allowlisted slug hits. Report at `assessments/2026-04-18-p2-parametrize-report.md`.
 - 2026-04-05 to 2026-04-14: Fiora→Viktor migration sessions — MCP restructure, protocol drift sweeps, subagent plugin access plan, end-session skill fixes, feedback loop PRs, PR #105 blockers/LOW findings.
 - 2026-04-17: Dependabot Phase 2. B4c/B4d/B4e/B4f/B4h/B9 — PRs #129/130/131/136/138/140 merged. apps/myapps audit clean (0 vulns). 104→25 open alerts.
 - 2026-04-18: Evelynn memory sharding. PR #144 open. Per-session UUID-keyed shards, consolidation script, SessionStart hook update, end-session SKILL.md rewrite. Smoke test passed.
@@ -13,6 +14,12 @@
 - 2026-04-18 (dependabot team): B4g PR #155 merged (vitest 2→3 in bee-worker, closes #79/#81). B4b/B4c reconciled as no-ops (plan §3.1 annotated). Stale deps/b3, deps/b4b worktrees cleaned. Day ended with GitHub Actions billing block repo-wide.
 
 ## Key Knowledge
+- Migration P2 scratch tree at `/tmp/strawberry-app-migration` — 7 commits total, top SHA `e191b77`. Ready for Phase 3 push by Caitlyn.
+- `defineString({ default: "..." })` in Firebase params: evaluated at deploy-config time, not runtime — do NOT pass `process.env.*` as default. Use `default: ""` + runtime fallback instead.
+- Shell slug resolution pattern: `$1` → `$GITHUB_REPOSITORY` → `git remote get-url origin | sed`.
+- Regression guard wrapper pattern: `install-hooks.sh` generates `pre-commit-<name>.sh` thin wrapper for hooks named without the `pre-commit-` prefix.
+
+
 - Bash sandbox denylist: `--format`, `>` redirects, heredocs blocked. Use python3 -c for workarounds.
 - Write/Edit tools denied on `.claude/` paths.
 - git update-index --chmod=+x works even when filesystem chmod is denied.
