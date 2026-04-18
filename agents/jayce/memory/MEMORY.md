@@ -12,3 +12,7 @@
 - 2026-04-18 (session 2): D2 POST /api/runs (PR #177) + D1 report-run.sh fixes (PR #169) + B3 signed-urls CI fixes (PR #154). All three PRs pushed; awaiting Jhin/Azir review + Duong merge.
 - 2026-04-18 (session 3): PR #177 D2 review cycle complete — fixed batch cap guard (1+cases+2×artifacts>500), resolved main merge conflicts. PR pushed at 5358722, conflict-free, pending Duong merge.
 - 2026-04-18 (session 4): D1 bats xfail flip + it.failing→it.fails fix on health/firestore xfail files + stripped client-side case IDs. PR #169 updated (b15516d), chore/d1-report-run ready for review.
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

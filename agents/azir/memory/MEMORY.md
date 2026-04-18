@@ -32,3 +32,7 @@
 - Trust own skills/docs first when coordinators over-specify.
 - Coordinators sometimes send duplicate requests — verify current state before re-doing.
 - Non-blocker hygiene asks (dead code, filename cosmetics) are fine as follow-up PRs — don't hold merges for them.
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

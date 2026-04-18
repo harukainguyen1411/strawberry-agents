@@ -82,3 +82,7 @@ Frontend developer on the test-dashboard workstream (testing-process team).
 - Use `it.fails("xfail: ...", () => { throw new Error("not implemented") })` — NOT `it.failing`
 - `it.todo` is acceptable as placeholder when Vitest not yet installed (matches A1 precedent)
 - Verify xfail file appears in test count after committing; silent parse failure = wrong API
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

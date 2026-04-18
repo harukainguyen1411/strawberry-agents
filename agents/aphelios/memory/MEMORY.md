@@ -32,3 +32,7 @@ Key coordination notes carried forward:
 - Orphan-sentinel (A7) depends on Kayn's P6.1 purge landing first; realistic clock is cutover + 7-14 days.
 
 Preferred cwd path (post-migration): agents run from `~/Documents/Personal/strawberry-agents/` once Phase A4 lands.
+
+## Archive Note
+
+Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
