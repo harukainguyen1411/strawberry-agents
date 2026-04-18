@@ -9,7 +9,7 @@ target-repo: harukainguyen1411/strawberry-app
 
 # Portfolio Tracker — Architecture Decision Record
 
-Replace the manual daily xlsx (`Portfolio tracker (2).xlsx`) with a live, near-realtime, 2-user portfolio tracker. Duong + one friend. Trading212 + Interactive Brokers ingestion, Vue SPA dashboard, scheduled Claude digest, ad-hoc Gemini chat panel. Tool-parity between UI and LLM surfaces is load-bearing.
+Replace the manual daily xlsx (`Portfolio tracker (2).xlsx`) with a live, near-realtime, 2-user portfolio tracker. Duong + one friend. [Trading212](https://t212public-api-docs.redoc.ly/) + [Interactive Brokers](https://www.interactivebrokers.com/api/doc.html) ingestion, Vue SPA dashboard, scheduled Claude digest, ad-hoc Gemini chat panel. Tool-parity between UI and LLM surfaces is load-bearing.
 
 Application code lives in `harukainguyen1411/strawberry-app` (public monorepo). This plan and agent memory stay in `Duongntd/strawberry`.
 
@@ -218,7 +218,7 @@ Single Vue SPA, mobile-first responsive, Firebase Hosting. Layout top-to-bottom 
 
 1. **Summary card** — total value in the user's `baseCurrency` (USD or EUR), per-broker breakdown, % day / % YTD.
 2. **Positions table** — sortable columns (ticker, qty, avg cost, last price, P&L %, sector), sector grouping toggle.
-3. **Trade ledger** — range picker (7/30/90/180/all), virtualized list (react-virtualized equivalent in Vue, e.g. `vue-virtual-scroller`).
+3. **Trade ledger** — range picker (7/30/90/180/all), virtualized list (react-virtualized equivalent in Vue, e.g. [`vue-virtual-scroller`](https://github.com/Akryum/vue-virtual-scroller)).
 4. **Intents block** — editable cards, status badges (open/executed/stale), quick-create input.
 5. **Sparkline** — Chart.js line chart of `snapshots/*.totalValueBase`, last 180 days, rendered in the user's base currency.
 6. **Chat panel (v3)** — slide-in drawer on mobile, right column on desktop. Streaming responses from the Gemini proxy.
@@ -238,7 +238,7 @@ Chart.js chosen over D3 for bundle size and the sparkline being the only chart. 
 - **Regression gate (repo rule 13)** — any bugfix commit must include or be preceded by a regression test.
 - **E2E gate (repo rule 15)** — Playwright flow exercises: sign-in → positions load → create intent → refresh → sparkline render. Required check on PR.
 - **QA gate for UI PRs (repo rule 16)** — a QA agent runs the Playwright flow with video + screenshots and diffs against the Figma design before the PR can merge. Figma file to be stood up in v0.
-- **Deploy smoke tests (repo rule 17)** — post-deploy smokes on stg and prod; prod failure triggers `scripts/deploy/rollback.sh`.
+- **Deploy smoke tests (repo rule 17)** — post-deploy smokes on stg and prod; prod failure triggers `scripts/deploy/rollback.sh`. <!-- orianna: ok — rollback.sh is a future deliverable, not yet created -->
 - **Merge discipline (repo rule 18)** — no self-merge, no `--admin`, one non-author approval required.
 
 ---
@@ -290,7 +290,7 @@ Open questions beyond the three above:
 
 For the task-breakdown agent picking this up after approval:
 
-- **Repo** — all app code lands in `harukainguyen1411/strawberry-app` under `apps/portfolio/` and `dashboards/portfolio/`. This plan and any memory entries stay in `Duongntd/strawberry`. See `architecture/cross-repo-workflow.md`.
+- **Repo** — all app code lands in `harukainguyen1411/strawberry-app` under `apps/portfolio/` <!-- orianna: ok — proposed future path in strawberry-app --> and `dashboards/portfolio/` <!-- orianna: ok — proposed future path in strawberry-app -->. This plan and any memory entries stay in `Duongntd/strawberry`. See `architecture/cross-repo-workflow.md`.
 - **Phased delivery** — each phase (v0 through v3 at minimum) gets its own plan in `plans/proposed/` with a concrete task list. This ADR is the umbrella; do not try to execute it as a single sprint.
 - **Tool-parity first** — the shared `portfolio-tools/` handler module is the architectural spine. Build it before either UI or MCP/Gemini adapters. Every feature after v0 adds one handler, then wires three adapters.
 - **TDD sequencing** — xfail test commit → implementation commit, on the same branch, every task (rule 12). The adapter tests should live alongside the handler tests and share fixtures.
