@@ -22,11 +22,11 @@ why: >
 
 # Evelynn Memory Sharding
 
-## Open questions for Duong
+## Resolved decisions (from open questions — answered by Duong 2026-04-18)
 
-1. **Retention window for `sessions/archive/`.** Plan proposes "never delete during consolidation." Duong — keep forever, or prune at N days? Default in plan is keep forever; a later prune plan can be drafted separately.
-2. **`last-sessions/` read depth.** Plan proposes "last ~5 by mtime." Duong — confirm 5 or a different number? If Evelynn runs multiple sessions per day this affects startup context size.
-3. **Remember plugin treatment.** Plan proposes "explicitly bypass `remember:remember` for Evelynn and document why" (Option B below). Duong — confirm bypass vs. shard the plugin output too (Option A)?
+1. **Retention window for `sessions/archive/`:** **30 days.** The consolidation script must prune archive shards older than 30 days (delete, no git history needed beyond that window). D3e above says "never deletes" — that decision is superseded: prune after 30 days.
+2. **`last-sessions/` read depth at startup:** **all shards within the last 48 hours** (not a fixed count of 5). D5 and T6 references to "last 5" are superseded by this: SessionStart reads every shard whose mtime is within 48 h.
+3. **`remember:remember` bypass for Evelynn:** **confirmed Option B.** Evelynn skips the plugin entirely; shards are the primary handoff mechanism. D6 stands as written.
 
 ---
 
@@ -47,7 +47,7 @@ The `remember:remember` plugin (`.remember/remember.md`) has the same single-fil
 
 **D1. Shard-on-close, UUID-keyed.** Every `/end-session` run writes a new shard at `agents/evelynn/memory/sessions/<short-uuid>.md`. The `<short-uuid>` is the exact same short UUID the cleaner already assigns to the transcript filename in Step 2 — reuse it, do not generate a second one. No write contention because every session's UUID is unique.
 
-**D2. Handoff shards, UUID-keyed.** The last-session handoff (current `last-session.md` fallback) becomes `agents/evelynn/memory/last-sessions/<short-uuid>.md`. SessionStart reads the **last 5** by mtime (Duong to confirm in Open Questions).
+**D2. Handoff shards, UUID-keyed.** The last-session handoff (current `last-session.md` fallback) becomes `agents/evelynn/memory/last-sessions/<short-uuid>.md`. SessionStart reads **all shards within the last 48 hours** by mtime (confirmed by Duong 2026-04-18; supersedes earlier "last 5" placeholder).
 
 **D3. Consolidate-on-boot, never-delete.** At the start of a fresh (non-resumed) Evelynn session, a consolidation step runs **before** the startup reads. It is the only writer to the roll-up because no other session is starting at the exact same moment — the consolidation window is the narrow "booting" moment. It:
   a. Finds shards in `agents/evelynn/memory/sessions/` with mtime older than 24h.
@@ -60,7 +60,7 @@ The `remember:remember` plugin (`.remember/remember.md`) has the same single-fil
 
   `evelynn.md` is renamed conceptually: the top (curated sections: Identity, Role, Key Context, Infrastructure, Protocols, Billing, Open Threads, Feedback) stays hand-maintained. The `## Sessions` section becomes an auto-managed tail whose source of truth is the shard directory. Consolidation rewrites only the `## Sessions` block, preserving everything above it via a sentinel marker (`<!-- sessions:auto-below -->`).
 
-**D5. SessionStart hook reads last N.** The current hook (`.claude/settings.json`) tells Evelynn to read `agents/evelynn/memory/last-session.md (if exists)`. Replace with `agents/evelynn/memory/last-sessions/` — read the 5 newest by mtime. The `evelynn.md` read is unchanged (already covers the roll-up).
+**D5. SessionStart hook reads last 48 h.** The current hook (`.claude/settings.json`) tells Evelynn to read `agents/evelynn/memory/last-session.md (if exists)`. Replace with `agents/evelynn/memory/last-sessions/` — read all shards whose mtime is within the last 48 hours (confirmed by Duong 2026-04-18; replaces the "5 newest" placeholder). The `evelynn.md` read is unchanged (already covers the roll-up).
 
 **D6. `remember:remember` plugin — bypass for Evelynn (Option B).** Audit of `.remember/remember.md` shows it is a single-file plugin output (1 line in current state, but schema is single-file). Two options:
   - **Option A (shard the plugin):** fork the plugin to write `.remember/sessions/<uuid>.md`. High cost, plugin is third-party.
