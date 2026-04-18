@@ -23,7 +23,7 @@ Strawberry has burned its full 3000/3000 GitHub Actions free minutes for the mon
 
 **Decision:** two-repo split.
 - **`Duongntd/strawberry`** stays private. Becomes pure agent-infra: `agents/`, `plans/`, `assessments/`, repo-root `CLAUDE.md`, `agents/evelynn/CLAUDE.md`, `secrets/encrypted/`, most of `architecture/`.
-- **`Duongntd/strawberry-app`** (new, public). Hosts `apps/`, `dashboards/`, `.github/workflows/`, `scripts/`, top-level build config, selected `docs/`, selected `architecture/` docs rewritten as public docs.
+- **`harukainguyen1411/strawberry-app`** (new, public). Hosts `apps/`, `dashboards/`, `.github/workflows/`, `scripts/`, top-level build config, selected `docs/`, selected `architecture/` docs rewritten as public docs.
 
 Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the monorepo), over `mmp-tooling` (unbranded, loses continuity), over `dashboards` (too narrow — portal/myapps/landing/functions ship from the same repo). It preserves the strawberry brand, reads as "the thing users can run," and doesn't pretend to be project-specific.
 
@@ -33,7 +33,7 @@ Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the
 
 ## 2. Scope — what goes where
 
-### 2.1 Moves to `strawberry-app` (public)
+### 2.1 Moves to `harukainguyen1411/strawberry-app` (public)
 
 | Path | Notes |
 |------|-------|
@@ -126,10 +126,10 @@ Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the
 | R8 | Discord relay, Firebase function triggers, Cloud Run deploys, `scripts/setup-discord-channels.sh` hardcode `Duongntd/strawberry` | High | Phase 2 grep sweep produces a list of all hardcoded references; Phase 3 sed-rewrite in one atomic commit. Static list in §6.2. |
 | R9 | Dependabot re-opens ~14 PRs in strawberry-app after cutover, spiking CI even though minutes are now free | Low | Accepted — free minutes. If it turns out Dependabot floods, can set `open-pull-requests-limit: 0` for a week. |
 | R10 | Marketing: making the code public surfaces Dark Strawberry before it's ready | Medium | Decision for Duong (§8). Default stance in this plan: **public repo, no marketing push.** Add a `README.md` that reads "early-access platform, not yet accepting signups" with a link to a waitlist if desired. |
-| R11 | Cross-repo workflow confusion: plans in strawberry reference PRs in strawberry-app and vice versa | Medium | Convention (§7): plans always link to `github.com/Duongntd/strawberry-app/pull/N`, PR bodies always link to `plans/<status>/<slug>.md` on strawberry main via permalink. No file-level coupling. |
-| R12 | PAT/bot accounts (`harukainguyen1411` collaborator) lose access when repo is recreated | High | Phase 3 re-adds `harukainguyen1411` as collaborator on strawberry-app before first PR is opened. Re-mint PAT if fine-grained scope was repo-pinned to strawberry. |
+| R11 | Cross-repo workflow confusion: plans in strawberry reference PRs in strawberry-app and vice versa | Medium | Convention (§7): plans always link to `github.com/harukainguyen1411/strawberry-app/pull/N`, PR bodies always link to `plans/<status>/<slug>.md` on strawberry main via permalink. No file-level coupling. |
+| R12 | PAT/bot accounts lose access when repo is recreated | High | Phase 3 re-issues fine-grained PAT scoped to `harukainguyen1411/strawberry-app`. Since `harukainguyen1411` owns the new repo, collaborator step is not required. |
 | R13 | Turbo cache layer in CI keyed on repo slug → full rebuild after cutover | Low | Accepted — one-time cost, rebuild completes in a few minutes. |
-| R14 | `apps/coder-worker/system-prompt.md` hardcodes "Duongntd/strawberry" — autonomous agent will try to commit to the wrong repo | Critical | Caught in Phase 2 grep sweep (see §6.2); sed-rewrite to `Duongntd/strawberry-app` in the atomic rewrite commit. |
+| R14 | `apps/coder-worker/system-prompt.md` hardcodes "Duongntd/strawberry" — autonomous agent will try to commit to the wrong repo | Critical | Caught in Phase 2 grep sweep (see §6.2); sed-rewrite to `harukainguyen1411/strawberry-app` in the atomic rewrite commit. |
 | R15 | `.github/branch-protection.json` currently requires only `validate-scope` and `preview` — doesn't match reality (should also include tdd-gate, unit-tests, e2e, qa). Re-applying as-is under-protects | Medium | Sync `branch-protection.json` with `plans/approved/2026-04-17-branch-protection-enforcement.md` Table §1 **before** reapplying. Treat as a blocker for Phase 3 exit. |
 
 ---
@@ -142,11 +142,11 @@ Total time budget: 2-4 hours. Two executors: **Ekko** (history rewrite, repo cre
 
 Duong must complete these before executors start. ~20 min.
 
-1. Create new empty public repo `Duongntd/strawberry-app` via github.com Console. Do **not** initialize with README/LICENSE/gitignore — we push a filtered history.
+1. Create new empty public repo under the **harukainguyen1411** account: https://github.com/new — set owner to harukainguyen1411, name strawberry-app, visibility public. Do not initialize with README/LICENSE/gitignore.
 2. In the new repo settings: Actions → General → Allow all actions; default workflow permissions → Read and write.
 3. Dependabot: Settings → Code security → enable Dependabot alerts and security updates (inherits weekly schedule from `.github/dependabot.yml` once pushed).
-4. Install the Firebase CI/CD GitHub App on the new repo (Firebase Console → Project Settings → Integrations → GitHub → select `Duongntd/strawberry-app`).
-5. Confirm Duong's second account `harukainguyen1411` exists and can be invited as collaborator. PAT held by agent sessions may need to be re-issued with scope `Duongntd/strawberry-app` — defer to Phase 3.
+4. Install the Firebase CI/CD GitHub App on the new repo (Firebase Console → Project Settings → Integrations → GitHub → select `harukainguyen1411/strawberry-app`).
+5. `harukainguyen1411` IS the repo owner — no collaborator invite needed. Duongntd may optionally be added as a collaborator on strawberry-app later for admin/visibility, but is not required for the migration.
 6. Confirm LICENSE choice (§8).
 7. Confirm repo name (`strawberry-app` vs alternative) and update this plan if changed.
 
@@ -195,7 +195,7 @@ Rollback point: discard `/tmp/strawberry-app`, no remote changes yet.
    grep -rln 'Duongntd/strawberry' . --include='*.sh' --include='*.ts' --include='*.js' --include='*.yml' --include='*.yaml' --include='*.md' --include='*.json'
    ```
 2. Expected hits (audit list — actual findings may differ; verify in session):
-   - `apps/coder-worker/system-prompt.md` — rewrite to `Duongntd/strawberry-app` (R14).
+   - `apps/coder-worker/system-prompt.md` — rewrite to `harukainguyen1411/strawberry-app` (R14).
    - `apps/discord-relay/src/discord-bot.ts:172` — rewrite issue-filing URL.
    - `.github/workflows/landing-prod-deploy.yml` — if repo slug baked in, rewrite.
    - `scripts/setup-branch-protection.sh`, `scripts/verify-branch-protection.sh` — parametrize on `$GITHUB_REPOSITORY` or hardcode new slug.
@@ -211,18 +211,17 @@ Rollback point: discard the commit, redo.
 Executed by Caitlyn in parallel with Phase 4 where possible.
 
 1. **Push to new remote.**
-   - In `/tmp/strawberry-app`: `git remote add origin https://github.com/Duongntd/strawberry-app.git && git push -u origin main`.
+   - In `/tmp/strawberry-app`: `git remote add origin https://github.com/harukainguyen1411/strawberry-app.git && git push -u origin main`.
 2. **Re-provision GitHub secrets.** For each secret currently in strawberry, set in strawberry-app:
    - `AGE_KEY`, `AGENT_GITHUB_TOKEN`, `BOT_WEBHOOK_SECRET`, `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA`, `GCP_SA_KEY_PROD`, `GCP_SA_KEY_STAGING`, `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_APP_ID`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_MEASUREMENT_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`.
-   - Method: `gh secret set <NAME> --repo Duongntd/strawberry-app --body "$(gh secret get <NAME> --repo Duongntd/strawberry)"` — but `gh secret get` does not exist. Actual method: Caitlyn coordinates with Duong, who pastes each value once via `gh secret set --body-file` or Console. See §6.1.
+   - Method: `gh secret set <NAME> --repo harukainguyen1411/strawberry-app --body "$(gh secret get <NAME> --repo Duongntd/strawberry)"` — but `gh secret get` does not exist. Actual method: Caitlyn coordinates with Duong, who pastes each value once via `gh secret set --body-file` or Console. See §6.1.
    - `BEE_SISTER_UIDS` — per scope note, this secret is called out but not in the current `gh secret list`. Either it's a Firebase config value baked into `apps/myapps/functions` or it's referenced in a plan but not yet provisioned. Caitlyn verifies with Duong before cutover.
-3. **Re-add `harukainguyen1411` as collaborator** with push permission: `gh api -X PUT repos/Duongntd/strawberry-app/collaborators/harukainguyen1411 -f permission=push`.
-4. **Re-issue fine-grained PAT** scoped to strawberry-app if the current agent PAT is repo-pinned. Update `secrets/encrypted/github-triage-pat.txt.age` in the private repo. Any agent session using the old PAT needs refresh.
-5. **Apply branch protection.** Fix `.github/branch-protection.json` in strawberry-app to match `plans/approved/2026-04-17-branch-protection-enforcement.md` §1 (5 required contexts, not 2). Commit. Run `scripts/setup-branch-protection.sh` against `Duongntd/strawberry-app`. Verify with `scripts/verify-branch-protection.sh`.
-6. **GitHub labels.** Run `scripts/setup-github-labels.sh` against the new repo.
-7. **Dependabot.** Already wired via the pushed `.github/dependabot.yml`. First run will open PRs — accepted.
-8. **Firebase GitHub App cutover.** Duong action: disconnect from strawberry, confirm connected to strawberry-app. Firebase will then deploy preview/prod from strawberry-app PRs.
-9. **First workflow run.** Push a trivial no-op commit (bump version in root `package.json`). Verify all required workflows run green. If red → **STOP, rollback to strawberry** by reverting Firebase binding and leaving the old repo as canonical.
+3. **Re-issue fine-grained PAT** minted from the `harukainguyen1411` account, scoped to `harukainguyen1411/strawberry-app`. Store encrypted token at `secrets/encrypted/github-triage-pat.txt.age` in the private repo as before. Any agent session using the old PAT needs refresh.
+4. **Apply branch protection.** Fix `.github/branch-protection.json` in strawberry-app to match `plans/approved/2026-04-17-branch-protection-enforcement.md` §1 (5 required contexts, not 2). Commit. Run `scripts/setup-branch-protection.sh` against `harukainguyen1411/strawberry-app`. Verify with `scripts/verify-branch-protection.sh`.
+5. **GitHub labels.** Run `scripts/setup-github-labels.sh` against the new repo.
+6. **Dependabot.** Already wired via the pushed `.github/dependabot.yml`. First run will open PRs — accepted.
+7. **Firebase GitHub App cutover.** Duong action: disconnect from strawberry, confirm connected to strawberry-app. Firebase will then deploy preview/prod from strawberry-app PRs.
+8. **First workflow run.** Push a trivial no-op commit (bump version in root `package.json`). Verify all required workflows run green. If red → **STOP, rollback to strawberry** by reverting Firebase binding and leaving the old repo as canonical.
 
 Rollback point: Firebase binding. Until step 8, strawberry remains the prod-deploying repo. After step 8 + one green deploy, strawberry-app is canonical.
 
@@ -237,7 +236,7 @@ Rollback point: Firebase binding. Until step 8, strawberry remains the prod-depl
 
 ### 4.6 Phase 5 — Agent and plan update (Caitlyn) — 20-30 min
 
-1. Update `agents/*/memory/MEMORY.md` across all active agents: find/replace `github.com/Duongntd/strawberry/pull` → `github.com/Duongntd/strawberry-app/pull`, and `Duongntd/strawberry` (in code context) → `Duongntd/strawberry-app`. Leave historical transcripts untouched (they're records of the past).
+1. Update `agents/*/memory/MEMORY.md` across all active agents: find/replace `github.com/Duongntd/strawberry/pull` → `github.com/harukainguyen1411/strawberry-app/pull`, and `Duongntd/strawberry` (in code context) → `harukainguyen1411/strawberry-app`. Leave historical transcripts untouched (they're records of the past).
 2. Update `architecture/git-workflow.md`, `architecture/pr-rules.md`, `CLAUDE.md` (root), and `agents/evelynn/CLAUDE.md` to name both repos explicitly: strawberry (agent-infra) and strawberry-app (code).
 3. Add one-pager `architecture/cross-repo-workflow.md` documenting §7 cross-repo conventions.
 4. Update plan-promote script commentary if any path-specific logic referred to `apps/`.
@@ -285,7 +284,7 @@ Use `git filter-repo --path apps/ --path dashboards/ --path .github/workflows/ -
 
 ### 6.1 GitHub secrets to re-provision
 
-All 17 secrets. Each must be re-entered by Duong (or pulled from local env where available) and set via `gh secret set <NAME> --repo Duongntd/strawberry-app --body-file -`. `gh` cannot read an existing secret's value, so each must be sourced from:
+All 17 secrets. Each must be re-entered by Duong (or pulled from local env where available) and set via `gh secret set <NAME> --repo harukainguyen1411/strawberry-app --body-file -`. `gh` cannot read an existing secret's value, so each must be sourced from:
 - Local file: `AGE_KEY` (from `secrets/age-key.txt`), Firebase service account JSONs (from local Firebase console download).
 - Paste-through: `VITE_FIREBASE_*` values (from `apps/myapps/src/firebase-config.ts` or Firebase Console).
 - Re-mint: `AGENT_GITHUB_TOKEN` (new PAT scoped to strawberry-app), `BOT_WEBHOOK_SECRET` (random — update Discord webhook config too).
@@ -322,10 +321,10 @@ Per-file decision is made in-session when the grep is run.
 | 0 | None — strawberry is untouched if Phase 1 not started |
 | 1 | Discard `/tmp/strawberry-app` — no remote changes |
 | 2 | Same as 1 |
-| 3 step 1-4 | Delete `Duongntd/strawberry-app` repo (Duong action, Console) |
-| 3 step 5-7 | Branch-protection / labels / Dependabot in new repo — harmless if new repo deleted |
-| 3 step 8 | Revert Firebase GitHub App binding back to strawberry (Duong action) |
-| 3 step 9 red | Same as step 8 — repo deletion or binding revert |
+| 3 step 1-3 | Delete `harukainguyen1411/strawberry-app` repo (Duong action, Console) |
+| 3 step 4-6 | Branch-protection / labels / Dependabot in new repo — harmless if new repo deleted |
+| 3 step 7 | Revert Firebase GitHub App binding back to strawberry (Duong action) |
+| 3 step 8 red | Same as step 7 — repo deletion or binding revert |
 | 4 | Close the newly-opened PRs in strawberry-app. Leave strawberry PRs open. |
 | 5 | Revert the `chore: azir migration` commit in strawberry. Agent memory retains both old and new refs temporarily. |
 | 6 | Restore purged paths from the commit prior to purge. Only phase that's pseudo-irreversible after 7 days. |
@@ -337,7 +336,7 @@ Per-file decision is made in-session when the grep is run.
 Adopted to avoid coupling drift between strawberry and strawberry-app.
 
 1. **Plans always live in strawberry.** Code PRs in strawberry-app link to plans via permalink, e.g. `https://github.com/Duongntd/strawberry/blob/main/plans/approved/2026-04-13-deployment-pipeline-architecture.md`.
-2. **PRs always live in strawberry-app.** Plans that reference code changes link to `https://github.com/Duongntd/strawberry-app/pull/N`. No embedded diffs in plans.
+2. **PRs always live in strawberry-app.** Plans that reference code changes link to `https://github.com/harukainguyen1411/strawberry-app/pull/N`. No embedded diffs in plans.
 3. **Shared commit prefix rules.** `chore:` / `ops:` for non-code; `feat:` / `fix:` / etc. for code. Same pre-push hook in both repos, tuned for the paths each repo owns.
 4. **Same gitleaks ruleset.** `pre-commit-secrets-guard.sh` is dual-tracked (§2.2) and must stay synchronized. Single source of truth lives in strawberry; strawberry-app copies on each hook-refresh.
 5. **Agent sessions run from strawberry checkout.** strawberry-app is checked out as a sibling worktree at `~/Documents/Personal/strawberry-app/` when agents need to touch code. Agents never `cd` between the two — each session is scoped to one or the other.
@@ -357,6 +356,8 @@ Adopted to avoid coupling drift between strawberry and strawberry-app.
 6. **`apps/private-apps/bee-worker` placement:** **moves to strawberry-app (public)**. Override of Azir's default. All apps ship from the public repo.
 7. **`architecture/` triage:** Azir's §2.5 table accepted as-is.
 
+8. **Owner account:** new public repo is owned by **harukainguyen1411** (Duong's personal/agent account), not Duongntd. Rationale: harukainguyen1411 is the canonical agent/contributor identity for public-facing work; Duongntd stays the private-infra owner.
+
 Additional decision: **skip formal TDD** for migration ops. Replace with Caitlyn-authored acceptance-criteria gate checklist (see §9), baked into Kayn's task gates.
 
 ---
@@ -365,10 +366,10 @@ Additional decision: **skip formal TDD** for migration ops. Replace with Caitlyn
 
 Migration is complete when all of these are true:
 
-- [ ] `Duongntd/strawberry-app` exists, is public, has a green first workflow run.
+- [ ] `harukainguyen1411/strawberry-app` exists, is public, has a green first workflow run.
 - [ ] All 17 GitHub secrets present in strawberry-app and verified via a successful staging deploy.
 - [ ] Branch protection on strawberry-app matches `plans/approved/2026-04-17-branch-protection-enforcement.md` §1 (5 required contexts, `strict: true`, 1 required review, `enforce_admins` per that plan).
-- [ ] `harukainguyen1411` is a collaborator on strawberry-app with push permission.
+- [ ] `harukainguyen1411` is the repo owner of strawberry-app (no collaborator invite required).
 - [ ] Firebase GitHub App is installed on strawberry-app and **not** on strawberry.
 - [ ] One green staging deploy and one green prod deploy have run from strawberry-app main.
 - [ ] All 13 originally-open PRs are either merged (via Phase 0) or re-opened in strawberry-app (Phase 4).
