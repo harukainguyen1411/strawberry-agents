@@ -10,6 +10,11 @@
 - `secrets/encrypted/github-triage-pat.age` holds the Duongntd classic PAT (repo+workflow). Repo secret name: `AGENT_GITHUB_TOKEN` on `harukainguyen1411/strawberry-agents`.
 - Always validate a fresh PAT via `GH_TOKEN="$(cat <file>)" gh api user --jq .login` before encrypting or setting as a secret. Must return `Duongntd`.
 
+## Persistent Context — PR #25 / PR #28 (2026-04-19)
+
+- PR #25 (`chore/p1-2-lib-sh-xfail`): All original 5 CI failures were lockfile desync (usage-dashboard missing). Pre-existing, NOT P1.2 regression. Current blocker: pre-existing eslint `no-unused-expressions` in `apps/myapps/portfolio-tracker/src/router/index.ts` line 28 and `apps/myapps/read-tracker/src/router/index.ts` line 31. Whoever owns portfolio-tracker (Jayce? portfolio plan) must fix. Cannot merge until those lint errors are resolved.
+- PR #28 (`chore/p1-3-env-ciphertext`): Scope creep resolved. Branch reset to exactly 4 P1.3 files. Force-pushed. Branch may have been re-force-pushed again by another session — latest tip shown as `0ab0a2d` post my push of `858bf8a`.
+
 ## Persistent Context — strawberry-app
 
 - `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app` (HEAD `12a817a` as of 2026-04-19).
