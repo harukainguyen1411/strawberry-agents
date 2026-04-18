@@ -90,12 +90,12 @@ rm actions-runner.tar.gz
 
 ### Register the Runner
 
-Go to GitHub → `Duongntd/strawberry` → Settings → Actions → Runners → New self-hosted runner.
+Go to GitHub → `harukainguyen1411/strawberry-app` → Settings → Actions → Runners → New self-hosted runner.
 
 Copy the token, then:
 
 ```bash
-./config.sh --url https://github.com/Duongntd/strawberry --token <REGISTRATION_TOKEN> --name strawberry-runner --labels self-hosted,linux,x64 --work _work
+./config.sh --url https://github.com/harukainguyen1411/strawberry-app --token <REGISTRATION_TOKEN> --name strawberry-runner --labels self-hosted,linux,x64 --work _work
 ```
 
 ### Systemd Service (auto-start on reboot)
@@ -112,7 +112,7 @@ cd /home/runner/actions-runner
 exit
 ```
 
-This creates a systemd service at `/etc/systemd/system/actions.runner.Duongntd-strawberry.strawberry-runner.service`.
+This creates a systemd service at `/etc/systemd/system/actions.runner.harukainguyen1411-strawberry-app.strawberry-runner.service`.
 
 Verify it survives reboot:
 
@@ -201,7 +201,7 @@ node --version          # v20.x
 firebase --version      # 13.x+
 claude --version        # should print version
 gh auth status          # logged in
-sudo systemctl status actions.runner.Duongntd-strawberry.strawberry-runner.service  # active (running)
+sudo systemctl status actions.runner.harukainguyen1411-strawberry-app.strawberry-runner.service  # active (running)
 sudo ufw status         # active, SSH only
 ```
 
