@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-19
 title: Portfolio Tracker — live 2-user app replacing the manual xlsx
