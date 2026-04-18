@@ -27,3 +27,4 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 
 ## Sessions
 - 2026-04-18: dependabot-cleanup team under Camille. Advisory-LGTM on #156 (B14) and #157 (B12). Surfaced shared-account invariant-#18 structural blocker + GH Actions billing diagnosis shortcut as learnings. Workstream parked pending billing resolution.
+- 2026-04-18 (fresh session, Evelynn direct): Re-reviewed #154 (B3 signed URLs, 2b452e9) and #180 (I1 deploy fix, 74e31ce) — both LGTM. CI systemic infra failure confirmed (all branches red, logs not found). Old Jhin session's "dashboards uses pnpm" phantom debunked — diff shows `npm install --prefer-offline`, correct for npm workspace. `require(require('path').resolve(...))` fix in unit-tests.yml is a genuine improvement.
