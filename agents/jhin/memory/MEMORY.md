@@ -7,6 +7,15 @@
 - 2026-04-18 R6: PR #150 (B1 Firestore schema). Changes requested. CRITICAL: approved plan deleted instead of archived (rule 4). IMPORTANT: cert("") silent failure — use ADC on Cloud Run; started_at as string breaks Timestamp ordering. SUGGESTIONS: redundant single-field indexes; named app init.
 - 2026-04-18 R7: PR #151 (C1 Vitest setup). Changes requested. CRITICAL: same rule-4 violation from #150 carryover (commit 66fec7c still present). IMPORTANT: env-guard test is self-defeating (mocks own fetch, not real network); @vitest/runner explicit dep creates version-skew risk. SUGGESTION: @vitest/ui unused.
 - 2026-04-18 R8: PR #149 (Ekko TDD hooks + CI). LGTM with coordination needed. IMPORTANT: PR template Testing section conflicts with #146 (J1) — both add ## Testing with different formats; needs design merge before either lands. Smoke convention, hook table, bypass policy all correct vs plan.
+- 2026-04-18 R9: PR #150 re-review (commits e0a3e91, 7234702). All 5 findings resolved. LGTM. (Jayce sent wrong PR# — said 152, meant 150 fixes.)
+- 2026-04-18 R10: PR #152 (G1 routing skeleton). LGTM. /monitoring/* reservation correct. xfail it.todo correct pre-C1. Process note: retarget base from chore/a1 to main after #147 merges.
+- 2026-04-18 R11: PR #153 (F1+F2 auth). Changes requested. CRITICAL: timingSafeEqual defeated by || token !== expected short-circuit; xfail commit after implementation (rule 12). IMPORTANT: empty ALLOWED_UIDS silently bypasses allowlist (fails open); firebase-admin version conflict with B1 (^12 vs ^13.8).
+- 2026-04-18 R12: PR #151 re-review (d2e1e23, b679a38). CRITICAL resolved (plan violation netted out by main merge). Still open: env-guard self-defeating test (IMPORTANT); @vitest/runner redundant dep (IMPORTANT); @vitest/ui unused (suggestion).
+- 2026-04-18 R13: PR #154 (B3 signed URLs). Changes requested. IMPORTANT: xfail test passes "output" as ArtifactKind (invalid — not in union, objectPath returns .undefined ext); Storage() instantiated per-call (should be module singleton). V4 + 15min TTL correct. xfail ordering correct.
+- 2026-04-18 R14: PR #147 re-review (A1). LGTM. /monitoring server-level 404 correct defence-in-depth. it.failing correct post-C1. tsconfig __tests__ exclude correct.
+- 2026-04-18 R15: PR #153 re-review (F1+F2 auth). LGTM. All criticals+importants resolved. timingSafeEqual-only compare correct; byte-length check present; xfail ordering fixed; allowlist fails closed; firebase-admin ^13.8.0. Residual: unnamed app (suggestion); commit prefix still chore: not feat:.
+- 2026-04-18 R16: PR #151 re-review (70c05fe). LGTM. All findings resolved: @vitest/runner removed, @vitest/ui removed, env-guard moved to setupFiles (vi.stubGlobal in beforeAll — actually enforces hermetic invariant now).
+- 2026-04-18 R17: PR #154 re-review (B3). LGTM. ArtifactKind fixed to "screenshot"; Storage singleton at module scope. Path format changed to <artifactId>-<kind>.<ext> — acceptable, ADR §3 unspecific on filename format.
 
 ## Migrated from lissandra (2026-04-17)
 # Lissandra
