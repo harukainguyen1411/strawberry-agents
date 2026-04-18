@@ -71,7 +71,7 @@ while read local_ref local_sha remote_ref remote_sha; do
   git log "$range" --format="%H" 2>/dev/null > "$_sha_list"
   xfail_found=""
   while IFS= read -r sha; do
-    if git show "$sha" --unified=0 2>/dev/null | grep -qE '(test\.fail|it\.failing|@pytest\.mark\.xfail|# xfail:)'; then
+    if git show "$sha" --unified=0 2>/dev/null | grep -qE '(test\.fail|it\.fails|it\.failing|@pytest\.mark\.xfail|# xfail:)'; then
       xfail_found="yes"
       break
     fi
