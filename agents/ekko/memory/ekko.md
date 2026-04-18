@@ -4,7 +4,8 @@
 Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead direction.
 
 ## Sessions
-- 2026-04-18 (subagent, dependabot B10-B14): Shipped 6 PRs (#156 B14 merged, #157 B12, #158 B13 merged, #171 B11b, #174 B11a, #176 B11). Reviewed 4 B10 action-bump PRs. Established raw-worktree-bypass + supersede-combined-PR patterns.
+- 2026-04-18 (subagent, testing-process): TDD hooks + CI wiring (PR #149 merged), C2 pre-commit dashboards hook (PR #165), xfail docs (PR #175). Fixed stale-base Azir blocker on #165.
+- 2026-04-18 (subagent, dependabot B10-B14): Shipped 6 PRs (#156 B14 merged, #157 B12, #158 B13 merged, #171 B11b, #174 B11a, #176 B11). Reviewed 4 B10 action-bump PRs.
 - 2026-04-17 (subagent, B5-B7 + vitest3): vitest 2→3 on discord-relay/deploy-webhook/coder-worker. Resolved esbuild/vite Dependabot alert chain.
 - 2026-04-13: Bee Gemini intake pipeline P0+P1 (PR #105).
 
@@ -20,6 +21,8 @@ Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead
 - **marked@14+ `marked.parse()` default is sync string**; async mode is opt-in via `marked.use({ async: true })`. TS types return `string | Promise<string>` regardless of `{ async: false }` option, so cast stays.
 - **date-fns v3→v4** didn't change `weekStartsOn` / `firstWeekContainsDate` defaults. Headline v4 changes are first-class tz (via `@date-fns/tz`/`@date-fns/utc`) + dropped sub-path locale imports.
 - **@google/generative-ai 0.24+** requires `format: "enum"` on any schema field with `enum: [...]` (tightened `EnumStringSchema` TS type, enforced at runtime).
+- **Stale-branch untracked files block merge**: `git merge origin/main` aborts if untracked files in the worktree collide with incoming additions. Remove the blocking files first, then re-run merge. After merge, explicitly `git add` any files that were untracked and thus not auto-restored.
+- **CWD-relative `require()` in git hooks**: `require('./$path')` resolves from shell CWD, not repo root. Always construct `abs_path="$REPO_ROOT/$path"` and use that in node `-e` `require()`.
 
 ## Feedback
 - When camille or team-lead flags stale state repeatedly, produce git-log forensic evidence (`git show --stat`, `git rev-parse HEAD origin/main`) once, then proceed. Don't relitigate.
