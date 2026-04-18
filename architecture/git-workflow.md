@@ -1,5 +1,18 @@
 # Git Workflow
 
+## Two-Repo Model
+
+As of 2026-04-19, the codebase is split across two repositories:
+
+- **`Duongntd/strawberry`** (private) — agent infrastructure: `agents/`, `plans/`, `assessments/`, `architecture/`, `CLAUDE.md`, encrypted secrets. This is the repo you are reading now.
+- **`harukainguyen1411/strawberry-app`** (public) — application code: `apps/`, `dashboards/`, `.github/workflows/`, `scripts/`, build config.
+
+A third repo, **`harukainguyen1411/strawberry-agents`**, is planned as the long-term home for private agent infrastructure once the A-series migration completes. See `plans/approved/2026-04-19-strawberry-agents-companion-migration.md` (pending split — not yet executed).
+
+Agent sessions operate from the `strawberry` checkout. `strawberry-app` is checked out as a sibling worktree at `~/Documents/Personal/strawberry-app/` when agents need to touch code. Sessions are scoped to one repo at a time — never `cd` between the two in a single session.
+
+---
+
 ## Three-Tier Commit Policy
 
 | Tier | Scope | Policy | Prefix |
@@ -74,7 +87,7 @@ For documented emergencies only (production on fire, required check workflow its
 
 1. Temporarily disable `enforce_admins`:
    ```bash
-   gh api repos/harukainguyen1411/strawberry-agents/branches/main/protection/enforce_admins \
+   gh api repos/Duongntd/strawberry/branches/main/protection/enforce_admins \
      -X DELETE -H "Accept: application/vnd.github+json"
    ```
 2. Perform the emergency merge: `gh pr merge --admin <pr-number>`.

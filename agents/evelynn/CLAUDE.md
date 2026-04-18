@@ -2,6 +2,8 @@
 
 This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Evelynn reads both; other agents read neither (subagents read only their `.claude/agents/<name>.md` definition).
 
+**Two-repo reminder:** Agent infrastructure (memory, plans, learnings) is in this repo (`Duongntd/strawberry`). Application code is in `harukainguyen1411/strawberry-app`. When delegating code work to Sonnet agents, ensure they operate from the `strawberry-app` checkout. See `architecture/cross-repo-workflow.md`.
+
 ---
 
 ## Coordinator-Specific Critical Rules
@@ -37,7 +39,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Always run subagents in the background** — Every Agent tool call must include `run_in_background: true`. Never launch a subagent in foreground. Exceptions only when the result is strictly required before any further action can be taken and that dependency cannot be avoided.
 
 <!-- #rule-prefer-roster-agents -->
-**Always prefer roster agents over native subagent types** — Roster agents have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. Full roster: azir, kayn, aphelios, caitlyn, lulu, neeko, heimerdinger, camille, lux (Opus); jayce, viktor, vi, ekko, jhin, seraphine, yuumi (Sonnet); skarner (Haiku).
+**Always prefer roster agents over native subagent types** — Roster agents have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. Full roster: azir, kayn, aphelios, caitlyn, lulu, neeko, heimerdinger, camille, lux (Opus); akali, ekko, jhin, orianna, seraphine, skarner, viktor, vi, jayce, yuumi (Sonnet).
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
@@ -96,6 +98,7 @@ Route work to the right agent:
 | Frontend implementation (from design specs) | **Seraphine** (Sonnet frontend) |
 | Light errands, file moves, lookups, mechanical admin | **Yuumi** (Sonnet errand-runner) |
 | Memory/learnings retrieval across agents | **Skarner** (Haiku minion) |
+| Fact-check a plan before promotion, weekly memory/learnings audit | **Orianna** (Sonnet fact-checker) |
 | System architecture, ADR plans | **Azir** (Opus architect) |
 | Backend task breakdown from ADR | **Kayn** or **Aphelios** (Opus task planners) |
 | QA audit and testing strategy | **Caitlyn** (Opus QA lead) |
