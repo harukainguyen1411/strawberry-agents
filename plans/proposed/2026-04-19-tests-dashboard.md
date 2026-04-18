@@ -2,8 +2,8 @@
 status: proposed
 owner: azir
 created: 2026-04-19
-slug: test-results-dashboard
-title: Strawberry Test Results Dashboard — cross-repo test-run status surface
+slug: tests-dashboard
+title: Strawberry Tests Dashboard — cross-repo test-run status surface
 supersedes: []
 related:
   - plans/approved/2026-04-19-claude-usage-dashboard.md
@@ -11,7 +11,7 @@ related:
   - plans/approved/2026-04-17-test-dashboard-architecture.md
 ---
 
-# Strawberry Test Results Dashboard ADR
+# Strawberry Tests Dashboard ADR
 
 ## Goal
 
@@ -46,9 +46,9 @@ v1 scope intentionally small: **static SPA, private hosting or file://, no auth,
 
 ## Decisions
 
-### D1. Hosting — default to local file:// static page, promote to Firebase Hosting (private) only if phone access is asked for
+### D1. Hosting — v1 = local file:// only, no phone access in v1
 
-**Decision: v1 = `file://` static SPA. Two files: `index.html`, `app.js`. Chart.js for sparklines via CDN.**
+**Decision: v1 = `file://` static SPA. Two files: `index.html`, `app.js`. Chart.js for sparklines via CDN. No phone access in v1. — Duong**
 
 Rationale:
 
@@ -79,7 +79,7 @@ Rationale:
 Rejected:
 
 - **Commit results to a results repo** — noisy git history, no value over local cache, and risks leaking private error text to public git if the repo is public-default. Reject.
-- **GitHub Actions artifacts** — valid once CI is the *primary* driver of test signal, but CI gates (Rules 12, 14, 15, 17) are still being stood up per the deployment-pipeline plan. v1 captures the *local* test signal Duong already produces. Flag as the natural v2 move when CI becomes routine (see §7 integration).
+- **GitHub Actions artifacts** — CI-artifact path is a v2 concern, not designed into v1 now. v1 captures the *local* test signal Duong already produces. — Evelynn
 - **GCS / Firestore** — same argument as D1: no need for a cloud store when the data is already on disk.
 
 v2 path: swap the local aggregator for a GitHub Actions step that uploads `test-results.json` as an artifact; add a fetch step in `build.sh` that pulls the most recent artifact per workflow via `gh run download`. Schema stays identical; only the read path changes.
@@ -108,6 +108,10 @@ Rejected:
 
 **Decision:** implement a Vitest reporter class that plugs into `defineConfig({ test: { reporters: [...] } })`. It listens to `onFinished` / `onTestFinished` and emits `test-results.json` + `test-run-history.json` in the same schema as the pytest plugin, into `./.test-dashboard/`.
 
+**Vitest version lock:** pin to the current major present in `strawberry-app/package.json` at implementation time (reader: Kayn). No planned migration in next 6 months. — Evelynn
+
+**TDD gate:** the tests-dashboard reporter package IS TDD-enabled. xfail-first per Rule 12. — Evelynn
+
 Tradeoff analysis:
 
 | Option | Pros | Cons | Verdict |
@@ -118,12 +122,12 @@ Tradeoff analysis:
 
 Implementation shape (Kayn-facing, not an implementation task here):
 
-- Package: `@strawberry/vitest-reporter-results-dashboard` (private, local workspace in strawberry-app under `packages/vitest-reporter-results-dashboard/`).
+- Package: `@strawberry/vitest-reporter-tests-dashboard` (private, local workspace in strawberry-app under `packages/vitest-reporter-tests-dashboard/`).
 - Entry: a class implementing Vitest's `Reporter` interface. Writes atomically (temp file + rename) so partial writes never corrupt the JSON the dashboard is reading.
 - Versioning: pinned to the Vitest major used by strawberry-app's vitest.config.ts; bumped via Renovate/Dependabot like any other internal dep.
 - Test strategy: fixture-based. Feed the reporter a synthetic `onFinished` payload, snapshot the emitted JSON against a golden file.
 
-**Parity contract:** the Vitest reporter's output for a given test outcome (pass/fail/xfail/xpassed/skip) MUST match, field-for-field, what the pytest plugin produces for the equivalent outcome. A shared JSON Schema file (`test-dashboard-data-schema.json`) lives in the dashboard repo and both writers validate against it in their own test suites.
+**Parity contract:** the Vitest reporter's output for a given test outcome (pass/fail/xfail/xpassed/skip) MUST match, field-for-field, what the pytest plugin produces for the equivalent outcome. A shared JSON Schema file (`tests-dashboard-data-schema.json`) lives in the dashboard repo and both writers validate against it in their own test suites.
 
 ### D5. Auth — none, confirmed
 
@@ -136,14 +140,14 @@ This is consistent with the "Strawberry is personal/local" scope and with demo-s
 **Decision:** two dashboards, one shell.
 
 - Usage dashboard = cost/attribution domain ("which agent burned Max quota").
-- Test dashboard = quality domain ("which tests are red, newly failing, flaky").
+- Tests dashboard = quality domain ("which tests are red, newly failing, flaky").
 
 Different data sources, different writers, different refresh cadences, different risks. Forcing them into one data model (or one data.json) creates coupling with zero payoff.
 
 But they share:
 
-- **Hosting root:** `dashboards/` under strawberry-app (once the usage-dashboard lands in that location per its approved plan). Test dashboard lives at `dashboards/test-dashboard/`.
-- **Design tokens:** single `dashboards/_shared/tokens.css` — GitHub-dark palette, Inter/JetBrains Mono, color scale for pass/fail/xfail/skip. Any UI-consistent primitives (status pill, sparkline) live under `dashboards/_shared/`.
+- **Hosting root:** `dashboards/` under strawberry-app (once the usage-dashboard lands in that location per its approved plan). Tests dashboard lives at `dashboards/tests-dashboard/`.
+- **Design tokens:** single `dashboards/_shared/tokens.css` — GitHub-dark palette, Inter/JetBrains Mono, color scale for pass/fail/xfail/skip. Any UI-consistent primitives (status pill, sparkline) live under `dashboards/_shared/`. Create `dashboards/_shared/tokens.css` up front and amend the approved usage-dashboard plan to depend on it. Dedupe-now is cheaper than dedupe-later. — Evelynn
 - **Entry index:** `dashboards/index.html` that lists both dashboards for one-click open. Cheap.
 
 v1 explicitly **does not merge** the two. If a future dashboard needs both test + cost (e.g., "which agent writes the most red tests"), a v3 combined view can read both `data.json` files side by side — no schema change needed.
@@ -166,6 +170,8 @@ All five emit test-run data. The dashboard is the **aggregator and viewer** of t
 - This dashboard's writers (pytest plugin patch + Vitest reporter) are installed **into** the pipeline's existing test commands (`scripts/test-functions.sh`, `scripts/test-storage-rules.sh`, etc. per §4 of the pipeline ADR). Writers piggyback on existing invocations; no new test run is introduced.
 - Phase 2's CI workflows can be extended in a follow-up to upload `test-results.json` as an artifact (the v2 data-flow upgrade described in D2) — but that is a separate follow-up, not part of this ADR.
 
+**Confirmed repo scope:** `harukainguyen1411/strawberry-app` + `harukainguyen1411/strawberry-agents` only. Archive repo `Duongntd/strawberry` and work repos (`~/Documents/Work/mmp/**`) are out of scope. — Duong + Evelynn
+
 **Nothing in the deployment-pipeline plan is retracted or replaced.** This dashboard is a sibling line of work that reads pipeline output.
 
 ### D8. Runner coverage — Vitest and pytest are first-class; bash test harnesses are a later concern
@@ -176,11 +182,13 @@ Rationale: bash test output formats are ad hoc; building a generic bash adapter 
 
 v2 path: adopt TAP output from bash tests (`tap-harness` or similar), add a TAP->schema adapter. Same downstream schema, same dashboard, no refactor.
 
-### D9. Refresh cadence — polling on page load + manual refresh, no SSE in v1
+### D9. Refresh cadence — v1 polling on page load + manual refresh; v2 SSE (confirmed)
 
-**Decision:** dashboard reads `data.json` on page load and on user-initiated refresh (button). No SSE, no WebSocket, no filesystem watcher in v1.
+**Decision (v1):** dashboard reads `data.json` on page load and on user-initiated refresh (button). No SSE, no WebSocket, no filesystem watcher in v1.
 
-Rationale: v1 is file://. File reads are synchronous and cheap. Dashboard reload costs a second. Duong's usage pattern is "run tests, then go look" — not "sit staring at the dashboard waiting for a green bar." SSE/polling is a v2 concern tied to hosting (D1 v2).
+**Decision (v2):** SSE for live-refresh when hosting moves to Firebase Hosting. — Duong (flips the original default which leaned poll-on-focus + manual refresh)
+
+Rationale: v1 is file://. File reads are synchronous and cheap. Dashboard reload costs a second. Duong's usage pattern is "run tests, then go look" — polling is sufficient for v1. SSE is the confirmed v2 path.
 
 ### D10. History retention — keep full history on disk, trim display to last 50 runs per repo (matches demo-studio-v3 default)
 
@@ -199,7 +207,7 @@ strawberry-app/                                 strawberry-agents/
     test-run-history.json       writes here         test-run-history.json
                                                     test-dashboard-data/
                                                       data.json           <-- aggregator merges both
-                                                      dashboards/test-dashboard/
+                                                      dashboards/tests-dashboard/
                                                         index.html
                                                         app.js
                                                         tokens.css        (symlink or copy of _shared/tokens.css)
@@ -213,7 +221,7 @@ strawberry-app/                                 strawberry-agents/
 4. Merge into a single `data.json` with two top-level sections: `current` (snapshot of both repos' latest run) and `history` (time-ordered merge, capped at 50 per repo).
 5. Write `data.json` atomically.
 
-**Dashboard (`dashboards/test-dashboard/`):**
+**Dashboard (`dashboards/tests-dashboard/`):**
 
 - `index.html` — three-panel layout:
   1. **Runs list** (top): one row per test run, newest first, columns: repo, timestamp, trigger, total, passed/failed/xfailed/skipped chips, duration. Click a row to drill into Per-test detail.
@@ -231,7 +239,7 @@ strawberry-app/                                 strawberry-agents/
 - **Gitignore discipline.** `.test-dashboard/` and `test-dashboard-data/` both must be in `.gitignore` in both repos. A single mistaken `git add -A` could leak error tracebacks with file paths to a public repo. Mitigation: add path checks to the existing pre-commit hook (`scripts/install-hooks.sh`) — any staged file matching `**/.test-dashboard/**` is blocked, explicit error message.
 - **Vitest version pinning.** Reporter API stability across Vitest 1.x -> 2.x is not guaranteed. Pin Vitest major in strawberry-app's workspace; reporter package declares Vitest as a peerDep with the pinned range. Renovate PR upgrades are gated by the reporter's own test suite.
 - **Data size.** 50 runs x ~637 tests x ~100 bytes/test ~= 3 MB worst case. Fine for a local fetch. If it grows, move history into a sibling `history.json` and lazy-load on user action.
-- **Duplicate dashboards confusion.** There are now three test-related dashboards in play: (a) the approved strawberry-app test-dashboard at `/test-dashboard` (Cloud Run, session monitoring), (b) this cross-repo test-run dashboard, (c) the approved usage dashboard. Mitigation: clear naming and the `dashboards/index.html` landing page described in D6. Do not reuse the exact name "test-dashboard" for (b); propose `dashboards/test-results/` for this one to avoid collision with the existing `/test-dashboard` surface. Duong to confirm in open question Q6.
+- **Duplicate dashboards confusion.** There are now three test-related dashboards in play: (a) the approved strawberry-app test-dashboard at `/test-dashboard` (Cloud Run, session monitoring), (b) this cross-repo tests-dashboard, (c) the approved usage dashboard. Mitigation: clear naming and the `dashboards/index.html` landing page described in D6. This dashboard uses `dashboards/tests-dashboard/` to avoid collision with the existing `/test-dashboard` surface.
 
 ---
 
@@ -248,7 +256,7 @@ strawberry-app/                                 strawberry-agents/
 | Bash/TAP adapter | — | yes | — |
 | CI-artifact data flow (vs. local-disk) | — | yes | — |
 | Firebase Hosting + Firebase Auth private surface | — | yes (if phone access asked for) | — |
-| SSE live-refresh | — | — | yes (paired with v2 hosting) |
+| SSE live-refresh | — | yes (confirmed, v2) | — |
 | Flake detection (pass/fail/pass within N runs -> flag) | — | yes | — |
 | Duration regression alerts | — | — | yes |
 | Agent attribution (which agent committed the code that made a test red) | — | — | yes (cross-joins with usage-dashboard data) |
@@ -257,9 +265,11 @@ strawberry-app/                                 strawberry-agents/
 
 ## Open questions for Duong
 
+*(Preserved for history. Resolutions in the Decisions table below.)*
+
 1. **Dashboard name / URL slug.** I propose `dashboards/test-results/` to avoid collision with the existing approved `strawberry-app/test-dashboard/` (Cloud Run, session monitoring). OK to land under that new name? If not, propose an alternative.
 2. **Hosting ambition.** v1 = `file://` local only. Do you want phone access on day 1? If yes, that flips v1 to Firebase Hosting (free tier) on a private surface behind the existing Firebase Auth UID allow-list, which adds a small amount of config (same pattern as the approved test-dashboard ADR, no new auth code). Default answer = no, stay local.
-3. **Aggregator home.** The aggregator script and `dashboards/test-results/` static files — which repo hosts them? Options: (a) `strawberry-app/dashboards/test-results/` (consistent with usage-dashboard precedent per the approved claude-usage-dashboard plan), or (b) `strawberry-agents/dashboards/test-results/` (this repo, since the aggregator reads multiple clones and strawberry-agents is the "brain" that coordinates). Default = (a) to match precedent. Counter-argument for (b): strawberry-app is public, and a committed aggregator config that hardcodes local clone paths is awkward in public code. Leaning (b) for the aggregator + private config, (a) for the static HTML — but flagging for your call.
+3. **Aggregator home.** The aggregator script and `dashboards/tests-dashboard/` static files — which repo hosts them? Options: (a) `strawberry-app/dashboards/tests-dashboard/` (consistent with usage-dashboard precedent per the approved claude-usage-dashboard plan), or (b) `strawberry-agents/dashboards/tests-dashboard/` (this repo, since the aggregator reads multiple clones and strawberry-agents is the "brain" that coordinates). Default = (a) to match precedent. Counter-argument for (b): strawberry-app is public, and a committed aggregator config that hardcodes local clone paths is awkward in public code. Leaning (b) for the aggregator + private config, (a) for the static HTML — but flagging for your call.
 4. **Vitest version lock.** strawberry-app currently on Vitest — what major? I need this to pin the reporter peerDep range. Kayn/Aphelios can read this from `package.json` at implementation time, but confirm the major is stable for the next 6 months (no planned migration) so the reporter doesn't get orphaned.
 5. **CI-artifact timeline.** D2 v1 reads local disk only. When (if ever) do you expect the deployment-pipeline Phase 2 CI workflows (`test.yml`, `e2e.yml`, `tdd-gate.yml`) to be the *primary* source of test signal for this dashboard? If that's within 30 days, we should design the v2 CI-artifact path into v1 now. If it's further out, keep v1 local-only as scoped.
 6. **Archive of the existing `plans/approved/2026-04-17-test-dashboard-architecture.md`.** That plan is for a different surface (session monitoring, Cloud Run). Should we rename it in-place to clarify the distinction once this plan lands (e.g., to `2026-04-17-session-dashboard-architecture.md`), or leave it alone? Non-blocking either way; flagging so we don't have two docs with overlapping names.
@@ -270,12 +280,29 @@ strawberry-app/                                 strawberry-agents/
 
 ---
 
-## Handoff notes (for Kayn/Aphelios once approved)
+## Decisions
+
+| # | Question topic | Decision |
+|---|---|---|
+| 1 | Slug | `dashboards/tests-dashboard/` — Duong |
+| 2 | Hosting ambition | v1 = local `file://` only. No phone access v1. — Duong |
+| 3 | Aggregator home | Option (a): `strawberry-app/dashboards/tests-dashboard/`. Matches usage-dashboard precedent. — Duong |
+| 4 | Vitest version lock | Pin to the current major present in `strawberry-app/package.json` at implementation time (reader: Kayn). No planned migration in next 6 months. — Evelynn |
+| 5 | CI-artifact timeline | Keep v1 local-disk-only. CI-artifact path is a v2 concern, not designed into v1 now. — Evelynn |
+| 6 | Existing ADR rename | Yes — rename `plans/approved/2026-04-17-test-dashboard-architecture.md` → `plans/approved/2026-04-17-session-dashboard-architecture.md` in a follow-up commit (tracked as task below). Update its own frontmatter slug + any cross-refs. — Evelynn. TODO: follow-up commit to handle rename (proposed file: `plans/proposed/2026-04-19-session-dashboard-adr-rename.md`) |
+| 7 | TDD gate | Tests-dashboard reporter package IS TDD-enabled. xfail-first per Rule 12. — Evelynn |
+| 8 | Repo scope | Confirmed: `harukainguyen1411/strawberry-app` + `harukainguyen1411/strawberry-agents` only. Archive and work repos out of scope. — Evelynn |
+| 9 | v2 SSE-vs-polling | SSE. (Flips Azir's default, which leaned poll.) — Duong |
+| 10 | Shared tokens | Yes — create `dashboards/_shared/tokens.css` up front and amend the approved usage-dashboard plan to depend on it. Dedupe-now is cheaper than dedupe-later. — Evelynn |
+
+---
+
+## Handoff notes (for Kayn once approved)
 
 - Reference implementation to read (DO NOT port): `~/Documents/Work/mmp/workspace/company-os/tools/demo-studio-v3/conftest_results_plugin.py`. Copy the schema semantics, not the file.
 - Reference implementation to read (port directly with `repo`/`runner` field additions): same path's `test-results.json` and `test-run-history.json` schemas.
 - Task-1 candidate: the Vitest reporter package + its golden-file tests. Self-contained, testable without the rest of the stack.
 - Task-2 candidate: `scripts/test-dashboard/build.sh` + shared JSON schema file + schema-validation tests for both writers.
-- Task-3 candidate: `dashboards/test-results/{index.html,app.js}` + `dashboards/_shared/tokens.css` + a Playwright smoke test that asserts a golden `data.json` renders the expected DOM.
-- Enforcement: per Rule 12, each task opens with an xfail test committed first, referencing this plan's slug (`test-results-dashboard`).
+- Task-3 candidate: `dashboards/tests-dashboard/{index.html,app.js}` + `dashboards/_shared/tokens.css` + a Playwright smoke test that asserts a golden `data.json` renders the expected DOM.
+- Enforcement: per Rule 12, each task opens with an xfail test committed first, referencing this plan's slug (`tests-dashboard`).
 - No implementer named in this ADR. Task breakdown is Kayn's.
