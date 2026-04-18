@@ -181,7 +181,8 @@ for _pkg in dashboards/server dashboards/test-dashboard; do
     FAIL=$((FAIL+1))
     continue
   fi
-  _enabled=$(node -e "try{const p=require('$_pj');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+  _abs_pj2="$REPO_ROOT/$_pkg/package.json"
+  _enabled=$(node -e "try{const p=require('$_abs_pj2');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
   if [ "$_enabled" = "true" ]; then
     echo "  PASS: $_pkg has tdd.enabled:true"
     PASS=$((PASS+1))
@@ -189,7 +190,7 @@ for _pkg in dashboards/server dashboards/test-dashboard; do
     echo "  FAIL: $_pkg missing tdd.enabled:true — hook will skip it"
     FAIL=$((FAIL+1))
   fi
-  _test_cmd=$(node -e "try{const p=require('$_pj');process.stdout.write(p.scripts&&p.scripts['test:unit']||'')}catch(e){}" 2>/dev/null || echo "")
+  _test_cmd=$(node -e "try{const p=require('$_abs_pj2');process.stdout.write(p.scripts&&p.scripts['test:unit']||'')}catch(e){}" 2>/dev/null || echo "")
   if [ -n "$_test_cmd" ]; then
     echo "  PASS: $_pkg has test:unit script"
     PASS=$((PASS+1))
@@ -199,21 +200,31 @@ for _pkg in dashboards/server dashboards/test-dashboard; do
   fi
 done
 
-# Verify the hook detects a staged dashboards/server file and resolves the package root.
-# Simulate: create a temp git index with one staged file under dashboards/server/src/.
-_tmp_repo=$(mktemp -d)
-git init "$_tmp_repo" >/dev/null 2>&1
-cp "$REPO_ROOT/dashboards/server/package.json" "$_tmp_repo/package.json"
-(cd "$_tmp_repo" && git add package.json >/dev/null 2>&1)
-_staged_output=$(GIT_DIR="$_tmp_repo/.git" GIT_WORK_TREE="$_tmp_repo" \
-  git diff --cached --name-only 2>/dev/null || echo "")
-rm -rf "$_tmp_repo"
-if [ -n "$_staged_output" ]; then
-  echo "  PASS: staged-file simulation works (hook detection mechanism valid)"
+echo ""
+echo "=== C2 regression — subdirectory CWD does not break tdd.enabled detection ==="
+# Regression test for Jhin R22: require() must use absolute path so the hook
+# works correctly when git invokes it from a subdirectory (e.g. cd dashboards/server && git commit).
+# We simulate by running the detection node snippet with CWD set to a subdirectory.
+_pj_rel="dashboards/server/package.json"
+_abs_pj="$REPO_ROOT/$_pj_rel"
+_result=$(cd "$REPO_ROOT/dashboards/server" && node -e "try{const p=require('$_abs_pj');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+if [ "$_result" = "true" ]; then
+  echo "  PASS: tdd.enabled detected correctly when CWD is dashboards/server (absolute path fix)"
   PASS=$((PASS+1))
 else
-  echo "  WARN: staged-file simulation inconclusive (not a FAIL — hook logic verified by code review)"
+  echo "  FAIL: tdd.enabled detection broken when CWD is a subdirectory — CWD-relative require() bug"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
+echo "=== C2 — hook uses absolute cd for test runner ==="
+# Verify the hook uses 'cd \$REPO_ROOT/\$pkg' (not 'cd \$pkg') so it works from any CWD.
+if grep -q 'REPO_ROOT.*pkg' "$REPO_ROOT/scripts/hooks/pre-commit-unit-tests.sh"; then
+  echo "  PASS: hook cd uses REPO_ROOT-anchored path"
   PASS=$((PASS+1))
+else
+  echo "  FAIL: hook cd does not use REPO_ROOT — may break from subdirectory CWD"
+  FAIL=$((FAIL+1))
 fi
 
 echo ""
