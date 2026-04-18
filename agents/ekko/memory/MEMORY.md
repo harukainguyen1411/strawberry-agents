@@ -6,14 +6,21 @@
 - Commits from this agent: use `chore:` or `ops:` prefix for non-code infra work
 - `scripts/safe-checkout.sh` required for any branch work — never raw `git checkout`
 - `tools/decrypt.sh` required for decryption — never raw `age -d`
-- Pushing `.github/workflows/` requires `workflow` OAuth scope. `Duongntd` token lacks it. Use `gh auth token --user harukainguyen1411` as push credential: `git push https://harukainguyen1411:<token>@github.com/harukainguyen1411/strawberry-agents.git main`
+- Pushing `.github/workflows/` requires `workflow` OAuth scope. Duongntd's CURRENT token (refreshed 2026-04-19) HAS `workflow` scope — plain `git push origin main` works as Duongntd. harukainguyen1411 is for PR reviews only, not pushes.
+- `secrets/encrypted/github-triage-pat.age` holds the Duongntd classic PAT (repo+workflow). Repo secret name: `AGENT_GITHUB_TOKEN` on `harukainguyen1411/strawberry-agents`.
+- Always validate a fresh PAT via `GH_TOKEN="$(cat <file>)" gh api user --jq .login` before encrypting or setting as a secret. Must return `Duongntd`.
 
 ## Persistent Context — strawberry-app
 
-- `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app` (HEAD `dc64379`, 2026-04-18).
+- `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app` (HEAD `12a817a` as of 2026-04-19).
 - `apps/` has 10 subdirs: `coder-worker`, `contributor-bot`, `deploy-webhook`, `discord-relay`, `landing`, `myapps`, `platform`, `private-apps`, `shared`, `yourApps`. No `bee` dir.
+- PR #31 (`feat/usage-dashboard-build-sh`): lock file was out of sync after T4 build.sh work; fixed by Jhin (commit `12a817a`). Pattern: "fails in <10s at npm ci" = missing lock file entries for new workspace/dep.
 
 ## Completed Tasks
+
+- **2026-04-19 (P1.3 env ciphertext):** Created `secrets/env/myapps-b31ea.env.age` in strawberry-app (branch `chore/p1-3-env-ciphertext`, commit `9942523`). Also updated `.gitignore` and `pre-commit-secrets-guard.sh` to allowlist `secrets/env/`. Four keys: GITHUB_TOKEN, BEE_GITHUB_REPO, BEE_SISTER_UIDS, DISCORD_WEBHOOK_URL. Re-encrypted `github-triage-pat.age` in strawberry-agents (branch `chore/refresh-triage-pat`, commit `8ba090f`).
+
+
 
 - **2026-04-18 (A3 strawberry-agents push):** Pushed filtered tree to `harukainguyen1411/strawberry-agents`. Final SHA: `650079a845f18e938d0c28f57eb6530911722d0d` (cherry-picked A2 commit onto main after detached HEAD divergence). Secrets set: `AGE_KEY` (from secrets/age-key.txt), `AGENT_GITHUB_TOKEN` (from secrets/github-triage-pat.txt). Branch protection BLOCKED — GitHub free plan does not allow branch protection on private repos (HTTP 403). Deviation noted; requires GitHub Pro upgrade or repo made public. Stopped at A3 per instructions.
 
