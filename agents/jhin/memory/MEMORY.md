@@ -18,6 +18,12 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 - `roles/firebaseauth.admin` is over-privileged for token verification (no IAM needed).
 
 ## Recurring review patterns
+- Bats xfail vacuous-pass: `source` fails non-zero when lib absent → `status -ne 0` test passes without exercising the function. Guard with `[ -f "${LIB}" ] || return 1`.
+- bats `$stderr` only populated with `run --separate-stderr` (bats-core 1.5+); bare `$stderr` assertions are no-ops.
+- Constant-equality assertions fail the "not a tautology" TDD criterion — need to test function behaviour, not string values.
+- `package.json` deploy scripts bypass static grep gates that only scan `scripts/deploy/**`.
+- repo-root detection via `command -v` is fragile when tools are on system PATH; prefer `BASH_SOURCE[0]`-relative.
+
 - Path-prefix validation on worker-consumed user fields (path traversal).
 - Idempotency guards on Firestore trigger handlers (at-least-once delivery).
 - HMAC verification uses raw body bytes, not re-serialized `req.body`.
@@ -29,6 +35,7 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
 
 ## Sessions
+- 2026-04-19 (S5): PR #25 (P1.2 _lib.sh xfail suite) + PR #26 (P1.4 Vitest proof-of-life). Both REQUEST_CHANGES. PR #25: impl commit d52f1b9 does not exist — branch has only the xfail commit; T8b vacuous-pass hazard (missing guard); T4 stderr assertion no-op without `run --separate-stderr`. PR #26: BEE_INTRO_MESSAGE is a string constant — fails "not a tautology" criterion; vitest@4.0.18 version needs verification; coverage block without @vitest/coverage-v8 dep.
 - 2026-04-19 (S4): PR #19 chore/a7-add-cursor-skills. REQUEST CHANGES. reference.md blob SHA diverged from base af2edbc0 — 4 inline `# gitleaks:allow` comments added beyond verbatim scope. 3 other files exact match. CI failures pre-existing (Firebase secret missing, lint errors in unrelated router files). Rule 18 enforced — did not merge.
 - 2026-04-18 (S3): PR #183 Orianna gate bugfixes. APPROVED. Bug A ([0-9]* anchor) + Bug B (awk suppress_next). Merge blocked by GH Actions billing suspension (all checks fail in 2-3s, no compute). Posted advisory comment. Rule 18 enforced — did not merge red.
 - 2026-04-18 (S1): dependabot-cleanup team under Camille. Advisory-LGTM on #156/#157. Shared-account invariant-#18 blocker + GH Actions billing diagnosis surfaced.
