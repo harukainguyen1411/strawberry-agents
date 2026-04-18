@@ -301,3 +301,182 @@ Total: **57 gates.**
 4. **Phase gates are strictly ordered** — P1 can only close if P0 is closed; Migration-complete can only close if P0–P6 all closed.
 5. **Gate failure is recoverable by design.** Each gate references a §N rollback point in the source plan; if a gate red-flags, the rollback is documented, not improvised.
 6. **Skipped formal TDD trade-off.** Since xfail-first is not enforced for migration ops, these gates ARE the test suite. A gate failing is the equivalent of a test failing — no implementation commit is considered "done" until its gate is green.
+
+---
+
+## strawberry-agents companion gates (AG-series)
+
+Amendment (2026-04-19, author: aphelios). These gates cover the companion migration `plans/approved/2026-04-19-strawberry-agents-companion-migration.md`. Aphelios's task breakdown at `plans/in-progress/2026-04-19-strawberry-agents-companion-tasks.md` references these gate IDs (`A<phase>-G<n>` and `AGM-G<n>`) when marking tasks complete. The original P*/M-G* gates above are scoped to strawberry-app; these AG/AGM-G gates are scoped to strawberry-agents and cross-repo post-conditions.
+
+Repo shorthand (amended): **strawberry-agents** = `harukainguyen1411/strawberry-agents` (new private agent-infra repo).
+
+### Phase A0 gate — base SHA tagged, freeze announced
+
+- [ ] **AG0-G1** Migration base SHA is tagged `migration-base-2026-04-19` on `Duongntd/strawberry` origin.
+  - Verify: `git -C /Users/duongntd99/Documents/Personal/strawberry fetch origin --tags && git rev-parse migration-base-2026-04-19` equals the SHA recorded in strawberry-app `P0.3` / Caitlyn's journal.
+
+- [ ] **AG0-G2** plan-promote freeze announcement in Evelynn coordinator channel precedes A1.1 timestamp.
+  - Verify: `grep -n 'plan-promote frozen' agents/ekko/journal/2026-04-*.md` returns a line with timestamp earlier than the `/tmp/strawberry-agents-filter.git` bare-clone stat.
+
+### Phase A1 gate — history filtered with --invert-paths, preserved
+
+- [ ] **AG1-G1** Scratch clone exists at a path distinct from strawberry-app's scratch.
+  - Verify: `test -d /tmp/strawberry-agents-filter.git && test -d /tmp/strawberry-agents && git -C /tmp/strawberry-agents rev-parse HEAD` equals the AG0-G1 tag SHA at clone time.
+
+- [ ] **AG1-G2** `git-filter-repo` available, version ≥ 2.38.
+  - Verify: `git filter-repo --version` exits 0.
+
+- [ ] **AG1-G3** No public paths remain in the filtered tree.
+  - Verify: `for p in apps dashboards .github/workflows .github/branch-protection.json .github/dependabot.yml .github/scripts turbo.json firestore.rules firestore.indexes.json release-please-config.json ecosystem.config.js scripts/deploy scripts/gce scripts/mac scripts/windows; do test -e "/tmp/strawberry-agents/$p" && echo "LEAK: $p"; done` — output empty. Plus `ls /tmp/strawberry-agents/package*.json /tmp/strawberry-agents/tsconfig*.json 2>/dev/null` — empty.
+
+- [ ] **AG1-G4** History is preserved (not squashed).
+  - Verify: `git -C /tmp/strawberry-agents rev-list --count HEAD` returns a value much greater than 1 (expected: on the order of the strawberry commit count minus filter-elided commits). Contrast with strawberry-app's P1-G3 which expects `1`.
+
+- [ ] **AG1-G5** Kept paths still present.
+  - Verify: for each of `agents/`, `plans/`, `assessments/`, `CLAUDE.md`, `secrets/encrypted/`, `tools/decrypt.sh`, `scripts/plan-promote.sh`, `scripts/plan-publish.sh`, `scripts/install-hooks.sh`, `scripts/hooks/pre-commit-secrets-guard.sh`, `architecture/git-workflow.md`, `tasklist/`, `incidents/`, `design/`, `mcps/` — `test -e /tmp/strawberry-agents/<path>` succeeds.
+
+- [ ] **AG1-G6** `secrets/encrypted/` is byte-identical to pre-filter reference.
+  - Verify: `diff -r /tmp/strawberry-agents/secrets/encrypted/ /tmp/strawberry-agents-reference/secrets/encrypted/` — empty output.
+
+- [ ] **AG1-G7** `tools/decrypt.sh` resolves filepaths for every known secret.
+  - Verify: `for s in $(ls /tmp/strawberry-agents/secrets/encrypted/*.age | sed 's|.*/||; s|\.age$||'); do /tmp/strawberry-agents/tools/decrypt.sh "$s" --dry-run-path-only || echo "FAIL: $s"; done` — no FAIL lines. (If `--dry-run-path-only` flag not yet wired in `decrypt.sh`, substitute an equivalent path-only check per Rule 6.)
+
+- [ ] **AG1-G8** gitleaks full-history scan reports zero real findings.
+  - Verify: `gitleaks detect --source=/tmp/strawberry-agents --log-opts="--all" --redact --report-path=/tmp/gitleaks-agents.json && jq 'length' /tmp/gitleaks-agents.json` returns `0` (or only allowlisted entries per `agents/camille/learnings/_migrated-from-pyke/2026-04-04-gitleaks-false-positives.md`).
+
+### Phase A2 gate — repo references retargeted inside filtered tree
+
+- [ ] **AG2-G1** Categorized reference-audit report exists.
+  - Verify: `test -s /tmp/migration-agents-ref-audit.md` AND file contains category tags (`agent-infra-url`, `code-pr-url`, `archive-permalink`, `transcript-historical`, `quoted-example`).
+
+- [ ] **AG2-G2** Zero active `Duongntd/strawberry` references in retargetable categories.
+  - Verify: `cd /tmp/strawberry-agents && grep -rln 'Duongntd/strawberry' CLAUDE.md agents/evelynn/CLAUDE.md scripts/plan-publish.sh scripts/plan-unpublish.sh scripts/plan-fetch.sh scripts/_lib_gdoc.sh architecture/git-workflow.md architecture/plan-gdoc-mirror.md 2>/dev/null` returns no matches. (Historical / transcript / archive-permalink hits remain — those are category `archive-permalink` or `transcript-historical`, not retargeted.)
+
+- [ ] **AG2-G3** Retarget commit exists atop the filtered history.
+  - Verify: `git -C /tmp/strawberry-agents log --oneline | grep -i 'retarget repo references'` returns ≥ 1 entry; `git -C /tmp/strawberry-agents log -1 --format=%H` sits at the tip (retarget is the final commit).
+
+### Phase A3 gate — pushed, private, protected
+
+- [ ] **AG3-G1** `harukainguyen1411/strawberry-agents` is private and visible.
+  - Verify: `gh repo view harukainguyen1411/strawberry-agents --json visibility,isPrivate,name | jq` returns `"visibility":"PRIVATE"` and `"isPrivate":true`.
+
+- [ ] **AG3-G2** `main` on strawberry-agents matches the filtered-tree HEAD SHA.
+  - Verify: `gh api repos/harukainguyen1411/strawberry-agents/commits/main --jq .sha` equals `git -C /tmp/strawberry-agents rev-parse HEAD`.
+
+- [ ] **AG3-G3** History is preserved on remote (count matches local).
+  - Verify: `gh api repos/harukainguyen1411/strawberry-agents/commits --paginate --jq 'length'` equals `git -C /tmp/strawberry-agents rev-list --count HEAD`.
+
+- [ ] **AG3-G4** Only the audited-required GitHub secrets exist on strawberry-agents.
+  - Verify: `gh secret list --repo harukainguyen1411/strawberry-agents --json name | jq 'length'` equals the audited count from A3.2 (expected `0` in the default case per ADR §4.3 step 2). Any extras are a misprovisioning — delete.
+
+- [ ] **AG3-G5** Branch protection matches §7.3 minimal private-infra profile.
+  - Verify: `gh api /repos/harukainguyen1411/strawberry-agents/branches/main/protection --jq '{force: .allow_force_pushes.enabled, delete: .allow_deletions.enabled, enforce_admins: .enforce_admins.enabled, reviews: .required_pull_request_reviews, checks: .required_status_checks}'` returns `force: false`, `delete: false`, `enforce_admins: false`, `reviews: null`, `checks: null` (checks may be null or `{"strict": false, "contexts": []}` — both acceptable until `plan-frontmatter-lint` ships per D10 deferral).
+
+- [ ] **AG3-G6** `install-hooks.sh` installs the agent-infra bundle and secrets-guard blocks a synthetic violation.
+  - Verify: in a scratch worktree, stage a fake `AWS_SECRET_ACCESS_KEY=AKIA...` literal; attempt `git commit`; exit code is non-zero AND stderr contains the secrets-guard denial message. Clean up the synthetic file.
+
+### Phase A4 gate — local working-tree swap complete
+
+- [ ] **AG4-G1** Old local strawberry tree archived or deleted.
+  - Verify: `git -C /Users/duongntd99/Documents/Personal/strawberry rev-parse HEAD 2>/dev/null` fails (directory no longer a git repo — renamed to `strawberry-archive-local` or removed).
+
+- [ ] **AG4-G2** Fresh strawberry-agents checkout exists at `~/Documents/Personal/strawberry-agents/` with hooks installed.
+  - Verify: `git -C /Users/duongntd99/Documents/Personal/strawberry-agents remote get-url origin` returns `https://github.com/harukainguyen1411/strawberry-agents.git`; `test -x /Users/duongntd99/Documents/Personal/strawberry-agents/.git/hooks/pre-commit`.
+
+- [ ] **AG4-G3** `secrets/age-key.txt` present in new checkout and gitignored.
+  - Verify: `test -f /Users/duongntd99/Documents/Personal/strawberry-agents/secrets/age-key.txt` AND `git -C /Users/duongntd99/Documents/Personal/strawberry-agents status --porcelain secrets/age-key.txt` returns empty (gitignored, no staged/unstaged change).
+
+- [ ] **AG4-G4** `scripts/plan-promote.sh` end-to-end smoke succeeds.
+  - Verify: a throwaway test plan is promoted from `proposed/` to `approved/` via `scripts/plan-promote.sh`, the commit lands on remote main, then is reverted; final `git status` is clean; Drive mirror is not left with orphan doc.
+
+### Phase A5 gate — memory + architecture + archive README updated
+
+- [ ] **AG5-G1** Post-migration `Duongntd/strawberry/pull/` references in MEMORY.md files are rewritten to `strawberry-app`.
+  - Verify: `grep -rn 'github.com/Duongntd/strawberry/pull/' /Users/duongntd99/Documents/Personal/strawberry-agents/agents/*/memory/MEMORY.md` — every remaining match is a pre-`migration-base-2026-04-19` PR (historical).
+
+- [ ] **AG5-G2** No regression of A2.2/A2.3 slug rewrites in MEMORY.md files.
+  - Verify: `grep -rn 'Duongntd/strawberry' /Users/duongntd99/Documents/Personal/strawberry-agents/agents/*/memory/MEMORY.md` — every remaining match is historical / transcript / archive-permalink context.
+
+- [ ] **AG5-G3** Core CLAUDE.md + git-workflow.md name all three repos.
+  - Verify: for each of `/Users/duongntd99/Documents/Personal/strawberry-agents/{CLAUDE.md,agents/evelynn/CLAUDE.md,architecture/git-workflow.md}`, `grep -c 'strawberry-agents' <file>` ≥ 1 AND `grep -c 'strawberry-app' <file>` ≥ 1 AND `grep -c 'archive\|Duongntd/strawberry' <file>` ≥ 1.
+
+- [ ] **AG5-G4** `architecture/cross-repo-workflow.md` exists in strawberry-agents and documents all three repos.
+  - Verify: `test -f /Users/duongntd99/Documents/Personal/strawberry-agents/architecture/cross-repo-workflow.md` AND `grep -c 'strawberry-agents' <file>` ≥ 5 AND `grep -c 'strawberry-app' <file>` ≥ 5 AND `grep -c 'archive\|Duongntd/strawberry' <file>` ≥ 1.
+
+- [ ] **AG5-G5** Every active agent's MEMORY.md carries the pre-2026-04-19-SHA footer.
+  - Verify: for each active agent `<A>` in the A5.4 enumeration, `grep -c '2026-04-19' /Users/duongntd99/Documents/Personal/strawberry-agents/agents/<A>/memory/MEMORY.md` ≥ 1 AND `grep -c 'Duongntd/strawberry\|strawberry-archive' /Users/duongntd99/Documents/Personal/strawberry-agents/agents/<A>/memory/MEMORY.md` ≥ 1.
+
+- [ ] **AG5-G6** `agents/memory/agent-network.md` references strawberry-agents as canonical agent-infra origin.
+  - Verify: `grep -c 'harukainguyen1411/strawberry-agents' /Users/duongntd99/Documents/Personal/strawberry-agents/agents/memory/agent-network.md` ≥ 1.
+
+- [ ] **AG5-G7** `Duongntd/strawberry` archive has a pinned README linking to both new repos.
+  - Verify: `gh api repos/Duongntd/strawberry/contents/README.md --jq .content | base64 -d` contains `strawberry-app` AND `strawberry-agents` AND `90 days` (or `2026-07-18`).
+
+- [ ] **AG5-G8** Phase A5 commit exists on strawberry-agents main.
+  - Verify: `git -C /Users/duongntd99/Documents/Personal/strawberry-agents log --oneline --grep="aphelios migration — update agent memory"` returns ≥ 1 commit dated on/after 2026-04-19.
+
+### Phase A6 gate — 90-day archive
+
+- [ ] **AG6-G1** 90 days have elapsed since A5.7 cutover with no reverts or incidents.
+  - Verify: current epoch minus A5.7 commit-date epoch ≥ `90 * 86400`; `git -C /Users/duongntd99/Documents/Personal/strawberry-agents log --oneline --grep="Revert.*aphelios migration"` empty; no strawberry-agents incident reports filed.
+
+- [ ] **AG6-G2** `Duongntd/strawberry` is archived and renamed.
+  - Verify: `gh api /repos/Duongntd/strawberry-archive --jq '.archived'` returns `true`.
+
+### Phase A7 gate — orphan-path sentinel (final cross-plan correctness)
+
+- [ ] **AG7-G1** Three-way manifest files are built from base / strawberry-app main / strawberry-agents main.
+  - Verify: `wc -l /tmp/migration-orphan-check/{base,app,agents,retired}.txt` — all four non-zero.
+
+- [ ] **AG7-G2** Every path in base manifest is accounted for in exactly one of app / agents / retired, with no illicit duplicates.
+  - Verify: (a) `comm -23 /tmp/migration-orphan-check/base.txt <(sort -u /tmp/migration-orphan-check/app.txt /tmp/migration-orphan-check/agents.txt /tmp/migration-orphan-check/retired.txt)` returns empty output (no orphans); (b) `comm -12 /tmp/migration-orphan-check/app.txt /tmp/migration-orphan-check/agents.txt | grep -vFf <(echo -e "scripts/hooks/pre-commit-secrets-guard.sh\nscripts/install-hooks.sh\n.gitignore\ntools/decrypt.sh")` returns empty output (no duplicates outside the dual-tracked set).
+
+### Migration-complete gates (AGM-series — strawberry-agents-scoped)
+
+These are the strawberry-agents companion analogues to the `M-G*` migration-complete gates above. Declared complete when every AGM-G is `[x]` AND every M-G in the original checklist is `[x]`.
+
+- [ ] **AGM-G1** `harukainguyen1411/strawberry-agents` exists, is private, and has strawberry's agent-infra subtree at its tip.
+  - Verify: AG3-G1 `[x]` AND AG3-G2 `[x]`.
+
+- [ ] **AGM-G2** History is preserved back to genesis (or to a documented clean-cut commit).
+  - Verify: AG1-G4 `[x]` AND AG3-G3 `[x]`.
+
+- [ ] **AGM-G3** No private paths leaked into public repo; no public paths leaked into private agent repo.
+  - Verify: AG1-G3 `[x]` AND (cross-plan) P1-G2 `[x]`.
+
+- [ ] **AGM-G4** gitleaks clean on strawberry-agents full history.
+  - Verify: AG1-G8 `[x]`.
+
+- [ ] **AGM-G5** Every secret in `secrets/encrypted/` is path-resolvable and byte-identical to pre-migration state.
+  - Verify: AG1-G6 `[x]` AND AG1-G7 `[x]`.
+
+- [ ] **AGM-G6** Branch protection on strawberry-agents matches §7.3 minimal profile.
+  - Verify: AG3-G5 `[x]`.
+
+- [ ] **AGM-G7** CLAUDE.md (root), `agents/evelynn/CLAUDE.md`, `architecture/git-workflow.md`, and `architecture/cross-repo-workflow.md` all name the three-repo relationship.
+  - Verify: AG5-G3 `[x]` AND AG5-G4 `[x]`.
+
+- [ ] **AGM-G8** Dual-tracked `pre-commit-secrets-guard.sh` is byte-identical to the strawberry-app copy.
+  - Verify: `diff /Users/duongntd99/Documents/Personal/strawberry-agents/scripts/hooks/pre-commit-secrets-guard.sh <(gh api repos/harukainguyen1411/strawberry-app/contents/scripts/hooks/pre-commit-secrets-guard.sh --jq .content | base64 -d)` — empty output. Supersedes M-G13 once both plans are complete (same invariant, new origin on the strawberry-agents side).
+
+- [ ] **AGM-G9** `scripts/plan-promote.sh` works end-to-end from the new canonical local checkout.
+  - Verify: AG4-G4 `[x]`.
+
+- [ ] **AGM-G10** No orphan paths across the three-repo split.
+  - Verify: AG7-G2 `[x]`. This is the final cross-plan correctness gate — the migration is considered **complete** when this green plus M-G11 green (strawberry-app smoke).
+
+---
+
+## Kayn + Aphelios reference — AG gate IDs by phase
+
+- **Phase A0:** AG0-G1, AG0-G2
+- **Phase A1:** AG1-G1, AG1-G2, AG1-G3, AG1-G4, AG1-G5, AG1-G6, AG1-G7, AG1-G8
+- **Phase A2:** AG2-G1, AG2-G2, AG2-G3
+- **Phase A3:** AG3-G1, AG3-G2, AG3-G3, AG3-G4, AG3-G5, AG3-G6
+- **Phase A4:** AG4-G1, AG4-G2, AG4-G3, AG4-G4
+- **Phase A5:** AG5-G1, AG5-G2, AG5-G3, AG5-G4, AG5-G5, AG5-G6, AG5-G7, AG5-G8
+- **Phase A6:** AG6-G1, AG6-G2
+- **Phase A7:** AG7-G1, AG7-G2
+- **Migration-complete (AGM-series):** AGM-G1, AGM-G2, AGM-G3, AGM-G4, AGM-G5, AGM-G6, AGM-G7, AGM-G8, AGM-G9, AGM-G10
+
+Total AG-series gates: **33** (adds to the 57 in the original checklist for a combined three-repo total of **90 gates**).
