@@ -20,6 +20,11 @@
 - 2026-04-19: P1.2 bats xfail suite + P1.4 Vitest proof-of-life — wrote 26-test bats suite for _lib.sh (24/26 xfail correctly); landed 2-commit Vitest proof-of-life for BEE_INTRO_MESSAGE; both branches pushed (chore/p1-2-lib-sh-xfail SHA 40463a0, chore/p1-4-vitest-proof-of-life SHAs 43437dc + 4765882)
 - 2026-04-19: PR #25/#26 Jhin review fixes — addressed C2/C4/I2/I3 on #25 and C1/I2 on #26; 29/29 bats + 4/4 vitest; pushed SHAs 8c68ae5 (p1-2) and dad412f (p1-4)
 
+- [PR #26 round 2 fixes](../learnings/2026-04-19-pr26-round2-fixes.md) — permission-denied test accessed wrong branch (makeRequest(undefined) hits unauthenticated, not permission-denied); lockfile drift requires deleting lockfile + overrides in root package.json; lint-staged can revert JSON edits during commit — use Write tool + verify staged diff before committing
+
+## Sessions
+- 2026-04-19: PR #26 round 2 — fixed misnamed permission-denied test (now calls with real UID + asserts permission-denied/not_authorized_for_bee), fixed lockfile drift (deleted lockfile, added root override vitest=4.0.18, pinned apps/myapps workspace); tip SHA ef7c188
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
