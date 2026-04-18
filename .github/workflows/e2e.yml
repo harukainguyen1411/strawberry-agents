@@ -1,0 +1,76 @@
+name: E2E (Playwright)
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Detect TDD-enabled packages
+        id: detect
+        shell: bash
+        run: |
+          changed=$(git diff --name-only origin/main...HEAD 2>/dev/null || true)
+          has_tdd=""
+          for f in $changed; do
+            dir=$(dirname "$f")
+            while [ "$dir" != "." ]; do
+              if [ -f "$dir/package.json" ]; then
+                enabled=$(node -e "try{const p=require('./$dir/package.json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+                if [ "$enabled" = "true" ]; then
+                  has_tdd="yes"
+                fi
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+          echo "has_tdd=$has_tdd" >> "$GITHUB_OUTPUT"
+
+      - name: Skip — no TDD-enabled packages changed
+        if: steps.detect.outputs.has_tdd != 'yes'
+        run: echo "No TDD-enabled packages in this PR — E2E skipped (green no-op)."
+
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f  # v6.3.0
+        if: steps.detect.outputs.has_tdd == 'yes'
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        if: steps.detect.outputs.has_tdd == 'yes'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E
+        if: steps.detect.outputs.has_tdd == 'yes'
+        run: |
+          for dir in dashboards/* apps/*; do
+            if [ -f "$dir/package.json" ] && [ -f "$dir/playwright.config.ts" ]; then
+              enabled=$(node -e "try{const p=require('./$dir/package.json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+              if [ "$enabled" = "true" ]; then
+                echo "Running E2E for $dir"
+                (cd "$dir" && npm run test:e2e -- --retries=2 --reporter=html)
+              fi
+            fi
+          done
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        if: always() && steps.detect.outputs.has_tdd == 'yes'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v4.6.1
+        with:
+          name: playwright-report
+          path: '**/playwright-report/'
+          retention-days: 30

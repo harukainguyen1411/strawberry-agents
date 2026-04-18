@@ -1,0 +1,82 @@
+name: Firebase Hosting PR Preview
+
+on:
+  pull_request:
+    branches: [main]
+    # No paths filter — always run so the required status check always reports.
+    # Steps are individually gated on whether apps/myapps/ changed.
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  preview:
+    # Do not run for PRs from forks — FIREBASE_SERVICE_ACCOUNT must not leak.
+    # Fork PRs still get a passing check because the job exits at the
+    # "Check if myapps changed" step (changed=false path), reporting success.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Check if myapps changed
+        id: changed
+        run: |
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          if git diff --name-only "$BASE" "$HEAD" | grep -qE '^apps/(myapps|platform|shared|myApps|yourApps)/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip — myapps unchanged
+        if: steps.changed.outputs.changed == 'false'
+        run: echo "No apps/myapps changes — skipping preview deploy, reporting success."
+
+      - name: Set up Node
+        if: steps.changed.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: apps/myapps/package-lock.json
+
+      - name: Install dependencies
+        if: steps.changed.outputs.changed == 'true'
+        working-directory: apps/myapps
+        run: npm ci
+
+      - name: Build
+        if: steps.changed.outputs.changed == 'true'
+        working-directory: apps/myapps
+        run: npm run build
+
+      - name: Deploy preview channel
+        id: firebase_deploy
+        if: steps.changed.outputs.changed == 'true'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
+          channelId: pr-${{ github.event.number }}
+          entryPoint: apps/myapps
+          expires: 7d
+
+      - name: Notify Discord relay
+        if: always() && steps.firebase_deploy.outputs.details_url != ''
+        env:
+          DISCORD_RELAY_WEBHOOK_URL: ${{ secrets.DISCORD_RELAY_WEBHOOK_URL }}
+          DISCORD_RELAY_WEBHOOK_SECRET: ${{ secrets.DISCORD_RELAY_WEBHOOK_SECRET }}
+          PREVIEW_URL: ${{ steps.firebase_deploy.outputs.details_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          REPO: ${{ github.repository }}
+        run: node .github/scripts/notify-discord-preview.js

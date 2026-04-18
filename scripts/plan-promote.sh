@@ -60,6 +60,31 @@ gdoc::require_tools
 # 3. Target file must be clean (matches plan-publish/unpublish guards).
 gdoc::require_clean "$SOURCE"
 
+# 3.5. Fact-check gate — runs between step 3 (require clean) and step 4 (Drive unpublish)
+# so that Drive is never touched for plans that fail fact-check.
+# No bypass flag. Human override: use raw git mv instead of this script.
+gdoc::log "running fact-check gate on: $SOURCE"
+FACT_CHECK_RC=0
+"$SCRIPT_DIR/orianna-fact-check.sh" "$SOURCE" || FACT_CHECK_RC=$?
+if [ "$FACT_CHECK_RC" -ne 0 ]; then
+  gdoc::log "fact-check returned non-zero exit ($FACT_CHECK_RC) — promotion halted"
+  # Show block-severity findings from the most-recent report for this plan.
+  REPORT_DIR="$REPO_ROOT/assessments/plan-fact-checks"
+  PLAN_BASENAME="$(basename "$SOURCE" .md)"
+  LATEST_REPORT=""
+  for _r in "$REPORT_DIR"/${PLAN_BASENAME}-*.md; do
+    [ -f "$_r" ] && LATEST_REPORT="$_r"
+  done
+  if [ -n "$LATEST_REPORT" ]; then
+    gdoc::log "report: $LATEST_REPORT"
+    # Print block findings section to stderr.
+    awk '/^## Block findings/{p=1; next} /^## Warn findings/{p=0} p && /[^[:space:]]/' \
+      "$LATEST_REPORT" >&2 || true
+  fi
+  exit 1
+fi
+gdoc::log "fact-check passed — continuing to step 4"
+
 # 4. If we have a gdoc_id, unpublish first. plan-unpublish.sh handles its own commit.
 EXISTING=$(gdoc::frontmatter_get "$SOURCE" gdoc_id || true)
 if [ -n "$EXISTING" ]; then

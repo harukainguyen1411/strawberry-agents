@@ -1,0 +1,161 @@
+name: TDD Gate
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  xfail-first:
+    name: xfail-first check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check xfail-first rule
+        env:
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_BEFORE: ${{ github.event.before }}
+          GH_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          if [ "$GH_EVENT_NAME" = "pull_request" ]; then
+            BASE="$GH_PR_BASE_SHA"
+            HEAD="$GH_PR_HEAD_SHA"
+            RANGE="$BASE..$HEAD"
+          else
+            BASE="$GH_BEFORE"
+            HEAD="$GH_SHA"
+            RANGE="$BASE..$HEAD"
+          fi
+
+          changed=$(git diff --name-only "$RANGE" 2>/dev/null || true)
+          tdd_pkgs=""
+          for f in $changed; do
+            dir=$(dirname "$f")
+            while [ "$dir" != "." ]; do
+              if [ -f "$dir/package.json" ]; then
+                enabled=$(node -e "try{const p=require('./$dir/package.json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+                if [ "$enabled" = "true" ]; then
+                  tdd_pkgs="$tdd_pkgs $dir"
+                fi
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          if [ -z "$tdd_pkgs" ]; then
+            echo "No TDD-enabled packages touched — skipping xfail-first check."
+            exit 0
+          fi
+
+          tip_msg=$(git log -1 --format="%B" "$HEAD" 2>/dev/null || git log -1 --format="%B")
+          if echo "$tip_msg" | grep -q "TDD-Waiver:"; then
+            echo "TDD-Waiver trailer found — skipping xfail-first check."
+            exit 0
+          fi
+
+          _shas=$(mktemp)
+          git log "$RANGE" --format="%H" > "$_shas"
+          xfail=""
+          while IFS= read -r sha; do
+            if git show "$sha" --unified=0 2>/dev/null | grep -qE '(test\.fail|it\.fails|it\.failing|@pytest\.mark\.xfail|# xfail:)'; then
+              xfail="yes"
+              break
+            fi
+          done < "$_shas"
+          rm -f "$_shas"
+
+          impl_files=$(echo "$changed" | grep -vE '(\.test\.|\.spec\.|_test\.|/tests?/)' | grep -vE '\.(md|json|yml|yaml|sh)$' || true)
+
+          if [ -z "$xfail" ] && [ -n "$impl_files" ]; then
+            echo "ERROR: Rule 1 violation — no xfail test commit precedes implementation."
+            echo "Touched packages: $tdd_pkgs"
+            exit 1
+          fi
+          echo "xfail-first check passed."
+
+  regression-test:
+    name: regression-test check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Check regression test rule
+        env:
+          GH_EVENT_NAME: ${{ github.event_name }}
+          GH_PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          GH_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_BEFORE: ${{ github.event.before }}
+          GH_SHA: ${{ github.sha }}
+        shell: bash
+        run: |
+          if [ "$GH_EVENT_NAME" = "pull_request" ]; then
+            RANGE="$GH_PR_BASE_SHA..$GH_PR_HEAD_SHA"
+          else
+            RANGE="$GH_BEFORE..$GH_SHA"
+          fi
+
+          changed=$(git diff --name-only "$RANGE" 2>/dev/null || true)
+          tdd_pkgs=""
+          for f in $changed; do
+            dir=$(dirname "$f")
+            while [ "$dir" != "." ]; do
+              if [ -f "$dir/package.json" ]; then
+                enabled=$(node -e "try{const p=require('./$dir/package.json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null || echo "false")
+                if [ "$enabled" = "true" ]; then
+                  tdd_pkgs="$tdd_pkgs $dir"
+                fi
+                break
+              fi
+              dir=$(dirname "$dir")
+            done
+          done
+
+          if [ -z "$tdd_pkgs" ]; then
+            echo "No TDD-enabled packages touched — skipping regression-test check."
+            exit 0
+          fi
+
+          test_files_in_range=$(git diff --name-only "$RANGE" | grep -E '(\.test\.|\.spec\.|_test\.|/tests?/)' || true)
+
+          _shas=$(mktemp)
+          git log "$RANGE" --format="%H" > "$_shas"
+          rule2_violation=""
+          rule2_sha=""
+          while IFS= read -r sha; do
+            msg=$(git log -1 --format="%B" "$sha")
+            case "$msg" in *"TDD-Waiver:"*|*"TDD-Trivial:"*) continue ;; esac
+            subject=$(printf '%s' "$msg" | head -1)
+            case " $subject " in
+              *" bug "*|*" bugfix "*|*" regression "*|*" hotfix "*)
+                if [ -z "$test_files_in_range" ]; then
+                  rule2_violation="yes"
+                  rule2_sha="$sha"
+                  break
+                fi
+                ;;
+            esac
+          done < "$_shas"
+          rm -f "$_shas"
+
+          if [ -n "$rule2_violation" ]; then
+            echo "ERROR: Rule 2 violation — bug-fix commit $rule2_sha lacks regression test."
+            exit 1
+          fi
+          echo "regression-test check passed."

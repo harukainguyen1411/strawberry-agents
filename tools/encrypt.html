@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Strawberry — Offline Secret Encryptor</title>
+<style>
+  :root { color-scheme: light dark; font: 16px/1.4 -apple-system,BlinkMacSystemFont,system-ui,sans-serif; }
+  body { max-width: 720px; margin: 1rem auto; padding: 0 1rem; }
+  h1 { font-size: 1.2rem; margin: 0.5rem 0; }
+  fieldset { border: 1px solid #888; border-radius: 6px; padding: 0.75rem; margin: 0.75rem 0; }
+  legend { font-weight: 600; padding: 0 0.4rem; }
+  label { display: block; font-size: 0.85rem; margin-top: 0.5rem; color: #666; }
+  textarea, input[type=text] { width: 100%; box-sizing: border-box; font: 13px ui-monospace,Menlo,Consolas,monospace; padding: 0.4rem; border-radius: 4px; border: 1px solid #888; background: rgba(127,127,127,0.08); color: inherit; }
+  textarea { min-height: 5em; resize: vertical; }
+  button { font-size: 1rem; padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #888; cursor: pointer; background: #4a90e2; color: white; margin-top: 0.5rem; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .row { display: flex; gap: 0.5rem; align-items: center; }
+  .ok { color: #2a8a2a; }
+  .err { color: #c00; }
+  .small { font-size: 0.8rem; color: #888; }
+  code { font-family: ui-monospace,Menlo,Consolas,monospace; font-size: 0.85em; background: rgba(127,127,127,0.15); padding: 0 0.2em; border-radius: 3px; }
+</style>
+</head>
+<body>
+<h1>Strawberry — Offline Secret Encryptor</h1>
+<p class="small">
+  Runs entirely in this browser. No network calls. Output is age-encrypted ASCII-armored ciphertext that only the Windows agent box can decrypt.
+  Paste the ciphertext into your agent chat and the agent will pipe it through <code>tools/decrypt.sh</code>.
+</p>
+
+<fieldset>
+  <legend>Recipient (Windows agent runtime)</legend>
+  <input id="recipient" type="text" value="age16zn6u722syny7sywep0x4pjlqudfm6w70w492wmqa69zw2mqwujsqnxvwm" spellcheck="false" autocomplete="off">
+  <p class="small">Baked in at build time from <code>secrets/recipients.txt</code>. If you regenerate the Windows keypair, update both this file and the recipients file together. Always verify <code>tools/encrypt.html.sha256</code> before opening.</p>
+</fieldset>
+
+<fieldset>
+  <legend>Plaintext</legend>
+  <label for="plaintext">The secret value (no key name, no quotes — just the raw token):</label>
+  <textarea id="plaintext" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+  <button id="encryptBtn" disabled>Encrypt</button>
+  <span id="status" class="small"></span>
+</fieldset>
+
+<fieldset>
+  <legend>Ciphertext (paste this into the agent chat)</legend>
+  <textarea id="ciphertext" readonly spellcheck="false"></textarea>
+  <div class="row">
+    <button id="copyBtn" disabled>Copy</button>
+    <button id="clearBtn">Clear all</button>
+    <span id="copyStatus" class="small"></span>
+  </div>
+</fieldset>
+
+<p class="small">
+  Library: <code>age-encryption</code> v0.2.4 (vendored, no CDN). Bundled to <code>tools/age-bundle.js</code>.
+  Verify integrity with the SHA256 sidecar files before each use.
+</p>
+
+<script src="age-bundle.js"></script>
+<script>
+(function(){
+    const $ = id => document.getElementById(id);
+    const ptEl = $('plaintext'), ctEl = $('ciphertext'), recEl = $('recipient');
+    const encBtn = $('encryptBtn'), copyBtn = $('copyBtn'), clearBtn = $('clearBtn');
+    const statusEl = $('status'), copyStatusEl = $('copyStatus');
+
+    if (typeof window.age === 'undefined') {
+        statusEl.textContent = 'FATAL: age library failed to load. Check that age-bundle.js sits next to encrypt.html.';
+        statusEl.className = 'err';
+        return;
+    }
+
+    encBtn.disabled = false;
+
+    encBtn.addEventListener('click', async () => {
+        statusEl.textContent = '';
+        statusEl.className = 'small';
+        ctEl.value = '';
+        copyBtn.disabled = true;
+        const pt = ptEl.value;
+        const recipient = recEl.value.trim();
+        if (!pt) { statusEl.textContent = 'Plaintext is empty.'; statusEl.className = 'err'; return; }
+        if (!recipient.startsWith('age1')) { statusEl.textContent = 'Recipient does not look like an age public key.'; statusEl.className = 'err'; return; }
+        try {
+            const e = new window.age.Encrypter();
+            e.addRecipient(recipient);
+            const ct = await e.encrypt(pt);
+            const armored = window.age.armor.encode(ct);
+            ctEl.value = armored;
+            copyBtn.disabled = false;
+            statusEl.textContent = 'Encrypted. Copy the ciphertext below.';
+            statusEl.className = 'ok';
+        } catch (err) {
+            statusEl.textContent = 'Encryption failed: ' + (err && err.message || err);
+            statusEl.className = 'err';
+        }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(ctEl.value);
+            copyStatusEl.textContent = 'Copied.';
+            copyStatusEl.className = 'ok small';
+        } catch (err) {
+            ctEl.select();
+            copyStatusEl.textContent = 'Clipboard API blocked — text is selected, copy manually.';
+            copyStatusEl.className = 'err small';
+        }
+    });
+
+    clearBtn.addEventListener('click', () => {
+        ptEl.value = '';
+        ctEl.value = '';
+        statusEl.textContent = '';
+        copyStatusEl.textContent = '';
+        copyBtn.disabled = true;
+        ptEl.focus();
+    });
+})();
+</script>
+</body>
+</html>

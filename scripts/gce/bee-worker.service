@@ -1,0 +1,24 @@
+[Unit]
+Description=Bee Worker (GitHub Issue Poller)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=bee
+Group=bee
+WorkingDirectory=/opt/bee-worker/apps/private-apps/bee-worker
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=30
+EnvironmentFile=/opt/bee-worker/apps/private-apps/bee-worker/.env
+Environment=BEE_WORK_DIR=/tmp/bee
+Environment=BEE_SYSTEM_PROMPT_PATH=/opt/bee-worker/apps/private-apps/bee-worker/system-prompt.md
+Environment=BEE_AUDIT_LOG_DIR=/var/log/bee-worker/audit
+Environment=BEE_RUNLOCK_PATH=/tmp/bee/claude.lock
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=bee-worker
+
+[Install]
+WantedBy=multi-user.target

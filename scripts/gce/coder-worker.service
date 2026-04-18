@@ -1,0 +1,23 @@
+[Unit]
+Description=Coder Worker (GitHub Issue Poller)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=coder
+Group=coder
+WorkingDirectory=/opt/coder-worker
+ExecStart=/usr/bin/node apps/coder-worker/dist/index.js
+Restart=on-failure
+RestartSec=30
+EnvironmentFile=/opt/coder-worker/apps/coder-worker/.env
+Environment=SYSTEM_PROMPT_PATH=/opt/coder-worker/apps/coder-worker/system-prompt.md
+Environment=AUDIT_LOG_DIR=/var/log/coder-worker/audit
+Environment=RUNLOCK_PATH=/tmp/coder/claude.lock
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=coder-worker
+
+[Install]
+WantedBy=multi-user.target
