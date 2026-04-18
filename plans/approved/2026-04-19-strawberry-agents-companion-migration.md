@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-19
 title: Companion ADR — strawberry-agents private infra-repo split (parallel to strawberry-app)
