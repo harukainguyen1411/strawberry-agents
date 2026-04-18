@@ -6,6 +6,7 @@
 
 ## Sessions
 - 2026-04-18 (migration P2): Phase 2 parametrization on `/tmp/strawberry-app-migration`. 17 files parametrized across runtime TS, shell, LLM prompt, discord-relay, docs. Regression guard hook `check-no-hardcoded-slugs.sh` created + install-hooks wiring. npm ci + turbo dry-run both green. Zero non-allowlisted slug hits. Report at `assessments/2026-04-18-p2-parametrize-report.md`.
+- 2026-04-18 (migration P3.2-P3.7): Non-interactive steps on harukainguyen1411/strawberry-app. branch-protection.json synced to 5-context spec (commits 50c9175, 193e117 on strawberry-app). setup-github-labels.sh patched for $1 in both trees. 8 labels created. Branch protection applied + verified via API. lint-slugs.yml CI workflow wired. BEE_SISTER_UIDS audited (Firebase param, not GH secret). FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA is orphan (only in docs, not in workflows). /tmp/strawberry-app-secrets-set.sh generated for Duong. Report at assessments/2026-04-18-p3-2-3-4-5-6-7-report.md.
 - 2026-04-05 to 2026-04-14: Fiora→Viktor migration sessions — MCP restructure, protocol drift sweeps, subagent plugin access plan, end-session skill fixes, feedback loop PRs, PR #105 blockers/LOW findings.
 - 2026-04-17: Dependabot Phase 2. B4c/B4d/B4e/B4f/B4h/B9 — PRs #129/130/131/136/138/140 merged. apps/myapps audit clean (0 vulns). 104→25 open alerts.
 - 2026-04-18: Evelynn memory sharding. PR #144 open. Per-session UUID-keyed shards, consolidation script, SessionStart hook update, end-session SKILL.md rewrite. Smoke test passed.
