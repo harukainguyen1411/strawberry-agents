@@ -74,7 +74,7 @@ For documented emergencies only (production on fire, required check workflow its
 
 1. Temporarily disable `enforce_admins`:
    ```bash
-   gh api repos/Duongntd/strawberry/branches/main/protection/enforce_admins \
+   gh api repos/harukainguyen1411/strawberry-agents/branches/main/protection/enforce_admins \
      -X DELETE -H "Accept: application/vnd.github+json"
    ```
 2. Perform the emergency merge: `gh pr merge --admin <pr-number>`.

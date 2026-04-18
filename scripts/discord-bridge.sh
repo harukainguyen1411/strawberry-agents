@@ -10,7 +10,8 @@ DATA_DIR="${DATA_DIR:-/home/runner/data}"
 EVENTS_DIR="$DATA_DIR/discord-events"
 PROCESSED_DIR="$DATA_DIR/discord-processed"
 RESPONSES_DIR="$DATA_DIR/discord-responses"
-STRAWBERRY_DIR="${STRAWBERRY_DIR:-/home/runner/strawberry}"
+STRAWBERRY_DIR="${STRAWBERRY_DIR:-/home/runner/strawberry-agents}"
+STRAWBERRY_APP_DIR="${STRAWBERRY_APP_DIR:-/home/runner/strawberry-app}"
 LOCK_FILE="$DATA_DIR/.delegation-lock"
 MIN_INTERVAL=30
 
@@ -36,7 +37,7 @@ TRIAGE_PROMPT_REPLY='You are a triage assistant for the Strawberry project. This
 
 # --- Load project context ---
 PROJECT_CONTEXT=""
-README_PATH="$STRAWBERRY_DIR/apps/myapps/README.md"
+README_PATH="$STRAWBERRY_APP_DIR/apps/myapps/README.md"
 if [ -f "$README_PATH" ]; then
   PROJECT_CONTEXT=$(cat "$README_PATH")
 fi

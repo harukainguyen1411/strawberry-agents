@@ -13,7 +13,7 @@ The three local workers (`discord-relay`, `coder-worker`, `bee-worker`) run on y
 
 - [ ] **Git for Windows** — `winget install Git.Git` (includes Git Bash + MSYS `flock`)
 - [ ] **Node 20+** (per-user install, NOT system-wide, so `%USERPROFILE%\.claude\` OAuth resolves under NSSM) — `winget install OpenJS.NodeJS.LTS` then confirm `node --version` shows 20+
-- [ ] **GitHub CLI** — `winget install GitHub.cli`, then `gh auth login` with the account that has access to `Duongntd/strawberry`
+- [ ] **GitHub CLI** — `winget install GitHub.cli`, then `gh auth login` with the account that has access to `harukainguyen1411/strawberry-app`
 - [ ] **Claude Code CLI** — `npm install -g @anthropic-ai/claude-code`, then `claude` once to complete the Max-subscription OAuth login. **This must be logged in as YOU (Max plan), not via API key.**
 - [ ] **NSSM** (service supervisor) — `winget install NSSM.NSSM`
 - [ ] Optional: **Cursor** as editor — you already use it
@@ -25,15 +25,15 @@ The three local workers (`discord-relay`, `coder-worker`, `bee-worker`) run on y
 You must run these as the repo owner (`Duongntd`). The collaborator PAT lacks admin scope.
 
 ```bash
-gh api -X PUT repos/Duongntd/strawberry/vulnerability-alerts
-gh api -X PUT repos/Duongntd/strawberry/automated-security-fixes
-gh api -X PATCH repos/Duongntd/strawberry \
+gh api -X PUT repos/harukainguyen1411/strawberry-app/vulnerability-alerts
+gh api -X PUT repos/harukainguyen1411/strawberry-app/automated-security-fixes
+gh api -X PATCH repos/harukainguyen1411/strawberry-app \
   -f security_and_analysis.secret_scanning.status=enabled \
   -f security_and_analysis.secret_scanning_push_protection.status=enabled
 ```
 
 - [ ] Ran the three commands above
-- [ ] Confirmed at https://github.com/Duongntd/strawberry/settings/security_analysis that Dependabot alerts, security updates, secret scanning, and push protection all show **Enabled**
+- [ ] Confirmed at https://github.com/harukainguyen1411/strawberry-app/settings/security_analysis that Dependabot alerts, security updates, secret scanning, and push protection all show **Enabled**
 
 ---
 
@@ -58,7 +58,7 @@ gh api -X PATCH repos/Duongntd/strawberry \
 The exact JSON payload is pending Pyke's review (he's auditing Fiora's draft right now). Once that lands, this section will contain the full `gh api PUT` command you paste into your terminal. Leave unchecked for now.
 
 - [ ] `gh api PUT` command from Pyke/Fiora applied (coming soon)
-- [ ] Confirmed at https://github.com/Duongntd/strawberry/settings/branches that `main` shows the rule with **Require a pull request before merging (1 approval)** + required status checks
+- [ ] Confirmed at https://github.com/harukainguyen1411/strawberry-app/settings/branches that `main` shows the rule with **Require a pull request before merging (1 approval)** + required status checks
 
 ---
 
@@ -71,7 +71,7 @@ Katarina is setting up the Firebase project in parallel. Once she finishes, she'
 - [ ] **Project Settings** (gear icon top left) → **Service accounts** tab
 - [ ] Click **Generate new private key** → **Generate key** → download the JSON file
 - [ ] Open the downloaded JSON in Cursor — copy the ENTIRE content (it's a JSON object)
-- [ ] Go to https://github.com/Duongntd/strawberry/settings/secrets/actions
+- [ ] Go to https://github.com/harukainguyen1411/strawberry-app/settings/secrets/actions
 - [ ] Click **New repository secret**
 - [ ] Name: `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA` (exact name — Fiora's workflows reference this string)
 - [ ] Value: paste the whole JSON content (including the curly braces)
@@ -136,7 +136,7 @@ Your `secrets/` folder should now contain exactly these files (all gitignored):
 
 ## 8. GitHub Actions Secrets checklist
 
-Go to https://github.com/Duongntd/strawberry/settings/secrets/actions and confirm these are set:
+Go to https://github.com/harukainguyen1411/strawberry-app/settings/secrets/actions and confirm these are set:
 
 - [ ] `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA` — from §4
 - [ ] `AGENT_GITHUB_TOKEN` — already set per Fiora's earlier note, used by the auto-label and (future) contributor-pipeline workflows
@@ -169,7 +169,7 @@ The install scripts require `.env` files to exist before running. Create them fr
 {
   printf 'GITHUB_TOKEN='
   tr -d '\r\n' < secrets/github-triage-pat.txt
-  printf '\nTRIAGE_TARGET_REPO=Duongntd/strawberry\nPOLL_INTERVAL_SECONDS=60\nMAX_CONCURRENT_JOBS=1\n'
+  printf '\nTRIAGE_TARGET_REPO=harukainguyen1411/strawberry-app\nPOLL_INTERVAL_SECONDS=60\nMAX_CONCURRENT_JOBS=1\n'
 } > apps/coder-worker/.env
 ```
 

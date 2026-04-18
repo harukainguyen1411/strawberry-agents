@@ -37,7 +37,7 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - **Subagent definition caching (discovered 2026-04-08 evening):** Claude Code loads `.claude/agents/<name>.md` at session startup and caches in-memory. Mid-session edits to those files (including `model:` frontmatter) do NOT take effect. Workaround: pass `model:` explicitly on every Agent tool spawn until next restart. Permanent fix: restart the session.
 - **Agent teams feature:** `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is enabled. `TeamCreate`/`SendMessage`/shared TaskList workflow is Evelynn's **primary** multi-agent coordination surface. When Duong says "have a team work on this", ALWAYS use TeamCreate — never spawn independent background agents. Agents in a team share a task list and can communicate via SendMessage.
 - **.claude/agents/*.md writes blocked in subagent mode** — any edit to agent defs must be done by Evelynn in a top-level session. This is a harness restriction, not a bug.
-- **myapps-prod-deploy.yml secrets** — VITE_FIREBASE_* secrets must be in `Duongntd/strawberry` repo (where the workflow lives), not `Duongntd/myapps`. FIREBASE_SERVICE_ACCOUNT also lives in strawberry repo.
+- **myapps-prod-deploy.yml secrets** — VITE_FIREBASE_* secrets must be in `harukainguyen1411/strawberry-app` repo (where the workflow lives). FIREBASE_SERVICE_ACCOUNT also lives in strawberry-app repo.
 
 ## Protocols
 - Every PR has exactly two reviewers: code reviewer (Lissandra/Rek'Sai) + plan author. Evelynn auto-assigns.

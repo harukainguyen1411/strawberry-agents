@@ -74,7 +74,7 @@ feature branch  →  PR  →  4 required checks pass  →  merge to main  →  a
 3. PR preview channel deployed automatically for visual review
 4. On merge: `myapps-prod-deploy.yml` triggers if any platform path changed → build → live deploy → Discord notification
 
-## Secrets required (on `Duongntd/strawberry`)
+## Secrets required (on `harukainguyen1411/strawberry-app`)
 
 | Secret | Used by |
 |--------|---------|
@@ -89,7 +89,7 @@ feature branch  →  PR  →  4 required checks pass  →  merge to main  →  a
 | `DISCORD_RELAY_WEBHOOK_URL` | prod deploy, PR preview (notifications) |
 | `DISCORD_RELAY_WEBHOOK_SECRET` | prod deploy, PR preview (notifications) |
 
-## Variables required (on `Duongntd/strawberry`)
+## Variables required (on `harukainguyen1411/strawberry-app`)
 
 | Variable | Value |
 |----------|-------|
