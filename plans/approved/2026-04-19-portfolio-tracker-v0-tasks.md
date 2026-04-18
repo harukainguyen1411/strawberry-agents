@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: kayn
 date: 2026-04-19
 title: Portfolio Tracker v0 — TDD Task Breakdown
