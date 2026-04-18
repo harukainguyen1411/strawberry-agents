@@ -45,20 +45,8 @@ which is already under the `myapps` umbrella.
 - Recommended only if myapps-b31ea already has tight Function quota usage or
   if you want hard billing separation from day one.
 
-**Action required:** Confirm one of:
-
-- [ ] **Reuse `myapps-b31ea` (prod) + `myapps-b31ea-staging` (staging)** — agent will
-      commit `firebase.json` / `.firebaserc` targeting these project IDs.
-- [ ] **Create a new project** — please create it in the GCP console (or run the
-      commands below), then reply with the new project ID.
-
-Commands to create a new project (run yourself — agent will not create without approval):
-
-```sh
-# Replace <NEW_PROJECT_ID> with your chosen ID (e.g. strawberry-portfolio)
-gcloud projects create <NEW_PROJECT_ID> --name="Strawberry Portfolio"
-firebase projects:addfirebase <NEW_PROJECT_ID>
-```
+**RESOLVED 2026-04-19** — Duong confirmed: reuse `myapps-b31ea` (prod) +
+`myapps-b31ea-staging` (staging). No new project needed.
 
 ---
 
@@ -66,17 +54,11 @@ firebase projects:addfirebase <NEW_PROJECT_ID>
 
 **Needed for:** V0.2 (Auth + allowlist)
 
-Two emails to be committed to
-`apps/myapps/portfolio-tracker/functions/config/allowlist.ts` (no secrets —
-just two plain email strings, same as any auth config file).
-
-**Action required:** Provide both emails:
-
-- [ ] Email 1 (Duong): `_________________________`
-- [ ] Email 2 (friend): `_________________________`
-
-Note: `harukainguyen1411@gmail.com` is on file as Duong's email — confirm
-whether to use this one or a different address.
+**RESOLVED 2026-04-19** — v0 ships with a single-email allowlist:
+`harukainguyen1411@gmail.com`. The allowlist is runtime-configurable via
+Firestore doc `config/auth_allowlist` (field `emails: string[]`) — adding
+a friend's email later requires only a Firestore doc edit, no code change
+or redeploy.
 
 ---
 
@@ -154,8 +136,8 @@ At that point, Evelynn will ping you with the sign-off checklist.
 
 | ID    | Blocker?        | Status      |
 |-------|-----------------|-------------|
-| DV0-1 | Yes (V0.1)      | Awaiting Duong decision |
-| DV0-2 | Yes (V0.2)      | Awaiting 2 email addresses |
+| DV0-1 | Yes (V0.1)      | **RESOLVED** — reuse myapps-b31ea / myapps-b31ea-staging |
+| DV0-2 | Yes (V0.2)      | **RESOLVED** — single email `harukainguyen1411@gmail.com`; runtime-configurable via Firestore |
 | DV0-3 | Soft (V0.6)     | Can use synthetic fixtures; real needed for V0.20 |
 | DV0-4 | Soft (V0.7)     | Can use synthetic fixtures; real needed for V0.20 |
 | DV0-5 | No (v2 only)    | Tracked under T9 |

@@ -111,19 +111,23 @@ boots and a deny-all rule blocks an anonymous read. Commit body: `Refs V0.1`.
 
 ---
 
-### V0.2 — Firebase Auth email-link sign-in + two-email allowlist
+### V0.2 — Firebase Auth email-link sign-in + single-email allowlist (runtime-configurable)
 
 **Goal:** Implement Firebase Auth email-link sign-in and a server-side
-allowlist (config file checked into the app, two emails) that rejects any
-other UID at first sign-in. No public signup surface in the UI.
+allowlist that rejects any other UID at first sign-in. The allowlist is
+**runtime-configurable via Firestore doc `config/auth_allowlist`** (array
+field `emails`). v0 ships with one entry (`harukainguyen1411@gmail.com`).
+Adding a second email is a Firestore doc edit — no redeploy required.
+No public signup surface in the UI.
 
 **Inputs:** ADR §2, V0.1 outputs.
 
 **Outputs:**
 - `apps/myapps/portfolio-tracker/src/auth/` with email-link flow.
 - `apps/myapps/portfolio-tracker/functions/onSignIn.ts` Cloud Function
-  (`beforeSignIn` blocking trigger) reading allowlist from
-  `functions/config/allowlist.ts` and rejecting non-allowlisted emails.
+  (`beforeSignIn` blocking trigger) reading allowlist from Firestore doc
+  `config/auth_allowlist` (field `emails: string[]`), cached per cold
+  start, rejecting non-allowlisted emails.
 - Sign-in view (minimal) gated in front of `/` and `/import`.
 
 **xfail-first:** unit test on the allowlist function — non-allowlisted
@@ -135,7 +139,8 @@ through. Commit body: `Refs V0.2`.
 - Non-allowlisted email is rejected at the blocking trigger; UID is not
   created.
 - No `signUp` UI; only "send sign-in link" form.
-- Allowlist file documented as the only place to add a user.
+- Allowlist is read from `config/auth_allowlist.emails` in Firestore (not
+  hardcoded). Adding a new email requires only a Firestore doc edit.
 
 ---
 
@@ -145,13 +150,17 @@ through. Commit body: `Refs V0.2`.
 `users/{uid}/positions/*`, `users/{uid}/trades/*`, `users/{uid}/cash/*`,
 `users/{uid}/meta/fx`, `users/{uid}.baseCurrency`) and ship Security
 Rules that enforce per-user isolation. Provide a Jest harness using the
-Firebase emulator for rules tests.
+Firebase emulator for rules tests. Rules must also allow the
+`beforeSignIn` function to read `config/auth_allowlist` (read-once at
+sign-in, cached per cold start).
 
 **Inputs:** ADR §4 data model, ADR §9 rules expectations, V0.2.
 
 **Outputs:**
 - `firestore.rules` — per-user subcollection isolation; deny cross-user
-  reads/writes; allow `users/{uid}` read+write only when `request.auth.uid == uid`.
+  reads/writes; allow `users/{uid}` read+write only when `request.auth.uid == uid`;
+  allow server-side (Admin SDK) read of `config/auth_allowlist` (used by
+  `beforeSignIn` Cloud Function — not accessible to client).
 - `apps/myapps/portfolio-tracker/test/rules/` Jest suite using
   `@firebase/rules-unit-testing`.
 - TypeScript types in `apps/myapps/portfolio-tracker/src/types/firestore.ts`
@@ -677,8 +686,8 @@ this task autonomously.
 
 | ID | Item | Needed for | Notes |
 |----|------|-----------|-------|
-| **DV0-1** | Firebase project ID + provisioning | V0.1 | Create or designate the GCP/Firebase project for `strawberry-app` portfolio tracker. |
-| **DV0-2** | Two allowlisted email addresses | V0.2 | Duong's email + friend's email. Committed to `functions/config/allowlist.ts`. |
+| **DV0-1** | Firebase project ID + provisioning | V0.1 | **RESOLVED** — reuse `myapps-b31ea` (prod) + `myapps-b31ea-staging` (staging). No new project. |
+| **DV0-2** | Allowlisted email address(es) | V0.2 | **RESOLVED** — v0 single-email allowlist: `harukainguyen1411@gmail.com`. Stored as `config/auth_allowlist.emails` array in Firestore (runtime-configurable). Friend's email added later via Firestore doc edit, no redeploy. |
 | **DV0-3** | Anonymized T212 export CSV sample | V0.6 | Real export from Duong's T212 account, scrubbed of PII. |
 | **DV0-4** | Anonymized IB Activity Statement CSV sample | V0.7 | Multi-section sample. |
 | **DV0-5** | Discord channel `#portfolio-digest` | (out of scope here — tracked under T9 / Ekko) | Not required for v0 ship, but mentioned for cross-team awareness. |
@@ -728,6 +737,7 @@ Per ADR §10 v0 row + §12 handoff notes, the following are explicitly
 - Trade ledger UI, intents UI, FX-override UI, manual refresh button
   (per design spec §1 out-of-scope list).
 - Multi-account view / `AccountSelector` (deferred to v1 — Security Rules enforce per-user isolation and cross-user data access is not permitted at v0).
+- Adding a second allowlisted email for a friend — the `config/auth_allowlist` Firestore doc is designed as a runtime-editable array; adding a friend's email requires only a Firestore doc edit, no code change or redeploy.
 
 If a reviewer spots any of the above sneaking into a V0.x task spec,
 that task should be rejected and re-scoped before implementation begins.
