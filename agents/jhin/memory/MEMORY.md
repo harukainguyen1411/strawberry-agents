@@ -30,11 +30,14 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 - Router routes missing `requiresAuth` meta bypass global guard.
 - `setInterval` in Vue composables needs unmount cleanup.
 - Pipe subshell (`echo|while`) makes background jobs children of subshell; top-level `wait` is no-op.
+- npm lockfile version pin check: cross-check package.json spec (no caret), lockfile workspace spec (no caret), and `node_modules/<pkg>.version` resolved entry. All three must match for the pin to be real.
+- age armor does not expose the recipient public key in human-readable form — verifying the recipient requires decryption or out-of-band confirmation from the author.
 
 ## Stale-view protocol (established 2026-04-18)
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
 
 ## Sessions
+- 2026-04-19 (S6): PR #25 re-review APPROVE. All blockers resolved: impl commit d52f1b9 present, T4 uses run --separate-stderr, T8b has early-guard, DL_REPO_ROOT hardened with T9a/T9b regressions, check-no-raw-age.sh awk multiline fix confirmed, G2 exclusion narrowed, package.json bare deploy removed. Filter chain fragility noted as acceptable. PR #26 REQUEST_CHANGES: (1) "permission-denied" test name is a lie — test calls makeRequest(undefined) which hits unauthenticated path, not permission-denied; (2) package-lock.json resolves vitest to 4.1.4 not 4.0.18 — pin broken. PR #28 COMMENT_ONLY: structurally correct but recipient key not independently verifiable from armor text; merge.mjs + merge.test.mjs are out-of-scope for P1.3.
 - 2026-04-19 (S5): PR #25 (P1.2 _lib.sh xfail suite) + PR #26 (P1.4 Vitest proof-of-life). Both REQUEST_CHANGES. PR #25: impl commit d52f1b9 does not exist — branch has only the xfail commit; T8b vacuous-pass hazard (missing guard); T4 stderr assertion no-op without `run --separate-stderr`. PR #26: BEE_INTRO_MESSAGE is a string constant — fails "not a tautology" criterion; vitest@4.0.18 version needs verification; coverage block without @vitest/coverage-v8 dep.
 - 2026-04-19 (S4): PR #19 chore/a7-add-cursor-skills. REQUEST CHANGES. reference.md blob SHA diverged from base af2edbc0 — 4 inline `# gitleaks:allow` comments added beyond verbatim scope. 3 other files exact match. CI failures pre-existing (Firebase secret missing, lint errors in unrelated router files). Rule 18 enforced — did not merge.
 - 2026-04-18 (S3): PR #183 Orianna gate bugfixes. APPROVED. Bug A ([0-9]* anchor) + Bug B (awk suppress_next). Merge blocked by GH Actions billing suspension (all checks fail in 2-3s, no compute). Posted advisory comment. Rule 18 enforced — did not merge red.
