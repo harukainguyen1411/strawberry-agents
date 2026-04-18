@@ -9,6 +9,7 @@ set -e
 
 REMOTE="$1"
 URL="$2"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
 
 # Read the ref list from stdin: <local-ref> <local-sha> <remote-ref> <remote-sha>
 while read local_ref local_sha remote_ref remote_sha; do
@@ -38,11 +39,12 @@ while read local_ref local_sha remote_ref remote_sha; do
     while [ "$dir" != "." ] && [ "$dir" != "/" ]; do
       pkg_json="$dir/package.json"
       if [ -f "$pkg_json" ]; then
-        if command -v node >/dev/null 2>&1; then
-          enabled=$(node -e "try{const p=require('./$pkg_json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null)
-        else
-          enabled=$(grep -q '"tdd"' "$pkg_json" && grep -q '"enabled".*true' "$pkg_json" && echo "true" || echo "false")
+        if ! command -v node >/dev/null 2>&1; then
+          echo "[pre-push] ERROR: node not found. node is required by the TDD hook." >&2
+          exit 1
         fi
+        abs_pkg_json="$REPO_ROOT/$pkg_json"
+        enabled=$(node -e "try{const p=require('$abs_pkg_json');process.stdout.write(String(p.tdd&&p.tdd.enabled===true))}catch(e){process.stdout.write('false')}" 2>/dev/null)
         if [ "$enabled" = "true" ]; then
           case "$tdd_pkgs" in
             *"|$dir|"*) ;;
