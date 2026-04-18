@@ -20,6 +20,8 @@
 
 set -eu
 
+command -v node >/dev/null 2>&1 || { echo "report-run.sh: node is required" >&2; exit 1; }
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
@@ -200,7 +202,7 @@ UPLOAD_URLS=$(node -e "
 " "$RESPONSE" 2>/dev/null || true)
 
 if [ -n "$UPLOAD_URLS" ]; then
-  echo "$UPLOAD_URLS" | while IFS="	" read -r local_ref signed_url; do
+  while IFS="	" read -r local_ref signed_url; do
     artifact_file="${local_ref}"
     if [ -f "$artifact_file" ]; then
       curl -sf -X PUT \
@@ -208,7 +210,9 @@ if [ -n "$UPLOAD_URLS" ]; then
         --data-binary "@${artifact_file}" \
         "$signed_url" >/dev/null 2>&1 &
     fi
-  done
+  done <<EOF
+$UPLOAD_URLS
+EOF
   wait
 fi
 
