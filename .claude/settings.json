@@ -1,10 +1,21 @@
 {
+  "agent": "evelynn",
   "permissions": {
     "allow": [],
     "deny": [],
     "defaultMode": "bypassPermissions"
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session — skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION — do not re-read startup files. Reply only: Session resumed.\"}}'; else echo '{\"systemMessage\":\"Evelynn fresh startup — reading protocol files.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"FRESH SESSION — Evelynn startup. Read in order: agents/evelynn/CLAUDE.md, agents/evelynn/profile.md, agents/evelynn/memory/evelynn.md, agents/evelynn/memory/last-session.md (if exists), agents/memory/duong.md, agents/memory/agent-network.md, agents/evelynn/learnings/index.md (if exists). Then run: bash agents/health/heartbeat.sh evelynn mac\"}}'; fi; }"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash",
