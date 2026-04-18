@@ -9,6 +9,8 @@
 
 ## Completed Tasks
 
+- **2026-04-18:** Lockfile sync check — `npm install` on main produced zero diff; `@types/node@25.6.0` already present in HEAD lockfile. No commit needed. CI failures on open PRs are branch-local, not a main issue.
+
 - **F4 (2026-04-18):** Generated INGEST_TOKEN, age-encrypted prod+staging env bundles for test-dashboard service, committed to main as `secrets/encrypted/dashboards.prod.env.age` and `secrets/encrypted/dashboards.staging.env.age`. SHA: `4a3fdc0`.
 - **2026-04-18:** Git hygiene sweep — removed stale branches, pruned remotes
 - **C2 (2026-04-18):** Pre-commit hook wiring for dashboards pnpm — PR #165. Hook detects `dashboards/**` staged changes and runs `pnpm -C <pkg> test:unit`; non-dashboards TDD packages keep `npm run`. Xfail in `scripts/hooks/test-hooks.sh`.
