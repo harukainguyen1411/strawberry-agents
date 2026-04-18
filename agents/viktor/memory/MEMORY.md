@@ -16,6 +16,7 @@
 - 2026-04-17: Dependabot Phase 2. B4c/B4d/B4e/B4f/B4h/B9 — PRs #129/130/131/136/138/140 merged. apps/myapps audit clean (0 vulns). 104→25 open alerts.
 - 2026-04-18: Evelynn memory sharding. PR #144 open. Per-session UUID-keyed shards, consolidation script, SessionStart hook update, end-session SKILL.md rewrite. Smoke test passed.
 - 2026-04-18 (review): PR #144 review fixes. Commit 8696583. 7 items (trap, git add scope, prune mtime, UUID collision, last-sessions prune, PID liveness, python3 guard). Follow-up issue #145.
+- 2026-04-18 (testing-process team): Phase 1 dashboard tasks. PRs: #153 (F1+F2 auth), #180 (I1 deploy fixes), #182 (F3 CORS). All LGTM'd, awaiting merge. Key learnings: PR lifecycle after merge, xfail file naming, cherry-pick over reimplementation.
 
 ## Key Knowledge
 - Bash sandbox denylist: `--format`, `>` redirects, heredocs blocked. Use python3 -c for workarounds.
