@@ -18,11 +18,13 @@ Any implementation commit in a TDD-enabled package must be preceded on the same 
 - Server-side (authoritative): `.github/workflows/tdd-gate.yml` job `xfail-first`
 - Bypass: `TDD-Waiver: <reason>` trailer on the tip commit (Duong only)
 
-**xfail annotations recognised:**
-- Vitest: `it.failing`
+**xfail annotations recognised (canonical per-framework APIs):**
+- Vitest: `it.fails` — **NOT** `it.failing` (that is Playwright's API; Vitest will throw TypeError)
 - Playwright: `test.fail`
 - pytest: `@pytest.mark.xfail`
 - Shell/bats: `# xfail:` comment
+
+**Verification step:** after seeding an xfail, run `npm run test:unit` locally and confirm the xfail file appears in the test count with status "failing as expected". If the test count doesn't include it, the API is wrong or the file is excluded by the vitest config.
 
 ### Rule 13 — Regression test required for bug fixes (CLAUDE.md §13)
 
