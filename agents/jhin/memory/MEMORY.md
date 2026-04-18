@@ -17,6 +17,9 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 - `cert("")` silently fails on Cloud Run; use ADC.
 - `roles/firebaseauth.admin` is over-privileged for token verification (no IAM needed).
 
+- `beforeUserCreated` fires only on account creation, not every sign-in. Use `beforeSignIn` when the requirement is "block all unauthorized sign-ins".
+- Cold-start cache pattern: the module-level variable must be written after the Firestore read — null-checking it without populating it is a dead cache.
+
 ## Recurring review patterns
 - Bats xfail vacuous-pass: `source` fails non-zero when lib absent → `status -ne 0` test passes without exercising the function. Guard with `[ -f "${LIB}" ] || return 1`.
 - bats `$stderr` only populated with `run --separate-stderr` (bats-core 1.5+); bare `$stderr` assertions are no-ops.
@@ -37,6 +40,7 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
 
 ## Sessions
+- 2026-04-19 (S7): PR #29 LGTM (advisory). PR #32 REQUEST_CHANGES: (1) `cachedEmails` module-level var never populated — dead cache, every call hits Firestore; (2) `beforeUserCreated` used instead of plan-specified `beforeSignIn`; (3) no test for `onSignIn` handler itself. PR #33 LGTM (advisory): security rules core correct (cross-user, enum, immutability, config-deny); `meta/{docId}` fully client-writable is accepted v0 risk; snapshots/digests server-write-only not tested.
 - 2026-04-19 (S6): PR #25 re-review APPROVE. All blockers resolved: impl commit d52f1b9 present, T4 uses run --separate-stderr, T8b has early-guard, DL_REPO_ROOT hardened with T9a/T9b regressions, check-no-raw-age.sh awk multiline fix confirmed, G2 exclusion narrowed, package.json bare deploy removed. Filter chain fragility noted as acceptable. PR #26 REQUEST_CHANGES: (1) "permission-denied" test name is a lie — test calls makeRequest(undefined) which hits unauthenticated path, not permission-denied; (2) package-lock.json resolves vitest to 4.1.4 not 4.0.18 — pin broken. PR #28 COMMENT_ONLY: structurally correct but recipient key not independently verifiable from armor text; merge.mjs + merge.test.mjs are out-of-scope for P1.3.
 - 2026-04-19 (S5): PR #25 (P1.2 _lib.sh xfail suite) + PR #26 (P1.4 Vitest proof-of-life). Both REQUEST_CHANGES. PR #25: impl commit d52f1b9 does not exist — branch has only the xfail commit; T8b vacuous-pass hazard (missing guard); T4 stderr assertion no-op without `run --separate-stderr`. PR #26: BEE_INTRO_MESSAGE is a string constant — fails "not a tautology" criterion; vitest@4.0.18 version needs verification; coverage block without @vitest/coverage-v8 dep.
 - 2026-04-19 (S4): PR #19 chore/a7-add-cursor-skills. REQUEST CHANGES. reference.md blob SHA diverged from base af2edbc0 — 4 inline `# gitleaks:allow` comments added beyond verbatim scope. 3 other files exact match. CI failures pre-existing (Firebase secret missing, lint errors in unrelated router files). Rule 18 enforced — did not merge.
