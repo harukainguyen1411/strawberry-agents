@@ -1,7 +1,7 @@
 ---
 name: end-session
 description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / remember / memory / learnings / commit protocol. User-invocable only. Required by CLAUDE.md rule 14 before closing any top-level session.
-disable-model-invocation: false
+disable-model-invocation: true
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 
@@ -81,7 +81,15 @@ git add agents/<agent>/journal/cli-<YYYY-MM-DD>.md
 
 ## Step 6 — Remember handoff
 
-Invoke the `remember:remember` skill via the Skill tool. This is the primary handoff mechanism — it writes `.remember/remember.md` with a structured snapshot of what is done, what is next, and any non-obvious context. The Remember plugin’s `SessionStart` hook loads this automatically at the start of the next session.
+**If agent == evelynn:** Skip the `remember:remember` plugin entirely (it has a single-file race surface unsafe under concurrent close — see D6 in `plans/approved/2026-04-18-evelynn-memory-sharding.md`). Instead, write a new shard at `agents/evelynn/memory/last-sessions/<short-uuid>.md` where `<short-uuid>` is the UUID from Step 2's transcript path. Content: a structured 5–10 line handoff — date, session number, what happened, open threads, dangling commits or PRs, blockers. Stage:
+
+```
+git add agents/evelynn/memory/last-sessions/<short-uuid>.md
+```
+
+Note "remember:remember bypassed for evelynn — shard written to last-sessions/<short-uuid>.md" in the final report.
+
+**If agent != evelynn:** Invoke the `remember:remember` skill via the Skill tool. This is the primary handoff mechanism — it writes `.remember/remember.md` with a structured snapshot of what is done, what is next, and any non-obvious context. The Remember plugin's `SessionStart` hook loads this automatically at the start of the next session.
 
 ```
 Skill: remember:remember
@@ -97,7 +105,20 @@ If the `remember` plugin is not installed or the skill is unavailable, fall back
 
 ## Step 7 — Memory refresh
 
-Review `agents/<agent>/memory/<agent>.md`. If anything material changed this session (new working patterns, new known issues, sessions list), update it:
+**If agent == evelynn:** Do NOT touch `agents/evelynn/memory/evelynn.md`. Instead, write a new shard at `agents/evelynn/memory/sessions/<short-uuid>.md` (same UUID from Step 2) containing:
+- A `## Session YYYY-MM-DD (SN, <mode>)` heading.
+- One-line summary of the session.
+- Any delta notes to Key Context or Working Patterns that should be folded in at next consolidation.
+
+Stage the shard:
+
+```
+git add agents/evelynn/memory/sessions/<short-uuid>.md
+```
+
+Note "evelynn memory shard written to sessions/<short-uuid>.md — consolidation will fold into evelynn.md at next boot" in the final report.
+
+**If agent != evelynn:** Review `agents/<agent>/memory/<agent>.md`. If anything material changed this session (new working patterns, new known issues, sessions list), update it:
 
 - Append a new session row to the `## Sessions` list with the format `- YYYY-MM-DD (SN, <mode>): <one-line summary>`.
 - Prune stale entries if the file exceeds 50 lines. Remove the oldest session rows first.
