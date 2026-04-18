@@ -12,7 +12,7 @@
 
 ## Persistent Context — PR #25 / PR #28 (2026-04-19)
 
-- PR #25 (`chore/p1-2-lib-sh-xfail`): All original 5 CI failures were lockfile desync (usage-dashboard missing). Pre-existing, NOT P1.2 regression. Current blocker: pre-existing eslint `no-unused-expressions` in `apps/myapps/portfolio-tracker/src/router/index.ts` line 28 and `apps/myapps/read-tracker/src/router/index.ts` line 31. Whoever owns portfolio-tracker (Jayce? portfolio plan) must fix. Cannot merge until those lint errors are resolved.
+- PR #25 (`chore/p1-2-lib-sh-xfail`): `_lib.sh` fully implemented (26 bats tests, shellcheck clean). Lint blocker fixed — commit `1197767` on branch resolves pre-existing `no-unused-expressions` in portfolio-tracker and read-tracker router guards. CI re-running; `preview` check is also red (pre-existing composite-deploy/no-dist error, same as PR #18). Awaiting CI green + one approving review from harukainguyen1411 before merge.
 - PR #28 (`chore/p1-3-env-ciphertext`): Scope creep resolved. Branch reset to exactly 4 P1.3 files. Force-pushed. Branch may have been re-force-pushed again by another session — latest tip shown as `0ab0a2d` post my push of `858bf8a`.
 
 ## Persistent Context — strawberry-app
