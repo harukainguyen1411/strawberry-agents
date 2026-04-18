@@ -1,7 +1,7 @@
 ---
 title: Evelynn memory sharding — per-session shards, consolidate-on-boot, SessionStart read-N
 owner: lux
-status: proposed
+status: approved
 date: 2026-04-18
 scope:
   - .claude/skills/end-session/SKILL.md
