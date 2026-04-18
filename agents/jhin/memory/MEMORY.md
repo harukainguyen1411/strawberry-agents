@@ -40,6 +40,8 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
 
 ## Sessions
+- 2026-04-19 (S12): PR #35 Advisory LGTM — CORS blocker resolved (isLocalOrigin on GET /health), regression test non-vacuous, 409 + SIGTERM child kill folded in. PR #37 Advisory LGTM — open_url() cross-platform helper resolves rule-10 blocker. Branch integrity verified: merge commit 0a5cd856 has coherent parents, no commits lost or duplicated. Minor: README "How it works" still says macOS-only open — stale prose, non-blocking.
+
 - 2026-04-19 (S11): PR #38 Advisory LGTM — ternary-to-if/else rewrite verified semantically equivalent in both task-list and read-tracker routers. PR #32 re-review Advisory LGTM — both blockers resolved: dead cache removed, trigger switched to `beforeUserSignedIn`, A.1.7/A.1.8 non-vacuous, xfail-first discipline preserved. 8/8 tests green.
 
 
