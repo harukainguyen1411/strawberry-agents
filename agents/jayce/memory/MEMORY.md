@@ -13,6 +13,8 @@
 
 - [2026-04-19 P1.2-C _lib.sh](../learnings/2026-04-19-p1-2-lib-sh-implementation.md) — repo-root detection heuristic via decrypt.sh on PATH; comment text triggers static scanners; safe-to-source discipline; no cipher-existence check in dl_decrypt_env
 
+- [2026-04-19 T5-T6 refresh-server + sbu](../learnings/2026-04-19-t5-t6-refresh-server-sbu.md) — await-in-non-async parse error; staggered test ports; PID guard pattern; branch off origin/main explicitly
+
 ## Sessions
 - 2026-04-18: Assigned B16 (task #8); B16a worktree created, recon surfaced PR #141 supersession path; stood down on GitHub Actions billing block before any commit/push.
 - 2026-04-18 (session 2): D2 POST /api/runs (PR #177) + D1 report-run.sh fixes (PR #169) + B3 signed-urls CI fixes (PR #154). All three PRs pushed; awaiting Jhin/Azir review + Duong merge.
@@ -23,6 +25,7 @@
 - 2026-04-18 (Bug-A Bug-B): Fixed report picker prefix collision ([0-9]* glob) and implemented orianna:ok suppression syntax. PR #183 pushed, awaiting review.
 - 2026-04-19 (P1.2-C): Implemented scripts/deploy/_lib.sh (7 helpers). 26/26 bats tests green on branch chore/p1-2-lib-sh-xfail, commit d52f1b9. PR creation deferred — Evelynn/Duong to open.
 - 2026-04-19 (P1.2 review I1+I4): PR #25 REQUEST_CHANGES from Jhin. Pushed missing d52f1b9 (C1). Hardened DL_REPO_ROOT detection — BASH_SOURCE[0] now authoritative, command-v fallback only when basename==tools (I1). Added 2 new bats tests. Deleted deploy script from apps/myapps/functions/package.json (I4). 28/28 tests green. Remote tip: 20c8c27.
+- 2026-04-19 (T5+T6): Built refresh-server.mjs (PR #35) and sbu.sh (PR #37) for strawberry-app. All 4 T5 tests + 3 T6 tests pass. Both PRs open against main, awaiting review.
 
 ## Archive Note
 
