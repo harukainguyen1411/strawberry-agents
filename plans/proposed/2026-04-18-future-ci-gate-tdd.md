@@ -1,21 +1,21 @@
 ---
-title: P1.2 CI Gate — TDD Test Plan
+title: Future CI Gate — xfail Catalog (Phase 2+)
 owner: caitlyn
-status: in-progress
+status: proposed
 date: 2026-04-18
-scope: P1.2 CI gate TDD plan — enumerate xfail tests that pin every failure the gate must prevent, before Vi implements the gate
+scope: Forward-looking CI gate xfail catalog for a future Phase 2+ task — not current-sprint P1.2
 why: |
-  Rule 12 requires every task to start with an xfail test committed first. P1.2 is the CI gate that
-  blocks deploys when tests fail. Before Vi implements the gate, Caitlyn must enumerate every failure
-  mode the gate prevents and author one xfail test per mode, so the gate's behaviour is pinned by
-  tests that initially fail and turn green only after the gate is wired correctly. Branch protection
-  enforcement landed in PR #143 — required status checks are now honoured, so this plan's xfail tests
-  will actually gate merges once committed.
+  Originally written as a P1.2 TDD plan but scope was misaligned — the real P1.2 is
+  scripts/deploy/_lib.sh helpers, not a CI gate. Content preserved here for a future Phase 2+
+  task that introduces genuine CI-level test gates. The failure mode catalog and xfail structure
+  remain valid when that work begins.
 parent_plan: plans/in-progress/2026-04-17-deployment-pipeline-tasks.md
-related_task: P1.2 (team `p1-2-ci-gate`)
+related_task: future Phase 2+ CI gate task (not P1.2)
 ---
 
-# P1.2 CI Gate — TDD Test Plan
+# Future CI Gate — xfail Catalog (Phase 2+)
+
+**Note 2026-04-18:** This plan was written under a scope mismatch. P1.2 in the deployment pipeline ADR is `scripts/deploy/_lib.sh` helpers, not a CI gate. Content preserved here for a future Phase 2+ task that introduces genuine CI-level test gates.
 
 ## Context
 
