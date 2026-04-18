@@ -10,7 +10,7 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 - **Shared-account GH blocker**: all agents operate under `harukainguyen1411`; `gh pr review --approve` refused. Use advisory-LGTM-via-`gh pr comment`. See learnings/2026-04-18-shared-account-invariant-18-blocker.md.
 - **GH Actions billing diagnosis**: all-PRs-red + empty logs + no compute ran → billing, not workflows. Check first.
 - `it.fails` is Vitest 4; `it.failing` is Playwright — wrong API silently registers 0 tests.
-- Firestore batch cap is 500 writes; always guard `casesInput.length`.
+- Firestore batch cap is 500 writes; guard must count ALL writes: `1 + cases + 2*artifacts > 500` — cases-only guard misses artifact docs + case-backfill updates.
 - `gcloud run deploy` needs `--service-account` — default compute SA has wrong IAM.
 - Artifact Registry uses `<region>-docker.pkg.dev/<project>/<repo>/<image>` — `gcr.io` is deprecated Container Registry.
 - `timingSafeEqual` defeated by `||` short-circuit when lengths differ — byte-length equality required first.
@@ -25,6 +25,9 @@ PR reviewer — surface logic, security, edge cases. Sonnet executor.
 - `setInterval` in Vue composables needs unmount cleanup.
 - Pipe subshell (`echo|while`) makes background jobs children of subshell; top-level `wait` is no-op.
 
+## Stale-view protocol (established 2026-04-18)
+5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
+
 ## Sessions
-- 2026-04-18: dependabot-cleanup team under Camille. Advisory-LGTM on #156 (B14) and #157 (B12). Surfaced shared-account invariant-#18 structural blocker + GH Actions billing diagnosis shortcut as learnings. Workstream parked pending billing resolution.
-- 2026-04-18 (fresh session, Evelynn direct): Re-reviewed #154 (B3 signed URLs, 2b452e9) and #180 (I1 deploy fix, 74e31ce) — both LGTM. CI systemic infra failure confirmed (all branches red, logs not found). Old Jhin session's "dashboards uses pnpm" phantom debunked — diff shows `npm install --prefer-offline`, correct for npm workspace. `require(require('path').resolve(...))` fix in unit-tests.yml is a genuine improvement.
+- 2026-04-18 (S1): dependabot-cleanup team under Camille. Advisory-LGTM on #156/#157. Shared-account invariant-#18 blocker + GH Actions billing diagnosis surfaced.
+- 2026-04-18 (S2): test-dashboard Phase 1 workstream (R18–R40). LGTMs: #146–#148, #152–#154, #161, #165, #169–#170, #175, #177, #180, #182. Rule-18 violation caught on #159 (zero-review admin merge, bad AR host landed on main — escalated to Evelynn). Stale-view protocol established. Partial-write hazard + batch cap formula patterns added to knowledge base.
