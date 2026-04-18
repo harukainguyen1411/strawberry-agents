@@ -138,17 +138,19 @@ Naming rationale: `strawberry-app` over `strawberry-apps` (singular reads as the
 
 Total time budget: 2-4 hours. Two executors: **Ekko** (history rewrite, repo creation, code cutover) and **Caitlyn** (secret re-provisioning, branch protection, deploy binding). Each phase has a rollback point.
 
-### 4.0 Preflight — Duong actions (before session start)
+### 4.0 Preflight — Ekko CLI-driven with Duong handoff (~5 min of Duong attention)
 
-Duong must complete these before executors start. ~20 min.
+Ekko drives preflight via `gh` CLI at session start. Duong's only manual step is the Firebase GitHub App install (Console UI — no CLI equivalent).
 
-1. Create new empty public repo under the **harukainguyen1411** account: https://github.com/new — set owner to harukainguyen1411, name strawberry-app, visibility public. Do not initialize with README/LICENSE/gitignore.
-2. In the new repo settings: Actions → General → Allow all actions; default workflow permissions → Read and write.
-3. Dependabot: Settings → Code security → enable Dependabot alerts and security updates (inherits weekly schedule from `.github/dependabot.yml` once pushed).
-4. Install the Firebase CI/CD GitHub App on the new repo (Firebase Console → Project Settings → Integrations → GitHub → select `harukainguyen1411/strawberry-app`).
-5. `harukainguyen1411` IS the repo owner — no collaborator invite needed. Duongntd may optionally be added as a collaborator on strawberry-app later for admin/visibility, but is not required for the migration.
-6. Confirm LICENSE choice (§8).
-7. Confirm repo name (`strawberry-app` vs alternative) and update this plan if changed.
+- **Prereq:** fix the pre-existing `ulid@3.0.2` lockfile desync in Duongntd/strawberry before migration session. Otherwise `npm ci` fails on the filtered tree (confirmed by Ekko dry-run, `assessments/2026-04-18-migration-dryrun.md`). This is a 1-commit fix — run `npm install ulid@latest` at the repo root, commit the updated package-lock.json.
+
+1. **Owner: Ekko** — Create new empty public repo: `gh repo create harukainguyen1411/strawberry-app --public --confirm`. Do not initialize with README/LICENSE/.gitignore.
+2. **Owner: Ekko** — Enable all actions and set default workflow permissions to read/write: `gh api repos/harukainguyen1411/strawberry-app/actions/permissions --method PUT --field enabled=true --field allowed_actions=all` and `gh api repos/harukainguyen1411/strawberry-app/actions/permissions/workflow --method PUT --field default_workflow_permissions=write --field can_approve_pull_request_reviews=true`.
+3. **Owner: Ekko** — Enable Dependabot alerts and security updates: `gh api repos/harukainguyen1411/strawberry-app/vulnerability-alerts --method PUT` and `gh api repos/harukainguyen1411/strawberry-app/automated-security-fixes --method PUT`.
+4. **Owner: Duong** — Install the Firebase CI/CD GitHub App on strawberry-app (Console UI only — no CLI equivalent): Firebase Console → Project Settings → Integrations → GitHub → select `harukainguyen1411/strawberry-app`. Also install on `harukainguyen1411/strawberry-agents` in the same session (back-to-back migrations share this step).
+5. **Owner: Duong** — Install the Firebase CI/CD GitHub App on strawberry-agents (same Console session as step 4).
+6. **Owner: Ekko** — Confirm LICENSE choice (§8) and update plan if changed.
+7. **Owner: Ekko** — Confirm repo name (`strawberry-app` vs alternative) and update this plan if changed. No collaborator invite needed — harukainguyen1411 is owner of both active repos.
 
 ### 4.1 Phase 0 — Merge the dual-green queue (Ekko, in strawberry) — 30-60 min
 
@@ -175,7 +177,7 @@ Rollback point: none needed — this is pure merging in the existing repo.
 3. Decision point (see §5): single squashed commit **vs.** path-filtered history. Default is **single squashed commit**. If Duong overrides to "preserve history," use path-filter steps (§5.2).
 4. For squash path:
    a. `git clone /tmp/strawberry-filter.git /tmp/strawberry-app && cd /tmp/strawberry-app`
-   b. Remove private paths: delete `agents/`, `plans/`, `assessments/`, `architecture/` (selected files re-added in next step), `secrets/`, `tasklist/`, `incidents/`, `design/`, `mcps/`, `strawberry-b14/`, `strawberry.pub/`, `apps/private-apps/`, `CLAUDE.md`, `agents/evelynn/CLAUDE.md`.
+   b. Remove private paths: delete `agents/`, `plans/`, `assessments/`, `architecture/` (selected files re-added in next step), `secrets/`, `tasklist/`, `incidents/`, `design/`, `mcps/`, `strawberry-b14/`, `strawberry.pub`, `apps/private-apps/`, `CLAUDE.md`, `agents/evelynn/CLAUDE.md`.
    c. Re-add sanitized `architecture/` files per §2.5 table under `docs/architecture/`.
    d. Prune `scripts/` per §2.2.
    e. `git add -A && git commit -m "chore: initial public commit — strawberry-app split from strawberry <SHORT-SHA>"`
