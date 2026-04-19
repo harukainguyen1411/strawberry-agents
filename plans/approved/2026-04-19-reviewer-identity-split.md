@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: camille
 date: 2026-04-19
 title: Split the strawberry-reviewers identity into per-agent lanes (ADR)
