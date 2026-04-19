@@ -95,9 +95,9 @@ Rejected alternatives:
 | Parse `claude cost` output | `cost` has no per-subagent granularity; stops at session level. |
 | Fork `ccusage` | `ccusage` reads flat session JSONLs, not the nested `subagents/` structure. Adding this upstream is out of scope. |
 
-### D2. Task identity — **use `description` from `agent-<id>.meta.json` verbatim**
+### D2. Task identity — **use `description` from `agent-<id>.meta.json` verbatim** [Resolved 2026-04-19]
 
-The Task tool already writes a `description` field into the meta sidecar (Evelynn-style: "Execute P1.4 first xfail Vitest", "Resolve DTD merge conflict", etc.). This is exactly the human-readable handle Duong wants to see in the leaderboard.
+The Task tool already writes a `description` field into the meta sidecar (Evelynn-style: "Execute P1.4 first xfail Vitest", "Resolve DTD merge conflict", etc.). This is exactly the human-readable handle Duong wants to see in the leaderboard. **Confirmed by Duong 2026-04-19: use `description` verbatim.**
 
 Reject "hook looks up TaskList for owner=<agent>": TaskList is the delegation audit trail (per commit `3c7d3c4`), but TaskList IDs are not in the meta.json or the JSONL. Correlating would require Evelynn to write a task-id into the Agent-tool prompt and the subagent to echo it — two new moving pieces. Not worth it given `description` already nails the use case for the dashboard.
 
@@ -142,7 +142,7 @@ Reject Firestore: the approved dashboard is explicitly local-first and file:// t
   "ended_at":         "2026-04-18T19:07:11.102Z",      // last JSONL timestamp
   "cwd":              "/Users/.../strawberry-agents",   // from JSONL first entry
   "git_branch":       "main",                           // from JSONL first entry if present
-  "closed_cleanly":   true,                             // /end-subagent-session sentinel observed? (optional, nice-to-have)
+  "closed_cleanly":   true,                             // /end-subagent-session sentinel observed? (INCLUDED — see D9 for hook prerequisite)
   "jsonl_path":       "~/.claude/projects/.../subagents/agent-a142.jsonl"  // for drill-down
 }
 ```
@@ -154,9 +154,9 @@ Fields worth adding beyond Duong's minimum list:
 - `model` — Sonnet vs. Opus token weights matter for the cost math.
 - `jsonl_path` — drill-down link from the dashboard row to the raw transcript.
 
-### D5. Aggregator and view — **new panel on the existing dashboard**
+### D5. Aggregator and view — **new Panel 5 at the bottom of the existing dashboard** [Resolved 2026-04-19]
 
-Same page, new stacked panel under the four existing sections. Not a separate tab. Rationale: keep one file:// URL, one keystroke (`sbu`), one pane. The existing layout has room.
+Same page, new stacked panel under the four existing sections — explicitly a new Panel 5 at the bottom. Not a separate tab. Rationale: keep one file:// URL, one keystroke (`sbu`), one pane. The existing layout has room. **Confirmed by Duong 2026-04-19: bottom-panel v1; weaving into Panel 2 stays as a v2 polish pass (not blocking).**
 
 **Panel 5 — Subagent tasks (last 7 days)**
 
@@ -170,9 +170,11 @@ Table, default-sorted by `total_tokens` desc, columns:
 - Parent (Evelynn shard id or top-level session, link)
 - Started at
 
-Group-collapse toggle: group by agent (shows one row per agent with sum + expand), group by task (one row per task string — catches loops where the same task spawned N times), or flat.
+**Group/filter controls [Resolved 2026-04-19]:** support BOTH group-by-agent AND group-by-task as first-class toggles. User flips between them with a control at the panel head. Default grouping is **by-task** (aligns with the wedge story — "PR #25 CI loop burned 60k"); a flat (ungrouped) mode is also available.
 
-No date picker in v2. Last-7-days fixed window. Add picker if the table gets unwieldy.
+**Retention toggle [Resolved 2026-04-19]:** default view is the last-7-days window backed by the 10 MB / 90 d trimmed `subagents.json` (see D6). Panel head also carries a **"show all"** toggle that re-reads directly from the raw JSONLs in `~/.claude/projects/**/subagents/` — bypassing the on-disk aggregate cap entirely. Scanner's trim policy is unchanged; the toggle is a read-path choice on the UI side (via an on-demand `subagent-scan-full.mjs` or client-side `fetch` of a second data file `subagents-full.json` generated lazily). Cache stays lean; "show all" accepts the slower load cost.
+
+No date picker in v2. Last-7-days fixed window in the default view, unbounded in "show all." Add picker if the table gets unwieldy.
 
 ### D6. Backfill — **forward-only with opportunistic scan of existing JSONLs**
 
@@ -182,7 +184,7 @@ Duong's local cache already has thousands of subagent spawns on disk. The scanne
 
 So **backfill is implicit and free.** No separate task needed.
 
-Trim policy: keep all spawns in `subagents.json` until the file exceeds 10 MB (sparklines + leaderboard only need aggregates; raw rows are for drill-down). Then drop the oldest by `ended_at`. Revisit if 10 MB fills up faster than 90 days.
+Trim policy [Resolved 2026-04-19]: keep all spawns in `subagents.json` until the file exceeds **10 MB or 90 days**, then drop oldest by `ended_at`. This is the on-disk aggregate cap only — the dashboard's "show all" toggle (see D5) sidesteps the cap by reading directly from the raw JSONLs in `~/.claude/projects/**/subagents/`, which are never trimmed by this pipeline (harness owns their lifetime). Confirmed by Duong: trim the aggregate cache aggressively, but preserve user access to the full history via the UI toggle.
 
 ### D7. Attribution edge cases — explicit handling
 
@@ -197,20 +199,46 @@ Trim policy: keep all spawns in `subagents.json` until the file exceeds 10 MB (s
 | Parent session compacted / resumed | Scanner keys by `agent_id` (unique per spawn), not session_id. Compaction of parent does not corrupt subagent rows. |
 | Concurrent scanners (Evelynn-shard A and B both running `build.sh` against the same cache dir) | Scanner is read-only on JSONLs and writes via temp-file + rename on `subagents.json`. Idempotent. Existing `build.sh` already has this shape for `agents.json`. |
 
-### D8. Relationship to TaskList audit trail
+### D8. Relationship to TaskList audit trail [Resolved 2026-04-19 — deferred]
 
-Out of scope for this ADR. TaskList is the authoritative delegation log; this dashboard is observability. If Duong later wants to correlate TaskList entries (with their richer status + owner + subject fields) to token cost, that is a v3 join — needs Evelynn to write task IDs into Agent-tool prompts, and needs the subagent scanner to extract them from the first user message. Doable, not needed for this wedge.
+Out of scope for this ADR. TaskList is the authoritative delegation log; this dashboard is observability. **Confirmed by Duong 2026-04-19: defer TaskList correlation to a later ADR.** If Duong later wants to correlate TaskList entries (with their richer status + owner + subject fields) to token cost, that is a v3 join — needs Evelynn to write task IDs into Agent-tool prompts, and needs the subagent scanner to extract them from the first user message. Doable, not needed for this wedge.
+
+### D9. `closed_cleanly` field and SubagentStop hook amendment [Resolved 2026-04-19 — include]
+
+Duong confirmed the `closed_cleanly` field is high-value / low-cost and must be included. Currently the `/end-subagent-session` skill writes a sentinel to `/tmp/claude-subagent-<sid>-closed`, which is unreliable across reboots and can be cleaned up before the cron scanner runs.
+
+**Prerequisite task — amend `.claude/settings.json` SubagentStop hook** to persist the sentinel into a durable location inside the cache dir:
+
+```
+~/.claude/strawberry-usage-cache/subagent-sentinels/<session_id>
+```
+
+The scanner reads these sentinel files (keyed by `agent_id` / `session_id` per the SubagentStop payload in §Capability Check) and populates `closed_cleanly:true` for matched rows. Absent sentinel → `closed_cleanly:false` (crashed, aborted, or stateless spawn that never ran the skill).
+
+Implementation notes for the hook amendment:
+
+- The SubagentStop hook already fires with `session_id` + `agent_id` in its payload (verified in §Capability Check).
+- The amendment is a one-liner in the hook command: `mkdir -p ~/.claude/strawberry-usage-cache/subagent-sentinels && touch ~/.claude/strawberry-usage-cache/subagent-sentinels/<agent_id>` (or embed `session_id:agent_id` in the filename for easier correlation).
+- The `/end-subagent-session` skill can keep its existing `/tmp` sentinel as a belt-and-suspenders signal, but the cron scanner only reads the durable cache-dir sentinels.
+- Cleanup: scanner may garbage-collect sentinels older than 90 days at the same time it trims `subagents.json`.
+
+This task is a hard prerequisite for shipping Panel 5 with a populated `closed_cleanly` column. Handoff notes (below) list it as T0.
 
 ## Scope Delta vs. Approved Plan
 
 This ADR adds, not replaces:
 
+- **Prerequisite (T0):** amend `.claude/settings.json` SubagentStop hook to persist sentinels into `~/.claude/strawberry-usage-cache/subagent-sentinels/` (see D9).
 - New script: `scripts/usage-dashboard/subagent-scan.mjs` (lives in `strawberry-app/scripts/usage-dashboard/` per approved-plan placement).
 - New data file: `~/.claude/strawberry-usage-cache/subagents.json`.
+- New sentinel dir: `~/.claude/strawberry-usage-cache/subagent-sentinels/` (populated by the amended SubagentStop hook; read by the scanner).
+- Optional lazy data file for "show all": `~/.claude/strawberry-usage-cache/subagents-full.json` (generated on-demand when the UI toggle flips; see D5).
 - `build.sh` gains one extra step (runs subagent-scan after agent-scan).
 - `merge.mjs` gains a pass that attaches subagent rows into the final `data.json` under a new `subagents:` key.
-- `index.html` + `app.js` gain Panel 5.
+- `index.html` + `app.js` gain Panel 5 with group-by (agent/task, default task) and "show all" toggles.
 - `roster.json` unchanged — existing agent list is reused.
+
+**Scope of subagent spawns tracked [Resolved 2026-04-19]:** all projects under `~/.claude/projects/`, bucketed by `cwd` — matches the approved parent dashboard's cross-project behavior. Confirmed by Duong.
 
 No changes to approved plan §Architecture, §Storage location, or §Deployment shape. Still file://, still cron every 10 min, still zero paid line items.
 
@@ -221,25 +249,29 @@ No changes to approved plan §Architecture, §Storage location, or §Deployment 
 - **Disk growth.** `~/.claude/projects/**/subagents/` grows unbounded. We do not garbage-collect it — that is the harness's job. If Duong's disk fills, that is a harness issue, not this dashboard's.
 - **Scanner cost.** Reading every subagent JSONL every 10 min is O(spawns × avg-size). Mitigation: cache per-file `mtime` in `subagents.json`; skip rescan if mtime unchanged. Already-closed JSONLs are immutable, so this is a huge win after the first run.
 
-## Open Questions (for Duong)
+## Resolutions Log
 
-1. **Task-identity fallback:** confirm `description` from meta.json is the right handle vs. the first line of the Evelynn prompt truncated to 80 chars. They are usually similar; when they diverge the first-line is more verbose ("Execute P1.4 of the deployment-pipeline plan: write the first failing..." vs. "Execute P1.4 first xfail Vitest"). I recommend `description` for brevity; happy to flip if you want the fuller label.
-2. **Retention:** is the 10 MB / 90-day soft cap on `subagents.json` right? You can easily afford 100+ MB on a Mac; the constraint is really "don't make `data.json` too big for the browser to swallow in one `fetch`." If you want me to trim harder, say so.
-3. **Panel placement:** new panel at the bottom of the existing page, or do you want subagent rows woven into the per-agent leaderboard (Panel 2) as drill-down expando rows? Weave is prettier, bottom-panel is cheaper to build. I lean bottom-panel for v1-of-this-feature; weave as a v2 polish pass.
-4. **Group-by default:** default to flat, by-agent, or by-task? I lean by-task because the wedge story ("PR #25 CI loop burned 60k") is a task-grouped story. Let me know.
-5. **Task-ID hook into TaskList:** defer to a later ADR, or add to this one? I kept it out of D8 because it requires touching Evelynn's prompt plumbing and the delegation protocol — larger blast radius than an observability-only change. Happy to do it as a follow-up if you want the correlation.
-6. **Cost of `closed_cleanly`:** the sentinel `/tmp/claude-subagent-<sid>-closed` is the signal. But scanner runs on cron, after the sentinel may have been cleaned up by the SubagentStop hook. If you want this field reliable, we need the SubagentStop hook to persist the signal (e.g., write a file into the cache dir instead of `/tmp`). Low-value field; drop it if we do not want to touch the hook.
-7. **Scope of subagent spawns to track:** every spawn across all `~/.claude/projects/`, or filter to strawberry-agents + strawberry + strawberry-app? Approved plan tracks both work and personal projects in one pane (bucketed). I default to same-behavior: all projects, bucket by cwd. Confirm.
+All seven open questions were resolved by Duong on 2026-04-19 and folded inline into D2, D5, D6, D8, D9, and §Scope Delta. No further open questions remain. Summary:
+
+1. **Task label** → `description` from meta.json (D2).
+2. **Retention** → 10 MB / 90 d soft cap on the aggregate cache; UI "show all" toggle reads raw JSONLs for unbounded history (D5, D6).
+3. **Panel placement** → new Panel 5 at the bottom; weave-into-Panel-2 deferred to v2 polish (D5).
+4. **Group-by** → support both by-agent and by-task; default by-task (D5).
+5. **TaskList correlation** → deferred to a later ADR (D8).
+6. **`closed_cleanly`** → include; prerequisite SubagentStop hook amendment persists sentinels into `~/.claude/strawberry-usage-cache/subagent-sentinels/` (D9).
+7. **Scope** → all projects under `~/.claude/projects/`, bucketed by cwd (§Scope Delta).
 
 ## Handoff Notes (for Kayn/Aphelios, once approved)
 
-- Scanner is small: under 200 LOC. Shape mirrors `agent-scan.mjs` — read dir, parse JSONL header + assistant lines with `usage`, read meta.json, emit record, write atomically.
-- Golden-test fixture: capture one real `subagents/<id>.jsonl` + `meta.json` pair (scrub prompt content), write expected output JSON, golden-diff in Vitest. Easy xfail candidate per rule 12.
+- **T0 (prerequisite):** amend `.claude/settings.json` SubagentStop hook per D9 — persist sentinels into `~/.claude/strawberry-usage-cache/subagent-sentinels/<agent_id>` instead of `/tmp`. This must land and bake for at least one session before T1 golden tests can assert `closed_cleanly:true` behavior end-to-end.
+- Scanner is small: under 200 LOC. Shape mirrors `agent-scan.mjs` — read dir, parse JSONL header + assistant lines with `usage`, read meta.json, read matching sentinel for `closed_cleanly`, emit record, write atomically.
+- Golden-test fixture: capture one real `subagents/<id>.jsonl` + `meta.json` pair (scrub prompt content) plus a fake sentinel, write expected output JSON, golden-diff in Vitest. Easy xfail candidate per rule 12.
 - `merge.mjs` change is a one-liner: `data.subagents = JSON.parse(readFileSync(cacheDir + 'subagents.json'))`.
-- UI change is one `<section>` in `index.html` + a render function in `app.js` that pivots the array into the table. No new deps — reuse existing Chart.js import (unused in this panel, fine).
-- Commit identity: this ships in the public app repo (`strawberry-app`) under `apps/**`-adjacent paths (scripts + dashboards), so normal PR-to-main flow with `chore:` or `feat:` prefix per rule 5 (feature-add → `feat:`).
+- UI change is one `<section>` in `index.html` + a render function in `app.js` that pivots the array into the table, plus the group-by toggle (agent/task, default task) and the "show all" toggle. No new deps — reuse existing Chart.js import (unused in this panel, fine).
+- "Show all" path: either a lazy second scanner pass that writes `subagents-full.json` on demand, or a client-side `fetch` of the raw JSONL dir if the file:// origin can read them. Pick whichever is simpler at implementation time; document the choice in the T3 PR.
+- Commit identity: this ships in the public app repo (`strawberry-app`) under `apps/**`-adjacent paths (scripts + dashboards), so normal PR-to-main flow with `chore:` or `feat:` prefix per rule 5 (feature-add → `feat:`). The hook amendment in T0 touches `.claude/settings.json` in `strawberry-agents` and uses `chore:` per rule 5.
 - TDD-enabled: xfail the scanner golden test before the implementation lands (rule 12).
-- Suggested task slices: (T1) scanner + golden test; (T2) merge.mjs wiring + build.sh step; (T3) Panel 5 UI. Each independently testable.
+- Suggested task slices: **(T0) SubagentStop hook amendment (prereq);** (T1) scanner + golden test; (T2) merge.mjs wiring + build.sh step; (T3) Panel 5 UI incl. group-by and "show all" toggles. Each independently testable after T0.
 
 ## References
 
