@@ -36,6 +36,7 @@
 - For Playwright Docker snapshot generation: `package.json` may declare `^1.58.0` but npm resolves to a newer patch (e.g. 1.59.1). Always match the Docker image tag to the RESOLVED version in `package-lock.json`, not the declared range. Use `mcr.microsoft.com/playwright:v<resolved>-jammy`.
 
 - 2026-04-19 (s11): reviewer identity setup — encrypted PAT at `secrets/encrypted/reviewer-github-token.age`, wrote `scripts/reviewer-auth.sh`, documented two-identity model in git-workflow.md + agent-network.md + camille memory. `reviewer-auth.sh gh api user --jq .login` returns `strawberry-reviewers`. Branch protection on strawberry-app currently ZERO (classic 404, GraphQL empty, rulesets []).
+- 2026-04-19 (s12): smoke-tested reviewer-auth.sh — PR #53 (Duongntd author), `strawberry-reviewers` approved, `reviewDecision` = APPROVED. Rule 18 structurally satisfied. Assessment at `assessments/reviewer-auth-smoke-2026-04-19.md`.
 - `tools/decrypt.sh` does NOT output plaintext to stdout. Interface: reads ciphertext from stdin, writes `KEY=val` to `--target` (must be under `secrets/`), optionally `--exec -- cmd` to exec with env. Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd` pattern.
 - `secrets/encrypted/reviewer-github-token.age` — reviewer bot PAT for strawberry-reviewers account.
 - `scripts/reviewer-auth.sh` — wraps `gh` with reviewer identity. Senna/Lucian use this for approvals.
