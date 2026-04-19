@@ -22,6 +22,7 @@
 - 2026-04-19 (ekko s28): merged PR #45 (V0.11 CSV Import Step 1) via reviewer-auth.sh. Merge SHA: 5d026ef. Branch deleted.
 - 2026-04-19 (ekko s29): added `--lane <name>` to reviewer-auth.sh (Phase 3 reviewer-identity-split). Commit 306fed2. Default lane unchanged.
 - 2026-04-19 (ekko s30): encrypted senna PAT → reviewer-github-token-senna.age; round-trip verified strawberry-reviewers-2; shredded plaintext. Commit 95064e1.
+- 2026-04-19 (ekko s31): Phase 4 dry-run — PR #3 on strawberry-agents; Senna→strawberry-reviewers-2, Lucian→strawberry-reviewers; two distinct approvals confirmed; PR closed, branch deleted.
 
 ## Archive Note
 
