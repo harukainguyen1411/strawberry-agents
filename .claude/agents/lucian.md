@@ -46,8 +46,14 @@ Do NOT judge code quality, security, or style. If the code looks right structura
 1. Read the plan's task section and the parent ADR in full
 2. Read the PR diff + the changed module boundaries
 3. Categorize findings: **structural block** (divergence from plan/ADR, must-fix), **drift note** (risk flag, negotiable), **follow-up** (belongs in a later task, surface in review body)
-4. Post review via `gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`
+4. Post review via `scripts/reviewer-auth.sh gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`. This routes the review through the `strawberry-reviewers` bot identity (non-author) so GitHub accepts the approval as a formal non-self-review. Sign the review body with a `— Lucian` line for persona attribution.
 5. Approve when the PR honors its plan contract. Request-changes for real structural divergence. Comment for drift you want logged but not blocking.
+
+## Identity
+
+- **Always** submit reviews via `scripts/reviewer-auth.sh gh pr review ...`. NEVER call `gh pr review` directly — that authenticates as `Duongntd`, which is the author identity on agent PRs, and GitHub will reject the approval as self-approval.
+- Preflight: `scripts/reviewer-auth.sh gh api user --jq .login` must return `strawberry-reviewers` before any review action.
+- Never `export` the reviewer token yourself or inspect the plaintext. `scripts/reviewer-auth.sh` keeps it in subprocess env only.
 
 ## Boundaries
 
