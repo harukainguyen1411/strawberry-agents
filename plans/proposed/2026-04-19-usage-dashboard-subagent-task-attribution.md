@@ -21,6 +21,49 @@ Concrete examples Duong wants to see:
 
 This is a second-order wedge on top of the existing roster-attribution wedge. The existing dashboard groups tokens by agent across all work. This extension groups tokens by agent × task — so Duong can spot loops, runaways, and disproportionate task cost.
 
+## Phases — v1 Capture vs. v2 Dashboard [Added 2026-04-19]
+
+Duong's 2026-04-19 amendment: split this ADR into two independently shippable phases. Ship v1 immediately to stop ongoing signal loss (the `closed_cleanly` sentinel lives in `/tmp` today and evaporates at reboot/cleanup). v2 can follow when UI budget opens.
+
+### v1 — Capture pipeline (ship now)
+
+**Goal:** persist every byte of subagent attribution data to disk in a structured form, so no data is lost while v2 is still in flight.
+
+| Component | Reference |
+|---|---|
+| SubagentStop hook amendment — sentinel into `~/.claude/strawberry-usage-cache/subagent-sentinels/<agent_id>` (replaces `/tmp`) | D9 |
+| `subagent-scan.mjs` scanner — walks `~/.claude/projects/**/subagents/`, emits per-spawn records | D1 |
+| Cron wiring — scanner runs after `agent-scan.mjs` in the existing `build.sh` tick (every 10 min) | D1 |
+| Aggregate schema — per-spawn record, stored in `subagents.json` | D4 |
+| Retention / cap enforcement — 10 MB / 90 d trim on `subagents.json`; sentinels garbage-collected on the same cadence | D6, D9 |
+| `closed_cleanly` wiring — scanner correlates sentinel presence with JSONL rows | D9 |
+| Mtime cache for incremental scan — skip closed JSONLs on subsequent ticks | Risks §Scanner cost |
+
+v1 ships without a consumer UI. The data accumulates in `subagents.json` and is inspectable via `jq` / any JSON viewer until v2 lands.
+
+### v2 — Dashboard UI (follow-up)
+
+**Goal:** surface the v1 data on the existing file:// dashboard so Duong can see loops and runaways at a glance.
+
+| Component | Reference |
+|---|---|
+| `merge.mjs` attaches `subagents.json` into `data.json` under a `subagents:` key | §Scope Delta |
+| Panel 5 rendering in `index.html` + `app.js` | D5 |
+| Group-by toggle — agent / task / flat; default task | D5 |
+| "Show all" toggle — reads raw JSONLs to bypass the aggregate cap, optionally via a lazy `subagents-full.json` | D5, D6 |
+| Drill-down tooltip + micro-breakdown `[in / out / cache]` | D5 |
+
+v2 is pure read-path on top of v1 output. No new capture primitives; no changes to the hook or scanner.
+
+### Risk of v1-without-v2
+
+Accepted. We accumulate structured attribution data with no visual consumer for some period. Trade-off justification:
+
+- The **alternative is worse:** without v1, the `/tmp` sentinel keeps evaporating and we permanently lose the `closed_cleanly` signal for every spawn that ran during the gap. That data cannot be reconstructed after the fact.
+- `subagents.json` is small (mtime-cached scanner keeps it cheap) and gitignored, so carrying it on disk between v1 and v2 is free.
+- A curious user can `jq` the file any time to answer the wedge question ad hoc; the dashboard is ergonomics, not novel capability.
+- v1 is also the bigger testing surface — getting the scanner + hook right while the UI is still a spec reduces regression risk when Panel 5 lands.
+
 ## Capability Check — Hook vs. Transcript vs. JSONL
 
 Before choosing a capture mechanism, I verified what data is actually reachable.
@@ -271,7 +314,10 @@ All seven open questions were resolved by Duong on 2026-04-19 and folded inline 
 - "Show all" path: either a lazy second scanner pass that writes `subagents-full.json` on demand, or a client-side `fetch` of the raw JSONL dir if the file:// origin can read them. Pick whichever is simpler at implementation time; document the choice in the T3 PR.
 - Commit identity: this ships in the public app repo (`strawberry-app`) under `apps/**`-adjacent paths (scripts + dashboards), so normal PR-to-main flow with `chore:` or `feat:` prefix per rule 5 (feature-add → `feat:`). The hook amendment in T0 touches `.claude/settings.json` in `strawberry-agents` and uses `chore:` per rule 5.
 - TDD-enabled: xfail the scanner golden test before the implementation lands (rule 12).
-- Suggested task slices: **(T0) SubagentStop hook amendment (prereq);** (T1) scanner + golden test; (T2) merge.mjs wiring + build.sh step; (T3) Panel 5 UI incl. group-by and "show all" toggles. Each independently testable after T0.
+- Suggested task slices — aligned with the v1/v2 phase split (see §Phases):
+  - **v1 (ship now):** (T0) SubagentStop hook amendment; (T1) scanner + golden test; (T2) `build.sh` cron wiring + retention trim + sentinel GC. v1 ships with no UI consumer — data lands in `subagents.json`.
+  - **v2 (follow-up):** (T3) `merge.mjs` attaches subagents into `data.json`; (T4) Panel 5 UI incl. group-by (agent/task, default task) and "show all" toggles.
+  - Each slice is independently testable after T0. v2 does not block v1.
 
 ## References
 
