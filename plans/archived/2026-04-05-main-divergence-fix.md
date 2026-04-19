@@ -1,6 +1,6 @@
 ---
 title: Fix Main Branch Divergence on PR Merge
-status: approved
+status: archived
 owner: pyke
 created: 2026-04-05
 ---
@@ -103,3 +103,7 @@ Option B is a 30-second settings change that eliminates the immediate pain. Opti
 ## Risk Assessment
 
 Low risk. Option B is a settings toggle. Option A uses --force-with-lease (safe) and aborts on real conflicts. Neither changes how agents work day-to-day.
+
+## Supersede Note
+
+Superseded by strawberry-app PR #51 (2026-04-19) which deleted auto-rebase.yml. Rule 11 (always merge, never rebase) now enforced; stale branches updated on-demand via `gh pr update-branch <num>` by the merging agent.

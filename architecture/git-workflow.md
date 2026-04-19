@@ -57,6 +57,10 @@ Agent sessions operate from the `strawberry` checkout. `strawberry-app` is check
 - PRs with significant changes must update relevant READMEs
 - **Gitignore-on-first-use:** When creating a new tool or app directory, add its build output patterns to `.gitignore` in the same commit that creates the directory. Build artifacts (`.turbo/`, `dist/`, `lib/`, `node_modules/`, `__pycache__/`) must never appear in `git status`.
 
+## Stale branches / keeping a PR up-to-date
+
+When a PR goes BEHIND or DIRTY against `main`, the merging agent runs `gh pr update-branch <num>` on-demand against that single PR. This replaces the former auto-rebase workflow (removed in strawberry-app PR #51) which force-pushed a rebase onto every open PR on each merge — violating Rule 11 and causing O(N × workflows) CI cascades.
+
 ## Branch Protection — Required Checks and Review Enforcement
 
 `main` enforces the following gates (configured via `scripts/setup-branch-protection.sh`):
