@@ -12,6 +12,7 @@
 - `harukainguyen1411/strawberry-app` main: 2-approval gate active (required_approving_review_count=2) as of 2026-04-19 s34. Use `--input -` with JSON body for gh api PUT branch protection (--field fails for nested objects).
 - Duongntd auth has NO admin on harukainguyen1411/strawberry-agents (pull/push/triage only). Branch-protection writes require harukainguyen1411 account (Duong-manual).
 - `tools/decrypt.sh`: reads ciphertext stdin, writes `KEY=val` to `--target` (must be under `secrets/`). Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd`.
+- T212 API: Basic auth (API_KEY_ID:SECRET_KEY base64). Live URL: https://live.trading212.com. See learnings/2026-04-19-t212-api-fixtures.md for full field/shape reference.
 - GitHub branch protection (classic or rulesets) on private repos requires GitHub Pro — free-plan accounts get 403.
 
 ## Sessions
@@ -31,6 +32,7 @@
 - 2026-04-19 (ekko s35): Moved .claude/agents/_retired/ → .claude/_retired-agents/ to hide retired agents from harness scanner. Updated 3 reference files. Pushed via harukainguyen1411 reviewer PAT.
 - 2026-04-19 (ekko s36): Closed 11 non-Dependabot PRs in Duongntd/strawberry (Phase 4 migration), deleted 11 feature branches. 19 Dependabot PRs left open.
 - 2026-04-19 (ekko s37): Full workspace sweep. /tmp migration scratch trees + secrets scripts deleted. All 12 strawberry-app worktrees removed (all merged/closed), 13 local branches deleted, main fast-forwarded 39 commits to 4ea1884. Old strawberry clone at ~/Documents/Personal/strawberry/ is DIRTY (2 modified files + 1 untracked) — not deleted, awaiting Duong decision.
+- 2026-04-19 (ekko s38): T212 API fixtures generated from live API (cash/portfolio/orders). order.id, fill.id, nextPagePath redacted. T212.env encrypted to T212.env.age (round-trip sha256 verified), plaintext deleted. PR #61 open on strawberry-app. Worktree at ~/Documents/Personal/strawberry-app-t212.
 
 ## Archive Note
 
