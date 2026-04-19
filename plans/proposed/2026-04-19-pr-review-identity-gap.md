@@ -145,3 +145,12 @@ Answer these before execution kicks off.
 - **PAT leak.** Age-encryption at rest and Rule-6-compliant subprocess handling mitigate, but a compromised laptop means the attacker has the decryption key (memory of the age recipient) and could decrypt. Same risk as every other agent PAT today — not worse. Rotation cadence limits blast radius.
 - **Scope creep.** Once a second identity exists, the temptation is to route everything through it (e.g. executors' workflow-dispatch calls). Resist. Reviewer bot is for `gh pr review` only. Enforce via the single-script indirection (`scripts/reviewer-auth.sh` has `gh pr review` in its name / does input validation on the subcommand) — executor implementer to decide.
 - **Smoke test false-pass.** The smoke test can pass while a subtle misconfiguration (e.g. bot has `admin` role instead of `Write`) leaves a latent bypass. Mitigation: after smoke test, run `gh api repos/harukainguyen1411/strawberry-app/collaborators/strawberry-reviewer/permission` and assert `permission == "write"`, not `"admin"`.
+
+## Decisions
+
+Duong's answers to the §6 open questions (recorded 2026-04-19):
+
+- **Reviewer bot username:** `strawberry-reviewers`
+- **Email alias:** `harukainguyen1411+strawberryreviewers@gmail.com` (gmail plus-addressing — mail routes to harukainguyen1411's inbox)
+- **PAT rotation cadence:** 90 days
+- **Scope vs 2026-04-17-branch-protection-enforcement.md:** chains after — this plan executes once the branch-protection plan is fully landed; do not amend or supersede the earlier plan
