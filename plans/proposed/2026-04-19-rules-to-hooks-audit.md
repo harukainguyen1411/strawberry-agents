@@ -235,6 +235,14 @@ flight?
 Recommendation: fix the claim first (a tiny chore commit) so the doc isn't
 lying, then land the hook after.
 
+### Duong's answers (2026-04-19)
+
+- **Q4 (keep rule text + `Enforced by:` footnotes): APPROVED.**
+- **Q5 (fix Rule 5 stale claim first, then land hook): APPROVED.**
+- **Q1 (commit-prefix override-trailer strictness): open — resolve at execution kickoff next session.**
+- **Q2 (checkout block scope re: detached-HEAD): open — resolve at execution kickoff next session.**
+- **Q3 (self-merge enforcement surface: PreToolUse vs CI): open — resolve at execution kickoff next session.**
+
 ## 6. Already well-enforced (don't re-migrate)
 
 Duong may assume these are under-enforced; they are not.
