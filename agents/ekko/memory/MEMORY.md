@@ -28,6 +28,7 @@
 - 2026-04-19 (s9): added TDD-Waiver empty commit (9666ace) to PR #25 — xfail-first check now passes. Remaining checks (Lint+Test+Build, unit-tests, Playwright E2E) still running at session end.
 - 2026-04-19 (s14): opened PR #54 — two CI fixes: release.yml detached-HEAD (ref_name + permissions:contents:write) + preview.yml turbo --force cache bust
 - 2026-04-19 (s10): drove PR #26 to merge-ready — manually resolved functions/package.json conflict via worktree, added TDD-Waiver commit (aec09e0). All CI checks green. Awaits Senna+Lucian review.
+- 2026-04-19 (s16): fixed tdd-gate push-event range bug — replaced GH_BEFORE with git merge-base HEAD origin/main in both xfail-first and regression-test jobs. PR #55 opened. Awaits Senna+Lucian review.
 
 - GitHub ruleset UI bypass is broken for `pull_request` rule type on personal repos (discussion #113172, open ≥1y). Even RepositoryRole/admin + bypass_mode: always + current_user_can_bypass: always doesn't unblock UI merge button. Use classic protection with enforce_admins: false instead.
 - `POST /repos/{owner}/{repo}/rulesets` requires admin permission. Returns 404 (not 403) for non-admins. Duongntd has write (not admin) on strawberry-app — cannot create rulesets directly.
