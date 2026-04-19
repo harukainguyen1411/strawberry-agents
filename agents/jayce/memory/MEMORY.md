@@ -43,6 +43,7 @@
 - 2026-04-19 (V0.7 Senna fixes): Fixed PR #41 findings #1+#2. Xfail commit (2ac6d4b) + fix short/cover (0416baf) + fix asset-category (1239d27). 38/38 tests green. PR comment posted. Not merged (Rule 18).
 - 2026-04-19 (V0.8 Senna fixes): Merged origin/V0.7 into V0.8 (clean, ort). Xfail 410e5e1 (strict Firestore mock, id: undefined regression). Fix 169ccb6 (destructure id out, add B.2.13 T212 EUR). 52/52 tests pass. PR #42 comment posted. Not merged (Rule 18).
 - 2026-04-19 (PR #40 V0.6 Senna fixes): Fixed EU comma-decimal parsing (parseDecimal helper) + phantom BUY classifier (TRADE_ACTIONS allowlist). 3 commits: 960651b (xfail) + f8c01d8 (EU decimal) + 9ab8809 (phantom BUY). Pushed + commented on PR. Not merged (Rule 18).
+- 2026-04-19 (PR #42 V0.8 main merge conflict): Resolved CONFLICTING state. 1 conflict in t212.ts — accountCurrency capture before TRADE_ACTIONS skip. index.ts auto-merged. Merge commit 18d0563. PR now MERGEABLE. Fast CI checks green; build/unit/E2E queued.
 
 ## Archive Note
 
