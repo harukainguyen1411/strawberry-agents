@@ -10,6 +10,7 @@
 - `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app`
 - Required checks for main: xfail-first, regression-test, unit-tests, Playwright E2E, QA report. `E2E tests (Playwright / Chromium)` is NOT required — pre-existing auth-local-mode heading bug.
 - No classic branch protection on strawberry-app (404). No rulesets. CLEAN/MERGEABLE is sufficient to merge.
+- Duongntd auth has NO admin on harukainguyen1411/strawberry-agents (pull/push/triage only). Branch-protection writes require harukainguyen1411 account (Duong-manual).
 - `tools/decrypt.sh`: reads ciphertext stdin, writes `KEY=val` to `--target` (must be under `secrets/`). Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd`.
 
 ## Sessions
@@ -23,6 +24,7 @@
 - 2026-04-19 (ekko s29): added `--lane <name>` to reviewer-auth.sh (Phase 3 reviewer-identity-split). Commit 306fed2. Default lane unchanged.
 - 2026-04-19 (ekko s30): encrypted senna PAT → reviewer-github-token-senna.age; round-trip verified strawberry-reviewers-2; shredded plaintext. Commit 95064e1.
 - 2026-04-19 (ekko s31): Phase 4 dry-run — PR #3 on strawberry-agents; Senna→strawberry-reviewers-2, Lucian→strawberry-reviewers; two distinct approvals confirmed; PR closed, branch deleted.
+- 2026-04-19 (ekko s32): Phase 7 branch-protection attempt — stopped; Duongntd lacks admin on harukainguyen1411/strawberry-agents. Duong-manual step required.
 
 ## Archive Note
 
