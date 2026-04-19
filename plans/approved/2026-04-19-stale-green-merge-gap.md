@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: camille
 date: 2026-04-19
 title: Close the stale-green merge gap on strawberry-app (ADR)
