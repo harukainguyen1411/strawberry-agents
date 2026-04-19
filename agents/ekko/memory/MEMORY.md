@@ -38,6 +38,7 @@
 
 - 2026-04-19 (s11): reviewer identity setup — encrypted PAT at `secrets/encrypted/reviewer-github-token.age`, wrote `scripts/reviewer-auth.sh`, documented two-identity model in git-workflow.md + agent-network.md + camille memory. `reviewer-auth.sh gh api user --jq .login` returns `strawberry-reviewers`. Branch protection on strawberry-app currently ZERO (classic 404, GraphQL empty, rulesets []).
 - 2026-04-19 (s13): git hygiene on strawberry-app — 12 worktrees removed, 15 branches deleted. `feat/usage-dashboard-html-shell` + its worktree `/private/tmp/strawberry-app-t7` skipped (dirty package-lock.json). `/usr/bin/git` required in subshells (git not on PATH).
+- 2026-04-19 (s15): worktree cleanup — 7 worktrees force-removed (pt-v04 through pt-v08, t8, pt-v12). pt-v12 patch saved to `/tmp/pt-v12-uncommitted.patch` (30 KB, 7 files). Final count: 2 worktrees.
 - 2026-04-19 (s12): smoke-tested reviewer-auth.sh — PR #53 (Duongntd author), `strawberry-reviewers` approved, `reviewDecision` = APPROVED. Rule 18 structurally satisfied. Assessment at `assessments/reviewer-auth-smoke-2026-04-19.md`.
 - `tools/decrypt.sh` does NOT output plaintext to stdout. Interface: reads ciphertext from stdin, writes `KEY=val` to `--target` (must be under `secrets/`), optionally `--exec -- cmd` to exec with env. Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd` pattern.
 - `secrets/encrypted/reviewer-github-token.age` — reviewer bot PAT for strawberry-reviewers account.
