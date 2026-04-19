@@ -12,6 +12,8 @@
 - Firebase preview secret: `FIREBASE_SERVICE_ACCOUNT` EXISTS on the repo but value is EMPTY — Duong must delete + re-add with actual JSON from Firebase console.
 - E2E `auth-local-mode` failures are pre-existing app bugs (heading not visible), not workflow issues.
 - PR #38 (`fix/router-lint-errors`) fixes `no-unused-expressions` in task-list + read-tracker routers — unblocks PRs #29/#32/#33.
+- `composite-deploy.sh` outputs to `deploy/` not `dist/`. Any workflow copying `apps/myapps/firebase.json` to repo root must patch `"public": "dist"` → `"public": "deploy"` via sed. PR #25 fix commit: 4871740.
+- Required checks for `main` branch: xfail-first, regression-test, unit-tests, Playwright E2E, QA report present. `E2E tests (Playwright / Chromium)` is NOT required — pre-existing auth-local-mode heading bug.
 
 ## Sessions
 
