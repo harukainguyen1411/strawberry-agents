@@ -25,3 +25,4 @@
 - 2026-04-19-github-ruleset-pullrequest-bypass-broken.md — ruleset UI bypass is broken for pull_request rule type on personal repos (discussion #113172); use classic protection with enforce_admins: false instead | last_used: 2026-04-19
 - 2026-04-19-gh-update-branch-conflict-worktree-fallback.md — when gh pr update-branch rejects CONFLICTING branches, fall back to manual merge in worktree; TDD-Waiver empty commit needed if merge touches TDD-enabled packages | last_used: 2026-04-19
 - 2026-04-19-reviewer-auth-smoke.md — reviewer-auth.sh smoke test confirmed: strawberry-reviewers approval on Duongntd PR flips reviewDecision to APPROVED; Rule 18 structurally satisfiable | last_used: 2026-04-19
+- 2026-04-19-pr45-v011-ancestor-chain-collapse.md — after ancestor-chain merge, always check git diff origin/main...HEAD --name-only for residue files; build-fix commits can introduce 1-line out-of-scope changes; fix surgically before push | last_used: 2026-04-19
