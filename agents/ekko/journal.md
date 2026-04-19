@@ -112,3 +112,22 @@
 
 **Blockers / Open threads:**
 - None for this task.
+
+---
+
+## 2026-04-19 (s5) — e2e.yml paths-ignore for apps/myapps
+
+**Task:** Eliminate duplicate Playwright E2E runs triggered by both `e2e.yml` and `myapps-test.yml` on `apps/myapps` PRs.
+
+**What happened:**
+- Read both workflow files. `e2e.yml` uses TDD-enabled package detection; `myapps-test.yml` is a per-app scoped workflow with its own E2E job.
+- Checked branch protection via REST (`GET /branches/main/protection` → 404) and confirmed with GraphQL (`branchProtectionRules` → `nodes: []`). No required checks configured — no wrapper job needed.
+- Created worktree `strawberry-app-e2e-scope` on branch `chore/e2e-scope-myapps`.
+- Added `paths-ignore: ['apps/myapps/**']` to `on.pull_request` in `e2e.yml`.
+- Committed (bd60386), pushed, opened PR #48.
+- CI queued (TDD Gate checks in QUEUED state at time of report).
+- Wrote learnings + updated MEMORY.md, committed to strawberry-agents main (a9e0bb0).
+
+**Blockers / Open threads:**
+- PR #48 needs human review + merge (Rule 18 — agents may not merge their own PRs).
+- If branch protection is enabled later with "Playwright E2E" as a required check, a thin always-runs wrapper job will be needed.

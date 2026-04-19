@@ -19,3 +19,4 @@
 - 2026-04-19-pr25-firebase-public-path.md — composite-deploy.sh outputs to deploy/ not dist/; any workflow copying apps/myapps/firebase.json to root must sed-patch "public": "dist" to "public": "deploy" | last_used: 2026-04-19
 - 2026-04-19-orianna-stale-report-glob-bug.md — orianna-fact-check.sh picks report by alphabetical glob order not mtime; stale old report with later timestamp beats new clean report; workaround: delete stale report; fix: use ls -t | head -1 | last_used: 2026-04-19
 - 2026-04-19-plan-promote-guard-hook.md — git diff --cached --name-status emits renames as R100<TAB>src<TAB>dst not separate D+A lines; must set GIT_WORK_TREE alongside GIT_DIR when testing hooks outside the worktree | last_used: 2026-04-19
+- 2026-04-19-e2e-paths-ignore-myapps.md — gh api branch protection returns 404 (not 401) when no rules exist; use GraphQL branchProtectionRules to confirm; skipped jobs only block merge when job name is a required check | last_used: 2026-04-19
