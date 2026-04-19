@@ -38,7 +38,7 @@ any route in this repo. These are `block` under the strict-default rule
 3. `agents/ekko/learnings/2026-04-19-orianna-o4-memory-audit.md` — **`scripts/migrate-hetzner-to-gce.sh`** — miss. Script was never committed. Proposed fix: remove the reference or anchor to the plan that *proposes* the migration (mark as speculative).
 4. `agents/orianna/learnings/2026-04-19-o4-tdd-stale-seed.md` — **`scripts/migrate-hetzner-to-gce.sh`** — same as #3.
 5. `agents/evelynn/learnings/2026-04-08-roster-vs-harness-reality.md` — **`agents/roster.md`** — miss. The roster lives at `agents/memory/agent-network.md` and `agents/memory/agents-table.md`. Proposed fix: rewrite reference.
-6. `agents/evelynn/learnings/2026-04-08-roster-vs-harness-reality.md` — **`.claude/agents/poppy.md`** — miss. Poppy is retired; the file now lives at `.claude/agents/_retired/poppy.md`. Proposed fix: note the retirement inline or update the path.
+6. `agents/evelynn/learnings/2026-04-08-roster-vs-harness-reality.md` — **`.claude/agents/poppy.md`** — miss. Poppy is retired; the file now lives at `.claude/_retired-agents/poppy.md`. Proposed fix: note the retirement inline or update the path.
 7. `agents/evelynn/memory/evelynn.md` — **`plans/ready/`** — miss. No `plans/ready/` directory exists in the lifecycle (valid subdirs: `proposed/`, `approved/`, `in-progress/`, `implemented/`, `archived/`). Proposed fix: rewrite as `plans/approved/`.
 8. `agents/evelynn/memory/last-sessions/cca80ba9.md` — **`scripts/hooks/check-no-hardcoded-slugs.sh`** — miss.
 9. `agents/kayn/learnings/2026-04-19-public-app-repo-migration-tasks.md` — **`scripts/hooks/check-no-hardcoded-slugs.sh`** — miss (same as #8). Proposed fix: if the hook is planned, mark speculative; if landed under a different name, update the path.
@@ -104,7 +104,7 @@ pyke, lux-frontend-sonnet) may be left as-is — they are historical snapshots.
 - [ ] `agents/memory/agents-table.md` — fix `agents/akali/` reference (either scaffold the directory or rewrite to `.claude/agents/akali.md`).
 - [ ] `agents/camille/learnings/2026-04-18-billing-block-failure-signature.md` — remove or retarget `architecture/operability.md` reference.
 - [ ] `agents/ekko/learnings/2026-04-19-orianna-o4-memory-audit.md` + `agents/orianna/learnings/2026-04-19-o4-tdd-stale-seed.md` — mark `scripts/migrate-hetzner-to-gce.sh` as speculative or remove.
-- [ ] `agents/evelynn/learnings/2026-04-08-roster-vs-harness-reality.md` — fix `agents/roster.md` → `agents/memory/agent-network.md`; fix `.claude/agents/poppy.md` → `.claude/agents/_retired/poppy.md`.
+- [ ] `agents/evelynn/learnings/2026-04-08-roster-vs-harness-reality.md` — fix `agents/roster.md` → `agents/memory/agent-network.md`; fix `.claude/agents/poppy.md` → `.claude/_retired-agents/poppy.md`.
 - [ ] `agents/evelynn/memory/evelynn.md` — replace `plans/ready/` with `plans/approved/` (or document the state explicitly if intentional).
 - [ ] `agents/evelynn/memory/last-sessions/cca80ba9.md` + `agents/kayn/learnings/2026-04-19-public-app-repo-migration-tasks.md` — resolve `scripts/hooks/check-no-hardcoded-slugs.sh` (land the hook or mark speculative).
 - [ ] `agents/evelynn/memory/last-sessions/faa8aa63.md` + `agents/evelynn/memory/sessions/faa8aa63.md` + `agents/lux/learnings/2026-04-18-shared-lib-review-checklist.md` — resolve `scripts/deploy/_lib.sh` and `scripts/deploy/functions.sh` (land the library or retarget to the deployment-pipeline plan).
