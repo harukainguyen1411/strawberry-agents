@@ -1,6 +1,6 @@
 ---
 title: Rules-to-hooks audit — which CLAUDE.md invariants can be mechanically enforced
-status: proposed
+status: approved
 owner: swain
 created: 2026-04-19
 tags: [governance, hooks, ci, enforcement, claude-md]
