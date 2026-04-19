@@ -2,6 +2,15 @@
 
 ## Sessions
 
+### 2026-04-19 — tests-dashboard task breakdown
+
+- Produced `plans/proposed/2026-04-19-tests-dashboard-tasks.md` (commit 1007c8e) from Azir's approved ADR `plans/approved/2026-04-19-tests-dashboard.md` (e97828d, Playwright amended as D4b).
+- 7 tasks + 2 ADR follow-ups + 1 hygiene + 1 optional hygiene sub-task. IDs: TD.H1, TD.H1b, TD.1, TD.1b, TD.1c, TD.2, TD.3, TD.F1, TD.F2. Five Duong-blockers (DTD-1 through DTD-5).
+- Critical path: TD.H1 → (TD.1 ∥ TD.1b ∥ TD.1c) → TD.2 → TD.3. TD.F1/TD.F2/TD.H1b parallel with everything.
+- Key calls: (a) TD.1c is conditional stub-vs-real per DTD-3; (b) gitignore hygiene promoted to its own task (Orianna flag); (c) ADR Decision rows 6 and 10 promoted to explicit follow-up tasks TD.F1 / TD.F2; (d) TD.3 bundles tokens.css creation with the SPA; (e) UI-PR Rule 16 flagged inline on TD.3.
+- OQ-A flagged to TD.2 implementer: schema-file cross-repo coupling (vendor-per-writer-with-byte-compare is the recommended default).
+- No implementer assigned (plan-writer convention, ADR handoff).
+
 ### 2026-04-19 — public app-repo migration task breakdown
 
 - Produced `plans/in-progress/2026-04-19-public-app-repo-migration-tasks.md` from Azir's approved ADR `plans/approved/2026-04-19-public-app-repo-migration.md`.
