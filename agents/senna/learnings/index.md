@@ -1,5 +1,7 @@
 # Senna learnings index
 
+- 2026-04-19-pr42-v08-post-mainmerge-reapprove.md — `accountCurrency` capture must precede TRADE_ACTIONS skip; scoped main-merge re-reviews | last_used: 2026-04-19
+
 - 2026-04-17-dependabot-lockfile-review-patterns.md — how to sanity-check lockfile diffs without line-by-line | last_used: 2026-04-18
 - 2026-04-17-preview-yml-entrypoint-gap.md — preview deploy workflow entrypoint mismatch pattern | last_used: 2026-04-17
 - 2026-04-18-always-fetch-origin-before-review.md — always `git fetch origin` before reading PR branch state | last_used: 2026-04-18
