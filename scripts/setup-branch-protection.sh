@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
-# Apply ruleset-based branch protection for a strawberry repo.
+# Apply classic branch protection for a strawberry repo.
 # Run as the repo owner / a token with Administration:write.
 #
 # Usage:
 #   bash scripts/setup-branch-protection.sh [OWNER/REPO]
 #
 #   Defaults:
-#     REPO env var, then Duongntd/strawberry (private planning repo).
+#     REPO env var, then derives from git remote origin.
 #     For strawberry-app:  bash scripts/setup-branch-protection.sh harukainguyen1411/strawberry-app
 #
-# NOTE: This script uses the Rulesets API (not classic branch protection).
-# Classic branch protection (PUT /branches/main/protection) is retired.
+# NOTE: This script uses classic branch protection (PUT /branches/main/protection).
+# Rulesets were tried and abandoned — the GitHub ruleset UI bypass is broken for the
+# `pull_request` rule type on personal repos (GitHub community discussion #113172, open
+# for ≥1 year). Even with RepositoryRole/admin bypass + bypass_mode: "always" +
+# current_user_can_bypass: "always" returned by the API, the UI merge button remained
+# blocked for `pull_request` rule type. Classic protection with enforce_admins: false
+# is the reliable workaround.
 #
-# bypass_actors: harukainguyen1411 (ID 273533031) for strawberry-app.
-#   For Duongntd/strawberry, swap in Duongntd's user ID.
-# bypass_mode: "always" — owner can merge directly without a PR.
-#   "pull_request" mode was found to block at merge time even for bypass actors
-#   (it only applies when creating/updating a PR, not at merge). See plan
-#   plans/implemented/2026-04-19-branch-protection-restore.md §Post-implementation correction.
+# Tradeoff: enforce_admins: false grants bypass to ALL admins (any admin can merge
+# without satisfying checks). Since harukainguyen1411 is currently sole admin, effective
+# access is identical to a per-user bypass. Acceptable for now; review if admin roster
+# changes.
 set -euo pipefail
 
 _derive_repo_from_remote() {
@@ -39,80 +42,52 @@ else
   }
 fi
 
-OWNER="${REPO%%/*}"
+echo "=== Apply classic branch protection: $REPO main ==="
+echo "enforce_admins: false (admin role bypass — see comment at top of script)"
 
-# bypass_actors: use RepositoryRole actor_id 5 (admin role) rather than a User actor.
-# actor_type "User" does NOT grant UI merge bypass on personal repos — GitHub silently
-# ignores it at merge time (undocumented quirk). Switching to RepositoryRole/admin
-# (actor_id 5) causes GitHub to return current_user_can_bypass: "always" and unblocks
-# the UI merge path. Security note: this grants bypass to ALL admins on the repo.
-# See plans/implemented/2026-04-19-branch-protection-restore.md §Correction #2.
-
-echo "=== Apply ruleset branch protection: $REPO main ==="
-echo "Bypass actor: RepositoryRole admin (actor_id 5, bypass_mode: always)"
-
-# Write ruleset JSON to a temp file.
-TMPFILE="$(mktemp /tmp/ruleset-XXXXXX.json)"
+# Write protection JSON to a temp file.
+TMPFILE="$(mktemp /tmp/protection-XXXXXX.json)"
 trap 'rm -f "$TMPFILE"' EXIT
 
 cat > "$TMPFILE" <<JSON
 {
-  "name": "main-branch-protection",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": {
-    "ref_name": { "include": ["refs/heads/main"], "exclude": [] }
+  "required_status_checks": {
+    "strict": true,
+    "contexts": [
+      "xfail-first check",
+      "regression-test check",
+      "unit-tests",
+      "Playwright E2E",
+      "QA report present (UI PRs)"
+    ]
   },
-  "bypass_actors": [
-    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }
-  ],
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    {
-      "type": "pull_request",
-      "parameters": {
-        "required_approving_review_count": 1,
-        "dismiss_stale_reviews_on_push": true,
-        "require_code_owner_review": false,
-        "require_last_push_approval": true,
-        "required_review_thread_resolution": true
-      }
-    },
-    {
-      "type": "required_status_checks",
-      "parameters": {
-        "strict_required_status_checks_policy": true,
-        "required_status_checks": [
-          { "context": "xfail-first check" },
-          { "context": "regression-test check" },
-          { "context": "unit-tests" },
-          { "context": "Playwright E2E" },
-          { "context": "QA report present (UI PRs)" }
-        ]
-      }
-    }
-  ]
+  "enforce_admins": false,
+  "required_pull_request_reviews": {
+    "dismiss_stale_reviews": true,
+    "require_last_push_approval": true,
+    "required_approving_review_count": 1
+  },
+  "restrictions": null,
+  "required_conversation_resolution": true,
+  "required_linear_history": false,
+  "allow_force_pushes": false,
+  "allow_deletions": false
 }
 JSON
 
-gh api "repos/$REPO/rulesets" \
-  -X POST \
+gh api "repos/$REPO/branches/main/protection" \
+  -X PUT \
   -H "Accept: application/vnd.github+json" \
   --input "$TMPFILE"
 
-echo "Done. Ruleset applied."
+echo "Done. Classic protection applied."
 
 echo ""
 echo "=== Verify ==="
-gh api "repos/$REPO/rulesets" \
-  --jq '.[] | {id, name, enforcement, target}'
+gh api "repos/$REPO/branches/main/protection" \
+  --jq '{enforce_admins:.enforce_admins.enabled, checks:.required_status_checks.contexts, reviews:.required_pull_request_reviews.required_approving_review_count}'
 
 echo ""
 echo "=== Auto-delete branches on merge (idempotent) ==="
 gh repo edit "$REPO" --delete-branch-on-merge
 echo "Done."
-
-echo ""
-echo "Classic protection endpoint (expect 404 — rulesets live separately):"
-gh api "repos/$REPO/branches/main/protection" 2>&1 || echo "  -> 404 expected (OK)"
