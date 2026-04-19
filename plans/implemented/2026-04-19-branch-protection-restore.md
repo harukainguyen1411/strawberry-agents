@@ -247,6 +247,64 @@ gh api repos/harukainguyen1411/strawberry-app/rulesets/<RULESET_ID> -X DELETE
 - **Q4 — 2FA confirmation for `harukainguyen1411`.** Required before §3.1 executes. If 2FA is off, enable it first.
 - **Q5 — Script update.** `scripts/setup-branch-protection.sh` in strawberry-app still uses the classic-protection API with `enforce_admins: true`. That conflicts with the owner-bypass goal. Should a follow-up rewrite that script to apply the ruleset above (and the executor of this recipe additionally author that rewrite), or leave the script as the break-glass "nuclear" protection and apply this ruleset separately? Recommendation: rewrite the script to apply the ruleset, deprecate the classic-protection path. The rewrite is outside this plan's scope — file a follow-up.
 
+## Post-implementation correction (2026-04-19)
+
+### What was originally applied
+
+Ekko applied the ruleset (ruleset id 15256914) with `bypass_actors[0].bypass_mode` set to `"pull_request"`, matching the wording in §5 Q2 ("if routine shepherding should still go through a PR but skip reviews/checks, change to `pull_request`"). The rest of the ruleset matched the recipe in §3 exactly.
+
+### What was observed
+
+After applying the ruleset, Duong attempted to merge a PR as `harukainguyen1411` and received:
+
+> "Merging is blocked due to pending merge requirements"
+
+No UI bypass option ("Merge without waiting for requirements to be met") appeared. The bypass actor configuration was confirmed correct (user ID 273533031, actor_type User), yet the bypass had no effect at merge time.
+
+### Root cause
+
+GitHub's `pull_request` bypass mode only applies when **creating or updating a pull request** — it allows the bypass actor to open a PR that would otherwise be blocked by rules, or push to a PR branch that would otherwise be blocked. It does **not** grant any bypass at merge time. To bypass required status checks and reviews at the point of merging, `bypass_mode: "always"` is required.
+
+Authoritative reference: https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/managing-rulesets-for-a-repository#granting-bypass-permissions-for-a-ruleset
+
+Note: the §2.3 bypass model table in this plan already correctly specified `"always"` — the discrepancy was in the script and in the executor's read of §5 Q2.
+
+### What was changed
+
+Duong authenticated as `harukainguyen1411` and issued one `gh api PUT` call to update ruleset 15256914:
+
+```bash
+gh api repos/harukainguyen1411/strawberry-app/rulesets/15256914 \
+  -X PUT \
+  -H "Accept: application/vnd.github+json" \
+  --field 'bypass_actors=[{"actor_id":273533031,"actor_type":"User","bypass_mode":"always"}]'
+```
+
+Verified `bypass_actors` field from the API response after the update:
+
+```json
+"bypass_actors": [
+  {
+    "actor_id": 273533031,
+    "actor_type": "User",
+    "bypass_mode": "always"
+  }
+]
+```
+
+Duong confirmed merging now works without being blocked.
+
+`scripts/setup-branch-protection.sh` in this repo has been updated to hardcode `bypass_mode: "always"` so future re-applications of the script are correct.
+
+### Lesson for Camille
+
+When configuring `bypass_actors` on a ruleset, always consult the GitHub docs linked above. The two modes mean:
+
+- `"pull_request"` — bypass applies **only when creating/updating a PR** (PR-level bypass).
+- `"always"` — bypass applies at **both PR creation and merge time** (full bypass).
+
+If the goal is to let the owner merge without satisfying required checks or reviews, `"always"` is the only correct value.
+
 ## 6. Non-goals
 
 - CODEOWNERS file — deferred, same reasoning as 2026-04-17 §10.
