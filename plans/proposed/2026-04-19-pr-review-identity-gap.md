@@ -77,8 +77,8 @@ Ordering is strict; each step must complete cleanly before the next.
    - Scope: `harukainguyen1411/strawberry-app` only (reviewer role does not need agent-infra access for review posting).
    - Permissions: `pull_requests: write`, `contents: read`, `metadata: read`, `issues: read`. Nothing else — no `contents: write`, no `workflows`, no `administration`.
    - Expiry: 90 days. Calendar reminder at day 80 for rotation.
-4. **Encrypt the PAT at rest.** Store under `secrets/reviewer-github-token.age`, encrypted to the existing age recipient used by `tools/decrypt.sh`. Never commit plaintext. `.gitignore` already excludes `secrets/` — confirm `.age`-encrypted files are retained per the existing secrets pipeline convention (see `secrets/` README if present, else ratify with Duong).
-5. **Add reviewer-auth helper script.** New file `scripts/reviewer-auth.sh` (POSIX-portable bash per Rule 10) that:
+4. **Encrypt the PAT at rest.** Store under `secrets/reviewer-github-token.age`, encrypted to the existing age recipient used by `tools/decrypt.sh`. Never commit plaintext. `.gitignore` already excludes `secrets/` — confirm `.age`-encrypted files are retained per the existing secrets pipeline convention (see `secrets/` README if present, else ratify with Duong). <!-- orianna: ok -->
+5. **Add reviewer-auth helper script.** New file `scripts/reviewer-auth.sh` (POSIX-portable bash per Rule 10) that: <!-- orianna: ok -->
    - Calls `tools/decrypt.sh` to surface the reviewer PAT into a child process env (`GH_TOKEN`) only — never `echo`'d, never written to disk in plaintext, per Rule 6.
    - Runs the provided `gh` subcommand under that env and exits.
    - Usage: `scripts/reviewer-auth.sh gh pr review <PR> --approve --body "— Senna"`.
@@ -97,11 +97,11 @@ Ordering is strict; each step must complete cleanly before the next.
 ## 4. Secrets & auth hygiene
 
 - **PAT scopes.** Fine-grained, single-repo (`strawberry-app`), minimum permissions (`pull_requests: write`, `contents: read`, `metadata: read`, `issues: read`). Reject any permission not explicitly required to submit a review.
-- **At rest.** `secrets/reviewer-github-token.age`, age-encrypted, gitignored. No plaintext variant anywhere on disk.
-- **In use.** `tools/decrypt.sh` invocation inside `scripts/reviewer-auth.sh` surfaces the PAT as `GH_TOKEN` into the child `gh` process env only. Never echoed, never logged, never in shell history (the script must not accept the token as an argument).
+- **At rest.** `secrets/reviewer-github-token.age`, age-encrypted, gitignored. No plaintext variant anywhere on disk. <!-- orianna: ok -->
+- **In use.** `tools/decrypt.sh` invocation inside `scripts/reviewer-auth.sh` surfaces the PAT as `GH_TOKEN` into the child `gh` process env only. Never echoed, never logged, never in shell history (the script must not accept the token as an argument). <!-- orianna: ok -->
 - **Rotation.** 90-day expiry matching the PAT. Calendar-based human task for Duong: day 80 reminder, mint replacement, re-encrypt, commit the new `.age` file. Old PAT revoked on GitHub after one successful review under the new PAT.
 - **No GitHub Secret storage.** This PAT lives in the agent-infra repo only. Don't copy it into `strawberry-app` GitHub Actions secrets — that would expose it to workflow code paths that shouldn't need it.
-- **Rule 6 compliance.** `scripts/reviewer-auth.sh` must never `cat`, `echo`, or pipe the decrypted value; only `export GH_TOKEN` inside a subshell and `exec gh "$@"`.
+- **Rule 6 compliance.** `scripts/reviewer-auth.sh` must never `cat`, `echo`, or pipe the decrypted value; only `export GH_TOKEN` inside a subshell and `exec gh "$@"`. <!-- orianna: ok -->
 - **Audit.** Every reviewer-bot review produces a GitHub API audit log entry visible to `harukainguyen1411`. Periodic (monthly) human review of reviewer-bot activity catches misuse.
 
 ## 5. Impact on existing agents
@@ -113,7 +113,7 @@ Reviewer-only change. Executors untouched.
   - `.claude/agents/lucian.md`
   - Any other `.claude/agents/*.md` whose role includes `gh pr review --approve`. Executor implementer discovers these via `grep -lE 'pr review --approve|reviewer|approval' .claude/agents/*.md`.
 - **Executor agents (no profile change, but must be explicitly told not to load the reviewer PAT).**
-  - `.claude/agents/{jayce,viktor,ekko,seraphine,yuumi,vi,akali,skarner}.md` — add a one-line boundary statement: "Do not source `scripts/reviewer-auth.sh`. This agent authenticates as `Duongntd` only."
+  - `.claude/agents/{jayce,viktor,ekko,seraphine,yuumi,vi,akali,skarner}.md` — add a one-line boundary statement: "Do not source `scripts/reviewer-auth.sh`. This agent authenticates as `Duongntd` only." <!-- orianna: ok -->
 - **Coordinator agents.** `agents/evelynn/CLAUDE.md` and `agents/camille/` profiles may reference the routing rule (executor → reviewer requires identity switch) but their own auth is unchanged.
 - **Memory files.** `agents/camille/memory/MEMORY.md` line 14 corrected per §3 step 12.
 - **No changes to `scripts/setup-agent-git-auth.sh`.** That script locks git auth to the agent token for push/pull operations on this repo; reviewer-bot only posts reviews and does not push. Leave setup-agent-git-auth alone.
