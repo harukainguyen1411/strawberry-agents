@@ -14,6 +14,16 @@ tools:
   - Agent
   - WebSearch
   - WebFetch
+  - Skill
+  - mcp__discord__discord_login
+  - mcp__discord__discord_create_text_channel
+  - mcp__discord__discord_create_category
+  - mcp__discord__discord_create_webhook
+  - mcp__discord__discord_edit_webhook
+  - mcp__discord__discord_send_webhook_message
+  - mcp__discord__discord_get_server_info
+  - mcp__discord__discord_send
+  - mcp__discord__discord_read_messages
 ---
 
 # Ekko — Quick Task Agent
