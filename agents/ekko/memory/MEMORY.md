@@ -35,6 +35,11 @@
 - `orianna-fact-check.sh` picks "latest" report by alphabetical glob order, not mtime. If Orianna writes a report with a lexicographically earlier timestamp than a stale previous report, the stale one wins and causes a false block exit. Workaround: delete the stale report before re-running promotion.
 - For Playwright Docker snapshot generation: `package.json` may declare `^1.58.0` but npm resolves to a newer patch (e.g. 1.59.1). Always match the Docker image tag to the RESOLVED version in `package-lock.json`, not the declared range. Use `mcr.microsoft.com/playwright:v<resolved>-jammy`.
 
+- 2026-04-19 (s11): reviewer identity setup — encrypted PAT at `secrets/encrypted/reviewer-github-token.age`, wrote `scripts/reviewer-auth.sh`, documented two-identity model in git-workflow.md + agent-network.md + camille memory. `reviewer-auth.sh gh api user --jq .login` returns `strawberry-reviewers`. Branch protection on strawberry-app currently ZERO (classic 404, GraphQL empty, rulesets []).
+- `tools/decrypt.sh` does NOT output plaintext to stdout. Interface: reads ciphertext from stdin, writes `KEY=val` to `--target` (must be under `secrets/`), optionally `--exec -- cmd` to exec with env. Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd` pattern.
+- `secrets/encrypted/reviewer-github-token.age` — reviewer bot PAT for strawberry-reviewers account.
+- `scripts/reviewer-auth.sh` — wraps `gh` with reviewer identity. Senna/Lucian use this for approvals.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
