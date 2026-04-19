@@ -30,6 +30,7 @@
 - 2026-04-19 (T5+T6): Built refresh-server.mjs (PR #35) and sbu.sh (PR #37) for strawberry-app. All 4 T5 tests + 3 T6 tests pass. Both PRs open against main, awaiting review.
 - 2026-04-19 (PR #35+#37 review fixes): Addressed Jhin REQUEST_CHANGES on both PRs. PR #35: added isLocalOrigin guard to GET /health, in-flight 409 guard, activeChild kill on SIGTERM, regression test 5. PR #37: replaced bare `open` with open_url() (open→xdg-open→start fallback), added liveness check after nohup, added test 4 (symlink-farm PATH isolation). Resolved merge conflict on t6 branch (force-pushed remote). Both pushed.
 - 2026-04-19 (TD.1): Built @strawberry/vitest-reporter-tests-dashboard package. xfail commit 1f98f19, impl commit 21f23f8. PR #49 open on strawberry-app. All substantive CI checks pass.
+- 2026-04-19 (TD.1 fix): Fixed nodeIdOf operator precedence bug (Jhin finding #2). Regression test bba5e62 + fix c63ddf7 pushed to chore/td1-vitest-reporter-tests-dashboard. PR #49 comment posted. Findings #1+#3 deferred to TD.2.
 
 ## Archive Note
 
