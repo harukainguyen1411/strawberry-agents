@@ -35,6 +35,7 @@
 - 2026-04-19 (kill-auto-rebase): Deleted .github/workflows/auto-rebase.yml. PR #51 on harukainguyen1411/strawberry-app open, awaiting review. Branch: chore/kill-auto-rebase-cascade, commit a301e95.
 - 2026-04-19 (P1.4 merge conflict): Resolved PR #26 merge conflicts. Only 1 of 5 listed files needed manual resolution (router/index.ts — formatting only). All 4 P1.4 vitest tests pass. Merge commit 8631802 pushed; PR now MERGEABLE.
 - 2026-04-19 (PR #48 Lucian fix): Reverted paths-ignore on e2e.yml; added internal myapps-only gate (only_myapps output + early-exit step). PR body updated. Commit 1b7e38f on chore/e2e-scope-myapps. Awaiting Senna + Lucian re-review.
+- 2026-04-19 (PR #32 V0.2 lint+gate fix): Fixed bare ternary lint errors in read-tracker + task-list routers. Restored VITE_E2E bypass in firebase/config.ts. Hardened myapps src/router/index.ts to short-circuit on non-auth routes and already-authenticated (local-mode) users. Commit 71cad12 pushed. PR comment posted.
 
 - 2026-04-19 (V0.10 Senna fixes): Fixed PR #44 critical findings — SignInView fake-success, Firestore hasOnly, useAuth dead flag. 4 fix commits (b055d02, bf6ff70, ef48fca, f7a5bec) + merge 941c50f. Pushed. PR comment posted.
 
