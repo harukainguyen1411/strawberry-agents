@@ -1,11 +1,11 @@
-# Ekko Last Session Handoff
+# Ekko Last Session — 2026-04-19 (s27)
 
 Date: 2026-04-19
 
 ## Accomplished
-- Merged PR #58 (fix/main-red-portfolio-cascade-residue) into harukainguyen1411/strawberry-app main.
-- Branch was BEHIND — merged origin/main via worktree, no conflicts. All CI checks green, APPROVED held.
-- Squash-merged via scripts/reviewer-auth.sh (run from strawberry-agents dir). Merge SHA: adbfe57.
+- Merged origin/main into PR #45 branch (feature/portfolio-v0-V0.11-csv-import-step1) — clean merge, no conflicts.
+- Post-merge SHA: 2c1c2fe. Pushed to remote.
+- All 15 CI checks passed. PR ready for reviewer pair to re-approve and merge.
 
 ## Open Threads
 - None.
