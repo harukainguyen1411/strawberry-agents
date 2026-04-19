@@ -146,3 +146,14 @@ Ephemeral runtime state in `~/.strawberry/ops/` (gitignored):
 | `~/.strawberry/ops/conversations/` | Multi-agent conversations |
 | `~/.strawberry/ops/health/` | Heartbeats, registry |
 | `~/.strawberry/ops/inbox-queue/` | Approval queue |
+
+## Agent Identity Model
+
+The system uses two GitHub identities. Executors and coordinator agents push code and open PRs as **`Duongntd`** (the agent account). Reviewer agents (Senna, Lucian) switch to the **`strawberry-reviewers`** identity when submitting approvals via `scripts/reviewer-auth.sh`. The human owner **`harukainguyen1411`** is reserved for break-glass merges only — see CLAUDE.md Rule 18.
+
+This satisfies Rule 18's non-author-reviewer requirement structurally: every PR opened by an executor (`Duongntd`) is approved by a distinct GitHub identity (`strawberry-reviewers`), so GitHub's "author cannot approve own PR" check passes.
+
+The `strawberry-reviewers` PAT is stored at `secrets/encrypted/reviewer-github-token.age` (age-encrypted, committed to repo). `scripts/reviewer-auth.sh` decrypts it via `tools/decrypt.sh` and passes `GH_TOKEN` into a child `gh` process only — never echoed, never written to a parent-shell variable, per Rule 6.
+
+Executor agents (Jayce, Viktor, Ekko, Seraphine, Yuumi, Vi, Akali, Skarner) MUST NOT source `scripts/reviewer-auth.sh` — they authenticate as `Duongntd` only.
+
