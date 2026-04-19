@@ -145,3 +145,20 @@
 **Blockers / Open threads:**
 - PR #48 needs human review + merge (Rule 18 — agents may not merge their own PRs).
 - If branch protection is enabled later with "Playwright E2E" as a required check, a thin always-runs wrapper job will be needed.
+
+---
+
+## 2026-04-19 (s10) — PR #26 p1-4-vitest-proof-of-life merge-ready
+
+**Task:** Drive PR #26 (`chore/p1-4-vitest-proof-of-life`) to merge-ready state. Branch was BEHIND + CONFLICTING, xfail-first red, two preview checks red.
+
+**What happened:**
+- `gh pr update-branch 26` failed — GitHub reported DIRTY/CONFLICTING even after Jayce's merge commit (8631802).
+- Used existing worktree at `/private/tmp/strawberry-app-p1-4-vitest` to run `git fetch origin main && git merge origin/main` manually.
+- Conflict was in `apps/myapps/functions/package.json` — PR branch had `deploy`, `test`, `test:run` scripts; main had only `serve` (deploy was intentionally removed by PR #25 review I4).
+- Resolved: kept `serve` + `test` + `test:run`, dropped `deploy`. Committed merge.
+- Pre-push TDD gate blocked push (merge commit touched `apps/myapps/functions`). Added empty TDD-Waiver commit (aec09e0).
+- Pushed. All CI checks passed: xfail-first, regression-test, unit-tests, Lint+Test+Build, Firebase Hosting PR Preview, Deploy Preview, Playwright E2E — all green.
+
+**Blockers / Open threads:**
+- PR #26 is now merge-ready (all checks green) but awaits Senna+Lucian review. Evelynn to dispatch.

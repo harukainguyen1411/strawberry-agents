@@ -1,6 +1,9 @@
-# Ekko Last Session — 2026-04-19 (s8)
+# Ekko Last Session — 2026-04-19 (s10)
 
-- Deleted ruleset 15256914 from harukainguyen1411/strawberry-app and applied classic branch protection (enforce_admins: false, 5 checks, 1 review).
-- Updated scripts/setup-branch-protection.sh to use classic PUT path; added comment explaining why rulesets were abandoned (pull_request rule type UI bypass broken on personal repos, discussion #113172).
-- Appended Correction #3 to plans/implemented/2026-04-19-branch-protection-restore.md. Committed ba1def9, pushed.
-- Open: PR #50 on strawberry-app is now stale (ruleset approach abandoned) — Duong should close it.
+## Accomplished
+- Drove PR #26 (`chore/p1-4-vitest-proof-of-life`) to merge-ready: all CI checks green.
+- Manually resolved `apps/myapps/functions/package.json` conflict (kept `test`/`test:run`, dropped `deploy`; merge via worktree since `gh pr update-branch` rejected CONFLICTING state).
+- Added empty TDD-Waiver commit (aec09e0) to satisfy pre-push TDD gate triggered by merge commit touching `apps/myapps/functions`.
+
+## Open Threads
+- PR #26 awaits Senna + Lucian review (REVIEW_REQUIRED). Evelynn to dispatch.
