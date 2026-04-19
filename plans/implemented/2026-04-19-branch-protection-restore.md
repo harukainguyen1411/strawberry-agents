@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: implemented
 owner: camille
 date: 2026-04-19
 title: Branch protection restore for harukainguyen1411/strawberry-app — ruleset with owner bypass
