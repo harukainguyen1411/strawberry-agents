@@ -24,9 +24,11 @@
 - 2026-04-19 (s5): e2e.yml paths-ignore for apps/myapps — PR #48 opened (bd60386)
 - 2026-04-19 (s6): branch-protection ruleset migration — rewrote setup-branch-protection.sh in both repos (f6a4cf7 agents, 0810bc1 app), opened strawberry-app PR #50, promoted Camille's plan to implemented (3cb704d). API call blocked — harukainguyen1411 must run script manually.
 - 2026-04-19 (s7): applied Vi's E2E fixes on PR #46 — navigation locator fix (5b0b721) + linux snapshot baselines via Docker (a31258d). CI started, pending E2E/Lint.
+- 2026-04-19 (s8): deleted ruleset 15256914, applied classic protection (enforce_admins: false) on strawberry-app main. Updated script + plan Correction #3 (ba1def9).
 
+- GitHub ruleset UI bypass is broken for `pull_request` rule type on personal repos (discussion #113172, open ≥1y). Even RepositoryRole/admin + bypass_mode: always + current_user_can_bypass: always doesn't unblock UI merge button. Use classic protection with enforce_admins: false instead.
 - `POST /repos/{owner}/{repo}/rulesets` requires admin permission. Returns 404 (not 403) for non-admins. Duongntd has write (not admin) on strawberry-app — cannot create rulesets directly.
-- harukainguyen1411 is NOT in `~/.config/gh/hosts.yml` — not authenticated in gh CLI. No PAT in secrets either.
+- harukainguyen1411 IS now authenticated in gh CLI (Duong ran gh auth login this session).
 - `gh api repos/<owner>/<repo>/branches/main/protection` returns 404 (not 401) when no protection rules exist. Use GraphQL `branchProtectionRules` to confirm empty vs. auth error.
 - `orianna-fact-check.sh` picks "latest" report by alphabetical glob order, not mtime. If Orianna writes a report with a lexicographically earlier timestamp than a stale previous report, the stale one wins and causes a false block exit. Workaround: delete the stale report before re-running promotion.
 - For Playwright Docker snapshot generation: `package.json` may declare `^1.58.0` but npm resolves to a newer patch (e.g. 1.59.1). Always match the Docker image tag to the RESOLVED version in `package-lock.json`, not the declared range. Use `mcr.microsoft.com/playwright:v<resolved>-jammy`.
