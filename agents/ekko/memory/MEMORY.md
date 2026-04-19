@@ -26,6 +26,7 @@
 - 2026-04-19 (s7): applied Vi's E2E fixes on PR #46 — navigation locator fix (5b0b721) + linux snapshot baselines via Docker (a31258d). CI started, pending E2E/Lint.
 - 2026-04-19 (s8): deleted ruleset 15256914, applied classic protection (enforce_admins: false) on strawberry-app main. Updated script + plan Correction #3 (ba1def9).
 - 2026-04-19 (s9): added TDD-Waiver empty commit (9666ace) to PR #25 — xfail-first check now passes. Remaining checks (Lint+Test+Build, unit-tests, Playwright E2E) still running at session end.
+- 2026-04-19 (s10): drove PR #26 to merge-ready — manually resolved functions/package.json conflict via worktree, added TDD-Waiver commit (aec09e0). All CI checks green. Awaits Senna+Lucian review.
 
 - GitHub ruleset UI bypass is broken for `pull_request` rule type on personal repos (discussion #113172, open ≥1y). Even RepositoryRole/admin + bypass_mode: always + current_user_can_bypass: always doesn't unblock UI merge button. Use classic protection with enforce_admins: false instead.
 - `POST /repos/{owner}/{repo}/rulesets` requires admin permission. Returns 404 (not 403) for non-admins. Duongntd has write (not admin) on strawberry-app — cannot create rulesets directly.
