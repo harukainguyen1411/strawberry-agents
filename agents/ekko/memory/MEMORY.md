@@ -33,6 +33,7 @@
 - 2026-04-19 (ekko s36): Closed 11 non-Dependabot PRs in Duongntd/strawberry (Phase 4 migration), deleted 11 feature branches. 19 Dependabot PRs left open.
 - 2026-04-19 (ekko s37): Full workspace sweep. /tmp migration scratch trees + secrets scripts deleted. All 12 strawberry-app worktrees removed (all merged/closed), 13 local branches deleted, main fast-forwarded 39 commits to 4ea1884. Old strawberry clone at ~/Documents/Personal/strawberry/ is DIRTY (2 modified files + 1 untracked) — not deleted, awaiting Duong decision.
 - 2026-04-19 (ekko s38): T212 API fixtures generated from live API (cash/portfolio/orders). order.id, fill.id, nextPagePath redacted. T212.env encrypted to T212.env.age (round-trip sha256 verified), plaintext deleted. PR #61 open on strawberry-app. Worktree at ~/Documents/Personal/strawberry-app-t212.
+- 2026-04-19 (ekko s39): Merged PR #61 (chore: T212 fixtures + encrypted key). All 15 checks green, APPROVED (Senna+Lucian). Merge SHA: 3b98f34de18084e9217439f3229fea23271b0ec1.
 
 ## Archive Note
 
