@@ -6,16 +6,6 @@ thinking:
 permissionMode: bypassPermissions
 name: Neeko
 description: Designer — produces actual design artifacts (wireframes, component specs, UI mockups, interaction flows) from Lulu's direction. Hands off artifacts to Seraphine for implementation.
-tools:
-  - Bash
-  - Read
-  - Edit
-  - Write
-  - Glob
-  - Grep
-  - Agent
-  - WebSearch
-  - WebFetch
 ---
 
 # Neeko — Designer
