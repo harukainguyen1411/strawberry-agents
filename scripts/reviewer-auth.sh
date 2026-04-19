@@ -2,8 +2,12 @@
 # scripts/reviewer-auth.sh — Run a gh subcommand as the strawberry-reviewers identity.
 #
 # Usage:
-#   scripts/reviewer-auth.sh gh pr review <PR> --approve --body "-- Senna"
+#   scripts/reviewer-auth.sh gh pr review <PR> --approve --body "-- Lucian"
+#   scripts/reviewer-auth.sh --lane senna gh pr review <PR> --approve --body "-- Senna"
 #   scripts/reviewer-auth.sh gh api user --jq .login
+#
+# --lane lucian  (default) uses reviewer-github-token.age
+# --lane senna           uses reviewer-github-token-senna.age
 #
 # Contract:
 #   - Decrypts secrets/encrypted/reviewer-github-token.age via tools/decrypt.sh
@@ -22,8 +26,29 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-AGE_FILE="$REPO_ROOT/secrets/encrypted/reviewer-github-token.age"
 DECRYPT="$REPO_ROOT/tools/decrypt.sh"
+
+# Parse optional --lane <name> flag before any other arguments.
+LANE="lucian"
+if [[ $# -ge 2 && "$1" == "--lane" ]]; then
+    LANE="$2"
+    shift 2
+fi
+
+case "$LANE" in
+    lucian)
+        AGE_FILE="$REPO_ROOT/secrets/encrypted/reviewer-github-token.age"
+        ENV_TARGET="secrets/reviewer-auth.env"
+        ;;
+    senna)
+        AGE_FILE="$REPO_ROOT/secrets/encrypted/reviewer-github-token-senna.age"
+        ENV_TARGET="secrets/reviewer-auth-senna.env"
+        ;;
+    *)
+        echo "reviewer-auth.sh: unknown lane '$LANE' (valid: lucian, senna)" >&2
+        exit 2
+        ;;
+esac
 
 if [[ ! -f "$AGE_FILE" ]]; then
     echo "reviewer-auth.sh: encrypted PAT not found at $AGE_FILE" >&2
@@ -32,7 +57,7 @@ fi
 
 if [[ $# -eq 0 ]]; then
     echo "reviewer-auth.sh: no command supplied" >&2
-    echo "Usage: $0 gh <subcommand> [args...]" >&2
+    echo "Usage: $0 [--lane <lucian|senna>] gh <subcommand> [args...]" >&2
     exit 2
 fi
 
@@ -47,6 +72,6 @@ fi
 # The --target file (mode 600, gitignored under secrets/) is a decrypt.sh
 # implementation requirement; it is not echoed or logged anywhere.
 cat "$AGE_FILE" | "$DECRYPT" \
-    --target secrets/reviewer-auth.env \
+    --target "$ENV_TARGET" \
     --var GH_TOKEN \
     --exec -- gh "$@"
