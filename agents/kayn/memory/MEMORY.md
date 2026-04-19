@@ -2,6 +2,16 @@
 
 ## Sessions
 
+### 2026-04-19 — subagent-task attribution v1 task breakdown
+
+- Produced `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution-tasks.md` (commit `29b7b62`, pushed) from Azir's ADR `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md` (being promoted to `approved/` concurrently by Ekko).
+- **4 tasks**: T0 (SubagentStop hook amendment, strawberry-agents repo) + AT.1 (subagent-scan.mjs + golden test) + AT.2 (build.sh integration + retention + sentinel GC) + AT.3 (mtime-cache incremental scan). v2 (merge.mjs + Panel 5 + toggles) explicitly out of scope.
+- Cross-repo split: T0 in `strawberry-agents` (hooks); AT.1–AT.3 in `strawberry-app`. Flagged in task-summary and risks.
+- Critical path: T0 (today) → AT.1 → {AT.2 ∥ AT.3}. Three waves, final wave half-width.
+- Key calls: (a) T0 xfail-exempt — settings-only shell-hook edit with no test harness; verification manual. (b) Sentinel-after-scan race surfaced during breakdown, not in ADR — scanner must re-check sentinel on cached-hit if prior `closed_cleanly:false`. (c) `mtimeCache ↔ retention` lockstep invariant as AT.3 test 4. (d) AT.1 must tolerate absent `agents.json` (test 8) to stay unit-testable. (e) No Duong-blockers — all 7 ADR OQs resolved inline by Duong 2026-04-19.
+- Task ID scheme: `AT.N` to avoid collision with parent usage-dashboard plan's `T1–T10`; T0 kept verbatim from ADR handoff notes.
+- No implementer assigned (plan-writer convention).
+
 ### 2026-04-19 — tests-dashboard task breakdown
 
 - Produced `plans/proposed/2026-04-19-tests-dashboard-tasks.md` (commit 1007c8e) from Azir's approved ADR `plans/approved/2026-04-19-tests-dashboard.md` (e97828d, Playwright amended as D4b).
