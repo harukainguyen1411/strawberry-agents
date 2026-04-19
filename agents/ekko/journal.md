@@ -1,5 +1,20 @@
 # Ekko Journal
 
+## 2026-04-19 — Firebase preview secret diagnosis
+
+**Task:** Diagnose why `firebaseServiceAccount` input error keeps firing on PRs #25/#26/#28 even though `FIREBASE_SERVICE_ACCOUNT` and `FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA` secrets both appear in the repo secret list.
+
+**Done:**
+- Found the two failing workflows: `preview.yml` (line 53) and `myapps-pr-preview.yml` (line 65) — both reference `${{ secrets.FIREBASE_SERVICE_ACCOUNT }}`.
+- Confirmed `FIREBASE_SERVICE_ACCOUNT` IS present in `gh secret list` (created 2026-04-18T13:18:46Z). Name match is exact.
+- Examined run logs for PR #25 run 24619343912 (Firebase Hosting PR Preview) and 24619343913 (Preview). The `with:` block logs show every other input (`repoToken`, `channelId`, `entryPoint`, `expires`) but omits `firebaseServiceAccount` entirely — the GitHub Actions runner silently drops secret inputs that resolve to empty string from the echo'd `with:` block.
+- `action-hosting-deploy@v0` calls `core.getInput('firebaseServiceAccount', {required: true})` which throws "Input required and not supplied" when value is empty.
+- Root cause: the secret NAME is correct but the VALUE stored is empty/zero-byte — likely a paste error when originally set.
+- PR #26 failures are a separate issue (lockfile desync from vitest pin change), not the service account problem.
+
+**Blockers / Open threads:**
+- Duong must re-paste the Firebase service account JSON into the `FIREBASE_SERVICE_ACCOUNT` secret on `harukainguyen1411/strawberry-app`. No workflow change needed.
+
 ## 2026-04-19 — Plan promotion: tests-dashboard ADR bypassing Orianna gate
 
 **Task:** Promote `plans/proposed/2026-04-19-tests-dashboard.md` to `plans/approved/` with Duong's explicit override of the Orianna fact-check gate.
