@@ -1,4 +1,4 @@
-# Jhin learnings index
+# Senna learnings index
 
 - 2026-04-17-dependabot-lockfile-review-patterns.md — how to sanity-check lockfile diffs without line-by-line | last_used: 2026-04-18
 - 2026-04-17-preview-yml-entrypoint-gap.md — preview deploy workflow entrypoint mismatch pattern | last_used: 2026-04-17

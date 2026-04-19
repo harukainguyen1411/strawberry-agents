@@ -10,4 +10,4 @@ Creative within constraints. Cares deeply about accessibility and motion design.
 
 ## Handoff chain
 
-Seraphine ← Neeko (design specs) / Lulu (design direction) → Jhin (PR review)
+Seraphine ← Neeko (design specs) / Lulu (design direction) → Senna + Lucian (PR review)

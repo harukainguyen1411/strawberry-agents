@@ -20,5 +20,6 @@
 | **Akali** | Sonnet | sonnet | — | QA — Playwright flow + Figma diff before PR |
 | **Skarner** | Sonnet | sonnet | — | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Ekko** | Sonnet | sonnet | low | Quick task + DevOps executor (<15min) |
-| **Jhin** | Sonnet | sonnet | low | PR reviewer |
+| **Senna** | Opus | opus | medium | PR reviewer — code quality + security |
+| **Lucian** | Opus | opus | medium | PR reviewer — plan/ADR fidelity |
 | **Yuumi** | Sonnet | sonnet | low | Evelynn's errand runner |

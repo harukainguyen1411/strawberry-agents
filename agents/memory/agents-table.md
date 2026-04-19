@@ -21,7 +21,9 @@ See `agent-network.md` for coordination rules, delegation chains, and session pr
 | **Viktor** | Sonnet | sonnet | Builder — refactoring and optimization | `.claude/agents/viktor.md` | `agents/viktor/` | active |
 | **Vi** | Sonnet | sonnet | Tester — executes Caitlyn's testing plans | `.claude/agents/vi.md` | `agents/vi/` | active |
 | **Ekko** | Sonnet | sonnet | Quick task executor — small fixes and DevOps execution | `.claude/agents/ekko.md` | `agents/ekko/` | active |
-| **Jhin** | Sonnet | sonnet | PR reviewer | `.claude/agents/jhin.md` | `agents/jhin/` | active |
+| **Senna** | Opus | opus | PR reviewer — code quality + security | `.claude/agents/senna.md` | `agents/senna/` | active |
+| **Lucian** | Opus | opus | PR reviewer — plan/ADR fidelity | `.claude/agents/lucian.md` | `agents/lucian/` | active |
+| **Jhin** | Sonnet | sonnet | PR reviewer | `.claude/agents/_retired/jhin.md` | `agents/_retired/jhin/` | retired-2026-04-19 |
 | **Seraphine** | Sonnet | sonnet | Frontend implementation — executes Neeko's design specs | `.claude/agents/seraphine.md` | `agents/seraphine/` | active |
 | **Yuumi** | Sonnet | sonnet | Evelynn's errand runner | `.claude/agents/yuumi.md` | `agents/yuumi/` | active |
 | **Skarner** | Sonnet | sonnet | Memory excavator — read-only searches | `.claude/agents/skarner.md` | `agents/skarner/` | promoted-from-haiku-2026-04-18 |
