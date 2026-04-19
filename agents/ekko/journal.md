@@ -1,5 +1,21 @@
 # Ekko Journal
 
+## 2026-04-19 — Plan promotion: tests-dashboard ADR bypassing Orianna gate
+
+**Task:** Promote `plans/proposed/2026-04-19-tests-dashboard.md` to `plans/approved/` with Duong's explicit override of the Orianna fact-check gate.
+
+**Done:**
+- Killed stale `plan-promote.sh` background processes.
+- Confirmed `plan-promote.sh` has no skip-fact-check flag (comment at line 65 says "No bypass flag. Human override: use raw git mv instead of this script.").
+- Confirmed plan has no `gdoc_id` — no Drive unpublish needed.
+- `git mv` proposed→approved, rewrote `status: proposed` → `status: approved`.
+- Committed with full bypass explanation body referencing the 11 forward-ref miscalibration.
+- Pushed to `harukainguyen1411/strawberry-agents` main. Commit: `e97828d`.
+
+**Blockers / Open threads:**
+- Orianna Track 2 redesign (forward-ref vs genuine fact error distinction) still in progress — this bypass is a one-off until that lands.
+
+
 ## 2026-04-19 — CI fix: PR body waivers + task-list/read-tracker lint
 
 **Task:** Fix CI red on PRs #29, #32, #33 (QA report linter) and pre-existing `no-unused-expressions` lint errors in sibling apps.
