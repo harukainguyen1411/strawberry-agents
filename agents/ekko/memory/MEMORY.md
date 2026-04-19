@@ -10,10 +10,13 @@
 - `secrets/encrypted/github-triage-pat.age` holds the Duongntd classic PAT (repo+workflow). Repo secret name: `AGENT_GITHUB_TOKEN` on `harukainguyen1411/strawberry-agents`.
 - Always validate a fresh PAT via `GH_TOKEN="$(cat <file>)" gh api user --jq .login` before encrypting or setting as a secret. Must return `Duongntd`.
 
-## Persistent Context — PR #25 / PR #28 (2026-04-19)
+## Persistent Context — PR #25 / #26 / #28 (2026-04-19 round 2)
 
-- PR #25 (`chore/p1-2-lib-sh-xfail`): `_lib.sh` fully implemented (26 bats tests, shellcheck clean). Lint blocker fixed — commit `1197767` on branch resolves pre-existing `no-unused-expressions` in portfolio-tracker and read-tracker router guards. CI re-running; `preview` check is also red (pre-existing composite-deploy/no-dist error, same as PR #18). Awaiting CI green + one approving review from harukainguyen1411 before merge.
-- PR #28 (`chore/p1-3-env-ciphertext`): Scope creep resolved. Branch reset to exactly 4 P1.3 files. Force-pushed. Branch may have been re-force-pushed again by another session — latest tip shown as `0ab0a2d` post my push of `858bf8a`.
+- PR #25 (`chore/p1-2-lib-sh-xfail`): Lint fixed, QA-Waiver added, main merged (conflict resolved). Remaining reds: E2E `auth-local-mode` tests (pre-existing app failure — heading not visible) + Firebase Hosting Preview (missing `FIREBASE_SERVICE_ACCOUNT` secret). Both are infra/pre-existing, not P1.2 related. CI lint+build PASS. If `Lint+Test+Build` is required, needs Duong to fix E2E or add service account secret.
+- PR #26 (`chore/p1-4-vitest-proof-of-life`): portfolio-tracker lint fixed, lockfile synced with main (rollup-linux-x64-gnu missing pkg added), vitest pin relaxed to ^4.0.18. New CI running.
+- PR #28 (`chore/p1-3-env-ciphertext`): All checks pass except Firebase Hosting Preview (missing service account secret — infra issue, Duong must add `FIREBASE_SERVICE_ACCOUNT` to repo secrets). Ready to merge once Jhin reviews (code approved already).
+- **Firebase Hosting Preview** always failing across ALL PRs: `Input required and not supplied: firebaseServiceAccount`. Root cause: `FIREBASE_SERVICE_ACCOUNT` GitHub secret not configured in `harukainguyen1411/strawberry-app`. Duong must add it via repo Settings > Secrets.
+- **E2E `auth-local-mode`**: Pre-existing failures — heading element not visible on home page. App-level bug, needs separate fix.
 
 ## Persistent Context — strawberry-app
 
