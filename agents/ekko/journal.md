@@ -45,6 +45,21 @@
 - Orianna Track 2 redesign (forward-ref vs genuine fact error distinction) still in progress — this bypass is a one-off until that lands.
 
 
+## 2026-04-19 — CI fixes: PR #25/#26/#28 firebase preview + lockfile
+
+**Task:** Fix three independent CI failures on open PRs in strawberry-app. All workflow/build bugs, not secret issues.
+
+**Done:**
+- PR #25 (`chore/p1-2-lib-sh-xfail`): `preview.yml` copied `firebase.json` to repo root but not `.firebaserc`, so firebase-tools had no project reference when `vars.FIREBASE_PROJECT_ID` is unset. Added `cp apps/myapps/.firebaserc .firebaserc` step. Commit: a303dd6.
+- PR #26 (`chore/p1-4-vitest-proof-of-life`): root `package-lock.json` had `@vitest/coverage-v8@4.1.4` but `apps/myapps/package.json` pins `4.0.18`. Ran `npm install` at repo root to regen lockfile. Commit: 99841bc.
+- PR #28 (`chore/p1-3-env-ciphertext`): `turbo --filter=...[origin/main]` skips myapps when no frontend files changed, leaving `apps/myapps/dist` absent. `composite-deploy.sh` then exits 1. Added explicit `npm run build` in `apps/myapps` before composite-deploy step. Commit: e9650bb.
+
+**Blockers / Open threads:**
+- CI runs triggered — awaiting green. No merges (per Rule 18).
+- PR #28 needed merge from remote before push (remote had forced-update commits). Merged cleanly.
+
+---
+
 ## 2026-04-19 — CI fix: PR body waivers + task-list/read-tracker lint
 
 **Task:** Fix CI red on PRs #29, #32, #33 (QA report linter) and pre-existing `no-unused-expressions` lint errors in sibling apps.
