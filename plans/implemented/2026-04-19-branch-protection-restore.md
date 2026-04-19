@@ -296,6 +296,39 @@ Duong confirmed merging now works without being blocked.
 
 `scripts/setup-branch-protection.sh` in this repo has been updated to hardcode `bypass_mode: "always"` so future re-applications of the script are correct.
 
+### Correction #2 — RepositoryRole over User
+
+**Observed symptom.** After the Correction #1 fix (`bypass_mode: "always"`), the GitHub API call for the merge attempt returned:
+
+```json
+"current_user_can_bypass": "never"
+```
+
+The UI bypass option ("Merge without waiting for requirements to be met") still did not appear.
+
+**Root cause.** `actor_type: "User"` in `bypass_actors` does not grant UI merge bypass on personal (user-owned) repos — GitHub silently ignores it at merge time in this repo type. This is an undocumented quirk specific to personal repos (as opposed to organization repos where User-type bypass actors work as expected).
+
+**Fix.** Switch the bypass actor to `actor_type: "RepositoryRole"` with `actor_id: 5` (the admin role):
+
+```bash
+gh api repos/harukainguyen1411/strawberry-app/rulesets/15256914 \
+  -X PUT \
+  -H "Accept: application/vnd.github+json" \
+  --field 'bypass_actors=[{"actor_id":5,"actor_type":"RepositoryRole","bypass_mode":"always"}]'
+```
+
+**Verified.** After the change, the API response returned:
+
+```json
+"current_user_can_bypass": "always"
+```
+
+The UI bypass path is now unblocked.
+
+**Security implication.** `actor_type: "RepositoryRole"` with the admin role grants bypass to ALL admins on the repo, not just `harukainguyen1411`. Since `harukainguyen1411` is currently the only admin, the effective access is identical today. If a second admin is ever added, they will inherit this bypass automatically. Flag for review if admin roster changes.
+
+`scripts/setup-branch-protection.sh` has been updated to use `actor_id: 5, actor_type: "RepositoryRole"` so future re-applications are correct.
+
 ### Lesson for Camille
 
 When configuring `bypass_actors` on a ruleset, always consult the GitHub docs linked above. The two modes mean:
