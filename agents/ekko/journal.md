@@ -214,3 +214,18 @@
 
 **Blockers / Open threads:**
 - Duong must encrypt and place `secrets/encrypted/reviewer-github-token-senna.age` before Senna can use `--lane senna`.
+
+---
+
+## 2026-04-19 — ekko s30: encrypt Senna reviewer PAT (Phase 2 reviewer-identity-split)
+
+**Task:** Encrypt `secrets/senna-reviewer.txt` to `secrets/encrypted/reviewer-github-token-senna.age`.
+
+**Done:**
+- Verified canonical recipient key from `agents/evelynn/memory/evelynn.md` line 34 — matches provided key `age16zn6u722syny7sywep0x4pjlqudfm6w70w492wmqa69zw2mqwujsqnxvwm`. Also confirmed same key in existing `reviewer-github-token.age` header.
+- Encrypted plaintext to `secrets/encrypted/reviewer-github-token-senna.age`. SHA256: `0f93a31f77127de23cb7b37ac0c3e6caba5ddd966da09d7d5260cd289b2e0621`.
+- Round-trip verified via `scripts/reviewer-auth.sh --lane senna gh api user --jq .login` — returned `strawberry-reviewers-2`. PASS.
+- Shredded plaintext via `rm -P secrets/senna-reviewer.txt` (macOS; `shred` not available).
+- Committed .age file: `95064e1`. Verified .gitignore allows `secrets/encrypted/*.age`.
+
+**Blockers / Open threads:** None. reviewer-identity-split Phase 2 complete.

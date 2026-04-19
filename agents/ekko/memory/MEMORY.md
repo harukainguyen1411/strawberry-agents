@@ -14,10 +14,6 @@
 
 ## Sessions
 
-- 2026-04-19 (s19): added TDD-Waiver empty commit (074e750) to PR #33 (V0.3 firestore-schema).
-- 2026-04-19 (ekko s20): PR #40 V0.6 csv-t212 — retargeted base, merged origin/main, all 15 CI checks green.
-- 2026-04-19 (ekko s21): PR #32 V0.2 + PR #43 V0.9 re-dirtied by PR #44 landing. Resolved, pushed.
-- 2026-04-19 (ekko s22): PR #32 V0.2 — removed duplicate /sign-in route, added router regression test. Pushed a53eb6c.
 - 2026-04-19 (ekko s23): PR #57 V0.7 IB CSV — merged origin/main, 4 conflicts resolved, TDD-Waiver added. All 14 CI checks green.
 - 2026-04-19 (ekko s24): PR #45 V0.11 CSV Import Step 1 — merged origin/main, 5 conflicts resolved. Pushed b985c68.
 - 2026-04-19 (ekko s25): merged PR #42 (V0.8 importCsv handler) via reviewer-auth.sh. Merge SHA: 73b9e2a.
@@ -25,6 +21,7 @@
 - 2026-04-19 (ekko s27): promoted 2 plans (stale-green-merge-gap, reviewer-identity-split) to approved via plan-promote.sh; fixed stale proposed/-path ref that Orianna gate correctly blocked.
 - 2026-04-19 (ekko s28): merged PR #45 (V0.11 CSV Import Step 1) via reviewer-auth.sh. Merge SHA: 5d026ef. Branch deleted.
 - 2026-04-19 (ekko s29): added `--lane <name>` to reviewer-auth.sh (Phase 3 reviewer-identity-split). Commit 306fed2. Default lane unchanged.
+- 2026-04-19 (ekko s30): encrypted senna PAT → reviewer-github-token-senna.age; round-trip verified strawberry-reviewers-2; shredded plaintext. Commit 95064e1.
 
 ## Archive Note
 
