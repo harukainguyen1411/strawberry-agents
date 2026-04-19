@@ -303,25 +303,36 @@ Key knobs — decisions and rationale:
   first, preserve `contexts` and `strict`, then submit — do not clobber
   the existing status-check contract.
 
-**strawberry-agents applicability.** Two-approval is applicable to
-`strawberry-agents` as well: plan PRs, script PRs, and agent-def PRs all
-benefit from the same two-lane signal. Apply the same payload. Note that
-this repo does not run the `apps/**` CI surface; if any required status
-check name differs, preserve per-repo checks under read-modify-write.
+**Scope: strawberry-app only.** This phase is applied to `strawberry-app`
+only. `strawberry-agents` is a private repo on GitHub Free, which does not
+expose classic branch-protection rules (`required_pull_request_reviews`) via
+the API — that capability requires GitHub Pro or the repo being public. The
+2-approval gate on `strawberry-agents` therefore remains agent-discipline-only
+until the repo is upgraded to Pro or goes public.
+
+### Known limitation: strawberry-agents
+
+GitHub Free does not grant access to branch-protection API endpoints for
+private repos. Attempts to apply `required_pull_request_reviews` to
+`harukainguyen1411/strawberry-agents` (private, Free tier) return a 403 or
+silently drop the rule. This was discovered during Phase 7 execution on
+2026-04-19. See ekko's learning for full details:
+`agents/ekko/learnings/2026-04-19-branch-protection-github-pro-required.md`.
+
+Until `strawberry-agents` is either made public or the org/account is upgraded
+to GitHub Pro, the two-approval gate there is enforced by agent discipline
+(Rule 18) rather than platform policy.
 
 **Order within this phase:**
 
-1. Fetch current protection payload for both repos, save to
+1. Fetch current protection payload for `strawberry-app`, save to
    `secrets/branch-protection-pre-rollout.json` (gitignored) for rollback
    reference.
-2. Apply to `strawberry-agents` first (lower blast radius — fewer in-flight
-   PRs, easier to unwind).
-3. Soak for 24h or one full review-cycle, whichever comes first.
-4. Apply to `strawberry-app`.
+2. Apply to `strawberry-app`.
 
-### Phase 6b — Duong-opens test PR (validation)
+### Phase 6b — Duong-opens test PR on strawberry-app (validation)
 
-After Phase 7 lands on a repo, Duong opens a throwaway PR and verifies:
+After Phase 7 lands on `strawberry-app`, Duong opens a throwaway PR there and verifies:
 
 - PR merge button is **blocked** with "At least 2 approving reviews required"
   until both lanes approve.
@@ -343,8 +354,9 @@ After Phase 7 lands on a repo, Duong opens a throwaway PR and verifies:
 4. Phase 3 — script change, commit with `chore:` prefix.
 5. Phase 4 — dry-run on throwaway PR. Do not proceed if any gate fails.
 6. Phase 5 — agent def updates in an Evelynn session. Commit with `chore:`.
-7. Phase 7 — apply branch-protection 2-approval gate, strawberry-agents
-   first, then strawberry-app after soak.
+7. Phase 7 — apply branch-protection 2-approval gate to strawberry-app only
+   (strawberry-agents is private on GitHub Free; branch-protection API
+   unavailable — see "Known limitation: strawberry-agents" under Phase 7).
 8. Phase 6b — Duong opens test PR to validate the gate.
 
 Do not flip live reviews to the new lane until Phase 4 is green. Do not
@@ -401,9 +413,11 @@ Fast-rollback path if the Senna lane misbehaves:
    `CHANGES_REQUESTED` then Lucian `APPROVED` within 30s. GitHub's PR
    decision must now show both states (one per reviewer) rather than
    collapsing to the later one.
-9. (Post-Phase 7) Test PR opened by Duong on each repo cannot be merged
-   until two approvals land from two **distinct** identities. Confirmed
-   under the merge-button hover-text and/or `gh pr checks`.
+9. (Post-Phase 7) Test PR opened by Duong on `strawberry-app` cannot be
+   merged until two approvals land from two **distinct** identities.
+   Confirmed under the merge-button hover-text and/or `gh pr checks`.
+   (strawberry-agents branch-protection gate not verifiable — GitHub Free
+   paywall; see "Known limitation: strawberry-agents" under Phase 7.)
 10. (Post-Phase 7) An author-push after the first approval does **not**
     dismiss it (verifies `dismiss_stale_reviews: false`).
 
@@ -431,8 +445,9 @@ Fast-rollback path if the Senna lane misbehaves:
 - [ ] Invite `strawberry-reviewers-2` to both repos; accept the invites
       (Phase 6a).
 - [ ] `age`-encrypt the PAT to the new filename; shred plaintext (Phase 2).
-- [ ] Open test PR on each repo after Phase 7 to validate 2-approval gate
-      (Phase 6b).
+- [ ] Open test PR on `strawberry-app` after Phase 7 to validate 2-approval
+      gate (Phase 6b). (strawberry-agents branch-protection not applicable —
+      GitHub Free; see Phase 7 known limitation.)
 
 All other steps (script edit, agent def edit, dry-run, commits) are
 agent-executable under Evelynn's routing.
