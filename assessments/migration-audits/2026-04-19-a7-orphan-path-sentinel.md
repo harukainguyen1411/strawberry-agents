@@ -33,7 +33,7 @@ Both queries executed at 2026-04-19 session time against live HEAD of each repo'
 
 Per plan Phase A7 "Retired-at-migration allowlist" and user brief, the following base-tree path prefixes are retired intentionally:
 
-1. `.claude/agents/_retired/` — retired agent definition files.
+1. `.claude/_retired-agents/` — retired agent definition files.
 2. `agents/_retired/` — retired agent memory, inboxes, and session files (490 files).
 3. `secrets/` — committed secrets metadata (`secrets/encrypted/*.age`, `secrets/README.md`, `secrets/recipients.txt`). Excluded from both public repos per ADR §2.3.
 
