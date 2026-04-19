@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: kayn
 date: 2026-04-19
 parent_adr: plans/approved/2026-04-19-usage-dashboard-subagent-task-attribution.md
