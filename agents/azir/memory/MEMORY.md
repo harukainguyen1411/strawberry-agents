@@ -1,10 +1,9 @@
 # Azir (Architecture Specialist — migrated from swain 2026-04-17)
 
 ## Sessions
+- 2026-04-19 (azir, PR #49 review): Architectural review of TD.1 Vitest reporter on `harukainguyen1411/strawberry-app`. Verdict comment (non-blocking approve-with-followups). Flagged: retention-drop-vs-archive-spill diverges from ADR D10 (TD.2 scope question); TD.H1 gitignore not yet landed; cross-repo schema path in xfail test; shared-helper duplication risk for TD.1b. Schema parity + atomic-write + peerDep pin + Rule-12 ordering all upheld.
 - 2026-04-19 (azir, late): Amended subagent-attribution ADR — folded Duong's 7 resolutions inline (Resolved-2026-04-19 annotations), added D9 for `closed_cleanly` + SubagentStop hook sentinel persistence into `~/.claude/strawberry-usage-cache/subagent-sentinels/`, then split into v1 capture / v2 dashboard phases with explicit accepted-risk note. Commits `61bef3b`, `a4265f0`. Stays in proposed/.
 - 2026-04-19 (azir): Per-subagent-per-task attribution ADR extending the usage dashboard — `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md`. Key finding: SubagentStop hook has NO usage fields (verified), but the harness already writes `subagents/agent-<id>.{jsonl,meta.json}` with full `usage` blocks + `agentType` + `description`. Chosen: scanner over `subagents/` dir on existing cron. Rejected: SubagentStop-hook-capture, end-session-sidecar. `description` field is task handle. Schema splits cache_read out of total. 7 open Qs for Duong.
-- 2026-04-19 (azir): Claude usage dashboard ADR (`a6cd887`) + subagent-attribution extension + strawberry-agents companion-migration ADR. All stayed in proposed/ for Duong review.
-
 ## Active Architecture Decisions
 - **Test dashboard (approved, partially implemented)**: One Cloud Run service, two Vite+React frontends at `dashboards/server`, `/test-dashboard`, reserved `/dashboard` for monitoring. ADR: `plans/approved/2026-04-17-test-dashboard-architecture.md`. §9 amended 2026-04-18 to drop `firebaseauth.admin` (verifyIdToken is public-JWK). §7 fail-closed on empty ALLOWED_UIDS.
 - **Three-repo split (approved + proposed)**: `strawberry-agents` (private agent brain, proposed companion ADR 2026-04-19) + `strawberry-app` (public code, approved 2026-04-19) + `Duongntd/strawberry` (archive, 90-day retention). Plans live in strawberry-agents; PRs live in strawberry-app. All three under `harukainguyen1411` for unified agent-account identity except the archive.
@@ -16,6 +15,7 @@
 - **Stale-view discipline**: always `gh api repos/.../pulls/<n> --jq '.head.sha'` before re-reviewing. Cached `gh pr view` output burned real cycles. Standing rule adopted: "architecture LGTM extends to future tips absent architectural changes."
 - **Silent-defeat classes in TDD pipeline**: vitest `exclude: ["**/*.xfail.test.ts"]` glob, `it.failing` (Playwright) vs `it.fails` (Vitest), `git add -A` contamination in shared worktree. All three seen this workstream.
 - **Firebase Admin SDK verifyIdToken needs NO IAM role** — public JWK verification. Don't grant firebaseauth.admin.
+- **PR architectural review posture (Azir)**: judge against ADR invariants only — schema contract, atomic-write contract, version pin, Rule-12 ordering, repo scope. Code-level smells (operator precedence, unused imports, dead variables) are breadcrumbs, not change requests. Use `gh pr review --comment` (not `--request-changes`) when ADR invariants hold and findings are follow-up-material. Separate blocking issues from follow-up-material explicitly so Kayn/Aphelios doesn't wait on non-blockers.
 
 ## Operational Notes
 - Fetch origin before diffing remote branches.
