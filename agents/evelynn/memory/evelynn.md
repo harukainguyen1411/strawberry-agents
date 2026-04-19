@@ -72,12 +72,50 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
-- 2026-04-11 (S37-S39): Bee MVP merged (9 PRs), autodeploy webhook, domain wiring, Cloudflare + GCP MCPs.
-- 2026-04-12 (S40, direct mode, Mac, massive session): Dark Strawberry platform built end-to-end. Branded landing page (Neeko design, "Midnight Garden" → "Warm Night"). Platform architecture 3 phases (monorepo, access control, collab/forking) designed by Swain, implemented by team. Deployment architecture (Turborepo + Changesets + per-app independent deploys) designed and implemented. 4 PRs merged (#95-#100). Bee rearchitect (GitHub issues). 3 new agents wired (Lux/Viktor/Ekko). Self-close rule updated across 14 agents. 83+ tests. CI gate. DS icon set (48 icons + Neeko chameleon). Discord configured. GCE VMs deployed (bee-worker + coder-worker). 11-agent team via TeamCreate. Biggest session to date.
-- 2026-04-14 (S42, Mac): Housekeeping + architecture. Finished incomplete Apr 13 session close. Git status cleanup (17 worktrees pruned, gitignore gaps fixed, stray files deleted). Git hygiene automation plan approved + executed (4/5 deliverables). PR #105 reviewed, fixed (all 6 findings), merged. Lux agent def fixed. Deployment pipeline architecture plan approved + visualized. Hardening plan archived.
-- 2026-04-17 (S43, Mac, direct mode): Bee storage rules fixed ({timestamp}→{ts}) + deployed. Bee function CORS added for apps.darkstrawberry.com (functions deploy blocked on missing env vars — pending Duong). Vietnamese legal doc review for Haruka delivered via inline Word comments (16 anchored, 27 verified sources, blank author) after 4 refinement passes. **Full roster mirror of secretary system** — 19→17 subagents, Neeko promoted to Opus designer + Lulu added as Opus design advisor, 12 agents retired to `_retired/` with learnings migrated into new owners. Plan implemented (`dca4831`). Scripts patched for new roster; evelynn CLAUDE.md delegation table rewritten. Push remote fixed (gh auth switch, not dead repo).
-- 2026-04-17 (S44, Mac, direct mode, evening): **Deployment pipeline phase 3.** Azir ADR written + amended 3× (full CI/CD in scope, release-please versioning, staging environment with approval gate, auto-revert on prod smoke fail, monorepo deploy isolation). Kayn breakdown → 39 tasks across Phase 1+2. Drove 5 of 6 Duong prereqs via MCP: created `myapps-b31ea-staging` + linked billing, provisioned prod+staging SAs with firebase.admin / cloudfunctions.admin / iam.serviceAccountUser, minted JSON keys, uploaded `GCP_SA_KEY_PROD` + `GCP_SA_KEY_STAGING` + `AGE_KEY` GH secrets, encrypted `BEE_SISTER_UIDS`, amended CLAUDE.md Rule 5. Duong did budgets + `budget-alerts` Pub/Sub topics in Console. Merged PRs #120 (P1.0 audit), #121 (script rename), #122 (Jhin retro review), #123 (Azir arch review), #124 (P1.1b Functions relocation to apps/myapps/functions/), #137 (P1.1c four-surface firebase.json). Single canonical `apps/myapps/firebase.json` now owns all surfaces; root firebase.json deleted. 4 CI jobs rewired with working-directory / cp-staging. Establishied review discipline: Jhin + Azir review every PR before merge. Eight Phase 1 tasks (P1.2/1.4-1.7/1.10-1.11) ready to execute next session.
-- 2026-04-18 (S47, Mac, direct mode, evening): **Public-repo migration + roster rebalance.** Opus budget cut: Azir/Kayn/Caitlyn xhigh→high, Aphelios/Neeko high→medium, Skarner→sonnet (Haiku retiring), Swain revived as sole xhigh all-rounder. Account roles corrected: harukainguyen1411=human/owner/bypass/reviewer, Duongntd=agent/collab/no-bypass/pusher. `harukainguyen1411/strawberry-app` created public, filtered+squashed at base tag `migration-base-2026-04-18` (`af2edbc0`), 17 slug refs parametrized, regression-guard hook + CI lint, branch protection w/ 5 required contexts, 16 secrets pasted, PR #18 smoke-test merged (10/11 green — 1 red is pre-existing Preview no-dist bug). `harukainguyen1411/strawberry-agents` created private but not yet pushed; A1 filter done (914 commits preserved via `--invert-paths`), tree at `/tmp/strawberry-agents-migration`. Agent-infra docs updated in Duongntd/strawberry (CLAUDE.md two-repo section, `architecture/cross-repo-workflow.md`, system-overview/git-workflow/pr-rules amended). Guard 4 allowlist extended for memory/journal/learnings/plans/architecture. New classic PAT from Duongntd, old PAT revoked. Yuumi retro fact-check caught the Firebase GitHub App bug → post-migration plan: new Sonnet agent **Orianna** (fact-checker + quarterly memory auditor) + grep-style evidence rule.
+
+## Session 2026-04-18 (S45, Mac, direct mode)
+
+Deployment pipeline stream (one of three parallel Evelynns today). Landed SessionStart hook + `agent: evelynn` config (commit `b58216d`). Merged PR #144 (memory sharding — per-session shards, boot-time consolidation, `remember:remember` bypass for Evelynn, `/end-session` frontmatter fix). Shipped PR #179 (P1.2 `scripts/deploy/_lib.sh` shared helpers — 8 functions, shellcheck-clean, re-source guard, JSONL audit log with `schema_version` + `hostname -s`, no python3 dep) — green from Jhin + Lux, awaiting Duong manual merge. Preserved misframed CI-gate TDD work at `plans/proposed/2026-04-18-future-ci-gate-tdd.md` for a future Phase 2+ task.
+
+### Delta notes for consolidation
+
+- **Working pattern:** Before framing a task for a team, grep the source-of-truth task file (`plans/in-progress/2026-04-17-deployment-pipeline-tasks.md`) for the task ID. Memory is lossy. Cost of verification is 60 seconds; cost of misframing is half a team's work.
+- **Review pairing:** Jhin (correctness) + Lux (architectural fit) in parallel is an effective two-reviewer pattern for shared-library and infra PRs. Used successfully on #144 and #179.
+- **Key infra:** `.claude/agents/evelynn.md` now exists (no model declared — uses default). `.claude/settings.json` has SessionStart hook with fresh/resume branches emitting both `additionalContext` and `systemMessage`. PR #144 changed `/end-session` to shard-on-close and `SessionStart` to consolidate-on-boot.
+
+## Session 2026-04-18 (S45, direct mode)
+
+**testing-process workstream** — TDD rules + test-dashboard Phase 1 via TeamCreate. Caitlyn as QA lead, ~16/32 tasks completed, 30+ PRs, 11 dual-green admin-merged at close. Duong chose public-repo migration over $20 Actions budget raise; Azir delivered 6-phase migration plan at `plans/proposed/2026-04-19-public-app-repo-migration.md`.
+
+**Deltas for next consolidation (fold into evelynn.md):**
+
+- **Working pattern: empirical verification before coordinator ruling.** Burned cycles yo-yo'ing on #161/#165 C2 duplicate because I ruled before Caitlyn checked ground truth. Rule going forward: when two executors deliver duplicate PRs or plausibly-conflicting implementations, delegate empirical test BEFORE ruling. Caitlyn formalized "rule of empirical verification as first move."
+
+- **Working pattern: don't extend one-off authorizations into standing rules without explicit re-auth.** Told Jayce he could author TDD-Waiver for cosmetic commits citing Duong's earlier one-off permission to Vi. Caitlyn rightly flagged that as looser than Rule 18 allows. When in doubt, kick back to Duong.
+
+- **Reviewer ground-truth protocol** (Jhin + Azir both adopted this session): `git fetch origin && git show origin/<branch>:<path>` before every review pass. Prevents stale-view phantoms. Worth embedding in Jhin/Azir agent definition system prompts.
+
+- **LGTM extension rule** (Azir formalized this session): architecture LGTM extends to future tips absent architectural changes (route semantics, auth model, data model, IAM, deploy topology, API contract). Everything else the prior LGTM carries. Reduces rescan friction; worth codifying in `architecture/review-policy.md` or reviewer prompts.
+
+- **Governance list to raise with Duong next pass:**
+  1. Rule 18 breach on #159 (zero-review admin merge with bug that broke main deploy).
+  2. pre-push-tdd.sh walks push-delta not branch-history — three incidents today with rename/docs commits falsely blocked.
+  3. GH formal review state vs comment-LGTM mismatch (#152 substantive approval via comment, not formal review).
+  4. Standing-auth TDD-Waiver precedent needs either formalization or retraction.
+
+- **Fresh-session remedy for sticky model errors** — when a reviewer (Jhin) accumulated a persistent pnpm-vs-npm phantom across 5 PRs and didn't update on contradicting evidence, spawning `jhin-fresh` with explicit ground-truth protocol cleared it immediately. Applicable generally for any agent with a sticky wrong model.
+
+## Session 2026-04-18 (S46, direct mode, Mac)
+
+Dependabot-cleanup workstream 3-of-3 under TeamCreate with camille as lead. 8 PRs merged before GitHub Actions billing hard-stopped the repo. Parked cleanly.
+
+### Delta notes for next consolidation
+
+- **Working pattern:** TeamCreate with a domain-expert lead (camille here, who authored the remediation plan) dramatically reduces coordinator load. Camille ran 5 executors, caught ekko's drift, and root-caused CI redness autonomously. Reuse for any multi-PR batch workstream.
+- **Known failure mode:** when every required check on every PR goes red simultaneously and log retrieval returns empty, cause is almost always GitHub Actions billing — not a workflow regression. Check billing FIRST. See learning `2026-04-18-ci-all-red-billing-first.md`.
+- **Invariant #18 operational reality:** agent-authored PRs are structurally blocked from two-reviewer approval because all agents share `harukainguyen1411`. GitHub refuses author==reviewer at the GraphQL level. Workaround today: Duong as second reviewer for agent-authored PRs. Dependabot-authored PRs clear normally (bot != harukainguyen1411). Long-term fix needs a second bot identity or rule carve-out.
+- **Cross-workstream parallelism gotcha:** `safe-checkout.sh` dirty-tree guard blocks worktree creation when another workstream has uncommitted files on main. Raw `git worktree add -b <branch> <path> main` is the correct escape hatch — invariant #3 compliant (it prescribes worktrees, not specifically the wrapper script).
+- **Subagent reliability calibration:** Ekko reported "batch fully wrapped" with two PRs in visibly broken state. Use Camille-equivalent verification layer for batch executors with high PR throughput.
 
 ## Feedback
 
