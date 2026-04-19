@@ -1,5 +1,19 @@
 # Ekko Journal
 
+## 2026-04-19 — Vi's E2E fixes on PR #46
+
+**Task:** Apply two E2E fixes on branch `fix/tdd-gate-enable-functions` (PR #46).
+
+**Done:**
+- Fix A: Updated `apps/myapps/e2e/navigation.spec.ts` line 69 — replaced `'MyApps'` with `'Dark Strawberry home'` to match AppHeader's actual aria-label. Committed `5b0b721`.
+- Fix B: Generated 7 linux Playwright snapshot baselines (`*-chromium-linux.png`) using Docker (`mcr.microsoft.com/playwright:v1.59.1-jammy` — matched resolved Playwright version 1.59.1 from package-lock). All 7 tests passed with `--update-snapshots`. Committed `a31258d`.
+- Pulled remote branch state first (branch had diverged — merged 9 remote commits including vitest-reporter-tests-dashboard package).
+- Pushed both commits to `origin/fix/tdd-gate-enable-functions`.
+- Posted PR comment at https://github.com/harukainguyen1411/strawberry-app/pull/46#issuecomment-4275235594.
+- CI started: xfail-first, regression-test, validate-scope, QA report, check-no-hardcoded-slugs all passing; E2E and Lint pending.
+
+**Blockers / Open threads:** None. Branch should go green on CI. Not self-merging per Rule 18.
+
 ## 2026-04-19 — pre-commit hook: Orianna bypass guard
 
 **Task:** Wire a pre-commit hook that blocks silent Orianna fact-check bypasses when a plan is moved out of `plans/proposed/` via raw `git mv`.

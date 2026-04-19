@@ -1,21 +1,11 @@
-# Ekko Last Session — 2026-04-19 (s6)
+# Ekko Last Session — 2026-04-19
 
 ## Accomplished
+- Applied Fix A to `apps/myapps/e2e/navigation.spec.ts`: locator `'MyApps'` → `'Dark Strawberry home'` (commit `5b0b721`).
+- Generated 7 linux Playwright snapshot baselines via Docker (`mcr.microsoft.com/playwright:v1.59.1-jammy`) and committed them (commit `a31258d`).
+- Pushed both commits to `fix/tdd-gate-enable-functions` (PR #46); posted PR comment at https://github.com/harukainguyen1411/strawberry-app/pull/46#issuecomment-4275235594.
 
-- Rewrote `scripts/setup-branch-protection.sh` in both strawberry-agents and strawberry-app to use GitHub Rulesets API (not classic branch protection). Committed to agents main (f6a4cf7); committed to strawberry-app worktree branch + opened PR #50 (commit 0810bc1).
-- Updated `.github/branch-protection.json` in strawberry-app to document ruleset shape; retired classic keys.
-- Promoted Camille's `2026-04-19-branch-protection-restore.md` plan from proposed to implemented (commit 3cb704d).
-
-## Blocker / Open Thread
-
-Ruleset not yet live. POST /repos/{owner}/{repo}/rulesets requires admin. Duongntd has write-only access to strawberry-app. harukainguyen1411 is not in ~/.config/gh/hosts.yml.
-
-Duong must:
-1. Merge PR #50 on strawberry-app (or harukainguyen1411 merges it)
-2. Authenticate as harukainguyen1411: gh auth login or export GH_TOKEN=<harukainguyen1411-pat>
-3. Run: bash scripts/setup-branch-protection.sh harukainguyen1411/strawberry-app
-
-Also still open from prior sessions:
-- PR #48 (chore/e2e-scope-myapps) awaits human review + merge.
-- Duong must re-paste Firebase service account JSON into FIREBASE_SERVICE_ACCOUNT secret.
-- PR #38 needs one approving review to unblock #29/#32/#33.
+## Open Threads
+- CI checks in progress — E2E and Lint were still pending at session close. Monitor PR #46 for green.
+- Not self-merging; Duong or harukainguyen1411 must approve and merge PR #46.
+- Still open from prior sessions: PR #50 (branch-protection ruleset), PR #48 (e2e-scope), PR #38, Firebase secret re-paste.
