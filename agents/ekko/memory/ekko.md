@@ -4,14 +4,13 @@
 Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead direction.
 
 ## Sessions
+- 2026-04-19 (subagent, plan-promote-bypass): Promoted tests-dashboard ADR to approved manually (Orianna gate bypassed on Duong override; no Drive doc; commit e97828d).
 - 2026-04-19 (subagent, PR-CI-round2): Fixed router lint + lockfile on PRs #25/#26; resolved PR #25 merge conflict with main; added QA-Waiver. FIREBASE_SERVICE_ACCOUNT and E2E failures are pre-existing blockers for Duong.
 - 2026-04-19 (subagent, CI-fix): Fixed QA-lint on PRs #29/#32/#33 (QA-Waiver); opened PR #38 to fix no-unused-expressions in task-list + read-tracker routers.
 - 2026-04-19 (subagent, ekko-dv0): Filed portfolio-v0 DV0 asks in assessments/; recommended reusing myapps-b31ea Firebase project; awaiting Duong on DV0-1/DV0-2/DV0-3/DV0-4.
 - 2026-04-19 (subagent, T9 Discord): Created #portfolio-digest channel + webhook on Strawberry server, restricted to Duong, encrypted webhook URL, committed + pushed.
 - 2026-04-18 (subagent, testing-process): TDD hooks + CI wiring (PR #149 merged), C2 pre-commit dashboards hook (PR #165), xfail docs (PR #175). Fixed stale-base Azir blocker on #165.
 - 2026-04-18 (subagent, dependabot B10-B14): Shipped 6 PRs (#156 B14 merged, #157 B12, #158 B13 merged, #171 B11b, #174 B11a, #176 B11). Reviewed 4 B10 action-bump PRs.
-- 2026-04-17 (subagent, B5-B7 + vitest3): vitest 2→3 on discord-relay/deploy-webhook/coder-worker. Resolved esbuild/vite Dependabot alert chain.
-- 2026-04-13: Bee Gemini intake pipeline P0+P1 (PR #105).
 
 ## Key Knowledge
 - **Raw `git worktree add -b <branch> <path> main`** bypasses safe-checkout.sh's dirty-tree guard when foreign files (other agents' edits) are blocking. Invariant-#3 compliant (still using worktree).
