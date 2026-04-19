@@ -74,7 +74,7 @@ D5 for the exception case).
 - Combining both in one agent keeps invocation semantics simple
   (plan-promote calls one gate, one report lands, one exit code).
 
-## D2. Tools: WebSearch, WebFetch, Context7 MCP; no Firecrawl v1.
+## D2. Tools: WebSearch, WebFetch, Context7 MCP, Firecrawl MCP.
 
 **Decision:** Orianna's tool list becomes:
 
@@ -87,30 +87,76 @@ tools:
   - WebSearch
   - WebFetch
   - mcp__context7__*
+  - mcp__firecrawl__*
 ```
 
-No Firecrawl in v1. No scraping or crawler-style tools.
+Firecrawl is included in v1 at Duong's direction, reversing the earlier
+"defer to v2" stance. The motivating gap: WebFetch's HTML-to-markdown path
+returns empty or stubbed markup for JavaScript-rendered docs sites
+(single-page-app docs portals, version switchers that hydrate client-side,
+vendor marketing pages behind heavy React/Vue shells). Context7 covers the
+major indexed libraries; WebFetch covers static HTML/markdown docs;
+Firecrawl fills the middle — JS-rendered pages where a naive fetch returns
+a shell with no substantive content.
 
-**Rationale:**
+**Rationale per tool:**
 
-- **WebSearch** — broad freshness queries ("is X deprecated as of 2026",
-  "latest stable version of Y", vendor announcement pages). Cheap, fast,
-  already allow-listed in the harness.
-- **WebFetch** — read a specific docs URL cited in the plan and check for
-  deprecation banners, 404s, redirects to sunset pages. Load-bearing: this
-  is how she verifies an author-cited link still resolves to what the author
-  thought it resolved to.
 - **Context7** (`plugin:context7:context7`) — the MCP server Duong's harness
   already advertises as the correct tool for "current documentation … for a
-  library, framework, SDK, API, CLI tool, or cloud service." This is a
-  perfect fit: it returns version-pinned docs for the exact library name in
-  the plan. Preferred over WebSearch for any named library / SDK /
-  framework.
-- **Firecrawl / general web crawler** — rejected for v1. Too open-ended,
-  too expensive, and Context7 + WebFetch cover the supervised cases.
-  Revisit in v2 if a class of external claim recurs that neither tool
-  handles (e.g., cloud-console-only features with no indexable docs).
+  library, framework, SDK, API, CLI tool, or cloud service." Returns
+  version-pinned docs for the exact library name in the plan. Preferred
+  over every other tool for any named library / SDK / framework because
+  it's authoritative, structured, and cheap per signal.
+- **WebFetch** — read a specific docs URL cited in the plan and check for
+  deprecation banners, 404s, redirects to sunset pages. Works well for
+  static HTML / server-rendered markdown (MDN, most vendor docs with
+  pre-rendered content, RFC-style pages). Cheap, one round-trip.
+- **Firecrawl** — the JS-rendered fallback. Use when a cited URL returns
+  empty/stubbed markup via WebFetch (SPA docs portals, client-side-
+  hydrated version switchers, Next.js app-dir docs with streaming payloads
+  that don't render on a plain GET, vendor console pages behind React
+  shells). Also the right tool for "is this library's landing page still
+  up" checks where the content only exists after hydration. Higher cost
+  per call than WebFetch, so never the first choice — only invoked when
+  WebFetch explicitly reports thin or empty content (see routing below).
+- **WebSearch** — broad freshness discovery ("is X deprecated as of 2026",
+  "latest stable version of Y", finding the current canonical URL for a
+  rebranded service). Last resort when the claim has no pinned URL and no
+  resolvable library name. Cheap per call but noisy; ranked snippets, not
+  authoritative docs.
 - Read/Glob/Grep/Bash retained for Phase 1.
+
+**Phase 2 routing order (cost + coverage):**
+
+For any B3 claim, Orianna tries tools in this order, stopping at the
+first that produces a decisive verdict:
+
+1. **Context7 first** — if the claim references a named library / SDK /
+   framework / CLI / cloud service that Context7 indexes. Cheapest per
+   signal, highest authority (version-pinned structured docs), and the
+   harness recommends it for exactly this case. A clean `@deprecated` or
+   "removed in version N" from Context7 short-circuits everything else.
+2. **WebFetch second** — if the claim cites a specific URL (or Context7
+   resolved the library to a canonical docs URL worth spot-checking). One
+   cheap round-trip, good for deprecation banners and sunset redirects on
+   static/server-rendered pages.
+3. **Firecrawl third** — only when WebFetch returns empty, thin, or
+   clearly-stub markup (below a length/selector threshold determined by
+   the implementer ADR). This catches JS-rendered docs that WebFetch
+   can't read. Higher cost, so gated behind an explicit WebFetch-was-
+   insufficient signal rather than run speculatively.
+4. **WebSearch last** — discovery only, when the claim has no URL and no
+   library Context7 recognizes. Ranked snippets feed back into steps 1–3
+   (e.g., search surfaces a canonical URL, then WebFetch or Firecrawl
+   reads it). Never the primary verdict source; always a pointer.
+
+Motivation: Context7 is cheap and authoritative, so always first.
+WebFetch is cheap and sufficient for the majority of cited URLs, so it
+precedes Firecrawl. Firecrawl is precise but expensive, so it's reserved
+for the WebFetch-failed subset. WebSearch is cheap but unstructured, so
+it only runs when nothing else has a direct path. This ordering
+minimizes per-claim cost while maximizing coverage — the expensive tool
+runs only when the cheap tools have demonstrably fallen short.
 
 ## D3. Claim routing: three buckets, contract-driven.
 
@@ -121,7 +167,7 @@ routing table that classifies every extracted token into exactly one of:
 |---|---|---|
 | **B1 — current-state internal** | Phase 1 grep/ls against repo checkout (existing v1 behavior) | `scripts/plan-promote.sh`, `apps/bee/server.ts` |
 | **B2 — forward-ref / planned artifact** | Skip check. Must be marked with "Proposed:", "Will:", "In a future phase:", or sit under an H2/H3 section titled `Proposed`, `Design`, `Plan`, or `Will build` | `apps/newservice/index.ts` (not yet written) |
-| **B3 — external reference** | Phase 2 web-verify via Context7 → WebFetch → WebSearch (in that order of preference) | Anthropic SDK method names, Firebase CLI flags, Next.js 15 APIs, Figma MCP tool names, vendor docs URLs |
+| **B3 — external reference** | Phase 2 web-verify via Context7 → WebFetch → Firecrawl → WebSearch (in that order of preference; see D2) | Anthropic SDK method names, Firebase CLI flags, Next.js 15 APIs, Figma MCP tool names, vendor docs URLs |
 
 **Classifier rules (in order, first match wins):**
 
@@ -242,12 +288,27 @@ of `.claude/agents/orianna.md`; it now applies to *external* anchors too
 
 1. **Scope by extraction.** Only tokens the contract classifies as B3
    trigger web calls. Prose narrative and in-repo paths do not.
-2. **Prefer Context7 over WebSearch.** Context7 calls are cheaper per
-   signal (structured doc lookup) than a generic WebSearch + multi-fetch
-   crawl. Routing order: Context7 → WebFetch for explicit URLs → WebSearch
-   for unresolved bare names. One tool call per claim in the common case.
+2. **Prefer Context7, then WebFetch, then Firecrawl, then WebSearch.**
+   Context7 calls are cheaper per signal (structured doc lookup) than a
+   generic fetch-and-scan. Routing order per D2: Context7 for named
+   libraries → WebFetch for explicit URLs → Firecrawl only when WebFetch
+   returned empty/stub markup on a JS-rendered page → WebSearch for
+   unresolved bare names. One tool call per claim in the common case;
+   Firecrawl is a conditional escalation, not a default.
 3. **Per-plan budget cap.** A configurable cap (v1 default: **20 web
-   calls per plan**, env var `ORIANNA_FRESHNESS_BUDGET`). If exceeded, the
+   calls per plan**, env var `ORIANNA_FRESHNESS_BUDGET`). The 20-check
+   default still holds — the unit remains "one outbound call to any of
+   Context7 / WebFetch / Firecrawl / WebSearch," counted uniformly. A
+   Firecrawl invocation is one unit, same as a WebFetch, even though
+   Firecrawl's underlying cost (both dollars and latency) is higher. The
+   budget is a call-count ceiling, not a dollar ceiling — the routing
+   order in D2 already keeps the expensive tool rare by gating it behind
+   a WebFetch-was-insufficient signal, so the 20-call cap remains the
+   right rough-cut limit for v1. Revisit if monthly-sweep telemetry
+   shows Firecrawl consuming a disproportionate share of the budget;
+   options then include (a) a separate `ORIANNA_FIRECRAWL_BUDGET`
+   sub-cap, or (b) weighting Firecrawl calls as 2 units against the
+   main budget. Neither is needed on day one. If exceeded, the
    remaining B3 claims are emitted as **warn** findings with the note
    "budget exhausted; verify manually." Promotion is not blocked on
    budget-exhausted warns.
@@ -296,10 +357,12 @@ the exact signal Phase 2 needs. WebFetch is needed because plans cite
 specific URLs that need specific-URL verification, not a search.
 Underselling the tool set here would blunt the whole redesign.
 
-**E. Add Firecrawl / generic web crawler in v1.**
-Rejected. Covers a superset of what WebFetch does, at higher cost and
-broader attack surface. Defer until we see a concrete class of claim
-neither Context7 nor WebFetch handles.
+**E. ~~Add Firecrawl / generic web crawler in v1.~~ — accepted, see D2.**
+Previously rejected on cost and scope grounds. Reversed at Duong's
+direction: Firecrawl is now in the v1 tool set as the JS-rendered docs
+fallback, gated behind WebFetch-was-insufficient so the higher per-call
+cost is only paid when the cheaper path demonstrably fails. Routing
+order and budget treatment are specified in D2 and D7.
 
 **F. Make Phase 2 advisory-only (warn, never block).**
 Rejected. The whole point of Orianna is a closed-loop gate. Advisory-only
