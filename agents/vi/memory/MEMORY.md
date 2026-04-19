@@ -22,11 +22,13 @@
 
 - [PR #26 round 2 fixes](../learnings/2026-04-19-pr26-round2-fixes.md) — permission-denied test accessed wrong branch (makeRequest(undefined) hits unauthenticated, not permission-denied); lockfile drift requires deleting lockfile + overrides in root package.json; lint-staged can revert JSON edits during commit — use Write tool + verify staged diff before committing
 - [Playwright usage-dashboard E2E](../learnings/2026-04-19-playwright-usage-dashboard-e2e.md) — Tailwind flex overrides hidden attr (use toHaveAttribute not toBeHidden); health probe race (wait >300ms); fixture expiry horizon; npx serve for static webServer; worktree needs npm install
+- [e2e.yml Firebase boot regression](../learnings/2026-04-19-e2e-workflow-firebase-boot.md) — missing npm ci (exit 127) + missing VITE_FIREBASE_* env vars (app blank) silently hidden until tdd.enabled set; fix: add npm ci step + secrets to run step; cross-check against sibling workflow
 
 ## Sessions
 - 2026-04-19: PR #26 round 2 — fixed misnamed permission-denied test (now calls with real UID + asserts permission-denied/not_authorized_for_bee), fixed lockfile drift (deleted lockfile, added root override vitest=4.0.18, pinned apps/myapps workspace); tip SHA ef7c188
 - 2026-04-19: T10 Playwright smoke — wrote 11-test suite for usage-dashboard static-load path; 11/11 green; found CSS ordering bug (hidden+flex); QA report filed; PR #39 open (strawberry-app)
 - 2026-04-19: P1.4 CI fix — pushed 2 unpushed commits (dfb6f49 lockfile regen + ef7c188 vitest workspace pin) + lint fix (a5be709 remove unused beforeEach); PR #26 updated with QA-Waiver; Unit Tests/TDD Gate/PR Body Linter/E2E all green; remaining failures pre-existing (rollup linux binary, portfolio-tracker lint, Firebase hosting)
+- 2026-04-19: e2e.yml Firebase boot fix — PR #46 (tdd-gate-enable-functions) exposed two pre-existing defects in e2e.yml: missing npm ci (exit 127) and missing VITE_FIREBASE_* env vars (firebase/config.ts throws → blank page → toBeVisible fails). Fixed in PR #47 (fix/e2e-workflow-npm-install).
 
 ## Archive Note
 
