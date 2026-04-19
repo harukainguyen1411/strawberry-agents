@@ -41,7 +41,7 @@ If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents
 8. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level sessions use `/end-session` (disable-model-invocation: true — Duong or Evelynn must explicitly trigger it). Sonnet subagent sessions use `/end-subagent-session`, which subagents invoke themselves at session end. Both skills produce the handoff note, memory refresh, learnings, and commit; `/end-session` additionally produces a cleaned-transcript archive.
 
 <!-- #rule-agent-model-declaration -->
-9. **Agent model selection is explicit or inherited** — every `.claude/agents/<name>.md` SHOULD declare a `model:` frontmatter field (`opus` for planners, `sonnet` for executors, `haiku` for minions — short aliases, never pinned version IDs). Omitting `model:` is permitted and means the agent inherits the session's default model at spawn time. Never use pinned version IDs.
+9. **Agent model selection is explicit or inherited** — every `.claude/agents/<name>.md` SHOULD declare a `model:` frontmatter field (`opus` for planners, `sonnet` for executors — short aliases, never pinned version IDs). Omitting `model:` is permitted and means the agent inherits the session's default model at spawn time. Haiku is retired; do not introduce new Haiku agents.
 
 <!-- #rule-posix-portable-scripts -->
 10. **Scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) MUST be POSIX-portable bash** — runnable on both macOS and Git Bash on Windows. Platform-specific affordances live under `scripts/mac/` or `scripts/windows/`.
