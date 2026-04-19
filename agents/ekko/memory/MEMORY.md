@@ -22,7 +22,10 @@
 - 2026-04-19: P1.3 env ciphertext; A4 operational surface sync; O4.1-O4.3 orianna memory-audit; PR #25/#26/#28 CI fixes; plan-promote tests-dashboard bypass; Firebase secret diagnosis; heartbeat removal (ca1ad32); plan promotions (82aee96, 8e7e794); pre-commit Orianna bypass guard hook (f19296f)
 - 2026-04-19 (s4): promoted usage-dashboard-subagent-task-attribution-tasks plan; orianna:ok annotations on 4 forward-refs; stale-report workaround applied (40050b9)
 - 2026-04-19 (s5): e2e.yml paths-ignore for apps/myapps — PR #48 opened (bd60386)
+- 2026-04-19 (s6): branch-protection ruleset migration — rewrote setup-branch-protection.sh in both repos (f6a4cf7 agents, 0810bc1 app), opened strawberry-app PR #50, promoted Camille's plan to implemented (3cb704d). API call blocked — harukainguyen1411 must run script manually.
 
+- `POST /repos/{owner}/{repo}/rulesets` requires admin permission. Returns 404 (not 403) for non-admins. Duongntd has write (not admin) on strawberry-app — cannot create rulesets directly.
+- harukainguyen1411 is NOT in `~/.config/gh/hosts.yml` — not authenticated in gh CLI. No PAT in secrets either.
 - `gh api repos/<owner>/<repo>/branches/main/protection` returns 404 (not 401) when no protection rules exist. Use GraphQL `branchProtectionRules` to confirm empty vs. auth error.
 - `orianna-fact-check.sh` picks "latest" report by alphabetical glob order, not mtime. If Orianna writes a report with a lexicographically earlier timestamp than a stale previous report, the stale one wins and causes a false block exit. Workaround: delete the stale report before re-running promotion.
 
