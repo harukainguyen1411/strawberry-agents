@@ -1,6 +1,6 @@
 ---
 title: Orianna role redesign — add external freshness check, demote grep-anchor to sanity gate
-status: proposed
+status: approved
 owner: lux
 created: 2026-04-19
 supersedes-behavior-of: plans/implemented/2026-04-19-orianna-fact-checker.md
