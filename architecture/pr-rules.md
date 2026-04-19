@@ -1,6 +1,6 @@
 # PR Rules
 
-Rules for all pull requests. Implementation PRs live in `harukainguyen1411/strawberry-app` (code). Plans commit directly to `Duongntd/strawberry` main (never via PR).
+Rules for all pull requests. Implementation PRs live in `harukainguyen1411/strawberry-app` (code). Plans commit directly to `harukainguyen1411/strawberry-agents` main (never via PR).
 
 ## Required Fields
 

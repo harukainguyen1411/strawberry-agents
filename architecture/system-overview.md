@@ -30,10 +30,10 @@ MCP servers (agent-manager, evelynn)
 
 The system spans two repositories after the 2026-04-19 two-repo split:
 
-### `Duongntd/strawberry` (private — agent infrastructure)
+### `harukainguyen1411/strawberry-agents` (private — agent infrastructure)
 
 ```
-strawberry/
+strawberry-agents/
 ├── agents/           # Agent profiles, memory, journals, learnings
 │   ├── evelynn/      # Head agent
 │   ├── azir/         # Architecture
@@ -64,7 +64,7 @@ strawberry-app/
 └── turbo.json        # Monorepo build config
 ```
 
-A third repo, `harukainguyen1411/strawberry-agents`, is planned as the long-term private home for agent infrastructure. See `plans/approved/2026-04-19-strawberry-agents-companion-migration.md`.
+The former monorepo `Duongntd/strawberry` is the read-only archive (90-day retention through 2026-07-18).
 
 ## Design Principles
 

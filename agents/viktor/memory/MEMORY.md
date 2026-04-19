@@ -25,7 +25,7 @@
 - 2026-04-18 (dependabot team): B4g PR #155 merged (vitest 2→3 in bee-worker, closes #79/#81). B4b/B4c reconciled as no-ops (plan §3.1 annotated). Stale deps/b3, deps/b4b worktrees cleaned. Day ended with GitHub Actions billing block repo-wide.
 
 ## Key Knowledge
-- **Two-repo model (as of 2026-04-19):** `Duongntd/strawberry` = private agent-infra. `harukainguyen1411/strawberry-app` = public code. `harukainguyen1411/strawberry-agents` = planned third repo. See `architecture/cross-repo-workflow.md`.
+- **Two-repo model (as of 2026-04-19):** `harukainguyen1411/strawberry-agents` = private agent-infra (this repo). `harukainguyen1411/strawberry-app` = public code. `Duongntd/strawberry` = read-only archive (90-day retention through 2026-07-18). See `architecture/cross-repo-workflow.md`.
 - **Guard 4 and architecture/ files:** `pre-commit-secrets-guard.sh` Guard 4 now excludes `architecture/*` — re-staging any architecture doc won't false-trip on Firebase config strings matching decrypted secrets.
 - Migration P2 scratch tree at `/tmp/strawberry-app-migration` — 7 commits total, top SHA `e191b77`. Ready for Phase 3 push by Caitlyn.
 - `defineString({ default: "..." })` in Firebase params: evaluated at deploy-config time, not runtime — do NOT pass `process.env.*` as default. Use `default: ""` + runtime fallback instead.

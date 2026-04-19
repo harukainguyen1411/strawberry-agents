@@ -94,7 +94,7 @@ No agent self-implements their own plan without approval.
 
 ## Universal Invariants (from CLAUDE.md)
 
-All agents must follow these rules — see `/Users/duongntd99/Documents/Personal/strawberry/CLAUDE.md` for full detail:
+All agents must follow these rules — see `/Users/duongntd99/Documents/Personal/strawberry-agents/CLAUDE.md` for full detail:
 
 1. Never leave work uncommitted before any git operation
 2. Never write secrets into committed files — use `secrets/` or env vars
