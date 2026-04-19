@@ -152,6 +152,23 @@ Executable task breakdown for the v1 phase of the subagent-task-attribution ADR.
 - CLI: `node subagent-scan.mjs` — no flags required. Optional `--cache-dir <path>` for testability (defaults to `~/.claude/strawberry-usage-cache`). Optional `--projects-dir <path>` for testability (defaults to `~/.claude/projects`).
 - Size target per ADR: "under 200 LOC. Shape mirrors `agent-scan.mjs`".
 
+**Task-label resolution** — Each scanned spawn row must include a `task_label` field with this shape:
+
+```
+task_label: {
+  source: "taskid" | "description" | "prompt-head",
+  value: "<string>"
+}
+```
+
+Resolution priority, first match wins:
+
+1. **taskid** — if the spawn's first user message starts with `[task:<id>]`, look up `<id>` in the live task store and use the task's subject. `source: "taskid"`. *(Optional convention; not enforced. Scanner should handle absence gracefully.)*
+2. **description** — if the `.meta.json` for this spawn records the Agent tool call's `description` field, use it verbatim. `source: "description"`.
+3. **prompt-head** — fall back to the first non-empty line of the spawn's first user message, trimmed to 80 chars with ellipsis if truncated. `source: "prompt-head"`.
+
+The scanner must never fail on an unresolvable task — every spawn gets a `task_label`, even if only the prompt head. Downstream UI uses `source` to show confidence.
+
 **TDD (xfail first commit)** — per CLAUDE.md rule 12, commit the test file first with `.fixme()` / `t.skip()` wrappers that reference this plan path in a comment. Second commit removes the skip and lands the implementation. Test cases:
 
 1. Golden: given fixture `agent-a142.jsonl` + `agent-a142.meta.json` + matching sentinel, scanner emits a record matching the committed golden `expected.json` byte-for-byte after `JSON.stringify(x, null, 2)`.
@@ -164,6 +181,9 @@ Executable task breakdown for the v1 phase of the subagent-task-attribution ADR.
 8. Missing `~/.claude/strawberry-usage-cache/agents.json` → scanner still runs; `parent_agent === null` on every row; no crash.
 9. JSONL with zero assistant lines (crashed spawn before first response) → row emitted with all token fields `0`, `ended_at === started_at`, `closed_cleanly` honored per sentinel.
 10. Multiple spawns under the same session dir → one row per spawn; no double-counting; ordering stable by `spawn_id` for test determinism.
+11. `task_label` taskid hit: first user message starts with `[task:abc123]` and the task store returns subject "Refactor pipeline" → `task_label.source === "taskid"` and `task_label.value === "Refactor pipeline"`.
+12. `task_label` description hit: `meta.description` is non-empty and first user message has no `[task:...]` prefix → `task_label.source === "description"` and `task_label.value` equals the description verbatim.
+13. `task_label` prompt-head fallback: `meta.description` absent and no `[task:...]` prefix → `task_label.source === "prompt-head"` and `task_label.value` equals the first non-empty line of the first user message, truncated to 80 chars with ellipsis appended when the original exceeds 80 chars.
 
 **Inputs**: any `~/.claude/projects/**/<session>/subagents/` tree on disk; `~/.claude/strawberry-usage-cache/subagent-sentinels/` (may be empty pre-T0 bake).
 **Outputs**: `~/.claude/strawberry-usage-cache/subagents.json` matching the envelope above.
@@ -172,7 +192,7 @@ Executable task breakdown for the v1 phase of the subagent-task-attribution ADR.
 - `node scripts/usage-dashboard/subagent-scan.mjs` on Duong's machine produces a `subagents.json` with >0 spawns (thousands already on disk per ADR D6).
 - `jq '.spawns | length'` > 0.
 - `jq '.spawns[] | select(.total_tokens == null)'` returns nothing (every row has numeric totals).
-- `node --test scripts/__tests__/subagent-scan.test.mjs` → all 10 tests green.
+- `node --test scripts/__tests__/subagent-scan.test.mjs` → all 13 tests green.
 
 **Parallelism**: sequential first step of v1 pipeline. Blocks AT.2 and AT.3.
 
