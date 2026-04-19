@@ -31,3 +31,4 @@
 - 2026-04-19-lane-flag-backward-compat.md — parse optional --lane before positional args; default to existing identity; per-lane --target files avoid cross-lane clobber in decrypt.sh | last_used: 2026-04-19
 - 2026-04-19-age-encrypt-key-verification.md — verify recipient key from evelynn.md + existing .age header before encrypting; round-trip verify before shredding; rm -P on macOS (no shred) | last_used: 2026-04-19
 - 2026-04-19-reviewer-lane-dry-run-pattern.md — throwaway PR pattern for validating new reviewer lanes; git worktree add bypasses safe-checkout.sh untracked guard; two-reviewer confirmation via gh pr view --json reviews | last_used: 2026-04-19
+- 2026-04-19-branch-protection-admin-required-strawberry-agents.md — Duongntd lacks admin on harukainguyen1411/strawberry-agents; branch-protection writes are Duong-manual; no prior protection exists (classic 404, rulesets 403 Pro-required) | last_used: 2026-04-19
