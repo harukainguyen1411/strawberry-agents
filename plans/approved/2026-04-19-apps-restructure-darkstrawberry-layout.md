@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 created: 2026-04-19
 slug: apps-restructure-darkstrawberry-layout
