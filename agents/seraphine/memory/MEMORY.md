@@ -83,6 +83,14 @@ Frontend developer on the test-dashboard workstream (testing-process team).
 - `it.todo` is acceptable as placeholder when Vitest not yet installed (matches A1 precedent)
 - Verify xfail file appears in test count after committing; silent parse failure = wrong API
 
+## Portfolio Tracker V0.11 (harukainguyen1411/strawberry-app)
+
+- PR #45: `feature/portfolio-v0-V0.11-csv-import-step1`
+- Tip after Senna fixes: `c8da426`
+- Worktree: `/Users/duongntd99/Documents/Personal/strawberry-app/.worktrees/portfolio-v0-V0.11-csv-import-step1`
+- Lucian approved at b985c68; Senna CHANGES_REQUESTED at b985c68; fixes pushed as c8da426
+- Awaiting Senna re-review
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
