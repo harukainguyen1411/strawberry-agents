@@ -1,11 +1,11 @@
 # Ekko Last Session — 2026-04-19
 
 ## Accomplished
-- PR #25: fixed `preview.yml` to copy `.firebaserc` alongside `firebase.json` to repo root (commit a303dd6 on `chore/p1-2-lib-sh-xfail`)
-- PR #26: regenerated root `package-lock.json` to sync `@vitest/coverage-v8` to 4.0.18 (commit 99841bc on `chore/p1-4-vitest-proof-of-life`)
-- PR #28: added explicit `npm run build` step in `apps/myapps` before `composite-deploy.sh` in `preview.yml` (commit e9650bb on `chore/p1-3-env-ciphertext`)
+- PR #25: diagnosed root cause — `firebase.json "public": "dist"` vs `composite-deploy.sh` outputting to `deploy/`
+- Fixed by adding `sed -i 's|"public": "dist"|"public": "deploy"|' firebase.json` in preview.yml (commit 4871740 on `chore/p1-2-lib-sh-xfail`)
+- All required branch-protection checks are now green on PR #25
 
 ## Open Threads
-- CI runs triggered on all three PRs — awaiting green confirmation
-- None of the PRs were merged (no reviews yet, Rule 18 compliance)
+- `E2E tests (Playwright / Chromium)` still failing — pre-existing `auth-local-mode` heading bug; NOT a required check
+- PR #25 is ready for human review + merge (Rule 18: agent cannot self-merge)
 - Prior thread still active: Duong must re-paste Firebase service account JSON into FIREBASE_SERVICE_ACCOUNT on harukainguyen1411/strawberry-app
