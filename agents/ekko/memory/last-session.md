@@ -1,11 +1,13 @@
-# Ekko Last Session — 2026-04-19 (s28)
+# Ekko Last Session — 2026-04-19 (s29)
 
 Date: 2026-04-19
 
 ## Accomplished
-- Merged PR #45 (V0.11 CSV Import Step 1, tip 2c1c2fe) via `scripts/reviewer-auth.sh` with squash + delete-branch strategy.
-- Branch `feature/portfolio-v0-V0.11-csv-import-step1` confirmed deleted (404).
-- `main` tip on harukainguyen1411/strawberry-app advanced to merge SHA `5d026ef`.
+- Implemented Phase 3 of reviewer-identity-split: `--lane <name>` flag on `scripts/reviewer-auth.sh`.
+- Default (no flag or `--lane lucian`) is fully backward compatible.
+- `--lane senna` routes to `reviewer-github-token-senna.age`; fails gracefully until secret is placed.
+- Commit `306fed2` on main.
 
 ## Open Threads
-- None.
+- Duong must encrypt Senna's GitHub PAT → `secrets/encrypted/reviewer-github-token-senna.age`.
+- Phases 4, 5, 7 of reviewer-identity-split still pending (other agents / Evelynn scope).

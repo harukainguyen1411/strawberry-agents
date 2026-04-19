@@ -195,3 +195,22 @@
 **Result:** PR #45 branch is now up-to-date with main. All CI green. Ready for reviewer pair.
 
 **Blockers / Open threads:** None.
+
+---
+
+## 2026-04-19 — ekko s29: reviewer-auth.sh --lane parameterization (Phase 3)
+
+**Task:** Implement Phase 3 of `plans/approved/2026-04-19-reviewer-identity-split.md` — add `--lane <name>` flag to `scripts/reviewer-auth.sh`.
+
+**Done:**
+- Added `--lane` parsing at top of arg section (before any other argument handling). Defaults to `lucian`.
+- `lucian` lane: existing `reviewer-github-token.age` + `secrets/reviewer-auth.env` — no behavior change.
+- `senna` lane: routes to `reviewer-github-token-senna.age` + `secrets/reviewer-auth-senna.env`.
+- Unknown lane: exits 2 with clear message listing valid options.
+- Updated header comment to document new usage forms.
+- Verified default lane: `bash scripts/reviewer-auth.sh gh auth status` → `strawberry-reviewers` logged in, exit 0.
+- Verified senna lane (secret not yet created): clear "encrypted PAT not found" error, exit 1.
+- Committed `306fed2`, pushed to main.
+
+**Blockers / Open threads:**
+- Duong must encrypt and place `secrets/encrypted/reviewer-github-token-senna.age` before Senna can use `--lane senna`.
