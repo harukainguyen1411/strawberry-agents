@@ -24,3 +24,4 @@
 - 2026-04-19-playwright-docker-version-matching.md — Docker image tag must match resolved npm version in package-lock.json (not declared range in package.json); mismatch causes browser executable not found | last_used: 2026-04-19
 - 2026-04-19-github-ruleset-pullrequest-bypass-broken.md — ruleset UI bypass is broken for pull_request rule type on personal repos (discussion #113172); use classic protection with enforce_admins: false instead | last_used: 2026-04-19
 - 2026-04-19-gh-update-branch-conflict-worktree-fallback.md — when gh pr update-branch rejects CONFLICTING branches, fall back to manual merge in worktree; TDD-Waiver empty commit needed if merge touches TDD-enabled packages | last_used: 2026-04-19
+- 2026-04-19-reviewer-auth-smoke.md — reviewer-auth.sh smoke test confirmed: strawberry-reviewers approval on Duongntd PR flips reviewDecision to APPROVED; Rule 18 structurally satisfiable | last_used: 2026-04-19
