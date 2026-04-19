@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-19
 extends: plans/approved/2026-04-19-claude-usage-dashboard.md
