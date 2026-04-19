@@ -34,7 +34,7 @@ prerequisite task IDs.
 - **Duong** — owns Phase 0 preflight (§4.0), Phase 3 step 7 Firebase binding
   cutover, Phase 3 step 8 sign-off for first-workflow red-or-green decision,
   Phase 6 purge confirmation after 7 days of stable operation.
-- **Reviewers** — **Kayn** (this planner) and **Jhin** (correctness) on
+- **Reviewers** — **Kayn** (this planner) and **Senna + Lucian** (Senna: code-quality + security; Lucian: plan/ADR fidelity) on
   every PR in both repos across the migration.
 
 Azir's §10 handoff named Ekko + Caitlyn; that allocation is overridden by
@@ -719,7 +719,7 @@ plan; Firebase GitHub App is bound to strawberry-app.
 - **Inputs:** strawberry-app main after P3.2-P3.7.
 - **Outputs:** trivial PR bumping `version` in root `package.json`; PR run
   exercises all required status checks; merged via squash-merge after Kayn +
-  Jhin review (or one-time admin-merge per ADR §8 decision 5 if CI minutes
+  Senna + Lucian review (or one-time admin-merge per ADR §8 decision 5 if CI minutes
   still 0 — this is the only sanctioned admin merge post-cutover and
   requires D7 sign-off + incident log). Staging deploy runs on merge and is
   green.
@@ -798,7 +798,7 @@ closed with a migration comment. Dependabot PRs are not replayed.
   PR body citing the original strawberry PR number and linking to the
   migration plan (`plans/approved/2026-04-19-public-app-repo-migration.md`).
   The original strawberry PR is closed (not merged) with the migration
-  comment from ADR §4.5 step 1d. Reviewers: Kayn + Jhin per team spec.
+  comment from ADR §4.5 step 1d. Reviewers: Kayn + Senna + Lucian per team spec.
 - **Acceptance gate:** satisfies **P4-G1** (mapping file
   `tasklist/migration-pr-map.md` covers every open-at-Phase-0-start
   strawberry PR), **P4-G2** (each closed strawberry PR has migration
@@ -1097,7 +1097,7 @@ by dependency.
 | T5 (end-of-day) | all hands standby | | — |
 | T5 + 7 days | — | P6.1 → P6.2 | D9 sign-off |
 
-Every PR across both repos is reviewed by **Kayn + Jhin** per team spec;
+Every PR across both repos is reviewed by **Kayn + Senna + Lucian** per team spec;
 merges happen via standard squash-merge (not `--admin`) except the
 sanctioned one-time override in P0.2 if CI minutes are still 0 (ADR §8
 decision 5 — requires D10).
@@ -1168,7 +1168,7 @@ on success (✓ = primary satisfier; F = feeds a migration-complete gate;
 
 Migration-complete gates **M-G12** (no `--admin` merge post-protection)
 and **M-G16** (no `.age` files committed to public) are system-level
-checks verified by Kayn + Jhin on review of every PR; they are not
+checks verified by Kayn + Senna + Lucian on review of every PR; they are not
 satisfied by a single task but by discipline across the whole run.
 **M-G13** (dual-tracked secrets-guard hook byte-identical) is verified
 at the moment strawberry-app receives its first hook refresh from

@@ -9,7 +9,7 @@ title: Dependabot Vulnerability Remediation — 104 open alerts across monorepo
 
 Triage and fix all open Dependabot alerts on `Duongntd/strawberry`. Snapshot taken 2026-04-17 via `gh api /repos/Duongntd/strawberry/dependabot/alerts`.
 
-This plan defines **batches, phase ordering, risk calls, and verification expectations**. It does **not** assign implementers — Viktor (upgrades), Vi (tests), and Jhin (review) pick up batches per `rule-plan-writers-no-assignment`.
+This plan defines **batches, phase ordering, risk calls, and verification expectations**. It does **not** assign implementers — Viktor (upgrades), Vi (tests), and Senna + Lucian (review) pick up batches per `rule-plan-writers-no-assignment`.
 
 ---
 
@@ -171,7 +171,7 @@ Per batch:
    - Run `npm audit --json > /tmp/audit-after.json` and diff.
    - Run the app's local test suite + typecheck + build.
 3. Vi runs the batch's owning app(s) E2E / smoke. For B4b (hono) and B8 (vite frontends), full suite mandatory.
-4. Jhin reviews the PR — focuses on `overrides` correctness and lockfile diff sanity, not full lockfile line-by-line.
+4. Senna + Lucian review the PR — Senna focuses on `overrides` correctness and lockfile diff sanity (code-quality + security); Lucian checks plan/ADR fidelity. Not full lockfile line-by-line.
 5. PR merged with `chore:` prefix per invariant 5.
 6. Dependabot alert(s) auto-close on merge; if not, manually dismiss with "fixed in #PR".
 
