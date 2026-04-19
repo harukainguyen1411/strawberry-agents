@@ -31,6 +31,7 @@
 - 2026-04-19 (s17): fixed firebase preview secret wiring — both preview workflows now reference FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA. PR #56 opened.
 - 2026-04-19 (s16): fixed tdd-gate push-event range bug — replaced GH_BEFORE with git merge-base HEAD origin/main in both xfail-first and regression-test jobs. PR #55 opened. Awaits Senna+Lucian review.
 - 2026-04-19 (s18): amended PR #56 — replaced FIREBASE_SERVICE_ACCOUNT_MYAPPS_B31EA with FIREBASE_SERVICE_ACCOUNT in both preview workflows. Pushed (merge required due to remote ahead). Comment posted. Duplicate secret deletion pending CI green.
+- 2026-04-19 (s19): added TDD-Waiver empty commit (074e750) to PR #33 (V0.3 firestore-schema). Gate was failing because xfail commits used xtest()/assertFails() Firebase patterns, not the grep-recognized patterns. All CI checks now green. Awaits Evelynn merge.
 
 - GitHub ruleset UI bypass is broken for `pull_request` rule type on personal repos (discussion #113172, open ≥1y). Even RepositoryRole/admin + bypass_mode: always + current_user_can_bypass: always doesn't unblock UI merge button. Use classic protection with enforce_admins: false instead.
 - `POST /repos/{owner}/{repo}/rulesets` requires admin permission. Returns 404 (not 403) for non-admins. Duongntd has write (not admin) on strawberry-app — cannot create rulesets directly.
