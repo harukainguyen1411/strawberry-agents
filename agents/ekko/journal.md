@@ -162,3 +162,20 @@
 
 **Blockers / Open threads:**
 - PR #26 is now merge-ready (all checks green) but awaits Senna+Lucian review. Evelynn to dispatch.
+
+---
+
+## 2026-04-19 — reviewer-auth.sh smoke test (plan §3 step 10)
+
+**Task:** Prove that `scripts/reviewer-auth.sh` posts an approval as `strawberry-reviewers` on a PR authored by `Duongntd`, flipping `reviewDecision` to `APPROVED`.
+
+**Done:**
+- Preflight: `scripts/reviewer-auth.sh gh api user --jq .login` returned `strawberry-reviewers`. PASS.
+- Created worktree on branch `smoke/reviewer-auth-test-2026-04-19`, appended blank line to `docs/delivery-pipeline-setup.md`, committed + pushed.
+- Opened draft PR #53 as `Duongntd` on `harukainguyen1411/strawberry-app`.
+- Posted `--approve` review via `scripts/reviewer-auth.sh` as `strawberry-reviewers`.
+- Queried `gh pr view 53 --json reviewDecision,reviews` — `reviewDecision: APPROVED`. PASS.
+- Closed PR without merge (`--delete-branch`). Branch and worktree cleaned up.
+- Assessment recorded at `assessments/reviewer-auth-smoke-2026-04-19.md`. Committed + pushed.
+
+**Blockers / Open threads:** None.
