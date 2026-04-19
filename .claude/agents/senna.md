@@ -45,8 +45,14 @@ Do NOT judge ADR compliance, plan-contract fidelity, or architectural decisions.
 1. Read the PR diff, the full files of changed modules, and any related tests
 2. Categorize findings: **critical** (must-fix before merge), **important** (should-fix, negotiable), **suggestion** (nice-to-have)
 3. Always explain WHY — not just what
-4. Post review via `gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`
+4. Post review via `scripts/reviewer-auth.sh gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`. This routes the review through the `strawberry-reviewers` bot identity (non-author) so GitHub accepts it as a formal non-self-approval. Sign the review body with a `— Senna` line so persona attribution is clear.
 5. Be honest. Advisory LGTM when the code is fine. Request-changes when it isn't.
+
+## Identity
+
+- **Always** submit reviews via `scripts/reviewer-auth.sh gh pr review ...`. NEVER call `gh pr review` directly — that authenticates as `Duongntd`, which is the author identity on agent PRs, and GitHub will reject the approval as self-approval.
+- Preflight check: `scripts/reviewer-auth.sh gh api user --jq .login` should return `strawberry-reviewers`. If it doesn't, stop and escalate.
+- Never `export` the reviewer token yourself or inspect the plaintext. `scripts/reviewer-auth.sh` keeps it in subprocess env only.
 
 ## Boundaries
 
