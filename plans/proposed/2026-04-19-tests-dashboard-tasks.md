@@ -90,6 +90,78 @@ confirmation Kayn must extract before implementation begins.
 
 ---
 
+## Blocker resolutions (Decided by Evelynn 2026-04-19)
+
+**DTD-1 — Vitest major pin**
+
+Grepped all non-node_modules `package.json` files in `strawberry-app`.
+Active workspace packages span majors 3 and 4; the leading edge is
+`"vitest": "^4.1.4"` (apps/coder-worker) and `"vitest": "^4.0.18"`
+(apps/myapps). Major 4 is the current stable major across the active
+surfaces.
+
+Decided by Evelynn 2026-04-19: pin the Vitest reporter peerDep to
+`"^4"`. Implementation note for TD.1: declare
+`"peerDependencies": { "vitest": "^4" }` in
+`packages/vitest-reporter-tests-dashboard/package.json`. No migration
+away from major 4 is planned in the next 6 months. DTD-1 closed.
+
+**DTD-2 — Playwright major pin**
+
+Grepped all non-node_modules `package.json` files in `strawberry-app`.
+Only one workspace (`apps/myapps`) pins `@playwright/test`, at
+`"^1.58.0"`. Major 1 is the current stable major (1.x has been the
+stable line for years; 2.0 does not exist at time of writing).
+
+Decided by Evelynn 2026-04-19: pin the Playwright reporter peerDep to
+`"^1"`. Implementation note for TD.1b: declare
+`"peerDependencies": { "@playwright/test": "^1" }` in
+`packages/playwright-reporter-tests-dashboard/package.json`. DTD-2 closed.
+
+**DTD-3 — pytest presence in either repo**
+
+Searched both `strawberry-app` and `strawberry-agents` for
+`pyproject.toml`, `requirements*.txt`, `conftest.py`, and `pytest.ini`
+(excluding `node_modules/`). Results:
+
+- `node_modules/node-gyp/gyp/pyproject.toml` — vendored node_modules, not a project test suite.
+- `node_modules/firebase-tools/templates/init/functions/python/requirements.txt` — vendored node_modules template, not a project test suite.
+- `apps/private-apps/bee-worker/tools/requirements.txt` — bee-worker internal tooling, not a pytest suite under test infrastructure.
+- No `conftest.py` anywhere. No `pytest.ini` anywhere.
+
+Decided by Evelynn 2026-04-19: no pytest suite is entering either repo
+in v1. TD.1c ships as the CONDITIONAL — stub only path: add `"pytest"`
+to the `runner` enum in `tests-dashboard-data-schema.json` and add a
+README note in `strawberry-agents/schemas/README.md` describing the
+one-line patch a future pytest adopter will need. No plugin code.
+Activate the non-stub path when pytest first lands in either repo.
+DTD-3 closed.
+
+**DTD-4 — Aggregator-home split confirmation**
+
+The ADR Decision #3 specifies option (a) for the static files home and
+the architecture diagram names strawberry-agents as the aggregator
+script home. Mapping to the ADR's decisions:
+
+- D2 (aggregator): script at
+  `strawberry-agents/scripts/test-dashboard/build.sh` — confirmed.
+- D6 (static SPA): files at
+  `strawberry-app/dashboards/tests-dashboard/` — confirmed.
+
+Neither path exists yet (both are to-be-created by TD.2 and TD.3
+respectively), which is expected. The split is correct and matches the
+ADR. DTD-4 closed.
+
+**DTD-5 — Repo scope confirmation**
+
+ADR Decision row 8 already resolved this. Repo scope is:
+`harukainguyen1411/strawberry-app` + `harukainguyen1411/strawberry-agents`
+only. Archive repo `Duongntd/strawberry` and all work repos under
+`~/Documents/Work/mmp/**` are explicitly out of scope. No action
+required. DTD-5 closed (informational only, as noted in the table).
+
+---
+
 ## Task-level conventions
 
 Each task has these fields:
