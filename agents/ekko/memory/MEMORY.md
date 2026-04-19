@@ -20,6 +20,7 @@
 - 2026-04-17: Dependabot B5/B7 vitest3 upgrade
 - 2026-04-18: TDD hooks + CI wiring; Guard 4 allowlist fix; lockfile sync; ulid lockfile fix; migration dry-run + Phase 1 real run + P3.1 push + P3.9 smoke test; phase-0 PR audit; F4 age-encrypt env bundles; git hygiene sweep; statusline setup + idle-time + ci/pr/quota strip; A3 strawberry-agents push
 - 2026-04-19: P1.3 env ciphertext; A4 operational surface sync; O4.1-O4.3 orianna memory-audit; PR #25/#26/#28 CI fixes; plan-promote tests-dashboard bypass; Firebase secret diagnosis; heartbeat removal (ca1ad32); plan promotions (82aee96, 8e7e794); pre-commit Orianna bypass guard hook (f19296f)
+- 2026-04-19 (s4): promoted usage-dashboard-subagent-task-attribution-tasks plan; orianna:ok annotations on 4 forward-refs; stale-report workaround applied (40050b9)
 
 - `orianna-fact-check.sh` picks "latest" report by alphabetical glob order, not mtime. If Orianna writes a report with a lexicographically earlier timestamp than a stale previous report, the stale one wins and causes a false block exit. Workaround: delete the stale report before re-running promotion.
 
