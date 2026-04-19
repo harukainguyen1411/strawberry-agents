@@ -10,8 +10,8 @@ Documents how the three-repo model works day-to-day. See the approved migration 
 | Repo | Visibility | Purpose | Status |
 |------|------------|---------|--------|
 | `harukainguyen1411/strawberry-app` | Public | Application code: `apps/`, `dashboards/`, `.github/workflows/`, `scripts/`, build config | Active |
-| `Duongntd/strawberry` | Private | Agent infrastructure: `agents/`, `plans/`, `assessments/`, `architecture/`, `CLAUDE.md`, encrypted secrets | Active (archive candidate in 90 days post strawberry-agents migration) |
-| `harukainguyen1411/strawberry-agents` | Private | Long-term home for agent infrastructure (pending migration from `Duongntd/strawberry`) | Proposed — see `plans/approved/2026-04-19-strawberry-agents-companion-migration.md` |
+| `harukainguyen1411/strawberry-agents` | Private | Agent infrastructure: `agents/`, `plans/`, `assessments/`, `architecture/`, `CLAUDE.md`, encrypted secrets | Active |
+| `Duongntd/strawberry` | Private | Archive of pre-migration monorepo (read-only, 90-day retention through 2026-07-18) | Archive |
 
 ---
 
@@ -19,7 +19,7 @@ Documents how the three-repo model works day-to-day. See the approved migration 
 
 | Account | Type | Role |
 |---------|------|------|
-| `Duongntd` | Agent account | Pushes code commits and PRs to `strawberry-app`; commits agent-infra directly to `strawberry` main |
+| `Duongntd` | Agent account | Pushes code commits and PRs to `strawberry-app`; commits agent-infra directly to `strawberry-agents` main |
 | `harukainguyen1411` | Human account | Reviews and merges PRs in `strawberry-app`; repo owner of `strawberry-app` and `strawberry-agents` |
 
 Agents open PRs from `Duongntd`. `harukainguyen1411` approves. Agents must never merge their own PRs
@@ -29,9 +29,8 @@ Agents open PRs from `Duongntd`. `harukainguyen1411` approves. Agents must never
 
 ## Where Plans Live
 
-Plans live in `Duongntd/strawberry` under `plans/` and commit directly to `main` via `scripts/plan-promote.sh`
-(never via PR). After the strawberry-agents migration completes, plans will move to
-`harukainguyen1411/strawberry-agents`. Until then, the private `strawberry` repo is the canonical plan store.
+Plans live in `harukainguyen1411/strawberry-agents` under `plans/` and commit directly to `main` via `scripts/plan-promote.sh`
+(never via PR). The private `strawberry-agents` repo is the canonical plan store.
 
 ---
 
@@ -43,10 +42,10 @@ Plans reference code PRs via absolute URLs:
 https://github.com/harukainguyen1411/strawberry-app/pull/<N>
 ```
 
-PR bodies reference plans via absolute permalink to `strawberry` main:
+PR bodies reference plans via absolute permalink to `strawberry-agents` main:
 
 ```
-https://github.com/Duongntd/strawberry/blob/main/plans/<status>/<slug>.md
+https://github.com/harukainguyen1411/strawberry-agents/blob/main/plans/<status>/<slug>.md
 ```
 
 No file-level coupling between the two repos. Links are the only cross-repo reference.
@@ -55,7 +54,7 @@ No file-level coupling between the two repos. Links are the only cross-repo refe
 
 ## How Secrets Flow
 
-Encrypted secrets are stored in `secrets/encrypted/` inside the private `strawberry` repo
+Encrypted secrets are stored in `secrets/encrypted/` inside the private `strawberry-agents` repo
 (gitignored plaintext stays local; only `.age` blobs are committed). `strawberry-app` CI workflows
 need secrets provisioned directly as GitHub Actions secrets on `harukainguyen1411/strawberry-app`.
 
@@ -72,8 +71,8 @@ Decryption of local secrets always uses `tools/decrypt.sh` — never raw `age -d
 
 Agent sessions are scoped to one repo at a time:
 
-- Plans, memory, learnings, architecture → work in the `strawberry` checkout at
-  `~/Documents/Personal/strawberry/`.
+- Plans, memory, learnings, architecture → work in the `strawberry-agents` checkout at
+  `~/Documents/Personal/strawberry-agents/`.
 - Code changes → work in the `strawberry-app` checkout at
   `~/Documents/Personal/strawberry-app/` (checked out as a sibling worktree).
 
@@ -86,13 +85,13 @@ repo — never raw `git checkout` (CLAUDE.md rule 3, `scripts/safe-checkout.sh`)
 
 To find where a feature lives — start in plans, then look in code:
 
-1. **Find the plan:** grep `plans/` in `strawberry` for the feature keyword.
+1. **Find the plan:** grep `plans/` in `strawberry-agents` for the feature keyword.
 2. **Find the implementation:** grep `apps/` or `dashboards/` in `strawberry-app` for the same keyword.
 3. **Link from plan to PR:** plan will contain an absolute URL to the `strawberry-app` PR.
 
 Example:
 ```bash
-# In strawberry checkout:
+# In strawberry-agents checkout:
 grep -r "bee-worker" plans/
 
 # In strawberry-app checkout:
@@ -103,9 +102,9 @@ grep -r "bee-worker" apps/
 
 ## Conventions Summary
 
-1. Plans always in `strawberry` (and eventually `strawberry-agents`). PRs always in `strawberry-app`.
+1. Plans always in `strawberry-agents`. PRs always in `strawberry-app`.
 2. `Duongntd` pushes; `harukainguyen1411` reviews and merges.
 3. Secrets for CI go into `strawberry-app` GitHub Actions secrets via `gh secret set`.
-4. Encrypted local secrets live in `strawberry` (or `strawberry-agents` post-migration).
+4. Encrypted local secrets live in `strawberry-agents`.
 5. Sessions are single-repo scoped — use worktrees, not `cd`.
 6. Cross-repo references use absolute GitHub URLs only — no relative paths between repos.

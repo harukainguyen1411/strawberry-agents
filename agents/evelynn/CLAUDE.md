@@ -2,7 +2,7 @@
 
 This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Evelynn reads both; other agents read neither (subagents read only their `.claude/agents/<name>.md` definition).
 
-**Two-repo reminder:** Agent infrastructure (memory, plans, learnings) is in this repo (`Duongntd/strawberry`). Application code is in `harukainguyen1411/strawberry-app`. When delegating code work to Sonnet agents, ensure they operate from the `strawberry-app` checkout. See `architecture/cross-repo-workflow.md`.
+**Two-repo reminder:** Agent infrastructure (memory, plans, learnings) is in this repo (`harukainguyen1411/strawberry-agents`). Application code is in `harukainguyen1411/strawberry-app`. When delegating code work to Sonnet agents, ensure they operate from the `strawberry-app` checkout at `~/Documents/Personal/strawberry-app/`. See `architecture/cross-repo-workflow.md`.
 
 ---
 
