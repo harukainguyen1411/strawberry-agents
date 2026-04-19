@@ -28,6 +28,7 @@
 - 2026-04-19 (ekko s32): Phase 7 branch-protection attempt — stopped; Duongntd lacks admin on harukainguyen1411/strawberry-agents. Duong-manual step required.
 - 2026-04-19 (ekko s33): Phase 7 retry as harukainguyen1411 — 403; branch protection on private repos requires GitHub Pro. Plan blocked.
 - 2026-04-19 (ekko s34): Applied 2-approval gate to harukainguyen1411/strawberry-app main. Verified count=2, all 5 contexts preserved.
+- 2026-04-19 (ekko s35): Moved .claude/agents/_retired/ → .claude/_retired-agents/ to hide retired agents from harness scanner. Updated 3 reference files. Pushed via harukainguyen1411 reviewer PAT.
 
 ## Archive Note
 
