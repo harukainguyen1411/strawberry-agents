@@ -272,7 +272,7 @@ This task is a hard prerequisite for shipping Panel 5 with a populated `closed_c
 This ADR adds, not replaces:
 
 - **Prerequisite (T0):** amend `.claude/settings.json` SubagentStop hook to persist sentinels into `~/.claude/strawberry-usage-cache/subagent-sentinels/` (see D9).
-- New script: `scripts/usage-dashboard/subagent-scan.mjs` (lives in `strawberry-app/scripts/usage-dashboard/` per approved-plan placement).
+- New script: `scripts/usage-dashboard/subagent-scan.mjs` (lives in `strawberry-app/scripts/usage-dashboard/` per approved-plan placement). <!-- orianna: ok -->
 - New data file: `~/.claude/strawberry-usage-cache/subagents.json`.
 - New sentinel dir: `~/.claude/strawberry-usage-cache/subagent-sentinels/` (populated by the amended SubagentStop hook; read by the scanner).
 - Optional lazy data file for "show all": `~/.claude/strawberry-usage-cache/subagents-full.json` (generated on-demand when the UI toggle flips; see D5).
