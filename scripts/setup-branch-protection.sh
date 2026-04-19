@@ -41,19 +41,17 @@ fi
 
 OWNER="${REPO%%/*}"
 
-# Pick bypass actor based on repo owner.
-# harukainguyen1411 user ID 273533031 — strawberry-app owner.
-# Duongntd: fetch at runtime for the private planning repo.
-if [ "$OWNER" = "harukainguyen1411" ]; then
-  BYPASS_ACTOR_ID=273533031
-else
-  BYPASS_ACTOR_ID="$(gh api /users/Duongntd --jq '.id')"
-fi
+# bypass_actors: use RepositoryRole actor_id 5 (admin role) rather than a User actor.
+# actor_type "User" does NOT grant UI merge bypass on personal repos — GitHub silently
+# ignores it at merge time (undocumented quirk). Switching to RepositoryRole/admin
+# (actor_id 5) causes GitHub to return current_user_can_bypass: "always" and unblocks
+# the UI merge path. Security note: this grants bypass to ALL admins on the repo.
+# See plans/implemented/2026-04-19-branch-protection-restore.md §Correction #2.
 
 echo "=== Apply ruleset branch protection: $REPO main ==="
-echo "Bypass actor ID: $BYPASS_ACTOR_ID (bypass_mode: always)"
+echo "Bypass actor: RepositoryRole admin (actor_id 5, bypass_mode: always)"
 
-# Write ruleset JSON to a temp file; substitute the bypass actor ID.
+# Write ruleset JSON to a temp file.
 TMPFILE="$(mktemp /tmp/ruleset-XXXXXX.json)"
 trap 'rm -f "$TMPFILE"' EXIT
 
@@ -66,7 +64,7 @@ cat > "$TMPFILE" <<JSON
     "ref_name": { "include": ["refs/heads/main"], "exclude": [] }
   },
   "bypass_actors": [
-    { "actor_id": ${BYPASS_ACTOR_ID}, "actor_type": "User", "bypass_mode": "always" }
+    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }
   ],
   "rules": [
     { "type": "deletion" },
