@@ -22,7 +22,7 @@ A single dashboard that surfaces test-run status across the Strawberry personal 
 3. **Failure trends** — over the last N days/runs, which tests fail, which are newly failing, which are flaky.
 4. **Per-test history** — for any node ID, the last K runs' pass/fail/xfail/skip with error messages on fail.
 
-v1 scope intentionally small: **static SPA, private hosting or file://, no auth, cross-repo merged data source, two writers (pytest plugin is already proven for work; Vitest adapter is net-new for Strawberry).**
+v1 scope intentionally small: **static SPA, private hosting or file://, no auth, cross-repo merged data source, three writers (pytest plugin is already proven for work; Vitest reporter and Playwright reporter are net-new for Strawberry). Playwright E2E is a first-class v1 writer alongside Vitest/pytest — all three emit the same schema to the same `.test-dashboard/` directory.**
 
 ## Context: what we have, what we don't
 
@@ -38,7 +38,7 @@ v1 scope intentionally small: **static SPA, private hosting or file://, no auth,
 - `dashboard.html` itself — it is a session-monitoring UI over Anthropic SDK events, not a test-results view. Build test-results view from scratch with the demo-studio-v3 design tokens.
 - All auth scaffolding (multi-user SSO, CSRF, session cookies). Strawberry is personal/local; zero auth.
 
-**Gap: Strawberry's primary stack is Vitest, not pytest.** The pytest plugin cannot be reused verbatim. A new **Vitest reporter/adapter** must emit the same JSON schema the pytest plugin produces, so a single dashboard can consume both writers uniformly. Nothing in demo-studio-v3 implements this — it is net-new.
+**Gap: Strawberry's primary stacks are Vitest and Playwright, not pytest.** The pytest plugin cannot be reused verbatim. Two new writers must emit the same JSON schema the pytest plugin produces, so a single dashboard can consume all three uniformly: a **Vitest reporter/adapter** (unit/component tests) and a **Playwright reporter** (E2E browser tests). Nothing in demo-studio-v3 implements either — both are net-new. Playwright is not a v2 concern: per the deployment-pipeline plan's Rule 15, every PR runs Playwright E2E, and the dashboard must cover that signal from day one.
 
 **Relationship to the existing strawberry-app test dashboard** (`plans/approved/2026-04-17-test-dashboard-architecture.md`): that ADR scoped a Cloud Run service with a Vite+React frontend at `/test-dashboard`, with Firebase Auth (UID allow-list). It targeted a different data source (the strawberry-app session-monitoring domain) and a different hosting shape (Cloud Run + auth). This new dashboard is **sibling, not replacement** — same design tokens and ideally same `/dashboards/` hosting root, different data domain. See §7.
 
@@ -89,7 +89,7 @@ v2 path: swap the local aggregator for a GitHub Actions step that uploads `test-
 **Decision:** keep both JSON schemas (`test-results.json` for current-run snapshot, `test-run-history.json` for rolling history) exactly as demo-studio-v3 defines them, with two additive fields at the top level of each run entry:
 
 - `repo`: `"strawberry-app"` | `"strawberry-agents"` — disambiguates when both repos' runs are aggregated into one view.
-- `runner`: `"vitest"` | `"pytest"` | `"bash"` — lets the dashboard render runner-specific UI hints (e.g., `node_modules`-path stripping for Vitest, `::` parametrization parsing for pytest node IDs).
+- `runner`: `"vitest"` | `"pytest"` | `"playwright"` | `"bash"` — lets the dashboard render runner-specific UI hints (e.g., `node_modules`-path stripping for Vitest, `::` parametrization parsing for pytest node IDs, project/browser tagging and trace-viewer links for Playwright).
 
 Additive-only. No renamed keys, no type changes. This preserves drop-in compatibility with the pytest plugin as-is; that plugin gains a two-line patch to emit the new keys, nothing else.
 
@@ -128,6 +128,34 @@ Implementation shape (Kayn-facing, not an implementation task here):
 - Test strategy: fixture-based. Feed the reporter a synthetic `onFinished` payload, snapshot the emitted JSON against a golden file.
 
 **Parity contract:** the Vitest reporter's output for a given test outcome (pass/fail/xfail/xpassed/skip) MUST match, field-for-field, what the pytest plugin produces for the equivalent outcome. A shared JSON Schema file (`tests-dashboard-data-schema.json`) lives in the dashboard repo and both writers validate against it in their own test suites.
+
+### D4b. Playwright adapter — custom **Playwright reporter** (implements Playwright's `Reporter` interface), first-class v1 writer
+
+**Decision:** implement a Playwright reporter class that plugs into `playwright.config.ts`'s `reporter: [...]` array. It listens to `onTestEnd` / `onEnd` (Playwright's native Reporter API hooks) and emits `test-results.json` + `test-run-history.json` in the same schema as the Vitest reporter and the pytest plugin, into `./.test-dashboard/`. Emits with `runner: "playwright"` per D3's extended enum.
+
+**Why v1, not v2:** the deployment-pipeline plan's Rule 15 makes Playwright E2E a required check on every PR to main (`e2e.yml`). That is one of the highest-signal red/green surfaces in the system — arguably higher than Vitest unit tests, because E2E catches integration regressions that unit tests miss. A dashboard that cannot render E2E results on day one is a dashboard that cannot answer "is the app broken right now" for the most expensive-to-debug failure mode. Playwright must be first-class from v1.
+
+**Playwright version lock:** pin to the current major present in `strawberry-app/package.json` at implementation time (reader: Kayn). No planned migration in next 6 months. Same rule as the Vitest pin.
+
+**TDD gate:** the Playwright reporter package IS TDD-enabled. xfail-first per Rule 12. Same rule as the Vitest reporter.
+
+Tradeoff analysis:
+
+| Option | Pros | Cons | Verdict |
+|--------|------|------|---------|
+| **Custom Playwright reporter** | First-class access to `TestCase`, `TestResult`, attachments (screenshots, video, trace.zip), retry count, project name, browser name, error stacks with source frames. Runs in-process during the Playwright run so no extra filesystem walk. Integrates cleanly with existing `playwright.config.ts`. | Must track Playwright's Reporter API (stable in 1.x, but requires version pinning like Vitest). | **Chosen.** |
+| **Post-process `--reporter=json`** | No Playwright API dependency. Parse a single JSON blob produced by stock Playwright. | Stock JSON reporter does not preserve the history ring (would have to re-read prior `test-run-history.json` out-of-band). No native hook for atomic temp-file+rename timing. Strictly more plumbing than the custom reporter path. | Reject. |
+| **Post-process JUnit XML** | Universally supported. | Same downsides as Vitest: lossy error format, cannot distinguish `retry` from `fail`, no attachment links, no project/browser metadata. | Reject. |
+
+Implementation shape (Kayn-facing, not an implementation task here):
+
+- Package: `@strawberry/playwright-reporter-tests-dashboard` (private, local workspace in strawberry-app under `packages/playwright-reporter-tests-dashboard/`).
+- Entry: a class implementing Playwright's `Reporter` interface (exported default, module path set in `playwright.config.ts` → `reporter`). Writes atomically (temp file + rename) so partial writes never corrupt the JSON the dashboard is reading.
+- Versioning: pinned to the Playwright major used by strawberry-app's `playwright.config.ts`; reporter package declares `@playwright/test` as a peerDep with the pinned range.
+- Test strategy: fixture-based. Feed the reporter a synthetic sequence of `onTestBegin` / `onTestEnd` / `onEnd` calls, snapshot the emitted JSON against a golden file. Same pattern as the Vitest reporter's tests.
+- Playwright-specific fields carried into the shared schema via additive keys (nested under a `playwright` sub-object on the test entry so non-Playwright consumers can ignore): `project`, `browser`, `retries`, `trace` (path to trace.zip if captured), `video` (path), `screenshots` (array). These are optional — pytest and Vitest entries simply omit the `playwright` key.
+
+**Parity contract (extended):** the Playwright reporter's output for a given test outcome MUST match, field-for-field at the top level, what the Vitest reporter and pytest plugin produce for the equivalent outcome. Playwright-specific enrichment lives under the optional `playwright` sub-object per above. All three writers validate against the shared `tests-dashboard-data-schema.json` in their own test suites. Schema drift in any writer fails that writer's CI before it can corrupt the dashboard.
 
 ### D5. Auth — none, confirmed
 
@@ -238,6 +266,7 @@ strawberry-app/                                 strawberry-agents/
 - **Partial writes during concurrent runs.** Two test invocations finishing at the same time could corrupt `test-results.json`. Both writers use atomic temp-file + rename. Aggregator is the sole reader; writers never read their own output.
 - **Gitignore discipline.** `.test-dashboard/` and `test-dashboard-data/` both must be in `.gitignore` in both repos. A single mistaken `git add -A` could leak error tracebacks with file paths to a public repo. Mitigation: add path checks to the existing pre-commit hook (`scripts/install-hooks.sh`) — any staged file matching `**/.test-dashboard/**` is blocked, explicit error message.
 - **Vitest version pinning.** Reporter API stability across Vitest 1.x -> 2.x is not guaranteed. Pin Vitest major in strawberry-app's workspace; reporter package declares Vitest as a peerDep with the pinned range. Renovate PR upgrades are gated by the reporter's own test suite.
+- **Playwright version pinning.** Playwright's Reporter API is stable within a major but has churned between majors in the past (e.g., `onStepEnd` signature changes, attachment shape tweaks). Pin Playwright major in strawberry-app's workspace; reporter package declares `@playwright/test` as a peerDep with the pinned range. Renovate PR upgrades are gated by the Playwright reporter's golden-file test suite, same enforcement contract as the Vitest reporter. If a future Playwright major breaks the reporter, the peerDep bound fails fast at install time rather than silently corrupting `test-results.json`.
 - **Data size.** 50 runs x ~637 tests x ~100 bytes/test ~= 3 MB worst case. Fine for a local fetch. If it grows, move history into a sibling `history.json` and lazy-load on user action.
 - **Duplicate dashboards confusion.** There are now three test-related dashboards in play: (a) the approved strawberry-app test-dashboard at `/test-dashboard` (Cloud Run, session monitoring), (b) this cross-repo tests-dashboard, (c) the approved usage dashboard. Mitigation: clear naming and the `dashboards/index.html` landing page described in D6. This dashboard uses `dashboards/tests-dashboard/` to avoid collision with the existing `/test-dashboard` surface.
 
@@ -252,7 +281,9 @@ strawberry-app/                                 strawberry-agents/
 | 14-run failure sparkline per repo | yes | — | — |
 | Per-test history (last 20 runs) | yes | — | — |
 | Vitest reporter (schema-compliant) | yes (net-new) | — | — |
+| Playwright reporter (schema-compliant, E2E first-class) | yes (net-new) | — | — |
 | pytest plugin drop-in (schema patched for `repo`/`runner`) | yes (if any pytest enters either repo) | — | — |
+| Playwright-specific enrichment rendering (browser/project filter, trace.zip deep-links, retry count, video/screenshot links) | yes | — | — |
 | Bash/TAP adapter | — | yes | — |
 | CI-artifact data flow (vs. local-disk) | — | yes | — |
 | Firebase Hosting + Firebase Auth private surface | — | yes (if phone access asked for) | — |
@@ -301,8 +332,12 @@ strawberry-app/                                 strawberry-agents/
 
 - Reference implementation to read (DO NOT port): `~/Documents/Work/mmp/workspace/company-os/tools/demo-studio-v3/conftest_results_plugin.py`. Copy the schema semantics, not the file.
 - Reference implementation to read (port directly with `repo`/`runner` field additions): same path's `test-results.json` and `test-run-history.json` schemas.
+- **Three writers, not two.** v1 ships three schema-compliant writers: (1) Vitest reporter (net-new), (2) Playwright reporter (net-new), (3) pytest plugin patch (two-line additive change to the demo-studio-v3 plugin for `repo`/`runner` fields). All three share the same `test-results.json` + `test-run-history.json` schema and the same atomic temp-file+rename write contract. All three validate against the shared `tests-dashboard-data-schema.json`.
 - Task-1 candidate: the Vitest reporter package + its golden-file tests. Self-contained, testable without the rest of the stack.
-- Task-2 candidate: `scripts/test-dashboard/build.sh` + shared JSON schema file + schema-validation tests for both writers.
-- Task-3 candidate: `dashboards/tests-dashboard/{index.html,app.js}` + `dashboards/_shared/tokens.css` + a Playwright smoke test that asserts a golden `data.json` renders the expected DOM.
-- Enforcement: per Rule 12, each task opens with an xfail test committed first, referencing this plan's slug (`tests-dashboard`).
+- Task-1b candidate: the Playwright reporter package + its golden-file tests. Same shape as Task-1, independent package, independent peerDep pin. Can run in parallel with Task-1 — no ordering dependency between the two reporter packages.
+- Task-2 candidate: `scripts/test-dashboard/build.sh` + shared JSON schema file (`tests-dashboard-data-schema.json`) + schema-validation tests for all three writers.
+- Task-3 candidate: `dashboards/tests-dashboard/{index.html,app.js}` + `dashboards/_shared/tokens.css` + a Playwright smoke test that asserts a golden `data.json` renders the expected DOM (including Playwright-runner rows with browser/project/retry metadata and trace.zip deep-link affordances).
+- Task-4 candidate: two-line additive patch to the pytest plugin for `repo`/`runner` emission. Gated behind "if any pytest enters either repo" — may be a no-op task in practice for v1 Strawberry, but specified so the pattern is wired.
+- Enforcement: per Rule 12, each task opens with an xfail test committed first, referencing this plan's slug (`tests-dashboard`). Both reporter packages (Vitest and Playwright) are TDD-enabled.
+- Repo scope (unchanged by this amendment): `harukainguyen1411/strawberry-app` + `harukainguyen1411/strawberry-agents` only.
 - No implementer named in this ADR. Task breakdown is Kayn's.
