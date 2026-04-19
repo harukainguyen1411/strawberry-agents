@@ -24,6 +24,7 @@
 - 2026-04-19 (ekko s26): merged PR #58 (fix/main-red-portfolio-cascade-residue) — merged origin/main, no conflicts, all CI green, squash-merged. Merge SHA: adbfe57.
 - 2026-04-19 (ekko s27): promoted 2 plans (stale-green-merge-gap, reviewer-identity-split) to approved via plan-promote.sh; fixed stale proposed/-path ref that Orianna gate correctly blocked.
 - 2026-04-19 (ekko s28): merged PR #45 (V0.11 CSV Import Step 1) via reviewer-auth.sh. Merge SHA: 5d026ef. Branch deleted.
+- 2026-04-19 (ekko s29): added `--lane <name>` to reviewer-auth.sh (Phase 3 reviewer-identity-split). Commit 306fed2. Default lane unchanged.
 
 ## Archive Note
 
