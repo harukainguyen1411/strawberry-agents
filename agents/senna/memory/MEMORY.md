@@ -37,6 +37,10 @@ PR reviewer — surface logic, security, edge cases. Opus executor.
 - Pipe subshell (`echo|while`) makes background jobs children of subshell; top-level `wait` is no-op.
 - npm lockfile version pin check: cross-check package.json spec (no caret), lockfile workspace spec (no caret), and `node_modules/<pkg>.version` resolved entry. All three must match for the pin to be real.
 - age armor does not expose the recipient public key in human-readable form — verifying the recipient requires decryption or out-of-band confirmation from the author.
+- In-memory Firestore mocks silently accept `undefined` field values; real firebase-admin throws unless `ignoreUndefinedProperties: true`. Always grep repo for that setting when reviewing any `set({ ...obj, field: undefined })` pattern.
+- CSV parser footgun checklist for broker imports: (1) parseFloat on locale numbers, (2) signed-qty → side for shorts, (3) Asset Category filter, (4) UTC assumption on broker-local timestamps, (5) non-trade rows (Dividend/Interest) misclassified, (6) non-crypto hash fallback collisions, (7) TOCTOU in get-then-set; prefer Firestore `create()`.
+- `mergeStateStatus: UNSTABLE` with all checks `cancelled` (not `failed`) is usually a benign concurrency supersede from a subsequent push — not a code issue.
+- `gh api repos/.../pulls/<n>` gives authoritative `mergeable` state; to reproduce conflicts locally use `git merge --no-commit` against the PR's actual `base.sha`, not `origin/main`.
 
 ## Stale-view protocol (established 2026-04-18)
 5 phantom findings in one session from reading local working tree. Fix: always `git fetch origin` + `git show origin/<branch>:path`. Never read local paths or carry file content between review rounds. If a teammate disputes a finding, re-fetch and re-verify before posting.
