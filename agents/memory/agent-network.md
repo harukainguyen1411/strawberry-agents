@@ -108,6 +108,22 @@ All agents must follow these rules — see `/Users/duongntd99/Documents/Personal
 10. Scripts outside `scripts/mac/` and `scripts/windows/` must be POSIX-portable
 11. Never use `git rebase` — always merge
 
+## Two-Identity Model
+
+The system uses two GitHub identities for PR lifecycle operations:
+
+| Identity | GitHub account | Who uses it |
+|---|---|---|
+| Executor identity | `Duongntd` | Jayce, Viktor, Ekko, Seraphine, Yuumi, Vi, Akali, Skarner — opens PRs, pushes branches |
+| Reviewer identity | `strawberry-reviewers` | Senna, Lucian — submits approvals via `scripts/reviewer-auth.sh` |
+| Human owner | `harukainguyen1411` | Duong only — break-glass merges and account administration |
+
+**Reviewer codepath:** `scripts/reviewer-auth.sh gh pr review <PR> --approve --body "-- Senna"`. Decrypts the reviewer PAT from `secrets/encrypted/reviewer-github-token.age` via `tools/decrypt.sh` and execs `gh` with `GH_TOKEN` in the child env only.
+
+**Executor boundary:** Executor agents MUST NOT source `scripts/reviewer-auth.sh`. They authenticate as `Duongntd` only.
+
+This model satisfies CLAUDE.md Rule 18 structurally: executor-authored PRs are approved by a distinct GitHub identity, so GitHub's author-cannot-approve-own-PR check passes without requiring human intervention on every PR.
+
 ## Inbox Protocol
 
 `[inbox]` → read file → update status `pending` → `read` → respond.
