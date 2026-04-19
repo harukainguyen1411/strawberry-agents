@@ -9,7 +9,7 @@
 - `scripts/reviewer-auth.sh` — wraps `gh` with strawberry-reviewers identity. Run from strawberry-agents dir.
 - `harukainguyen1411/strawberry-app` cloned at `~/Documents/Personal/strawberry-app`
 - Required checks for main: xfail-first, regression-test, unit-tests, Playwright E2E, QA report. `E2E tests (Playwright / Chromium)` is NOT required — pre-existing auth-local-mode heading bug.
-- No classic branch protection on strawberry-app (404). No rulesets. CLEAN/MERGEABLE is sufficient to merge.
+- `harukainguyen1411/strawberry-app` main: 2-approval gate active (required_approving_review_count=2) as of 2026-04-19 s34. Use `--input -` with JSON body for gh api PUT branch protection (--field fails for nested objects).
 - Duongntd auth has NO admin on harukainguyen1411/strawberry-agents (pull/push/triage only). Branch-protection writes require harukainguyen1411 account (Duong-manual).
 - `tools/decrypt.sh`: reads ciphertext stdin, writes `KEY=val` to `--target` (must be under `secrets/`). Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd`.
 - GitHub branch protection (classic or rulesets) on private repos requires GitHub Pro — free-plan accounts get 403.
@@ -27,6 +27,7 @@
 - 2026-04-19 (ekko s31): Phase 4 dry-run — PR #3 on strawberry-agents; Senna→strawberry-reviewers-2, Lucian→strawberry-reviewers; two distinct approvals confirmed; PR closed, branch deleted.
 - 2026-04-19 (ekko s32): Phase 7 branch-protection attempt — stopped; Duongntd lacks admin on harukainguyen1411/strawberry-agents. Duong-manual step required.
 - 2026-04-19 (ekko s33): Phase 7 retry as harukainguyen1411 — 403; branch protection on private repos requires GitHub Pro. Plan blocked.
+- 2026-04-19 (ekko s34): Applied 2-approval gate to harukainguyen1411/strawberry-app main. Verified count=2, all 5 contexts preserved.
 
 ## Archive Note
 

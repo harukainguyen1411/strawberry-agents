@@ -1,12 +1,13 @@
-# Ekko Last Session — 2026-04-19 (s33)
+# Ekko Last Session — 2026-04-19 (s34)
 
 Date: 2026-04-19
 
 ## Accomplished
-- Pre-flight confirmed harukainguyen1411 was the active gh auth account.
-- Attempted to apply 2-approval branch protection gate to harukainguyen1411/strawberry-agents main via API.
-- API returned 403: branch protection on private repos requires GitHub Pro; harukainguyen1411 is on the free plan.
+- Applied 2-approval gate (required_approving_review_count: 2) to `harukainguyen1411/strawberry-app` main branch protection
+- Preserved all 5 required_status_checks contexts and enforce_admins=false
+- Set dismiss_stale_reviews=false, require_code_owner_reviews=false, require_last_push_approval=false
+- Verification confirmed: count=2, all 5 contexts present
 
-## Open Threads / Blockers
-- Phase 7 is blocked by GitHub Free plan limitation. Options: (a) upgrade harukainguyen1411 to GitHub Pro, (b) make strawberry-agents public, or (c) revise plan to drop protection requirement.
-- Auth was left as harukainguyen1411. Duong should run `gh auth switch --hostname github.com --user Duongntd` to restore normal agent workflow.
+## Open Threads
+- `gh auth` is still set to `harukainguyen1411` — Duong must run `gh auth switch --hostname github.com --user Duongntd` to restore normal workflow
+- Snapshot at `secrets/branch-protection-pre-rollout-strawberry-app.json` (gitignored, local only) for rollback reference
