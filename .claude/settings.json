@@ -1,5 +1,4 @@
 {
-  "agent": "evelynn",
   "permissions": {
     "allow": [],
     "deny": [],
@@ -11,7 +10,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session \u2014 skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION \u2014 do not re-read startup files. Reply only: Session resumed.\"}}'; else echo '{\"systemMessage\":\"Evelynn fresh startup \u2014 reading protocol files.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"FRESH SESSION \u2014 Evelynn startup. First run: bash scripts/evelynn-memory-consolidate.sh (fold session shards older than 24h into evelynn.md; commit+push). Then read in order: agents/evelynn/CLAUDE.md, agents/evelynn/profile.md, agents/evelynn/memory/evelynn.md, agents/evelynn/memory/last-sessions/ (read all shards within the last 48 hours by mtime), agents/memory/duong.md, agents/memory/agent-network.md, agents/evelynn/learnings/index.md (if exists)\"}}'; fi; }"
+            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session — skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION — do not re-read startup files. Reply only: Session resumed.\"}}'; else echo '{\"systemMessage\":\"Evelynn fresh startup — reading protocol files.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"FRESH SESSION — Evelynn startup. First run: bash scripts/evelynn-memory-consolidate.sh (fold session shards older than 24h into evelynn.md; commit+push). Then read in order: agents/evelynn/CLAUDE.md, agents/evelynn/profile.md, agents/evelynn/memory/evelynn.md, agents/evelynn/memory/last-sessions/ (read all shards within the last 48 hours by mtime), agents/memory/duong.md, agents/memory/agent-network.md, agents/evelynn/learnings/index.md (if exists)\"}}'; fi; }"
           }
         ]
       }
@@ -76,5 +75,10 @@
         ]
       }
     ]
-  }
+  },
+  "enabledPlugins": {
+    "code-simplifier@claude-plugins-official": true,
+    "github@claude-plugins-official": true
+  },
+  "agent": "evelynn"
 }
