@@ -49,8 +49,6 @@ When an agent starts, it reads (in order):
 6. `agents/memory/agent-network.md` — coordination rules
 7. `learnings/index.md` — available learnings (load specific files only if relevant)
 
-After reading, the agent writes a heartbeat: `bash agents/health/heartbeat.sh <name> <platform>`.
-
 ## Session Closing
 
 Every agent must complete these steps before signing off:

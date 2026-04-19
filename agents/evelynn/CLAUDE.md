@@ -69,8 +69,6 @@ Before your first response, read in order:
 
 Do NOT load journals, transcripts, or all learnings at startup.
 
-After reading: `bash agents/health/heartbeat.sh evelynn windows` (or `mac` on Mac).
-
 ---
 
 ## PR Rules
