@@ -32,6 +32,7 @@
 - 2026-04-19 (TD.1): Built @strawberry/vitest-reporter-tests-dashboard package. xfail commit 1f98f19, impl commit 21f23f8. PR #49 open on strawberry-app. All substantive CI checks pass.
 - 2026-04-19 (TD.1 fix): Fixed nodeIdOf operator precedence bug (Jhin finding #2). Regression test bba5e62 + fix c63ddf7 pushed to chore/td1-vitest-reporter-tests-dashboard. PR #49 comment posted. Findings #1+#3 deferred to TD.2.
 - 2026-04-19 (kill-auto-rebase): Deleted .github/workflows/auto-rebase.yml. PR #51 on harukainguyen1411/strawberry-app open, awaiting review. Branch: chore/kill-auto-rebase-cascade, commit a301e95.
+- 2026-04-19 (P1.4 merge conflict): Resolved PR #26 merge conflicts. Only 1 of 5 listed files needed manual resolution (router/index.ts — formatting only). All 4 P1.4 vitest tests pass. Merge commit 8631802 pushed; PR now MERGEABLE.
 - 2026-04-19 (PR #48 Lucian fix): Reverted paths-ignore on e2e.yml; added internal myapps-only gate (only_myapps output + early-exit step). PR body updated. Commit 1b7e38f on chore/e2e-scope-myapps. Awaiting Senna + Lucian re-review.
 
 ## Archive Note
