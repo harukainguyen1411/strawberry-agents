@@ -14,8 +14,10 @@
 #
 # bypass_actors: harukainguyen1411 (ID 273533031) for strawberry-app.
 #   For Duongntd/strawberry, swap in Duongntd's user ID.
-# bypass_mode: "pull_request" — owner must still open a PR for audit trail,
-#   but skips status-check and review requirements on that PR.
+# bypass_mode: "always" — owner can merge directly without a PR.
+#   "pull_request" mode was found to block at merge time even for bypass actors
+#   (it only applies when creating/updating a PR, not at merge). See plan
+#   plans/implemented/2026-04-19-branch-protection-restore.md §Post-implementation correction.
 set -euo pipefail
 
 _derive_repo_from_remote() {
@@ -49,7 +51,7 @@ else
 fi
 
 echo "=== Apply ruleset branch protection: $REPO main ==="
-echo "Bypass actor ID: $BYPASS_ACTOR_ID (bypass_mode: pull_request)"
+echo "Bypass actor ID: $BYPASS_ACTOR_ID (bypass_mode: always)"
 
 # Write ruleset JSON to a temp file; substitute the bypass actor ID.
 TMPFILE="$(mktemp /tmp/ruleset-XXXXXX.json)"
@@ -64,7 +66,7 @@ cat > "$TMPFILE" <<JSON
     "ref_name": { "include": ["refs/heads/main"], "exclude": [] }
   },
   "bypass_actors": [
-    { "actor_id": ${BYPASS_ACTOR_ID}, "actor_type": "User", "bypass_mode": "pull_request" }
+    { "actor_id": ${BYPASS_ACTOR_ID}, "actor_type": "User", "bypass_mode": "always" }
   ],
   "rules": [
     { "type": "deletion" },
