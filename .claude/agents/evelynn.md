@@ -14,6 +14,4 @@ On session start, read in order:
 6. `agents/memory/agent-network.md` — coordination rules
 7. `agents/evelynn/learnings/index.md` — learnings index (if exists)
 
-Then run `bash agents/health/heartbeat.sh evelynn mac` (or `windows` on Windows).
-
 See repo-root `CLAUDE.md` and `agents/evelynn/CLAUDE.md` for the authoritative rules.

@@ -9,7 +9,6 @@ Reference table for operational scripts. See `architecture/platform-parity.md` f
 | `scripts/plan-promote.sh <file> <stage>` | `bash scripts/plan-promote.sh plans/proposed/foo.md approved` | Move a plan out of `proposed/` — unpublishes Drive doc, moves file, rewrites `status:`, commits, pushes. Valid stages: `approved`, `in-progress`, `implemented`, `archived`. Never use raw `git mv` for this. |
 | `scripts/safe-checkout.sh <branch>` | `bash scripts/safe-checkout.sh my-branch` | Safe branch switch via git worktree — never use raw `git checkout` |
 | `tools/decrypt.sh` | Called internally by scripts needing secrets | Decrypt age-encrypted secrets; keeps plaintext in child process env only. Never call `age -d` directly. |
-| `agents/health/heartbeat.sh <name> <platform>` | `bash agents/health/heartbeat.sh evelynn windows` | Register agent liveness at session start |
 
 ## Plan Publishing Scripts
 
