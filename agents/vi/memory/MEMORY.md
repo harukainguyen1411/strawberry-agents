@@ -29,6 +29,7 @@
 - 2026-04-19: T10 Playwright smoke — wrote 11-test suite for usage-dashboard static-load path; 11/11 green; found CSS ordering bug (hidden+flex); QA report filed; PR #39 open (strawberry-app)
 - 2026-04-19: P1.4 CI fix — pushed 2 unpushed commits (dfb6f49 lockfile regen + ef7c188 vitest workspace pin) + lint fix (a5be709 remove unused beforeEach); PR #26 updated with QA-Waiver; Unit Tests/TDD Gate/PR Body Linter/E2E all green; remaining failures pre-existing (rollup linux binary, portfolio-tracker lint, Firebase hosting)
 - 2026-04-19: e2e.yml Firebase boot fix — PR #46 (tdd-gate-enable-functions) exposed two pre-existing defects in e2e.yml: missing npm ci (exit 127) and missing VITE_FIREBASE_* env vars (firebase/config.ts throws → blank page → toBeVisible fails). Fixed in PR #47 (fix/e2e-workflow-npm-install).
+- 2026-04-19: PR #46 E2E diagnosis — two distinct failures remain on beca79d: (A) 7 visual-regression tests fail because snapshots committed as *-darwin.png but CI expects *-linux.png; (B) navigation test looks for link name 'MyApps' but AppHeader has no such link (uses $t('common.home')). Both regressions from my 598d0eb commit (T10 session). Duong's beca79d is unrelated/correct. Fix A: generate linux snapshots in CI or linux docker. Fix B: change locator to 'Dark Strawberry home' aria-label or /home/i.
 
 ## Archive Note
 
