@@ -1,0 +1,926 @@
+diff --git a/apps/myapps/portfolio-tracker/src/components/ErrorBanner.vue b/apps/myapps/portfolio-tracker/src/components/ErrorBanner.vue
+index 67501b3..083a616 100644
+--- a/apps/myapps/portfolio-tracker/src/components/ErrorBanner.vue
++++ b/apps/myapps/portfolio-tracker/src/components/ErrorBanner.vue
+@@ -1,7 +1,76 @@
+ <template>
+-  <!-- ErrorBanner stub — V0.12 xfail placeholder -->
+-  <div></div>
++  <!--
++    ErrorBanner — hard parse failure (bad headers).
++    Shows expected vs received headers diff.
++    Props:
++      title            - headline (default: "Could not parse CSV")
++      message          - detail message
++      expectedHeaders  - list of expected CSV headers
++      receivedHeaders  - list of headers actually found in the file
++    Refs V0.12
++  -->
++  <div
++    role="alert"
++    data-testid="error-banner"
++    class="rounded-lg px-4 py-4"
++    style="
++      border: 1px solid var(--accent);
++      background: color-mix(in srgb, var(--accent) 10%, transparent);
++    "
++  >
++    <!-- Title -->
++    <div class="flex items-start gap-2 mb-2">
++      <svg
++        width="16"
++        height="16"
++        viewBox="0 0 24 24"
++        fill="none"
++        stroke="currentColor"
++        stroke-width="2"
++        stroke-linecap="round"
++        stroke-linejoin="round"
++        class="mt-0.5 flex-shrink-0"
++        aria-hidden="true"
++        style="color: var(--accent);"
++      >
++        <circle cx="12" cy="12" r="10" />
++        <line x1="12" y1="8" x2="12" y2="12" />
++        <line x1="12" y1="16" x2="12.01" y2="16" />
++      </svg>
++      <p class="text-sm font-semibold" style="color: var(--accent);">
++        {{ title || 'Could not parse CSV' }}
++      </p>
++    </div>
++
++    <!-- Message -->
++    <p v-if="message" class="text-sm mb-3 ml-6" style="color: var(--text);">{{ message }}</p>
++
++    <!-- Header diff -->
++    <div v-if="expectedHeaders && expectedHeaders.length > 0" class="ml-6 space-y-1.5 text-xs" style="color: var(--muted);">
++      <div>
++        <span class="font-medium">Expected: </span>
++        <code class="break-all" style="color: var(--text);">{{ expectedHeaders.join(', ') }}</code>
++      </div>
++      <div v-if="receivedHeaders && receivedHeaders.length > 0">
++        <span class="font-medium">Received: </span>
++        <code class="break-all" style="color: var(--accent-soft);">{{ receivedHeaders.join(', ') }}</code>
++      </div>
++    </div>
++
++    <!-- Actions -->
++    <div class="mt-3 ml-6 flex gap-3">
++      <slot name="actions">
++        <!-- Default: Try again button placeholder — parent provides the action -->
++      </slot>
++    </div>
++  </div>
+ </template>
++
+ <script setup lang="ts">
+-defineProps<{ title?: string; message?: string; expectedHeaders?: string[]; receivedHeaders?: string[] }>()
++defineProps<{
++  title?: string
++  message?: string
++  expectedHeaders?: string[]
++  receivedHeaders?: string[]
++}>()
+ </script>
+diff --git a/apps/myapps/portfolio-tracker/src/components/ImportPreviewTable.vue b/apps/myapps/portfolio-tracker/src/components/ImportPreviewTable.vue
+index ea8baac..a4962fa 100644
+--- a/apps/myapps/portfolio-tracker/src/components/ImportPreviewTable.vue
++++ b/apps/myapps/portfolio-tracker/src/components/ImportPreviewTable.vue
+@@ -1,7 +1,85 @@
+ <template>
+-  <!-- ImportPreviewTable stub — V0.12 xfail placeholder -->
+-  <div></div>
++  <!--
++    ImportPreviewTable — shows a collapsible preview of parse results.
++    Props:
++      rows        - array of row objects
++      columns     - ColumnDef[] { key, label }
++      maxVisible  - initial row count (default 5)
++    Refs V0.12
++  -->
++  <div>
++    <!-- Table wrapper -->
++    <div class="overflow-x-auto rounded-lg" style="border: 1px solid var(--border);">
++      <table class="min-w-full text-sm">
++        <thead>
++          <tr style="background: var(--surface-hi);">
++            <th
++              v-for="col in columns"
++              :key="col.key"
++              scope="col"
++              class="px-4 py-2.5 text-left text-xs font-medium uppercase tracking-wider"
++              style="color: var(--muted);"
++            >
++              {{ col.label }}
++            </th>
++          </tr>
++        </thead>
++        <tbody>
++          <tr
++            v-for="(row, idx) in visibleRows"
++            :key="idx"
++            data-testid="preview-row"
++            class="border-t transition-colors"
++            style="border-color: var(--border);"
++          >
++            <td
++              v-for="col in columns"
++              :key="col.key"
++              class="px-4 py-2.5"
++              style="color: var(--text);"
++            >
++              {{ (row as Record<string, unknown>)[col.key] ?? '—' }}
++            </td>
++          </tr>
++        </tbody>
++      </table>
++    </div>
++
++    <!-- Show all / collapse toggle -->
++    <div v-if="rows.length > maxVisible" class="mt-2 text-center">
++      <button
++        data-testid="show-all-btn"
++        type="button"
++        class="text-xs underline"
++        style="color: var(--muted);"
++        @click="expanded = !expanded"
++      >
++        <span v-if="expanded">Show less</span>
++        <span v-else>Show all ({{ rows.length }})</span>
++      </button>
++    </div>
++  </div>
+ </template>
++
+ <script setup lang="ts">
+-defineProps<{ rows: unknown[]; columns: unknown[]; maxVisible?: number }>()
++import { ref, computed } from 'vue'
++
++export interface ColumnDef {
++  key: string
++  label: string
++}
++
++const props = withDefaults(defineProps<{
++  rows: Record<string, unknown>[]
++  columns: ColumnDef[]
++  maxVisible?: number
++}>(), {
++  maxVisible: 5,
++})
++
++const expanded = ref(false)
++
++const visibleRows = computed(() =>
++  expanded.value ? props.rows : props.rows.slice(0, props.maxVisible)
++)
+ </script>
+diff --git a/apps/myapps/portfolio-tracker/src/components/Toast.vue b/apps/myapps/portfolio-tracker/src/components/Toast.vue
+index 2464850..1a7e104 100644
+--- a/apps/myapps/portfolio-tracker/src/components/Toast.vue
++++ b/apps/myapps/portfolio-tracker/src/components/Toast.vue
+@@ -1,7 +1,118 @@
+ <template>
+-  <!-- Toast stub — V0.12 xfail placeholder -->
+-  <div></div>
++  <!--
++    Toast — global notification with auto-dismiss.
++    Props:
++      show      - controlled visibility
++      message   - text to display
++      duration  - auto-dismiss delay in ms (default 5000)
++      onRetry   - optional retry callback
++    Emits:
++      dismiss   - fired when toast hides (auto or manual)
++    Refs V0.12
++  -->
++  <Teleport to="body">
++    <Transition name="toast-fade">
++      <div
++        v-if="show"
++        data-testid="toast"
++        role="status"
++        aria-live="polite"
++        class="fixed z-[200] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm"
++        :class="position === 'bottom' ? 'bottom-6 left-1/2 -translate-x-1/2' : 'top-6 right-6'"
++        style="
++          background: var(--surface-hi);
++          border: 1px solid var(--border-hi);
++          color: var(--text);
++          min-width: 240px;
++          max-width: 360px;
++        "
++      >
++        <span class="flex-1">{{ message }}</span>
++        <div class="flex items-center gap-2 flex-shrink-0">
++          <button
++            v-if="onRetry"
++            data-testid="toast-retry-btn"
++            type="button"
++            class="text-xs font-medium underline"
++            style="color: var(--accent-soft);"
++            @click="handleRetry"
++          >
++            Retry
++          </button>
++          <button
++            type="button"
++            class="flex items-center justify-center w-5 h-5 rounded opacity-60 hover:opacity-100"
++            style="color: var(--muted);"
++            aria-label="Dismiss notification"
++            @click="dismiss"
++          >
++            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
++              <line x1="18" y1="6" x2="6" y2="18" />
++              <line x1="6" y1="6" x2="18" y2="18" />
++            </svg>
++          </button>
++        </div>
++      </div>
++    </Transition>
++  </Teleport>
+ </template>
++
+ <script setup lang="ts">
+-defineProps<{ message?: string; show?: boolean; onRetry?: () => void }>()
++import { watch, onUnmounted } from 'vue'
++
++const props = withDefaults(defineProps<{
++  show: boolean
++  message: string
++  duration?: number
++  onRetry?: () => void
++  position?: 'bottom' | 'top-right'
++}>(), {
++  duration: 5000,
++  position: 'top-right',
++})
++
++const emit = defineEmits<{
++  dismiss: []
++}>()
++
++let timer: ReturnType<typeof setTimeout> | null = null
++
++watch(() => props.show, (visible) => {
++  if (timer) {
++    clearTimeout(timer)
++    timer = null
++  }
++  if (visible && props.duration > 0) {
++    timer = setTimeout(dismiss, props.duration)
++  }
++}, { immediate: true })
++
++onUnmounted(() => {
++  if (timer) clearTimeout(timer)
++})
++
++function dismiss() {
++  if (timer) {
++    clearTimeout(timer)
++    timer = null
++  }
++  emit('dismiss')
++}
++
++function handleRetry() {
++  dismiss()
++  props.onRetry?.()
++}
+ </script>
++
++<style scoped>
++.toast-fade-enter-active,
++.toast-fade-leave-active {
++  transition: opacity 0.2s ease, transform 0.2s ease;
++}
++.toast-fade-enter-from,
++.toast-fade-leave-to {
++  opacity: 0;
++  transform: translateY(8px);
++}
++</style>
+diff --git a/apps/myapps/portfolio-tracker/src/components/WarnBanner.vue b/apps/myapps/portfolio-tracker/src/components/WarnBanner.vue
+index 8fb2373..1602ee9 100644
+--- a/apps/myapps/portfolio-tracker/src/components/WarnBanner.vue
++++ b/apps/myapps/portfolio-tracker/src/components/WarnBanner.vue
+@@ -1,7 +1,97 @@
+ <template>
+-  <!-- WarnBanner stub — V0.12 xfail placeholder -->
+-  <div></div>
++  <!--
++    WarnBanner — partial-parse warning banner.
++    Click expands the details list.
++    Props:
++      count   - number of skipped rows
++      message - summary text
++      details - optional array of row error strings
++    Refs V0.12
++  -->
++  <div
++    role="alert"
++    class="rounded-lg px-4 py-3 cursor-pointer select-none"
++    style="
++      border: 1px solid var(--warn);
++      background: color-mix(in srgb, var(--warn) 10%, transparent);
++    "
++    @click="toggle"
++    @keydown.enter.prevent="toggle"
++    @keydown.space.prevent="toggle"
++    tabindex="0"
++    :aria-expanded="expanded ? 'true' : 'false'"
++    aria-label="Warning: some rows were skipped. Click to see details."
++  >
++    <!-- Header row -->
++    <div class="flex items-center justify-between gap-2">
++      <div class="flex items-center gap-2">
++        <!-- Warning icon -->
++        <svg
++          width="16"
++          height="16"
++          viewBox="0 0 24 24"
++          fill="none"
++          stroke="currentColor"
++          stroke-width="2"
++          stroke-linecap="round"
++          stroke-linejoin="round"
++          aria-hidden="true"
++          style="color: var(--warn); flex-shrink: 0;"
++        >
++          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
++          <line x1="12" y1="9" x2="12" y2="13" />
++          <line x1="12" y1="17" x2="12.01" y2="17" />
++        </svg>
++        <span class="text-sm font-medium" style="color: var(--warn);">{{ message }}</span>
++      </div>
++      <!-- Chevron -->
++      <svg
++        width="14"
++        height="14"
++        viewBox="0 0 24 24"
++        fill="none"
++        stroke="currentColor"
++        stroke-width="2.5"
++        stroke-linecap="round"
++        stroke-linejoin="round"
++        class="transition-transform"
++        :style="expanded ? 'transform: rotate(180deg); color: var(--warn);' : 'color: var(--warn);'"
++        aria-hidden="true"
++      >
++        <polyline points="6 9 12 15 18 9" />
++      </svg>
++    </div>
++
++    <!-- Details list (expanded) -->
++    <ul
++      v-if="expanded && details && details.length > 0"
++      data-testid="warn-details"
++      class="mt-2 space-y-1"
++    >
++      <li
++        v-for="(detail, idx) in details"
++        :key="idx"
++        class="text-xs ml-6"
++        style="color: var(--text);"
++      >
++        {{ detail }}
++      </li>
++    </ul>
++  </div>
+ </template>
++
+ <script setup lang="ts">
+-defineProps<{ count: number; message: string; details?: string[] }>()
++import { ref } from 'vue'
++
++defineProps<{
++  count: number
++  message: string
++  details?: string[]
++}>()
++
++const expanded = ref(false)
++
++function toggle() {
++  expanded.value = !expanded.value
++}
+ </script>
+diff --git a/apps/myapps/portfolio-tracker/src/components/__tests__/CsvImportStep2.test.ts b/apps/myapps/portfolio-tracker/src/components/__tests__/CsvImportStep2.test.ts
+index 47b57a8..a83a253 100644
+--- a/apps/myapps/portfolio-tracker/src/components/__tests__/CsvImportStep2.test.ts
++++ b/apps/myapps/portfolio-tracker/src/components/__tests__/CsvImportStep2.test.ts
+@@ -1,11 +1,13 @@
+ /**
+- * A.18 — CsvImport Step 2 + WarnBanner + ErrorBanner + ImportPreviewTable xfail tests (Refs V0.12)
++ * A.18 — CsvImport Step 2 tests (Refs V0.12)
+  *
+  * Tests:
+- * - ImportPreviewTable shows 5 collapsed rows + "Show all" expander
++ * - ImportPreviewTable shows maxVisible rows + "Show all" expander
++ * - "Show all" expands to all rows
+  * - WarnBanner click expands details list of skipped rows
+- * - Successful commit triggers redirect to /
+- * - Network failure shows retry toast
++ * - Toast component renders retry message
++ *
++ * Implementation: it.fails() → it() — components are implemented.
+  */
+ 
+ import { describe, it, expect, vi } from 'vitest'
+@@ -30,12 +32,13 @@ vi.mock('@/composables/useAuth', () => ({
+   }),
+ }))
+ 
+-// Mock importCsv callable
+ vi.mock('@/composables/useImportCsv', () => ({
+   useImportCsv: vi.fn(() => ({
+     importCsv: vi.fn().mockResolvedValue({ tradesAdded: 5, tradesSkipped: 0, positionsWritten: 3, errors: [] }),
+     loading: { value: false },
+     error: { value: null },
++    result: { value: null },
++    reset: vi.fn(),
+   })),
+ }))
+ 
+@@ -56,7 +59,7 @@ const SAMPLE_COLUMNS = [
+ ]
+ 
+ describe('A.18 — CsvImport Step 2', () => {
+-  it.fails('A.18.1 ImportPreviewTable shows maxVisible rows with "Show all" expander when rows > maxVisible', async () => {
++  it('A.18.1 ImportPreviewTable shows maxVisible rows with "Show all" expander when rows > maxVisible', async () => {
+     const ImportPreviewTable = (await import('@/components/ImportPreviewTable.vue')).default
+     const wrapper = mount(ImportPreviewTable, {
+       props: {
+@@ -79,7 +82,7 @@ describe('A.18 — CsvImport Step 2', () => {
+     wrapper.unmount()
+   })
+ 
+-  it.fails('A.18.2 ImportPreviewTable "Show all" expands to all rows', async () => {
++  it('A.18.2 ImportPreviewTable "Show all" expands to all rows', async () => {
+     const ImportPreviewTable = (await import('@/components/ImportPreviewTable.vue')).default
+     const wrapper = mount(ImportPreviewTable, {
+       props: {
+@@ -100,7 +103,7 @@ describe('A.18 — CsvImport Step 2', () => {
+     wrapper.unmount()
+   })
+ 
+-  it.fails('A.18.3 WarnBanner click expands details list of skipped rows', async () => {
++  it('A.18.3 WarnBanner click expands details list of skipped rows', async () => {
+     const WarnBanner = (await import('@/components/WarnBanner.vue')).default
+     const wrapper = mount(WarnBanner, {
+       props: {
+@@ -112,12 +115,12 @@ describe('A.18 — CsvImport Step 2', () => {
+     await nextTick()
+ 
+     // Details should be hidden initially
+-    const details = wrapper.find('[data-testid="warn-details"]')
+-    const isHidden = !details.exists() || details.element.style.display === 'none' || details.classes().includes('hidden')
+-    expect(isHidden).toBe(true)
++    expect(wrapper.find('[data-testid="warn-details"]').exists()).toBe(false)
+ 
+-    // Click the banner
+-    await wrapper.trigger('click')
++    // Click the banner to expand — use find on root or call vm directly
++    const bannerEl = wrapper.find('[role="alert"]')
++    await bannerEl.trigger('click')
++    await nextTick()
+     await nextTick()
+ 
+     // Details should now be visible
+@@ -128,27 +131,29 @@ describe('A.18 — CsvImport Step 2', () => {
+     wrapper.unmount()
+   })
+ 
+-  it.fails('A.18.4 Toast component auto-dismisses and renders retry message', async () => {
++  it('A.18.4 Toast component renders message and retry button when show=true', async () => {
+     const Toast = (await import('@/components/Toast.vue')).default
+     const wrapper = mount(Toast, {
+       props: {
+         message: "Couldn't save import. Retry?",
+         show: true,
++        duration: 0, // disable auto-dismiss for test
+         onRetry: vi.fn(),
+       },
+       attachTo: document.body,
+     })
+     await nextTick()
+ 
+-    // Toast should be visible
+-    const toast = wrapper.find('[data-testid="toast"]')
+-    expect(toast.exists()).toBe(true)
+-    expect(toast.text()).toContain("Couldn't save import")
++    // Toast should be visible (Teleport renders to body)
++    const toast = document.body.querySelector('[data-testid="toast"]')
++    expect(toast).not.toBeNull()
++    expect(toast!.textContent).toContain("Couldn't save import")
+ 
+     // Retry button should exist
+-    const retryBtn = wrapper.find('[data-testid="toast-retry-btn"]')
+-    expect(retryBtn.exists()).toBe(true)
++    const retryBtn = document.body.querySelector('[data-testid="toast-retry-btn"]')
++    expect(retryBtn).not.toBeNull()
+ 
+     wrapper.unmount()
++    document.body.innerHTML = ''
+   })
+ })
+diff --git a/apps/myapps/portfolio-tracker/src/composables/useImportCsv.ts b/apps/myapps/portfolio-tracker/src/composables/useImportCsv.ts
+index 9027a3e..4b6abfc 100644
+--- a/apps/myapps/portfolio-tracker/src/composables/useImportCsv.ts
++++ b/apps/myapps/portfolio-tracker/src/composables/useImportCsv.ts
+@@ -1,9 +1,58 @@
+ /**
+- * useImportCsv — stub for V0.12 xfail.
+- * Full implementation in V0.12 implementation commit.
++ * useImportCsv — composable to call the importCsv HTTPS callable (V0.8).
++ *
++ * Wraps the Firebase callable `importCsv` with reactive loading/error state.
++ * On success returns { tradesAdded, tradesSkipped, positionsWritten, errors }.
++ *
+  * Refs V0.12
+  */
+ 
++import { ref } from 'vue'
++import { getFunctions, httpsCallable } from 'firebase/functions'
++import { app } from '@/firebase/config'
++
++export interface ImportResult {
++  tradesAdded: number
++  tradesSkipped: number
++  positionsWritten: number
++  errors: Array<{ row: number; reason: string }>
++}
++
++export interface ImportPayload {
++  source: 'T212' | 'IB'
++  csvText: string
++}
++
+ export function useImportCsv() {
+-  throw new Error('not implemented — V0.12')
++  const loading = ref(false)
++  const error = ref<string | null>(null)
++  const result = ref<ImportResult | null>(null)
++
++  const functions = getFunctions(app)
++  const callable = httpsCallable<ImportPayload, ImportResult>(functions, 'importCsv')
++
++  async function importCsv(payload: ImportPayload): Promise<ImportResult | null> {
++    loading.value = true
++    error.value = null
++    result.value = null
++
++    try {
++      const response = await callable(payload)
++      result.value = response.data
++      return response.data
++    } catch (err) {
++      error.value = err instanceof Error ? err.message : String(err)
++      return null
++    } finally {
++      loading.value = false
++    }
++  }
++
++  function reset() {
++    loading.value = false
++    error.value = null
++    result.value = null
++  }
++
++  return { importCsv, loading, error, result, reset }
+ }
+diff --git a/apps/myapps/portfolio-tracker/src/views/CsvImport.vue b/apps/myapps/portfolio-tracker/src/views/CsvImport.vue
+index f974412..72a119e 100644
+--- a/apps/myapps/portfolio-tracker/src/views/CsvImport.vue
++++ b/apps/myapps/portfolio-tracker/src/views/CsvImport.vue
+@@ -2,11 +2,12 @@
+   <!--
+     CsvImport — two-step CSV import flow.
+     Step 1: Source select + DropZone + CsvPasteArea + "Parse →" CTA
+-    Step 2: Preview + commit (V0.12)
+-    Refs V0.11
++    Step 2: Preview holdings/trades + WarnBanner + "Commit import →" CTA
++    Refs V0.11, V0.12
+   -->
+   <div class="px-4 py-6 max-w-2xl mx-auto">
+-    <!-- Step 1 -->
++
++    <!-- ══════════════ STEP 1 ══════════════ -->
+     <template v-if="step === 'step1'">
+       <h1 class="text-2xl font-medium mb-1" style="color: var(--text);">Import trades</h1>
+       <p class="text-sm mb-6" style="color: var(--muted);">
+@@ -43,22 +44,22 @@
+         <CsvPasteArea v-model="pasteText" />
+       </div>
+ 
+-      <!-- Error banner (parse failure) -->
+-      <div
++      <!-- Error banner (parse failure — bad headers) -->
++      <ErrorBanner
+         v-if="parseError"
+-        role="alert"
+-        class="mb-4 rounded-lg px-4 py-3 text-sm"
+-        style="
+-          border: 1px solid var(--accent);
+-          background: color-mix(in srgb, var(--accent) 10%, transparent);
+-          color: var(--text);
+-        "
++        :message="parseError"
++        class="mb-4"
+       >
+-        <p class="font-medium mb-1" style="color: var(--accent);">
+-          Could not parse CSV
+-        </p>
+-        <p>{{ parseError }}</p>
+-      </div>
++        <template #actions>
++          <button
++            type="button"
++            class="ds-btn-ghost text-sm py-1.5 px-4"
++            @click="resetParser"
++          >
++            Try again
++          </button>
++        </template>
++      </ErrorBanner>
+ 
+       <!-- CTAs -->
+       <div class="flex items-center gap-3">
+@@ -92,44 +93,204 @@
+       </p>
+     </template>
+ 
+-    <!-- Step 2 placeholder (V0.12) -->
+-    <template v-else-if="step === 'step2'">
+-      <!-- V0.12 implements this step -->
+-      <slot name="step2" :parseResult="parseResult" :source="source" :onBack="goBack" />
++    <!-- ══════════════ STEP 2 ══════════════ -->
++    <template v-else-if="step === 'step2' && parseResult">
++
++      <!-- Back link -->
++      <button
++        type="button"
++        class="flex items-center gap-1 text-sm mb-4"
++        style="color: var(--muted);"
++        @click="goBack"
++        aria-label="Back to Step 1"
++      >
++        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
++          <polyline points="15 18 9 12 15 6" />
++        </svg>
++        Back
++      </button>
++
++      <!-- Preview heading -->
++      <div class="mb-4">
++        <h2 class="text-xl font-semibold" style="color: var(--text);">
++          Preview
++          <span
++            class="ml-2 text-sm font-normal px-2 py-0.5 rounded-full"
++            style="background: var(--surface-hi); color: var(--muted);"
++          >
++            {{ parseResult.trades.length }} trades · {{ parseResult.positions.length }} positions
++          </span>
++        </h2>
++        <p class="text-sm mt-1" style="color: var(--muted);">
++          Source: {{ source === 'T212' ? 'Trading 212' : 'Interactive Brokers' }}
++        </p>
++      </div>
++
++      <!-- Warn banner (partial-row failures) -->
++      <WarnBanner
++        v-if="parseResult.errors && parseResult.errors.length > 0"
++        :count="parseResult.errors.length"
++        :message="`${parseResult.errors.length} row${parseResult.errors.length > 1 ? 's' : ''} skipped — see details`"
++        :details="parseResult.errors.map(e => `Row ${e.row}: ${e.reason}`)"
++        class="mb-4"
++      />
++
++      <!-- Holdings preview -->
++      <div class="mb-4">
++        <h3 class="text-sm font-medium mb-2" style="color: var(--muted);">Holdings preview</h3>
++        <ImportPreviewTable
++          :rows="holdingsPreviewRows"
++          :columns="holdingsColumns"
++          :maxVisible="5"
++        />
++      </div>
++
++      <!-- Trades preview -->
++      <div class="mb-6">
++        <h3 class="text-sm font-medium mb-2" style="color: var(--muted);">Trades preview</h3>
++        <ImportPreviewTable
++          :rows="tradesPreviewRows"
++          :columns="tradesColumns"
++          :maxVisible="5"
++        />
++      </div>
++
++      <!-- Commit failure error -->
++      <ErrorBanner
++        v-if="commitError"
++        title="Couldn't save import"
++        :message="commitError"
++        class="mb-4"
++      >
++        <template #actions>
++          <button
++            type="button"
++            class="ds-btn-ghost text-sm py-1.5 px-4"
++            @click="onCommit"
++          >
++            Retry
++          </button>
++        </template>
++      </ErrorBanner>
++
++      <!-- CTAs -->
++      <div class="flex items-center gap-3">
++        <button
++          type="button"
++          class="ds-btn-ghost"
++          @click="goBack"
++          aria-label="Cancel and go back to Step 1"
++        >
++          Cancel
++        </button>
++        <button
++          data-testid="commit-btn"
++          class="ds-btn-primary"
++          :disabled="committing"
++          :aria-disabled="committing"
++          @click="onCommit"
++        >
++          <span v-if="committing">Saving…</span>
++          <span v-else>Commit import →</span>
++        </button>
++      </div>
+     </template>
++
++    <!-- Toast for commit errors -->
++    <Toast
++      :show="showToast"
++      :message="toastMessage"
++      :onRetry="commitError ? onCommit : undefined"
++      @dismiss="showToast = false"
++    />
+   </div>
+ </template>
+ 
+ <script setup lang="ts">
+ import { ref, computed } from 'vue'
++import { useRouter } from 'vue-router'
+ import DropZone from '@/components/DropZone.vue'
+ import CsvPasteArea from '@/components/CsvPasteArea.vue'
+ import SourceSelect from '@/components/SourceSelect.vue'
++import ErrorBanner from '@/components/ErrorBanner.vue'
++import WarnBanner from '@/components/WarnBanner.vue'
++import ImportPreviewTable from '@/components/ImportPreviewTable.vue'
++import Toast from '@/components/Toast.vue'
+ import { useCsvParser, type CsvSource, type ParseResult } from '@/composables/useCsvParser'
++import { useImportCsv } from '@/composables/useImportCsv'
++import type { ColumnDef } from '@/components/ImportPreviewTable.vue'
++import type { Position, Trade } from '@/../functions/portfolio-tools/types.js'
+ 
+ type Step = 'step1' | 'step2'
+ 
++const router = useRouter()
++
+ const step = ref<Step>('step1')
+ const source = ref<CsvSource | ''>('')
+ const pasteText = ref('')
+ const fileText = ref<string | null>(null)
++const csvRaw = ref<string | null>(null) // original CSV text for callable
+ const dropError = ref<string | null>(null)
+ const parseResult = ref<ParseResult | null>(null)
+ 
+-const { parse, parseError, loading: parsing, reset: resetParser } = useCsvParser()
++const committing = ref(false)
++const commitError = ref<string | null>(null)
++const showToast = ref(false)
++const toastMessage = ref('')
++
++const { parse, parseError, loading: parsing, reset: resetParser, result: parserResult } = useCsvParser()
++const { importCsv } = useImportCsv()
+ 
+ /** True when there's something to parse (file dropped or text pasted) */
+ const canParse = computed(() => {
+   return !!(fileText.value || pasteText.value.trim()) && !!source.value
+ })
+ 
++/** Flatten positions for preview table */
++const holdingsPreviewRows = computed((): Record<string, unknown>[] => {
++  if (!parseResult.value) return []
++  return parseResult.value.positions.map((p: Position) => ({
++    ticker: p.ticker,
++    broker: p.broker,
++    quantity: p.quantity,
++    avgCost: `${p.avgCost.amount.toFixed(2)} ${p.avgCost.currency}`,
++  }))
++})
++
++const holdingsColumns: ColumnDef[] = [
++  { key: 'ticker', label: 'Ticker' },
++  { key: 'broker', label: 'Broker' },
++  { key: 'quantity', label: 'Qty' },
++  { key: 'avgCost', label: 'Avg Cost' },
++]
++
++/** Flatten trades for preview table */
++const tradesPreviewRows = computed((): Record<string, unknown>[] => {
++  if (!parseResult.value) return []
++  return parseResult.value.trades.map((t: Trade) => ({
++    ticker: t.ticker,
++    side: t.side,
++    quantity: t.quantity,
++    price: `${t.price.amount.toFixed(2)} ${t.price.currency}`,
++    executedAt: t.executedAt,
++  }))
++})
++
++const tradesColumns: ColumnDef[] = [
++  { key: 'ticker', label: 'Ticker' },
++  { key: 'side', label: 'Action' },
++  { key: 'quantity', label: 'Qty' },
++  { key: 'price', label: 'Price' },
++  { key: 'executedAt', label: 'Date' },
++]
++
+ function onSourceChange() {
+-  // Clear prior parse state when source changes
+   parseResult.value = null
+-  parseError.value = null
+   fileText.value = null
++  csvRaw.value = null
+   pasteText.value = ''
+   dropError.value = null
++  commitError.value = null
+   resetParser()
+ }
+ 
+@@ -141,7 +302,9 @@ function onFileDropped(file: File) {
+   dropError.value = null
+   const reader = new FileReader()
+   reader.onload = (e) => {
+-    fileText.value = e.target?.result as string ?? null
++    const text = e.target?.result as string ?? null
++    fileText.value = text
++    csvRaw.value = text
+   }
+   reader.readAsText(file)
+ }
+@@ -152,20 +315,49 @@ async function onParse() {
+   const text = fileText.value ?? pasteText.value
+   if (!text || !source.value) return
+ 
++  csvRaw.value = text
+   await parse(source.value, text)
+ 
+-  if (!parseError.value) {
+-    parseResult.value = useCsvParser().result.value
++  if (!parseError.value && parserResult.value) {
++    parseResult.value = parserResult.value
+     step.value = 'step2'
++    commitError.value = null
++  }
++}
++
++async function onCommit() {
++  if (committing.value || !source.value || !csvRaw.value) return
++
++  committing.value = true
++  commitError.value = null
++
++  try {
++    const result = await importCsv({
++      source: source.value as CsvSource,
++      csvText: csvRaw.value,
++    })
++
++    if (result) {
++      router.push('/')
++    } else {
++      throw new Error('Import failed — no result returned.')
++    }
++  } catch (err) {
++    const msg = err instanceof Error ? err.message : String(err)
++    commitError.value = msg
++    toastMessage.value = "Couldn't save import. Retry?"
++    showToast.value = true
++  } finally {
++    committing.value = false
+   }
+ }
+ 
+ function goBack() {
+   step.value = 'step1'
+   parseResult.value = null
++  commitError.value = null
+   resetParser()
+ }
+ 
+-// Expose for parent / V0.12 slot
+ defineExpose({ step, source, parseResult, goBack })
+ </script>
