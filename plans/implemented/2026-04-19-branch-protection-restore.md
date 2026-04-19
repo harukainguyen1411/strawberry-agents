@@ -338,6 +338,33 @@ When configuring `bypass_actors` on a ruleset, always consult the GitHub docs li
 
 If the goal is to let the owner merge without satisfying required checks or reviews, `"always"` is the only correct value.
 
+## Post-implementation correction (2026-04-19) — Correction #3: Revert to classic protection
+
+### Symptom
+
+Even after Correction #2 switched the bypass actor to `actor_type: "RepositoryRole"` with `actor_id: 5` (admin role) and `bypass_mode: "always"`, and the API returned `current_user_can_bypass: "always"`, the UI merge button remained blocked for PRs. The "Merge without waiting for requirements to be met" option never appeared for `pull_request` rule type.
+
+### Root cause
+
+GitHub's ruleset UI bypass is broken for the `pull_request` rule type on personal (user-owned) repos. This is a confirmed GitHub limitation documented in GitHub community discussion #113172 (open for ≥1 year with no fix). The `pull_request` ruleset rule type does not honour bypass actors at the UI merge step on personal repos, regardless of `bypass_mode` or `actor_type`.
+
+### Fix
+
+Deleted ruleset 15256914 entirely (`DELETE /repos/harukainguyen1411/strawberry-app/rulesets/15256914`). Applied classic branch protection via `PUT /repos/harukainguyen1411/strawberry-app/branches/main/protection` with:
+
+- `enforce_admins: false` — this is the key setting; it allows admins (including `harukainguyen1411`) to merge without satisfying required checks or reviews via the UI merge button.
+- Same 5 required status checks with `strict: true`.
+- Same review config: 1 required review, dismiss_stale_reviews: true, require_last_push_approval: true.
+- `required_conversation_resolution: true`, `allow_force_pushes: false`, `allow_deletions: false`, `restrictions: null`.
+
+Verified via API: `enforce_admins: false`, 5 checks present, 1 required review.
+
+### Tradeoff
+
+Classic `enforce_admins: false` grants bypass to ALL admins on the repo, not just `harukainguyen1411`. There is no per-actor bypass list as rulesets provided. Since `harukainguyen1411` is currently the sole admin, effective access is identical to the intended per-user bypass. Acceptable for now. If a second admin is ever added, they will inherit bypass automatically — review at that time.
+
+`scripts/setup-branch-protection.sh` has been updated to use the classic protection PUT path with a comment explaining the ruleset abandonment.
+
 ## 6. Non-goals
 
 - CODEOWNERS file — deferred, same reasoning as 2026-04-17 §10.
