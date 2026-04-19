@@ -15,6 +15,20 @@
 **Blockers / Open threads:**
 - Duong must re-paste the Firebase service account JSON into the `FIREBASE_SERVICE_ACCOUNT` secret on `harukainguyen1411/strawberry-app`. No workflow change needed.
 
+## 2026-04-19 — Plan promotion: orianna-role-redesign ADR bypassing Orianna gate
+
+**Task:** Promote `plans/proposed/2026-04-19-orianna-role-redesign.md` to `plans/approved/` with Orianna gate bypass (ADR describes the redesign itself; forward-refs are intentional).
+
+**Done:**
+- Killed stale `plan-promote.sh` background processes.
+- Ran `plan-promote.sh` — failed at Orianna gate with 8 block findings, all forward-refs to artifacts the plan itself defines (scripts/orianna-freshness-check.sh, external-allowlist.md, freshness-audits/, plus example paths and new MCP tools).
+- Confirmed no `gdoc_id` in frontmatter — no Drive unpublish needed.
+- `git mv` proposed→approved, rewrote `status: proposed` → `status: approved`.
+- Committed with bypass explanation body per e97828d pattern. Commit: `a4dda94`.
+- Pushed to main.
+
+---
+
 ## 2026-04-19 — Plan promotion: tests-dashboard ADR bypassing Orianna gate
 
 **Task:** Promote `plans/proposed/2026-04-19-tests-dashboard.md` to `plans/approved/` with Duong's explicit override of the Orianna fact-check gate.

@@ -17,7 +17,7 @@
 
 - 2026-04-17: Dependabot B5/B7 vitest3 upgrade
 - 2026-04-18: TDD hooks + CI wiring; Guard 4 allowlist fix; lockfile sync; ulid lockfile fix; migration dry-run + Phase 1 real run + P3.1 push + P3.9 smoke test; phase-0 PR audit; F4 age-encrypt env bundles; git hygiene sweep; statusline setup + idle-time + ci/pr/quota strip; A3 strawberry-agents push
-- 2026-04-19: P1.3 env ciphertext; A4 operational surface sync; O4.1-O4.3 orianna memory-audit; PR #25/#26/#28 CI diagnosis rounds 1+2; plan-promote tests-dashboard bypass; Firebase preview secret root cause diagnosis (empty value, not missing name)
+- 2026-04-19: P1.3 env ciphertext; A4 operational surface sync; O4.1-O4.3 orianna memory-audit; PR #25/#26/#28 CI diagnosis rounds 1+2; plan-promote tests-dashboard bypass; Firebase preview secret root cause diagnosis (empty value, not missing name); promote orianna-role-redesign ADR to approved (Orianna gate bypassed — forward-refs intentional, ADR describes redesign itself)
 
 ## Archive Note
 
