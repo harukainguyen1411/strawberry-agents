@@ -14,6 +14,7 @@
 - 2026-04-13 S1 (subagent): Firebase Hosting caching fix — deployed to both myapps-b31ea and darkstrawberry-landing sites. Key learnings: **/*.html does not match SPA routes like /; use ** catch-all for no-cache and let JS/CSS rules override with immutable. darkstrawberry.com is a separate hosting site (darkstrawberry-landing) with its own apps/landing/firebase.json. Fixed missing packageManager in package.json (turbo was broken). No GitHub remote.
 - 2026-04-13 S2 (subagent): Firebase Storage CORS investigation. Root cause: Firebase Storage was never initialized for myapps-b31ea. Browser SDK gets 404 on v0 API — not a CORS header issue. Enabled firebasestorage.googleapis.com API. Requires Duong to visit Firebase Console > Storage > Get Started. See assessments/2026-04-13-firebase-storage-cors-investigation.md and architecture/firebase-storage-cors.md.
 - 2026-04-14 S1 (subagent): Git hygiene automation. Delivered D5/D1/D2/D4. D3 + hook install blocked by sandbox path restrictions on .claude/skills/ and .git/hooks/.
+- 2026-04-19 S1 (subagent, devops advisor mode): E2E CI performance audit on harukainguyen1411/strawberry-app. Delivered plan at plans/proposed/2026-04-19-e2e-ci-performance.md with 11 ranked wins. Top 3: workers 1→2 in Playwright config, fix browser cache key to Playwright-version scope, add concurrency + docs paths-ignore. Baseline run: 24620828113, E2E job ~8m 30s dominated by 7m 46s test step.
 
 ## Context
 - myapps repo: github.com/Duongntd/myapps — Vue 3 + Tailwind + Firebase (Auth + Firestore). Hosted on Firebase Hosting.
