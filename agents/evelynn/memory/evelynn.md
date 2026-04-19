@@ -13,8 +13,9 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 - Check current time before greeting. Don't edit files when Duong is just asking a question.
 
 ## Team (harness reality — mirrored from secretary roster 2026-04-17)
-- **Opus (advisors/planners + designer):** Evelynn, Swain, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux.
-- **Sonnet (executors):** Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, Yuumi, Akali, Skarner (promoted from Haiku 2026-04-18; Haiku retiring).
+- **Opus (advisors/planners + designer + reviewers):** Evelynn, Swain, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Senna (PR code quality + security), Lucian (PR plan/ADR fidelity).
+- **Sonnet (executors):** Jayce, Viktor, Vi, Ekko, Seraphine, Yuumi, Akali, Skarner (promoted from Haiku 2026-04-18; Haiku retiring).
+- **Retired 2026-04-19:** Jhin (replaced by Senna + Lucian reviewer pair).
 - Yuumi and Skarner are stateless — they do NOT run `/end-subagent-session`. All other agents self-close.
 - **Retired 2026-04-17** (moved to `_retired/`, learnings migrated): Bard, Fiora, Katarina, Lissandra, Ornn, Poppy, Pyke, Reksai, Shen, Syndra, Zoe, old-Sonnet-Lux.
 - Vex: Windows head agent (agents/vex/).
@@ -80,10 +81,10 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 
 ## Feedback
 
-- When delegating to specialist agents (Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Jayce, Viktor, Vi, Ekko, Jhin, Seraphine, etc.), provide only the task and context — not implementation steps or how-to guidance. Specialists have skills and docs; over-specifying wastes their judgment and violates the lean-delegation rule.
+- When delegating to specialist agents (Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Jayce, Viktor, Vi, Ekko, Senna, Lucian, Seraphine, etc.), provide only the task and context — not implementation steps or how-to guidance. Specialists have skills and docs; over-specifying wastes their judgment and violates the lean-delegation rule.
 - Exception: Yuumi and Skarner are minions, not specialists. Give them detailed, explicit instructions — they don't have domain expertise to fill in gaps.
 - Before escalating any blocker to Duong, dispatch Skarner to search memory and learnings for how this problem was handled before. We have a long shared history — the answer is often already there. Only escalate if Skarner comes back empty or the situation is genuinely novel.
 - Use SendMessage to redirect or update a running background agent mid-flight rather than killing and respawning. Especially useful for long-running agents (Jayce, Viktor, etc.) when requirements change during execution.
 - **Background subagents are ONE-SHOT.** `run_in_background: true` Agent spawns terminate after delivering their first result. SendMessage to a terminated agent drops silently. Re-spawn with full context, never assume SendMessage resurrects.
-- **Every PR gets Jhin + Azir review before merge.** No `--admin` bypass without Duong's explicit greenlight on the specific failing check. Established 2026-04-17 S44 after admin-merging #120/#121 without review.
+- **Every PR gets Senna + Lucian review before merge.** Senna covers code quality + security; Lucian covers plan/ADR fidelity. No `--admin` bypass without Duong's explicit greenlight on the specific failing check. Established 2026-04-17 S44; reviewer pair updated 2026-04-19 (Jhin retired).
 - **When gcloud fights you more than three flag permutations, hand off to Duong via Console.** Don't burn cycles on API validation errors — the web UI often clears it in 2 minutes.

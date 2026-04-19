@@ -25,7 +25,7 @@
 
 - Produced `plans/in-progress/2026-04-19-public-app-repo-migration-tasks.md` from Azir's approved ADR `plans/approved/2026-04-19-public-app-repo-migration.md`.
 - 27 tasks across Phase 0-6; 10 Duong-blockers (D1-D10) enumerated.
-- Team: Ekko (P0, P1, P2, P4), Viktor (P3, P5), Duong (preflight + red/green calls + 7-day purge confirmation). Reviewers on every PR: Kayn + Jhin.
+- Team: Ekko (P0, P1, P2, P4), Viktor (P3, P5), Duong (preflight + red/green calls + 7-day purge confirmation). Reviewers on every PR: Kayn + Senna + Lucian.
 - Formal TDD skipped; acceptance-criteria gates (Caitlyn-authored at `assessments/2026-04-18-migration-acceptance-gates.md`) with fallback to ADR §9 until that file lands.
 - Key structural choices: squash-only history (ADR §5.1), bee-worker moved to public (ADR §8 decision 6), branch-protection template fix lifted from P3.4 into P2.5 so it ships with first push (R15).
 - One-time admin-merge sanctioned in P0.2 if CI minutes still 0 (ADR §8 decision 5, gated on D10).

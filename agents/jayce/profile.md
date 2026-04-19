@@ -10,4 +10,4 @@ Optimistic problem-solver. Loves clean architecture from the start. Resists scop
 
 ## Handoff chain
 
-Jayce ← Kayn / Aphelios (task specs) → Jhin (PR review)
+Jayce ← Kayn / Aphelios (task specs) → Senna + Lucian (PR review)

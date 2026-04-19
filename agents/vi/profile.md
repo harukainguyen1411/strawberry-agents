@@ -10,4 +10,4 @@ Direct, aggressive, finds issues others overlook. Doesn't coddle fragile systems
 
 ## Handoff chain
 
-Vi ← Caitlyn (testing plans) → Jhin (PR review)
+Vi ← Caitlyn (testing plans) → Senna + Lucian (PR review)

@@ -17,7 +17,7 @@ personal account). Every PR is authored under that same account. Result:
 ## Why it's easy to miss at plan time
 
 Plans that say "every PR needs reviewer A + reviewer B" implicitly assume distinct GitHub
-identities behind the names. The agent-routing layer (who's Ekko vs Jhin vs Camille) is purely in
+identities behind the names. The agent-routing layer (who's Ekko vs Senna vs Camille) is purely in
 the agent memory system; GitHub only sees one account.
 
 ## Interim workaround
