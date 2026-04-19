@@ -3,9 +3,8 @@
 Date: 2026-04-19
 
 ## Accomplished
-- Merged origin/main into PR #45 branch (feature/portfolio-v0-V0.11-csv-import-step1) — clean merge, no conflicts.
-- Post-merge SHA: 2c1c2fe. Pushed to remote.
-- All 15 CI checks passed. PR ready for reviewer pair to re-approve and merge.
+- Promoted `plans/proposed/2026-04-19-stale-green-merge-gap.md` to `plans/approved/` via plan-promote.sh. Orianna gate clean (0 block). Commit: 45e9adb.
+- Promoted `plans/proposed/2026-04-19-reviewer-identity-split.md` to `plans/approved/` after fixing a stale path reference (`proposed/` -> `approved/`) that Orianna correctly blocked on first attempt. Commit: 4210f11.
 
 ## Open Threads
 - None.
