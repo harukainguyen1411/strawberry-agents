@@ -26,6 +26,7 @@
 - 2026-04-19 (s7): applied Vi's E2E fixes on PR #46 — navigation locator fix (5b0b721) + linux snapshot baselines via Docker (a31258d). CI started, pending E2E/Lint.
 - 2026-04-19 (s8): deleted ruleset 15256914, applied classic protection (enforce_admins: false) on strawberry-app main. Updated script + plan Correction #3 (ba1def9).
 - 2026-04-19 (s9): added TDD-Waiver empty commit (9666ace) to PR #25 — xfail-first check now passes. Remaining checks (Lint+Test+Build, unit-tests, Playwright E2E) still running at session end.
+- 2026-04-19 (s14): opened PR #54 — two CI fixes: release.yml detached-HEAD (ref_name + permissions:contents:write) + preview.yml turbo --force cache bust
 - 2026-04-19 (s10): drove PR #26 to merge-ready — manually resolved functions/package.json conflict via worktree, added TDD-Waiver commit (aec09e0). All CI checks green. Awaits Senna+Lucian review.
 
 - GitHub ruleset UI bypass is broken for `pull_request` rule type on personal repos (discussion #113172, open ≥1y). Even RepositoryRole/admin + bypass_mode: always + current_user_can_bypass: always doesn't unblock UI merge button. Use classic protection with enforce_admins: false instead.
@@ -36,6 +37,7 @@
 - For Playwright Docker snapshot generation: `package.json` may declare `^1.58.0` but npm resolves to a newer patch (e.g. 1.59.1). Always match the Docker image tag to the RESOLVED version in `package-lock.json`, not the declared range. Use `mcr.microsoft.com/playwright:v<resolved>-jammy`.
 
 - 2026-04-19 (s11): reviewer identity setup — encrypted PAT at `secrets/encrypted/reviewer-github-token.age`, wrote `scripts/reviewer-auth.sh`, documented two-identity model in git-workflow.md + agent-network.md + camille memory. `reviewer-auth.sh gh api user --jq .login` returns `strawberry-reviewers`. Branch protection on strawberry-app currently ZERO (classic 404, GraphQL empty, rulesets []).
+- 2026-04-19 (s13): git hygiene on strawberry-app — 12 worktrees removed, 15 branches deleted. `feat/usage-dashboard-html-shell` + its worktree `/private/tmp/strawberry-app-t7` skipped (dirty package-lock.json). `/usr/bin/git` required in subshells (git not on PATH).
 - 2026-04-19 (s12): smoke-tested reviewer-auth.sh — PR #53 (Duongntd author), `strawberry-reviewers` approved, `reviewDecision` = APPROVED. Rule 18 structurally satisfied. Assessment at `assessments/reviewer-auth-smoke-2026-04-19.md`.
 - `tools/decrypt.sh` does NOT output plaintext to stdout. Interface: reads ciphertext from stdin, writes `KEY=val` to `--target` (must be under `secrets/`), optionally `--exec -- cmd` to exec with env. Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd` pattern.
 - `secrets/encrypted/reviewer-github-token.age` — reviewer bot PAT for strawberry-reviewers account.
