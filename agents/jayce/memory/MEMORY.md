@@ -38,6 +38,7 @@
 - 2026-04-19 (PR #32 V0.2 lint+gate fix): Fixed bare ternary lint errors in read-tracker + task-list routers. Restored VITE_E2E bypass in firebase/config.ts. Hardened myapps src/router/index.ts to short-circuit on non-auth routes and already-authenticated (local-mode) users. Commit 71cad12 pushed. PR comment posted.
 
 - 2026-04-19 (V0.10 Senna fixes): Fixed PR #44 critical findings — SignInView fake-success, Firestore hasOnly, useAuth dead flag. 4 fix commits (b055d02, bf6ff70, ef48fca, f7a5bec) + merge 941c50f. Pushed. PR comment posted.
+- 2026-04-19 (V0.10 merge conflict): Resolved PR #44 DIRTY state. 1 conflict in router/index.ts — kept HEAD (V0.10). Merge commit ab7393b pushed. PR comment posted. Not merged (Rule 18).
 
 ## Archive Note
 
