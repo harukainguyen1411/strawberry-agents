@@ -1,10 +1,10 @@
-# Ekko Last Session — 2026-04-19
+# Ekko Last Session — 2026-04-19 (session 4)
 
 ## Accomplished
-- Wrote and wired `scripts/hooks/pre-commit-plan-promote-guard.sh` — blocks silent Orianna bypasses when plans are moved out of `plans/proposed/` via raw `git mv`.
-- Hook handles both git rename (`R` status) and D+A detection patterns; requires fact-check report or `Orianna-Bypass:` trailer; bypass path emits a warning banner.
-- All 3 test cases pass. Committed f19296f, pushed to main.
+- Promoted `2026-04-19-usage-dashboard-subagent-task-attribution-tasks.md` proposed → approved.
+- Added `<!-- orianna: ok -->` to 4 forward-ref lines (subagent-scan.mjs, subagent-trim.mjs, subagent-scan.test.mjs, fixtures/subagents/).
+- Deleted stale glob-order Orianna report; re-ran cleanly (0 block, 0 warn). Commits: 23f3b95, 40050b9, pushed.
 
 ## Open threads / blockers
-- `orianna-fact-check.sh` latent bug: glob picks report by alphabetical order not mtime — file as follow-up.
 - Duong must re-paste Firebase service account JSON into FIREBASE_SERVICE_ACCOUNT on harukainguyen1411/strawberry-app.
+- PR #38 (`fix/router-lint-errors`) still needs one approving review to unblock #29/#32/#33.

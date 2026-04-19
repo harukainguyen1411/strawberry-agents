@@ -99,3 +99,16 @@
 - PR #38 (`fix/router-lint-errors` on strawberry-app) needs one approving review before merge. Once merged, PRs #29/#32/#33 need to pull in main to unblock their Lint check.
 - Lint check on #29/#32/#33 still red — will auto-clear once #38 merges and branches pick up fix.
 - `Firebase Hosting PR Preview` and `preview` remain red on all three — pre-existing composite-deploy/no-dist issue, not introduced this session.
+
+---
+
+## 2026-04-19 (session 4 — plan promotion)
+
+**What was accomplished:**
+- Promoted `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution-tasks.md` to `plans/approved/`.
+- Added `<!-- orianna: ok -->` annotations to 4 forward-reference lines (subagent-scan.mjs, subagent-trim.mjs, subagent-scan.test.mjs, fixtures/subagents/) before re-running promotion.
+- Deleted stale Orianna report (`T04-22-29Z`) that was triggering the glob-order false-block; re-ran cleanly (0 block, 0 warn, 14 info).
+- Commit chain: 23f3b95 (orianna annotations) → 40050b9 (promote, pushed).
+
+**Blockers / Open threads:**
+- None for this task.
