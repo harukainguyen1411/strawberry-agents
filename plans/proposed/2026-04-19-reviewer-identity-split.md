@@ -247,7 +247,7 @@ identity cannot supply two *distinct* approving reviewers.
 
 **Current state (grep/API-verified earlier today,** see
 `agents/camille/learnings/2026-04-19-branch-protection-probe-and-rulesets.md`
-**and the stale-green plan at `plans/proposed/2026-04-19-stale-green-merge-gap.md`):**
+**and the stale-green plan at `plans/approved/2026-04-19-stale-green-merge-gap.md`):**
 `harukainguyen1411/strawberry-app`'s branch-protection payload on `main`
 does **not** carry a `required_pull_request_reviews` block at all. This
 phase instates it — it is net-new policy, not a modification of an existing
