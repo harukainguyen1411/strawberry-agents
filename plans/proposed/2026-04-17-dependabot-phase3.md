@@ -11,7 +11,7 @@ addendum-to: plans/approved/2026-04-17-dependabot-remediation.md
 
 Phase 1-2 of `2026-04-17-dependabot-remediation.md` landed successfully: **79 of 104 alerts resolved**. This addendum scopes the remaining **25 alerts** and carries forward the lockfile patterns that worked in Phase 1-2 (per Viktor's and Vi's learnings).
 
-This plan defines **batches, risk, and verification expectations only**. It does **not** assign implementers (per `rule-plan-writers-no-assignment`). Viktor (upgrades), Vi (tests), and Jhin (review) pick up batches.
+This plan defines **batches, risk, and verification expectations only**. It does **not** assign implementers (per `rule-plan-writers-no-assignment`). Viktor (upgrades), Vi (tests), and Senna + Lucian (review) pick up batches.
 
 ---
 
@@ -164,7 +164,7 @@ Per batch (carries forward §5 from the parent plan):
    - **B3a:** `tsc --noEmit` + build. (No test files.)
    - **B3b:** root `npm ci` dry-run + any root-scope script that exercises proxy-agent path (if none, audit diff only).
    - **B3c, B3d:** Vi runs myapps suite. Kill port 4173 first. Expected baseline: vitest 17/17 (post-B8), E2E 29 pass / 7 fail (visual-regression + navigation:63). Any deviation = regression.
-6. Jhin reviews — focuses on `overrides` correctness, lockfile diff sanity (field-by-field for surgical batches), and drops-for-auto-closed-alerts.
+6. Senna + Lucian review — Senna focuses on `overrides` correctness, lockfile diff sanity (field-by-field for surgical batches), and code-quality + security; Lucian checks drops-for-auto-closed-alerts align with plan/ADR scope.
 7. PR merged with `chore:` prefix (invariant 5).
 8. Dependabot alerts auto-close on merge; manually dismiss with "fixed in #PR" if not.
 

@@ -64,10 +64,10 @@ repo at a time) and to match each task's profile, this plan assigns:
 - **Duong** — owns Phase A0 preflight (D-agents-1 and D-agents-2 in §
   "Duong-blocking prerequisites" below), Phase A6 archive at T+90
   days, and any PAT re-mint / Firebase Console actions if surfaced.
-- **Reviewers** — **Kayn** and **Jhin** on every PR across both
+- **Reviewers** — **Kayn** and **Senna + Lucian** on every PR across both
   repos. (Plans commit direct to main per Rule 4; the push to
   strawberry-agents main in A3.1 is not a PR but **is** reviewed by
-  Kayn via post-push inspection.)
+  Kayn via post-push inspection. Senna: code-quality + security; Lucian: plan/ADR fidelity.)
 
 Azir's §8 handoff named Ekko + Caitlyn; Caitlyn is already busy with
 the acceptance-gate checklist and its amendments, so Viktor picks up
@@ -1009,10 +1009,10 @@ agents — Viktor confirms final list in-session against
 `ls /Users/duongntd99/Documents/Personal/strawberry/agents/` at the
 time A5.4 runs.
 
-**Reviewers:** Kayn + Jhin on every PR and every post-push inspection
+**Reviewers:** Kayn + Senna + Lucian on every PR and every post-push inspection
 across both migrations. This plan produces **no PRs** in
 strawberry-agents (plans commit direct to main per Rule 4); Kayn +
-Jhin review the direct-to-main commits post-push.
+Senna + Lucian review the direct-to-main commits post-push.
 
 ---
 
