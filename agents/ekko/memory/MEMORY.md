@@ -12,6 +12,7 @@
 - No classic branch protection on strawberry-app (404). No rulesets. CLEAN/MERGEABLE is sufficient to merge.
 - Duongntd auth has NO admin on harukainguyen1411/strawberry-agents (pull/push/triage only). Branch-protection writes require harukainguyen1411 account (Duong-manual).
 - `tools/decrypt.sh`: reads ciphertext stdin, writes `KEY=val` to `--target` (must be under `secrets/`). Use `cat secret.age | tools/decrypt.sh --target secrets/x.env --var KEY --exec -- cmd`.
+- GitHub branch protection (classic or rulesets) on private repos requires GitHub Pro — free-plan accounts get 403.
 
 ## Sessions
 
@@ -25,6 +26,7 @@
 - 2026-04-19 (ekko s30): encrypted senna PAT → reviewer-github-token-senna.age; round-trip verified strawberry-reviewers-2; shredded plaintext. Commit 95064e1.
 - 2026-04-19 (ekko s31): Phase 4 dry-run — PR #3 on strawberry-agents; Senna→strawberry-reviewers-2, Lucian→strawberry-reviewers; two distinct approvals confirmed; PR closed, branch deleted.
 - 2026-04-19 (ekko s32): Phase 7 branch-protection attempt — stopped; Duongntd lacks admin on harukainguyen1411/strawberry-agents. Duong-manual step required.
+- 2026-04-19 (ekko s33): Phase 7 retry as harukainguyen1411 — 403; branch protection on private repos requires GitHub Pro. Plan blocked.
 
 ## Archive Note
 
