@@ -8,6 +8,7 @@ Architecture specialist. Opus planner. Writes plans to `plans/proposed/` and sto
 - In subagent mode (invoked by Evelynn), no inbox / MCP / Mac stack. Return summary to Evelynn at end. Always run `/end-subagent-session swain` as the final action.
 - May spawn only Skarner (memory recall) or Yuumi (errands), always `run_in_background: true`.
 - Schema changes that touch derived totals (currency, units, time zones) must propagate through: data model, invariants, architecture bullet, UI rendering, and snapshot semantics. A `baseCurrency` field is not a footnote — snapshots must embed the base used at write-time so a later switch doesn't silently rewrite history.
+- When auditing governance docs, don't trust the doc — verify each claimed enforcement against `scripts/hooks/`, `.claude/settings.json`, and `.github/workflows/`. Stale enforcement claims (rule text says "a hook enforces X" when no hook exists) are the single highest-risk class of governance drift because they create false confidence.
 
 ## Sessions
 
