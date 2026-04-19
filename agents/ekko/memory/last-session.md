@@ -1,8 +1,9 @@
-# Last Session Handoff — 2026-04-19
+# Ekko Last Session — 2026-04-19
 
-- Promoted `plans/proposed/2026-04-19-tests-dashboard.md` to `plans/approved/` manually (bypassing Orianna fact-check gate on Duong's explicit override).
-- Confirmed plan had no `gdoc_id` — no Drive unpublish required. `plan-promote.sh` has no skip flag; used raw `git mv` per the script's own comment.
-- Commit `e97828d` pushed to main on `harukainguyen1411/strawberry-agents`.
+- Diagnosed `firebaseServiceAccount` input error on PRs #25/#26/#28 preview deploys.
+- Root cause: `FIREBASE_SERVICE_ACCOUNT` secret exists by name but stored value is empty/zero-byte — runner drops empty secrets from `with:` log echo, `action-hosting-deploy@v0` throws "Input required and not supplied".
+- Both workflow files (`preview.yml` L53, `myapps-pr-preview.yml` L65) reference the correct secret name — no workflow change needed.
 
 Open threads:
-- Orianna Track 2 redesign (forward-ref detection fix) is ongoing — this bypass was one-off per Duong's instruction.
+- Duong must re-paste the Firebase service account JSON into `FIREBASE_SERVICE_ACCOUNT` on `harukainguyen1411/strawberry-app` (delete + recreate secret with actual JSON value).
+- PR #26 lockfile desync (vitest pin) is a separate unrelated failure.
