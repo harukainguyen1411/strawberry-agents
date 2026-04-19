@@ -29,3 +29,4 @@
 - 2026-04-19-reviewer-auth-cwd-constraint.md — reviewer-auth.sh must run from strawberry-agents dir; decrypt.sh refuses targets outside its own secrets/; cwd strawberry-app causes exit 5 | last_used: 2026-04-19
 - 2026-04-19-sequential-plan-promote-stale-path.md — when promoting plans in batch, cross-plan proposed/ refs go stale after first promotion; grep and fix before running second plan-promote.sh | last_used: 2026-04-19
 - 2026-04-19-lane-flag-backward-compat.md — parse optional --lane before positional args; default to existing identity; per-lane --target files avoid cross-lane clobber in decrypt.sh | last_used: 2026-04-19
+- 2026-04-19-age-encrypt-key-verification.md — verify recipient key from evelynn.md + existing .age header before encrypting; round-trip verify before shredding; rm -P on macOS (no shred) | last_used: 2026-04-19
