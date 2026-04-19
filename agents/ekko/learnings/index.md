@@ -12,3 +12,4 @@
 - 2026-04-19-discord-mcp-channel-webhook-setup.md — Discord MCP channel+webhook pattern: find guild via REST, create channel, restrict via permissions API, encrypt webhook URL with age -r | last_used: 2026-04-19
 - 2026-04-19-inbox-gitignored-use-assessments.md — agents/*/inbox/ is gitignored; use assessments/ for committed Duong-facing docs | last_used: 2026-04-19
 - 2026-04-19-ci-fix-pr-body-lint.md — QA-Waiver vs QA-Report URL pattern; Turbo sweeps siblings; no-unused-expressions ternary fix; secrets-guard false positive on branch names | last_used: 2026-04-19
+- 2026-04-19-pr25-pr26-ci-diagnosis-round2.md — unpushed local commits = stale CI; merge conflict blocks pull_request CI events; gh run rerun uses cached PR body; FIREBASE_SERVICE_ACCOUNT infra gap; E2E cascade from missing lockfile entry | last_used: 2026-04-19

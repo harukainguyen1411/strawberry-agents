@@ -4,6 +4,7 @@
 Fullstack Engineer — quick tasks, dependabot, focused delivery under team-lead direction.
 
 ## Sessions
+- 2026-04-19 (subagent, PR-CI-round2): Fixed router lint + lockfile on PRs #25/#26; resolved PR #25 merge conflict with main; added QA-Waiver. FIREBASE_SERVICE_ACCOUNT and E2E failures are pre-existing blockers for Duong.
 - 2026-04-19 (subagent, CI-fix): Fixed QA-lint on PRs #29/#32/#33 (QA-Waiver); opened PR #38 to fix no-unused-expressions in task-list + read-tracker routers.
 - 2026-04-19 (subagent, ekko-dv0): Filed portfolio-v0 DV0 asks in assessments/; recommended reusing myapps-b31ea Firebase project; awaiting Duong on DV0-1/DV0-2/DV0-3/DV0-4.
 - 2026-04-19 (subagent, T9 Discord): Created #portfolio-digest channel + webhook on Strawberry server, restricted to Duong, encrypted webhook URL, committed + pushed.
