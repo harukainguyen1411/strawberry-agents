@@ -1,12 +1,12 @@
-# Ekko Last Session — 2026-04-19 (s32)
+# Ekko Last Session — 2026-04-19 (s33)
 
 Date: 2026-04-19
 
 ## Accomplished
-- Attempted Phase 7 of reviewer-identity-split: apply 2-approval gate to harukainguyen1411/strawberry-agents.
-- Discovered Duongntd auth lacks admin on that repo (permissions: pull/push/triage only). Stopped per plan constraint.
+- Pre-flight confirmed harukainguyen1411 was the active gh auth account.
+- Attempted to apply 2-approval branch protection gate to harukainguyen1411/strawberry-agents main via API.
+- API returned 403: branch protection on private repos requires GitHub Pro; harukainguyen1411 is on the free plan.
 
 ## Open Threads / Blockers
-- Phase 7 is a Duong-manual step. harukainguyen1411 account (repo owner) must run the `gh api -X PUT` protection call.
-- Classic protection is not present (404); rulesets are 403 (Pro required). The payload from plan § "Phase 7" can be applied directly — no pre-existing protection to read-modify-write. Pre-rollout snapshot should note "no prior protection" then apply fresh.
-- After strawberry-agents soak (24h or one review cycle), Phase 7 for strawberry-app follows.
+- Phase 7 is blocked by GitHub Free plan limitation. Options: (a) upgrade harukainguyen1411 to GitHub Pro, (b) make strawberry-agents public, or (c) revise plan to drop protection requirement.
+- Auth was left as harukainguyen1411. Duong should run `gh auth switch --hostname github.com --user Duongntd` to restore normal agent workflow.
