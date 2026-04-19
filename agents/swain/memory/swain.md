@@ -12,3 +12,4 @@ Architecture specialist. Opus planner. Writes plans to `plans/proposed/` and sto
 ## Sessions
 
 - 2026-04-19: Amended portfolio ADR with v0 kickoff Q4-Q7; Q7 (per-user base currency USD/EUR) propagated as schema change through §3/§4/§8; v0 scope tightened to CSV-only + handler stub.
+- 2026-04-19 (2): Rules-to-hooks audit — classified CLAUDE.md invariants 1-18 by enforcement. Plan at `plans/proposed/2026-04-19-rules-to-hooks-audit.md`. Top 5 to migrate: Rule 5 (commit-prefix — stale enforcement claim), Rule 11 (git rebase), Rule 3 (raw git checkout), Rule 1 (uncommitted work), Rule 18 (gh pr merge --admin). Surprising: Rule 5 CLAUDE.md text claims a hook that doesn't exist. Already well-enforced: 2, 7, 12-16.
