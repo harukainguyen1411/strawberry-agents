@@ -102,9 +102,9 @@ Executable task breakdown for the v1 phase of the subagent-task-attribution ADR.
 **What**: Implement the post-hoc scanner that walks `~/.claude/projects/**/<session>/subagents/` and emits one record per `agent-<id>.jsonl` + `agent-<id>.meta.json` pair. Records land in `~/.claude/strawberry-usage-cache/subagents.json`.
 
 **Where**:
-- Implementation: `scripts/usage-dashboard/subagent-scan.mjs` (sibling to the existing `agent-scan.mjs` in this directory — mirror its file shape per ADR handoff notes).
-- Fixture dir: `scripts/__tests__/fixtures/subagents/` — add one real-shape `agent-<id>.jsonl` (scrubbed of prompt content), its sibling `agent-<id>.meta.json`, and a fake sentinel file.
-- Test: `scripts/__tests__/subagent-scan.test.mjs` (node --test, mirroring `agent-scan.test.mjs` style).
+- Implementation: `scripts/usage-dashboard/subagent-scan.mjs` <!-- orianna: ok --> (sibling to the existing `agent-scan.mjs` in this directory — mirror its file shape per ADR handoff notes).
+- Fixture dir: `scripts/__tests__/fixtures/subagents/` <!-- orianna: ok --> — add one real-shape `agent-<id>.jsonl` (scrubbed of prompt content), its sibling `agent-<id>.meta.json`, and a fake sentinel file.
+- Test: `scripts/__tests__/subagent-scan.test.mjs` <!-- orianna: ok --> (node --test, mirroring `agent-scan.test.mjs` style).
 
 **Behavior to implement**:
 - Walk `~/.claude/projects/**/<session>/subagents/*.jsonl` (glob the pattern cross-platform with Node's `fs.glob` or manual dir walk — mirror how `agent-scan.mjs` handles this).
@@ -217,7 +217,7 @@ The scanner must never fail on an unresolvable task — every spawn gets a `task
 
 **Where**:
 - Modify: `scripts/usage-dashboard/build.sh` — add one step after the existing `agent-scan.mjs` invocation.
-- Optionally extract retention into a small helper: `scripts/usage-dashboard/subagent-trim.mjs` (or inline in the scanner — executor's call; inline is fine for v1 if it stays under the 200-LOC soft cap).
+- Optionally extract retention into a small helper: `scripts/usage-dashboard/subagent-trim.mjs` <!-- orianna: ok --> (or inline in the scanner — executor's call; inline is fine for v1 if it stays under the 200-LOC soft cap).
 - Extend: `scripts/__tests__/build-sh.test.mjs` (existing) with the new cases listed under TDD below.
 
 **Behavior to implement**:
