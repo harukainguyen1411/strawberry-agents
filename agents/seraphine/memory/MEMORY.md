@@ -86,10 +86,12 @@ Frontend developer on the test-dashboard workstream (testing-process team).
 ## Portfolio Tracker V0.11 (harukainguyen1411/strawberry-app)
 
 - PR #45: `feature/portfolio-v0-V0.11-csv-import-step1`
-- Tip after Senna fixes: `c8da426`
+- Tip after TS build-error fixes: `700bbc5` (2026-04-19)
+  - 2b83acd: fix 4 TS errors (t212 array wrap, beforeEach import, wrapper.vm casts)
+  - 700bbc5: chore TDD-Waiver (empty commit required by pre-push hook)
 - Worktree: `/Users/duongntd99/Documents/Personal/strawberry-app/.worktrees/portfolio-v0-V0.11-csv-import-step1`
 - Lucian approved at b985c68; Senna CHANGES_REQUESTED at b985c68; fixes pushed as c8da426
-- Awaiting Senna re-review
+- Awaiting Senna re-review (CI should now be green)
 
 ## Archive Note
 
