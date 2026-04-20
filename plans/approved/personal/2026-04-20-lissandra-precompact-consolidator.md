@@ -17,6 +17,7 @@ architecture_changes:
   - architecture/agent-pair-taxonomy.md  # row 18 added (single-lane memory-consolidator)
   - architecture/compact-workflow.md      # new doc (T10)
 orianna_signature_approved: "sha256:a24957c87a2dd006412ddd915fffb2fbe5c3ee9cd6cb8c5836767ac122db09b3:2026-04-20T16:23:52Z"
+orianna_signature_in_progress: "sha256:a24957c87a2dd006412ddd915fffb2fbe5c3ee9cd6cb8c5836767ac122db09b3:2026-04-20T16:25:30Z"
 ---
 
 # Lissandra — pre-compact memory consolidator
