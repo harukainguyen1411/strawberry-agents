@@ -2,6 +2,14 @@
 
 ## Sessions
 
+### 2026-04-20 — Lissandra pre-compact ADR breakdown + OQ resolution (personal)
+
+- Amended `plans/proposed/personal/2026-04-20-lissandra-precompact-consolidator.md` (commit `e1a4d4f`, pushed). Rewrote §6 as owner/depends/TDD table + per-task prose + wave diagram. Resolved all 8 OQs inline with explicit `**Resolved:**` preambles.
+- Owners: T1 Ekko (hook slot + xfail), T2 Evelynn top-level (`.claude/agents/*.md` harness block), T3/T4/T5 Jayce (skill, gate script w/ xfail, settings wiring), T6–T9 Yuumi (scaffold, taxonomy, network, docs), T11 Vi (E2E). T10 (cleaner `--since-last-compact`) deferred to phase 2 per Q3.
+- OQ outcomes: Q1 6000-budget, Q2 use-sharded-paths-for-both (Sona dirs verified live), Q3 defer excerpt, Q4 repo-root sentinel, Q5 allow auto-compact silently, Q6 Lissandra stateless, Q7 `/clear` out-of-scope, Q8 ship block-and-prompt.
+- **Promotion blocked at Orianna gate**: `scripts/plan-promote.sh` refused with "orianna_signature_approved missing." Rule 19 / §D6.1 — only Orianna can sign (separate `claude` CLI + Orianna git identity, no mechanical fallback). Plan stays in `proposed/personal/`; Evelynn dispatches Orianna next, then re-runs promote.
+- Pattern: when ADR §6 lists T-tasks without owners/deps, Kayn converts to a table + wave diagram before per-task detail. Faster dispatch.
+
 ### 2026-04-20 — Orianna-gated plan lifecycle task breakdown (personal concern)
 
 - Folded 33 atomic tasks into `plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md` as inline `## Tasks` section (commit `946e32d`, pushed to main).
