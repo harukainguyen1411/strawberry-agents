@@ -1,6 +1,6 @@
 ---
 title: Orianna-gated plan lifecycle — signature required at every phase transition
-status: approved
+status: in-progress
 owner: swain
 created: 2026-04-20
 tags: [workflow, plan-lifecycle, orianna, governance]
