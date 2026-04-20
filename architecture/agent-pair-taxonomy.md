@@ -1,7 +1,7 @@
 # Agent pair taxonomy — as-built
 
 **Status:** implemented
-**Source ADR:** `plans/in-progress/2026-04-20-agent-pair-taxonomy.md`
+**Source ADR:** `plans/implemented/2026-04-20-agent-pair-taxonomy.md`
 **Last updated:** 2026-04-20
 
 This doc describes the agent pair taxonomy *as it actually runs in the repo today* — file paths, frontmatter contracts, hook behavior, and the routing mechanics Evelynn uses. The ADR is the design rationale; this is the operating manual.
