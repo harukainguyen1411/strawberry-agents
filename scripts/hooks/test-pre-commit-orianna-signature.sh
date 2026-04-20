@@ -33,8 +33,17 @@ make_repo() {
   git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
     commit --allow-empty -q -m "init"
   mkdir -p "$r/plans/proposed"
-  printf '---\ntitle: test\nstatus: proposed\n---\n\n# Body\n\nContent.\n' \
-    > "$r/plans/proposed/2026-04-20-sig-test.md"
+  # Use heredoc to avoid printf treating '---' as option flags
+  cat > "$r/plans/proposed/2026-04-20-sig-test.md" << 'PLANEOF'
+---
+title: test
+status: proposed
+---
+
+# Body
+
+Content.
+PLANEOF
   git -C "$r" add plans/
   git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
     commit -q -m "add plan"
@@ -71,7 +80,7 @@ Signed-by: Orianna
 Signed-phase: approved
 Signed-hash: sha256:${HASH}"
 
-output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)"; rc=$?
+rc=0; output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)" || rc=$?
 if [ "$rc" -eq 0 ]; then
   printf 'PASS  VALID_ACCEPT\n'
   PASS=$((PASS + 1))
@@ -100,7 +109,7 @@ Signed-by: Orianna
 Signed-phase: approved
 Signed-hash: sha256:${HASH}"
 
-output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)"; rc=$?
+rc=0; output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)" || rc=$?
 if [ "$rc" -ne 0 ]; then
   printf 'PASS  MULTI_FILE_REJECT\n'
   PASS=$((PASS + 1))
@@ -124,7 +133,7 @@ git -C "$REPO" add "$PLAN"
 # Commit message with NO trailers at all
 COMMIT_MSG="chore: orianna signature for 2026-04-20-sig-test-approved"
 
-output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)"; rc=$?
+rc=0; output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)" || rc=$?
 if [ "$rc" -ne 0 ]; then
   printf 'PASS  MISSING_TRAILER_REJECT\n'
   PASS=$((PASS + 1))
@@ -152,7 +161,7 @@ Signed-by: Orianna
 Signed-phase: approved
 Signed-hash: sha256:${HASH}"
 
-output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)"; rc=$?
+rc=0; output="$(run_hook "$REPO" "$COMMIT_MSG" "$ORIANNA_EMAIL" 2>&1)" || rc=$?
 if [ "$rc" -ne 0 ]; then
   printf 'PASS  EXTRA_CONTENT_REJECT\n'
   PASS=$((PASS + 1))
