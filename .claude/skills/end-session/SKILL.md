@@ -1,7 +1,7 @@
 ---
 name: end-session
 description: Close a top-level Claude Code session end-to-end. Cleans the session jsonl into a verbatim markdown transcript, archives it under agents/<agent>/transcripts/, then walks the journal / remember / memory / learnings / commit protocol. Required by CLAUDE.md rule 14 before closing any top-level session.
-disable-model-invocation: true
+disable-model-invocation: false
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 
@@ -185,4 +185,4 @@ Then exit. Do not close the session yourself — Duong or Evelynn explicitly end
 
 ## Refusal posture
 
-You are `disable-model-invocation: true`. This skill MUST only be triggered explicitly by Duong or Evelynn typing `/end-session`. It cannot auto-fire on model judgment. If Duong's intent is ambiguous, ask before firing.
+You are `disable-model-invocation: false`. This skill MUST only be triggered explicitly by Duong or Evelynn typing `/end-session`. It cannot auto-fire on model judgment. If Duong's intent is ambiguous, ask before firing.
