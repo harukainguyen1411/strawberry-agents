@@ -29,3 +29,7 @@ See `agent-network.md` for coordination rules, delegation chains, and session pr
 | **Skarner** | Sonnet | sonnet | Memory excavator — read-only searches | `.claude/agents/skarner.md` | `agents/skarner/` | promoted-from-haiku-2026-04-18 |
 | **Akali** | Sonnet | sonnet | QA — Playwright flow + Figma diff before PR | `.claude/agents/akali.md` | `agents/akali/` | active |
 | **Orianna** | Sonnet | sonnet | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits | `.claude/agents/orianna.md` | `agents/orianna/` | new-2026-04-19 |
+| **Xayah** | Opus | opus | Complex-track test planner — resilience/fault-injection/cross-service test plans and audits. Pair mate: Caitlyn. | `.claude/agents/xayah.md` | `agents/xayah/` | new-2026-04-20 |
+| **Rakan** | Sonnet | sonnet | Complex-track test implementer — xfail skeletons, fault-injection harnesses, non-routine fixtures. Pair mate: Vi. | `.claude/agents/rakan.md` | `agents/rakan/` | new-2026-04-20 |
+| **Soraka** | Sonnet | sonnet | Normal-track frontend implementer — small frontend tweaks from Lulu's advice. Pair mate: Seraphine. | `.claude/agents/soraka.md` | `agents/soraka/` | new-2026-04-20 |
+| **Syndra** | Sonnet | sonnet | Normal-track AI/agents specialist — small AI-stack tweaks, prompt tuning, agent-def edits. Pair mate: Lux. | `.claude/agents/syndra.md` | `agents/syndra/` | new-2026-04-20 |
