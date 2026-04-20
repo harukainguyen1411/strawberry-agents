@@ -45,7 +45,7 @@ DOC_TITLE=$(gdoc::doc_title_for "$TARGET")
 EXISTING_GDOC_ID=$(gdoc::frontmatter_get "$TARGET" gdoc_id || true)
 
 # Build the wrapped markdown body in a temp file.
-WRAPPED=$(mktemp --suffix=.md)
+WRAPPED=$(mktemp /tmp/plan-publish-XXXXXX)
 trap 'rm -f "$WRAPPED"' EXIT
 gdoc::wrap_frontmatter <"$TARGET" >"$WRAPPED"
 
