@@ -9,7 +9,7 @@ title: Deployment Pipeline ADR — Firebase surfaces, TDD gates, CI, release-ple
 
 Architecture-level plan for how the strawberry monorepo deploys. Scope covers the full industry-standard pipeline: scripts as the portable body, GitHub Actions as the thin CI skin, release-please for versioning, a staging environment with gated promotion, and auto-revert on prod smoke failure. Implementation tasks are for Kayn/Aphelios to break out after approval — this plan does not write scripts or workflow YAML.
 
-**Supersedes** `plans/approved/2026-04-13-deployment-pipeline-architecture.md`. That plan targeted the Dark Strawberry web apps (Vite/Firebase Hosting) with Changesets versioning; its component thinking (C1 reproducible builds, C4 gated promotion, C5 env validation, C6 smoke tests, C7 version visibility, C8 rollback, C11 turbo cache correctness) is absorbed and re-expressed here in the Cloud-Functions-first, script-first shape that matches the current state of the repo. Where the two conflict, this ADR wins. Changesets is replaced with release-please; `turbo.json` env-hashing concerns only re-apply when a Vite app surface is added back to the pipeline and are out of scope for the Phase 1 Bee/Functions cutover.
+**Supersedes** `plans/approved/2026-04-13-deployment-pipeline-architecture.md`<!-- orianna: ok — historical plan ref; plans/approved/ deleted per orianna-gated-plan-lifecycle T9.1 -->. That plan targeted the Dark Strawberry web apps (Vite/Firebase Hosting) with Changesets versioning; its component thinking (C1 reproducible builds, C4 gated promotion, C5 env validation, C6 smoke tests, C7 version visibility, C8 rollback, C11 turbo cache correctness) is absorbed and re-expressed here in the Cloud-Functions-first, script-first shape that matches the current state of the repo. Where the two conflict, this ADR wins. Changesets is replaced with release-please; `turbo.json` env-hashing concerns only re-apply when a Vite app surface is added back to the pipeline and are out of scope for the Phase 1 Bee/Functions cutover.
 
 ---
 
@@ -20,7 +20,7 @@ Architecture-level plan for how the strawberry monorepo deploys. Scope covers th
 - **Firebase Cloud Functions** under `apps/myapps/functions/` (TypeScript, Node 20, entry `lib/index.js`) targeting project `myapps-b31ea`. Functions are co-located under `apps/myapps/` alongside the other Firebase surfaces for this project (hosting, Firestore rules, Storage rules), and all four surfaces share a single `apps/myapps/firebase.json` (see §1a and §4). See Jayce's audit at `assessments/2026-04-17-deploy-script-audit.md` (PR #120) for the source of this layout decision.
 - **Firebase Storage rules** (project `myapps-b31ea`).
 - **A staging Firebase project** (separate project ID — see open questions) mirroring the prod surface set.
-- **GitHub Actions workflows** (`.github/workflows/test.yml`, `.github/workflows/deploy.yml`, plus the release-please workflow) as thin triggers around the deploy scripts.
+- **GitHub Actions workflows** (`.github/workflows/test.yml`<!-- orianna: ok — Phase 2 planned workflow, not yet created -->, `.github/workflows/deploy.yml`<!-- orianna: ok — Phase 2 planned workflow, not yet created -->, plus the release-please workflow) as thin triggers around the deploy scripts.
 - **release-please** monorepo manifest mode, per-app versioning, with `apps/myapps/functions` as the first versioned package (`bee`).
 - **Auto-revert** on prod smoke failure.
 - A single "deploy surface" abstraction so adding more surfaces later doesn't require redesigning the pipeline.
@@ -57,7 +57,7 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 
 ## 2. Environment and secrets strategy
 
-**Problem today.** `apps/myapps/functions/.env.myapps-b31ea` is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=<haruka-uid>`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists. (Actual UID value lives in the encrypted dotenv; see P1.3.)
+**Problem today.** `apps/myapps/functions/.env.myapps-b31ea`<!-- orianna: ok — gitignored file per §2 design; not committed by intent --> is missing. It must contain `GITHUB_TOKEN`, `BEE_GITHUB_REPO=Duongntd/strawberry`, `BEE_SISTER_UIDS=<haruka-uid>`, `DISCORD_WEBHOOK_URL`. Functions deploy is blocked until it exists. (Actual UID value lives in the encrypted dotenv; see P1.3.)
 
 **Principle.** Encrypted ciphertext in git; plaintext only materialized at deploy time, into a child process env, never into a committed file and never into shell history.
 
@@ -72,7 +72,7 @@ The Firebase CLI's deploy surface is determined at invocation time, not by the r
 
 **Flow.**
 
-1. Duong edits ciphertext via the existing `tools/encrypt.html` flow (or a new `tools/edit-env.sh` that decrypts, opens `$EDITOR`, re-encrypts, and shreds the temp file).
+1. Duong edits ciphertext via the existing `tools/encrypt.html` flow (or a new `tools/edit-env.sh`<!-- orianna: ok — proposed future tool, not yet built --> that decrypts, opens `$EDITOR`, re-encrypts, and shreds the temp file).
 2. Deploy entrypoint invokes `tools/decrypt.sh` to materialize plaintext into the child process environment. It does **not** write `.env` to disk unless `firebase deploy` explicitly needs a file on disk — in which case the file is written to a path inside the gitignored `apps/myapps/functions/` tree, never committed, and removed on exit via a `trap`.
 3. Rule 6 hard-enforced: no raw `age -d`, no `cat` on plaintext, no piping of the age key. Pre-commit hook already blocks this; deploy scripts must honor it too.
 
@@ -104,9 +104,9 @@ Rationale for Vitest over Jest for Functions: faster, native TS, lighter config,
 
 **Commands (shape only, Kayn to bind to concrete tools):**
 
-- `scripts/test-functions.sh` — runs functions unit + integration tests; exits non-zero on any failure. POSIX bash, works on macOS and Git Bash.
-- `scripts/test-storage-rules.sh` — boots the Firebase emulator, runs rules-unit-testing, tears down the emulator. Same portability contract.
-- `scripts/test-all.sh` — invokes every `scripts/test-*.sh` entrypoint. Used by CI and by agents before opening PRs.
+- `scripts/test-functions.sh`<!-- orianna: ok — Phase 1 planned script, not yet built; see §9 Phase 1 --> — runs functions unit + integration tests; exits non-zero on any failure. POSIX bash, works on macOS and Git Bash.
+- `scripts/test-storage-rules.sh`<!-- orianna: ok — Phase 1 planned script, not yet built; see §9 Phase 1 --> — boots the Firebase emulator, runs rules-unit-testing, tears down the emulator. Same portability contract.
+- `scripts/test-all.sh`<!-- orianna: ok — Phase 1 planned script, not yet built; see §9 Phase 1 --> — invokes every `scripts/test-*.sh` entrypoint. Used by CI and by agents before opening PRs.
 
 **Non-negotiables.**
 
@@ -121,6 +121,7 @@ Rationale for Vitest over Jest for Functions: faster, native TS, lighter config,
 **Shape: one thin entrypoint per surface, one orchestrator per project, one top-level deploy script.**
 
 ```
+<!-- orianna: ok — proposed script tree design; most files not yet built; see §9 Phase 1 / Phase 2 -->
 scripts/
   deploy.sh                      # existing; becomes the top-level dispatcher
   deploy/
@@ -137,9 +138,9 @@ scripts/
 
 **Contracts.**
 
-- `scripts/deploy.sh <project> [<surface>] [--ref <git-ref>] [--skip-staging] [--yes]` — top-level. If surface omitted, deploys all surfaces for that project. `--ref` checks out a specific ref (used by auto-revert and `workflow_dispatch` hotfix). `--skip-staging` is for hotfixes and is audited (Section 6). Examples: `scripts/deploy.sh myapps-b31ea`, `scripts/deploy.sh myapps-b31ea functions --ref bee-v1.2.2`.
+- `scripts/deploy.sh`<!-- orianna: ok — Phase 1 planned top-level dispatcher; existing file to be refactored --> `<project> [<surface>] [--ref <git-ref>] [--skip-staging] [--yes]` — top-level. If surface omitted, deploys all surfaces for that project. `--ref` checks out a specific ref (used by auto-revert and `workflow_dispatch` hotfix). `--skip-staging` is for hotfixes and is audited (Section 6). Examples: `scripts/deploy.sh myapps-b31ea`, `scripts/deploy.sh myapps-b31ea functions --ref bee-v1.2.2`.
 - Each surface script takes exactly one positional arg: the Firebase project ID. Optional flags match the top-level flags that are relevant.
-- Each surface script is responsible for: (1) running its own test gate, (2) materializing env via `tools/decrypt.sh`, (3) invoking the Firebase CLI with `--project <id>` **and an explicit `--only` scope** (Section 1a.7), (4) emitting an audit event, (5) invoking `scripts/deploy/smoke.sh` after deploy.
+- Each surface script is responsible for: (1) running its own test gate, (2) materializing env via `tools/decrypt.sh`, (3) invoking the Firebase CLI with `--project <id>` **and an explicit `--only` scope** (Section 1a.7), (4) emitting an audit event, (5) invoking `scripts/deploy/smoke.sh`<!-- orianna: ok — Phase 2 planned script, not yet built --> after deploy.
 - **Firebase CLI invocation context.** Scripts run from the repo root, but the Firebase CLI needs to resolve `firebase.json` for the target project. Surface scripts `cd "$REPO_ROOT/apps/myapps"` before invoking `firebase deploy`, then restore `cwd` on exit via a `trap`. The alternative — passing `--config apps/myapps/firebase.json` from the repo root — works for `firebase.json` itself but does not reliably handle relative paths *inside* firebase.json (e.g. `"source": "functions"` resolves relative to the config file's dir, which works either way; but `predeploy` scripts and `ignore` globs are more predictable when `cwd` matches the config dir). Choose `cd` + `trap`. Helper `dl_cd_firebase_root <project>` in `_lib.sh` encapsulates this so no surface script hardcodes the path.
 - **Every script is POSIX bash, works identically on macOS and Git Bash on Windows** (Rule 10). Platform-specific affordances live under `scripts/mac/` or `scripts/windows/` and are optional hooks, never required for deploy correctness.
 
@@ -152,11 +153,11 @@ scripts/
 - `firebase deploy` invocations in this script tree include `--only <surface>`. Bare `firebase deploy` fails a static grep check.
 - Firebase CLI is invoked from `apps/myapps/` (per the `cd` + `trap` rule above) so the single `apps/myapps/firebase.json` is auto-detected; no `--config` flag needed.
 
-**Interaction with existing `scripts/deploy.sh` and `scripts/composite-deploy.sh`.** Both exist today and their current semantics need to be reconciled. Kayn's breakdown must include an audit pass: keep, rename, or absorb. The names above reserve `scripts/deploy.sh` as the new canonical dispatcher — if the existing file does something incompatible, rename the old one first and do not silently overwrite. `composite-deploy.sh` was built for the Vite-app world of the superseded plan and is not invoked in this ADR's design; decide during breakdown whether to delete it or carry it forward for a future web-surface addition.
+**Interaction with existing `scripts/deploy.sh`<!-- orianna: ok — Phase 1 build target; may not yet exist or may be renamed --> and `scripts/composite-deploy.sh`.** Both were expected to exist at plan-write time; current semantics need to be reconciled during Phase 1 breakdown. Kayn's breakdown must include an audit pass: keep, rename, or absorb. The names above reserve `scripts/deploy.sh` as the new canonical dispatcher — if the existing file does something incompatible, rename the old one first and do not silently overwrite. `composite-deploy.sh` was built for the Vite-app world of the superseded plan and is not invoked in this ADR's design; decide during breakdown whether to delete it or carry it forward for a future web-surface addition.
 
 **Phase-2 policy for `composite-deploy.sh` and Vite/Hosting assembly.** Phase 2 does **NOT** absorb Vite hosting assembly. `scripts/composite-deploy.sh` remains called by `.github/workflows/release.yml` and `.github/workflows/preview.yml` unchanged until a separate web-surface ADR supersedes it. The script stays dormant and carries its deprecation comment through Phase 2. Phase-2 `release.yml`/`preview.yml` rewrites MUST NOT take a dependency on `composite-deploy.sh` beyond the existing unchanged invocation; if those workflows still need Hosting deploys after the Phase-2 rewrite, they continue to call the existing `composite-deploy.sh` **unchanged** and the Hosting surface remains outside the new `scripts/deploy/` tree. The new pipeline does not absorb Vite assembly — attempting to do so violates §1 non-goals.
 
-**Note on top-level VPS scripts.** `scripts/deploy-discord-relay-vps.sh` (the Hetzner-VPS Discord-relay PM2 restart script, renamed in P1.1 from the previous `scripts/deploy.sh`) lives at top level but is **outside** this pipeline. Its body is POSIX-bash (Rule 10 satisfied) even though its runtime target is a Linux VPS. It deploys the Discord-relay VPS, not a Firebase surface, and does not participate in the test gate / audit log / smoke test contract. Flagged here to prevent reader confusion with the upcoming Firebase dispatcher at `scripts/deploy.sh`. A future reorg may move it under `scripts/vps/` — not required now.
+**Note on top-level VPS scripts.** `scripts/deploy-discord-relay-vps.sh` (the Hetzner-VPS Discord-relay PM2 restart script, renamed in P1.1 from the previous `scripts/deploy.sh`) lives at top level but is **outside** this pipeline. Its body is POSIX-bash (Rule 10 satisfied) even though its runtime target is a Linux VPS. It deploys the Discord-relay VPS, not a Firebase surface, and does not participate in the test gate / audit log / smoke test contract. Flagged here to prevent reader confusion with the upcoming Firebase dispatcher at `scripts/deploy.sh`. A future reorg may move it under `scripts/vps/`<!-- orianna: ok — speculative future path, not yet created --> — not required now.
 
 ---
 
@@ -168,10 +169,10 @@ CI is in scope for Phase 2 of this plan. The scripts remain the body; the YAML i
 
 **Workflows.**
 
-- `.github/workflows/test.yml` — triggers on every PR to `main`. Runs `scripts/test-all.sh`. Required status check on the `main` branch protection rule. PRs cannot merge without it green.
-- `.github/workflows/deploy.yml` — triggers on `workflow_dispatch` only. Inputs: `project` (required, e.g. `myapps-b31ea`), `ref` (optional git ref; defaults to `main`), `skip_staging` (optional boolean, default false, audit-logged when true). Used for hotfixes and reruns. Calls `scripts/deploy.sh <project> [<surface>] --ref <ref>`.
+- `.github/workflows/test.yml`<!-- orianna: ok — Phase 2 planned workflow, not yet created --> — triggers on every PR to `main`. Runs `scripts/test-all.sh`. Required status check on the `main` branch protection rule. PRs cannot merge without it green.
+- `.github/workflows/deploy.yml`<!-- orianna: ok — Phase 2 planned workflow, not yet created --> — triggers on `workflow_dispatch` only. Inputs: `project` (required, e.g. `myapps-b31ea`), `ref` (optional git ref; defaults to `main`), `skip_staging` (optional boolean, default false, audit-logged when true). Used for hotfixes and reruns. Calls `scripts/deploy.sh <project> [<surface>] --ref <ref>`.
 - `.github/workflows/release.yml` — triggers on tag push matching `<package>-v*` (e.g. `bee-v1.2.3`). Deploys the staging project first, smoke-tests, then (via a `production` GH Environment gate) deploys prod and smoke-tests. See Section 6.
-- `.github/workflows/release-please.yml` — triggers on push to `main`. Runs `googleapis/release-please-action` in manifest mode to open/update release PRs and cut tags on merge.
+- `.github/workflows/release-please.yml`<!-- orianna: ok — Phase 2 planned workflow, not yet created --> — triggers on push to `main`. Runs `googleapis/release-please-action` in manifest mode to open/update release PRs and cut tags on merge.
 
 **Branch protection on `main`.**
 
@@ -208,7 +209,7 @@ Duong picked release-please explicitly. This section specifies how.
 
 **Tool and config.**
 
-- `googleapis/release-please-action@v4` (or current stable major), **manifest mode**.
+- `googleapis/release-please-action@v4`<!-- orianna: ok — official Google/googleapis GitHub Action; vendor-legitimated integration name --> (or current stable major), **manifest mode**.
 - `release-please-config.json` and `.release-please-manifest.json` at repo root. Manifest mode is mandatory — it supports the per-app versioning axis required for deploy isolation (Section 1a.5).
 - **First app:** `apps/myapps/functions`, package name `bee`. Tag format `bee-v1.2.3`. release-please `include-paths` for `bee` must be scoped to `apps/myapps/functions/**` specifically (see §1a.5) so sibling surfaces under `apps/myapps/` don't bump the Bee version. Other apps added later follow the same pattern (e.g. `landing-v0.1.0`). The release-please `package-name: bee` is independent of the npm `name` field in `apps/myapps/functions/package.json` (currently `darkstrawberry-functions`). release-please `include-paths` + `package-name` in the manifest are the binding; npm `name` is not renamed by this ADR. Both names coexist legitimately — release-please tags use `bee`, npm resolution uses `darkstrawberry-functions`.
 - First Bee version: see open questions (`0.1.0` vs `1.0.0`).
@@ -304,18 +305,18 @@ job 2: deploy-production
 
 ### 7a. Auto-revert on prod smoke failure
 
-**Smoke test (~30 seconds, runs on every deploy).** `scripts/deploy/smoke.sh` performs:
+**Smoke test (~30 seconds, runs on every deploy).** `scripts/deploy/smoke.sh`<!-- orianna: ok — Phase 2 planned script, not yet built --> performs:
 
 1. HTTP GET `/version`, assert body `{ version }` matches the `BEE_VERSION` the deploy just set. Closes the loop on "is this actually the deploy I think it is."
 2. A configurable HTTP assertion list: healthz endpoint (200), an unauthenticated public read (200), an auth-gated read (401/403 without token). The list lives in a small YAML/JSON config file per surface (Kayn picks format during breakdown); extensibility is the point, not the config format.
 
 **On staging smoke failure.** Exit non-zero, block prod. No revert needed — staging's brokenness does not affect prod.
 
-**On prod smoke failure.** `scripts/deploy/revert.sh` runs:
+**On prod smoke failure.** `scripts/deploy/revert.sh`<!-- orianna: ok — Phase 2 planned script, not yet built --> runs:
 
 1. Look up the previous successful prod tag. Two sources of truth, in order: (a) `logs/deploy-audit.jsonl` — most recent `status: success` record for the prod project + surface; (b) GitHub Releases API, filtering to releases that actually succeeded.
 2. **Guardrail: if no previous successful tag exists** (first-ever deploy, or history lost) → **do NOT revert**. Fail loud, open an issue, page Duong. A revert with no known-good anchor is worse than a broken deploy.
-3. Invoke `scripts/deploy.sh myapps-b31ea <surface> --ref <prev-tag> --yes`. This is a full redeploy, not a magic rollback.
+3. Invoke `scripts/deploy.sh`<!-- orianna: ok — Phase 1 planned dispatcher; see §9 --> `myapps-b31ea <surface> --ref <prev-tag> --yes`. This is a full redeploy, not a magic rollback.
 4. Open a GitHub issue (title: `Auto-revert: <tag> → <prev-tag>`, body: smoke-failure output).
 5. Post a Discord alert with both tags, the failed-smoke reason, and the issue link.
 6. Audit log records two records: the failed forward deploy (`status: failure`) AND the revert deploy (`status: success` or `status: failure` of its own smoke).
@@ -367,7 +368,7 @@ The monitoring dashboard is a separate future plan. This ADR defines only the **
 
 **The seam the dashboard will plug into:**
 
-- `scripts/deploy/_lib.sh` owns the audit-log append. Dashboard reads `logs/deploy-audit.jsonl`. That's the entire contract.
+- `scripts/deploy/_lib.sh`<!-- orianna: ok — Phase 1 planned helper, not yet built --> owns the audit-log append. Dashboard reads `logs/deploy-audit.jsonl`. That's the entire contract.
 - No other component of the pipeline touches the audit log. If the dashboard needs richer data later, the schema grows additively (new fields are safe; removing fields is a breaking change).
 
 ---
@@ -378,14 +379,14 @@ Phase-level only. Task-level breakdown is Kayn's job after approval.
 
 **Phase 1 — Local deploy pipeline (no CI yet).**
 
-- Script tree (`scripts/deploy/*`, `scripts/test-*.sh`) per Section 4.
+- Script tree (`scripts/deploy/*`<!-- orianna: ok — Phase 1 build target; see §4 design spec -->, `scripts/test-*.sh`<!-- orianna: ok — Phase 1 build targets; see §3 -->) per Section 4.
 - Encrypted env bootstrap for `myapps-b31ea` per Section 2.
 - TDD test gates per Section 3 (Vitest + emulator).
 - Deploy audit log writer in `_lib.sh` per Section 8.
-- Reconciliation of existing `scripts/deploy.sh` and `scripts/composite-deploy.sh`.
+- Reconciliation of existing `scripts/deploy.sh`<!-- orianna: ok — Phase 1 target; existing file to be refactored --> and `scripts/composite-deploy.sh`.
 - Monorepo deploy isolation contract in `_lib.sh` (Section 1a.7).
 
-Exit criterion: Duong can run `scripts/deploy.sh myapps-b31ea` on his laptop, tests run, deploy succeeds, audit log written.
+Exit criterion: Duong can run `scripts/deploy.sh`<!-- orianna: ok — Phase 1 build target --> `myapps-b31ea` on his laptop, tests run, deploy succeeds, audit log written.
 
 **Phase 2 — CI + release-please + staging + auto-revert.**
 
@@ -398,8 +399,8 @@ Exit criterion: Duong can run `scripts/deploy.sh myapps-b31ea` on his laptop, te
 - release-please manifest config; first Bee release.
 - Staging project env + staging deploy wiring.
 - GH Environments `staging` and `production` with Duong as prod reviewer.
-- `scripts/deploy/smoke.sh` with `/version` check + configurable assertion list.
-- `scripts/deploy/revert.sh` with guardrails per Section 7a.
+- `scripts/deploy/smoke.sh`<!-- orianna: ok — Phase 2 planned script, not yet built --> with `/version` check + configurable assertion list.
+- `scripts/deploy/revert.sh`<!-- orianna: ok — Phase 2 planned script, not yet built --> with guardrails per Section 7a.
 - Commit-scope validation hook (flagged work; not designed here).
 
 Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → merge → tag → staging deploy + smoke → approval → prod deploy + smoke → Discord notification. A forced bad deploy triggers auto-revert to the previous tag.
@@ -430,7 +431,7 @@ Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → 
 5. **Audit log retention.** Recommendation: no rotation now; revisit when the dashboard lands.
 6. **Firebase CLI auth for local deploys — personal Google account, or a project-scoped service account stored encrypted?** Recommendation: personal account locally, service account in CI — the scripts detect which.
 7. **`firebase-functions-test` offline mode vs emulator-backed integration — both, or only emulator?** Recommendation: emulator-backed only.
-8. **Reconcile `scripts/deploy.sh` and `scripts/composite-deploy.sh` up-front, or retire later?** Recommendation: reconcile up-front — two deploy entrypoints invites confusion.
+8. **Reconcile `scripts/deploy.sh`<!-- orianna: ok — Phase 1 target; existing file to be refactored --> and `scripts/composite-deploy.sh` up-front, or retire later?** Recommendation: reconcile up-front — two deploy entrypoints invites confusion.
 9. **Release-please bot commits on `main` — acceptable?** (release-please pushes version-bump commits and manifest updates directly to `main` after you merge the release PR.) Recommendation: yes, it's the point of the tool; branch protection carves out its GitHub Actions identity.
 10. **First Bee version — `0.1.0` or `1.0.0`?** Recommendation: `0.1.0`. Bee is pre-stable-API; `1.0.0` signals an API contract we're not yet ready to hold.
 11. **Release PR auto-merge on green CI, or manual merge by Duong?** Recommendation: **manual**. The release PR is the last human checkpoint before a tag goes out; auto-merge removes it.
@@ -446,7 +447,7 @@ Exit criterion: a `feat:` commit in `apps/myapps/functions/` → release PR → 
 
 ## Cross-references
 
-- `plans/approved/2026-04-13-deployment-pipeline-architecture.md` — **superseded** by this ADR. Where that plan and this one conflict, this one wins. Specifically: Changesets is replaced by release-please; the Vite/web-app-focused components (env validation plugin, version.json injection, turbo cache hashing, Playwright smoke against web URLs) do not re-apply to the Functions-first pipeline and will be re-derived if a web surface is added.
+- `plans/approved/2026-04-13-deployment-pipeline-architecture.md`<!-- orianna: ok — historical plan ref; plans/approved/ deleted per orianna-gated-plan-lifecycle T9.1; original plan was demoted --> — **superseded** by this ADR. Where that plan and this one conflict, this one wins. Specifically: Changesets is replaced by release-please; the Vite/web-app-focused components (env validation plugin, version.json injection, turbo cache hashing, Playwright smoke against web URLs) do not re-apply to the Functions-first pipeline and will be re-derived if a web surface is added.
 - `plans/proposed/2026-04-08-autonomous-delivery-pipeline.md` — the autonomous Discord loop that will eventually *call* these deploy scripts. This plan defines the scripts' contract so that loop has something stable to invoke.
 - `CLAUDE.md` Rule 5 — requires amendment in Phase 2 to accommodate `feat:` / `fix:` in `apps/**` commits. Phase-2 prerequisite.
 - `CLAUDE.md` Rule 6 — secrets discipline, `tools/decrypt.sh` usage.
