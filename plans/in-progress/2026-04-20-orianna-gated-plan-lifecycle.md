@@ -8,7 +8,7 @@ tags: [workflow, plan-lifecycle, orianna, governance]
 
 # Context
 
-> **Role-slot reference.** This ADR refers to agents by **role slot** rather than by name — `the normal-track breakdown agent`, `the complex-track test planner`, etc. The concrete name-to-slot mapping lives in the companion taxonomy ADR `plans/proposed/2026-04-20-agent-pair-taxonomy.md`. When the taxonomy ADR lands, role-slot references here resolve through its pair matrix (§D1 of that ADR). This ADR's signature / gating content is unchanged by the taxonomy; only role labels are decoupled from specific agent identities.
+> **Role-slot reference.** This ADR refers to agents by **role slot** rather than by name — `the normal-track breakdown agent`, `the complex-track test planner`, etc. The concrete name-to-slot mapping lives in the companion taxonomy ADR `plans/implemented/2026-04-20-agent-pair-taxonomy.md`. When the taxonomy ADR lands, role-slot references here resolve through its pair matrix (§D1 of that ADR). This ADR's signature / gating content is unchanged by the taxonomy; only role labels are decoupled from specific agent identities.
 
 The plan lifecycle today (`proposed/` → `approved/` → `in-progress/` → `implemented/` → `archived/`) is only partially gated. `scripts/plan-promote.sh` runs an Orianna fact-check on the `proposed → approved` transition (see `scripts/plan-promote.sh:63-86` and `scripts/orianna-fact-check.sh`), but subsequent transitions carry no gate at all. The symptoms:
 
@@ -377,7 +377,7 @@ Evelynn's answers to the three open questions Kayn surfaced in the breakdown (20
 
 - **OQ-K2 — CLAUDE.md rule slot for T10.4:** Rule #19. CLAUDE.md currently ends at rule #18; sequential numbering with no gaps means the Orianna signature invariant lands as rule #19. No renumbering of existing rules.
 
-- **OQ-K3 — Does this ADR self-demote in T9.1?:** No. Self-referential exception — this ADR stays in `approved/`. Demoting the rule that governs plan demotion is circular; the gating mechanism cannot gate itself retroactively. T9.1's mass demotion of `plans/approved/` EXCLUDES this file (`plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md`). Kayn's breakdown already assumed this; it is now confirmed so the Phase 9 executor has a clear, unambiguous call.
+- **OQ-K3 — Does this ADR self-demote in T9.1?:** No. Self-referential exception — this ADR stayed in `approved/` during T9.1. Self-referential exception — the gating mechanism could not gate itself retroactively. T9.1's mass demotion of `plans/approved/` EXCLUDED this file (`plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md`). Kayn's breakdown already assumed this; it is now confirmed so the Phase 9 executor has a clear, unambiguous call.
 
 ---
 
@@ -706,7 +706,7 @@ Phase 11 — smoke + freeze lift
 
 - [ ] **T9.1. Bulk demote `plans/approved/*.md` → `plans/proposed/`** — `kind: chore` | `estimate_minutes: 60`
   - executor: ERRAND (human-driven — Duong; §D8 Q9 = manual, no new script) | ADR: §D8
-  - files: every `plans/approved/*.md` EXCEPT `plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md` (OQ-K3 resolved: self-referential exception — this ADR stays in `approved/`; see OQ Resolutions section)
+  - files: every `plans/approved/*.md` EXCEPT `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md` (OQ-K3 resolved: self-referential exception — this ADR stayed in `approved/` during T9.1; now in `in-progress/`; see OQ Resolutions section)
   - detail: enumerate files first (drift-catch); `git mv` each into `plans/proposed/`; rewrite `status: approved` → `status: proposed`; batch into ONE `chore:` commit direct to main.
   - deps: T8.1 installed (freeze active first)
   - DoD: `plans/approved/` contains only this ADR (self-referential exception confirmed by OQ-K3); each demoted plan's `status:` matches new dir; batch commit lists all demoted plans for audit.
