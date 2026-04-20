@@ -1,3 +1,4 @@
+<!-- Script-only: invoke via scripts/orianna-fact-check.sh, not via the Agent tool. -->
 ---
 name: Orianna
 model: sonnet
