@@ -118,14 +118,59 @@ fi
 [ -n "$PLAN_REL" ] || die "could not determine relative path of plan file within repo"
 
 SIGNING_COMMIT=""
-# Walk git log for the plan file, find commit that first added our signature line
+SIGNING_COMMIT_PLAN_PATH=""
+# Walk git log for the plan file (following renames), find the commit that INTRODUCED
+# the signature line. Rename commits (git mv) show the whole file as added at the new
+# path — we must skip them. We use -M (rename detection) in diff-tree: if the status
+# is 'R' the commit is a rename-only change and cannot be the signing commit.
+# For non-rename commits we verify the parent did NOT have the field already.
 while IFS= read -r log_line; do
   commit_hash="${log_line%% *}"
   [ -n "$commit_hash" ] || continue
-  # Check if this commit added the signature field
-  if git -C "$REPO_ROOT" show "$commit_hash" -- "$PLAN_REL" 2>/dev/null | grep -q "^+${FIELD_NAME}:"; then
-    SIGNING_COMMIT="$commit_hash"
-    break
+
+  # Use -M so renames appear as R<score> rather than A+D pair.
+  # A rename commit for the plan file will have status starting with 'R'.
+  name_status="$(git -C "$REPO_ROOT" diff-tree --no-commit-id -r --name-status -M "$commit_hash" 2>/dev/null)"
+  [ -n "$name_status" ] || continue
+
+  # Determine the file path in this commit and its status
+  # For a rename: "R100\told-path\tnew-path"
+  # For add/modify: "A\tpath" or "M\tpath"
+  file_status="$(printf '%s\n' "$name_status" | awk '{print substr($1,1,1)}' | head -1)"
+  case "$file_status" in
+    R)
+      # This commit is a rename — the signature existed before this commit.
+      # Skip it: it cannot be the signing commit.
+      continue
+      ;;
+    A|M)
+      commit_file="$(printf '%s\n' "$name_status" | awk '{print $2}' | head -1)"
+      ;;
+    *)
+      # Unknown status — skip
+      continue
+      ;;
+  esac
+  [ -n "$commit_file" ] || continue
+
+  # Check if this commit's diff adds the signature field
+  if git -C "$REPO_ROOT" show "$commit_hash" -- "$commit_file" 2>/dev/null | grep -q "^+${FIELD_NAME}:"; then
+    # For 'A' (new file), the parent has no file at all — the field is genuinely new.
+    # For 'M' (modify), double-check the parent lacked the field.
+    parent_has_field=0
+    if [ "$file_status" = "M" ]; then
+      parent_hash="$(git -C "$REPO_ROOT" log -1 --format='%P' "$commit_hash" 2>/dev/null | awk '{print $1}')"
+      if [ -n "$parent_hash" ]; then
+        if git -C "$REPO_ROOT" show "${parent_hash}:${commit_file}" 2>/dev/null | grep -q "^${FIELD_NAME}:"; then
+          parent_has_field=1
+        fi
+      fi
+    fi
+    if [ "$parent_has_field" -eq 0 ]; then
+      SIGNING_COMMIT="$commit_hash"
+      SIGNING_COMMIT_PLAN_PATH="$commit_file"
+      break
+    fi
   fi
 done <<EOF
 $(git -C "$REPO_ROOT" log --follow --format='%H %ae' -- "$PLAN_REL" 2>/dev/null)
@@ -161,14 +206,17 @@ if [ "$TRAILER_HASH_BARE" != "$SIG_HASH" ]; then
 fi
 
 # --- CHECK 4: signing commit diff scoped to exactly one file (the plan) ---
+# Use the path the file had AT THE SIGNING COMMIT (may differ from current PLAN_REL
+# if the plan was subsequently renamed/promoted via git mv).
 NUM_FILES="$(git -C "$REPO_ROOT" diff-tree --no-commit-id -r --name-only "$SIGNING_COMMIT" 2>/dev/null | wc -l | tr -d ' ')"
 if [ "$NUM_FILES" -ne 1 ]; then
   fail "signing commit $SIGNING_COMMIT touches $NUM_FILES files (must touch exactly 1 — the plan file); §D1.2 single-file diff scope violated"
 fi
 
 CHANGED_FILE="$(git -C "$REPO_ROOT" diff-tree --no-commit-id -r --name-only "$SIGNING_COMMIT" 2>/dev/null)"
-if [ "$CHANGED_FILE" != "$PLAN_REL" ]; then
-  fail "signing commit $SIGNING_COMMIT touches '$CHANGED_FILE' but expected '$PLAN_REL'"
+# Accept either the commit-time path (before rename) or the current path (no rename case)
+if [ "$CHANGED_FILE" != "$SIGNING_COMMIT_PLAN_PATH" ] && [ "$CHANGED_FILE" != "$PLAN_REL" ]; then
+  fail "signing commit $SIGNING_COMMIT touches '$CHANGED_FILE' but expected plan path '$PLAN_REL' (or pre-rename '$SIGNING_COMMIT_PLAN_PATH')"
 fi
 
 # --- All checks passed ---
