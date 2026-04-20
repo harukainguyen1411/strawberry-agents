@@ -2,6 +2,17 @@
 
 ## Sessions
 
+### 2026-04-20 — session-state-encapsulation task breakdown (work concern)
+
+- Produced `plans/2026-04-20-session-state-encapsulation-tasks.md` on `missmp/company-os` branch `feat/demo-studio-v3` (commit `ea17448`, pushed) from Azir's ADR `plans/2026-04-20-session-state-encapsulation.md`.
+- **36 tasks** — 30 in extraction scope (SE.0–SE.E), 6 follow-up HTTP-spec alignment (SE.F). 14 xfail-test tasks paired with 16 impl tasks + 6 non-code (audit/index/ops).
+- Phase-scoped task-ID scheme `SE.<phase>.<n>`: SE.0 preflight, SE.A new module, SE.B call-site migration, SE.C enum backfill, SE.D TTL cache, SE.E grep gate, SE.F HTTP-spec follow-ups. Matches Azir's §6 phase structure 1:1.
+- **Single hardest ordering call:** SE.C.3 (live enum `--apply`) must merge immediately before SE.B.8 (delete `approved` route + legacy-enum branches). Reverse order orphans every pre-migration row. Flagged in two places for redundancy.
+- Cross-ADR coupling: sibling ADRs `managed-agent-lifecycle` + `managed-agent-dashboard-tab` on same branch both consume `session_store.transition_status` + terminal-status set `{completed, cancelled, qc_failed, build_failed, built}`. Their impl cannot start before SE.A.6 + SE.C.3. Flagged for Sona.
+- 5 OQs for Duong (OQ-SE-1 through OQ-SE-5); the operationally critical one is OQ-SE-1 (backfill policy for statuses outside the §4.2 mapping table).
+- No implementer assigned (plan-writer convention; `owner: Kayn` in frontmatter points to the breakdown author only).
+- Worktree setup: `~/Documents/Work/mmp/workspace/company-os-demo-studio-v3` added on `feat/demo-studio-v3`; left in place for subsequent Kayn calls on this branch.
+
 ### 2026-04-19 — subagent-task attribution v1 task breakdown
 
 - Produced `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution-tasks.md` (commit `29b7b62`, pushed) from Azir's ADR `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md` (being promoted to `approved/` concurrently by Ekko).
@@ -38,6 +49,8 @@
 - Every task names: owner, inputs, outputs, acceptance gate, rollback point (ADR §6.3 row ref), blockers, Duong-in-loop flag.
 - Acceptance gates prefer named-gate references over prose ("Caitlyn gate 'xxx'"); fallback to ADR §X item N when no gate file yet exists.
 - Dispatch sections end every breakdown: critical-path spine, parallel windows, hard serial points, owner-concurrent clock.
+- Enum-migration decomposition pattern (`session-state-encapsulation`): pair (a) backfill-script task with dry-run + apply sub-tasks, (b) delete-legacy-enum-code task, and place the apply-sub-task as a HARD SERIAL POINT immediately before the delete task. Reverse order orphans pre-migration rows. Flag redundantly in task body + dispatch plan.
+- Work-concern repo (`company-os`) has NO `scripts/safe-checkout.sh` — use raw `git worktree add` for branch switches. Strawberry-agents scripts do not apply across concerns.
 
 ## Archive Note
 
