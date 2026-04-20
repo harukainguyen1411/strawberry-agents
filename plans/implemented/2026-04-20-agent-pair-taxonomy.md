@@ -1,6 +1,6 @@
 ---
 title: Agent pair taxonomy — complex / normal two-track roster
-status: in-progress
+status: implemented
 owner: swain
 date: 2026-04-20
 created: 2026-04-20
