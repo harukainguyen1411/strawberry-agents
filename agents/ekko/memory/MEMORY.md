@@ -43,6 +43,7 @@
 - 2026-04-20 (ekko): Closed PR #4 (billing block — all CI queued 0s); cherry-picked f223542+13db201 onto main as chore: infra commits. Landed at 7735020. 24/24 bats green.
 - 2026-04-20 (ekko): Closed PR #5 strawberry-agents (billing block — all CI 4-5s); local test run 38/38 xfail exit 0; cherry-picked 8 commits onto main. Range 3ad163d..9b49d89.
 - 2026-04-20 (ekko): Bug 1 — added Orianna-Bypass trailer reader to pre-commit-plan-authoring-freeze.sh (consistent with promote-guard §D9.1); COMMIT_EDITMSG resolution fixed to use absolute GIT_DIR; 6-case regression test added. Commit 90b0f53. Bug 2 — fixed mktemp --suffix=.md (Linux-only) in plan-publish.sh (now deleted). Commit 3b1f191. Bug 3 / re-publish: moot — Drive mirror feature retired.
+- 2026-04-20 (ekko): T1 for Lissandra plan — added memory-consolidator:single_lane to is_sonnet_slot() in pre-commit-agent-shared-rules.sh. xfail commit 78f57b1, impl commit d314926. 17/17 bats green.
 - 2026-04-20 (ekko): Drive mirror feature removed entirely. Deleted plan-publish.sh, plan-unpublish.sh, test_plan_gdoc_offline.sh, architecture/plan-gdoc-mirror.md. Stripped Drive unpublish step from plan-promote.sh. Updated CLAUDE.md rule #7, key-scripts.md, platform-parity.md, agent-network.md, evelynn.md, orianna-gated-plan-lifecycle.md. Commits 51e2264 + 136c3a2.
 
 ## Archive Note
