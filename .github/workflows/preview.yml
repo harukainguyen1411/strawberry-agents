@@ -3,6 +3,12 @@ name: Preview
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'apps/**'
+      - 'dashboards/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'turbo.json'
 
 permissions:
   checks: write
