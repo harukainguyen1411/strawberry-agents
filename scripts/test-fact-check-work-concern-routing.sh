@@ -36,6 +36,7 @@ run_check() {
   shift 2
   local slug="wcrtest-${label}-$$"
   local plan_path="$SCRATCH/${slug}.md"
+  trap "rm -rf \"$REPORT_DIR/${slug}-\"*.md \"$plan_path\"" EXIT INT TERM
   printf '%s\n' "$body" > "$plan_path"
   local rc=0
   env "$@" bash "$FACT_CHECK" "$plan_path" >/dev/null 2>&1 || rc=$?
@@ -47,6 +48,7 @@ run_check() {
     rm -f "$report"
   fi
   rm -f "$plan_path"
+  trap - EXIT INT TERM
   printf '%s' "$blocks"
 }
 
@@ -57,6 +59,7 @@ run_check_warn() {
   shift 2
   local slug="wcrtest-${label}-$$"
   local plan_path="$SCRATCH/${slug}.md"
+  trap "rm -rf \"$REPORT_DIR/${slug}-\"*.md \"$plan_path\"" EXIT INT TERM
   printf '%s\n' "$body" > "$plan_path"
   env "$@" bash "$FACT_CHECK" "$plan_path" >/dev/null 2>&1 || true
   local report
@@ -67,6 +70,7 @@ run_check_warn() {
     rm -f "$report"
   fi
   rm -f "$plan_path"
+  trap - EXIT INT TERM
   printf '%s' "$warn_text"
 }
 
@@ -183,8 +187,86 @@ else
   fail "I3_MISSING_WORK_CHECKOUT_WARN_NAMES_REPO_PATH" "warn finding did not name the expected work-concern path $FAKE_ABSENT"
 fi
 
+# ---- I4: concern: "work" (YAML-quoted) still routes to WORK_CONCERN_REPO -----
+# Locks the behavior: quoted values must not silently fall back to strawberry-app.
+I4_BODY='---
+title: I4 Quoted Work Routing Test
+status: proposed
+owner: talon
+created: 2026-04-21
+concern: "work"
+tags: [test]
+---
+
+Depends on `'"${WORK_TOKEN}"'` being present in the work repo.
+'
+
+blocks="$(run_check I4_quoted "$I4_BODY" \
+  "WORK_CONCERN_REPO=$FAKE_WORK" \
+  "STRAWBERRY_APP=$FAKE_APP_MISSING")"
+if [ "$blocks" -eq 0 ]; then
+  pass "I4_QUOTED_CONCERN_WORK_ROUTES_TO_WORK_REPO"
+else
+  fail "I4_QUOTED_CONCERN_WORK_ROUTES_TO_WORK_REPO" "expected 0 blocks (quoted concern:work routes to work repo), got $blocks"
+fi
+
+# ---- I5: dashboards/* with concern: work routes to WORK_CONCERN_REPO ---------
+FAKE_WORK_DASH="$(mktemp -d)"
+mkdir -p "$FAKE_WORK_DASH/dashboards/analytics"
+touch "$FAKE_WORK_DASH/dashboards/analytics/main.py"
+DASH_TOKEN="dashboards/analytics/main.py"
+
+I5_BODY="---
+title: I5 Dashboards Work Routing Test
+status: proposed
+owner: talon
+created: 2026-04-21
+concern: work
+tags: [test]
+---
+
+Depends on \`${DASH_TOKEN}\` being present in the work repo.
+"
+
+blocks="$(run_check I5_dashboards "$I5_BODY" \
+  "WORK_CONCERN_REPO=$FAKE_WORK_DASH" \
+  "STRAWBERRY_APP=$FAKE_APP_MISSING")"
+if [ "$blocks" -eq 0 ]; then
+  pass "I5_DASHBOARDS_CONCERN_WORK_ROUTES_TO_WORK_REPO"
+else
+  fail "I5_DASHBOARDS_CONCERN_WORK_ROUTES_TO_WORK_REPO" "expected 0 blocks (dashboards/* routes to work repo), got $blocks"
+fi
+
+# ---- I6: .github/workflows/* with concern: work routes to WORK_CONCERN_REPO --
+FAKE_WORK_GH="$(mktemp -d)"
+mkdir -p "$FAKE_WORK_GH/.github/workflows"
+touch "$FAKE_WORK_GH/.github/workflows/deploy.yml"
+GH_TOKEN=".github/workflows/deploy.yml"
+
+I6_BODY="---
+title: I6 GitHub Workflows Work Routing Test
+status: proposed
+owner: talon
+created: 2026-04-21
+concern: work
+tags: [test]
+---
+
+Depends on \`${GH_TOKEN}\` being present in the work repo.
+"
+
+blocks="$(run_check I6_ghworkflows "$I6_BODY" \
+  "WORK_CONCERN_REPO=$FAKE_WORK_GH" \
+  "STRAWBERRY_APP=$FAKE_APP_MISSING")"
+if [ "$blocks" -eq 0 ]; then
+  pass "I6_GITHUB_WORKFLOWS_CONCERN_WORK_ROUTES_TO_WORK_REPO"
+else
+  fail "I6_GITHUB_WORKFLOWS_CONCERN_WORK_ROUTES_TO_WORK_REPO" "expected 0 blocks (.github/workflows/* routes to work repo), got $blocks"
+fi
+
 # Clean up fake dirs
 rm -rf "$FAKE_WORK" "$FAKE_APP" "$FAKE_APP_MISSING" "$FAKE_WORK_MISSING"
+rm -rf "$FAKE_WORK_DASH" "$FAKE_WORK_GH"
 rm -rf "$SCRATCH"
 
 printf '\nResults: %d passed, %d failed\n' "$PASS" "$FAIL"

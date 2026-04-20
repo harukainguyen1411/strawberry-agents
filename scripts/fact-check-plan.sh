@@ -87,6 +87,7 @@ PLAN_CONCERN="$(awk '
     val = $0
     sub(/^concern:[[:space:]]*/, "", val)
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
+    gsub(/^["'"'"']|["'"'"']$/, "", val)
     print val
     exit
   }
