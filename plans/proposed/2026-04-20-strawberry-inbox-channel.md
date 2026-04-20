@@ -180,6 +180,16 @@ confirmed working on Git Bash / PowerShell.
 5. **Scope of the first cut** — ship watcher + skill together, or land the
    watcher first and leave `/check-inbox` for a follow-up task?
 
+## Gating Answers (approved by Duong 2026-04-20)
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Plugin location | `.claude/plugins/strawberry-inbox/` |
+| 2 | Coordinator identification | `CLAUDE_AGENT_NAME` env, fallback `STRAWBERRY_AGENT` |
+| 3 | Auto-mark-read | Yes — flip `status: read` on display |
+| 4 | Skill name | `/check-inbox` |
+| 5 | First-cut scope | Bundle plugin + skill as one deliverable |
+
 ## 10. Handoff
 
 Once Duong answers the gating questions, this plan promotes to `approved/`
