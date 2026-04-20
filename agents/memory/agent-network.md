@@ -72,16 +72,36 @@ Same Orianna gates apply before plan promotion. Same Senna + Lucian PR review ap
 
 Evelynn is the hub. Duong talks to Evelynn. Evelynn delegates to agents via the Agent tool.
 
-**Delegation chain:**
-- Duong → Evelynn → Azir (architecture) → Kayn/Aphelios (task breakdown) → Jayce/Viktor/Vi/Seraphine (execution)
-- Duong → Evelynn → Caitlyn (testing plan) → Vi (test execution)
+**Delegation chain (tier-aware):**
+
+Architecture:
+- Complex track: Duong → Evelynn → Swain (architect, complex) → Aphelios (breakdown, complex) → Viktor/Rakan (build/test, complex)
+- Normal track: Duong → Evelynn → Azir (architect, normal) → Kayn (breakdown, normal) → Jayce/Vi (build/test, normal)
+
+Testing:
+- Complex track: Evelynn → Xayah (test-plan, complex) → Rakan (test-impl, complex)
+- Normal track: Evelynn → Caitlyn (test-plan, normal) → Vi (test-impl, normal)
+
+Building:
+- Complex track: Evelynn → Viktor (builder, complex)
+- Normal track: Evelynn → Jayce (builder, normal)
+
+Frontend:
+- Complex: Evelynn → Neeko (design, complex) → Seraphine (impl, complex)
+- Normal: Evelynn → Lulu (design, normal) → Soraka (impl, normal)
+
+AI/MCP:
+- Complex: Evelynn → Lux (ai-specialist, complex)
+- Normal: Evelynn → Syndra (ai-specialist, normal)
+
+Single-lane:
 - Duong → Evelynn → Heimerdinger (DevOps advice) → Ekko (execution)
-- Duong → Evelynn → Lulu (design advice) → Neeko (design artifacts) → Seraphine (implementation)
-- Duong → Evelynn → Camille (security/git advice)
-- Duong → Evelynn → Lux (AI/MCP research)
-- Duong/Evelynn → `scripts/orianna-fact-check.sh` (called automatically by `plan-promote.sh`) — Orianna is script-only, not invocable via the Agent tool
+- Duong → Evelynn → Camille (git/security advice)
 - Duong/Evelynn → Senna (PR code quality + security review) + Lucian (PR plan/ADR fidelity review) — both review every PR before merge
-- Duong → Evelynn → Karma (quick plan) → Talon (quick execution) — quick lane for trivial tasks
+- Duong/Evelynn → `scripts/orianna-fact-check.sh` (called automatically by `plan-promote.sh`) — Orianna is script-only, not invocable via the Agent tool
+
+Quick lane:
+- Duong → Evelynn → Karma (quick plan) → Talon (quick execution) — for trivial tasks
 
 **Escalate to Evelynn when:**
 - Blocker needing cross-domain coordination
@@ -131,19 +151,27 @@ No agent self-implements their own plan without approval.
 
 ## Universal Invariants (from CLAUDE.md)
 
-All agents must follow these rules — see `/Users/duongntd99/Documents/Personal/strawberry-agents/CLAUDE.md` for full detail:
+All agents must follow these rules — see `CLAUDE.md` for full detail and anchor links:
 
-1. Never leave work uncommitted before any git operation
-2. Never write secrets into committed files — use `secrets/` or env vars
+1. Never leave work uncommitted before any git operation that changes the working tree
+2. Never write secrets into committed files — use `secrets/` (gitignored) or env vars
 3. Use `git worktree` for branches — never raw `git checkout`; use `scripts/safe-checkout.sh`
 4. Plans go directly to main, never via PR
-5. Use `chore:` prefix for all commits
-6. Never run raw `age -d` — use `tools/decrypt.sh` exclusively
-7. Use `scripts/plan-promote.sh` to move plans out of `proposed/`
-8. Always invoke `/end-session` or `/end-subagent-session` before closing
-9. Every agent definition must declare its `model:` field
-10. Scripts outside `scripts/mac/` and `scripts/windows/` must be POSIX-portable
+5. Conventional commit prefixes scoped by diff — non-code: `chore:` or `ops:`; code in `apps/**`: `feat:`, `fix:`, `perf:`, `refactor:`, or `chore:`; breaking: `feat!:` or `BREAKING CHANGE:` footer
+6. Never run raw `age -d` or read decrypted secret values into context — use `tools/decrypt.sh` exclusively
+7. Use `scripts/plan-promote.sh` to move plans out of `proposed/` — never raw `git mv`
+8. Always invoke `/end-session` before closing any top-level session; subagents invoke `/end-subagent-session`
+9. Agent model selection is explicit or inherited — `model:` field in frontmatter; Opus for planners, Sonnet for executors; Haiku is retired
+10. Scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) must be POSIX-portable bash
 11. Never use `git rebase` — always merge
+12. No task starts without an xfail test committed first (TDD-enabled services)
+13. No bug fix lands without a regression test
+14. Pre-commit hook runs unit tests for changed packages; commit blocked on failure — never pass `--no-verify`
+15. PR creation triggers Playwright E2E; PR cannot merge red
+16. Before opening a UI PR, a QA agent must run the full Playwright flow with video + screenshots and diff against Figma — report in `assessments/qa-reports/`, linked in PR body
+17. Post-deploy smoke tests run on stg and prod; rollback on prod failure via `scripts/deploy/rollback.sh`
+18. Agents must NOT use `gh pr merge --admin` or any branch-protection bypass; must NOT merge a PR they authored; every merge requires all checks green + one approving review from a distinct account
+19. Every plan promotion and phase transition requires an Orianna signature commit (`scripts/orianna-sign.sh`) with `Orianna-Signed-By:`, `Orianna-Phase:`, and `Orianna-Timestamp:` trailers; bypass via `Orianna-Bypass: <reason>` trailer with admin identity (`harukainguyen1411@gmail.com`)
 
 ## Two-Identity Model
 
