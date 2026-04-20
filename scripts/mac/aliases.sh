@@ -8,5 +8,5 @@
 # STRAWBERRY_AGENT — fallback identity for the channel plugin if CLAUDE_AGENT_NAME
 #   is not exported by the claude CLI into the plugin subprocess environment
 
-alias evelynn='cd ~/Documents/Personal/strawberry-agents && STRAWBERRY_AGENT=evelynn claude --agent evelynn --plugin-dir .claude/plugins/strawberry-inbox --channels server:strawberry-inbox --dangerously-load-development-channels'
-alias sona='cd ~/Documents/Personal/strawberry-agents && STRAWBERRY_AGENT=sona claude --agent sona --plugin-dir .claude/plugins/strawberry-inbox --channels server:strawberry-inbox --dangerously-load-development-channels'
+alias evelynn='cd ~/Documents/Personal/strawberry-agents && STRAWBERRY_AGENT=Evelynn claude --agent Evelynn --plugin-dir .claude/plugins/strawberry-inbox --channels server:strawberry-inbox --dangerously-load-development-channels server:strawberry-inbox'
+alias sona='cd ~/Documents/Personal/strawberry-agents && STRAWBERRY_AGENT=Sona claude --agent Sona --plugin-dir .claude/plugins/strawberry-inbox --channels server:strawberry-inbox --dangerously-load-development-channels server:strawberry-inbox'
