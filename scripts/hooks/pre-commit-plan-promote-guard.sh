@@ -7,9 +7,33 @@
 #   (a) a matching fact-check report at assessments/plan-fact-checks/<basename>-*.md
 #   (b) an "Orianna-Bypass: <reason>" trailer in the commit message (>=10 chars reason)
 #
-# If the trailer is present the commit is allowed but a WARNING banner is printed.
+# If the trailer is present:
+#   - Commit is BLOCKED if the author is an agent identity
+#     (author email matches AGENT_EMAILS list below).
+#   - Commit is ALLOWED with a WARNING banner if the author is Duong's
+#     admin identity (harukainguyen1411 / ADMIN_EMAILS list below).
+#
+# Per ADR §D9.1: only Duong's admin account may use the Orianna-Bypass trailer.
+# Agents must never use it.
 
 set -e
+
+# --- identity gates for Orianna-Bypass ---
+
+# Agent account(s) — NOT permitted to use Orianna-Bypass under any circumstances.
+# Add additional agent noreply addresses here if more agent accounts are created.
+AGENT_EMAILS="duong.nguyen.thai.duy@gmail.com 103487096+Duongntd@users.noreply.github.com"
+
+# Admin account(s) — the only identities allowed to use Orianna-Bypass.
+ADMIN_EMAILS="harukainguyen1411@gmail.com"
+
+# Resolve the author email for the pending commit.
+# GIT_AUTHOR_EMAIL is set by git when running hooks; fall back to config value.
+if [ -n "$GIT_AUTHOR_EMAIL" ]; then
+  current_author_email="$GIT_AUTHOR_EMAIL"
+else
+  current_author_email="$(git config user.email 2>/dev/null || true)"
+fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
@@ -83,8 +107,17 @@ commit_msg=""
 [ -f "$COMMIT_MSG_FILE" ] && commit_msg="$(cat "$COMMIT_MSG_FILE")"
 
 bypass_reason=""
+bypass_blocked_agent=0
 if echo "$commit_msg" | grep -qE '^Orianna-Bypass:[[:space:]].{10,}'; then
   bypass_reason="$(echo "$commit_msg" | grep -E '^Orianna-Bypass:' | head -1 | sed 's/^Orianna-Bypass:[[:space:]]*//')"
+
+  # Check if the bypass is being used by an agent identity — strictly disallowed.
+  for _agent_email in $AGENT_EMAILS; do
+    if [ "$current_author_email" = "$_agent_email" ]; then
+      bypass_blocked_agent=1
+      break
+    fi
+  done
 fi
 
 FACT_CHECK_DIR="$REPO_ROOT/assessments/plan-fact-checks"
@@ -105,6 +138,25 @@ for base in $promoted_basenames; do
 
   # No report — check bypass trailer
   if [ -n "$bypass_reason" ]; then
+    # Agent identities are never permitted to use Orianna-Bypass (ADR §D9.1).
+    if [ "$bypass_blocked_agent" -eq 1 ]; then
+      all_ok=0
+      printf '\n' >&2
+      printf '=== BLOCKED: Orianna-Bypass forbidden for agent identity ===\n' >&2
+      printf 'Plan  : %s\n' "$base" >&2
+      printf 'Author: %s\n' "$current_author_email" >&2
+      printf '\n' >&2
+      printf 'The Orianna-Bypass trailer is reserved for Duong'\''s admin identity\n' >&2
+      printf '(harukainguyen1411 / personal email) — not agent accounts.\n' >&2
+      printf 'Per ADR 2026-04-20-orianna-gated-plan-lifecycle §D9.1.\n' >&2
+      printf '\n' >&2
+      printf 'To promote this plan:\n' >&2
+      printf '  1. Run scripts/orianna-sign.sh <plan> <phase> to obtain a signature.\n' >&2
+      printf '  2. Then run scripts/plan-promote.sh as usual.\n' >&2
+      printf '\n' >&2
+      continue
+    fi
+
     printf '\n' >&2
     printf '########################################################\n' >&2
     printf '# WARNING: Orianna fact-check bypassed                 #\n' >&2
