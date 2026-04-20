@@ -279,19 +279,19 @@ Shift row numbers for Yuumi (→ 17) and Camille (→ 18). Stable row numbers ar
 Eleven tasks, ordered logically. Owner column resolved; TDD pairings noted
 per Rule 12. All tasks commit `chore:` per CLAUDE.md Rule 5.
 
-| ID   | Task                                                                 | Owner                    | Depends on           | TDD  |
-|------|----------------------------------------------------------------------|--------------------------|----------------------|------|
-| T1   | Add `memory-consolidator:single_lane` to `is_sonnet_slot()` + test   | Ekko                     | —                    | yes  |
-| T2   | Create `.claude/agents/lissandra.md` (top-level — harness blocked)   | Evelynn (dispatch only)  | T1                   | no   |
-| T3   | Write `.claude/skills/pre-compact-save/SKILL.md`                     | Jayce                    | —                    | no   |
-| T4   | Write `scripts/hooks/pre-compact-gate.sh`                            | Jayce                    | —                    | yes  |
-| T5   | Wire PreCompact into `.claude/settings.json` + smoke-confirm         | Jayce                    | T3, T4               | no   |
-| T6   | Create `agents/lissandra/` scaffold + index + profile + MEMORY       | Yuumi                    | —                    | no   |
-| T7   | Update `architecture/agent-pair-taxonomy.md` §1.1 table (+1 row)     | Yuumi                    | —                    | no   |
-| T8   | Update `agents/memory/agent-network.md` roster entry                 | Yuumi                    | —                    | no   |
-| T9   | Documentation: `/compact` workflow blurb in `CLAUDE.md`              | Yuumi                    | T2, T3, T5           | no   |
-| T10  | (Deferred to phase 2 per OQ-Q3) `clean-jsonl.py --since-last-compact`| —                        | —                    | —    |
-| T11  | Manual E2E verification (Evelynn + Sona) + report                    | Vi                       | T1–T9                | no   |
+| ID   | Task                                                                 | Owner                    | Depends on           | TDD  | estimate_minutes |
+|------|----------------------------------------------------------------------|--------------------------|----------------------|------|------------------|
+| T1   | Add `memory-consolidator:single_lane` to `is_sonnet_slot()` + test   | Ekko                     | —                    | yes  | 30               |
+| T2   | Create `.claude/agents/lissandra.md` (top-level — harness blocked)   | Evelynn (dispatch only)  | T1                   | no   | 20               |
+| T3   | Write `.claude/skills/pre-compact-save/SKILL.md`                     | Jayce                    | —                    | no   | 30               |
+| T4   | Write `scripts/hooks/pre-compact-gate.sh`                            | Jayce                    | —                    | yes  | 45               |
+| T5   | Wire PreCompact into `.claude/settings.json` + smoke-confirm         | Jayce                    | T3, T4               | no   | 15               |
+| T6   | Create `agents/lissandra/` scaffold + index + profile + MEMORY       | Yuumi                    | —                    | no   | 20               |
+| T7   | Update `architecture/agent-pair-taxonomy.md` §1.1 table (+1 row)     | Yuumi                    | —                    | no   | 10               |
+| T8   | Update `agents/memory/agent-network.md` roster entry                 | Yuumi                    | —                    | no   | 10               |
+| T9   | Documentation: `/compact` workflow blurb in `CLAUDE.md`              | Yuumi                    | T2, T3, T5           | no   | 15               |
+| T10  | (Deferred to phase 2 per OQ-Q3) `clean-jsonl.py --since-last-compact`| —                        | —                    | —    | —                |
+| T11  | Manual E2E verification (Evelynn + Sona) + report                    | Vi                       | T1–T9                | no   | 60               |
 
 ### 6.1 Task detail
 
@@ -318,10 +318,11 @@ per Rule 12. All tasks commit `chore:` per CLAUDE.md Rule 5.
   Write `.claude/skills/pre-compact-save/SKILL.md`. Mirror the
   `end-session` skill header but set `disable-model-invocation: false`.
   Body: ~30 lines. Takes optional `$ARGUMENTS` = `evelynn`|`sona`. Skill
-  steps: (a) detect coordinator, (b) spawn Lissandra via Agent tool with
-  a fully-formed task prompt carrying `session_id`, `transcript_path`,
-  `coordinator`, (c) verify sentinel + commit on return, (d) report
-  artifacts.
+  steps:
+  a. detect coordinator
+  b. spawn Lissandra via Agent tool with a fully-formed task prompt carrying `session_id`, `transcript_path`, `coordinator`
+  c. verify sentinel + commit on return
+  d. report artifacts
 
 - **T4 — PreCompact gate script (Jayce, TDD)**
   Write `scripts/hooks/pre-compact-gate.sh` per §3.1.1. POSIX bash (Rule
@@ -486,6 +487,19 @@ The plan is implemented when:
 6. `architecture/agent-pair-taxonomy.md` §1.1 lists Lissandra in the single-lane table.
 7. Manual end-to-end verification passes for both Evelynn and Sona sessions (T11).
 8. `.no-precompact-save` sentinel at repo root correctly bypasses the hook.
+
+## Test plan
+
+Three test tasks cover the plan's testable surface area.
+
+**T1 — Hook slot registration (`scripts/hooks/pre-commit-agent-shared-rules.test.sh`).**
+An xfail test case is added before the implementation commit. The test creates a fixture agent file declaring `role_slot: memory-consolidator` and `tier: single_lane` and asserts the hook rejects an `opus` model declaration while accepting `sonnet`. Run with `bash scripts/hooks/pre-commit-agent-shared-rules.test.sh`; must be green before T1-impl merges.
+
+**T4 / T6 — PreCompact gate unit tests (`scripts/hooks/tests/pre-compact-gate.test.sh`).**
+A shell-based fixture driver pipes representative JSON payloads (no sentinel, sentinel present, `.no-precompact-save` present) into `scripts/hooks/pre-compact-gate.sh` and asserts on stdout JSON and exit code. Three cases: block emitted when no sentinel, exit 0 when sentinel present, exit 0 when opt-out dotfile present. Run with `bash scripts/hooks/tests/pre-compact-gate.test.sh`. The xfail commit precedes the T4-impl commit on the same branch.
+
+**T11 — Manual E2E verification (Vi).**
+Vi runs a full `/compact` + `/pre-compact-save` flow in a disposable Evelynn session and a disposable Sona session. For each: greet coordinator, do representative work, type `/compact`, observe block message, run `/pre-compact-save`, verify handoff shard + session shard + journal entry + commit land in `agents/<coordinator>/`, re-run `/compact`, observe allow. Results written to `assessments/personal/2026-04-20-lissandra-verification.md`. T11 must pass before the plan moves to `implemented/`.
 
 ## 9. Rollback
 
