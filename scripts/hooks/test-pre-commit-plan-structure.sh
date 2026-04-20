@@ -16,7 +16,7 @@ FAIL=0
 XFAIL=0  # expected failures before implementation lands
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-HOOK="$REPO_ROOT/scripts/hooks/pre-commit-plan-structure.sh"
+HOOK="$REPO_ROOT/scripts/hooks/pre-commit-zz-plan-structure.sh"
 LIB="$REPO_ROOT/scripts/_lib_plan_structure.sh"
 
 # ---------------------------------------------------------------------------
@@ -39,7 +39,7 @@ _assert() {
 # Requires that the files already exist in <repo_dir>.
 _run_hook_with_staged() {
   local dir="$1"; shift
-  local local_hook="$dir/scripts/hooks/pre-commit-plan-structure.sh"
+  local local_hook="$dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
   # Stage the given files
   for f in "$@"; do
     git -C "$dir" add "$f" 2>/dev/null || true
@@ -62,7 +62,7 @@ _setup_repo() {
   mkdir -p "$dir/scripts/hooks"
   cp "$REPO_ROOT/scripts/_lib_plan_structure.sh" "$dir/scripts/"
   cp "$REPO_ROOT/scripts/_lib_orianna_estimates.sh" "$dir/scripts/"
-  cp "$HOOK" "$dir/scripts/hooks/"
+  cp "$HOOK" "$dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
   echo "$dir"
 }
 
@@ -270,12 +270,12 @@ rm -rf "$ta_dir"
 tb_dir="$(_setup_repo)"
 _write_plan_missing_key "$tb_dir" "plans/proposed/missing-key.md"
 git -C "$tb_dir" add "plans/proposed/missing-key.md"
-tb_local_hook="$tb_dir/scripts/hooks/pre-commit-plan-structure.sh"
-tb_stderr="$( (cd "$tb_dir" && bash "$tb_local_hook") 2>&1 >/dev/null || true )"
-tb_rc="$( (cd "$tb_dir" && bash "$tb_local_hook") && echo 0 || echo $? )"
+tb_local_hook="$tb_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tb_stderr="$( (cd "$tb_dir" && bash "$tb_local_hook") 2>&1 1>/dev/null || true )"
+tb_rc="$( (cd "$tb_dir" && bash "$tb_local_hook") 2>/dev/null && echo 0 || echo $? )"
 _assert "(b) missing frontmatter key blocks (exit 1)" 1 "$tb_rc"
-# Check message contains the expected key name
-if printf '%s' "$tb_stderr" | grep -q 'concern'; then
+# Check message contains the expected key name (tightened to actual message format)
+if printf '%s' "$tb_stderr" | grep -q 'missing required frontmatter field: .concern'; then
   _assert "(b) error message names the missing key" "yes" "yes"
 else
   _assert "(b) error message names the missing key" "yes" "no"
@@ -329,6 +329,223 @@ _write_plan_missing_key "$tg_dir" "plans/archived/old-plan.md"
 rc="$(_run_hook_with_staged "$tg_dir" "plans/archived/old-plan.md")"
 _assert "(g) plans/archived/** is skipped (exit 0)" 0 "$rc"
 rm -rf "$tg_dir"
+
+# ---------------------------------------------------------------------------
+# Test (h): tests_required: false skips ## Test plan check — exit 0
+# ---------------------------------------------------------------------------
+th_dir="$(_setup_repo)"
+mkdir -p "$th_dir/plans/proposed"
+cat > "$th_dir/plans/proposed/no-test-needed.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-20
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# No test plan needed
+
+## 1. Problem & motivation
+
+Infra-only change.
+
+## 6. Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$th_dir" "plans/proposed/no-test-needed.md")"
+_assert "(h) tests_required: false skips Test plan check (exit 0)" 0 "$rc"
+rm -rf "$th_dir"
+
+# ---------------------------------------------------------------------------
+# Test (i): empty-value frontmatter key fails (B3 regression lock)
+# ---------------------------------------------------------------------------
+ti_dir="$(_setup_repo)"
+mkdir -p "$ti_dir/plans/proposed"
+cat > "$ti_dir/plans/proposed/empty-concern.md" <<'PLAN'
+---
+status: proposed
+concern:
+owner: karma
+created: 2026-04-20
+orianna_gate_version: 2
+tests_required: true
+tags: [test]
+---
+
+# Empty concern value
+
+## 1. Problem & motivation
+
+Tests empty value detection.
+
+## 6. Tasks
+
+- [ ] **T1** — Do it. estimate_minutes: 5. DoD: done.
+
+## Test plan
+
+Tests here.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$ti_dir" add "plans/proposed/empty-concern.md"
+ti_stderr="$( (cd "$ti_dir" && bash "$ti_dir/scripts/hooks/pre-commit-zz-plan-structure.sh") 2>&1 1>/dev/null || true )"
+ti_rc="$( (cd "$ti_dir" && bash "$ti_dir/scripts/hooks/pre-commit-zz-plan-structure.sh") 2>/dev/null && echo 0 || echo $? )"
+_assert "(i) empty-value frontmatter key blocks (exit 1)" 1 "$ti_rc"
+if printf '%s' "$ti_stderr" | grep -q 'missing required frontmatter field: .concern'; then
+  _assert "(i) error message names the empty key" "yes" "yes"
+else
+  _assert "(i) error message names the empty key" "yes" "no"
+fi
+rm -rf "$ti_dir"
+
+# ---------------------------------------------------------------------------
+# Test (j): multi-file staged batch — both files checked
+# ---------------------------------------------------------------------------
+tj_dir="$(_setup_repo)"
+_write_good_plan "$tj_dir" "plans/proposed/good1.md"
+_write_plan_missing_estimate "$tj_dir" "plans/proposed/bad1.md"
+git -C "$tj_dir" add "plans/proposed/good1.md" "plans/proposed/bad1.md"
+tj_local_hook="$tj_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tj_rc="$( (cd "$tj_dir" && bash "$tj_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(j) multi-file batch: bad file blocks even with good file present (exit 1)" 1 "$tj_rc"
+rm -rf "$tj_dir"
+
+# ---------------------------------------------------------------------------
+# Test (k): estimate boundary — 0 is rejected, 61 is rejected, negative rejected
+# ---------------------------------------------------------------------------
+tk_dir="$(_setup_repo)"
+mkdir -p "$tk_dir/plans/proposed"
+cat > "$tk_dir/plans/proposed/bad-estimate-zero.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-20
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Zero estimate
+
+## 6. Tasks
+
+- [ ] **T1** — Zero estimate. estimate_minutes: 0. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc_zero="$(_run_hook_with_staged "$tk_dir" "plans/proposed/bad-estimate-zero.md")"
+_assert "(k1) estimate_minutes: 0 blocks (exit 1)" 1 "$rc_zero"
+rm -rf "$tk_dir"
+
+tk2_dir="$(_setup_repo)"
+mkdir -p "$tk2_dir/plans/proposed"
+cat > "$tk2_dir/plans/proposed/bad-estimate-61.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-20
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Over-limit estimate
+
+## 6. Tasks
+
+- [ ] **T1** — Too long. estimate_minutes: 61. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc_61="$(_run_hook_with_staged "$tk2_dir" "plans/proposed/bad-estimate-61.md")"
+_assert "(k2) estimate_minutes: 61 blocks (exit 1)" 1 "$rc_61"
+rm -rf "$tk2_dir"
+
+tk3_dir="$(_setup_repo)"
+mkdir -p "$tk3_dir/plans/proposed"
+cat > "$tk3_dir/plans/proposed/bad-estimate-neg.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-20
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Negative estimate
+
+## 6. Tasks
+
+- [ ] **T1** — Negative. estimate_minutes: -5. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc_neg="$(_run_hook_with_staged "$tk3_dir" "plans/proposed/bad-estimate-neg.md")"
+_assert "(k3) estimate_minutes: -5 blocks (exit 1)" 1 "$rc_neg"
+rm -rf "$tk3_dir"
+
+# ---------------------------------------------------------------------------
+# Test (l): OQ hardening — check_task_estimates on the approved plan (quirk lock)
+# Calls check_task_estimates from the lib directly on the approved plan.
+# The approved plan contains (d) enumeration labels in its DoD prose; verify
+# the current behaviour (pass or fail) is locked in.
+# ---------------------------------------------------------------------------
+tl_plan="$REPO_ROOT/plans/approved/personal/2026-04-20-plan-structure-prelint.md"
+if [ -f "$tl_plan" ]; then
+  # Source the lib to get check_task_estimates (which delegates to check_estimate_minutes)
+  # shellcheck source=scripts/_lib_plan_structure.sh
+  . "$LIB"
+  tl_rc=0
+  check_task_estimates "$tl_plan" 2>/dev/null || tl_rc=$?
+  # Document current behaviour: the plan uses (d) enumeration labels inside DoD prose,
+  # but those appear in non-task lines so check_estimate_minutes passes (exit 0) today.
+  # This test locks that behaviour in with eyes open (OQ hardening option b).
+  # If this starts failing, a new task line with a literal (d) must have been added.
+  _assert "(l) OQ: check_task_estimates on approved plan passes today (quirk lock)" 0 "$tl_rc"
+else
+  printf 'SKIP: (l) approved plan not found at %s\n' "$tl_plan"
+fi
 
 # ---------------------------------------------------------------------------
 # Summary
