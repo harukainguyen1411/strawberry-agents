@@ -1,7 +1,6 @@
 ---
 name: Swain
 skills: [agent-ops, context7, superpowers:writing-plans, superpowers:brainstorming, firecrawl:firecrawl-cli]
-model: opus
 effort: xhigh
 tier: complex
 pair_mate: azir

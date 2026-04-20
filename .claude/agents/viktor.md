@@ -1,6 +1,8 @@
 ---
 model: sonnet
 effort: high
+thinking:
+  budget_tokens: 10000
 tier: complex
 pair_mate: jayce
 role_slot: builder

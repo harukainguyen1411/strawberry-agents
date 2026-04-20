@@ -1,6 +1,8 @@
 ---
 model: sonnet
 effort: low
+thinking:
+  budget_tokens: 2000
 permissionMode: bypassPermissions
 name: Soraka
 description: Normal-track frontend implementer — small tweaks (tooltips, copy, component variants) from Lulu's inline advice. Pair-mate of Seraphine (complex-track).

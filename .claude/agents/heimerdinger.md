@@ -1,5 +1,4 @@
 ---
-model: opus
 effort: medium
 permissionMode: bypassPermissions
 name: Heimerdinger

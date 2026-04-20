@@ -1,6 +1,8 @@
 ---
 model: sonnet
 effort: medium
+thinking:
+  budget_tokens: 5000
 tier: complex
 pair_mate: soraka
 role_slot: frontend-impl

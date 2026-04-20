@@ -1,6 +1,8 @@
 ---
 model: sonnet
 effort: low
+thinking:
+  budget_tokens: 2000
 permissionMode: bypassPermissions
 name: Yuumi
 description: Evelynn's errand runner — file reads, edits, memory updates, state file management, and any small operational tasks the coordinator needs done. Always attached to Evelynn.

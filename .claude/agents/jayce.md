@@ -1,6 +1,8 @@
 ---
 model: sonnet
 effort: medium
+thinking:
+  budget_tokens: 5000
 tier: normal
 pair_mate: viktor
 role_slot: builder

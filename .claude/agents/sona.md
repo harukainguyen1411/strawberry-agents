@@ -1,6 +1,5 @@
 ---
 name: Sona
-model: opus
 effort: medium
 concern: work
 permissionMode: bypassPermissions
