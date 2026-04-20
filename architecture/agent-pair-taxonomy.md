@@ -46,6 +46,7 @@ Single-lane roles:
 | 15 | Memory excavator | Skarner (Sonnet low) |
 | 16 | Errand runner | Yuumi (Sonnet low) |
 | 17 | Git/security advisor | Camille (Opus medium) |
+| 18 | Memory consolidator | Lissandra (Sonnet medium) |
 
 ### 1.2 Why three tracks (not five), and why quick collapses roles
 
