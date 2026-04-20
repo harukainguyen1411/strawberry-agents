@@ -67,6 +67,7 @@ esac
 # ---- constants -------------------------------------------------------------
 
 STRAWBERRY_APP="${STRAWBERRY_APP:-$HOME/Documents/Personal/strawberry-app}"
+WORK_CONCERN_REPO="${WORK_CONCERN_REPO:-$HOME/Documents/Work/mmp/workspace/company-os}"
 REPORT_DIR="$REPO_ROOT/assessments/plan-fact-checks"
 PLAN_BASENAME="$(basename "$PLAN_PATH" .md)"
 TIMESTAMP="$(date -u '+%Y-%m-%dT%H-%M-%SZ' 2>/dev/null || date '+%Y-%m-%dT%H-%M-%SZ')"
@@ -74,6 +75,22 @@ CHECKED_AT="$(date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || date '+%Y-%m-%dT%H:%M
 REPORT_PATH="$REPORT_DIR/${PLAN_BASENAME}-${TIMESTAMP}.md"
 
 mkdir -p "$REPORT_DIR"
+
+# ---- frontmatter concern parsing -------------------------------------------
+# Extract the concern: field from YAML frontmatter (between first two --- lines).
+# Result is stored in PLAN_CONCERN; defaults to empty string (personal/legacy behavior).
+
+PLAN_CONCERN=""
+PLAN_CONCERN="$(awk '
+  /^---/ { count++; if (count == 2) exit; next }
+  count == 1 && /^concern:/ {
+    val = $0
+    sub(/^concern:[[:space:]]*/, "", val)
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
+    print val
+    exit
+  }
+' "$PLAN_PATH")"
 
 # ---- allowlist loading -----------------------------------------------------
 # Build a simple lookup from agents/orianna/allowlist.md Section 1.
@@ -116,20 +133,24 @@ is_allowlisted() {
   done
 }
 
-# ---- two-repo routing ------------------------------------------------------
+# ---- concern-aware routing -------------------------------------------------
 
 # Given a path token, return the repo root to check against, or "unknown".
+# When PLAN_CONCERN is "work", apps/, dashboards/, and .github/workflows/ resolve
+# against WORK_CONCERN_REPO instead of STRAWBERRY_APP. All other prefixes and all
+# non-work concerns use the original two-repo routing (backward-compatible default).
 route_path() {
   local tok="$1"
   case "$tok" in
     agents/*|plans/*|scripts/*|architecture/*|assessments/*|.claude/*|tools/*)
       printf '%s' "$REPO_ROOT"
       ;;
-    apps/*|dashboards/*)
-      printf '%s' "$STRAWBERRY_APP"
-      ;;
-    .github/workflows/*)
-      printf '%s' "$STRAWBERRY_APP"
+    apps/*|dashboards/*|.github/workflows/*)
+      if [ "$PLAN_CONCERN" = "work" ]; then
+        printf '%s' "$WORK_CONCERN_REPO"
+      else
+        printf '%s' "$STRAWBERRY_APP"
+      fi
       ;;
     *)
       printf '%s' "unknown"
@@ -228,8 +249,11 @@ block_count=0
 warn_count=0
 info_count=0
 cross_repo_missing_count=0
+cross_repo_missing_root=""
 app_checkout_present=0
 [ -d "$STRAWBERRY_APP" ] && app_checkout_present=1
+work_concern_checkout_present=0
+[ -d "$WORK_CONCERN_REPO" ] && work_concern_checkout_present=1
 
 # Process each extracted token
 while IFS= read -r token; do
@@ -285,10 +309,18 @@ $((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result
     continue
   fi
 
-  # Cross-repo: strawberry-app
+  # Cross-repo checkout guard — skip verification if the required checkout is absent.
   if [ "$repo_root" = "$STRAWBERRY_APP" ]; then
     if [ "$app_checkout_present" -eq 0 ]; then
       cross_repo_missing_count=$((cross_repo_missing_count + 1))
+      cross_repo_missing_root="$STRAWBERRY_APP"
+      continue
+    fi
+  fi
+  if [ "$repo_root" = "$WORK_CONCERN_REPO" ]; then
+    if [ "$work_concern_checkout_present" -eq 0 ]; then
+      cross_repo_missing_count=$((cross_repo_missing_count + 1))
+      cross_repo_missing_root="$WORK_CONCERN_REPO"
       continue
     fi
   fi
@@ -304,6 +336,8 @@ $((info_count)). **Claim:** \`${token}\` | **Anchor:** \`test -e ${repo_root}/${
     block_count=$((block_count + 1))
     if [ "$repo_root" = "$STRAWBERRY_APP" ]; then
       checkout_note=" (checked against strawberry-app checkout at ${STRAWBERRY_APP})"
+    elif [ "$repo_root" = "$WORK_CONCERN_REPO" ]; then
+      checkout_note=" (checked against work-concern checkout at ${WORK_CONCERN_REPO})"
     else
       checkout_note=""
     fi
@@ -313,11 +347,17 @@ $((block_count)). **Claim:** \`${token}\` | **Anchor:** \`test -e ${repo_root}/$
 
 done < <(extract_tokens "$PLAN_PATH")
 
-# Emit a warn finding if cross-repo paths could not be verified
+# Emit a warn finding if cross-repo paths could not be verified (names the absent repo)
 if [ "$cross_repo_missing_count" -gt 0 ]; then
   warn_count=$((warn_count + 1))
+  _missing_repo="${cross_repo_missing_root:-$STRAWBERRY_APP}"
+  if [ "$_missing_repo" = "$WORK_CONCERN_REPO" ]; then
+    _repo_label="work-concern checkout"
+  else
+    _repo_label="strawberry-app checkout"
+  fi
   warn_findings="${warn_findings}
-1. **Claim:** (cross-repo path check) | **Anchor:** \`test -d ${STRAWBERRY_APP}\` | **Result:** could not verify ${cross_repo_missing_count} cross-repo path(s); strawberry-app checkout not found at \`${STRAWBERRY_APP}\` | **Severity:** warn"
+1. **Claim:** (cross-repo path check) | **Anchor:** \`test -d ${_missing_repo}\` | **Result:** could not verify ${cross_repo_missing_count} cross-repo path(s); ${_repo_label} not found at \`${_missing_repo}\` | **Severity:** warn"
 fi
 
 # ---- write report ----------------------------------------------------------
