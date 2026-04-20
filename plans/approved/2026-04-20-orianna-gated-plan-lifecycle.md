@@ -369,6 +369,18 @@ Round-2 questions raised by the earlier revision were answered by Duong on 2026-
 
 ---
 
+## OQ Resolutions
+
+Evelynn's answers to the three open questions Kayn surfaced in the breakdown (2026-04-20). These resolutions are authoritative; inline task definitions below reflect them.
+
+- **OQ-K1 — T4.3 lib placement:** Separate file. T4.3 ships as `scripts/_lib_orianna_estimates.sh`, not bundled into `_lib_orianna_gate_inprogress.sh`. Rationale: modular and independently testable — new signing infrastructure defaults to separate units. T4.1 sources it via `. _lib_orianna_estimates.sh`.
+
+- **OQ-K2 — CLAUDE.md rule slot for T10.4:** Rule #19. CLAUDE.md currently ends at rule #18; sequential numbering with no gaps means the Orianna signature invariant lands as rule #19. No renumbering of existing rules.
+
+- **OQ-K3 — Does this ADR self-demote in T9.1?:** No. Self-referential exception — this ADR stays in `approved/`. Demoting the rule that governs plan demotion is circular; the gating mechanism cannot gate itself retroactively. T9.1's mass demotion of `plans/approved/` EXCLUDES this file (`plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md`). Kayn's breakdown already assumed this; it is now confirmed so the Phase 9 executor has a clear, unambiguous call.
+
+---
+
 # Tasks
 
 > Execution breakdown authored by Kayn on 2026-04-20 per §D3 (one plan, one
@@ -569,7 +581,7 @@ Phase 11 — smoke + freeze lift
 
 - [ ] **T4.3. `estimate_minutes` parser + bounds lib** — `kind: impl` | `estimate_minutes: 30`
   - executor: BUILDER (Jayce) | ADR: §D4
-  - files: folded into T4.1's `_lib_orianna_gate_inprogress.sh` OR standalone `_lib_orianna_estimates.sh` (OQ-K1)
+  - files: `scripts/_lib_orianna_estimates.sh` (new, separate — OQ-K1 resolved: separate file, not bundled; T4.1 sources it)
   - detail: parse every task entry under `## Tasks`; verify `estimate_minutes:` present, integer, `1 ≤ n ≤ 60`; reject alt-unit literals (`hours`, `days`, `weeks`, `h)`, `(d)`) anywhere in section.
   - deps: T5.4 xfail first
   - DoD: rejects missing, zero, negative, 61, alt-units; clean pass on conforming fixture.
@@ -694,10 +706,10 @@ Phase 11 — smoke + freeze lift
 
 - [ ] **T9.1. Bulk demote `plans/approved/*.md` → `plans/proposed/`** — `kind: chore` | `estimate_minutes: 60`
   - executor: ERRAND (human-driven — Duong; §D8 Q9 = manual, no new script) | ADR: §D8
-  - files: every `plans/approved/*.md` except this ADR itself (OQ-K3)
+  - files: every `plans/approved/*.md` EXCEPT `plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md` (OQ-K3 resolved: self-referential exception — this ADR stays in `approved/`; see OQ Resolutions section)
   - detail: enumerate files first (drift-catch); `git mv` each into `plans/proposed/`; rewrite `status: approved` → `status: proposed`; batch into ONE `chore:` commit direct to main; re-publish to Drive per-file via `scripts/plan-publish.sh` (proposed-only mirror).
   - deps: T8.1 installed (freeze active first)
-  - DoD: `plans/approved/` empty except this ADR (self-referential exception pending OQ-K3); each demoted plan's `status:` matches new dir; Drive mirror re-published; batch commit lists all demoted plans for audit.
+  - DoD: `plans/approved/` contains only this ADR (self-referential exception confirmed by OQ-K3); each demoted plan's `status:` matches new dir; Drive mirror re-published; batch commit lists all demoted plans for audit.
 
 - [ ] **T9.2. Sibling-file inline merges (per-plan, opportunistic)** — `kind: chore` | `estimate_minutes: 20` (per affected plan)
   - executor: ERRAND (author-driven per plan — NOT a single task; one per affected plan) | ADR: §D3, §D8 Q10
@@ -731,7 +743,7 @@ Phase 11 — smoke + freeze lift
 - [ ] **T10.4. CLAUDE.md universal invariant** — `kind: docs` | `estimate_minutes: 20`
   - executor: ERRAND (Duong approval required — rule addition) | ADR: §D10
   - files: `CLAUDE.md` (edit)
-  - detail: add rule (likely #19 — see OQ-K2) stating "Plan promotions past `proposed → approved` require valid Orianna signatures on every transition; no bypass except human-admin-identity."
+  - detail: add rule #19 (OQ-K2 resolved: sequential numbering, no gaps) stating "Plan promotions past `proposed → approved` require valid Orianna signatures on every transition; no bypass except human-admin-identity."
   - deps: T10.3 (so rule can cite arch doc)
   - DoD: rule present; cross-links to `architecture/plan-lifecycle.md` + §D9.1.
 
@@ -783,9 +795,11 @@ tracked opportunistically by Evelynn).
 
 ## Open questions raised by the breakdown
 
-- **OQ-K1.** T4.3 lib placement — bundle into `_lib_orianna_gate_inprogress.sh` vs separate `_lib_orianna_estimates.sh`? Recommend bundle; flagged for Jayce at build time.
-- **OQ-K2.** T10.4 rule slot number — CLAUDE.md currently has rules through #18. Rule #19 is the natural next slot. Flagged for Duong.
-- **OQ-K3.** T9.1 demotion scope — does this ADR itself (now in `approved/`) demote alongside the others, or stay as reference artifact? Breakdown assumes it stays (self-referential exception); flagged for Duong.
+All three resolved by Evelynn on 2026-04-20. See `## OQ Resolutions` section above for full rationale; inline task definitions updated to reflect each answer.
+
+- **OQ-K1.** T4.3 lib placement — **RESOLVED: separate file** (`scripts/_lib_orianna_estimates.sh`). Not bundled into `_lib_orianna_gate_inprogress.sh`.
+- **OQ-K2.** T10.4 rule slot number — **RESOLVED: rule #19.** Sequential, no gaps.
+- **OQ-K3.** T9.1 demotion scope — **RESOLVED: this ADR stays in `approved/`.** Self-referential exception; T9.1 excludes this file explicitly.
 
 ## Revision log
 
