@@ -1,6 +1,6 @@
 ---
 title: Orianna claim-contract — work-concern repo routing
-status: proposed
+status: approved
 owner: karma
 created: 2026-04-21
 date: 2026-04-21
