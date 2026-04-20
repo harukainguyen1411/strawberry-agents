@@ -107,7 +107,7 @@ _acquire_lock
 
 # 0. Repo identity guard — must be run from inside strawberry-agents, never from a
 #    workspace repo (mmp/workspace, strawberry-app, etc.).  Plans live in this repo
-#    exclusively (CLAUDE.md rule 20).
+#    exclusively.
 _claude_md="$REPO_ROOT/CLAUDE.md"
 if [ ! -f "$_claude_md" ] || ! grep -qF "Strawberry — Personal Agent System" "$_claude_md"; then
   printf 'plan-promote: must be run from inside the strawberry-agents repo (current: %s).\n' "$REPO_ROOT" >&2
@@ -123,11 +123,23 @@ fi
 # Gate-v1 (legacy fact-check) only ran on proposed→approved; that path is preserved.
 case "$SOURCE" in
   plans/proposed/*.md) ;;
+  plans/proposed/work/*.md) ;;
+  plans/proposed/personal/*.md) ;;
   */plans/proposed/*.md) ;;
+  */plans/proposed/work/*.md) ;;
+  */plans/proposed/personal/*.md) ;;
   plans/approved/*.md) ;;
+  plans/approved/work/*.md) ;;
+  plans/approved/personal/*.md) ;;
   */plans/approved/*.md) ;;
+  */plans/approved/work/*.md) ;;
+  */plans/approved/personal/*.md) ;;
   plans/in-progress/*.md) ;;
+  plans/in-progress/work/*.md) ;;
+  plans/in-progress/personal/*.md) ;;
   */plans/in-progress/*.md) ;;
+  */plans/in-progress/work/*.md) ;;
+  */plans/in-progress/personal/*.md) ;;
   *) gdoc::die "plan-promote only handles plans from proposed/, approved/, or in-progress/ (got $SOURCE)" ;;
 esac
 [ -f "$SOURCE" ] || gdoc::die "no such file: $SOURCE"
@@ -274,7 +286,22 @@ fi
 
 # 4. (Drive unpublish step removed — Drive mirror feature retired.)
 BASENAME=$(basename "$SOURCE")
-TARGET_DIR="$(dirname "$(dirname "$SOURCE")")/$TARGET_STATUS"
+SOURCE_PARENT="$(dirname "$SOURCE")"
+SOURCE_GRANDPARENT="$(dirname "$SOURCE_PARENT")"
+SOURCE_PARENT_BASE="$(basename "$SOURCE_PARENT")"
+# Detect concern subdir: if the immediate parent is work/ or personal/ then grandparent
+# is the phase dir and we must preserve the concern subdir in the destination.
+case "$SOURCE_PARENT_BASE" in
+  work|personal)
+    CONCERN_SUBDIR="/$SOURCE_PARENT_BASE"
+    PLANS_ROOT="$(dirname "$SOURCE_GRANDPARENT")"
+    ;;
+  *)
+    CONCERN_SUBDIR=""
+    PLANS_ROOT="$SOURCE_GRANDPARENT"
+    ;;
+esac
+TARGET_DIR="${PLANS_ROOT}/${TARGET_STATUS}${CONCERN_SUBDIR}"
 TARGET_PATH="$TARGET_DIR/$BASENAME"
 
 mkdir -p "$TARGET_DIR"

@@ -106,9 +106,6 @@ See `agents/memory/agent-network.md` for the full roster.
 <!-- #rule-orianna-signature-required -->
 19. **Plan promotions past `proposed → approved` require valid Orianna signatures on every transition** — `scripts/plan-promote.sh` invokes `scripts/orianna-verify-signature.sh` for the target phase plus carry-forward verification of all prior signatures. Plans authored under the v2 regime (`orianna_gate_version: 2`) are blocked from any transition without a valid signature; grandfathered plans (no `orianna_gate_version` field) fall back to legacy fact-check behavior. The only bypass is the `Orianna-Bypass: <reason>` commit trailer, valid only when the commit author is Duong's admin identity (`harukainguyen1411`); agent-identity bypass attempts are rejected by the pre-commit hook. See `architecture/plan-lifecycle.md` for the full lifecycle, `architecture/key-scripts.md` for the helper scripts, and `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md` §D9.1 for the bypass rationale.
 
-<!-- #rule-plans-live-in-strawberry-agents -->
-20. **All plans live in `strawberry-agents/plans/`, never in any concern's workspace repo** — work-concern plans go to `plans/proposed/work/<slug>.md`, personal-concern plans to `plans/proposed/personal/<slug>.md`. Workspace repos (`mmp/workspace`, `strawberry-app`, etc.) hold code and infra; this repo holds plans/architecture/memory. `scripts/plan-promote.sh` only operates on plans inside this repo and will refuse to run from elsewhere.
-
 ## File Structure
 
 | Path | Purpose |
