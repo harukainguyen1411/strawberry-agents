@@ -4,34 +4,37 @@ Authoritative list of agents. When adding or removing an agent, update this tabl
 
 See `agent-network.md` for coordination rules, delegation chains, and session protocol.
 
-| Agent | Tier | Model | Role | Definition file | Directory | Current status |
-|---|---|---|---|---|---|---|
-| **Evelynn** | Opus | opus | Head coordinator — routes, synthesizes, never executes | `.claude/agents/evelynn.md` | `agents/evelynn/` | active |
-| **Swain** | Opus | opus | System architect — cross-cutting structural, scaling, infra planning. Do not invoke unless Duong explicitly asks. | `.claude/agents/swain.md` | — | active |
-| **Azir** | Opus | opus | Head product architect — ADR plans, system architecture | `.claude/agents/azir.md` | `agents/azir/` | active |
-| **Kayn** | Opus | opus | Backend task planner — breaks ADRs into executable task lists | `.claude/agents/kayn.md` | `agents/kayn/` | active |
-| **Aphelios** | Opus | opus | Backend task planner — parallel partner to Kayn on large plans | `.claude/agents/aphelios.md` | `agents/aphelios/` | active |
-| **Caitlyn** | Opus | opus | QA audit lead — writes testing plans, hands off to Vi | `.claude/agents/caitlyn.md` | `agents/caitlyn/` | active |
-| **Lulu** | Opus | opus | Frontend/UI/UX design advisor | `.claude/agents/lulu.md` | `agents/lulu/` | active |
-| **Neeko** | Opus | opus | Designer — wireframes, component specs, UI mockups, interaction flows | `.claude/agents/neeko.md` | `agents/neeko/` | active |
-| **Heimerdinger** | Opus | opus | DevOps advisor — hands off execution to Ekko | `.claude/agents/heimerdinger.md` | `agents/heimerdinger/` | active |
-| **Camille** | Opus | opus | Git/GitHub/security advisor | `.claude/agents/camille.md` | `agents/camille/` | active |
-| **Lux** | Opus | opus | AI, Agents & MCP specialist | `.claude/agents/lux.md` | `agents/lux/` | active |
-| **Jayce** | Sonnet | sonnet | Builder — new features and modules | `.claude/agents/jayce.md` | `agents/jayce/` | active |
-| **Viktor** | Sonnet | sonnet | Builder — refactoring and optimization | `.claude/agents/viktor.md` | `agents/viktor/` | active |
-| **Vi** | Sonnet | sonnet | Tester — executes Caitlyn's testing plans | `.claude/agents/vi.md` | `agents/vi/` | active |
-| **Ekko** | Sonnet | sonnet | Quick task executor — small fixes and DevOps execution | `.claude/agents/ekko.md` | `agents/ekko/` | active |
-| **Senna** | Opus | opus | PR reviewer — code quality + security | `.claude/agents/senna.md` | `agents/senna/` | active |
-| **Lucian** | Opus | opus | PR reviewer — plan/ADR fidelity | `.claude/agents/lucian.md` | `agents/lucian/` | active |
-| **Jhin** | Sonnet | sonnet | PR reviewer | `.claude/_retired-agents/jhin.md` | `agents/_retired/jhin/` | retired-2026-04-19 |
-| **Seraphine** | Sonnet | sonnet | Frontend implementation — executes Neeko's design specs | `.claude/agents/seraphine.md` | `agents/seraphine/` | active |
-| **Yuumi** | Sonnet | sonnet | Evelynn's errand runner | `.claude/agents/yuumi.md` | `agents/yuumi/` | active |
-| **Skarner** | Sonnet | sonnet | Memory excavator — read-only searches | `.claude/agents/skarner.md` | `agents/skarner/` | promoted-from-haiku-2026-04-18 |
-| **Akali** | Sonnet | sonnet | QA — Playwright flow + Figma diff before PR | `.claude/agents/akali.md` | `agents/akali/` | active |
-| **Orianna** | Sonnet | sonnet | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits | `.claude/agents/orianna.md` | `agents/orianna/` | new-2026-04-19 |
-| **Xayah** | Opus | opus | Complex-track test planner — resilience/fault-injection/cross-service test plans and audits. Pair mate: Caitlyn. | `.claude/agents/xayah.md` | `agents/xayah/` | new-2026-04-20 |
-| **Rakan** | Sonnet | sonnet | Complex-track test implementer — xfail skeletons, fault-injection harnesses, non-routine fixtures. Pair mate: Vi. | `.claude/agents/rakan.md` | `agents/rakan/` | new-2026-04-20 |
-| **Soraka** | Sonnet | sonnet | Normal-track frontend implementer — small frontend tweaks from Lulu's advice. Pair mate: Seraphine. | `.claude/agents/soraka.md` | `agents/soraka/` | new-2026-04-20 |
-| **Syndra** | Sonnet | sonnet | Normal-track AI/agents specialist — small AI-stack tweaks, prompt tuning, agent-def edits. Pair mate: Lux. | `.claude/agents/syndra.md` | `agents/syndra/` | new-2026-04-20 |
-| **Karma** | Quick | opus | Quick-lane planner — collapsed architect + breakdown + test plan. Pair mate: Talon. | `.claude/agents/karma.md` | `agents/karma/` | new-2026-04-21 |
-| **Talon** | Quick | sonnet | Quick-lane executor — collapsed build + test + light frontend. Pair mate: Karma. | `.claude/agents/talon.md` | `agents/talon/` | new-2026-04-21 |
+Tier values: `complex` | `normal` | `quick` | `single_lane` | `concern` (coordinators)
+
+| Agent | Concern/Tier | Role slot | Pair-mate | Model | Effort | Definition file | Status |
+|---|---|---|---|---|---|---|---|
+| **Evelynn** | concern: personal | — | — | opus (omit) | medium | `.claude/agents/evelynn.md` | active |
+| **Sona** | concern: work | — | — | opus (omit) | medium | `.claude/agents/sona.md` | active |
+| **Swain** | complex | architect | Azir | opus (omit) | xhigh | `.claude/agents/swain.md` | active |
+| **Azir** | normal | architect | Swain | opus (omit) | high | `.claude/agents/azir.md` | active |
+| **Aphelios** | complex | breakdown | Kayn | opus (omit) | high | `.claude/agents/aphelios.md` | active |
+| **Kayn** | normal | breakdown | Aphelios | opus (omit) | medium | `.claude/agents/kayn.md` | active |
+| **Xayah** | complex | test-plan | Caitlyn | opus (omit) | high | `.claude/agents/xayah.md` | active |
+| **Caitlyn** | normal | test-plan | Xayah | opus (omit) | medium | `.claude/agents/caitlyn.md` | active |
+| **Rakan** | complex | test-impl | Vi | sonnet | high | `.claude/agents/rakan.md` | active |
+| **Vi** | normal | test-impl | Rakan | sonnet | medium | `.claude/agents/vi.md` | active |
+| **Viktor** | complex | builder | Jayce | sonnet | high | `.claude/agents/viktor.md` | active |
+| **Jayce** | normal | builder | Viktor | sonnet | medium | `.claude/agents/jayce.md` | active |
+| **Neeko** | complex | frontend-design | Lulu | opus (omit) | high | `.claude/agents/neeko.md` | active |
+| **Lulu** | normal | frontend-design | Neeko | opus (omit) | medium | `.claude/agents/lulu.md` | active |
+| **Seraphine** | complex | frontend-impl | Soraka | sonnet | medium | `.claude/agents/seraphine.md` | active |
+| **Soraka** | normal | frontend-impl | Seraphine | sonnet | low | `.claude/agents/soraka.md` | active |
+| **Lux** | complex | ai-specialist | Syndra | opus (omit) | high | `.claude/agents/lux.md` | active |
+| **Syndra** | normal | ai-specialist | Lux | sonnet | high | `.claude/agents/syndra.md` | active |
+| **Karma** | quick | quick-planner | Talon | opus (omit) | medium | `.claude/agents/karma.md` | active |
+| **Talon** | quick | quick-executor | Karma | sonnet | low | `.claude/agents/talon.md` | active |
+| **Heimerdinger** | single_lane | devops-advice | — | opus (omit) | medium | `.claude/agents/heimerdinger.md` | active |
+| **Ekko** | single_lane | devops-exec | — | sonnet | medium | `.claude/agents/ekko.md` | active |
+| **Senna** | single_lane | pr-code-security | — | opus (omit) | high | `.claude/agents/senna.md` | active |
+| **Lucian** | single_lane | pr-fidelity | — | opus (omit) | medium | `.claude/agents/lucian.md` | active |
+| **Akali** | single_lane | qa | — | sonnet | medium | `.claude/agents/akali.md` | active |
+| **Skarner** | single_lane | memory | — | sonnet | low | `.claude/agents/skarner.md` | active |
+| **Yuumi** | single_lane | errand | — | sonnet | low | `.claude/agents/yuumi.md` | active |
+| **Camille** | single_lane | git-security | — | opus (omit) | medium | `.claude/agents/camille.md` | active |
+| **Orianna** | single_lane | fact-check | — | opus (omit) | medium | `.claude/_script-only-agents/orianna.md` | active (script-only) |
+| **Jhin** | — | pr-review | — | sonnet | — | `.claude/_retired-agents/jhin.md` | retired-2026-04-19 |
