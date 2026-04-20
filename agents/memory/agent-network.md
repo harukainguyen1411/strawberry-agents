@@ -26,12 +26,13 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 | **Azir** | Head product architect — writes ADR plans |
 | **Kayn** | Backend task planner — breaks ADRs into executable tasks |
 | **Aphelios** | Backend task planner — works in parallel with Kayn on large plans |
+| **Xayah** | Complex-track test planner — resilience/fault-injection/cross-service test plans and audits; hands off to Rakan and Vi. new-2026-04-20 |
 | **Caitlyn** | QA audit lead — writes testing plans, hands off to Vi |
 | **Lulu** | Frontend/UI/UX design advisor — design principles, critiques, pattern guidance |
 | **Neeko** | Designer — produces design artifacts (wireframes, component specs, UI mockups, interaction flows), hands off to Seraphine |
 | **Heimerdinger** | DevOps advisor — hands off execution to Ekko |
 | **Camille** | Git/GitHub/security advisor |
-| **Lux** | AI, Agents & MCP specialist |
+| **Lux** | AI, Agents & MCP specialist — complex-track |
 | **Senna** | PR reviewer — code quality + security (replaced Jhin 2026-04-19) |
 | **Lucian** | PR reviewer — plan/ADR fidelity (new 2026-04-19, paired with Senna) |
 
@@ -41,9 +42,12 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 |---|---|
 | **Jayce** | Builder — new features and modules |
 | **Viktor** | Builder — refactoring and optimization |
+| **Rakan** | Complex-track test implementer — xfail test skeletons, fault-injection harnesses, non-routine fixtures from Xayah's plans. new-2026-04-20 |
 | **Vi** | Tester — executes Caitlyn's testing plans |
 | **Ekko** | Quick task executor — small fixes and DevOps execution |
 | **Seraphine** | Frontend implementation — executes Neeko's design specs |
+| **Soraka** | Normal-track frontend implementer — small frontend tweaks from Lulu's advice; escalates to Seraphine for Neeko-scale work. new-2026-04-20 |
+| **Syndra** | Normal-track AI/agents specialist — small AI-stack tweaks (prompt tuning, agent-def edits, MCP config); escalates complex work to Lux. new-2026-04-20 |
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
