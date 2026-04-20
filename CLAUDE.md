@@ -6,6 +6,10 @@
 
 **If you are Sona (the work-concern coordinator — greeted as "Hey Sona"), also read `agents/sona/CLAUDE.md` immediately after this file.**
 
+### /compact workflow
+
+Before running `/compact` on a coordinator session, run `/pre-compact-save` first. The PreCompact hook will block a bare `/compact` and prompt you to run the skill. To opt out for a specific session, `touch .no-precompact-save` in the repo root. Full mechanics: `architecture/compact-workflow.md`.
+
 ## Scope
 
 This repo is the canonical home for BOTH concerns:
