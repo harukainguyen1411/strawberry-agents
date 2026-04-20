@@ -82,8 +82,9 @@ is_sonnet_slot() {
     "quick-executor:quick")  return 0 ;;  # Talon — Sonnet low
     # Single-lane Sonnet agents (must declare model: sonnet)
     "qa:single_lane")           return 0 ;;  # Akali — Sonnet medium
-    "memory:single_lane")       return 0 ;;  # Skarner — Sonnet low
-    "errand:single_lane")       return 0 ;;  # Yuumi — Sonnet low
+    "memory:single_lane")              return 0 ;;  # Skarner — Sonnet low
+    "memory-consolidator:single_lane") return 0 ;;  # Lissandra — Sonnet medium
+    "errand:single_lane")              return 0 ;;  # Yuumi — Sonnet low
     "devops-exec:single_lane")  return 0 ;;  # Ekko — Sonnet medium
     # Single-lane Opus agents fall through to default → caller treats as Opus
     # (devops-advice, pr-code-security, pr-fidelity, git-security, fact-check)
