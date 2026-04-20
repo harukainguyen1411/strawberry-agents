@@ -138,6 +138,14 @@ rc=0
 REPO="$REPO" bash "$SIGN" "$PLAN" approved 2>/dev/null || rc=$?
 if [ "$rc" -eq 0 ]; then pass "APPROVED_SIGN"; else fail "APPROVED_SIGN" "orianna-sign.sh approved exited $rc"; fi
 
+# --- CASE 1b: Verify signature commit author is Orianna (regression for ambient-identity bug) ---
+sig_author="$(git -C "$REPO" log -1 --format='%ae' HEAD)"
+if [ "$sig_author" = "orianna@agents.strawberry.local" ]; then
+  pass "APPROVED_SIGN_AUTHOR"
+else
+  fail "APPROVED_SIGN_AUTHOR" "expected orianna@agents.strawberry.local, got $sig_author"
+fi
+
 # --- CASE 2: Verify approved signature ---
 rc=0
 bash "$VERIFY" "$PLAN" approved 2>/dev/null || rc=$?
