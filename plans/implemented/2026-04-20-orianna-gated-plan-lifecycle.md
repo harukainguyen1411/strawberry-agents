@@ -139,10 +139,10 @@ No Orianna gate. Archiving is bookkeeping, not a governance event. `plan-promote
 ## Tasks
 
 - [ ] **T1. Write failing test for X.** `kind: test` | `estimate_minutes: 10`
-  - files: `tests/unit/x.test.ts`
+  - files: `tests/unit/x.test.ts` <!-- orianna: ok — illustrative schema example, not a real path -->
   - detail: assert function returns Y for input Z
 - [ ] **T2. Implement X.** `kind: impl` | `estimate_minutes: 25`
-  - files: `src/x.ts`
+  - files: `src/x.ts` <!-- orianna: ok — illustrative schema example, not a real path -->
   - detail: minimal implementation to pass T1
 ```
 
@@ -258,15 +258,15 @@ Enforces §D1.2 commit shape. Installed via `scripts/install-hooks.sh`.
 
 **Demote approved plans; grandfather later-stage plans; enforce going forward.**
 
-- **All plans currently in `plans/approved/` are moved back to `plans/proposed/`** as part of this ADR's implementation. Their `status:` frontmatter is rewritten to `proposed`. These plans re-enter the lifecycle and must earn an `orianna_signature_approved` under the new regime before they can promote again. This guarantees every plan that reaches `in-progress` from here on carries a valid approved-phase signature, which the in-progress gate's signature carry-forward check (§D2.2) requires.
-- The demotion is a **manual one-time operation** (Q10 resolution). No new mode on `scripts/plan-promote.sh`, no throwaway migration script. Author performs `git mv plans/approved/<plan>.md plans/proposed/`, rewrites the `status:` frontmatter line to `proposed`, and batches all demotions into one `chore:` commit. Sibling-file merging (where applicable) is also manual per §D3 — author inlines existing `<basename>-tasks.md` / `<basename>-tests.md` content into the parent plan before the next `orianna-sign approved` invocation.
+- **All plans that were in `plans/approved/`<!-- orianna: ok — historical ref; dir deleted per T9.1 --> were moved back to `plans/proposed/`** as part of this ADR's implementation (T9.1, executed; `plans/approved/` directory no longer exists). Their `status:` frontmatter was rewritten to `proposed`. These plans re-enter the lifecycle and must earn an `orianna_signature_approved` under the new regime before they can promote again. This guarantees every plan that reaches `in-progress` from here on carries a valid approved-phase signature, which the in-progress gate's signature carry-forward check (§D2.2) requires.
+- The demotion was a **manual one-time operation** (Q10 resolution). No new mode on `scripts/plan-promote.sh`, no throwaway migration script. Author performed `git mv plans/approved/<plan>.md plans/proposed/`<!-- orianna: ok — historical shell command, dir was deleted after execution -->, rewrote the `status:` frontmatter line to `proposed`, and batched all demotions into one `chore:` commit. Sibling-file merging (where applicable) was also manual per §D3 — author inlined existing `<basename>-tasks.md` / `<basename>-tests.md` content into the parent plan before the next `orianna-sign approved` invocation.
 - Plans currently in `plans/in-progress/`, `plans/implemented/`, `plans/archived/` remain where they are with no retroactive signatures. They finish their current phase under grandfathered rules.
 - A new frontmatter field `orianna_gate_version:` is introduced. Plans signed under the new regime carry `orianna_gate_version: 2`. Plans without this field are grandfathered.
 - `plan-promote.sh` checks `orianna_gate_version` on the source plan. If absent, log a warning ("grandfathered plan; gate-v1 rules applied") and fall back to the existing single-phase fact-check behavior. If present and `= 2`, enforce §D2 gates for the requested transition.
 - New plans created after this ADR lands MUST include `orianna_gate_version: 2`. The pre-commit hook for plan creation can enforce this (out of scope for this ADR; note as follow-up).
 - For plans currently in `in-progress/`, retroactive signing is author's discretion — no bulk backfill. A plan already mid-implementation can opt in by running `scripts/orianna-sign.sh <plan> approved` followed by `... in-progress` before its next phase transition; otherwise it promotes to `implemented/` under grandfathered rules.
 
-**The `proposed/` directory becomes the single entry point** for the new gate. Every plan — whether newly authored or demoted from `approved/` — gets signed at this boundary before it can move forward.
+**The `proposed/` directory is the single entry point** for the new gate. Every plan — whether newly authored or demoted from what was previously `approved/` — gets signed at this boundary before it can move forward.
 
 ---
 
@@ -341,7 +341,7 @@ All eight original gating questions were answered by Duong on 2026-04-20. Decisi
 
 1. **Q1. Orianna git identity.** Resolved: `orianna@agents.strawberry.local` as author email (§D1.1). No GitHub bot account.
 2. **Q2. Bypass eligibility.** Resolved: option (b) — `Orianna-Bypass` is valid only when the commit/push originates from Duong's admin identity `harukainguyen1411`, introduced only when break-glass is needed. Agents always use other accounts. Enforcement lives in the pre-commit hook (§D1.2 / §D9.1).
-3. **Q3. Grandfathering cutoff.** Resolved: all plans in `plans/approved/` are demoted back to `plans/proposed/` and must re-earn a signature (§D8). Plans in `in-progress/`, `implemented/`, and `archived/` stay put under grandfathered rules; retroactive signing of in-flight plans is author's discretion.
+3. **Q3. Grandfathering cutoff.** Resolved: all plans that were in `plans/approved/`<!-- orianna: ok — historical ref; dir deleted per T9.1 --> were demoted back to `plans/proposed/` and must re-earn a signature (§D8; T9.1 executed — `plans/approved/` no longer exists). Plans in `in-progress/`, `implemented/`, and `archived/` stay put under grandfathered rules; retroactive signing of in-flight plans is author's discretion.
 4. **Q4. Test-plan format.** Resolved: defer schema to a follow-up ADR owned by the test-plan / audit role (§D11). The `## Test plan` section is appended inline to the plan file — no sibling files.
 5. **Q5. Estimate sanity bounds.** Resolved: `1 ≤ estimate_minutes ≤ 60`. Values above 60 are **block**, forcing decomposition (§D4).
 6. **Q6. Architecture-impact declaration default.** Resolved: no implicit default. Plans must declare either `architecture_changes:` or `architecture_impact: none`; missing both is **block** at the implemented gate (§D5).
@@ -354,7 +354,7 @@ All eight original gating questions were answered by Duong on 2026-04-20. Decisi
 
 Round-2 questions raised by the earlier revision were answered by Duong on 2026-04-20. Decisions are captured in the relevant `D*` sections; summary below.
 
-9. **Q9. Demotion script ownership.** Resolved: **manual**. The bulk `plans/approved/` → `plans/proposed/` demotion is a one-time operation performed by hand — no new `--demote-to-proposed` mode added to `scripts/plan-promote.sh`, no throwaway migration script. Rationale: adding a dedicated script for a one-shot backfill invites the script to rot in-tree; a manual pass is cheaper and leaves `plan-promote.sh` focused on forward motion. §D8 is revised accordingly — author runs `git mv` manually for each demoted plan, rewrites `status:`, and commits in one `chore:` batch.
+9. **Q9. Demotion script ownership.** Resolved: **manual**. The bulk `plans/approved/`<!-- orianna: ok — historical ref; dir deleted per T9.1 --> → `plans/proposed/` demotion is a one-time operation performed by hand — no new `--demote-to-proposed` mode added to `scripts/plan-promote.sh`, no throwaway migration script. Rationale: adding a dedicated script for a one-shot backfill invites the script to rot in-tree; a manual pass is cheaper and leaves `plan-promote.sh` focused on forward motion. §D8 is revised accordingly — author runs `git mv` manually for each demoted plan, rewrites `status:`, and commits in one `chore:` batch.
 10. **Q10. Sibling-file merge during demotion.** Resolved: **manual**. Authors merge any existing `<basename>-tasks.md` / `<basename>-tests.md` sibling content into the single-file layout by hand before re-promoting. No auto-merge flag on the demotion path. Rationale: siblings don't follow a canonical heading structure and auto-merge would require a per-file review anyway; manual ensures the content is inspected on the way in. §D3's grandfathering note is revised: migrated plans MUST inline sibling content before their next `orianna-sign approved` invocation; Orianna's approved gate performs a grep for sibling filenames under `plans/` to catch unmerged leftovers.
 11. **Q11. Freeze scope.** Resolved: **new files only**. §D12's freeze applies only to *new* files under `plans/proposed/`; edits to existing proposed drafts remain allowed. Rationale: authors must still polish in-flight drafts (including this ADR) during the freeze; the goal is to stop *new* plan authoring, not to freeze the whole tree. The temporary pre-commit hook introduced by §D12 checks `git diff --name-status` for `A` (added) entries under `plans/proposed/` — `M` (modified) entries pass through.
 
@@ -377,7 +377,7 @@ Evelynn's answers to the three open questions Kayn surfaced in the breakdown (20
 
 - **OQ-K2 — CLAUDE.md rule slot for T10.4:** Rule #19. CLAUDE.md currently ends at rule #18; sequential numbering with no gaps means the Orianna signature invariant lands as rule #19. No renumbering of existing rules.
 
-- **OQ-K3 — Does this ADR self-demote in T9.1?:** No. Self-referential exception — this ADR stayed in `approved/` during T9.1. Self-referential exception — the gating mechanism could not gate itself retroactively. T9.1's mass demotion of `plans/approved/` EXCLUDED this file (`plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md`). Kayn's breakdown already assumed this; it is now confirmed so the Phase 9 executor has a clear, unambiguous call.
+- **OQ-K3 — Does this ADR self-demote in T9.1?:** No. Self-referential exception — this ADR stayed in `approved/` during T9.1. The gating mechanism could not gate itself retroactively. T9.1's mass demotion of `plans/approved/`<!-- orianna: ok — historical ref; dir deleted per T9.1 --> EXCLUDED this file (which was at `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md`<!-- orianna: ok — historical path; plan is now at plans/implemented/ --> at that time; now at `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md`). Kayn's breakdown already assumed this; it is now confirmed so the Phase 9 executor has a clear, unambiguous call.
 
 ---
 
@@ -469,7 +469,7 @@ Phase 8 — freeze (§D12)
   T8.Z removal (executed via T11.2)
 
 Phase 9 — migration (§D8, MANUAL one-shot)
-  T9.1 bulk demote plans/approved/*.md → plans/proposed/
+  T9.1 bulk demote plans/approved/*.md<!-- orianna: ok — historical ref; dir deleted per T9.1 --> → plans/proposed/ (DONE — plans/approved/ deleted)
   T9.2 sibling-file inline merges (per-plan, opportunistic)
 
 Phase 10 — architecture docs + CLAUDE.md (§D10)
@@ -684,32 +684,32 @@ Phase 11 — smoke + freeze lift
 
 ### Phase 8 — Freeze infrastructure (§D12)
 
-- [ ] **T8.1. Temporary new-file freeze hook** — `kind: impl` | `estimate_minutes: 25`
+- [x] **T8.1. Temporary new-file freeze hook** — `kind: impl` | `estimate_minutes: 25` | **DONE** — hook was created then removed in T11.2 (commit b6a82f8).
   - executor: BUILDER (Jayce) | ADR: §D12
-  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh` (new)
+  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh`<!-- orianna: ok — created in T8.1, deleted in T11.2; intentionally no longer on disk --> (created in T8.1, deleted in T11.2 — no longer on disk)
   - detail: `git diff --cached --name-status | awk '$1=="A" && $2 ~ /^plans\/proposed\//'` — any match fails commit with message pointing at §D12. `M`/`R`/`D` entries passthrough.
   - DoD: new file under `plans/proposed/` blocked; edits passthrough.
 
-- [ ] **T8.2. Install + announce freeze** — `kind: infra` | `estimate_minutes: 15`
+- [x] **T8.2. Install + announce freeze** — `kind: infra` | `estimate_minutes: 15` | **DONE**
   - executor: ERRAND | ADR: §D12
-  - files: `scripts/install-hooks.sh` (edit), `agents/memory/last-session.md` (edit)
+  - files: `scripts/install-hooks.sh` (edit), Evelynn inbox (edit; `agents/memory/last-session.md`<!-- orianna: ok — file does not exist; freeze announcement was delivered via inbox instead --> was the original target but does not exist)
   - deps: T8.1
   - DoD: fresh-clone installs freeze hook; Evelynn sees notice at startup.
 
-- [ ] **T8.Z. Removal task — lift freeze** — `kind: chore` | `estimate_minutes: 10`
+- [x] **T8.Z. Removal task — lift freeze** — `kind: chore` | `estimate_minutes: 10` | **DONE** — executed in T11.2 (commit b6a82f8); `scripts/hooks/pre-commit-plan-authoring-freeze.sh`<!-- orianna: ok — deleted in T11.2; intentionally no longer on disk --> deleted.
   - executor: ERRAND (execute only after T11.1 passes) | ADR: §D12
-  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh` (delete), `scripts/install-hooks.sh` (edit)
+  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh`<!-- orianna: ok — deleted in T11.2; intentionally no longer on disk --> (deleted — no longer on disk), `scripts/install-hooks.sh` (edit)
   - deps: T11.1
   - DoD: freeze hook deleted; install-hooks wiring removed; commit `chore: lift §D12 freeze`.
 
 ### Phase 9 — Migration (§D8, MANUAL one-shot)
 
-- [ ] **T9.1. Bulk demote `plans/approved/*.md` → `plans/proposed/`** — `kind: chore` | `estimate_minutes: 60`
+- [x] **T9.1. Bulk demote `plans/approved/*.md`<!-- orianna: ok — historical ref; dir deleted after this task executed --> → `plans/proposed/`** — `kind: chore` | `estimate_minutes: 60` | **DONE** — `plans/approved/` directory deleted; all plans demoted.
   - executor: ERRAND (human-driven — Duong; §D8 Q9 = manual, no new script) | ADR: §D8
-  - files: every `plans/approved/*.md` EXCEPT `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md` (OQ-K3 resolved: self-referential exception — this ADR stayed in `approved/` during T9.1; now in `in-progress/`; see OQ Resolutions section)
+  - files: every `plans/approved/*.md`<!-- orianna: ok — historical ref; dir no longer exists --> EXCEPT this plan (OQ-K3 resolved: self-referential exception — this ADR stayed in `approved/` during T9.1; now in `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md`)
   - detail: enumerate files first (drift-catch); `git mv` each into `plans/proposed/`; rewrite `status: approved` → `status: proposed`; batch into ONE `chore:` commit direct to main.
   - deps: T8.1 installed (freeze active first)
-  - DoD: `plans/approved/` contains only this ADR (self-referential exception confirmed by OQ-K3); each demoted plan's `status:` matches new dir; batch commit lists all demoted plans for audit.
+  - DoD: `plans/approved/`<!-- orianna: ok — historical ref; dir deleted after this task executed --> deleted; each demoted plan's `status:` matches new dir; batch commit lists all demoted plans for audit.
 
 - [ ] **T9.2. Sibling-file inline merges (per-plan, opportunistic)** — `kind: chore` | `estimate_minutes: 20` (per affected plan)
   - executor: ERRAND (author-driven per plan — NOT a single task; one per affected plan) | ADR: §D3, §D8 Q10
