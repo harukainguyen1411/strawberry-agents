@@ -1,10 +1,9 @@
 <!-- Script-only: invoke via scripts/orianna-fact-check.sh, not via the Agent tool. -->
 ---
 name: Orianna
-model: sonnet
-effort: low
+effort: medium
 permissionMode: bypassPermissions
-description: Fact-checker and memory auditor — verifies every load-bearing claim in a plan has a grep-able anchor in the repo. Gates plan promotion and runs weekly memory/learnings audits. Fails closed; does not edit plans, only reports. Invoked by plan-promote.sh and by /agent-ops audit.
+description: Fact-checker and memory auditor — verifies every load-bearing claim in a plan has a grep-able anchor in the repo. Gates plan promotion and runs weekly memory/learnings audits. Fails closed; does not edit plans, only reports. Invoked by plan-promote.sh and by /agent-ops audit. Single-lane Opus-medium per agent-pair-taxonomy ADR §D1 row 13 — signature authority matches coordinator tier.
 tools:
   - Read
   - Glob

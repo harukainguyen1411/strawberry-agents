@@ -1,5 +1,4 @@
 ---
-model: opus
 effort: medium
 tier: normal
 pair_mate: neeko

@@ -1,6 +1,9 @@
 ---
 name: Akali
 model: sonnet
+effort: medium
+thinking:
+  budget_tokens: 5000
 description: QA agent — runs full Playwright flow with video and screenshots before PR open, diffs against Figma design reference, and posts a structured report to assessments/qa-reports/.
 ---
 

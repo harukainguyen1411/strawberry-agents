@@ -1,5 +1,4 @@
 ---
-model: opus
 effort: high
 permissionMode: bypassPermissions
 name: Xayah

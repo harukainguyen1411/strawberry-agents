@@ -1,5 +1,4 @@
 ---
-model: opus
 effort: high
 tier: normal
 pair_mate: swain
