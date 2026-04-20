@@ -50,6 +50,10 @@
 ## Sessions
 - 2026-04-20: Built strawberry-inbox Channels plugin + /check-inbox skill. Pushed directly to main (infra, not app code). Plan promoted to implemented.
 
+- [2026-04-20 agent-pair-taxonomy-sync-hooks](../learnings/2026-04-20-agent-pair-taxonomy-sync-hooks.md) — awk -v for shell vars in awk; multi-check fixture design; builder slots both Sonnet; dispatcher auto-discovery; sync idempotency via diff
+
+- 2026-04-20 (sync-shared-rules + pre-commit hook): Built scripts/sync-shared-rules.sh + scripts/hooks/pre-commit-agent-shared-rules.sh per taxonomy ADR §D4.3/D4.3a. 24/24 bats tests pass. PR #4 opened, reviewers Senna+Lucian.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
