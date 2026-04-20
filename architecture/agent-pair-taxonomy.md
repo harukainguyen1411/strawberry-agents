@@ -8,9 +8,9 @@ This doc describes the agent pair taxonomy *as it actually runs in the repo toda
 
 ---
 
-## 1. The two-track model
+## 1. The track model
 
-Every role slot that benefits from complexity sharding has **two fills**: a complex track and a normal track. Single-lane roles stay single-lane. Coordinators are sharded by life domain (concern), not by complexity.
+Three tracks total: **complex**, **normal**, **quick**. Most role slots split into complex/normal pair-mates. Single-lane roles stay single-lane. Coordinators are sharded by life domain (concern), not by complexity. The quick track collapses planner and executor roles into a single pair (Karma + Talon) for trivial work where the full chain is ceremony.
 
 ### 1.1 Role-slot matrix
 
@@ -26,6 +26,13 @@ Every role slot that benefits from complexity sharding has **two fills**: a comp
 | 7 | Frontend impl | Seraphine (Sonnet medium) | Soraka (Sonnet low) |
 | 8 | AI / Agents / MCP | Lux (Opus high) | Syndra (Sonnet high) |
 
+Quick lane (collapsed planner + executor pair):
+
+| # | Role slot | Agent |
+|---|-----------|-------|
+| Q1 | Quick planner (architect + breakdown + test plan, collapsed) | Karma (Opus medium, `tier: quick`, `pair_mate: talon`) |
+| Q2 | Quick executor (builder + test impl, collapsed) | Talon (Sonnet low, `tier: quick`, `pair_mate: karma`) |
+
 Single-lane roles:
 
 | # | Role slot | Agent |
@@ -40,13 +47,30 @@ Single-lane roles:
 | 16 | Errand runner | Yuumi (Sonnet low) |
 | 17 | Git/security advisor | Camille (Opus medium) |
 
-### 1.2 Why two tracks, not three
+### 1.2 Why three tracks (not five), and why quick collapses roles
 
-Three tiers (light / normal / heavy) explodes to ~25 active agents at 9 paired role slots. The coordination overhead (which tier? which pair-mate? which shared file?) dominates the savings. Two tiers — complex, normal — capture the load-bearing axis without coordinating noise.
+The original design considered a three-tier split per role slot (light / normal / heavy) and rejected it: ~9 paired slots × 3 tiers = ~27 active agents, with coordination overhead dominating savings.
 
-Default lean: **when uncertain, pick normal.** Escalation upward (re-route the next phase to complex) is cheap; routing complex when normal would suffice is wasted Opus budget. See §3 for classification rules.
+The quick lane is a different shape: not a third per-role tier, but a **collapsed pair** that handles the trivial end of the spectrum across all role slots. Karma planning a tooltip-copy change does the work that Azir → Kayn → Caitlyn would otherwise share. Talon implementing a 10-line script change does the work Jayce + Vi would otherwise share. The lane exists because trivial work doesn't justify three handoffs.
 
-### 1.3 Never Opus-low
+Default lean across all three tracks:
+- **When uncertain between complex and normal → pick normal.** Escalation upward mid-plan is cheap.
+- **When uncertain between normal and quick → pick normal.** The quick lane is for genuinely trivial single-domain work; if you're unsure, the full chain protects against missed concerns.
+- See §3 for classification rules.
+
+### 1.3 Quick-lane discipline
+
+The quick lane shares the **full lifecycle protocol** with the other tracks:
+- Plans go through Orianna's signing gate at every transition.
+- Implementations follow xfail-first TDD (Rule 12).
+- PRs require Senna + Lucian dual review (Rule 18).
+- No `--admin` bypass.
+
+What's collapsed is the *role chain*, not the *gates*. Karma authors a single-file plan with `complexity: quick` frontmatter. Talon implements with the same commit/PR discipline as Jayce/Viktor. The Orianna gate, the pre-commit hooks, the TDD enforcement, the dual review — all unchanged.
+
+If a "quick" task turns out to be non-trivial (touches multiple domains, requires schema changes, surfaces a security concern), Karma escalates upward to Azir/Swain rather than expanding the quick-lane plan.
+
+### 1.4 Never Opus-low
 
 The canonical preference ordering is:
 
@@ -73,6 +97,8 @@ Practical effect: Rakan (test-impl complex) is Sonnet-high. Syndra (AI specialis
     frontend-design.md     # Neeko + Lulu
     frontend-impl.md       # Seraphine + Soraka
     ai-specialist.md       # Lux + Syndra
+    quick-planner.md       # Karma
+    quick-executor.md      # Talon
   azir.md
   swain.md
   aphelios.md
@@ -137,12 +163,12 @@ Opus agents do not need an explicit `thinking:` block — adaptive thinking is a
 Every paired agent carries:
 
 ```yaml
-tier: complex | normal
+tier: complex | normal | quick
 pair_mate: <other-agent-name>
-role_slot: architect | breakdown | test-plan | test-impl | builder | frontend-design | frontend-impl | ai-specialist
+role_slot: architect | breakdown | test-plan | test-impl | builder | frontend-design | frontend-impl | ai-specialist | quick-planner | quick-executor
 ```
 
-Single-lane agents omit these.
+Single-lane agents omit these. The `quick` tier value is reserved for Karma + Talon (the collapsed planner/executor pair) — quick-lane agents pair across roles (planner ↔ executor) rather than across tiers within the same role.
 
 ### 3.4 Coordinator fields
 
