@@ -1,0 +1,8 @@
+{
+  "name": "strawberry-inbox",
+  "description": "Watches the current coordinator's inbox directory and emits a channel event whenever a new pending message arrives. Companion to /check-inbox.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Duongntd"
+  }
+}
