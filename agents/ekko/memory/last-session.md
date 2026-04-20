@@ -1,13 +1,14 @@
-# Ekko Last Session — 2026-04-19 (s34)
+# Ekko Last Session — 2026-04-20
 
-Date: 2026-04-19
+Date: 2026-04-20
 
 ## Accomplished
-- Applied 2-approval gate (required_approving_review_count: 2) to `harukainguyen1411/strawberry-app` main branch protection
-- Preserved all 5 required_status_checks contexts and enforce_admins=false
-- Set dismiss_stale_reviews=false, require_code_owner_reviews=false, require_last_push_approval=false
-- Verification confirmed: count=2, all 5 contexts present
+Applied 4 surgical fixes to Evelynn's memory consolidation mechanism:
+
+1. **48h consolidation window** — `scripts/evelynn-memory-consolidate.sh`: changed age threshold from 86400 (24h) to 172800 (48h), updated comments.
+2. **filter-last-sessions.sh** — created `scripts/filter-last-sessions.sh` (executable): lists last-sessions/ shards modified within last 48h, newest first. Includes pre-boot validator (sentinel check + shard count to stderr).
+3. **Pre-boot validator** — embedded in filter-last-sessions.sh: verifies sentinel exists exactly once in evelynn.md, reports total shard count.
+4. **Unified handoff source** — `.claude/agents/evelynn.md` line 12: replaced `last-session.md` (singular) with `last-sessions/` directory reference matching CLAUDE.md. `.claude/settings.json` SessionStart hook updated to call filter-last-sessions.sh and reference 48h.
 
 ## Open Threads
-- `gh auth` is still set to `harukainguyen1411` — Duong must run `gh auth switch --hostname github.com --user Duongntd` to restore normal workflow
-- Snapshot at `secrets/branch-protection-pre-rollout-strawberry-app.json` (gitignored, local only) for rollback reference
+- None. Changes left uncommitted for Duong's review.

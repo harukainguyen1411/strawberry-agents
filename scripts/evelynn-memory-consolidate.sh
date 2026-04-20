@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# evelynn-memory-consolidate.sh — fold session shards older than 24h into evelynn.md
+# evelynn-memory-consolidate.sh — fold session shards older than 48h into evelynn.md
 #
 # Responsibilities:
 #   1. Find shards in agents/evelynn/memory/sessions/*.md with mtime > 24h old
@@ -104,7 +104,7 @@ fi
 cd "${REPO_ROOT}"
 
 # ---------------------------------------------------------------------------
-# Find shards older than 24h (mtime > 24h ago)
+# Find shards older than 48h (mtime > 48h ago)
 # Use python3 for portability instead of GNU find -mtime or stat
 # ---------------------------------------------------------------------------
 OLD_SHARDS_WITH_TIME=""
@@ -123,13 +123,13 @@ print(mtime, age)
 ")
     mtime=$(echo "$result" | awk '{print $1}')
     age=$(echo "$result" | awk '{print $2}')
-    if [ "$age" -gt 86400 ]; then
+    if [ "$age" -gt 172800 ]; then
         OLD_SHARDS_WITH_TIME="${OLD_SHARDS_WITH_TIME}${mtime} ${f}\n"
     fi
 done
 
 if [ -z "$OLD_SHARDS_WITH_TIME" ]; then
-    echo "evelynn-memory-consolidate: no shards older than 24h — nothing to do."
+    echo "evelynn-memory-consolidate: no shards older than 48h — nothing to do."
     exit 0
 fi
 
