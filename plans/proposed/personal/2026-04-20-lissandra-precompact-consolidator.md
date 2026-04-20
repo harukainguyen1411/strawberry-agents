@@ -13,6 +13,7 @@ related:
   - .claude/skills/end-session/SKILL.md
   - .claude/skills/end-subagent-session/SKILL.md
   - plans/proposed/2026-04-18-evelynn-memory-sharding.md
+orianna_signature_approved: "sha256:01150985c4c03b0fe5ae609abef064432c744bc810359ab3e617fa13461b089d:2026-04-20T15:24:57Z"
 ---
 
 # Lissandra — pre-compact memory consolidator
