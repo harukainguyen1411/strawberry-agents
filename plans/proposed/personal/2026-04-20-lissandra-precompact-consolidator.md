@@ -3,8 +3,8 @@ status: proposed
 orianna_gate_version: 2
 concern: personal
 complexity: normal
-author: azir
-date: 2026-04-20
+owner: azir
+created: 2026-04-20
 tags: [agent-addition, memory, session-lifecycle, hooks]
 supersedes: []
 related:
@@ -12,7 +12,7 @@ related:
   - architecture/agent-pair-taxonomy.md
   - .claude/skills/end-session/SKILL.md
   - .claude/skills/end-subagent-session/SKILL.md
-  - plans/approved/2026-04-18-evelynn-memory-sharding.md
+  - plans/proposed/2026-04-18-evelynn-memory-sharding.md
 ---
 
 # Lissandra — pre-compact memory consolidator
@@ -97,12 +97,12 @@ Keep the personality block short (3–5 lines in the agent def). The LoL voice i
 - **Never** writes to `agents/lissandra/` outside her own closing protocol (which is `/end-subagent-session` — she is a Sonnet subagent herself).
 - Never calls `/end-session` on the coordinator's behalf. That skill is `disable-model-invocation: true` precisely to keep it human-triggered. Lissandra performs an *equivalent consolidation* without firing the skill.
 - Never promotes plans, never opens PRs, never calls `scripts/plan-promote.sh`.
-- Never modifies `.claude/settings.json`, `.claude/hooks/`, or other coordinator-global state. Her output is append-only artifacts.
+- Never modifies `.claude/settings.json`, `scripts/hooks/`, or other coordinator-global state. Her output is append-only artifacts.
 
 ### 2.5 What Lissandra is not
 
 - Not a replacement for `/end-session`. The end-session skill still runs at actual session end. Lissandra runs at *compact boundaries*, which are more frequent and of lower stakes.
-- Not a replacement for the `remember:remember` plugin. Evelynn bypasses that plugin for concurrency reasons (per `plans/approved/2026-04-18-evelynn-memory-sharding.md` §D6); Lissandra follows the same sharded-write discipline.
+- Not a replacement for Evelynn's sharded-write memory discipline. Evelynn avoids concurrent memory writes for concurrency reasons (per `plans/proposed/2026-04-18-evelynn-memory-sharding.md` §D6); Lissandra follows the same discipline.
 - Not a transcript archiver in the full `scripts/clean-jsonl.py` sense — she writes a compact-specific transcript excerpt, not the end-session archive (see §4.3).
 
 ## 3. Triggers
@@ -203,7 +203,7 @@ Run the Evelynn or Sona variant of the `/end-session` protocol, minus the full-t
 - Step 7 (session shard): write `agents/evelynn/memory/sessions/<short-uuid>.md` with the `## Session YYYY-MM-DD (SN, <mode>)` heading + one-line summary + delta notes.
 - Step 8 (learnings): **conditional**. Apply the `/end-subagent-session` decision gate (is there a durable fact / generalizable lesson / resolved open question?). If yes, write `agents/evelynn/learnings/<YYYY-MM-DD>-<topic>.md` + append to `learnings/index.md`. If no, skip and note "no learnings this consolidation" in the report. **This is the key judgment call** — Lissandra must not flood the coordinator's learnings dir with routine-session noise.
 
-**For Sona:** same, with `agents/sona/` paths. Sona does **not** bypass `remember:remember` for concurrency (that bypass is Evelynn-specific per the memory-sharding plan); Lissandra still writes session + last-session shards to Sona's sharded dirs. Verified 2026-04-20: `agents/sona/memory/last-sessions/` and `agents/sona/memory/sessions/` both exist — sharded layout is live. See §7 Q2 resolution.
+**For Sona:** same, with `agents/sona/` paths. Sona does not use the same sharded-write bypass as Evelynn (that bypass is Evelynn-specific per the memory-sharding plan); Lissandra still writes session + last-session shards to Sona's sharded dirs. Verified 2026-04-20: `agents/sona/memory/last-sessions/` and `agents/sona/memory/sessions/` both exist — sharded layout is live. See §7 Q2 resolution.
 
 ### 4.3 Partial transcript excerpt
 
@@ -360,10 +360,8 @@ per Rule 12. All tasks commit `chore:` per CLAUDE.md Rule 5.
   is imminent."
 
 - **T9 — `/compact` workflow docs (Yuumi)**
-  Add a short subsection to the relevant doc (most likely
-  `architecture/session-lifecycle.md` if it exists — else a new
-  `architecture/compact-workflow.md` + pointer from `CLAUDE.md` "File
-  Structure" table). Content: "Run `/pre-compact-save` before
+  Add a short subsection to `architecture/compact-workflow.md` (create
+  it) and add a pointer from the `CLAUDE.md` "File Structure" table. Content: "Run `/pre-compact-save` before
   `/compact`, or the PreCompact hook will block the first compact once.
   To opt out, `touch .no-precompact-save` at repo root." Depends on T2,
   T3, T5 so docs don't front-run the mechanism.
@@ -427,8 +425,8 @@ execution; any deviation requires a superseding amendment.
   sharded paths uniformly for both coordinators. If at Lissandra's
   first real Sona invocation the dirs turn out to be stubs (no shard
   files yet), her write is still structurally valid — she populates the
-  first shard. No branching logic needed. `remember:remember` bypass is
-  Evelynn-specific; Lissandra never invokes that plugin regardless.
+  first shard. No branching logic needed. The concurrency bypass is
+  Evelynn-specific; Lissandra uses sharded writes for both coordinators.
 
 - **Q3 — Compact-transcript excerpt: phase 1 skip or T10 now?**
   **Resolved: skip phase 1 (T10 deferred).** Phase 1 ships six
