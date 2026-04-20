@@ -8,10 +8,12 @@ tags: [workflow, plan-lifecycle, orianna, governance]
 
 # Context
 
+> **Role-slot reference.** This ADR refers to agents by **role slot** rather than by name — `the normal-track breakdown agent`, `the complex-track test planner`, etc. The concrete name-to-slot mapping lives in the companion taxonomy ADR `plans/proposed/2026-04-20-agent-pair-taxonomy.md`. When the taxonomy ADR lands, role-slot references here resolve through its pair matrix (§D1 of that ADR). This ADR's signature / gating content is unchanged by the taxonomy; only role labels are decoupled from specific agent identities.
+
 The plan lifecycle today (`proposed/` → `approved/` → `in-progress/` → `implemented/` → `archived/`) is only partially gated. `scripts/plan-promote.sh` runs an Orianna fact-check on the `proposed → approved` transition (see `scripts/plan-promote.sh:63-86` and `scripts/orianna-fact-check.sh`), but subsequent transitions carry no gate at all. The symptoms:
 
-- **Task breakdowns are ad-hoc.** Kayn/Aphelios sometimes emit a `-tasks.md` sibling (e.g. `plans/in-progress/2026-04-17-deployment-pipeline-tasks.md`), sometimes inline the tasks in the parent plan, sometimes skip the step entirely. No hook or script enforces existence.
-- **Test plans are decoupled.** Caitlyn writes testing plans on request, but nothing requires one before `approved → in-progress`.
+- **Task breakdowns are ad-hoc.** The backend breakdown agents (normal- and complex-track) sometimes emit a `-tasks.md` sibling (e.g. `plans/in-progress/2026-04-17-deployment-pipeline-tasks.md`), sometimes inline the tasks in the parent plan, sometimes skip the step entirely. No hook or script enforces existence.
+- **Test plans are decoupled.** The test-plan / audit agent writes testing plans on request, but nothing requires one before `approved → in-progress`.
 - **Architecture docs drift.** `architecture/` contains 22 files (`ls architecture/`) but no promote step verifies that an implemented plan left a trail in that tree. Duong explicitly flagged this as the single biggest staleness risk.
 - **Orianna doesn't "sign" anything.** The existing fact-check writes a report to `assessments/plan-fact-checks/` and exits 0/1 — the promote consumes the exit code but no durable "Orianna approved promotion at phase X" marker survives in the plan itself. The hook `scripts/hooks/pre-commit-plan-promote-guard.sh` accepts *any* report file for a plan as sufficient evidence, even one written before the plan's current content.
 
@@ -38,14 +40,14 @@ Tamper-evidence comes from **git commit authorship**, not from cryptographic sig
 **Why this over detached sig files or a hash ledger:**
 
 - **Single source of truth.** The plan file *is* the thing being signed; keeping the signature alongside the content avoids a second file that can drift out of sync. A detached `.signed/<plan>.sig` file is two things to keep consistent; if someone `git mv`s the plan, the sig file must move with it. One file is fewer edge cases.
-- **Low ceremony, high signal.** A dedicated hash ledger (`.orianna-signatures.json` committed to a protected path) is heavier machinery for no additional security — the attacker vector in a solo-dev agent system is not a malicious committer, it is *an agent forgetting to invoke Orianna*. Git authorship is sufficient to distinguish "Orianna wrote this" from "Kayn wrote this" without a separate signing infrastructure.
+- **Low ceremony, high signal.** A dedicated hash ledger (`.orianna-signatures.json` committed to a protected path) is heavier machinery for no additional security — the attacker vector in a solo-dev agent system is not a malicious committer, it is *an agent forgetting to invoke Orianna*. Git authorship is sufficient to distinguish "Orianna wrote this" from "any other agent wrote this" without a separate signing infrastructure.
 - **Reviewable in `git log` without tooling.** `git blame <plan>` answers "who signed this" in one command. A sig file or ledger requires an extra step.
 
 The body-hash field *is* load-bearing: if any agent edits the plan body after Orianna signs, the hash recorded in the signature no longer matches the current body, and `plan-promote.sh` refuses on content-drift grounds even if authorship checks out. This catches the "sign, then sneak an edit in before promote" case.
 
 ### D1.1. Making Orianna's git identity distinguishable
 
-Today, subagent commits in this repo are authored as `Duongntd <duong.nguyen.thai.duy@gmail.com>` (the agent GitHub account — see `agents/memory/duong.md:14`). Every agent — Jayce, Viktor, Kayn, Orianna — commits as the same identity. That is insufficient for a per-agent signature.
+Today, subagent commits in this repo are authored as `Duongntd <duong.nguyen.thai.duy@gmail.com>` (the agent GitHub account — see `agents/memory/duong.md:14`). Every agent — builders, task planners, fact-checkers alike — commits as the same identity. That is insufficient for a per-agent signature.
 
 **Proposal:** When Orianna signs, she commits with a `git commit --trailer "Signed-by: Orianna"` trailer *and* a conventional author override:
 
@@ -101,7 +103,7 @@ New checks. Orianna verifies:
 - **Task list exists.** A `## Tasks` section in the plan file itself. Sibling `<basename>-tasks.md` files are **not** accepted — one plan, one file (§D3).
 - **AI-minute estimates.** Every task in the list has an `estimate_minutes: <integer>` field (see §D4 for format). No human-hour estimates; no unit-less numbers.
 - **Test tasks present when tests are needed.** If the plan declares `tests_required: true` in frontmatter (default is `true`; set `false` explicitly to opt out with justification), at least one task must have `kind: test` or a title matching `^(write|add) .* test` (case-insensitive).
-- **Caitlyn test plan appended inline.** If `tests_required: true`, the plan must contain a `## Test plan` section inside the plan file. Sibling `<basename>-tests.md` files are **not** accepted — same single-file rule as tasks. Orianna verifies the section exists and is non-empty; she does not validate contents (format is a follow-up Caitlyn ADR, §D11).
+- **Test plan appended inline.** If `tests_required: true`, the plan must contain a `## Test plan` section inside the plan file — authored by the test-plan / audit role. Sibling `<basename>-tests.md` files are **not** accepted — same single-file rule as tasks. Orianna verifies the section exists and is non-empty; she does not validate contents (format is a follow-up test-plan schema ADR, §D11).
 - **Signature carry-forward.** The `orianna_signature_approved` line must be present and still valid (hash match, authorship match). If the plan body was edited after approval, the approved signature is stale and the in-progress signature cannot be issued until approval is re-signed.
 
 ### D2.3. in-progress → implemented (`orianna_signature_implemented`)
@@ -121,7 +123,7 @@ No Orianna gate. Archiving is bookkeeping, not a governance event. `plan-promote
 
 ## D3. Where task breakdowns live — appended to plan file
 
-**Decision:** One plan, one file. Task lists live inside the plan file under a `## Tasks` section. Sibling `<basename>-tasks.md` files are **not** permitted under the new gate. Likewise for Caitlyn's `## Test plan` section (§D2.2) — inline only, no sibling files.
+**Decision:** One plan, one file. Task lists live inside the plan file under a `## Tasks` section. Sibling `<basename>-tasks.md` files are **not** permitted under the new gate. Likewise for the `## Test plan` section (§D2.2) written by the test-plan / audit role — inline only, no sibling files.
 
 **Rationale:**
 
@@ -163,7 +165,7 @@ No Orianna gate. Archiving is bookkeeping, not a governance event. `plan-promote
 
 - Planners underestimate systematically when abstract units (points) are used. Concrete time pressures the estimate toward reality.
 - Duong is running a solo-operator agent system — throughput is literal wall-clock across agents, not velocity abstraction.
-- AI-minutes are calibratable: after the plan completes, Evelynn or Lucian can compare estimate to actual session durations and build a correction factor per agent/task-kind.
+- AI-minutes are calibratable: after the plan completes, Evelynn or the PR fidelity reviewer can compare estimate to actual session durations and build a correction factor per agent/task-kind.
 
 ---
 
@@ -315,15 +317,15 @@ This ADR itself is subject to §D5. Expected `architecture_changes:` on implemen
 
 ---
 
-## D11. Caitlyn test-plan schema — deferred to a follow-up ADR
+## D11. Test-plan schema — deferred to a follow-up ADR
 
-This ADR checks only the existence of a `## Test plan` section in the plan file (§D2.2). The schema of that section — test-case list shape, expected/actual columns, coverage expectations — is out of scope here and will be specified in a dedicated Caitlyn ADR. Until that ADR lands, Caitlyn authors an ad-hoc test plan directly inside the plan file (same single-file rule as tasks). Orianna's gate passes as long as the section exists and is non-empty.
+This ADR checks only the existence of a `## Test plan` section in the plan file (§D2.2). The schema of that section — test-case list shape, expected/actual columns, coverage expectations — is out of scope here and will be specified in a dedicated ADR owned by the test-plan / audit role. Until that ADR lands, the test-plan author writes an ad-hoc test plan directly inside the plan file (same single-file rule as tasks). Orianna's gate passes as long as the section exists and is non-empty.
 
 ---
 
 ## D12. Implementation ordering — plan-authoring freeze
 
-Because this ADR introduces new mandatory frontmatter fields (`orianna_gate_version`, potentially `tests_required`, `architecture_changes` / `architecture_impact`) and restructures the lifecycle around a signing gate, **new plan creation is frozen from the moment this ADR promotes to `in-progress/` until the new gate infrastructure is live and validated**. The freeze window is enforced socially (Evelynn does not spawn Swain/Aphelios for new plans during this period) and mechanically via a temporary pre-commit hook that rejects new files under `plans/proposed/`. Once `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, and the updated `plan-promote.sh` are all green on a smoke test (§D8 demotion + one fresh plan signed through all three phases), the freeze lifts. The freeze is tracked as the final task in this ADR's `## Tasks` section.
+Because this ADR introduces new mandatory frontmatter fields (`orianna_gate_version`, potentially `tests_required`, `architecture_changes` / `architecture_impact`) and restructures the lifecycle around a signing gate, **new plan creation is frozen from the moment this ADR promotes to `in-progress/` until the new gate infrastructure is live and validated**. The freeze window is enforced socially (Evelynn does not spawn architect or breakdown agents for new plans during this period) and mechanically via a temporary pre-commit hook that rejects new files under `plans/proposed/`. Once `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, and the updated `plan-promote.sh` are all green on a smoke test (§D8 demotion + one fresh plan signed through all three phases), the freeze lifts. The freeze is tracked as the final task in this ADR's `## Tasks` section.
 
 In-flight work at the freeze start — plans already in `in-progress/` or `implemented/` — continues under grandfathered rules (§D8). The freeze applies only to the creation of new `proposed/` entries.
 
@@ -336,7 +338,7 @@ All eight original gating questions were answered by Duong on 2026-04-20. Decisi
 1. **Q1. Orianna git identity.** Resolved: `orianna@agents.strawberry.local` as author email (§D1.1). No GitHub bot account.
 2. **Q2. Bypass eligibility.** Resolved: option (b) — `Orianna-Bypass` is valid only when the commit/push originates from Duong's admin identity `harukainguyen1411`, introduced only when break-glass is needed. Agents always use other accounts. Enforcement lives in the pre-commit hook (§D1.2 / §D9.1).
 3. **Q3. Grandfathering cutoff.** Resolved: all plans in `plans/approved/` are demoted back to `plans/proposed/` and must re-earn a signature (§D8). Plans in `in-progress/`, `implemented/`, and `archived/` stay put under grandfathered rules; retroactive signing of in-flight plans is author's discretion.
-4. **Q4. Test-plan format.** Resolved: defer schema to a follow-up Caitlyn ADR (§D11). The `## Test plan` section is appended inline to the plan file — no sibling files.
+4. **Q4. Test-plan format.** Resolved: defer schema to a follow-up ADR owned by the test-plan / audit role (§D11). The `## Test plan` section is appended inline to the plan file — no sibling files.
 5. **Q5. Estimate sanity bounds.** Resolved: `1 ≤ estimate_minutes ≤ 60`. Values above 60 are **block**, forcing decomposition (§D4).
 6. **Q6. Architecture-impact declaration default.** Resolved: no implicit default. Plans must declare either `architecture_changes:` or `architecture_impact: none`; missing both is **block** at the implemented gate (§D5).
 7. **Q7. Signature coverage of sibling files.** Resolved: no sibling files permitted — one plan, one file (§D3). The question dissolves because the artifact it protected no longer exists.
@@ -349,7 +351,7 @@ All eight original gating questions were answered by Duong on 2026-04-20. Decisi
 These arose while incorporating Duong's round-1 answers and need a decision before this ADR moves to `approved/`.
 
 1. **Q9. Demotion script ownership.** §D8's bulk demotion of `plans/approved/` → `plans/proposed/` + status rewrite + Drive-mirror republish is a one-shot migration. Where does it live? Options: (a) a new mode `scripts/plan-promote.sh --demote-to-proposed` (symmetrical with the existing promote flow — heavier script, benefit of reuse); (b) a throwaway `scripts/migrate/2026-04-20-demote-approved.sh` (lighter, but one-off scripts tend to rot in-tree); (c) manual — author a one-line migration note and use existing `plan-promote.sh` in a reverse mode. Leaning: (a) — adding `--demote-to-proposed` as a first-class mode is cheap once and may prove useful beyond this migration (e.g. re-opening an accidentally-promoted plan).
-2. **Q10. Sibling-file merge during demotion.** §D3 requires demoted plans to inline any existing sibling `-tasks.md` or `-tests.md` content before the next promotion. Is this a manual author step, or does the demotion script auto-merge (append sibling content under `## Tasks` / `## Test plan`)? Auto-merge is fragile if siblings have non-canonical heading structures; manual is another thing for Duong/Aphelios to remember. Leaning: auto-merge with a conservative rule — append verbatim under a new `## Tasks (migrated from sibling)` heading so the author can clean up, and mark the plan with `migration_cleanup_required: true` frontmatter that Orianna's `approved` gate checks for (block until cleared).
+2. **Q10. Sibling-file merge during demotion.** §D3 requires demoted plans to inline any existing sibling `-tasks.md` or `-tests.md` content before the next promotion. Is this a manual author step, or does the demotion script auto-merge (append sibling content under `## Tasks` / `## Test plan`)? Auto-merge is fragile if siblings have non-canonical heading structures; manual is another thing for Duong or the breakdown agent to remember. Leaning: auto-merge with a conservative rule — append verbatim under a new `## Tasks (migrated from sibling)` heading so the author can clean up, and mark the plan with `migration_cleanup_required: true` frontmatter that Orianna's `approved` gate checks for (block until cleared).
 3. **Q11. Freeze-enforcement hook scope.** §D12's temporary pre-commit hook blocks new files under `plans/proposed/` during the freeze. Does this also block *edits* to existing `proposed/` files (e.g. iterating on an in-flight draft)? Strict read is "new-file-only"; a looser read would block all `proposed/` churn to prevent sneaking drafts in under the wire. Leaning: new-file-only — authors should still be able to polish existing drafts (including this ADR) during the freeze; the goal is to stop *new* work, not to freeze the whole tree.
 
 ---
