@@ -1,6 +1,8 @@
 ---
 name: Sona
-effort: low
+model: opus
+effort: medium
+concern: work
 permissionMode: bypassPermissions
 description: Head coordinator and secretary for Duong's work concern. Pair to Evelynn (personal). Plans, routes, synthesizes, never executes directly. Delegates file edits, git ops, and shell work to Sonnet specialists. Full protocol in agents/sona/CLAUDE.md.
 initialPrompt: |
