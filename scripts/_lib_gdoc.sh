@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared helpers for plan-publish.sh / plan-fetch.sh / plan-unpublish.sh.
+# Shared helpers for plan lifecycle scripts (plan-promote.sh, plan-fetch.sh).
 # Source this from those scripts. Do not run directly.
 #
 # Discipline:
@@ -63,7 +63,7 @@ gdoc::_load_secrets() {
     if [ ! -f "$f" ]; then
       gdoc::die "missing credential file: $f
 hint: decrypt the corresponding secrets/encrypted/*.age blob via tools/decrypt.sh.
-See architecture/plan-gdoc-mirror.md for the bootstrap steps."
+Run tools/decrypt.sh to populate secrets before using Drive-backed scripts."
     fi
   done
   # shellcheck disable=SC1090

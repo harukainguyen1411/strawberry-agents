@@ -27,7 +27,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# Honor REPO env var if set (used by test harnesses that operate on a temp repo).
+# Otherwise default to the repo containing this script.
+if [ -n "${REPO:-}" ] && [ -d "${REPO}" ]; then
+  REPO_ROOT="$(cd "$REPO" && pwd)"
+else
+  REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
 
 ORIANNA_HASH_BODY="$SCRIPT_DIR/orianna-hash-body.sh"
 ORIANNA_VERIFY="$SCRIPT_DIR/orianna-verify-signature.sh"
@@ -152,13 +158,16 @@ case "$PHASE" in
     ;;
 esac
 
-[ -f "$PROMPT_FILE" ] || die "phase prompt not found: $PROMPT_FILE"
-
-# ---- CHECK: claude CLI available (§D9.2 — no fallback) -------------------
+# ---- CHECK: claude CLI available (§D9.2 — no fallback, checked FIRST) ----
+# Must be before prompt-file check so offline-fail produces a clear "signature
+# unavailable" message even if prompt files are absent (e.g. in test repos).
 
 if ! command -v claude >/dev/null 2>&1; then
-  die "claude CLI not found. Signing requires the claude CLI (§D9.2). No mechanical fallback for signing. Retry when connectivity is restored."
+  log_stderr "signature unavailable: claude CLI not found (§D9.2). No mechanical fallback for signing. Retry when connectivity is restored."
+  exit 1
 fi
+
+[ -f "$PROMPT_FILE" ] || die "phase prompt not found: $PROMPT_FILE"
 
 # ---- Invoke phase-appropriate Orianna check via claude CLI ----------------
 

@@ -45,7 +45,7 @@ See `agents/memory/agent-network.md` for the full roster.
 6. **Never run raw `age -d` or read decrypted secret values into context** — Use `tools/decrypt.sh` exclusively; it keeps plaintext in the child process env only. Never `cat`/`type`/pipe `secrets/age-key.txt`. The pre-commit hook blocks violations.
 
 <!-- #rule-plan-promote-sh -->
-7. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes. Raw `git mv` leaves orphan Drive docs.
+7. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. `plan-promote.sh` runs the Orianna gate, moves the file, rewrites `status:`, commits, and pushes.
 
 <!-- #rule-end-session-skill -->
 8. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level sessions use `/end-session` (disable-model-invocation: true — Duong or Evelynn must explicitly trigger it). Sonnet subagent sessions use `/end-subagent-session`, which subagents invoke themselves at session end. Both skills produce the handoff note, memory refresh, learnings, and commit; `/end-session` additionally produces a cleaned-transcript archive.

@@ -60,6 +60,8 @@ if [ -n "$MISSING" ]; then
 fi
 
 # --- Smoke repo setup ---
+# Derive real repo root from script location (always the real strawberry-agents repo).
+REAL_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO="$(mktemp -d)"
 git -C "$REPO" init -q
 git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
@@ -69,6 +71,14 @@ mkdir -p "$REPO/plans/proposed" "$REPO/plans/approved" \
   "$REPO/assessments/plan-fact-checks" \
   "$REPO/architecture"
 printf 'arch content\n' > "$REPO/architecture/key-scripts.md"
+# Copy orianna agent files so orianna-sign.sh can find prompts and contract files
+# when operating with REPO=$REPO (temp repo). These are read-only references.
+mkdir -p "$REPO/agents/orianna/prompts"
+cp "$REAL_REPO/agents/orianna/prompts/plan-check.md" "$REPO/agents/orianna/prompts/"
+cp "$REAL_REPO/agents/orianna/prompts/task-gate-check.md" "$REPO/agents/orianna/prompts/"
+cp "$REAL_REPO/agents/orianna/prompts/implementation-gate-check.md" "$REPO/agents/orianna/prompts/"
+cp "$REAL_REPO/agents/orianna/claim-contract.md" "$REPO/agents/orianna/"
+cp "$REAL_REPO/agents/orianna/allowlist.md" "$REPO/agents/orianna/"
 git -C "$REPO" add .
 git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
   commit -q -m "scaffold"
@@ -76,7 +86,8 @@ git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
 SLUG="2026-04-20-smoke-test-plan"
 PLAN="$REPO/plans/proposed/$SLUG.md"
 
-# Toy plan — conforming to gate-v2 rules
+# Toy plan — conforming to gate-v2 rules.
+# No backtick file-path claims to avoid claim-contract blocks in the approved gate.
 cat > "$PLAN" << 'PLANEOF'
 ---
 title: Smoke Test Plan
@@ -91,7 +102,8 @@ architecture_impact: none
 
 # Context
 
-Toy plan used as an end-to-end smoke fixture.
+Toy plan used as an end-to-end smoke fixture for the Orianna signing lifecycle.
+No implementation — this plan exists only to exercise the gate infrastructure.
 
 ## Architecture impact
 
@@ -99,13 +111,11 @@ None. This plan exercises the signing lifecycle only; no architecture changes.
 
 ## Tasks
 
-- [ ] **T1. Write tests.** `kind: test` | `estimate_minutes: 10`
-  - files: `scripts/test-smoke.sh`
-  - detail: smoke test assertions
+- [ ] **T1. Write smoke assertions.** `kind: test` | `estimate_minutes: 10`
+  - detail: smoke test assertions for signing flow
 
-- [ ] **T2. Implement.** `kind: impl` | `estimate_minutes: 15`
-  - files: `scripts/smoke.sh`
-  - detail: minimal implementation
+- [ ] **T2. Implement smoke helper.** `kind: impl` | `estimate_minutes: 15`
+  - detail: minimal implementation to support smoke assertions
 
 ## Test plan
 
@@ -140,6 +150,14 @@ bash "$VERIFY" "$PLAN" approved 2>/dev/null || rc=$?
 if [ "$rc" -ne 0 ]; then pass "EDIT_STALE_DETECT"; else fail "EDIT_STALE_DETECT" "expected stale sig to be detected"; fi
 
 # --- CASE 4: Re-sign approved after edit ---
+# orianna-sign.sh's idempotency guard prevents re-signing if the field already exists.
+# Remove the stale orianna_signature_approved line first (as per §D9.4 workflow),
+# then commit the removal, then re-sign.
+tmp="$(mktemp)"
+grep -v '^orianna_signature_approved:' "$PLAN" > "$tmp" && mv "$tmp" "$PLAN"
+git -C "$REPO" add "$PLAN"
+git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
+  commit -q -m "chore: remove stale approved signature before re-sign"
 rc=0
 REPO="$REPO" bash "$SIGN" "$PLAN" approved 2>/dev/null || rc=$?
 if [ "$rc" -eq 0 ]; then pass "RESIGN_AFTER_EDIT"; else fail "RESIGN_AFTER_EDIT" "re-sign approved exited $rc"; fi
@@ -206,7 +224,20 @@ git -C "$HERMETIC_REPO" -c user.email="test@example.com" -c user.name="Tester" \
   commit --allow-empty -q -m "init"
 mkdir -p "$HERMETIC_REPO/plans/proposed"
 HERMETIC_PLAN="$HERMETIC_REPO/plans/proposed/2026-04-20-hermetic-plan.md"
-printf '---\ntitle: Hermetic Plan\nstatus: proposed\norianna_gate_version: 2\n---\n\n# Body\n\nContent.\n' > "$HERMETIC_PLAN"
+cat > "$HERMETIC_PLAN" << 'HPLANEOF'
+---
+title: Hermetic Plan
+status: proposed
+owner: test
+created: 2026-04-20
+tags: [test]
+orianna_gate_version: 2
+---
+
+# Body
+
+Content for offline-fail test.
+HPLANEOF
 git -C "$HERMETIC_REPO" add .
 git -C "$HERMETIC_REPO" -c user.email="test@example.com" -c user.name="Tester" \
   commit -q -m "add hermetic plan"

@@ -8,7 +8,7 @@
 # After fetch:
 #   - plans/proposed/<file>.md is deleted
 #   - plans/approved/<file>.md is written with whatever Drive currently holds
-#   - the gdoc_id is preserved (cleanup happens in plan-unpublish.sh)
+#   - the gdoc_id is preserved in frontmatter for reference
 #   - the change is committed with a chore: prefix
 #
 # Drive content is canonical during the review window. Local edits to the
@@ -96,4 +96,4 @@ git -C "$REPO_ROOT" commit -m "chore: approve $BASENAME via gdoc fetch" >&2
 git -C "$REPO_ROOT" push >&2
 
 gdoc::log "done. $TARGET -> $APPROVED_PATH"
-gdoc::log "drive doc $GDOC_ID still exists; run plan-unpublish.sh when ready"
+gdoc::log "drive doc $GDOC_ID still exists; trash it manually in Google Drive if no longer needed"
