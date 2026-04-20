@@ -110,7 +110,7 @@ time. Leniency on integration names defeats the purpose of the gate.
 
 ---
 
-## 5. Two-repo routing rules
+## 5. Repo routing rules
 
 When classifying a path-shaped token, use the following prefix rules to
 determine which repo checkout to check against:
@@ -133,13 +133,30 @@ determine which repo checkout to check against:
 - `scripts/usage-dashboard/` (local path `~/Documents/Personal/strawberry-app/scripts/usage-dashboard/`)
 - `tests/e2e/` (local path `~/Documents/Personal/strawberry-app/tests/e2e/`)
 
+**work-concern repo (checkout: `~/Documents/Work/mmp/workspace/company-os/`):**
+
+The work-concern root activates **only** when the plan's YAML frontmatter declares
+`concern: work`. When active, the following prefixes resolve against
+`~/Documents/Work/mmp/workspace/company-os/` instead of the strawberry-app
+checkout:
+
+- `apps/`
+- `dashboards/`
+- `.github/workflows/`
+
 **Unknown prefix:** emit an `info` finding: "unknown path prefix `<prefix>/`;
 add to this contract's routing table if the path is load-bearing."
 
-If the strawberry-app checkout is absent at the expected path, emit a `warn`
-finding on the check itself: "could not verify N cross-repo path(s);
-strawberry-app checkout not found at `~/Documents/Personal/strawberry-app/`."
-Do not silently skip cross-repo checks (ADR §4.5).
+**Default-safe behavior:** Plans without a `concern:` field, or with any value
+other than `work` (including `concern: personal`), keep the original two-repo
+routing — `apps/`, `dashboards/`, and `.github/workflows/` resolve against the
+strawberry-app checkout. The work-concern root is additive and does not affect
+legacy plans or personal-concern plans.
+
+If a cross-repo checkout is absent at the expected path, emit a `warn` finding
+naming whichever checkout was expected: "could not verify N cross-repo path(s);
+<checkout-label> not found at `<path>`." Do not silently skip cross-repo checks
+(ADR §4.5).
 
 ---
 
