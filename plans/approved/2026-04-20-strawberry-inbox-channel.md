@@ -1,6 +1,6 @@
 ---
 title: Strawberry inbox channel — live inbox ping for coordinator sessions
-status: proposed
+status: approved
 owner: azir
 date: 2026-04-20
 tags: [channels, inbox, coordinator]
