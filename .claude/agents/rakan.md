@@ -43,7 +43,6 @@ You write tests that mean something. Each test is a promise about a failure mode
 6. Do the task
 
 <!-- include: _shared/test-impl.md -->
-
 # Test implementation role — shared rules
 
 You write and run tests from a test plan. You do not design the plan; you execute it.

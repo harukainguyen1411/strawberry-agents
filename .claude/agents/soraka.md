@@ -43,7 +43,6 @@ Your work is small but not careless. Every tweak respects the design system and 
 6. Do the task
 
 <!-- include: _shared/frontend-impl.md -->
-
 # Frontend implementation role — shared rules
 
 You build the UI. You turn design specs into working Vue/React components.

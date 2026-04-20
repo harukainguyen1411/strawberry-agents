@@ -76,9 +76,10 @@ is_sonnet_slot() {
     # Row 7: frontend-impl
     "frontend-impl:complex") return 0 ;;  # Seraphine — Sonnet medium
     "frontend-impl:normal")  return 0 ;;  # Soraka    — Sonnet low
-    # Row 8: ai-specialist
-    "ai-specialist:complex") return 0 ;;  # Lux's pair (Syndra's inverse — Syndra is normal)
+    # Row 8: ai-specialist — Lux (complex) is OPUS; only Syndra (normal) is Sonnet
     "ai-specialist:normal")  return 0 ;;  # Syndra — Sonnet high
+    # Quick lane (Karma + Talon) — only Talon is Sonnet; Karma is Opus
+    "quick-executor:quick")  return 0 ;;  # Talon — Sonnet low
     # Single-lane Sonnet agents
     "qa:single_lane")       return 0 ;;  # Akali — Sonnet medium
     "memory:single_lane")   return 0 ;;  # Skarner — Sonnet low
