@@ -35,36 +35,70 @@ The Orianna ADR names agents by role (`the task breakdown agent`, `the feature b
 
 ## D1. The pair matrix
 
-Every role slot gets two fills — a **complex** track and a **normal** track — *except* the three single-lane roles where a split would add coordination cost without benefit (see §D1.3).
+Every role slot gets two fills — a **complex** track and a **normal** track — *except* the single-lane roles where a split would add coordination cost without benefit (see §D1.3). Coordinators (Evelynn, Sona) are a separate row at the top of the table: they are not sharded by complexity — there is one per concern (personal vs work) and they *are* the pair.
 
-| # | Role | Complex (higher effort) | Normal (lower effort) |
-|---|------|------------------------|-----------------------|
+**Canonical rule: never Opus-low.** Per Lux's cost-quality research (§D1.6), Opus-low is the worst `$/quality` point on the frontier: it pays Opus token rates for under-reasoned output. Every roster slot was retiered against that rule; the table below is the result.
+
+| # | Role slot | Complex (higher effort) | Normal (lower effort) |
+|---|-----------|------------------------|-----------------------|
+| 0 | Coordinator | **Evelynn** — Opus medium *(personal)* | **Sona** — Opus medium *(work)* |
 | 1 | Architect (ADR) | **Swain** — Opus xhigh | **Azir** — Opus high |
 | 2 | Task breakdown | **Aphelios** — Opus high | **Kayn** — Opus medium |
 | 3 | Test plan / audit | **Xayah** *new* — Opus high | **Caitlyn** — Opus medium |
-| 4 | Test implementation | **Rakan** *new* — Opus low | **Vi** — Sonnet medium |
-| 5 | Feature builder | **Viktor** *rescoped* — Sonnet medium | **Jayce** — Sonnet low |
-| 6 | Frontend design → impl | **Neeko → Seraphine** (Opus high → Sonnet medium) | **Lulu → Soraka** *new* (Opus low → Sonnet low) |
-| 7 | DevOps advice → exec | **Heimerdinger → Ekko** (single lane — no split) | — |
-| 8 | PR review | **Senna (code) + Lucian (fidelity)** (single lane — no split) | — |
-| 9 | AI/Agents/MCP specialist | **Lux** *rescoped* — Opus high | **Syndra** *new* — Sonnet low |
+| 4 | Test implementation | **Rakan** *new* — Sonnet high *(was Opus low)* | **Vi** — Sonnet medium |
+| 5 | Feature builder | **Viktor** *rescoped* — Sonnet high *(bumped from medium)* | **Jayce** — Sonnet medium *(bumped from low)* |
+| 6 | Frontend design | **Neeko** — Opus high | **Lulu** — Opus medium *(was Opus low)* |
+| 7 | Frontend impl | **Seraphine** — Sonnet medium | **Soraka** *new* — Sonnet low |
+| 8 | AI/Agents/MCP specialist | **Lux** *rescoped* — Opus high | **Syndra** *new* — Sonnet high *(was Opus low)* |
+| 9 | DevOps advice | **Heimerdinger** — Opus medium *(single-lane)* | — |
+| 10 | DevOps exec | **Ekko** — Sonnet medium *(single-lane)* | — |
+| 11 | PR code/security | **Senna** — Opus high *(single-lane)* | — |
+| 12 | PR plan fidelity | **Lucian** — Opus medium *(single-lane)* | — |
+| 13 | Fact-check / signer | **Orianna** — Opus medium *(single-lane)* | — |
+| 14 | QA Playwright | **Akali** — Sonnet medium *(single-lane)* | — |
+| 15 | Memory excavator | **Skarner** — Sonnet low *(single-lane)* | — |
+| 16 | Errand runner | **Yuumi** — Sonnet low *(single-lane)* | — |
+| 17 | Git/security advisor | **Camille** — Opus medium *(single-lane)* | — |
 
 Notes on the matrix:
 
+- **Row 0, Coordinators.** Evelynn (personal) and Sona (work) are the only two coordinators in the Strawberry system; they are not complex/normal pair-mates but concern-pair-mates (one per life domain). Both run Opus-medium — below the architect tier because coordinators route rather than reason deeply. The `tier` field on their agent definitions is either blank or `coordinator`; `pair_mate:` is set across domains (Evelynn's pair_mate = Sona, and vice versa) purely for roster-symmetry purposes, but no shared-rules file is generated (coordinator rules live inline in `agents/<name>/CLAUDE.md`).
 - **Row 1, Swain rescope.** Swain's `effort` bumps from `high` to `xhigh`. He's invoked for cross-cutting structural decisions — lifecycle gates, schema propagation, multi-service architecture — where deep reasoning time is worth the cost. Azir remains head product architect for normal-track ADRs (new features, standard API design).
 - **Row 2, Aphelios promoted to complex.** He already pairs with Kayn informally on large plans; this formalizes him as the Opus-high breakdown agent for any task Swain authors or any plan Evelynn classifies as complex. Kayn stays at Opus-medium for normal-track breakdowns.
 - **Row 3, Xayah new.** Test-planning for resilient/distributed work needs more capacity than Caitlyn at Opus-medium. Xayah takes the complex lane.
-- **Row 4, Rakan new at Opus-low.** Test implementation is the unusual slot where complex-track uses a *cheaper* model than normal-track. Rationale: complex test work means authoring xfail skeletons, fault-injection fixtures, and trace-capture harnesses — tasks that need careful reasoning (Opus) but low token count (low effort). Vi stays Sonnet-medium for bulk test execution where the work is high-volume.
-- **Row 5, Viktor rescoped.** Viktor is no longer "refactor specialist." Refactor is a *task type*, not an identity — every feature builder refactors as part of their work. Viktor becomes the complex-track builder for invasive features, migrations, or cross-module work. Jayce stays as normal-track builder for greenfield and additive work.
-- **Row 6, split pair.** Each side has its own designer + implementer. Complex-track keeps the existing Neeko → Seraphine handoff. Normal-track introduces Soraka as the light-weight frontend implementer; Lulu (Opus-low) provides design guidance inline without full artifact production.
-- **Rows 7 & 8, single-lane.** Heimerdinger → Ekko and Senna + Lucian stay single-lane; see §D1.3.
-- **Row 9, Lux rescoped + Syndra new.** Lux becomes the AI/MCP/agent-definition-organization specialist. Syndra is the normal-track counterpart for small AI tweaks (change a prompt, adjust an agent's effort level, add a tool to a definition).
+- **Row 4, Rakan retiered to Sonnet-high.** Previously scoped as Opus-low in the original matrix — retiered per the never-Opus-low rule. Sonnet-high gives strong reasoning on test-skeleton authoring (xfail tests, fault-injection harnesses, trace-capture fixtures) at a substantially better `$/quality` point than Opus-low. Vi stays Sonnet-medium for bulk test execution where the work is high-volume.
+- **Row 5, Viktor + Jayce both bumped.** Viktor (complex-track builder) goes Sonnet-medium → Sonnet-high: invasive features and migrations benefit from higher-effort builds where ambiguity is highest. Jayce (normal-track builder) goes Sonnet-low → Sonnet-medium: the original Sonnet-low was under-powered for real feature work; Sonnet-medium is the common-case builder tier.
+- **Row 6–7, frontend pair split into two rows.** Design and implementation are separate concerns; each has its own complex/normal split. Neeko (Opus-high) designs for complex UI work; Lulu (Opus-medium, retiered from the original Opus-low per the never-Opus-low rule) designs for normal UI work. Seraphine (Sonnet-medium) implements complex designs; Soraka (Sonnet-low) implements light tweaks. This makes four distinct agents in the frontend lane, which is correct because design and impl have independent tier needs.
+- **Row 8, Lux + Syndra.** Lux becomes the AI/MCP/agent-definition-organization specialist at Opus-high. Syndra retiered to Sonnet-high (was Opus-low) — small AI tweaks still deserve careful reasoning on prompt/agent-def work, and Sonnet-high is the right `$/quality` point. See §D3.1 for Lux's scope.
+- **Rows 9–17, single-lane.** Each single-lane agent gets an explicit row (rather than being bundled). Heimerdinger (Opus-medium advice) → Ekko (Sonnet-medium exec) is a two-row single-lane pipeline, not a complex/normal split. Senna (Opus-high — security review is worth the top tier) and Lucian (Opus-medium — fidelity review is lighter) are the PR reviewer pair, one row each since they review different concerns, not different complexity levels. Orianna (Opus-medium — signer authority matches coordinator tier). Akali (Sonnet-medium Playwright). Skarner/Yuumi (Sonnet-low minions — stateless, no self-close). Camille (Opus-medium git/security advisor).
 
 ### D1.1. Effort levels and model choices
 
 `model:` + `effort:` frontmatter on each agent definition, already an established pattern (see e.g. `.claude/agents/azir.md` — `model: opus`, `effort: high`).
 
-Canonical effort tags: `low | medium | high | xhigh`. Only Swain uses `xhigh` for now; introduce the value in his frontmatter and let the harness treat unknown values as `high` equivalent until tooling catches up (implementation follow-up).
+Canonical effort tags: `low | medium | high | xhigh`. Swain is the only agent using `xhigh` today; Q1 confirmed the harness accepts the value (runtime treats `xhigh` as a legitimate budget level). New values degrade silently to `high` if tooling lags — but the `xhigh` case is validated.
+
+### D1.1a. Model frontmatter convention — omit Opus, declare Sonnet explicitly
+
+Claude Code's global default model is **Opus 4.7 (1M context)** (confirmed: no `"model"` field in `~/.claude/settings.json`; the harness inherits the latest Opus 4.7 1M on every spawn). This has two consequences for agent definitions:
+
+- **Opus agents: omit `model:` from frontmatter.** They inherit the session default, which keeps them on whatever the current Opus tier is without a pin. Pinning a specific ID (e.g. `model: opus-4-7`) creates drift debt the day a newer Opus lands. Leaving the field off means Opus agents auto-upgrade.
+- **Sonnet agents: declare `model: sonnet` explicitly.** The alias `sonnet` (never a pinned ID like `sonnet-4-5`) locks the agent to the Sonnet tier. Without the field, a Sonnet agent would silently promote to Opus on spawn — a 5× burn (see §D1.6) for no capability gain on the kind of work Sonnet agents do.
+- **`effort:` is always explicit.** Never omitted. The effort tag is the budget signal and has no reasonable default.
+
+This convention is encoded in the shared-rules pattern (§D4): the `_shared/<role>.md` file captures effort expectations, and each per-agent file is responsible for its own `model:` (omit for Opus, declare for Sonnet) and its own `effort:` value. The pre-commit hook in §D4.3 is extended to verify this convention: any agent definition with `model: opus` (redundant) produces a warning; any agent definition without `model:` is assumed Opus and must match the Opus-family expectation in its `_shared/<role>.md`.
+
+**Why this sits in the taxonomy ADR:** the model convention is a property of the pair-mate contract. Pair-mates in the same role slot use different tiers, and the tier convention (complex = Opus, normal = mixed, single-lane = case-by-case) drives which `model:` field each definition carries. Documenting it here keeps the rule alongside the matrix that uses it.
+
+### D1.1b. Canonical ordering rule
+
+From Lux's cost-quality research, the canonical preference ordering for assigning a tier to a role slot is:
+
+**Opus-xhigh > Opus-high > Opus-medium > Sonnet-high > Sonnet-medium > Sonnet-low**
+
+When assigning tiers in this matrix (or any future retiering), walk the ordering top-down and pick the first tier that matches the role's reasoning-depth needs. **Never place an agent out of this order without an ADR-level justification**: if a role gets bumped up (e.g. skipping Opus-medium to reach Opus-high for a capability reason) or bumped down (e.g. landing at Sonnet-low for a specific cost-shape reason), the matrix notes must include a one-line rationale anchored to the role's work profile.
+
+The never-Opus-low rule is a corollary: Opus-low sits *outside* this ordering — it's not a ranked tier, it's an anti-pattern. Any agent targeting careful reasoning but low token count goes to Sonnet-high instead (see Rakan and Syndra retierings in §D1 matrix notes).
 
 ### D1.2. Why two tiers not three
 
@@ -74,13 +108,21 @@ When in doubt, Evelynn picks **normal**. See §D6 for classification rules.
 
 ### D1.3. Single-lane roles — rationale
 
-Three role slots stay single-lane (no complex/normal split):
+Several role slots stay single-lane (no complex/normal split):
 
 - **DevOps advice → exec (Heimerdinger → Ekko).** DevOps tasks are infrastructure-shaped. The "complex" case in DevOps isn't about reasoning depth, it's about blast radius. Heimerdinger already escalates to Duong for high-blast-radius changes; a second Opus-high DevOps agent would duplicate without differentiating. Ekko's execution tier is sufficient for both small and large DevOps changes because the execution part is mechanical once the plan is clear.
-- **PR review (Senna + Lucian).** PR review is a *pair* of concerns — code-quality+security (Senna) and plan/ADR fidelity (Lucian) — applied to every PR. The work already partitions by concern, not by complexity. Adding a complex/normal split per reviewer would mean 4 reviewers per PR, which is coordination overhead with no signal gain.
-- **Implicit: Evelynn herself.** Head coordinator is unsharded by design.
+- **PR review (Senna + Lucian).** PR review is a *pair* of concerns — code-quality+security (Senna) and plan/ADR fidelity (Lucian) — applied to every PR. The work already partitions by concern, not by complexity. Adding a complex/normal split per reviewer would mean 4 reviewers per PR, which is coordination overhead with no signal gain. Senna sits at Opus-high (security is worth the top tier); Lucian sits at Opus-medium (fidelity review is a comparison against the plan, not open-ended reasoning).
+- **Orianna (fact-check / signer).** Signature authority is a property of agent identity (§D1.1 of the lifecycle ADR); splitting the identity would break that property. Opus-medium matches the coordinator tier since the work is verification, not deep reasoning.
+- **Akali (QA Playwright).** Task shape doesn't partition by complexity — every UI PR needs the same Playwright + Figma diff flow regardless of feature size. Sonnet-medium is appropriate for browser automation work.
+- **Skarner + Yuumi.** Minion agents, stateless, Sonnet-low. They are not sharded by complexity because their task shape is "cheap, bounded, high-volume lookups / moves." See `agents/memory/agent-network.md` for their stateless / no-self-close semantics.
+- **Camille.** Git and security advisor, Opus-medium, single-lane because git/security advice rarely decomposes into two complexity tiers — it's either a small question or it's an escalation to Duong.
+- **Coordinators (Evelynn, Sona).** Not sharded by complexity; sharded by concern (personal vs work). See row 0 in the matrix and §D7 on routing.
 
-These three are called out in this ADR so they don't look like oversights in the taxonomy. Any future split for them is scoped separately (see §D9).
+These roles are called out in this ADR so they don't look like oversights in the taxonomy. Any future split for them is scoped separately (see §D9).
+
+### D1.6. Cost awareness (footnote)
+
+For calibration: on the Claude Max plan, **Opus vs Sonnet at equal effort burns roughly 5× more quota.** End-to-end, **Opus-xhigh vs Sonnet-low burns roughly 50×** (Opus-xhigh vs Sonnet-high is the 5× gap; compounding effort tiers adds another ~10× within the family). The matrix above is a budget document as much as a capability one — every Opus slot should justify its presence against "could Sonnet-high do this?"; every `xhigh` should justify its presence against "could Opus-high do this?" This footnote is not enforced by hook; it is a reminder to weigh Lux's cost-quality ordering (§D1.1b) when proposing new agents or retiering existing ones.
 
 ---
 
@@ -97,14 +139,14 @@ Four new agent definitions. Each follows the shared-rules pattern in §D3.
 - **One-line:** Writes resilience/fault-injection/cross-service test plans and audits for complex-track ADRs; hands off authoring to Rakan and bulk execution to Vi.
 - **Invocation trigger:** Any plan Evelynn has routed to Swain for architecture or Aphelios for breakdown; any plan touching distributed-system invariants, persistence-sync, or cross-agent messaging.
 
-### D2.2. Rakan — Opus-low, complex-track test implementer
+### D2.2. Rakan — Sonnet-high, complex-track test implementer
 
 - **Role slot:** Test implementation (complex).
 - **Tier:** complex.
-- **Model/effort:** `model: opus`, `effort: low`.
-- **Pair mate:** Vi (normal-track).
+- **Model/effort:** `model: sonnet`, `effort: high`.
+- **Pair mate:** Vi (normal-track, Sonnet-medium).
 - **One-line:** Authors xfail test skeletons, fault-injection harnesses, and non-routine test fixtures from Xayah's plans; passes the test plan to Vi for bulk run/iterate.
-- **Note on tier-model-effort interaction:** Rakan is the one "complex tier at low effort" slot in the matrix. See §D1 matrix notes for rationale. Opus-low gives careful reasoning on small-token tasks at ~1/3 the cost of Opus-medium.
+- **Note on tier-model interaction:** Rakan was originally scoped as Opus-low in the first taxonomy draft; retiered to Sonnet-high per the never-Opus-low rule (§D1 matrix notes + §D1.1b). Sonnet-high gives strong reasoning on test-skeleton authoring at a better `$/quality` point than Opus-low while preserving the complex-tier distinction from Vi's Sonnet-medium.
 
 ### D2.3. Soraka — Sonnet-low, normal-track frontend implementer
 
@@ -115,14 +157,15 @@ Four new agent definitions. Each follows the shared-rules pattern in §D3.
 - **One-line:** Implements small frontend tweaks — a tooltip, a copy change, a simple component variant — from Lulu's inline advice; escalates to Seraphine when Neeko-scale design artifacts are needed.
 - **Invocation trigger:** Trivial frontend tasks where producing a full Neeko design spec would be ceremony.
 
-### D2.4. Syndra — Sonnet-low, normal-track AI/agents specialist
+### D2.4. Syndra — Sonnet-high, normal-track AI/agents specialist
 
 - **Role slot:** AI/Agents/MCP (normal).
 - **Tier:** normal.
-- **Model/effort:** `model: sonnet`, `effort: low`.
-- **Pair mate:** Lux (complex-track).
+- **Model/effort:** `model: sonnet`, `effort: high`.
+- **Pair mate:** Lux (complex-track, Opus-high).
 - **One-line:** Handles small AI-stack tweaks — adjusting a prompt, tuning an agent's `effort:` value, adding a tool to a definition, renaming roster entries — where a full Lux research pass is overkill.
 - **Invocation trigger:** Single-file or few-line changes to `.claude/agents/*.md`, `agents/*/profile.md`, or MCP config. Not for new MCP tools (that's Lux) or major agent redesigns (that's Lux + Swain).
+- **Note on tier-model interaction:** Syndra was originally scoped as Sonnet-low in the first taxonomy draft; retiered to Sonnet-high per the never-Opus-low rule corollary (§D1.1b) — prompt/agent-def work deserves careful reasoning even at the normal tier, and Sonnet-high is the `$/quality` point that gives it.
 
 ---
 
@@ -136,15 +179,25 @@ Frontmatter update: `effort: medium` → `effort: high`. Lux is the complex-trac
 
 Description update: add "owns the shape of `.claude/agents/*.md` and the shared-rules include pattern (§D4)."
 
-### D3.2. Viktor — rescoped to complex-track builder
+### D3.2. Viktor — rescoped to complex-track builder + effort bump
 
 Today: "Refactoring agent — code restructuring, optimization, cleanup, migrations." New: "Complex-track feature builder — invasive features, migrations, cross-module work, and refactor-as-part-of-build. Paired with Jayce (normal-track)."
 
 Rationale captured in §D1 matrix note (row 5): refactor is a task type, not an identity. Every builder refactors; labeling one agent "refactor only" forced awkward routing decisions whenever a feature touched existing code (which is always).
 
-Viktor's model stays `sonnet`; his `effort` bumps from `medium` to `medium` (unchanged — the complex-track tier is already at Sonnet-medium per the matrix). The rescope is the *description and boundary text*, not the model.
+Viktor's model stays `sonnet`; his `effort` **bumps from `medium` to `high`** (this is the retiering change — complex-track builds benefit from higher-effort reasoning where ambiguity is greatest). The rescope is both the description/boundary text *and* the effort level.
 
 Description update: drop "No new features or greenfield work (that's Jayce)" — this boundary no longer holds. Replace with "Viktor handles complex-track builds (migrations, multi-module features, invasive refactors). Jayce handles normal-track builds (greenfield, additive, single-module). Refactor is a task-shape both agents do as needed."
+
+**Grandfathering for in-flight plans (Q7 resolution):** Plans currently in `plans/in-progress/` that reference Viktor as "refactor-only agent" continue to run under the old semantics. New plans authored after Phase B of the migration (§D8) use the new builder semantics. Evelynn should not retroactively reroute Viktor-assigned tasks from in-flight plans; if an in-flight task hits ambiguity under the old scope, escalate to Duong rather than silently reinterpreting.
+
+### D3.3a. Jayce — effort bump
+
+Jayce (normal-track builder) `effort` bumps from `low` to `medium`. Original Sonnet-low was under-powered for real feature work even at the normal tier; Sonnet-medium is the common-case builder tier. No scope change.
+
+### D3.3b. Lulu — effort bump
+
+Lulu (normal-track frontend design) `effort` bumps from `low` to `medium`, per the never-Opus-low rule. No scope change; the bump simply moves her onto the canonical ordering (§D1.1b).
 
 ### D3.3. Swain — effort bump
 
@@ -211,6 +264,14 @@ Claude Code does not natively process `<!-- include: ... -->` directives in agen
 
 Alternative considered: a build step that generates `.claude/agents/*.md` from `_shared/` + per-agent stubs. Rejected because (a) generated files in `.claude/agents/` fight the human-editability of agent definitions and (b) the drift detection is identical either way.
 
+### D4.3a. Additional hook checks beyond drift
+
+The same `pre-commit-agent-shared-rules.sh` hook performs three additional checks on every commit touching `.claude/agents/`:
+
+1. **Shared-rules drift (primary check, Q2 resolution).** Each paired agent's inlined shared content must byte-match the canonical `_shared/<role>.md`. Failure = re-run `sync-shared-rules.sh` or the commit is rejected. Q2 confirmed hook over CI: feedback is immediate and prevents drift from shipping rather than catching it post-push.
+2. **Pair-mate symmetry (Q4 resolution).** For any agent with `pair_mate: <other>` frontmatter, the hook verifies `<other>`'s definition carries `pair_mate: <this>` in reverse. Asymmetric pairings (A→B but B→A missing or B→C) are rejected. Cheap to check (one grep over `.claude/agents/*.md`); catches a real drift class where someone renames or retiers one half of a pair and forgets the other.
+3. **Model-frontmatter convention (§D1.1a).** Sonnet agents MUST declare `model: sonnet`; Opus agents MUST omit `model:` entirely (inheriting the session default). Violations: `model: opus` declared on an Opus agent (redundant, warning), or `model:` missing on an agent that appears in a Sonnet role slot (e.g. Vi, Seraphine — check would emit an error). The hook implements this by cross-referencing each agent's `role_slot` + `tier` against the matrix in §D1 — mechanical comparison, no ambiguity.
+
 ### D4.4. Migration — existing single-lane roles are unaffected
 
 Heimerdinger, Ekko, Senna, Lucian, Evelynn, Yuumi, Skarner, Akali, Orianna keep their existing monolithic definitions. They get no `_shared/` file. The shared-rules pattern only applies where there are two pair-mates to share between.
@@ -276,21 +337,24 @@ The current delegation table in `agents/evelynn/CLAUDE.md` (lines 87–109) maps
 
 | Work type | Complex agent | Normal agent |
 |-----------|---------------|--------------|
+| Coordinator *(concern-split, not complexity-split)* | **Evelynn** (Opus medium, personal) | **Sona** (Opus medium, work) |
 | System architecture, ADR plans | **Swain** (Opus xhigh) | **Azir** (Opus high) |
 | Backend task breakdown from ADR | **Aphelios** (Opus high) | **Kayn** (Opus medium) |
 | QA audit and testing strategy | **Xayah** (Opus high) | **Caitlyn** (Opus medium) |
-| Writing and running tests | **Rakan** (Opus low) | **Vi** (Sonnet medium) |
-| Feature build | **Viktor** (Sonnet medium) | **Jayce** (Sonnet low) |
-| Frontend (design → impl) | **Neeko → Seraphine** | **Lulu → Soraka** |
-| AI/Agents/MCP advice | **Lux** (Opus high) | **Syndra** (Sonnet low) |
-| Quick fixes, DevOps execution | **Ekko** (single-lane) | — |
-| DevOps advice | **Heimerdinger** (single-lane) | — |
-| PR code + security review | **Senna** (single-lane) | — |
-| PR plan/ADR fidelity review | **Lucian** (single-lane) | — |
-| Memory retrieval | **Skarner** (single-lane) | — |
-| Light errands | **Yuumi** (single-lane) | — |
-| Fact-check | **Orianna** (single-lane) | — |
-| QA Playwright + Figma diff | **Akali** (single-lane) | — |
+| Writing and running tests | **Rakan** (Sonnet high) | **Vi** (Sonnet medium) |
+| Feature build | **Viktor** (Sonnet high) | **Jayce** (Sonnet medium) |
+| Frontend design | **Neeko** (Opus high) | **Lulu** (Opus medium) |
+| Frontend implementation | **Seraphine** (Sonnet medium) | **Soraka** (Sonnet low) |
+| AI/Agents/MCP advice | **Lux** (Opus high) | **Syndra** (Sonnet high) |
+| DevOps advice | **Heimerdinger** (Opus medium, single-lane) | — |
+| Quick fixes, DevOps execution | **Ekko** (Sonnet medium, single-lane) | — |
+| PR code + security review | **Senna** (Opus high, single-lane) | — |
+| PR plan/ADR fidelity review | **Lucian** (Opus medium, single-lane) | — |
+| Fact-check / plan signing | **Orianna** (Opus medium, single-lane) | — |
+| QA Playwright + Figma diff | **Akali** (Sonnet medium, single-lane) | — |
+| Memory retrieval | **Skarner** (Sonnet low, single-lane) | — |
+| Light errands | **Yuumi** (Sonnet low, single-lane) | — |
+| Git/security advisor | **Camille** (Opus medium, single-lane) | — |
 
 **Additional updates Evelynn's CLAUDE.md needs:**
 
@@ -353,20 +417,31 @@ Phases A–C are sequential but each is a single small commit set. Phase D is de
 
 ---
 
-# Open gating questions
+# Resolved gating questions (round 2)
 
-1. **Q1. Xhigh effort tag.** Swain gets `effort: xhigh`. Does the Claude Code harness accept values outside `low | medium | high`? If not, this either degrades silently to `high` (safe but then the tier distinction is documentation-only for Swain vs Azir) or we need a different signal (e.g. a custom frontmatter field the harness ignores but our tooling reads). Leaning: degrade silently for now; revisit if an actual model-budget difference is needed.
+All seven round-1 questions plus one new framing decision were answered by Duong on 2026-04-20 in the consolidation pass. Summary:
 
-2. **Q2. Shared-rules sync scope — hook or CI?** §D4.3 specifies a pre-commit hook for drift detection. Alternative: CI-only check via a GitHub Actions workflow. Hook is faster feedback but another hook to install; CI is slower but matches the existing enforcement style for larger governance rules (e.g. the TDD gate workflow). Leaning: hook, because `.claude/agents/*.md` edits are frequent and CI round-trips would slow iteration.
+1. **Q1. Xhigh effort tag.** Resolved: `effort: xhigh` works — harness accepts the value as a legitimate budget level. Swain uses it (§D1.1); no degradation to `high` needed.
+2. **Q2. Shared-rules drift detection — hook vs CI.** Resolved: **pre-commit hook** (§D4.3a). `.claude/agents/*.md` edits are frequent and CI round-trips would slow iteration; immediate feedback prevents drift from shipping.
+3. **Q3. Default-lean wording.** Resolved: keep "**complex** / **normal**." Semantics are clearer than premium/standard; Duong's task briefings already use the pairing.
+4. **Q4. Pair-mate symmetry check.** Resolved: **yes**, the pre-commit hook verifies A→B ↔ B→A on every agent-def commit (§D4.3a check #2).
+5. **Q5. Model/effort tiers — retiering applied.** Resolved: **Lux's retiering adopted** (§D1 matrix). Canonical rule: **never Opus-low** — it is the worst `$/quality` point and sits outside the canonical ordering (§D1.1b). Retierings: Rakan Opus-low → Sonnet-high; Syndra Sonnet-low → Sonnet-high; Viktor Sonnet-medium → Sonnet-high; Jayce Sonnet-low → Sonnet-medium; Lulu Opus-low → Opus-medium.
+6. **Q6. Soraka.** Resolved: **keep Soraka** as the Sonnet-low normal-track frontend implementer. Rationale: matching pair structure across role slots makes the roster learnable; Soraka activates in Phase A of migration and gets real invocations as they emerge.
+7. **Q7. Viktor rescope collisions with in-flight plans.** Resolved: **grandfathered** — in-flight plans that named Viktor under the old "refactor-only" scope run to completion under that scope; new plans (authored post-Phase B, §D8) use the new complex-track-builder semantics (§D3.2).
+8. **New framing decision — model frontmatter convention.** Resolved: Opus agents omit `model:` (inherit session default, which is Opus 4.7 1M); Sonnet agents declare `model: sonnet` (alias, never a pinned ID); `effort:` is always explicit. Pre-commit hook check #3 enforces (§D1.1a + §D4.3a).
 
-3. **Q3. Default-lean wording — "normal" as literal name.** §D6 defaults to "normal" when uncertain. Is "normal" the right label vs alternatives like "standard" or "default"? "Normal" pairs linguistically with "complex"; "standard" pairs better with "premium." Leaning: stick with "normal" — the pairing "complex / normal" is already used in Duong's task briefing and has clearer semantics (complex = exceptional, normal = the rest).
+These decisions are durable — no further round is expected before the ADR promotes. See §D1 matrix notes, §D1.1a (model convention), §D1.1b (canonical ordering), §D1.6 (cost footnote), and §D3 (rescopes) for the concrete text they flow into.
 
-4. **Q4. Pair-mate field validation.** §D5 puts `pair_mate:` in frontmatter. Should the pre-commit hook validate that `pair_mate:` is symmetric (if A's pair is B, then B's pair is A)? Leaning: yes, add to the same `pre-commit-agent-shared-rules.sh` hook — cheap check, catches one class of drift.
+---
 
-5. **Q5. Rakan's unusual tier-model combo.** Rakan is complex-tier at Opus-low (§D2.2). This is the only place in the matrix where complex-tier uses a lower effort than normal-tier (Vi is Sonnet-medium — higher model-adjusted cost than Opus-low in most scenarios, though the comparison depends on the token profile). Is this combination confusing for Evelynn's routing? Alternative: bump Rakan to Opus-medium. Leaning: keep Opus-low with a note in Evelynn's delegation table explaining the carefully-reasoning-but-small-tokens shape.
+# Open gating questions (round 3 — new, raised by this consolidation)
 
-6. **Q6. Soraka vs "just use Seraphine."** Is there enough normal-track frontend work to justify Soraka as a separate agent, given Seraphine already handles Sonnet-medium frontend implementation? An alternative is to skip Soraka entirely and have Lulu → Seraphine handle both tiers. Leaning: create Soraka; Lulu's Opus-low budget pairs well with Sonnet-low implementer, and keeping the frontend pair structurally identical to other paired roles (design + impl in both tiers) makes the roster learnable. But if rollout is phased (§D8), Soraka can go in the Phase A batch and be activated later if real usage emerges.
+These arose while consolidating Lux's retiering into the matrix. None block the ADR's current state, but should be decided before the taxonomy migrates to `approved/`.
 
-7. **Q7. Viktor rescope collisions with in-flight plans.** Any plans currently in `plans/in-progress/` that specified Viktor as the "refactor-only agent" will now read ambiguously after the rescope. Do we revise in-flight plans? Leaning: no — in-flight plans finish under grandfathered semantics (same as the Orianna ADR's grandfathering rule); only new plans (post-Phase B) use the new Viktor scope.
+1. **Q8. Sona inclusion scope.** Row 0 of §D1's matrix lists Sona alongside Evelynn as the work-concern coordinator. Sona's definition today lives at `.claude/agents/sona.md` (untracked per `git status`). Does this ADR commit Sona to the roster as a first-class coordinator, or does she stay provisional until a separate Sona-specific ADR lands? Leaning: commit her — the coordinator row needs both columns populated to make the concern-split rule legible; if Sona's definition is still being finalized, the matrix should note her status but not omit her.
+
+2. **Q9. Single-lane coordinator `pair_mate:`.** §D1 row 0 suggests Evelynn ↔ Sona as `pair_mate:` partners for roster-symmetry. Is this semantically correct, given the pair represents *different concerns* rather than the same role at different complexities? Alternative: leave `pair_mate:` blank for coordinators (they are truly single-lane within their concern) and instead add a new frontmatter field `concern: personal | work` for routing. Leaning: introduce `concern:` as a separate field; don't misuse `pair_mate:` for concern pairing. This keeps the pair-mate symmetry check (Q4) uncomplicated by a separate axis.
+
+3. **Q10. Senna/Lucian tier asymmetry.** Senna is Opus-high, Lucian is Opus-medium. Both are single-lane reviewers on every PR. Does the tier asymmetry create a routing confusion — "does Senna do more than Lucian per PR?" Leaning: no, the asymmetry reflects work-shape (security reasoning vs fidelity comparison) and is called out in §D1.3. But worth naming here so it doesn't get re-litigated later.
 
 ---
