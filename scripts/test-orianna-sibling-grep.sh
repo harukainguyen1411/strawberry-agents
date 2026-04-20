@@ -42,7 +42,16 @@ make_plans_dir() {
 PLANS_DIR="$(make_plans_dir)"
 PLAN_SLUG="2026-04-20-feature-plan"
 PLAN_FILE="$PLANS_DIR/proposed/${PLAN_SLUG}.md"
-printf '---\ntitle: Feature Plan\nstatus: proposed\n---\n\n# Body\n\nContent.\n' > "$PLAN_FILE"
+cat > "$PLAN_FILE" << 'PLANEOF'
+---
+title: Feature Plan
+status: proposed
+---
+
+# Body
+
+Content.
+PLANEOF
 
 # --- CASE 1: Sibling tasks file present → block ---
 SIBLING="$PLANS_DIR/proposed/${PLAN_SLUG}-tasks.md"
