@@ -4,6 +4,8 @@ model: sonnet
 effort: medium
 thinking:
   budget_tokens: 5000
+tier: single_lane
+role_slot: qa
 description: QA agent — runs full Playwright flow with video and screenshots before PR open, diffs against Figma design reference, and posts a structured report to assessments/qa-reports/.
 ---
 

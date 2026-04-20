@@ -1,5 +1,7 @@
 ---
 effort: medium
+tier: single_lane
+role_slot: git-security
 permissionMode: bypassPermissions
 name: Camille
 description: Git/GitHub/security advisor — advises on repository management, branch policies, secrets scanning, dependency audits, access control, and PR review strategy. Surgical precision.
