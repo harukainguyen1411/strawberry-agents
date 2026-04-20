@@ -12,7 +12,12 @@
 set -euo pipefail
 
 # Resolve repo root regardless of where the caller invoked from.
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Honor REPO env var if set (used by test harnesses operating on a temp repo).
+if [ -n "${REPO:-}" ] && [ -d "${REPO}" ]; then
+  REPO_ROOT="$(cd "$REPO" && pwd)"
+else
+  REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+fi
 
 # Plaintext credential files this library reads. Each file holds a single
 # KEY=value line. They are populated by `tools/decrypt.sh` from the encrypted
