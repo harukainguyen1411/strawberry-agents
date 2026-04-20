@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 orianna_gate_version: 2
 concern: personal
 complexity: normal
@@ -494,8 +494,8 @@ The plan is implemented when:
 
 Three test tasks cover the plan's testable surface area.
 
-**T1 — Hook slot registration (`scripts/hooks/pre-commit-agent-shared-rules.test.sh`).**
-An xfail test case is added before the implementation commit. The test creates a fixture agent file declaring `role_slot: memory-consolidator` and `tier: single_lane` and asserts the hook rejects an `opus` model declaration while accepting `sonnet`. Run with `bash scripts/hooks/pre-commit-agent-shared-rules.test.sh`; must be green before T1-impl merges.
+**T1 — Hook slot registration (`scripts/hooks/test-hooks.sh`).**
+An xfail test case is added before the implementation commit. The test creates a fixture agent file declaring `role_slot: memory-consolidator` and `tier: single_lane` and asserts the hook rejects an `opus` model declaration while accepting `sonnet`. The slot registration test is covered by the shared hook test suite at `scripts/hooks/test-hooks.sh`; run with `bash scripts/hooks/test-hooks.sh`; must be green before T1-impl merges. (Note: the xfail was wired into `test-hooks.sh` rather than a standalone `pre-commit-agent-shared-rules.test.sh` — naming corrected here from the original task breakdown.)
 
 **T4 / T6 — PreCompact gate unit tests (`scripts/hooks/tests/pre-compact-gate.test.sh`).**
 A shell-based fixture driver pipes representative JSON payloads (no sentinel, sentinel present, `.no-precompact-save` present) into `scripts/hooks/pre-compact-gate.sh` and asserts on stdout JSON and exit code. Three cases: block emitted when no sentinel, exit 0 when sentinel present, exit 0 when opt-out dotfile present. Run with `bash scripts/hooks/tests/pre-compact-gate.test.sh`. The xfail commit precedes the T4-impl commit on the same branch.
