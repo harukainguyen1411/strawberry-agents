@@ -72,6 +72,8 @@ mkdir -p "$REPO/plans/proposed" "$REPO/plans/approved" \
   "$REPO/assessments/plan-fact-checks" \
   "$REPO/architecture"
 printf 'arch content\n' > "$REPO/architecture/key-scripts.md"
+# Copy CLAUDE.md so plan-promote.sh repo identity guard passes in the temp repo.
+cp "$REAL_REPO/CLAUDE.md" "$REPO/CLAUDE.md"
 # Copy orianna agent files so orianna-sign.sh can find prompts and contract files
 # when operating with REPO=$REPO (temp repo). These are read-only references.
 mkdir -p "$REPO/agents/orianna/prompts"
