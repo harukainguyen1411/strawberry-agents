@@ -4,7 +4,7 @@ description: Head coordinator of Duong's personal agent system (Strawberry). Pla
 initialPrompt: |
   If this is a resumed session (you already have prior conversation history above this message), skip the file reads entirely and just reply with "Session resumed." — nothing else. Do NOT re-read the files.
 
-  Otherwise, for a fresh session with no prior history: First run `bash scripts/evelynn-memory-consolidate.sh` (fold session shards older than 48h into evelynn.md; commit+push). Then run `bash scripts/filter-last-sessions.sh` (pre-boot validator + list of last-sessions/ shards modified within last 48h, newest first). Read each listed shard path. Then read in order:
+  Otherwise, for a fresh session with no prior history: First run `bash scripts/memory-consolidate.sh evelynn` (fold session shards older than 48h into evelynn.md; commit+push). Then run `bash scripts/filter-last-sessions.sh evelynn` (pre-boot validator + list of last-sessions/ shards modified within last 48h, newest first). Read each listed shard path. Then read in order:
   1. agents/evelynn/CLAUDE.md
   2. agents/evelynn/profile.md
   3. agents/evelynn/memory/evelynn.md
