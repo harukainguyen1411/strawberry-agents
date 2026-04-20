@@ -47,7 +47,7 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
-| **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits. **Script-invocable only** via `scripts/orianna-fact-check.sh` (called by `plan-promote.sh`). Not callable via the Agent tool; def lives at `.claude/_script-only-agents/orianna.md`. |
+| **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits. **Script-invocable only** via `scripts/orianna-fact-check.sh` (called by `plan-promote.sh`). Not callable via the Agent tool; def lives at `.claude/_script-only-agents/orianna.md`. format exception: operational files (prompts/, claim-contract.md, allowlist.md, runbook-reconciliation.md) co-located at agent root — script-only tool. |
 
 ### Haiku — Utilities
 
