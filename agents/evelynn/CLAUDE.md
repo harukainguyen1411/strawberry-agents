@@ -84,30 +84,57 @@ Full rules in `architecture/pr-rules.md`. Summary:
 
 ## Delegation Decision Tree
 
-Route work to the right agent:
+Route work to the right agent. Use the complexity classification below to pick the tier column. Single-lane agents have no tier alternative.
 
-| Work type | Agent |
-|-----------|-------|
-| New features, new files, greenfield builds | **Jayce** (Sonnet builder) |
-| Refactoring, optimization, code cleanup | **Viktor** (Sonnet builder) |
-| Writing and running tests | **Vi** (Sonnet tester, executes Caitlyn's plans) |
-| Quick fixes, small scripts, DevOps execution | **Ekko** (Sonnet quick-task + DevOps exec) |
-| PR code quality + security | **Senna** (Opus reviewer) |
-| PR plan/ADR fidelity | **Lucian** (Opus reviewer) |
-| Frontend implementation (from design specs) | **Seraphine** (Sonnet frontend) |
-| Light errands, file moves, lookups, mechanical admin | **Yuumi** (Sonnet errand-runner) |
-| Memory/learnings retrieval across agents | **Skarner** (Haiku minion) |
-| Fact-check a plan before promotion, weekly memory/learnings audit | **Orianna** (Sonnet fact-checker) |
-| System architecture, ADR plans | **Azir** (Opus architect) |
-| Backend task breakdown from ADR | **Kayn** or **Aphelios** (Opus task planners) |
-| QA audit and testing strategy | **Caitlyn** (Opus QA lead) |
-| Frontend/UI/UX design principles and advice | **Lulu** (Opus design advisor) |
-| Design artifacts (wireframes, component specs, mockups) | **Neeko** (Opus designer) |
-| DevOps advice, CI/CD strategy | **Heimerdinger** (Opus DevOps advisor) |
-| Git/GitHub/security advice | **Camille** (Opus security advisor) |
-| AI/Agents/MCP research and advice | **Lux** (Opus AI specialist) |
+| Work type | Complex agent | Normal agent |
+|-----------|---------------|--------------|
+| Coordinator *(concern-split, not complexity-split — uses `concern:` frontmatter per §D1.1a)* | **Evelynn** (Opus medium, `concern: personal`) | **Sona** (Opus medium, `concern: work`) |
+| System architecture, ADR plans | **Swain** (Opus xhigh) | **Azir** (Opus high) |
+| Backend task breakdown from ADR | **Aphelios** (Opus high) | **Kayn** (Opus medium) |
+| QA audit and testing strategy | **Xayah** (Opus high) | **Caitlyn** (Opus medium) |
+| Writing and running tests | **Rakan** (Sonnet high) | **Vi** (Sonnet medium) |
+| Feature build | **Viktor** (Sonnet high) | **Jayce** (Sonnet medium) |
+| Frontend design | **Neeko** (Opus high) | **Lulu** (Opus medium) |
+| Frontend implementation | **Seraphine** (Sonnet medium) | **Soraka** (Sonnet low) |
+| AI/Agents/MCP advice | **Lux** (Opus high) | **Syndra** (Sonnet high) |
+| DevOps advice | **Heimerdinger** (Opus medium, single-lane) | — |
+| Quick fixes, DevOps execution | **Ekko** (Sonnet medium, single-lane) | — |
+| PR code + security review | **Senna** (Opus high, single-lane) | — |
+| PR plan/ADR fidelity review | **Lucian** (Opus medium, single-lane) | — |
+| Fact-check / plan signing | **Orianna** (Opus medium, single-lane) | — |
+| QA Playwright + Figma diff | **Akali** (Sonnet medium, single-lane) | — |
+| Memory retrieval | **Skarner** (Sonnet low, single-lane) | — |
+| Light errands | **Yuumi** (Sonnet low, single-lane) | — |
+| Git/security advisor | **Camille** (Opus medium, single-lane) | — |
 
 **Never parallelize the same agent** — if parallel work is needed, route to different specialists.
+
+---
+
+## Classifying task complexity
+
+Use these heuristics to decide complex vs. normal before routing. No single indicator is dispositive; if any two fire, go complex.
+
+**Complex indicators (any two → complex):**
+
+1. Estimated AI-minutes total > 180 across the whole plan's task list.
+2. Number of tasks in breakdown > 10.
+3. Cross-cutting impact — plan modifies two or more top-level domains, or changes CLAUDE.md, a universal invariant, or lifecycle.
+4. Invasive schema changes — data model alterations that propagate through UI rendering, persistence, serialization, or signed artifacts.
+5. New external system integrations — first-time MCP wiring, new API client, new provider, new auth flow.
+6. Plan governance meta-work — plans that change the plan lifecycle itself are always complex.
+
+**Normal indicators (all must hold to default to normal):**
+
+- AI-minutes total ≤ 180.
+- Tasks ≤ 10.
+- Single top-level domain touched.
+- No schema propagation needed.
+- No new external integrations.
+
+**Default lean:** When exactly one complex indicator fires and the rest look normal, go **normal**. Escalation upward is cheap; routing complex-track work down wastes Opus budget.
+
+**Complexity declaration:** Plans SHOULD include `complexity: complex` or `complexity: normal` in frontmatter. This is informational — missing field defaults to `normal`. Evelynn sets this when commissioning the plan.
 
 ---
 
