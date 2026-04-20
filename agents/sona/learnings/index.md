@@ -4,6 +4,9 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-20 Orianna suppression gap](2026-04-20-orianna-suppression-gap.md) — `<!-- orianna: ok -->` is an unpoliced trust primitive; can bypass claim-contract Step C entirely with no audit trail.
+- [2026-04-20 Plan-structure hook false-positives](2026-04-20-plan-structure-hook-false-positives.md) — `(d)` and `h)` substrings in prose trigger the estimates hook; brief planners to self-verify `check_plan_structure` before handoff.
+- [2026-04-20 Concurrent coordinator close](2026-04-20-concurrent-coordinator-close.md) — shared working tree + multiple closes = staging collisions; use agent-scoped paths, never leave work staged across turns.
 - [2026-04-20 Agent-OS unification day](2026-04-20-agent-os-unification-day.md) — migration into strawberry-agents as canonical home; SDK Spike 1; TDD-gate PR #46; recovery from reset-hard incident via reflog tag.
 - [2026-04-20 Scope before drafting](2026-04-20-scope-before-drafting.md) — confirm ownership before writing an ADR on someone else's service. "We own X" = whole store, not just API surface.
 - [2026-04-17 Two-phase teammate shutdown](2026-04-17-two-phase-teammate-shutdown.md) — collect learnings in phase 1 before `shutdown_request`. Skipping cost 8 agents' memory.
