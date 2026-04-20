@@ -45,6 +45,11 @@
 - 2026-04-19 (PR #40 V0.6 Senna fixes): Fixed EU comma-decimal parsing (parseDecimal helper) + phantom BUY classifier (TRADE_ACTIONS allowlist). 3 commits: 960651b (xfail) + f8c01d8 (EU decimal) + 9ab8809 (phantom BUY). Pushed + commented on PR. Not merged (Rule 18).
 - 2026-04-19 (PR #42 V0.8 main merge conflict): Resolved CONFLICTING state. 1 conflict in t212.ts — accountCurrency capture before TRADE_ACTIONS skip. index.ts auto-merged. Merge commit 18d0563. PR now MERGEABLE. Fast CI checks green; build/unit/E2E queued.
 
+- [2026-04-20 Channels plugin + Node strip-types](../learnings/2026-04-20-channels-plugin-node-strip-types.md) — Node --experimental-strip-types replaces Bun; .ts import paths required; plugin cwd != repo root (use git rev-parse); --channels server:name vs plugin:name@marketplace; --plugin-dir needed alongside --channels
+
+## Sessions
+- 2026-04-20: Built strawberry-inbox Channels plugin + /check-inbox skill. Pushed directly to main (infra, not app code). Plan promoted to implemented.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
