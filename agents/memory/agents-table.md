@@ -33,3 +33,5 @@ See `agent-network.md` for coordination rules, delegation chains, and session pr
 | **Rakan** | Sonnet | sonnet | Complex-track test implementer — xfail skeletons, fault-injection harnesses, non-routine fixtures. Pair mate: Vi. | `.claude/agents/rakan.md` | `agents/rakan/` | new-2026-04-20 |
 | **Soraka** | Sonnet | sonnet | Normal-track frontend implementer — small frontend tweaks from Lulu's advice. Pair mate: Seraphine. | `.claude/agents/soraka.md` | `agents/soraka/` | new-2026-04-20 |
 | **Syndra** | Sonnet | sonnet | Normal-track AI/agents specialist — small AI-stack tweaks, prompt tuning, agent-def edits. Pair mate: Lux. | `.claude/agents/syndra.md` | `agents/syndra/` | new-2026-04-20 |
+| **Karma** | Quick | opus | Quick-lane planner — collapsed architect + breakdown + test plan. Pair mate: Talon. | `.claude/agents/karma.md` | `agents/karma/` | new-2026-04-21 |
+| **Talon** | Quick | sonnet | Quick-lane executor — collapsed build + test + light frontend. Pair mate: Karma. | `.claude/agents/talon.md` | `agents/talon/` | new-2026-04-21 |
