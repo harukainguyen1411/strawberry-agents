@@ -112,8 +112,19 @@ esac
 
 PLAN_DIR="$(dirname "$PLAN_REL")"
 
-if [ "$PLAN_DIR" != "$EXPECTED_DIR" ]; then
-  die "phase '$PHASE' requires plan to be in $EXPECTED_DIR/ but plan is in $PLAN_DIR/. Move the plan to the correct directory first."
+# Accept both flat layout (plans/<phase>/<file>.md) and concern-subdir layout
+# (plans/<phase>/{work,personal}/<file>.md).
+_plan_dir_ok=0
+if [ "$PLAN_DIR" = "$EXPECTED_DIR" ]; then
+  _plan_dir_ok=1
+else
+  case "$PLAN_DIR" in
+    "${EXPECTED_DIR}/work"|"${EXPECTED_DIR}/personal") _plan_dir_ok=1 ;;
+  esac
+fi
+
+if [ "$_plan_dir_ok" -eq 0 ]; then
+  die "phase '$PHASE' requires plan to be in $EXPECTED_DIR/ (or $EXPECTED_DIR/{work,personal}/) but plan is in $PLAN_DIR/. Move the plan to the correct directory first."
 fi
 
 # ---- CHECK: signature field not already present (idempotency guard) -------
