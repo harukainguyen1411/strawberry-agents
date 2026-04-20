@@ -288,14 +288,17 @@ log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
 
 git -C "$REPO_ROOT" add "$PLAN_PATH"
 
+COMMIT_MSG="chore: orianna signature for ${PLAN_BASENAME}-${PHASE}
+
+Signed-by: Orianna
+Signed-phase: ${PHASE}
+Signed-hash: sha256:${BODY_HASH}"
+
 git -C "$REPO_ROOT" \
   -c "user.name=$ORIANNA_NAME" \
   -c "user.email=$ORIANNA_EMAIL" \
   commit \
-  -m "chore: orianna signature for ${PLAN_BASENAME}-${PHASE}" \
-  --trailer "Signed-by: Orianna" \
-  --trailer "Signed-phase: ${PHASE}" \
-  --trailer "Signed-hash: sha256:${BODY_HASH}"
+  -m "$COMMIT_MSG"
 
 log_stderr "signed and committed: ${PLAN_BASENAME} phase=${PHASE} hash=${BODY_HASH}"
 log_stderr "NOTE: signature committed but NOT pushed. Run 'git push' or let plan-promote.sh push."
