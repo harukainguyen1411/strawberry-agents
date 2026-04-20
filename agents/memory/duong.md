@@ -19,3 +19,21 @@
 - Has side project interests and learning goals that get deprioritized
 - Values systems and structure — if it's not tracked, it doesn't happen
 - Prefers agents with distinct personalities and honest communication
+
+## Decision-Presentation Format (mandatory)
+
+When presenting Duong with decision choices, always use this format:
+
+```
+N. <question>
+   a: cleanest but might take more time/effort
+   b: balanced
+   c: quickest, but might introduce debt
+Pick: <your recommendation + one-line why>
+```
+
+- Always label options a / b / c with that semantics (cleanest → balanced → quick-but-debt).
+- Always state your own pick after the options.
+- Duong's design preference: **simple yet clean and works**. A well-designed system is one that works well *and* is simple — not a complex one. Lean (a) or (b) on recommendations accordingly; only suggest (c) when the debt is genuinely cheap to repay later.
+- Duong answers in compact form: `1a 2b 3a` etc.
+- **If Duong skips a number, he concurs with your recommended pick** for that question. Do not re-ask.
