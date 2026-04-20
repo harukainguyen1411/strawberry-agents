@@ -128,30 +128,136 @@ gdoc::require_tools
 # 3. Target file must be clean (matches plan-publish/unpublish guards).
 gdoc::require_clean "$SOURCE"
 
-# 3.5. Fact-check gate — runs between step 3 (require clean) and step 4 (Drive unpublish)
-# so that Drive is never touched for plans that fail fact-check.
-# No bypass flag. Human override: use raw git mv instead of this script.
-gdoc::log "running fact-check gate on: $SOURCE"
-FACT_CHECK_RC=0
-"$SCRIPT_DIR/orianna-fact-check.sh" "$SOURCE" || FACT_CHECK_RC=$?
-if [ "$FACT_CHECK_RC" -ne 0 ]; then
-  gdoc::log "fact-check returned non-zero exit ($FACT_CHECK_RC) — promotion halted"
-  # Show block-severity findings from the most-recent report for this plan.
-  REPORT_DIR="$REPO_ROOT/assessments/plan-fact-checks"
-  PLAN_BASENAME="$(basename "$SOURCE" .md)"
-  LATEST_REPORT=""
-  for _r in "$REPORT_DIR"/${PLAN_BASENAME}-*.md; do
-    [ -f "$_r" ] && LATEST_REPORT="$_r"
-  done
-  if [ -n "$LATEST_REPORT" ]; then
-    gdoc::log "report: $LATEST_REPORT"
-    # Print block findings section to stderr.
-    awk '/^## Block findings/{p=1; next} /^## Warn findings/{p=0} p && /[^[:space:]]/' \
-      "$LATEST_REPORT" >&2 || true
+# 3.5. Orianna gate — runs between step 3 (require clean) and step 4 (Drive unpublish)
+# so that Drive is never touched for plans that fail the gate.
+#
+# Gate version branching (§D8 T6.4):
+#   - orianna_gate_version absent  → "grandfathered plan; gate-v1 rules applied"
+#                                    Fall back to legacy orianna-fact-check.sh call.
+#   - orianna_gate_version = 2     → Enforce §D6 signature gates:
+#                                    T6.1 presence check, T6.2 carry-forward,
+#                                    T6.5 no direct fact-check call (runs inside orianna-sign.sh).
+#
+# archived transitions carry no Orianna gate (§D2.4).
+
+PLAN_BASENAME="$(basename "$SOURCE" .md)"
+GATE_VERSION="$(gdoc::frontmatter_get "$SOURCE" orianna_gate_version || true)"
+
+# Map target status to the underscore-form phase name used in signature field names.
+# in-progress → in_progress; others are unchanged.
+case "$TARGET_STATUS" in
+  in-progress) _sig_phase="in_progress" ;;
+  *)           _sig_phase="$TARGET_STATUS" ;;
+esac
+
+if [ "$TARGET_STATUS" = "archived" ]; then
+  # §D2.4 — no Orianna gate on archived transition; signature trail is preserved, not required.
+  gdoc::log "archived transition — no Orianna gate required (§D2.4)"
+
+elif [ "$GATE_VERSION" != "2" ]; then
+  # ---- Gate v1 / grandfather path (T6.4) ----------------------------------------
+  gdoc::log "WARNING: grandfathered plan; gate-v1 rules applied (orianna_gate_version not set or != 2)"
+  gdoc::log "running legacy fact-check gate on: $SOURCE"
+  FACT_CHECK_RC=0
+  "$SCRIPT_DIR/orianna-fact-check.sh" "$SOURCE" || FACT_CHECK_RC=$?
+  if [ "$FACT_CHECK_RC" -ne 0 ]; then
+    gdoc::log "fact-check returned non-zero exit ($FACT_CHECK_RC) — promotion halted"
+    REPORT_DIR="$REPO_ROOT/assessments/plan-fact-checks"
+    LATEST_REPORT=""
+    for _r in "$REPORT_DIR"/${PLAN_BASENAME}-*.md; do
+      [ -f "$_r" ] && LATEST_REPORT="$_r"
+    done
+    if [ -n "$LATEST_REPORT" ]; then
+      gdoc::log "report: $LATEST_REPORT"
+      awk '/^## Block findings/{p=1; next} /^## Warn findings/{p=0} p && /[^[:space:]]/' \
+        "$LATEST_REPORT" >&2 || true
+    fi
+    exit 1
   fi
-  exit 1
+  gdoc::log "legacy fact-check passed — continuing to step 4"
+
+else
+  # ---- Gate v2 path (T6.1 + T6.2 + T6.5) ----------------------------------------
+
+  # T6.1: Signature presence check — assert orianna_signature_<target-phase> in frontmatter.
+  gdoc::log "gate-v2: checking orianna_signature_${_sig_phase} presence in: $SOURCE"
+  _sig_value="$(gdoc::frontmatter_get "$SOURCE" "orianna_signature_${_sig_phase}" || true)"
+  if [ -z "$_sig_value" ]; then
+    printf '\n' >&2
+    printf '=== BLOCKED: Orianna signature required (gate-v2) ===\n' >&2
+    printf 'Plan  : %s\n' "$SOURCE" >&2
+    printf 'Phase : %s\n' "$TARGET_STATUS" >&2
+    printf '\n' >&2
+    printf 'The plan is missing orianna_signature_%s in its frontmatter.\n' "$_sig_phase" >&2
+    printf 'Obtain a signature before promoting:\n' >&2
+    printf '  bash scripts/orianna-sign.sh %s %s\n' "$SOURCE" "$_sig_phase" >&2
+    printf '\n' >&2
+    printf 'Per plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D6.1\n' >&2
+    exit 1
+  fi
+  gdoc::log "gate-v2: orianna_signature_${_sig_phase} present — running validity check"
+
+  # T6.1 (continued): Signature validity check — invoke orianna-verify-signature.sh.
+  VERIFY_RC=0
+  "$SCRIPT_DIR/orianna-verify-signature.sh" "$SOURCE" "$_sig_phase" >&2 || VERIFY_RC=$?
+  if [ "$VERIFY_RC" -ne 0 ]; then
+    printf '\n' >&2
+    printf '=== BLOCKED: Orianna signature invalid (gate-v2) ===\n' >&2
+    printf 'Plan  : %s\n' "$SOURCE" >&2
+    printf 'Phase : %s\n' "$TARGET_STATUS" >&2
+    printf '\n' >&2
+    printf 'orianna-verify-signature.sh exited %d (see diagnosis above).\n' "$VERIFY_RC" >&2
+    printf 'To re-sign after a body edit:\n' >&2
+    printf '  1. Remove the stale orianna_signature_%s field from frontmatter.\n' "$_sig_phase" >&2
+    printf '  2. Run: bash scripts/orianna-sign.sh %s %s\n' "$SOURCE" "$_sig_phase" >&2
+    printf '\n' >&2
+    printf 'Per plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D6.2\n' >&2
+    exit 1
+  fi
+  gdoc::log "gate-v2: orianna_signature_${_sig_phase} valid"
+
+  # T6.2: Carry-forward check — verify all prior-phase signatures are still valid.
+  # Prevents a tampered earlier phase from silently invalidating the chain (§D6.3).
+  case "$_sig_phase" in
+    in_progress)
+      _prior_phases="approved"
+      ;;
+    implemented)
+      _prior_phases="approved in_progress"
+      ;;
+    *)
+      _prior_phases=""
+      ;;
+  esac
+
+  for _prior in $_prior_phases; do
+    gdoc::log "gate-v2: carry-forward check for prior phase: ${_prior}"
+    PRIOR_RC=0
+    "$SCRIPT_DIR/orianna-verify-signature.sh" "$SOURCE" "$_prior" >&2 || PRIOR_RC=$?
+    if [ "$PRIOR_RC" -ne 0 ]; then
+      printf '\n' >&2
+      printf '=== BLOCKED: Prior Orianna signature invalid — carry-forward failure (gate-v2) ===\n' >&2
+      printf 'Plan         : %s\n' "$SOURCE" >&2
+      printf 'Current phase: %s\n' "$TARGET_STATUS" >&2
+      printf 'Failed phase : %s\n' "$_prior" >&2
+      printf '\n' >&2
+      printf 'The orianna_signature_%s field is invalid against the current plan body.\n' "$_prior" >&2
+      printf 'A tampered or edited plan body after signing invalidates subsequent promotions.\n' >&2
+      printf 'To recover:\n' >&2
+      printf '  1. Remove the stale orianna_signature_%s field from frontmatter.\n' "$_prior" >&2
+      printf '  2. Run: bash scripts/orianna-sign.sh %s %s\n' "$SOURCE" "$_prior" >&2
+      printf '  3. Then re-sign the current phase: bash scripts/orianna-sign.sh %s %s\n' "$SOURCE" "$_sig_phase" >&2
+      printf '\n' >&2
+      printf 'Per plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D6.3\n' >&2
+      exit 1
+    fi
+    gdoc::log "gate-v2: prior signature ${_prior} valid"
+  done
+
+  # T6.5: On the v2 path, fact-check runs inside orianna-sign.sh as a precondition
+  # (§D2.1, §D6.4). No direct orianna-fact-check.sh call here.
+  gdoc::log "gate-v2: all Orianna signature checks passed — continuing to step 4"
 fi
-gdoc::log "fact-check passed — continuing to step 4"
 
 # 4. If we have a gdoc_id, unpublish first. plan-unpublish.sh handles its own commit.
 EXISTING=$(gdoc::frontmatter_get "$SOURCE" gdoc_id || true)
