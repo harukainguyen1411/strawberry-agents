@@ -41,7 +41,7 @@ Every role slot gets two fills — a **complex** track and a **normal** track �
 
 | # | Role slot | Complex (higher effort) | Normal (lower effort) |
 |---|-----------|------------------------|-----------------------|
-| 0 | Coordinator | **Evelynn** — Opus medium *(personal)* | **Sona** — Opus medium *(work)* |
+| 0 | Coordinator | **Evelynn** — Opus medium, `concern: personal` | **Sona** — Opus medium, `concern: work` |
 | 1 | Architect (ADR) | **Swain** — Opus xhigh | **Azir** — Opus high |
 | 2 | Task breakdown | **Aphelios** — Opus high | **Kayn** — Opus medium |
 | 3 | Test plan / audit | **Xayah** *new* — Opus high | **Caitlyn** — Opus medium |
@@ -62,7 +62,7 @@ Every role slot gets two fills — a **complex** track and a **normal** track �
 
 Notes on the matrix:
 
-- **Row 0, Coordinators.** Evelynn (personal) and Sona (work) are the only two coordinators in the Strawberry system; they are not complex/normal pair-mates but concern-pair-mates (one per life domain). Both run Opus-medium — below the architect tier because coordinators route rather than reason deeply. The `tier` field on their agent definitions is either blank or `coordinator`; `pair_mate:` is set across domains (Evelynn's pair_mate = Sona, and vice versa) purely for roster-symmetry purposes, but no shared-rules file is generated (coordinator rules live inline in `agents/<name>/CLAUDE.md`).
+- **Row 0, Coordinators.** Evelynn (personal) and Sona (work) are the only two coordinators in the Strawberry system; they are not complex/normal pair-mates but **concern-pair-mates** (one per life domain). Both run Opus-medium — below the architect tier because coordinators route rather than reason deeply. Coordinators do NOT carry `tier:` or `pair_mate:` frontmatter — instead they carry a new `concern: personal | work` field (see §D1.1). No shared-rules file is generated for coordinators (coordinator rules live inline in `agents/<name>/CLAUDE.md`), and the pair-mate symmetry check (§D4.3a check #2) explicitly skips any agent without `pair_mate:` — coordinators are exempt by virtue of having no such field. Sona's agent definition (`.claude/agents/sona.md`) becomes tracked as part of this ADR's implementation — she's a first-class coordinator, not provisional (Q8 resolution).
 - **Row 1, Swain rescope.** Swain's `effort` bumps from `high` to `xhigh`. He's invoked for cross-cutting structural decisions — lifecycle gates, schema propagation, multi-service architecture — where deep reasoning time is worth the cost. Azir remains head product architect for normal-track ADRs (new features, standard API design).
 - **Row 2, Aphelios promoted to complex.** He already pairs with Kayn informally on large plans; this formalizes him as the Opus-high breakdown agent for any task Swain authors or any plan Evelynn classifies as complex. Kayn stays at Opus-medium for normal-track breakdowns.
 - **Row 3, Xayah new.** Test-planning for resilient/distributed work needs more capacity than Caitlyn at Opus-medium. Xayah takes the complex lane.
@@ -80,13 +80,14 @@ Canonical effort tags: `low | medium | high | xhigh`. Swain is the only agent us
 
 ### D1.1a. Model frontmatter convention — omit Opus, declare Sonnet explicitly
 
-Claude Code's global default model is **Opus 4.7 (1M context)** (confirmed: no `"model"` field in `~/.claude/settings.json`; the harness inherits the latest Opus 4.7 1M on every spawn). This has two consequences for agent definitions:
+Claude Code's global default model is **Opus 4.7 (1M context)** (confirmed: no `"model"` field in `~/.claude/settings.json`; the harness inherits the latest Opus 4.7 1M on every spawn). This has several consequences for agent definitions:
 
-- **Opus agents: omit `model:` from frontmatter.** They inherit the session default, which keeps them on whatever the current Opus tier is without a pin. Pinning a specific ID (e.g. `model: opus-4-7`) creates drift debt the day a newer Opus lands. Leaving the field off means Opus agents auto-upgrade.
-- **Sonnet agents: declare `model: sonnet` explicitly.** The alias `sonnet` (never a pinned ID like `sonnet-4-5`) locks the agent to the Sonnet tier. Without the field, a Sonnet agent would silently promote to Opus on spawn — a 5× burn (see §D1.6) for no capability gain on the kind of work Sonnet agents do.
-- **`effort:` is always explicit.** Never omitted. The effort tag is the budget signal and has no reasonable default.
+- **Opus agents: omit `model:` from frontmatter.** They inherit the session default, which keeps them on whatever the current Opus tier is without a pin. Pinning a specific ID (e.g. `model: opus-4-7`) creates drift debt the day a newer Opus lands. Leaving the field off means Opus agents auto-upgrade. On Opus 4.7, **adaptive thinking is the only mode** — it is automatic and non-configurable at the model level; the `effort:` dial is how you tune its intensity.
+- **Sonnet agents: declare `model: sonnet` explicitly.** The alias `sonnet` resolves to **Sonnet 4.6** (never a pinned ID like `sonnet-4-5` or `sonnet-4-6`) and locks the agent to the Sonnet tier. Without the field, a Sonnet agent would silently promote to Opus on spawn — a 5× burn (see §D1.6) for no capability gain on the kind of work Sonnet agents do. **Adaptive thinking on Sonnet 4.6 is opt-in but we adopt it uniformly across the roster** — it is the default mode we use for every Sonnet agent, so `effort:` has the same semantics on Sonnet as it does on Opus (both families use the same adaptive-thinking dial). Per [Anthropic's adaptive-thinking docs](https://platform.claude.com/docs/en/build-with-claude/adaptive-thinking), Sonnet 4.6 supports adaptive thinking; Opus 4.7 requires it.
+- **`effort:` is always explicit.** Never omitted. The effort tag is the budget signal and has no reasonable default. It is a **ceiling-plus-tendency, not a floor**: at `medium`, the model may skip thinking entirely for trivial sub-tasks and scale upward to moderate depth on harder ones — the tag bounds how much reasoning the model is willing to spend, not how much it must spend every turn. Practical consequence: `effort: high` does not mean "always think hard," and `effort: low` does not mean "never think" — it means "budget frugally, but reach for thought if the task genuinely needs it."
+- **Coordinators carry `concern: personal | work` instead of `pair_mate:` / `tier:` / `role_slot:`.** Coordinators are not sharded by complexity — they are sharded by life domain. The `concern:` field names that domain and is the routing key Evelynn and Sona use to decide whether a task belongs to them. This is a distinct axis from the pair-mate axis; pair-mate symmetry (§D4.3a check #2) explicitly skips agents without `pair_mate:`, so coordinators do not spuriously fail the symmetry check. Non-coordinator agents do not carry `concern:`. Q9 resolution: do not misuse `pair_mate:` for concern pairing.
 
-This convention is encoded in the shared-rules pattern (§D4): the `_shared/<role>.md` file captures effort expectations, and each per-agent file is responsible for its own `model:` (omit for Opus, declare for Sonnet) and its own `effort:` value. The pre-commit hook in §D4.3 is extended to verify this convention: any agent definition with `model: opus` (redundant) produces a warning; any agent definition without `model:` is assumed Opus and must match the Opus-family expectation in its `_shared/<role>.md`.
+This convention is encoded in the shared-rules pattern (§D4): the `_shared/<role>.md` file captures effort expectations, and each per-agent file is responsible for its own `model:` (omit for Opus, declare for Sonnet) and its own `effort:` value. The pre-commit hook in §D4.3 is extended to verify this convention: any agent definition with `model: opus` (redundant) produces a warning; any agent definition without `model:` is assumed Opus and must match the Opus-family expectation in its `_shared/<role>.md`; coordinators (identified by `concern:` presence) skip the pair-mate symmetry check.
 
 **Why this sits in the taxonomy ADR:** the model convention is a property of the pair-mate contract. Pair-mates in the same role slot use different tiers, and the tier convention (complex = Opus, normal = mixed, single-lane = case-by-case) drives which `model:` field each definition carries. Documenting it here keeps the rule alongside the matrix that uses it.
 
@@ -111,12 +112,12 @@ When in doubt, Evelynn picks **normal**. See §D6 for classification rules.
 Several role slots stay single-lane (no complex/normal split):
 
 - **DevOps advice → exec (Heimerdinger → Ekko).** DevOps tasks are infrastructure-shaped. The "complex" case in DevOps isn't about reasoning depth, it's about blast radius. Heimerdinger already escalates to Duong for high-blast-radius changes; a second Opus-high DevOps agent would duplicate without differentiating. Ekko's execution tier is sufficient for both small and large DevOps changes because the execution part is mechanical once the plan is clear.
-- **PR review (Senna + Lucian).** PR review is a *pair* of concerns — code-quality+security (Senna) and plan/ADR fidelity (Lucian) — applied to every PR. The work already partitions by concern, not by complexity. Adding a complex/normal split per reviewer would mean 4 reviewers per PR, which is coordination overhead with no signal gain. Senna sits at Opus-high (security is worth the top tier); Lucian sits at Opus-medium (fidelity review is a comparison against the plan, not open-ended reasoning).
+- **PR review (Senna + Lucian).** PR review is a *pair* of concerns — code-quality+security (Senna) and plan/ADR fidelity (Lucian) — applied to every PR. The work already partitions by concern, not by complexity. Adding a complex/normal split per reviewer would mean 4 reviewers per PR, which is coordination overhead with no signal gain. **Tier asymmetry (Senna Opus-high, Lucian Opus-medium) is intentional (Q10 resolution): code and security review is deeper work than plan-fidelity review.** Senna reasons open-endedly about threat models, race conditions, and API-shape regressions — Opus-high is justified. Lucian compares the PR diff against a written plan and flags deviations — a more structured task that Opus-medium handles cleanly. The asymmetry reflects work-shape, not reviewer importance; both run on every PR.
 - **Orianna (fact-check / signer).** Signature authority is a property of agent identity (§D1.1 of the lifecycle ADR); splitting the identity would break that property. Opus-medium matches the coordinator tier since the work is verification, not deep reasoning.
 - **Akali (QA Playwright).** Task shape doesn't partition by complexity — every UI PR needs the same Playwright + Figma diff flow regardless of feature size. Sonnet-medium is appropriate for browser automation work.
 - **Skarner + Yuumi.** Minion agents, stateless, Sonnet-low. They are not sharded by complexity because their task shape is "cheap, bounded, high-volume lookups / moves." See `agents/memory/agent-network.md` for their stateless / no-self-close semantics.
 - **Camille.** Git and security advisor, Opus-medium, single-lane because git/security advice rarely decomposes into two complexity tiers — it's either a small question or it's an escalation to Duong.
-- **Coordinators (Evelynn, Sona).** Not sharded by complexity; sharded by concern (personal vs work). See row 0 in the matrix and §D7 on routing.
+- **Coordinators (Evelynn, Sona).** Not sharded by complexity; sharded by concern (personal vs work) via the new `concern: personal | work` frontmatter field (§D1.1a). Sona's definition is committed as part of this ADR's implementation (Q8 resolution). See row 0 in the matrix and §D7 on routing.
 
 These roles are called out in this ADR so they don't look like oversights in the taxonomy. Any future split for them is scoped separately (see §D9).
 
@@ -269,7 +270,7 @@ Alternative considered: a build step that generates `.claude/agents/*.md` from `
 The same `pre-commit-agent-shared-rules.sh` hook performs three additional checks on every commit touching `.claude/agents/`:
 
 1. **Shared-rules drift (primary check, Q2 resolution).** Each paired agent's inlined shared content must byte-match the canonical `_shared/<role>.md`. Failure = re-run `sync-shared-rules.sh` or the commit is rejected. Q2 confirmed hook over CI: feedback is immediate and prevents drift from shipping rather than catching it post-push.
-2. **Pair-mate symmetry (Q4 resolution).** For any agent with `pair_mate: <other>` frontmatter, the hook verifies `<other>`'s definition carries `pair_mate: <this>` in reverse. Asymmetric pairings (A→B but B→A missing or B→C) are rejected. Cheap to check (one grep over `.claude/agents/*.md`); catches a real drift class where someone renames or retiers one half of a pair and forgets the other.
+2. **Pair-mate symmetry (Q4 resolution).** For any agent with `pair_mate: <other>` frontmatter, the hook verifies `<other>`'s definition carries `pair_mate: <this>` in reverse. Asymmetric pairings (A→B but B→A missing or B→C) are rejected. Cheap to check (one grep over `.claude/agents/*.md`); catches a real drift class where someone renames or retiers one half of a pair and forgets the other. **Coordinators are skipped** — any agent whose frontmatter carries `concern: personal | work` (and therefore omits `pair_mate:`) is exempt from this check, because coordinators pair by concern not by complexity (Q9 resolution; see §D1.1a).
 3. **Model-frontmatter convention (§D1.1a).** Sonnet agents MUST declare `model: sonnet`; Opus agents MUST omit `model:` entirely (inheriting the session default). Violations: `model: opus` declared on an Opus agent (redundant, warning), or `model:` missing on an agent that appears in a Sonnet role slot (e.g. Vi, Seraphine — check would emit an error). The hook implements this by cross-referencing each agent's `role_slot` + `tier` against the matrix in §D1 — mechanical comparison, no ambiguity.
 
 ### D4.4. Migration — existing single-lane roles are unaffected
@@ -337,7 +338,7 @@ The current delegation table in `agents/evelynn/CLAUDE.md` (lines 87–109) maps
 
 | Work type | Complex agent | Normal agent |
 |-----------|---------------|--------------|
-| Coordinator *(concern-split, not complexity-split)* | **Evelynn** (Opus medium, personal) | **Sona** (Opus medium, work) |
+| Coordinator *(concern-split, not complexity-split — uses `concern:` frontmatter per §D1.1a)* | **Evelynn** (Opus medium, `concern: personal`) | **Sona** (Opus medium, `concern: work`) |
 | System architecture, ADR plans | **Swain** (Opus xhigh) | **Azir** (Opus high) |
 | Backend task breakdown from ADR | **Aphelios** (Opus high) | **Kayn** (Opus medium) |
 | QA audit and testing strategy | **Xayah** (Opus high) | **Caitlyn** (Opus medium) |
@@ -373,27 +374,28 @@ The current delegation table in `agents/evelynn/CLAUDE.md` (lines 87–109) maps
 
 1. Create `_shared/` directory and the 8 shared rule files (§D4.1). Content = factor out existing per-agent rule text where pair-mates already exist (Azir, Kayn, Caitlyn, Vi, Jayce, Seraphine).
 2. Create agent definitions for Xayah, Rakan, Soraka, Syndra. Each stubbed with shared rules inlined per §D4.3.
-3. Add `sync-shared-rules.sh` and `pre-commit-agent-shared-rules.sh`.
-4. Update `agents-table.md` and `agent-network.md` to list the new agents as `new-2026-04-xx`.
+3. Add `sync-shared-rules.sh` and `pre-commit-agent-shared-rules.sh`. The hook must implement the three checks in §D4.3a (shared-rules drift, pair-mate symmetry with `concern:` exemption, model-frontmatter convention).
+4. Track `.claude/agents/sona.md` (Q8 resolution). The file exists untracked today; it gets `concern: work` frontmatter added per §D1.1a and is committed as part of this Phase A. Evelynn's own definition gets `concern: personal` added at the same time so the coordinator axis is symmetric from the first commit.
+5. Update `agents-table.md` and `agent-network.md` to list the new agents (Xayah, Rakan, Soraka, Syndra) as `new-2026-04-xx` and add Sona's roster entry.
 
 Phase A leaves existing routing intact — Evelynn keeps using the current delegation table. New agents are in the roster but not yet invoked.
 
 ### D8.2. Phase B — rescopes
 
-5. Rescope Lux definition per §D3.1 (narrowed scope, effort bump, description update).
-6. Rescope Viktor definition per §D3.2 (drop "refactor only" boundary, add complex-track language).
-7. Bump Swain's `effort:` to `xhigh` per §D3.3.
-8. Update `agents/memory/agent-network.md` delegation chain to include tier-aware language where relevant (e.g. "Duong → Evelynn → Swain/Azir (architecture by complexity)").
+6. Rescope Lux definition per §D3.1 (narrowed scope, effort bump, description update).
+7. Rescope Viktor definition per §D3.2 (drop "refactor only" boundary, add complex-track language).
+8. Bump Swain's `effort:` to `xhigh` per §D3.3.
+9. Update `agents/memory/agent-network.md` delegation chain to include tier-aware language where relevant (e.g. "Duong → Evelynn → Swain/Azir (architecture by complexity)").
 
 ### D8.3. Phase C — routing table swap
 
-9. Update `agents/evelynn/CLAUDE.md` delegation table per §D7.
-10. Add the "Classifying task complexity" section.
-11. From here on, Evelynn routes by tier using the heuristics in §D6.
+10. Update `agents/evelynn/CLAUDE.md` delegation table per §D7.
+11. Add the "Classifying task complexity" section.
+12. From here on, Evelynn routes by tier using the heuristics in §D6.
 
 ### D8.4. Phase D — optional enforcement
 
-12. Add `complexity:` frontmatter field to the Orianna `proposed → approved` gate as a warning-first, block-later (a follow-up ADR, not this one).
+13. Add `complexity:` frontmatter field to the Orianna `proposed → approved` gate as a warning-first, block-later (a follow-up ADR, not this one).
 
 Phases A–C are sequential but each is a single small commit set. Phase D is deferred.
 
@@ -434,14 +436,14 @@ These decisions are durable — no further round is expected before the ADR prom
 
 ---
 
-# Open gating questions (round 3 — new, raised by this consolidation)
+# Resolved gating questions (round 3)
 
-These arose while consolidating Lux's retiering into the matrix. None block the ADR's current state, but should be decided before the taxonomy migrates to `approved/`.
+Round 3 arose while consolidating Lux's retiering. Duong resolved all three on 2026-04-20 in this revision pass:
 
-1. **Q8. Sona inclusion scope.** Row 0 of §D1's matrix lists Sona alongside Evelynn as the work-concern coordinator. Sona's definition today lives at `.claude/agents/sona.md` (untracked per `git status`). Does this ADR commit Sona to the roster as a first-class coordinator, or does she stay provisional until a separate Sona-specific ADR lands? Leaning: commit her — the coordinator row needs both columns populated to make the concern-split rule legible; if Sona's definition is still being finalized, the matrix should note her status but not omit her.
+1. **Q8. Sona inclusion scope.** Resolved: **commit Sona as first-class coordinator.** Row 0 stays as-is, and `.claude/agents/sona.md` becomes tracked as part of this ADR's implementation (§D1 matrix note row 0; §D1.3 coordinators bullet).
+2. **Q9. Coordinator pairing axis.** Resolved: **introduce `concern: personal | work` frontmatter for coordinators.** Coordinators do NOT carry `pair_mate:` or `tier:`. Non-coordinators do not carry `concern:`. The pair-mate symmetry hook (§D4.3a check #2) skips any agent with `concern:` set. See §D1.1a fourth bullet for the full rule.
+3. **Q10. Senna/Lucian tier asymmetry.** Resolved: **keep the asymmetry as-is.** Code and security review is deeper work than plan-fidelity review; Senna stays Opus-high and Lucian stays Opus-medium. Rationale captured in §D1.3 PR-review bullet.
 
-2. **Q9. Single-lane coordinator `pair_mate:`.** §D1 row 0 suggests Evelynn ↔ Sona as `pair_mate:` partners for roster-symmetry. Is this semantically correct, given the pair represents *different concerns* rather than the same role at different complexities? Alternative: leave `pair_mate:` blank for coordinators (they are truly single-lane within their concern) and instead add a new frontmatter field `concern: personal | work` for routing. Leaning: introduce `concern:` as a separate field; don't misuse `pair_mate:` for concern pairing. This keeps the pair-mate symmetry check (Q4) uncomplicated by a separate axis.
-
-3. **Q10. Senna/Lucian tier asymmetry.** Senna is Opus-high, Lucian is Opus-medium. Both are single-lane reviewers on every PR. Does the tier asymmetry create a routing confusion — "does Senna do more than Lucian per PR?" Leaning: no, the asymmetry reflects work-shape (security reasoning vs fidelity comparison) and is called out in §D1.3. But worth naming here so it doesn't get re-litigated later.
+All three round-3 resolutions flow into the ADR text above; no open questions remain at authoring time. The ADR is ready for Orianna fact-check and promotion.
 
 ---
