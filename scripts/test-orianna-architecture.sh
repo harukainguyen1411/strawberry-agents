@@ -38,51 +38,125 @@ fi
 
 # --- Fixture helpers ---
 
+PAST_DATE="2026-01-01T00:00:00+0000"
+
 make_repo_with_arch() {
   r="$(mktemp -d)"
   git -C "$r" init -q
-  git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
-    commit --allow-empty -q -m "init"
+  # Force all initial commits to a fixed past date so that approved_ts (= NOW)
+  # is always strictly after them. This ensures LIST_UNMODIFIED works correctly
+  # without any same-second precision problems.
+  GIT_COMMITTER_DATE="$PAST_DATE" GIT_AUTHOR_DATE="$PAST_DATE" \
+    git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
+    commit --allow-empty -q -m "init" --date="$PAST_DATE"
   mkdir -p "$r/architecture" "$r/plans/in-progress"
   printf 'initial arch content\n' > "$r/architecture/agent-system.md"
   git -C "$r" add .
-  git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
-    commit -q -m "add arch file"
+  GIT_COMMITTER_DATE="$PAST_DATE" GIT_AUTHOR_DATE="$PAST_DATE" \
+    git -C "$r" -c user.email="test@example.com" -c user.name="Tester" \
+    commit -q -m "add arch file" --date="$PAST_DATE"
   printf '%s' "$r"
 }
 
 approved_ts() {
-  # ISO-8601 UTC timestamp in the past (approval was 1 hour ago)
-  date -u -v-1H '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
-    date -u --date='1 hour ago' '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
+  # Return current UTC timestamp as the "approval" timestamp.
+  # make_repo_with_arch forces its commits to PAST_DATE (2026-01-01), so this
+  # timestamp (today) is always strictly after the initial repo commits.
+  # Cases that need a "post-approval" arch modification commit use real current
+  # time (no --date override), which is also after this TS.
+  # Cases that need "no post-approval" modification simply don't add any commits.
+  date -u '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || \
     printf '2026-04-20T00:00:00Z'
 }
 
 make_plan_both_absent() {
   r="$1"
   f="$r/plans/in-progress/2026-04-20-test-plan.md"
-  printf '---\ntitle: test\nstatus: in-progress\n---\n\n# Body\n\nContent.\n\n## Test results\n\nhttps://ci.example.com/run/123\n' > "$f"
+  cat > "$f" << 'PLANEOF'
+---
+title: test
+status: in-progress
+---
+
+# Body
+
+Content.
+
+## Test results
+
+https://ci.example.com/run/123
+PLANEOF
   printf '%s' "$f"
 }
 
 make_plan_changes_list() {
   r="$1"; path="$2"
   f="$r/plans/in-progress/2026-04-20-test-plan.md"
-  printf '---\ntitle: test\nstatus: in-progress\narchitecture_changes:\n  - %s\n---\n\n# Body\n\nContent.\n\n## Test results\n\nhttps://ci.example.com/run/123\n' "$path" > "$f"
+  # Write frontmatter with dynamic path using printf '%s'
+  printf '%s\n' "---" > "$f"
+  printf '%s\n' "title: test" >> "$f"
+  printf '%s\n' "status: in-progress" >> "$f"
+  printf '%s\n' "architecture_changes:" >> "$f"
+  printf '  - %s\n' "$path" >> "$f"
+  cat >> "$f" << 'PLANEOF'
+---
+
+# Body
+
+Content.
+
+## Test results
+
+https://ci.example.com/run/123
+PLANEOF
   printf '%s' "$f"
 }
 
 make_plan_none_empty() {
   r="$1"
   f="$r/plans/in-progress/2026-04-20-test-plan.md"
-  printf '---\ntitle: test\nstatus: in-progress\narchitecture_impact: none\n---\n\n# Body\n\nContent.\n\n## Architecture impact\n\n## Test results\n\nhttps://ci.example.com/run/123\n' > "$f"
+  cat > "$f" << 'PLANEOF'
+---
+title: test
+status: in-progress
+architecture_impact: none
+---
+
+# Body
+
+Content.
+
+## Architecture impact
+
+## Test results
+
+https://ci.example.com/run/123
+PLANEOF
   printf '%s' "$f"
 }
 
 make_plan_none_reason() {
   r="$1"
   f="$r/plans/in-progress/2026-04-20-test-plan.md"
-  printf '---\ntitle: test\nstatus: in-progress\narchitecture_impact: none\n---\n\n# Body\n\nContent.\n\n## Architecture impact\n\nNone. This plan migrates one script'\''s error messages only.\n\n## Test results\n\nhttps://ci.example.com/run/123\n' > "$f"
+  cat > "$f" << 'PLANEOF'
+---
+title: test
+status: in-progress
+architecture_impact: none
+---
+
+# Body
+
+Content.
+
+## Architecture impact
+
+None. This plan migrates one script's error messages only.
+
+## Test results
+
+https://ci.example.com/run/123
+PLANEOF
   printf '%s' "$f"
 }
 
