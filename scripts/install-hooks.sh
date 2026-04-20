@@ -2,6 +2,18 @@
 # Installs strawberry git hook dispatchers into .git/hooks.
 # Each dispatcher verb (pre-commit, pre-push) runs every scripts/hooks/<verb>-*.sh in order.
 # Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
+#
+# Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
+#   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
+#   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
+#   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2)
+#   pre-commit-plan-authoring-freeze.sh — blocks new proposed/ plans during freeze window (§D12)
+#   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
+#   pre-commit-secrets-guard.sh         — blocks secrets in committed files
+#   pre-commit-unit-tests.sh            — runs unit tests for changed packages
+#
+# Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
+#   pre-push-tdd.sh                     — TDD gate enforcement
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
