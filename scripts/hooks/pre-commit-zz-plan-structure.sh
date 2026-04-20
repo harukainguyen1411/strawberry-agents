@@ -28,10 +28,16 @@ if [ -z "$staged_plans" ]; then
 fi
 
 # 2. Filter: exclude template and archived plans; collect absolute paths into a temp file
-_filter_tmp="/tmp/pre-commit-plan-structure-files-$$.tmp"
+_filter_tmp="$(mktemp /tmp/pre-commit-plan-structure-XXXXXX.tmp)"
+trap 'rm -f "$_filter_tmp"' EXIT INT HUP TERM
 printf '%s\n' "$staged_plans" | while IFS= read -r rel; do
   case "$rel" in
     plans/_template.md|plans/archived/*) continue ;;
+  esac
+  # Block paths with spaces — plan naming convention forbids them; a space here
+  # is a sign something is very wrong (or a symlink attack). Fail loud.
+  case "$rel" in
+    *\ *) printf '[pre-commit-plan-structure] BLOCK: plan path contains a space (not allowed): %s\n' "$rel" >&2; exit 1 ;;
   esac
   abs="$REPO_ROOT/$rel"
   [ -f "$abs" ] || continue
@@ -112,16 +118,31 @@ awk -v _sep="__END_OF_FILE__" '
   in_fm && /^---[[:space:]]*$/ { in_fm = 0; fm_done = 1; next }
 
   in_fm {
-    if ($0 ~ /^status:[[:space:]]/) { has_status = 1 }
-    if ($0 ~ /^concern:[[:space:]]/) { has_concern = 1 }
-    if ($0 ~ /^owner:[[:space:]]/) { has_owner = 1 }
-    if ($0 ~ /^created:[[:space:]]/) { has_created = 1 }
-    if ($0 ~ /^orianna_gate_version:[[:space:]]/) { has_gate_ver = 1 }
-    if ($0 ~ /^tests_required:[[:space:]]/) {
-      has_tests_required = 1
-      val = $0; sub(/^tests_required:[[:space:]]*/, "", val)
-      gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
-      tests_required_val = val
+    # For each key: extract value (strip key + leading/trailing space) and require non-empty.
+    # This matches lib check_plan_frontmatter behaviour — empty value == missing.
+    if ($0 ~ /^status:/) {
+      v = $0; sub(/^status:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) has_status = 1
+    }
+    if ($0 ~ /^concern:/) {
+      v = $0; sub(/^concern:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) has_concern = 1
+    }
+    if ($0 ~ /^owner:/) {
+      v = $0; sub(/^owner:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) has_owner = 1
+    }
+    if ($0 ~ /^created:/) {
+      v = $0; sub(/^created:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) has_created = 1
+    }
+    if ($0 ~ /^orianna_gate_version:/) {
+      v = $0; sub(/^orianna_gate_version:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) has_gate_ver = 1
+    }
+    if ($0 ~ /^tests_required:/) {
+      v = $0; sub(/^tests_required:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      if (length(v) > 0) { has_tests_required = 1; tests_required_val = v }
     }
     next
   }
@@ -210,7 +231,6 @@ awk -v _sep="__END_OF_FILE__" '
     }
     exit 0
   }
-' $(cat "$_filter_tmp") || _awk_rc=$?
+' $(tr '\n' ' ' < "$_filter_tmp") || _awk_rc=$?
 
-rm -f "$_filter_tmp"
 exit "$_awk_rc"

@@ -21,6 +21,9 @@
 #
 # Do NOT add a shebang execution entry — this file is sourced-only.
 
+# Guard against double-sourcing.
+_LIB_ORIANNA_ESTIMATES_LOADED=1
+
 # check_estimate_minutes <plan_file>
 # Reads the ## Tasks section of the plan; validates every task entry.
 # Returns 0 on clean pass, non-zero on any violation.
