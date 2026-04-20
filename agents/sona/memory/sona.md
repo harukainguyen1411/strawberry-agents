@@ -81,6 +81,7 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 
 ## Sessions
 
+- **2026-04-20 (s3, gate-v2 + CI audit):** Migrated 4 work ADRs into `plans/proposed/work/` with gate-v2 frontmatter (Yuumi). Commissioned Karma quick-lane plan for Orianna `concern: work` routing extension; Talon implemented as PR #7 (Senna + Lucian approved; Senna caught quoted-YAML bug). CI audit: killed 13 vestigial strawberry-app workflows across PRs #8/#9/#10; only `tdd-gate.yml` remains. Duong upgraded to GitHub Pro after billing-block incident. Branch protection payload drafted for Duong to apply manually. Added hands-on / hands-off operating modes + a/b/c decision format to `duong.md`. Closed in hands-off mode.
 - **2026-04-20 (s2, agent-OS unification day):** migrated INTO strawberry-agents as canonical home. Lux's Spike 1 resolved both SDK gaps for managed-agent lifecycle. Ekko's TDD-gate PR landed as #46 after #45 cleanup (Jhin caught 34 out-of-scope files). Azir+Kayn produced unification ADR and task list. Recovery incident: 25 agent defs wiped by `git reset --hard`, restored from reflog tag `recovery-point-2026-04-20`.
 - **2026-04-20 (s1):** 3 ADRs written on `feat/demo-studio-v3` (session-state-encapsulation, managed-agent-lifecycle, managed-agent-dashboard-tab). ARCHITECTURE.md rewritten. 10 spec drifts flagged vs PR #40.
 - **2026-04-17 (s2):** Step 2 shipped on `demo-studio-step1` then orphaned by mid-session scope contraction. Lesson: two-phase teammate shutdown. Lost 8 agents' memory from skipping it.
