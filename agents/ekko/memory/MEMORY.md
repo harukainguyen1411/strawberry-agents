@@ -33,6 +33,7 @@
 - 2026-04-20 (ekko — Sona dispatch): Genericised memory-consolidate and filter-last-sessions scripts to accept `<secretary>` arg. scripts/memory-consolidate.sh replaces scripts/evelynn-memory-consolidate.sh. Commit 97a4fb3. BLOCKER: .claude/agents/evelynn.md edit denied by harness — evelynn.md still calls old scripts. Duong must update manually (see learnings/2026-04-20-script-parameterisation.md).
 - 2026-04-20 (ekko — Sona dispatch): Refreshed missmp/api checkout for PR #40 — already at latest HEAD 27e6e06, no new commits, reference/ unchanged.
 - 2026-04-20: Promoted 2026-04-20-agent-pair-taxonomy.md to approved. Orianna: 0 blocks, 0 warns, 6 info. Commit 8fa6821.
+- 2026-04-20 (ekko): Closed PR #4 (billing block — all CI queued 0s); cherry-picked f223542+13db201 onto main as chore: infra commits. Landed at 7735020. 24/24 bats green.
 
 ## Archive Note
 
