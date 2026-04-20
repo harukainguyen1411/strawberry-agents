@@ -98,10 +98,10 @@ Orianna runs a different check at each gate. The checks escalate in what they co
 
 New checks. Orianna verifies:
 
-- **Task list exists.** A `## Tasks` section in the plan, OR a sibling `<plan-basename>-tasks.md` file (the existing pattern — e.g. `plans/in-progress/2026-04-17-deployment-pipeline-tasks.md`). At least one must be present. See §D3 for which is authoritative.
+- **Task list exists.** A `## Tasks` section in the plan file itself. Sibling `<basename>-tasks.md` files are **not** accepted — one plan, one file (§D3).
 - **AI-minute estimates.** Every task in the list has an `estimate_minutes: <integer>` field (see §D4 for format). No human-hour estimates; no unit-less numbers.
 - **Test tasks present when tests are needed.** If the plan declares `tests_required: true` in frontmatter (default is `true`; set `false` explicitly to opt out with justification), at least one task must have `kind: test` or a title matching `^(write|add) .* test` (case-insensitive).
-- **Caitlyn section present if tests are needed.** If `tests_required: true`, the plan must contain a `## Test plan` section OR link out to a `<plan-basename>-tests.md` sibling file.
+- **Caitlyn test plan appended inline.** If `tests_required: true`, the plan must contain a `## Test plan` section inside the plan file. Sibling `<basename>-tests.md` files are **not** accepted — same single-file rule as tasks. Orianna verifies the section exists and is non-empty; she does not validate contents (format is a follow-up Caitlyn ADR, §D11).
 - **Signature carry-forward.** The `orianna_signature_approved` line must be present and still valid (hash match, authorship match). If the plan body was edited after approval, the approved signature is stale and the in-progress signature cannot be issued until approval is re-signed.
 
 ### D2.3. in-progress → implemented (`orianna_signature_implemented`)
@@ -121,15 +121,15 @@ No Orianna gate. Archiving is bookkeeping, not a governance event. `plan-promote
 
 ## D3. Where task breakdowns live — appended to plan file
 
-**Decision:** Task lists live inside the plan file under a `## Tasks` section. The sibling `-tasks.md` pattern is deprecated going forward; existing sibling task files are grandfathered.
+**Decision:** One plan, one file. Task lists live inside the plan file under a `## Tasks` section. Sibling `<basename>-tasks.md` files are **not** permitted under the new gate. Likewise for Caitlyn's `## Test plan` section (§D2.2) — inline only, no sibling files.
 
 **Rationale:**
 
-- **Single-file lifecycle.** The promote script moves one file; if the authoritative task list lives in a sibling, every move must be a two-file move. Script complexity grows; drift windows open when only one half moves.
-- **Signature coverage.** The signature's body-hash (§D1) covers the task list automatically when tasks are inline. Sibling files would need their own hash in the signature, doubling the machinery.
-- **Orianna grep simplicity.** Orianna's §D2.2 check becomes a single-file read — no "is the sibling also clean?" logic.
+- **Single-file lifecycle.** The promote script moves one file; a sibling would force every move to be multi-file. Script complexity grows; drift windows open when only one half moves.
+- **Signature coverage.** The signature's body-hash (§D1) covers the task list, test plan, and any other in-file sections automatically. Sibling files would need their own hashes, doubling the machinery with no added value.
+- **Orianna grep simplicity.** Every §D2 check is a single-file read — no "is the sibling also clean?" logic.
 
-**Compatibility:** For backward compatibility, the in-progress gate accepts EITHER a `## Tasks` section OR a sibling `<basename>-tasks.md` file for plans whose first signature predates this ADR's implementation. New plans signed under the new regime must use the inline form.
+**Grandfathered sibling files:** Existing sibling files in `plans/in-progress/` and earlier stages (e.g. `plans/in-progress/2026-04-17-deployment-pipeline-tasks.md`) remain on disk for their current phase but carry no signature weight. Plans demoted to `plans/proposed/` under §D8 must inline any existing sibling content before their next promotion — the demotion script performs this merge as part of the one-time backfill.
 
 **Task entry schema (inline):**
 
@@ -155,7 +155,7 @@ No Orianna gate. Archiving is bookkeeping, not a governance event. `plan-promote
 **Orianna's validation at the `approved → in-progress` gate:**
 
 1. Every task entry contains the literal string `estimate_minutes:` followed by whitespace and an integer.
-2. Integer is within sanity bounds: `1 ≤ n ≤ 120`. Values outside this range are **warn**, not block — a 4-hour task is legal but worth flagging.
+2. Integer is within sanity bounds: `1 ≤ n ≤ 60`. Values above 60 are **block** — a task larger than one AI-hour must be decomposed before promotion, not flagged-through. Values below 1 (zero or negative) are **block**.
 3. No alternative units anywhere in the Tasks section: grep for `hours`, `days`, `weeks`, `h)`, `(d)` and flag as block. AI-minute is the only unit.
 4. Missing field on any task entry is **block**.
 
@@ -182,32 +182,26 @@ The set maps approximately to: "does this plan cause other agents to need to rel
 
 The plan MUST contain ONE of:
 
-- **`architecture_changes:` frontmatter field** — a YAML list of paths under `architecture/`, e.g.
-
+- `**architecture_changes:` frontmatter field** — a YAML list of paths under `architecture/`, e.g.
   ```yaml
   architecture_changes:
     - architecture/agent-system.md
     - architecture/key-scripts.md
   ```
-
   Orianna verifies each listed path exists AND has a git-log entry modifying that file within the window `[approved_signature_timestamp, now]`. "You listed `architecture/agent-system.md` but didn't touch it since approval" = block.
-
 - **OR an `architecture_impact: none` frontmatter field with `## Architecture impact` section** — one line reason minimum.
-
   ```yaml
   architecture_impact: none
   ```
-
   ```markdown
   ## Architecture impact
 
   None. This plan migrates one script's error messages; no documented component
   or interface changes.
   ```
-
   Orianna verifies: frontmatter value present, section heading exactly matches, body non-empty.
 
-Plans that match none of the four triggers in §D5 SHOULD still declare `architecture_impact: none` — it's cheap and makes the intent explicit. Orianna treats an implicit-none plan as **warn** at the implemented gate, prompting the author to declare.
+Plans MUST declare one of the two forms above — there is no implicit default. A plan arriving at the implemented gate with neither `architecture_changes:` nor `architecture_impact: none` is **blocked**. Orianna's error message points the author at §D5 with a one-line summary of both options. Forcing explicitness means every implemented plan answers "did this affect the system?" on the record.
 
 **Why explicit opt-out over inference:** if Orianna tries to infer "did this plan touch architecture-relevant things" from the diff, she needs a complex heuristic that will be wrong. Making the author commit to one of two options (changed these files, or none) shifts the decision to where the knowledge lives.
 
@@ -219,11 +213,11 @@ New logic:
 
 1. **Signature presence check.** For the target phase, assert `orianna_signature_<target-phase>` exists in frontmatter. No signature = refuse with a clear error message pointing to how to obtain one (invoke Orianna via `scripts/orianna-sign.sh <plan> <phase>` — see §D7).
 2. **Signature validity check.** Run `scripts/orianna-verify-signature.sh <plan> <phase>`:
-   - Compute SHA-256 of the current body. Compare to the hash in the signature field.
-   - Run `git log --follow --format='%ae %H %s' -- <plan>` and find the commit that introduced the signature line.
-   - Verify that commit's author email is `orianna@agents.strawberry.local`.
-   - Verify that commit carries `Signed-by: Orianna`, `Signed-phase: <phase>`, `Signed-hash: <hash>` trailers and they match.
-   - Verify that commit's diff is scoped to only the plan file (§D1.2).
+  - Compute SHA-256 of the current body. Compare to the hash in the signature field.
+  - Run `git log --follow --format='%ae %H %s' -- <plan>` and find the commit that introduced the signature line.
+  - Verify that commit's author email is `orianna@agents.strawberry.local`.
+  - Verify that commit carries `Signed-by: Orianna`, `Signed-phase: <phase>`, `Signed-hash: <hash>` trailers and they match.
+  - Verify that commit's diff is scoped to only the plan file (§D1.2).
 3. **Signature carry-forward.** For transitions past the first, verify all prior-phase signatures are also valid. An invalid earlier signature invalidates later signatures (you cannot sign `in-progress` on top of an `approved` that was tampered with).
 4. **No fallback to mechanical-only check.** The current `orianna-fact-check.sh` falls back to `scripts/fact-check-plan.sh` when the `claude` CLI is absent (see `scripts/orianna-fact-check.sh:70-75`). For signing, there is no fallback — if Orianna cannot be invoked, no signature is issued. See §H for the offline failure mode.
 
@@ -242,7 +236,7 @@ Entry point for Orianna's signing flow. Steps:
 1. Verify the plan is currently in the correct source directory for the requested phase (e.g. phase `approved` requires the plan to be in `plans/proposed/`).
 2. Invoke the phase-appropriate Orianna check (`plan-check` for approved, `task-gate-check` for in-progress, `implementation-gate-check` for implemented — new prompts under `agents/orianna/prompts/`).
 3. If the check passes cleanly:
-   a. Compute body hash.
+  a. Compute body hash.
    b. Append `orianna_signature_<phase>: "sha256:<hash>:<iso-timestamp>"` to frontmatter.
    c. Commit with Orianna's author identity and the required trailers (§D1.1).
    d. Do NOT push. `plan-promote.sh` pushes when it moves the file.
@@ -260,15 +254,17 @@ Enforces §D1.2 commit shape. Installed via `scripts/install-hooks.sh`.
 
 ## D8. Migration / backfill
 
-**Grandfather existing plans; enforce going forward.**
+**Demote approved plans; grandfather later-stage plans; enforce going forward.**
 
-- Plans currently in `plans/approved/`, `plans/in-progress/`, `plans/implemented/`, `plans/archived/` remain where they are with no retroactive signatures.
+- **All plans currently in `plans/approved/` are moved back to `plans/proposed/`** as part of this ADR's implementation. Their `status:` frontmatter is rewritten to `proposed`. These plans re-enter the lifecycle and must earn an `orianna_signature_approved` under the new regime before they can promote again. This guarantees every plan that reaches `in-progress` from here on carries a valid approved-phase signature, which the in-progress gate's signature carry-forward check (§D2.2) requires.
+- The demotion is a one-time bulk operation performed by `scripts/plan-promote.sh --demote-to-proposed` (a new mode, see §D7 follow-up) OR a one-shot migration script. It uses the Drive-mirror-aware flow so Drive docs for demoted plans get (re-)published.
+- Plans currently in `plans/in-progress/`, `plans/implemented/`, `plans/archived/` remain where they are with no retroactive signatures. They finish their current phase under grandfathered rules.
 - A new frontmatter field `orianna_gate_version:` is introduced. Plans signed under the new regime carry `orianna_gate_version: 2`. Plans without this field are grandfathered.
 - `plan-promote.sh` checks `orianna_gate_version` on the source plan. If absent, log a warning ("grandfathered plan; gate-v1 rules applied") and fall back to the existing single-phase fact-check behavior. If present and `= 2`, enforce §D2 gates for the requested transition.
 - New plans created after this ADR lands MUST include `orianna_gate_version: 2`. The pre-commit hook for plan creation can enforce this (out of scope for this ADR; note as follow-up).
-- A one-time mass-backfill is explicitly NOT proposed. Retroactively signing 50+ plans adds no signal and consumes agent budget.
+- For plans currently in `in-progress/`, retroactive signing is author's discretion — no bulk backfill. A plan already mid-implementation can opt in by running `scripts/orianna-sign.sh <plan> approved` followed by `... in-progress` before its next phase transition; otherwise it promotes to `implemented/` under grandfathered rules.
 
-**The `proposed/` directory is the boundary:** a plan in `proposed/` today that was written before this ADR lands will be the first candidate for the new gate on its next promotion. Orianna signs what's there now — the pre-proposed history is not re-litigated.
+**The `proposed/` directory becomes the single entry point** for the new gate. Every plan — whether newly authored or demoted from `approved/` — gets signed at this boundary before it can move forward.
 
 ---
 
@@ -282,7 +278,7 @@ Enforces §D1.2 commit shape. Installed via `scripts/install-hooks.sh`.
 Orianna-Bypass: <reason, minimum 10 chars>
 ```
 
-The trailer allows the promote commit without a valid signature. It is logged in git history, so audits show exactly which transitions were force-promoted. Agents MUST NOT use this trailer — the hook is extended to reject `Orianna-Bypass` trailers in commits authored by agent identities (author email `duong.nguyen.thai.duy@gmail.com` = Duongntd = agent account). Only commits authored by Duong's human identity (`harukainguyen1411` / Duong's personal email) are permitted to carry the bypass.
+The trailer allows the promote commit without a valid signature. It is logged in git history, so audits show exactly which transitions were force-promoted. Agents MUST NOT use this trailer — the hook is extended to reject `Orianna-Bypass` trailers in commits authored by agent identities (author email `duong.nguyen.thai.duy@gmail.com` = Duongntd = agent account). Only commits authored by Duong's admin identity (`harukainguyen1411` / Duong's personal email) are permitted to carry the bypass. Per Duong: `harukainguyen1411` is the admin account, introduced only when needed for break-glass; agents always use other accounts.
 
 This preserves the break-glass property (Rule 18 precedent: human-only bypass) while making the bypass visible in history.
 
@@ -319,25 +315,42 @@ This ADR itself is subject to §D5. Expected `architecture_changes:` on implemen
 
 ---
 
-# Open gating questions (for Duong before approval)
+## D11. Caitlyn test-plan schema — deferred to a follow-up ADR
 
-These must be resolved before this ADR moves to `plans/approved/`.
+This ADR checks only the existence of a `## Test plan` section in the plan file (§D2.2). The schema of that section — test-case list shape, expected/actual columns, coverage expectations — is out of scope here and will be specified in a dedicated Caitlyn ADR. Until that ADR lands, Caitlyn authors an ad-hoc test plan directly inside the plan file (same single-file rule as tasks). Orianna's gate passes as long as the section exists and is non-empty.
 
-1. **Q1. Orianna git identity.** The proposal is `orianna@agents.strawberry.local` as author email. Acceptable? Alternatives: reuse `Duongntd` and rely only on the `Signed-by: Orianna` trailer (weaker — any agent could forge the trailer) or provision a real GitHub bot account for Orianna (heavier — new account, new PAT, new rotation burden). Pick one.
+---
 
-2. **Q2. Bypass eligibility.** §D9.1 restricts `Orianna-Bypass` to commits authored by Duong's personal GitHub identity. But subagents commit as `Duongntd` (agent account), and Duong himself also sometimes commits with that account from the agent checkout. How do we distinguish "Duong the human pushed this" from "an agent did"? Options: (a) require the bypass commit to be GPG-signed with Duong's personal key; (b) require the bypass to be pushed to main from the `harukainguyen1411` account specifically (branch-protection-level check); (c) require an out-of-band Telegram confirmation via Evelynn. Current leaning: (b), piggybacking on the two-identity model already documented in `agents/memory/agent-network.md:111-126`.
+## D12. Implementation ordering — plan-authoring freeze
 
-3. **Q3. Grandfathering cutoff.** §D8 grandfathers all existing plans (no retroactive signatures). Duong — is there a subset of recent, still-active plans where a retroactive signature would be valuable? For example, plans currently in `in-progress/` that will promote to `implemented/` under the new regime — should they get retroactive `approved` + `in-progress` signatures so the implemented-gate checks can run on them? Trade-off: one extra round-trip per active plan vs clean switchover where only new plans are gated.
+Because this ADR introduces new mandatory frontmatter fields (`orianna_gate_version`, potentially `tests_required`, `architecture_changes` / `architecture_impact`) and restructures the lifecycle around a signing gate, **new plan creation is frozen from the moment this ADR promotes to `in-progress/` until the new gate infrastructure is live and validated**. The freeze window is enforced socially (Evelynn does not spawn Swain/Aphelios for new plans during this period) and mechanically via a temporary pre-commit hook that rejects new files under `plans/proposed/`. Once `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, and the updated `plan-promote.sh` are all green on a smoke test (§D8 demotion + one fresh plan signed through all three phases), the freeze lifts. The freeze is tracked as the final task in this ADR's `## Tasks` section.
 
-4. **Q4. Test-plan format.** §D2.2 requires a `## Test plan` section OR a sibling `-tests.md` file for plans with `tests_required: true`. Caitlyn today produces ad-hoc testing plans — should this ADR specify a schema for them (e.g. test-case list with expected/actual columns) or defer that to a separate Caitlyn ADR? Leaning: defer; this ADR only checks existence, not contents.
+In-flight work at the freeze start — plans already in `in-progress/` or `implemented/` — continues under grandfathered rules (§D8). The freeze applies only to the creation of new `proposed/` entries.
 
-5. **Q5. Estimate sanity bounds.** §D4 proposes `1 ≤ estimate_minutes ≤ 120` as the warn range. Is 120 (2 hours) the right upper bound for a single AI-minute task, or should the bar be lower to force decomposition (e.g. 60)? Tasks over the bound should probably be split, not just flagged.
+---
 
-6. **Q6. Architecture-impact declaration default.** §D5 says plans SHOULD declare `architecture_impact: none` when inapplicable and a plan without any declaration gets a `warn` at the implemented gate. Should the default be a `block` instead to force explicitness? Leaning: start with warn; escalate to block in a follow-up once the pattern is established.
+# Resolved gating questions (round 1)
 
-7. **Q7. Signature coverage of sibling files.** If the `-tasks.md` sibling pattern is grandfathered (§D3), should the signature hash cover both files for grandfathered plans, or accept that tampering with the sibling is undetected? Leaning: detected — compute a composite hash `sha256(body_plan || body_sibling)` for plans that use the sibling pattern. Adds one step to the hash routine; negligible cost.
+All eight original gating questions were answered by Duong on 2026-04-20. Decisions are captured in the relevant `D*` sections; summary below.
 
-8. **Q8. Implementation ordering.** This ADR is workflow-changing; it should not land on top of stale drafts. Should Duong freeze new plan creation while implementation is underway, or is the grandfathering (§D8) sufficient to allow parallel work? Leaning: no freeze — grandfathering handles it — but confirm.
+1. **Q1. Orianna git identity.** Resolved: `orianna@agents.strawberry.local` as author email (§D1.1). No GitHub bot account.
+2. **Q2. Bypass eligibility.** Resolved: option (b) — `Orianna-Bypass` is valid only when the commit/push originates from Duong's admin identity `harukainguyen1411`, introduced only when break-glass is needed. Agents always use other accounts. Enforcement lives in the pre-commit hook (§D1.2 / §D9.1).
+3. **Q3. Grandfathering cutoff.** Resolved: all plans in `plans/approved/` are demoted back to `plans/proposed/` and must re-earn a signature (§D8). Plans in `in-progress/`, `implemented/`, and `archived/` stay put under grandfathered rules; retroactive signing of in-flight plans is author's discretion.
+4. **Q4. Test-plan format.** Resolved: defer schema to a follow-up Caitlyn ADR (§D11). The `## Test plan` section is appended inline to the plan file — no sibling files.
+5. **Q5. Estimate sanity bounds.** Resolved: `1 ≤ estimate_minutes ≤ 60`. Values above 60 are **block**, forcing decomposition (§D4).
+6. **Q6. Architecture-impact declaration default.** Resolved: no implicit default. Plans must declare either `architecture_changes:` or `architecture_impact: none`; missing both is **block** at the implemented gate (§D5).
+7. **Q7. Signature coverage of sibling files.** Resolved: no sibling files permitted — one plan, one file (§D3). The question dissolves because the artifact it protected no longer exists.
+8. **Q8. Implementation ordering.** Resolved: freeze new plan creation from this ADR's `in-progress/` start until the new gate infrastructure is validated end-to-end (§D12).
+
+---
+
+# Open gating questions (round 2 — new, raised by revision)
+
+These arose while incorporating Duong's round-1 answers and need a decision before this ADR moves to `approved/`.
+
+1. **Q9. Demotion script ownership.** §D8's bulk demotion of `plans/approved/` → `plans/proposed/` + status rewrite + Drive-mirror republish is a one-shot migration. Where does it live? Options: (a) a new mode `scripts/plan-promote.sh --demote-to-proposed` (symmetrical with the existing promote flow — heavier script, benefit of reuse); (b) a throwaway `scripts/migrate/2026-04-20-demote-approved.sh` (lighter, but one-off scripts tend to rot in-tree); (c) manual — author a one-line migration note and use existing `plan-promote.sh` in a reverse mode. Leaning: (a) — adding `--demote-to-proposed` as a first-class mode is cheap once and may prove useful beyond this migration (e.g. re-opening an accidentally-promoted plan).
+2. **Q10. Sibling-file merge during demotion.** §D3 requires demoted plans to inline any existing sibling `-tasks.md` or `-tests.md` content before the next promotion. Is this a manual author step, or does the demotion script auto-merge (append sibling content under `## Tasks` / `## Test plan`)? Auto-merge is fragile if siblings have non-canonical heading structures; manual is another thing for Duong/Aphelios to remember. Leaning: auto-merge with a conservative rule — append verbatim under a new `## Tasks (migrated from sibling)` heading so the author can clean up, and mark the plan with `migration_cleanup_required: true` frontmatter that Orianna's `approved` gate checks for (block until cleared).
+3. **Q11. Freeze-enforcement hook scope.** §D12's temporary pre-commit hook blocks new files under `plans/proposed/` during the freeze. Does this also block *edits* to existing `proposed/` files (e.g. iterating on an in-flight draft)? Strict read is "new-file-only"; a looser read would block all `proposed/` churn to prevent sneaking drafts in under the wire. Leaning: new-file-only — authors should still be able to polish existing drafts (including this ADR) during the freeze; the goal is to stop *new* work, not to freeze the whole tree.
 
 ---
 
@@ -345,5 +358,6 @@ These must be resolved before this ADR moves to `plans/approved/`.
 
 - **Task-execution gates during implementation.** This ADR does not gate per-task commits during `in-progress`. A task-level signature protocol could follow, but adds overhead per commit; defer.
 - **Cross-repo architecture** (i.e. `strawberry-app` architecture docs). This ADR scopes to strawberry-agents only. Cross-repo extension is a follow-up once the in-repo flow is proven.
-- **PR-level signature.** PRs to `apps/**` are a separate lifecycle governed by CLAUDE.md rules 15, 16, 18. Orianna does not sign PRs.
+- **PR-level signature.** PRs to `apps/`** are a separate lifecycle governed by CLAUDE.md rules 15, 16, 18. Orianna does not sign PRs.
 - **Automation of architecture-doc updates.** §D5 requires the human (or implementing agent) to update `architecture/` — Orianna verifies the update happened but does not write architecture docs herself.
+
