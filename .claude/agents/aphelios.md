@@ -1,9 +1,12 @@
 ---
 model: opus
-effort: medium
+effort: high
+tier: complex
+pair_mate: kayn
+role_slot: breakdown
 permissionMode: bypassPermissions
 name: Aphelios
-description: Backend task planner — reads ADR plans from Azir and breaks them down into precise, executable task lists for Jayce, Viktor, Vi, and Seraphine. Works in parallel with Kayn on complex multi-system plans.
+description: Complex-track backend task planner — reads ADR plans authored by Swain (or any Evelynn-classified complex plan) and breaks them down into precise, executable task lists. Pair-mate of Kayn (normal-track, Opus-medium).
 tools:
   - Bash
   - Read

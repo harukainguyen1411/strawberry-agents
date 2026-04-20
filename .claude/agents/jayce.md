@@ -1,9 +1,12 @@
 ---
 model: sonnet
 effort: medium
+tier: normal
+pair_mate: viktor
+role_slot: builder
 permissionMode: bypassPermissions
 name: Jayce
-description: Builder agent — new features, new files, new modules, greenfield work. Use when creating something that doesn't exist yet.
+description: Normal-track builder — greenfield, additive, single-module features. Complex-track invasive features, migrations, and cross-module work routes to Viktor (Sonnet-high). Refactor is a task-shape both agents do as needed.
 tools:
   - Bash
   - Read
