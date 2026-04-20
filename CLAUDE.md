@@ -39,7 +39,12 @@ See `agents/memory/agent-network.md` for the full roster.
 4. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
 
 <!-- #rule-chore-commit-prefix -->
-5. **Conventional commit prefixes — scoped by diff** — Non-code commits (plans, agent definitions, infra, docs, scripts outside `apps/**`) MUST use `chore:` or `ops:`. Code commits that touch `apps/**` MUST use one of `feat:`, `fix:`, `perf:`, `refactor:`, or `chore:` — these feed release-please versioning (see `plans/approved/2026-04-17-deployment-pipeline.md` §6). Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer for major bumps. Never use `docs:` / `plan:` / other non-conventional prefixes. The pre-push hook enforces diff-scope ↔ commit-type.
+5. **Conventional commit prefixes — scoped by diff** —
+   - **Touches `apps/**`?** Use one of: `feat:`, `fix:`, `perf:`, `refactor:`, `chore:`. Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer. (These feed release-please versioning — see `plans/approved/2026-04-17-deployment-pipeline.md` §6.)
+   - **Touches infra / ops only (deploys, GCP, CI)?** Use `ops:`.
+   - **Everything else** (plans, agent definitions, scripts outside `apps/**`, docs)? Use `chore:`.
+   - **Never** use `docs:` / `plan:` / other non-conventional prefixes.
+   - The pre-push hook enforces diff-scope ↔ commit-type.
 
 <!-- #rule-no-raw-age-d -->
 6. **Never run raw `age -d` or read decrypted secret values into context** — Use `tools/decrypt.sh` exclusively; it keeps plaintext in the child process env only. Never `cat`/`type`/pipe `secrets/age-key.txt`. The pre-commit hook blocks violations.
