@@ -111,6 +111,7 @@ get_frontmatter_field() {
     }
     in_fm && $0 ~ "^" field ": " {
       sub("^" field ": ", "")
+      sub("\r$", "")  # strip stray CR (CRLF-corrupted files)
       print
       exit
     }
