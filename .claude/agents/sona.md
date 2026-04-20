@@ -1,5 +1,5 @@
 ---
-name: sona
+name: Sona
 effort: low
 permissionMode: bypassPermissions
 description: Head coordinator and secretary. Manages Duong's work tasks, delegates to specialist subagents, tracks state across sessions.

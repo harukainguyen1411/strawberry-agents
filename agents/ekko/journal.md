@@ -229,3 +229,13 @@
 - Committed .age file: `95064e1`. Verified .gitignore allows `secrets/encrypted/*.age`.
 
 **Blockers / Open threads:** None. reviewer-identity-split Phase 2 complete.
+
+## 2026-04-20 — Plan promotion: orianna-gated-plan-lifecycle
+
+**Task:** Promote `plans/proposed/2026-04-20-orianna-gated-plan-lifecycle.md` to approved via `scripts/plan-promote.sh`.
+
+**Done:**
+- Ran `scripts/plan-promote.sh` — fact-check gate ran a fresh Orianna pass (0 blocks, 0 warns, 22 infos, CLEAN).
+- No gdoc_id on plan; Drive unpublish step skipped.
+- Plan moved to `plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md`, frontmatter status rewritten.
+- Commit `618904b` pushed to main.
