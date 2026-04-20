@@ -68,14 +68,25 @@ sections (e.g. a casual "TODO: nice-to-have") are `warn`, not `block`.
    - `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`,
      `.claude/`, `tools/` → check against this repo (your working
      directory).
-   - `apps/`, `dashboards/`, `.github/workflows/` → check against the
-     strawberry-app checkout at `~/Documents/Personal/strawberry-app/`.
-     Before checking, run:
-       `git -C ~/Documents/Personal/strawberry-app fetch origin main 2>/dev/null || true`
-     Then verify using `test -e` against the checkout path.
-     If the checkout does not exist, emit a `warn` finding:
-     "could not verify N cross-repo path(s); strawberry-app checkout not
-     found at ~/Documents/Personal/strawberry-app/" — and continue.
+   - `apps/`, `dashboards/`, `.github/workflows/` → route depends on the
+     plan's `concern:` frontmatter field:
+       - If the plan frontmatter declares `concern: work`, route these prefixes
+         to the work-concern checkout at `~/Documents/Work/mmp/workspace/company-os/`.
+         Before checking, run:
+           `git -C ~/Documents/Work/mmp/workspace/company-os fetch origin main 2>/dev/null || true`
+         Then verify using `test -e` against that checkout path.
+         If the checkout does not exist, emit a `warn` finding:
+         "could not verify N cross-repo path(s); work-concern checkout not
+         found at ~/Documents/Work/mmp/workspace/company-os/" — and continue.
+       - Otherwise (plan has `concern: personal`, no `concern:` field, or any
+         other value), route to the strawberry-app checkout at
+         `~/Documents/Personal/strawberry-app/`.
+         Before checking, run:
+           `git -C ~/Documents/Personal/strawberry-app fetch origin main 2>/dev/null || true`
+         Then verify using `test -e` against the checkout path.
+         If the checkout does not exist, emit a `warn` finding:
+         "could not verify N cross-repo path(s); strawberry-app checkout not
+         found at ~/Documents/Personal/strawberry-app/" — and continue.
    - Unknown prefixes → emit an `info` finding: "unknown path prefix
      `<prefix>/`; add to contract if load-bearing."
    - Run `test -e <repo-root>/<path>` for each routed path. Does not exist
