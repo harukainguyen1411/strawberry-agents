@@ -39,12 +39,13 @@ _assert() {
 # Requires that the files already exist in <repo_dir>.
 _run_hook_with_staged() {
   local dir="$1"; shift
+  local local_hook="$dir/scripts/hooks/pre-commit-plan-structure.sh"
   # Stage the given files
   for f in "$@"; do
     git -C "$dir" add "$f" 2>/dev/null || true
   done
-  # Run hook; capture exit
-  (cd "$dir" && bash "$HOOK" 2>/dev/null) && echo 0 || echo $?
+  # Run the hook copy local to the test repo so REPO_ROOT resolves correctly
+  (cd "$dir" && bash "$local_hook" 2>/dev/null) && echo 0 || echo $?
 }
 
 # Setup a minimal git repo in /tmp
@@ -269,8 +270,9 @@ rm -rf "$ta_dir"
 tb_dir="$(_setup_repo)"
 _write_plan_missing_key "$tb_dir" "plans/proposed/missing-key.md"
 git -C "$tb_dir" add "plans/proposed/missing-key.md"
-tb_stderr="$( (cd "$tb_dir" && bash "$HOOK") 2>&1 >/dev/null || true )"
-tb_rc="$( (cd "$tb_dir" && bash "$HOOK") && echo 0 || echo $? )"
+tb_local_hook="$tb_dir/scripts/hooks/pre-commit-plan-structure.sh"
+tb_stderr="$( (cd "$tb_dir" && bash "$tb_local_hook") 2>&1 >/dev/null || true )"
+tb_rc="$( (cd "$tb_dir" && bash "$tb_local_hook") && echo 0 || echo $? )"
 _assert "(b) missing frontmatter key blocks (exit 1)" 1 "$tb_rc"
 # Check message contains the expected key name
 if printf '%s' "$tb_stderr" | grep -q 'concern'; then

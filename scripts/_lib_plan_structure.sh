@@ -51,54 +51,95 @@ check_plan_frontmatter() {
 }
 
 # check_task_estimates <plan_file>
-# Delegates to check_estimate_minutes from _lib_orianna_estimates.sh.
-# Also handles the numbered task section header variant (## N. Tasks).
-# Returns 0 on clean pass, non-zero on any violation.
+# Validates estimate_minutes fields in the ## Tasks (or ## N. Tasks) section.
+# Implements the same rules as check_estimate_minutes from _lib_orianna_estimates.sh
+# using a single awk pass for performance (< 200ms for 10 plans target, §T3).
+#
+# Rules (matching §D4 and _lib_orianna_estimates.sh):
+#   1. Every task entry (- [ ] or - [x]) must have estimate_minutes: <integer in 1-60>.
+#   2. Banned unit literals (hours, days, weeks, h), (d)) must not appear in the
+#      ## Tasks section body — checked outside of backtick spans.
+# Returns 0 on clean pass, non-zero with [lib-plan-structure] BLOCK: messages on stderr.
 check_task_estimates() {
   _cte_plan="$1"
   [ -n "$_cte_plan" ] || { printf '[lib-plan-structure] ERROR: no plan file argument\n' >&2; return 2; }
   [ -f "$_cte_plan" ] || { printf '[lib-plan-structure] ERROR: plan file not found: %s\n' "$_cte_plan" >&2; return 2; }
 
-  # Source estimates lib if not already loaded
-  if ! command -v check_estimate_minutes >/dev/null 2>&1; then
-    _estimates_lib="${_LIB_PLAN_STRUCTURE_DIR}/_lib_orianna_estimates.sh"
-    if [ ! -f "$_estimates_lib" ]; then
-      # Fallback: try relative to cwd
-      _estimates_lib="scripts/_lib_orianna_estimates.sh"
-    fi
-    if [ ! -f "$_estimates_lib" ]; then
-      printf '[lib-plan-structure] ERROR: cannot find _lib_orianna_estimates.sh\n' >&2
-      return 2
-    fi
-    # shellcheck source=/dev/null
-    . "$_estimates_lib"
-  fi
-
-  # _lib_orianna_estimates.sh only recognises `## Tasks` heading.
-  # Plans may also use `## N. Tasks` (numbered heading). We need to
-  # call the delegate but without mangling line content (sed on a task
-  # line containing multiple `estimate_minutes:` tokens would confuse
-  # the greedy extraction). Instead: extract the tasks section ourselves
-  # with awk that understands both heading forms, write to a temp file
-  # with a canonical `## Tasks` header, then delegate.
-  _cte_tmp="$(mktemp /tmp/plan-structure-XXXXXX.md)"
+  # Single awk pass over the plan file.
+  # Handles both `## Tasks` and `## N. Tasks` headings.
+  # Strips inline backtick spans before checking banned literals and estimate extraction
+  # to prevent false positives from DoD prose that mentions these tokens.
   awk '
-    /^## Tasks[[:space:]]*$/ || /^## [0-9]+\. Tasks[[:space:]]*$/ { in_tasks=1; print "## Tasks"; next }
-    in_tasks && /^## / { in_tasks=0 }
-    in_tasks { print }
-  ' "$_cte_plan" > "$_cte_tmp"
+    # Enter tasks section on either heading form
+    /^## Tasks[[:space:]]*$/ || /^## [0-9]+\. Tasks[[:space:]]*$/ {
+      in_tasks = 1
+      next
+    }
+    # Exit tasks section on the next ## heading
+    in_tasks && /^## / { in_tasks = 0 }
 
-  # If the temp file has content beyond the heading, run the check; else pass
-  _cte_body="$(tail -n +2 "$_cte_tmp")"
-  if [ -z "$_cte_body" ]; then
-    rm -f "$_cte_tmp"
-    return 0
-  fi
+    in_tasks {
+      line = $0
 
-  check_estimate_minutes "$_cte_tmp"
-  _cte_rc=$?
-  rm -f "$_cte_tmp"
-  return "$_cte_rc"
+      # Strip inline backtick spans to get the "prose" version of the line
+      prose = line
+      while (match(prose, /`[^`]*`/)) {
+        prose = substr(prose, 1, RSTART-1) substr(prose, RSTART+RLENGTH)
+      }
+
+      # Check 1: task entry lines must have estimate_minutes: <int in 1-60>
+      if (prose ~ /^- \[[ xX]\]/) {
+        if (prose !~ /estimate_minutes:/) {
+          print "[lib-plan-structure] BLOCK: task entry missing estimate_minutes: field (§D4): " line | "cat >&2"
+          fail = 1
+        } else {
+          # Extract value: find first estimate_minutes: occurrence (not greedy over multiple)
+          val = prose
+          sub(/.*estimate_minutes:[[:space:]]*/, "", val)
+          # Extract leading integer (may be followed by non-digit)
+          match(val, /^-?[0-9]+/)
+          if (RLENGTH < 1) {
+            print "[lib-plan-structure] BLOCK: estimate_minutes value is not an integer in task: " line | "cat >&2"
+            fail = 1
+          } else {
+            n = substr(val, 1, RLENGTH) + 0
+            if (n < 1) {
+              print "[lib-plan-structure] BLOCK: estimate_minutes: " n " is below minimum (1): " line | "cat >&2"
+              fail = 1
+            } else if (n > 60) {
+              print "[lib-plan-structure] BLOCK: estimate_minutes: " n " exceeds maximum (60); task must be decomposed (§D4): " line | "cat >&2"
+              fail = 1
+            }
+          }
+        }
+      }
+
+      # Check 2: no alternative unit literals in prose (outside backtick spans)
+      # Only check once per unit per section (flag file used to suppress duplicates)
+      if (!hours_flagged && prose ~ /\bhours\b/) {
+        print "[lib-plan-structure] BLOCK: alternative time unit \"hours\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
+        fail = 1; hours_flagged = 1
+      }
+      if (!days_flagged && prose ~ /\bdays\b/) {
+        print "[lib-plan-structure] BLOCK: alternative time unit \"days\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
+        fail = 1; days_flagged = 1
+      }
+      if (!weeks_flagged && prose ~ /\bweeks\b/) {
+        print "[lib-plan-structure] BLOCK: alternative time unit \"weeks\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
+        fail = 1; weeks_flagged = 1
+      }
+      if (!hparen_flagged && index(prose, "h)") > 0) {
+        print "[lib-plan-structure] BLOCK: alternative time unit \"h)\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
+        fail = 1; hparen_flagged = 1
+      }
+      if (!dparen_flagged && index(prose, "(d)") > 0) {
+        print "[lib-plan-structure] BLOCK: alternative time unit \"(d)\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
+        fail = 1; dparen_flagged = 1
+      }
+    }
+
+    END { exit fail }
+  ' "$_cte_plan"
 }
 
 # check_test_plan_present <plan_file>
