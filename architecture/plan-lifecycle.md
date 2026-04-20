@@ -203,6 +203,50 @@ by `scripts/hooks/pre-commit-plan-promote-guard.sh`).
 
 ---
 
+## Pre-commit structural lint
+
+**Shift-left rationale:** Orianna's structural plan checks (required frontmatter,
+`estimate_minutes:` on every task, `## Test plan` presence when `tests_required: true`)
+are deterministic and fast. Running them only at promotion-time means a planner can push
+a structurally broken plan and find out late. `scripts/hooks/pre-commit-plan-structure.sh`
+runs the same deterministic checks at `git commit`, before any LLM invocation.
+
+**What the hook checks:**
+
+- **Frontmatter:** all six required keys present (`status`, `concern`, `owner`, `created`,
+  `orianna_gate_version`, `tests_required`).
+- **Task estimates:** every `- [ ]` / `- [x]` task entry has `estimate_minutes:` with an
+  integer in `[1, 60]`. Banned alternative literals (`hours`, `days`, `weeks`, `h)`, `(d)`)
+  are rejected outside backtick spans.
+- **Test plan section:** when `tests_required: true`, a `## Test plan` heading with at least
+  one non-blank, non-heading line must be present.
+
+**What the hook does NOT check:**
+
+- Path-shaped claim verification (LLM-only; Orianna's `plan-check.md` at `proposed → approved`).
+- Semantic correctness, prose quality, or gating-question resolution.
+- Plans under `plans/archived/**` (grandfathered) or `plans/_template.md` (has placeholder values
+  by design).
+
+**Split of responsibilities:**
+
+| Layer | Tool | Trigger | Checks |
+|-------|------|---------|--------|
+| Pre-commit (this) | `scripts/hooks/pre-commit-plan-structure.sh` | `git commit` | Structural (fast, deterministic) |
+| Promotion gate | Orianna via `scripts/orianna-sign.sh` | `plan-promote.sh` | Full: structural + semantic + path claims |
+
+**Entry point:** copy `plans/_template.md` for new plans. All required frontmatter keys and
+section headings are pre-filled with `<placeholder>` values that fail the linter until filled in.
+
+**Shared library:** `scripts/_lib_plan_structure.sh` exposes `check_plan_frontmatter`,
+`check_task_estimates`, `check_test_plan_present`, and `check_plan_structure`. Both the hook
+and any other caller source this lib. The estimate validation rules match
+`scripts/_lib_orianna_estimates.sh` (§D4).
+
+**Performance:** single awk pass over all staged plan files; < 200ms for 10 staged plans.
+
+---
+
 ## Related scripts
 
 | Script | Purpose |
@@ -213,6 +257,9 @@ by `scripts/hooks/pre-commit-plan-promote-guard.sh`).
 | `scripts/plan-promote.sh` | Move plan between phase directories (verifies signatures) |
 | `scripts/hooks/pre-commit-orianna-signature-guard.sh` | Enforce signing commit shape |
 | `scripts/hooks/pre-commit-plan-authoring-freeze.sh` | Block new plan creation during freeze window |
+| `scripts/hooks/pre-commit-plan-structure.sh` | Pre-commit structural lint for staged plans/**/*.md |
+| `scripts/_lib_plan_structure.sh` | Shared lib: check_plan_frontmatter, check_task_estimates, check_test_plan_present, check_plan_structure |
+| `plans/_template.md` | Plan authoring template; correct-by-construction frontmatter + section skeletons |
 | `agents/orianna/prompts/plan-check.md` | proposed→approved gate prompt |
 | `agents/orianna/prompts/task-gate-check.md` | approved→in-progress gate prompt |
 | `agents/orianna/prompts/implementation-gate-check.md` | in-progress→implemented gate prompt |
