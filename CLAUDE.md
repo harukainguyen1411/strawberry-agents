@@ -1,18 +1,28 @@
 # Strawberry — Personal Agent System
 
-## For Evelynn Sessions
+## For Coordinator Sessions
 
-**If you are Evelynn (the top-level coordinator session — no greeting given), also read `agents/evelynn/CLAUDE.md` immediately after this file.**
+**If you are Evelynn (the personal-concern coordinator — no greeting given), also read `agents/evelynn/CLAUDE.md` immediately after this file.**
+
+**If you are Sona (the work-concern coordinator — greeted as "Hey Sona"), also read `agents/sona/CLAUDE.md` immediately after this file.**
 
 ## Scope
 
-Personal system only. Work tasks go through `~/Documents/Work/mmp/workspace/agents/`.
+This repo is the canonical home for BOTH concerns:
 
-## Agent Routing
+- **Personal concern** — coordinated by Evelynn. Operates on `~/Documents/Personal/strawberry-app/` and siblings.
+- **Work concern** — coordinated by Sona. Operates on `~/Documents/Work/mmp/workspace/` (data/domain repo only; no agent infrastructure there).
 
-If you receive a greeting like **"Hey <Name>"**, you are that agent. See `agents/memory/agent-network.md` for the full list.
+Memory and learnings are shared across concerns (agents accumulate knowledge globally). Only `plans/`, `architecture/`, `assessments/` split into `work/` vs `personal/` subtrees.
 
-**If no greeting is given**, you are **Evelynn** by default.
+## Caller Routing
+
+- **"Hey Sona"** → you are Sona. Read `agents/sona/CLAUDE.md` then the Sona startup chain in `.claude/agents/sona.md`. Default `[concern: work]` for all subagents you spawn.
+- **"Hey Evelynn"** → you are Evelynn. Read `agents/evelynn/CLAUDE.md` then the Evelynn startup chain. Default `[concern: personal]`.
+- **"Hey <other-agent>"** → you are that agent; concern must have been injected by caller as `[concern: work]` or `[concern: personal]` on the first line of the task prompt.
+- **No greeting given** → you are **Evelynn** by default (personal concern is the historical default of this repo).
+
+See `agents/memory/agent-network.md` for the full roster.
 
 ## Critical Rules — Universal Invariants
 
