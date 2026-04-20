@@ -88,7 +88,9 @@ Phase 2 of that design.
    `context7` are already callable. The only change needed is documenting
    the tool expectations in the prompt (Step E explicitly names which tool
    to use per case). No changes to the CLI flags or an agent-definition
-   file are required (Orianna has no `.claude/agents/orianna.md` today;
+   file are required (Orianna has no `.claude/agents/orianna.md` today; <!-- orianna: ok -->
+  <!-- prior line notes a known-absent path — do not block -->
+  
    she is prompt-driven).
 7. **Suppression.** The existing `<!-- orianna: ok -->` suppression syntax
    from Step C carries over to Step E: authors can opt out per line or
@@ -170,7 +172,7 @@ Phase 2 of that design.
 - **kind:** test
 - **estimate_minutes:** 30
 - **files:**
-  - `scripts/test-orianna-plan-check-step-e.sh` (new)
+  - `scripts/test-orianna-plan-check-step-e.sh` (new) <!-- orianna: ok -->
 - **detail:** POSIX-bash test script that asserts: [1] the plan-check
   prompt contains a `Step E` section between Step D and the
   `## Report format` heading; [2] the prompt references
@@ -180,7 +182,8 @@ Phase 2 of that design.
   value is `15`. Test is structural only — no live LLM invocation, no
   network. Make it executable (`chmod +x`). Do not wire into CI in this
   plan; leave that to a follow-up if Duong wants it blocking.
-- **DoD:** `bash scripts/test-orianna-plan-check-step-e.sh` exits 0 on
+- **DoD:** <!-- orianna: ok -->
+  `bash scripts/test-orianna-plan-check-step-e.sh` exits 0 on
   the fully-implemented branch and exits non-zero if any of T1/T2/T3
   outputs regress.
 
