@@ -15,7 +15,15 @@
 # Do NOT add a shebang execution entry — this file is sourced-only.
 
 # Resolve the lib directory so we can source sibling libs regardless of caller cwd.
+# shellcheck disable=SC3028
 _LIB_PLAN_STRUCTURE_DIR="${_LIB_PLAN_STRUCTURE_DIR:-$(cd "$(dirname "${BASH_SOURCE:-$0}")" 2>/dev/null && pwd || echo "scripts")}"
+
+# Source sibling: _lib_orianna_estimates.sh — single source of truth for estimate checks.
+# guard against double-sourcing
+if [ -z "${_LIB_ORIANNA_ESTIMATES_LOADED:-}" ]; then
+  # shellcheck source=scripts/_lib_orianna_estimates.sh
+  . "$_LIB_PLAN_STRUCTURE_DIR/_lib_orianna_estimates.sh"
+fi
 
 # check_plan_frontmatter <plan_file>
 # Verifies all required YAML frontmatter keys are present and non-empty.
@@ -32,6 +40,7 @@ check_plan_frontmatter() {
   _cpf_fail=0
 
   # Required keys — each must be present and have a non-empty value on the same line
+  # shellcheck disable=SC2016  # backticks in printf format string are literal markdown, not subshell
   for _key in status concern owner created orianna_gate_version tests_required; do
     # Match 'key: value' — value must not be empty
     _val="$(printf '%s\n' "$_cpf_fm" | awk -v k="$_key" '
@@ -52,94 +61,16 @@ check_plan_frontmatter() {
 
 # check_task_estimates <plan_file>
 # Validates estimate_minutes fields in the ## Tasks (or ## N. Tasks) section.
-# Implements the same rules as check_estimate_minutes from _lib_orianna_estimates.sh
-# using a single awk pass for performance (< 200ms for 10 plans target, §T3).
-#
-# Rules (matching §D4 and _lib_orianna_estimates.sh):
-#   1. Every task entry (- [ ] or - [x]) must have estimate_minutes: <integer in 1-60>.
-#   2. Banned unit literals (hours, days, weeks, h), (d)) must not appear in the
-#      ## Tasks section body — checked outside of backtick spans.
-# Returns 0 on clean pass, non-zero with [lib-plan-structure] BLOCK: messages on stderr.
+# Delegates to check_estimate_minutes from _lib_orianna_estimates.sh (single source
+# of truth, §3 / §5 / T1 — no logic duplication).
+# Returns 0 on clean pass, non-zero with BLOCK messages on stderr.
 check_task_estimates() {
   _cte_plan="$1"
   [ -n "$_cte_plan" ] || { printf '[lib-plan-structure] ERROR: no plan file argument\n' >&2; return 2; }
   [ -f "$_cte_plan" ] || { printf '[lib-plan-structure] ERROR: plan file not found: %s\n' "$_cte_plan" >&2; return 2; }
 
-  # Single awk pass over the plan file.
-  # Handles both `## Tasks` and `## N. Tasks` headings.
-  # Strips inline backtick spans before checking banned literals and estimate extraction
-  # to prevent false positives from DoD prose that mentions these tokens.
-  awk '
-    # Enter tasks section on either heading form
-    /^## Tasks[[:space:]]*$/ || /^## [0-9]+\. Tasks[[:space:]]*$/ {
-      in_tasks = 1
-      next
-    }
-    # Exit tasks section on the next ## heading
-    in_tasks && /^## / { in_tasks = 0 }
-
-    in_tasks {
-      line = $0
-
-      # Strip inline backtick spans to get the "prose" version of the line
-      prose = line
-      while (match(prose, /`[^`]*`/)) {
-        prose = substr(prose, 1, RSTART-1) substr(prose, RSTART+RLENGTH)
-      }
-
-      # Check 1: task entry lines must have estimate_minutes: <int in 1-60>
-      if (prose ~ /^- \[[ xX]\]/) {
-        if (prose !~ /estimate_minutes:/) {
-          print "[lib-plan-structure] BLOCK: task entry missing estimate_minutes: field (§D4): " line | "cat >&2"
-          fail = 1
-        } else {
-          # Extract value: find first estimate_minutes: occurrence (not greedy over multiple)
-          val = prose
-          sub(/.*estimate_minutes:[[:space:]]*/, "", val)
-          # Extract leading integer (may be followed by non-digit)
-          match(val, /^-?[0-9]+/)
-          if (RLENGTH < 1) {
-            print "[lib-plan-structure] BLOCK: estimate_minutes value is not an integer in task: " line | "cat >&2"
-            fail = 1
-          } else {
-            n = substr(val, 1, RLENGTH) + 0
-            if (n < 1) {
-              print "[lib-plan-structure] BLOCK: estimate_minutes: " n " is below minimum (1): " line | "cat >&2"
-              fail = 1
-            } else if (n > 60) {
-              print "[lib-plan-structure] BLOCK: estimate_minutes: " n " exceeds maximum (60); task must be decomposed (§D4): " line | "cat >&2"
-              fail = 1
-            }
-          }
-        }
-      }
-
-      # Check 2: no alternative unit literals in prose (outside backtick spans)
-      # Only check once per unit per section (flag file used to suppress duplicates)
-      if (!hours_flagged && prose ~ /\bhours\b/) {
-        print "[lib-plan-structure] BLOCK: alternative time unit \"hours\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
-        fail = 1; hours_flagged = 1
-      }
-      if (!days_flagged && prose ~ /\bdays\b/) {
-        print "[lib-plan-structure] BLOCK: alternative time unit \"days\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
-        fail = 1; days_flagged = 1
-      }
-      if (!weeks_flagged && prose ~ /\bweeks\b/) {
-        print "[lib-plan-structure] BLOCK: alternative time unit \"weeks\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
-        fail = 1; weeks_flagged = 1
-      }
-      if (!hparen_flagged && index(prose, "h)") > 0) {
-        print "[lib-plan-structure] BLOCK: alternative time unit \"h)\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
-        fail = 1; hparen_flagged = 1
-      }
-      if (!dparen_flagged && index(prose, "(d)") > 0) {
-        print "[lib-plan-structure] BLOCK: alternative time unit \"(d)\" found in ## Tasks section; use estimate_minutes only (§D4)" | "cat >&2"
-        fail = 1; dparen_flagged = 1
-      }
-    }
-
-    END { exit fail }
-  ' "$_cte_plan"
+  # Delegate to the canonical estimate validator — no duplicated logic.
+  check_estimate_minutes "$_cte_plan"
 }
 
 # check_test_plan_present <plan_file>
@@ -158,7 +89,7 @@ check_test_plan_present() {
 
   # Default to true when field is absent or blank
   case "$_ctp_tr" in
-    false|'false'|'False'|'FALSE') return 0 ;;
+    false|False|FALSE) return 0 ;;
   esac
 
   # tests_required is true (or defaulted to true): check ## Test plan section exists
@@ -171,6 +102,7 @@ check_test_plan_present() {
   ' "$_ctp_plan")"
 
   if [ "$_ctp_found" != "yes" ]; then
+    # shellcheck disable=SC2016  # backticks are literal markdown, not subshell
     printf '[lib-plan-structure] BLOCK: tests_required is true but `## Test plan` section is missing or empty\n' >&2
     return 1
   fi

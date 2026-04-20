@@ -9,12 +9,12 @@
 #   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2)
 #   pre-commit-plan-authoring-freeze.sh — blocks new plans during Orianna freeze window
 #   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
-#   pre-commit-plan-structure.sh        — structural lint for staged plans/**/*.md (shift-left)
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
+#   pre-commit-zz-plan-structure.sh     — structural lint for staged plans/**/*.md (shift-left, after secrets)
 #
-# Execution order is alphabetical (ls | sort). plan-structure runs before
-# secrets-guard alphabetically; both are fast and run before unit-tests.
+# Execution order is alphabetical (ls | sort). zz-prefix ensures plan-structure
+# runs AFTER secrets-guard (secrets always win) and BEFORE unit-tests.
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
 #   pre-push-tdd.sh                     — TDD gate enforcement
