@@ -15,6 +15,10 @@
 - T212 API: Basic auth (API_KEY_ID:SECRET_KEY base64). Live URL: https://live.trading212.com. See learnings/2026-04-19-t212-api-fixtures.md for full field/shape reference.
 - GitHub branch protection (classic or rulesets) on private repos requires GitHub Pro — free-plan accounts get 403.
 
+- Global git hooksPath (`~/.config/git/hooks/pre-commit`) runs `$REPO_ROOT/scripts/hooks/pre-commit-*.sh`. Hooks are active even if `.git/hooks/` is empty. Check `git config --global core.hooksPath` when debugging unexpected hook behavior.
+- `git commit --trailer` appends trailers AFTER the pre-commit hook runs. COMMIT_EDITMSG at pre-commit time holds the PREVIOUS commit's message. Always embed trailers directly in `-m` message body when pre-commit hooks need to inspect them.
+- `git add <specific-file>` before every commit — staged files from failed prior operations linger and get swept into unrelated commits.
+
 ## Sessions
 
 - 2026-04-20 (ekko s-audit): CLAUDE.md cleanup — Lux audit items 1-5. rule5 decision tree `98f33b7`, end-session skill DMI fix `0904844`, rule19 anchor `4d4e732`, plan-fetch.sh+google-oauth-bootstrap.sh deleted (concurrent session cf2b5f2), end-session refuse-empty-arg `cd6a2ab`. All pushed.
