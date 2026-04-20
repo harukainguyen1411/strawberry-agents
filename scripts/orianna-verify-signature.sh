@@ -95,10 +95,27 @@ fi
 
 # --- Locate the signing commit: find commit that introduced the signature line ---
 # Use git log to walk commits modifying the plan and look for the one that added the field.
-PLAN_REL="$(git -C "$(dirname "$PLAN")" rev-parse --show-toplevel 2>/dev/null | xargs -I{} sh -c 'printf "%s\n" "${1#"$2/"}"' _ "$PLAN" {})"
 REPO_ROOT="$(git -C "$(dirname "$PLAN")" rev-parse --show-toplevel 2>/dev/null)" || die "plan is not in a git repository"
 
-PLAN_REL="${PLAN#"$REPO_ROOT/"}"
+# Compute relative path: resolve both plan and repo root to their canonical (physical) paths
+# before stripping the prefix, to handle macOS /var -> /private/var symlinks.
+if command -v realpath >/dev/null 2>&1; then
+  PLAN_CANONICAL="$(realpath "$PLAN" 2>/dev/null)" || PLAN_CANONICAL="$PLAN"
+  REPO_CANONICAL="$(realpath "$REPO_ROOT" 2>/dev/null)" || REPO_CANONICAL="$REPO_ROOT"
+elif command -v readlink >/dev/null 2>&1; then
+  PLAN_CANONICAL="$(readlink -f "$PLAN" 2>/dev/null)" || PLAN_CANONICAL="$PLAN"
+  REPO_CANONICAL="$(readlink -f "$REPO_ROOT" 2>/dev/null)" || REPO_CANONICAL="$REPO_ROOT"
+else
+  PLAN_CANONICAL="$PLAN"
+  REPO_CANONICAL="$REPO_ROOT"
+fi
+
+PLAN_REL="${PLAN_CANONICAL#"$REPO_CANONICAL/"}"
+# Fallback: if prefix strip didn't work (mismatch), use git ls-files to get the relative path
+if [ "$PLAN_REL" = "$PLAN_CANONICAL" ]; then
+  PLAN_REL="$(git -C "$REPO_ROOT" ls-files --full-name "$PLAN" 2>/dev/null)" || true
+fi
+[ -n "$PLAN_REL" ] || die "could not determine relative path of plan file within repo"
 
 SIGNING_COMMIT=""
 # Walk git log for the plan file, find commit that first added our signature line
