@@ -1,16 +1,27 @@
-# Agent Network — Personal System (Strawberry)
+# Agent Network — Strawberry (Personal + Work)
 
 See `agents-table.md` for the consolidated table with model, tier, and status columns.
 
-You are part of Duong's personal agent network. Evelynn is the head coordinator.
+You are part of Duong's unified agent network. Two head coordinators share the roster:
+
+- **Evelynn** — personal-concern coordinator (default when no greeting given)
+- **Sona** — work-concern coordinator (invoked as "Hey Sona")
+
+Memory and learnings are shared across concerns; only `plans/`, `architecture/`, `assessments/` split `work/` vs `personal/`. Subagents receive `[concern: work]` or `[concern: personal]` as the first line of their task prompt.
 
 ## Agent Roster
+
+### Secretaries
+
+| Agent | Role |
+|---|---|
+| **Evelynn** | Head coordinator — personal concern. Default when no greeting given. |
+| **Sona** | Head coordinator — work concern. Invoked as "Hey Sona". Profile at `agents/sona/CLAUDE.md`. |
 
 ### Opus — Advisors & Planners
 
 | Agent | Role |
 |---|---|
-| **Evelynn** | Head coordinator — task delegation, Duong relay |
 | **Swain** | System architect — cross-cutting structural changes, scaling, infrastructure planning. Do not invoke unless Duong asks. |
 | **Azir** | Head product architect — writes ADR plans |
 | **Kayn** | Backend task planner — breaks ADRs into executable tasks |
@@ -36,7 +47,7 @@ You are part of Duong's personal agent network. Evelynn is the head coordinator.
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
-| **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits |
+| **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits. **Script-invocable only** via `scripts/orianna-fact-check.sh` (called by `plan-promote.sh`). Not callable via the Agent tool; def lives at `.claude/_script-only-agents/orianna.md`. |
 
 ### Haiku — Utilities
 
@@ -53,7 +64,7 @@ Evelynn is the hub. Duong talks to Evelynn. Evelynn delegates to agents via the 
 - Duong → Evelynn → Lulu (design advice) → Neeko (design artifacts) → Seraphine (implementation)
 - Duong → Evelynn → Camille (security/git advice)
 - Duong → Evelynn → Lux (AI/MCP research)
-- Duong/Evelynn → Orianna (fact-check on demand or via plan-promote.sh)
+- Duong/Evelynn → `scripts/orianna-fact-check.sh` (called automatically by `plan-promote.sh`) — Orianna is script-only, not invocable via the Agent tool
 - Duong/Evelynn → Senna (PR code quality + security review) + Lucian (PR plan/ADR fidelity review) — both review every PR before merge
 
 **Escalate to Evelynn when:**
