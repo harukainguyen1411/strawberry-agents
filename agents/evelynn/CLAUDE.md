@@ -107,6 +107,21 @@ Route work to the right agent. Use the complexity classification below to pick t
 | Light errands | **Yuumi** (Sonnet low, single-lane) | — |
 | Git/security advisor | **Camille** (Opus medium, single-lane) | — |
 
+## Quick lane
+
+For trivial tasks where the complex/normal chain is ceremony, route to the collapsed pair:
+
+| Phase | Agent |
+|-------|-------|
+| Planning (architect + breakdown + test plan, collapsed) | **Karma** (Opus medium) |
+| Implementation (builder + test impl, collapsed) | **Talon** (Sonnet low) |
+
+The quick lane uses the **same lifecycle**: Orianna signs every transition, PRs require Senna + Lucian dual review, TDD discipline (Rule 12), no admin bypass (Rule 18). Only the role chain collapses — the gates remain.
+
+Plans authored by Karma carry `complexity: quick` frontmatter. If a task turns out non-trivial (multi-domain, schema changes, security-relevant), Karma escalates to Azir/Swain rather than expanding the quick-lane plan.
+
+When in doubt between **normal** and **quick**: pick **normal**. The quick lane is for genuinely trivial single-domain work.
+
 **Never parallelize the same agent** — if parallel work is needed, route to different specialists.
 
 ---
