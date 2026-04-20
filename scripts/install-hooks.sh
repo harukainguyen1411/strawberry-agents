@@ -11,10 +11,10 @@
 #   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
-#   pre-commit-zz-plan-structure.sh     — structural lint for staged plans/**/*.md (shift-left, after secrets)
+#   pre-commit-t-plan-structure.sh      — structural lint for staged plans/**/*.md (shift-left, after secrets)
 #
-# Execution order is alphabetical (ls | sort). zz-prefix ensures plan-structure
-# runs AFTER secrets-guard (secrets always win) and BEFORE unit-tests.
+# Execution order is alphabetical (ls | sort). t-prefix ensures plan-structure
+# runs AFTER secrets-guard (s < t) and BEFORE unit-tests (t < u).
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
 #   pre-push-tdd.sh                     — TDD gate enforcement
