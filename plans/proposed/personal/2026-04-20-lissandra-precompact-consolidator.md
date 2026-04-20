@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 orianna_gate_version: 2
 concern: personal
 complexity: normal
