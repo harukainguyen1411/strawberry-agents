@@ -36,7 +36,20 @@ fi
 make_plan_with_tasks() {
   tasks_body="$1"
   f="$(mktemp)"
-  printf '---\ntitle: test\nstatus: proposed\n---\n\n# Body\n\n## Tasks\n\n%s\n' "$tasks_body" > "$f"
+  # Write frontmatter + header using heredoc to avoid printf treating '---' as flags
+  cat > "$f" << 'FMEOF'
+---
+title: test
+status: proposed
+---
+
+# Body
+
+## Tasks
+
+FMEOF
+  # Append task body lines (printf '%s\n' is safe regardless of content)
+  printf '%s\n' "$tasks_body" >> "$f"
   printf '%s' "$f"
 }
 
