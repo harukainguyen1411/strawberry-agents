@@ -44,7 +44,15 @@ make_repo() {
 write_plan() {
   repo="$1"; slug="$2"
   f="$repo/plans/proposed/$slug.md"
-  printf '---\ntitle: %s\nstatus: proposed\n---\n\n# Body\n\nTest plan content.\n' "$slug" > "$f"
+  # Use printf '%s\n' for each line to avoid printf treating '---' as option flags
+  printf '%s\n' "---" > "$f"
+  printf '%s\n' "title: $slug" >> "$f"
+  printf '%s\n' "status: proposed" >> "$f"
+  printf '%s\n' "---" >> "$f"
+  printf '%s\n' "" >> "$f"
+  printf '%s\n' "# Body" >> "$f"
+  printf '%s\n' "" >> "$f"
+  printf '%s\n' "Test plan content." >> "$f"
   printf '%s' "$f"
 }
 
