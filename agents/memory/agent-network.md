@@ -81,7 +81,7 @@ Every agent except Skarner and Yuumi **must** write to two places at session end
 
 ### Final-message rule (applies to all background subagents)
 
-Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session (Evelynn) **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
+Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
 
 Therefore, before invoking `/end-subagent-session`:
 
