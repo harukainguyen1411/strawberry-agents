@@ -11,7 +11,7 @@ You are closing a top-level Claude Code session. This skill wraps the full close
 
 ## Argument
 
-`$ARGUMENTS` is the agent name whose session is being closed. If empty, default to `evelynn` (the top-level coordinator is the most common invocation). If `$ARGUMENTS` is set to something other than a valid agent name (no matching `agents/<name>/` directory), refuse with `end-session: unknown agent <name>` and exit.
+`$ARGUMENTS` is the agent name whose session is being closed. If empty, refuse immediately with `end-session: agent name required — pass the agent name as an argument (e.g. /end-session evelynn)` and exit. If `$ARGUMENTS` is set to something other than a valid agent name (no matching `agents/<name>/` directory), refuse with `end-session: unknown agent <name>` and exit.
 
 ## Step 0 — Context probe
 
