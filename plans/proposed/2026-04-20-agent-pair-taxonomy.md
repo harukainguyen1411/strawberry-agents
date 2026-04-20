@@ -9,7 +9,7 @@ tags: [taxonomy, roster, pairing, governance]
 
 # Context
 
-The plan lifecycle ADR (`plans/proposed/2026-04-20-orianna-gated-plan-lifecycle.md`) gates each phase transition on a **role** — architect, breakdown, test plan, test impl, feature build, frontend, DevOps, review, AI-specialist. Today the roster has one agent per role regardless of the task's complexity. That's the wrong default.
+The plan lifecycle ADR (`plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md`) gates each phase transition on a **role** — architect, breakdown, test plan, test impl, feature build, frontend, DevOps, review, AI-specialist. Today the roster has one agent per role regardless of the task's complexity. That's the wrong default.
 
 **Symptoms today:**
 
@@ -200,6 +200,18 @@ Jayce (normal-track builder) `effort` bumps from `low` to `medium`. Original Son
 
 Lulu (normal-track frontend design) `effort` bumps from `low` to `medium`, per the never-Opus-low rule. No scope change; the bump simply moves her onto the canonical ordering (§D1.1b).
 
+### D3.3c. Caitlyn — effort drop
+
+Caitlyn (normal-track test plan) `effort` drops from `high` to `medium`. No scope change. The normal-track test-plan slot is Opus-medium by matrix design (§D1 row 3); Caitlyn's current `effort: high` is reconciled down to match. Complex-track test-planning (resilience, fault injection, cross-service fixtures) moves to Xayah at Opus-high (§D2.1) — Caitlyn retains the normal-track slot for standard test-plan work where Opus-medium is sufficient.
+
+### D3.3d. Neeko — effort bump
+
+Neeko (complex-track frontend design) `effort` bumps from `medium` to `high`. No scope change. The complex-track frontend-design slot is Opus-high by matrix design (§D1 row 6); Neeko's current `effort: medium` is reconciled up to match. This is the counterpart to Lulu's bump-up onto the canonical ordering: complex-track UI work (multi-state flows, novel interaction patterns, cross-surface design systems) justifies Opus-high.
+
+### D3.3e. Kayn — effort drop
+
+Kayn (normal-track task breakdown) `effort` drops from `high` to `medium`. No scope change. The normal-track breakdown slot is Opus-medium by matrix design (§D1 row 2); Kayn's current `effort: high` is reconciled down to match. Complex-track breakdowns route to Aphelios at Opus-high (§D1 matrix note row 2) — Kayn retains the normal-track slot for standard ADR decomposition where Opus-medium is the right `$/quality` point.
+
 ### D3.3. Swain — effort bump
 
 Swain's `effort:` goes from `high` to `xhigh`. No description change; the role (cross-cutting system architect) is unchanged. The bump formalizes "when Duong invokes Swain, he's paying for the deeper reasoning tier."
@@ -375,7 +387,7 @@ The current delegation table in `agents/evelynn/CLAUDE.md` (lines 87–109) maps
 1. Create `_shared/` directory and the 8 shared rule files (§D4.1). Content = factor out existing per-agent rule text where pair-mates already exist (Azir, Kayn, Caitlyn, Vi, Jayce, Seraphine).
 2. Create agent definitions for Xayah, Rakan, Soraka, Syndra. Each stubbed with shared rules inlined per §D4.3.
 3. Add `sync-shared-rules.sh` and `pre-commit-agent-shared-rules.sh`. The hook must implement the three checks in §D4.3a (shared-rules drift, pair-mate symmetry with `concern:` exemption, model-frontmatter convention).
-4. Track `.claude/agents/sona.md` (Q8 resolution). The file exists untracked today; it gets `concern: work` frontmatter added per §D1.1a and is committed as part of this Phase A. Evelynn's own definition gets `concern: personal` added at the same time so the coordinator axis is symmetric from the first commit.
+4. Update `.claude/agents/sona.md` (Q8 resolution). The file is already tracked+modified today; it gets `concern: work` frontmatter added per §D1.1a and is committed as part of this Phase A. Evelynn's own definition gets `concern: personal` added at the same time so the coordinator axis is symmetric from the first commit.
 5. Update `agents-table.md` and `agent-network.md` to list the new agents (Xayah, Rakan, Soraka, Syndra) as `new-2026-04-xx` and add Sona's roster entry.
 
 Phase A leaves existing routing intact — Evelynn keeps using the current delegation table. New agents are in the roster but not yet invoked.
