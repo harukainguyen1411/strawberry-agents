@@ -431,6 +431,53 @@ Phases A–C are sequential but each is a single small commit set. Phase D is de
 
 ---
 
+## D13. Quick lane — Karma + Talon (collapsed pair)
+
+Added 2026-04-21 (post-promotion amendment per author + Evelynn).
+
+The complex/normal split in §D1 covers tasks worth a multi-agent role chain. Some work isn't — a tooltip copy change, a one-line script tweak, a single-file agent-def edit doesn't justify Architect → Breakdown → Test plan → Builder → Test impl × five separate dispatches. The **quick lane** is a third track that collapses planner and executor roles into a single pair.
+
+### D13.1. Roster
+
+- **Karma** — Opus medium, `tier: quick`, `pair_mate: talon`, `role_slot: quick-planner`. Authors plan + tasks + test plan inline in one decisive single-file pass.
+- **Talon** — Sonnet low, `tier: quick`, `pair_mate: karma`, `role_slot: quick-executor`. Builds + tests in one strike.
+
+### D13.2. Same protocol, fewer hops
+
+The quick lane shares the **full lifecycle protocol** with the complex/normal tracks:
+
+- Plans pass through Orianna's signing gate at every transition (proposed → approved → in-progress → implemented).
+- Implementations follow xfail-first TDD (CLAUDE.md Rule 12).
+- PRs require Senna + Lucian dual review (CLAUDE.md Rule 18).
+- No `--admin` bypass; no skip-hooks.
+
+What collapses is the *role chain*, not the *gates*. Karma authors a single-file plan with `complexity: quick` frontmatter (see §D6.1). Talon implements with the same commit/PR discipline as Jayce/Viktor.
+
+### D13.3. When to invoke
+
+Quick lane is for **trivial single-domain work**:
+- Single top-level domain touched (e.g. only `scripts/` or only `agents/<name>/profile.md`)
+- No schema propagation, no new external integrations, no universal-invariant changes
+- Plan body fits in 1-3 paragraphs of context plus a flat task list
+
+If a task hits any of the §D6 complex indicators (>180 AI-min, >10 tasks, cross-cutting, schema, integration, plan-governance), Karma escalates to Azir/Swain rather than expanding the quick-lane plan.
+
+When uncertain between **normal** and **quick**: pick **normal**. The normal track's full chain protects against missed concerns.
+
+### D13.4. Frontmatter contract
+
+Adds `tier: quick` to the §D5 enum. Adds `quick-planner | quick-executor` to the `role_slot:` enum. Adds `complexity: quick` to the §D6.1 plan-frontmatter values. The pre-commit hook (§D4.3a check #3) is updated to recognize `quick-executor:quick` as the only Sonnet slot in the quick lane (Karma is Opus, Talon is Sonnet).
+
+### D13.5. Shared-rules files
+
+Two new files under `.claude/agents/_shared/`:
+- `quick-planner.md` — sourced into karma.md
+- `quick-executor.md` — sourced into talon.md
+
+Sync + drift detection identical to §D4.3.
+
+---
+
 # Resolved gating questions (round 2)
 
 All seven round-1 questions plus one new framing decision were answered by Duong on 2026-04-20 in the consolidation pass. Summary:
@@ -459,3 +506,7 @@ Round 3 arose while consolidating Lux's retiering. Duong resolved all three on 2
 All three round-3 resolutions flow into the ADR text above; no open questions remain at authoring time. The ADR is ready for Orianna fact-check and promotion.
 
 ---
+
+## Revision log
+
+- 2026-04-21 — Evelynn — added §D13 (quick lane). Collapsed planner/executor pair (Karma + Talon) for trivial work. Same Orianna gate, same PR review. New shared files: `_shared/quick-planner.md`, `_shared/quick-executor.md`. Pre-commit hook (§D4.3a) updated to recognize quick lane.
