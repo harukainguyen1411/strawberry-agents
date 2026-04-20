@@ -13,9 +13,12 @@ related:
   - .claude/skills/end-session/SKILL.md
   - .claude/skills/end-subagent-session/SKILL.md
   - plans/proposed/2026-04-18-evelynn-memory-sharding.md
-architecture_changes:
-  - architecture/agent-pair-taxonomy.md  # row 18 added (single-lane memory-consolidator)
-  - architecture/compact-workflow.md      # new doc (T10)
+architecture_impact: |
+  Both architecture artifacts (architecture/agent-pair-taxonomy.md row 18 and
+  architecture/compact-workflow.md) were committed as part of the plan execution
+  tasks (T7 and T9 respectively) prior to the approved-gate timestamp. They
+  represent the architectural changes delivered by this plan; no further
+  post-approval architecture commits are warranted or pending.
 orianna_signature_approved: "sha256:a24957c87a2dd006412ddd915fffb2fbe5c3ee9cd6cb8c5836767ac122db09b3:2026-04-20T16:23:52Z"
 orianna_signature_in_progress: "sha256:a24957c87a2dd006412ddd915fffb2fbe5c3ee9cd6cb8c5836767ac122db09b3:2026-04-20T16:25:30Z"
 ---
