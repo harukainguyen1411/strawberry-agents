@@ -3,8 +3,6 @@ title: GitHub Auth Switching Lockdown
 status: proposed
 owner: pyke
 created: 2026-04-05
-gdoc_id: 1iXUZCOAiQ1Q50ZNRo2vVlsEafzQlbS0EvCrIResg5fY
-gdoc_url: https://docs.google.com/document/d/1iXUZCOAiQ1Q50ZNRo2vVlsEafzQlbS0EvCrIResg5fY/edit
 ---
 
 # GitHub Auth Switching Lockdown
