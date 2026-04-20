@@ -294,6 +294,11 @@ Signed-by: Orianna
 Signed-phase: ${PHASE}
 Signed-hash: sha256:${BODY_HASH}"
 
+# Write COMMIT_EDITMSG before git commit so the pre-commit hook (which runs before
+# git prepares the message internally) can inspect the trailers.
+GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --git-dir)"
+printf '%s\n' "$COMMIT_MSG" > "${GIT_DIR_PATH}/COMMIT_EDITMSG"
+
 git -C "$REPO_ROOT" \
   -c "user.name=$ORIANNA_NAME" \
   -c "user.email=$ORIANNA_EMAIL" \
