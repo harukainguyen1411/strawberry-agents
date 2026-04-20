@@ -15,7 +15,8 @@ teardown() {
   rm -rf "$TMP_DIR"
 }
 
-# Helper: create a minimal agent .md file
+# Helper: create a minimal agent .md file.
+# make_agent <path> <name> [model] [tier] [pair_mate] [role_slot] [concern] [inlined_shared]
 make_agent() {
   local path="$1"
   local name="$2"
@@ -59,30 +60,43 @@ make_agent() {
 # --- No agent files staged → exit 0 fast ---
 
 @test "pre-commit-agent-shared-rules.sh: exits 0 when no .claude/agents files are staged" {
-  # Pass an empty staged list via env var or empty stdin — script should fast-exit 0
+  # With an empty agents dir, no files to check → exit 0
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
 
 # ============================================================
 # Check 1: Shared-rules drift
+# Use an architect role (Opus slot) to avoid model-convention check 3 conflicts.
+# Both pair-mates (swain=complex, azir=normal) are Opus and omit model:.
 # ============================================================
 
 @test "check1: exits 0 when inlined content byte-matches canonical shared file" {
-  local shared_content="## Shared Rules\n\n- Rule one\n"
-  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+  local shared_content="## Shared Architect Rules
 
-  make_agent "$TMP_DIR/.claude/agents/jayce.md" "jayce" "sonnet" "normal" "viktor" "builder" "" "$(printf '%b' "$shared_content")"
+- Design for next 2 years
+"
+  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/architect.md"
+
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/swain.md" "swain" "" "complex" "azir" "architect" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/azir.md"  "azir"  "" "normal"  "swain" "architect" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
 
 @test "check1: exits non-zero when inlined content has drifted from canonical shared file" {
-  printf "## Shared Rules\n\n- Rule one (canonical)\n" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+  printf "## Shared Architect Rules\n\n- Canonical rule\n" > "$TMP_DIR/.claude/agents/_shared/architect.md"
 
-  # Agent has stale/different inlined content
-  make_agent "$TMP_DIR/.claude/agents/jayce.md" "jayce" "sonnet" "normal" "viktor" "builder" "" "## Shared Rules\n\n- Rule one (stale)\n"
+  # swain has stale inlined content; azir has matching content (only one drifted)
+  local canonical_inlined="## Shared Architect Rules
+
+- Canonical rule
+"
+  make_agent "$TMP_DIR/.claude/agents/swain.md" "swain" "" "complex" "azir"  "architect" "" "## Stale content"
+  make_agent "$TMP_DIR/.claude/agents/azir.md"  "azir"  "" "normal"  "swain" "architect" "" "$canonical_inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -ne 0 ]
@@ -90,8 +104,9 @@ make_agent() {
 }
 
 @test "check1: error message tells user to run sync-shared-rules.sh" {
-  printf "## Canonical shared content\n" > "$TMP_DIR/.claude/agents/_shared/builder.md"
-  make_agent "$TMP_DIR/.claude/agents/jayce.md" "jayce" "sonnet" "normal" "viktor" "builder" "" "## Stale content\n"
+  printf "## Canonical shared content\n" > "$TMP_DIR/.claude/agents/_shared/architect.md"
+  make_agent "$TMP_DIR/.claude/agents/swain.md" "swain" "" "complex" "azir"  "architect" "" "## Stale content"
+  make_agent "$TMP_DIR/.claude/agents/azir.md"  "azir"  "" "normal"  "swain" "architect" "" "## Stale content"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -ne 0 ]
@@ -100,26 +115,37 @@ make_agent() {
 
 # ============================================================
 # Check 2: Pair-mate symmetry
+# builder slot: both Viktor (complex) and Jayce (normal) are Sonnet — use model: sonnet.
 # ============================================================
 
 @test "check2: exits 0 when pair_mate is symmetric (A→B and B→A)" {
-  local shared_content="## Shared\n\n- rule\n"
+  local shared_content="## Shared Builder Rules
+
+- Build clean code
+"
   printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
 
-  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$(printf '%b' "$shared_content")"
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" ""       "complex" "jayce"  "builder" "" "$(printf '%b' "$shared_content")"
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" "jayce"  "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
 
 @test "check2: exits non-zero when pair_mate is asymmetric (A→B but B points to C)" {
-  local shared_content="## Shared\n\n- rule\n"
+  local shared_content="## Shared
+
+- rule
+"
   printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
 
-  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$(printf '%b' "$shared_content")"
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$inlined"
   # viktor's pair_mate points to someone else — asymmetric
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" ""       "complex" "rakan"  "builder" "" "$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" "rakan"  "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -ne 0 ]
@@ -127,12 +153,17 @@ make_agent() {
 }
 
 @test "check2: exits non-zero when pair_mate is missing on one side (A→B but B has no pair_mate)" {
-  local shared_content="## Shared\n\n- rule\n"
+  local shared_content="## Shared
+
+- rule
+"
   printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
 
-  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$(printf '%b' "$shared_content")"
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$inlined"
   # viktor has no pair_mate declared
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" ""       "complex" ""       "builder" "" "$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" ""       "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -ne 0 ]
@@ -149,26 +180,40 @@ make_agent() {
 
 # ============================================================
 # Check 3: Model-frontmatter convention
+# Per §D1: builder:normal=Jayce (Sonnet), builder:complex=Viktor (Sonnet),
+# architect:normal=Azir (Opus, omit model:), architect:complex=Swain (Opus, omit model:).
 # ============================================================
 
 @test "check3: exits 0 when Sonnet agent declares model: sonnet" {
-  # Row 4 test-impl normal track — Vi is Sonnet medium
-  local shared_content="## Shared\n\n- rule\n"
-  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/test-impl.md"
+  # builder:normal = Jayce (Sonnet medium) — must declare model: sonnet
+  local shared_content="## Shared Builder Rules
 
-  make_agent "$TMP_DIR/.claude/agents/vi.md" "vi" "sonnet" "normal" "rakan" "test-impl" "" "$(printf '%b' "$shared_content")"
+- Build clean code
+"
+  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" "jayce"  "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
 
 @test "check3: exits non-zero (error) when Sonnet-role agent is missing model: sonnet" {
-  # A Sonnet-role agent (e.g. Vi in test-impl normal slot) without model: declared
-  local shared_content="## Shared\n\n- rule\n"
-  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/test-impl.md"
+  # builder:normal slot (Jayce) without model: declared → error
+  local shared_content="## Shared Builder Rules
 
-  # No model declared but role_slot=test-impl tier=normal is a Sonnet slot per §D1 matrix
-  make_agent "$TMP_DIR/.claude/agents/vi.md" "vi" "" "normal" "rakan" "test-impl" "" "$(printf '%b' "$shared_content")"
+- Build clean code
+"
+  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  # jayce missing model: — builder:normal is Sonnet
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  ""       "normal"  "viktor" "builder" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" "jayce"  "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -ne 0 ]
@@ -176,12 +221,18 @@ make_agent() {
 }
 
 @test "check3: exits 0 (but warns) when Opus agent redundantly declares model: opus" {
-  # Opus agents should omit model: — declaring it is redundant and produces a warning (not error)
-  local shared_content="## Shared\n\n- rule\n"
-  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+  # architect:complex = Swain (Opus xhigh). Declaring model: opus is redundant → warning only, not error.
+  local shared_content="## Shared Architect Rules
 
-  # An Opus-role agent with model: opus explicitly declared (redundant)
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "opus" "complex" "jayce" "builder" "" "$(printf '%b' "$shared_content")"
+- Design for next 2 years
+"
+  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/architect.md"
+
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  # swain has model: opus declared — redundant but not blocking
+  make_agent "$TMP_DIR/.claude/agents/swain.md" "swain" "opus" "complex" "azir"  "architect" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/azir.md"  "azir"  ""     "normal"  "swain" "architect" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   # Exit 0 — warning only, not a blocking error
@@ -190,26 +241,39 @@ make_agent() {
 }
 
 @test "check3: exits 0 when Opus agent correctly omits model: field" {
-  local shared_content="## Shared\n\n- rule\n"
-  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
+  # architect:complex = Swain (Opus xhigh). Omitting model: is correct.
+  local shared_content="## Shared Architect Rules
 
-  # Opus-role (complex builder) with no model: declared — correct
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "" "complex" "jayce" "builder" "" "$(printf '%b' "$shared_content")"
+- Design for next 2 years
+"
+  printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/architect.md"
+
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/swain.md" "swain" ""  "complex" "azir"  "architect" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/azir.md"  "azir"  ""  "normal"  "swain" "architect" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
 
 # ============================================================
-# Integration: all three checks together
+# Integration: all three checks together on a valid pair
 # ============================================================
 
 @test "integration: clean pair passes all three checks" {
-  local shared_content="## Shared Builder Rules\n\n- Build clean code\n- Follow patterns\n"
+  # Use the builder role (both slots are Sonnet per §D1 row 5)
+  local shared_content="## Shared Builder Rules
+
+- Build clean code
+- Follow patterns
+"
   printf "%b" "$shared_content" > "$TMP_DIR/.claude/agents/_shared/builder.md"
 
-  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$(printf '%b' "$shared_content")"
-  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" ""       "complex" "jayce"  "builder" "" "$(printf '%b' "$shared_content")"
+  local inlined
+  inlined="$(printf '%b' "$shared_content")"
+  make_agent "$TMP_DIR/.claude/agents/jayce.md"  "jayce"  "sonnet" "normal"  "viktor" "builder" "" "$inlined"
+  make_agent "$TMP_DIR/.claude/agents/viktor.md" "viktor" "sonnet" "complex" "jayce"  "builder" "" "$inlined"
 
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]

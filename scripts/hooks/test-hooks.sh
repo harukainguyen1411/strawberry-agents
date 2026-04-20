@@ -119,7 +119,7 @@ rm -rf "$tmp_hooks"
 
 echo ""
 echo "=== sub-hook presence (B6 regression) ==="
-for _sh in pre-commit-secrets-guard.sh pre-commit-artifact-guard.sh pre-commit-unit-tests.sh pre-push-tdd.sh; do
+for _sh in pre-commit-secrets-guard.sh pre-commit-artifact-guard.sh pre-commit-unit-tests.sh pre-push-tdd.sh pre-commit-agent-shared-rules.sh; do
   if [ -f "$REPO_ROOT/scripts/hooks/$_sh" ]; then
     echo "  PASS: scripts/hooks/$_sh present"
     PASS=$((PASS+1))
