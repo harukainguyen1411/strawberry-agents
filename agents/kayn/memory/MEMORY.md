@@ -2,6 +2,16 @@
 
 ## Sessions
 
+### 2026-04-20 — SE task file BD amendment revision (work concern, s3)
+
+- Issued inline-edits to the 36-task SE breakdown per Sona's `2026-04-20-session-state-encapsulation-bd-amendment.md`. Commit `611b52e`, pushed to `origin/feat/demo-studio-v3`.
+- 11 task bodies amended (SE.A.4, SE.A.5, SE.A.8, SE.B.2, SE.B.4, SE.C.1, SE.C.2, SE.C.3, SE.E.2, SE.F.1, SE.F.3, SE.F.5) + 1 new sub-task `SE.A.4b` + 1 sub-task `SE.F.1b` documented inside SE.F.1's body. Zero existing task IDs renumbered.
+- Net shape change: `Session` dataclass becomes lifecycle-only (drop brand/market/languages/shortcode/configVersion); identity fields become agent-init pass-through; `factory_bridge*` collapses to thin shells (mostly deletion); HTTP responses on /sessions, /session/{id}/status, /session/new shrink to lifecycle-only; grep gate gains config_mgmt_client scope + insuranceLine literal patterns. OQ-SE-2 SUPERSEDED by BD-1.
+- Pattern lessons: (a) "decision-of-record on top of an unchanged ADR" via amendment file beats rewriting; (b) sub-task ID `<parent>b` preserves ordering + dispatch-tool sort; (c) fixture updates fold into impl task's commit pair (per existing TDD convention); (d) cross-task-pack overlap (SE.B.2/SE.B.4 vs Aphelios's BD pack) needs explicit ownership flags in task bodies.
+- Coordination flags Sona needs at dispatch: SE.B.2 owns the 4 Refactor-to-S2 paths in main.py; Aphelios owns the Delete-from-S1 paths (preview route, SAMPLE_CONFIG plumbing). SE.B.4 owns the bridge-file deletes; Aphelios's BD pack defers to SE.B.4 on these specific lines. SE.E.2 reserves room for Aphelios's third grep pattern (config-write `session["config"] = ...`) without adding it speculatively.
+- Estimates table left untouched (out of §4 scope); flagged informally that SE.B.4 grew + SE.A added a sub-task.
+- Sibling ADRs (`managed-agent-lifecycle`, `managed-agent-dashboard-tab`) inherit the lifecycle-only `Session` shape change; their owners need a corresponding amendment if they referenced session.brand/market/shortcode/configVersion. Flagged in the BD-amendments section.
+
 ### 2026-04-20 — session-state-encapsulation task breakdown (work concern)
 
 - Produced `plans/2026-04-20-session-state-encapsulation-tasks.md` on `missmp/company-os` branch `feat/demo-studio-v3` (commit `ea17448`, pushed) from Azir's ADR `plans/2026-04-20-session-state-encapsulation.md`.
