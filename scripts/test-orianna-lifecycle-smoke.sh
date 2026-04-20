@@ -46,6 +46,7 @@ if [ -n "$MISSING" ]; then
     APPROVED_VERIFY \
     EDIT_STALE_DETECT \
     RESIGN_AFTER_EDIT \
+    PROMOTE_TO_APPROVED \
     INPROGRESS_SIGN \
     PROMOTE_TO_INPROGRESS \
     IMPLEMENTED_SIGN \
@@ -55,7 +56,7 @@ if [ -n "$MISSING" ]; then
   do
     printf 'XFAIL  %s\n' "$c"
   done
-  printf '\nResults: 0 passed, 10 xfail (expected — implementation not present)\n'
+  printf '\nResults: 0 passed, 11 xfail (expected — implementation not present)\n'
   exit 0
 fi
 
@@ -123,7 +124,7 @@ Smoke harness covers all three phase signatures and post-hoc verification.
 
 ## Test results
 
-Pending — to be filled in after implementation.
+https://ci.example.com/run/smoke-001
 PLANEOF
 
 git -C "$REPO" add "$PLAN"
@@ -162,14 +163,32 @@ rc=0
 REPO="$REPO" bash "$SIGN" "$PLAN" approved 2>/dev/null || rc=$?
 if [ "$rc" -eq 0 ]; then pass "RESIGN_AFTER_EDIT"; else fail "RESIGN_AFTER_EDIT" "re-sign approved exited $rc"; fi
 
-# --- CASE 5: Sign in-progress ---
+# --- CASE 5: Promote to approved (proposed → approved) ---
+# The plan must be in plans/approved/ before it can be signed for in_progress.
 rc=0
-REPO="$REPO" bash "$SIGN" "$PLAN" in_progress 2>/dev/null || rc=$?
+REPO="$REPO" NO_PUSH=1 bash "$PROMOTE" "$PLAN" approved 2>/dev/null || rc=$?
+APPROVED_PLAN="$REPO/plans/approved/$SLUG.md"
+if [ "$rc" -eq 0 ] && [ -f "$APPROVED_PLAN" ]; then
+  pass "PROMOTE_TO_APPROVED"
+else
+  fail "PROMOTE_TO_APPROVED" "promote to approved failed (rc=$rc, file_exists=$([ -f "$APPROVED_PLAN" ] && echo yes || echo no))"
+fi
+
+# --- CASE 6: Sign in-progress (plan now in approved/) ---
+# The plan body is stable from initial commit onward — test results link already
+# present in the initial content. Body hash must not change between any two signings
+# (§D9.4 carry-forward). Architecture evidence touches only architecture/, not the plan.
+printf '\nupdated by smoke test\n' >> "$REPO/architecture/key-scripts.md"
+git -C "$REPO" add "$REPO/architecture/key-scripts.md"
+git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
+  commit -q -m "chore: update arch doc"
+rc=0
+REPO="$REPO" bash "$SIGN" "$APPROVED_PLAN" in_progress 2>/dev/null || rc=$?
 if [ "$rc" -eq 0 ]; then pass "INPROGRESS_SIGN"; else fail "INPROGRESS_SIGN" "orianna-sign.sh in_progress exited $rc"; fi
 
-# --- CASE 6: Promote to in-progress ---
+# --- CASE 7: Promote to in-progress ---
 rc=0
-REPO="$REPO" bash "$PROMOTE" "$PLAN" in-progress 2>/dev/null || rc=$?
+REPO="$REPO" NO_PUSH=1 bash "$PROMOTE" "$APPROVED_PLAN" in-progress 2>/dev/null || rc=$?
 INPROGRESS_PLAN="$REPO/plans/in-progress/$SLUG.md"
 if [ "$rc" -eq 0 ] && [ -f "$INPROGRESS_PLAN" ]; then
   pass "PROMOTE_TO_INPROGRESS"
@@ -178,23 +197,16 @@ else
 fi
 
 # --- CASE 7: Sign implemented ---
-# First add test results section to satisfy implemented gate
-printf '\n## Test results\n\nhttps://ci.example.com/run/smoke-001\n' >> "$INPROGRESS_PLAN"
-git -C "$REPO" add "$INPROGRESS_PLAN"
-git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
-  commit -q -m "chore: add test results"
-# Also add architecture change evidence
-printf '\nupdated by smoke test\n' >> "$REPO/architecture/key-scripts.md"
-git -C "$REPO" add .
-git -C "$REPO" -c user.email="test@example.com" -c user.name="Tester" \
-  commit -q -m "chore: update arch doc"
+# No plan body edits needed: the CI link was added before in_progress signing,
+# so the body hash is stable. The implemented gate verifies the Test results
+# section exists with a link (already present) and that carry-forward sigs match.
 rc=0
 REPO="$REPO" bash "$SIGN" "$INPROGRESS_PLAN" implemented 2>/dev/null || rc=$?
 if [ "$rc" -eq 0 ]; then pass "IMPLEMENTED_SIGN"; else fail "IMPLEMENTED_SIGN" "orianna-sign.sh implemented exited $rc"; fi
 
 # --- CASE 8: Promote to implemented ---
 rc=0
-REPO="$REPO" bash "$PROMOTE" "$INPROGRESS_PLAN" implemented 2>/dev/null || rc=$?
+REPO="$REPO" NO_PUSH=1 bash "$PROMOTE" "$INPROGRESS_PLAN" implemented 2>/dev/null || rc=$?
 IMPLEMENTED_PLAN="$REPO/plans/implemented/$SLUG.md"
 if [ "$rc" -eq 0 ] && [ -f "$IMPLEMENTED_PLAN" ]; then
   pass "PROMOTE_TO_IMPLEMENTED"
