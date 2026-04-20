@@ -35,6 +35,7 @@
 - 2026-04-19 (ekko s38): T212 API fixtures generated from live API (cash/portfolio/orders). order.id, fill.id, nextPagePath redacted. T212.env encrypted to T212.env.age (round-trip sha256 verified), plaintext deleted. PR #61 open on strawberry-app. Worktree at ~/Documents/Personal/strawberry-app-t212.
 - 2026-04-19 (ekko s39): Merged PR #61 (chore: T212 fixtures + encrypted key). All 15 checks green, APPROVED (Senna+Lucian). Merge SHA: 3b98f34de18084e9217439f3229fea23271b0ec1.
 - 2026-04-19 (ekko s40): Updated PR #62 branch (phase1-darkstrawberry-apps-rename) — merged origin/main, resolved rename-vs-add conflict for T212 fixtures (moved from apps/myapps/ ghost dir to apps/darkstrawberry-apps/), pushed ff372ed. mergeStateStatus: BLOCKED (needs reviews/CI), mergeable: MERGEABLE.
+- 2026-04-20: Promoted 2026-04-20-orianna-gated-plan-lifecycle.md to approved via plan-promote.sh. Orianna gate: 0 blocks, CLEAN. Commit 618904b pushed to main.
 
 ## Archive Note
 
