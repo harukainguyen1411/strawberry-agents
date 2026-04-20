@@ -1,29 +1,55 @@
 #!/usr/bin/env bash
-# filter-last-sessions.sh — list last-sessions/ shards modified within the last 48h,
+# filter-last-sessions.sh <secretary> — list last-sessions/ shards modified within the last 48h,
 # newest first (one path per line).
 #
+# Usage: bash scripts/filter-last-sessions.sh evelynn
+#        bash scripts/filter-last-sessions.sh sona
+#
 # Also runs a pre-boot validator:
-#   - verifies the <!-- sessions:auto-below sentinel exists in evelynn.md
+#   - verifies the <!-- sessions:auto-below sentinel exists in <secretary>.md
 #   - counts shards in last-sessions/
-#   - reports totals for Evelynn's audit trail
+#   - reports totals for the coordinator's audit trail
 #
 # Exit codes:
 #   0 — success (even if no shards match)
-#   1 — sentinel missing or duplicated in evelynn.md
+#   1 — sentinel missing or duplicated in <secretary>.md, or invalid secretary name
 
 set -euo pipefail
 
+# ---------------------------------------------------------------------------
+# Argument validation
+# ---------------------------------------------------------------------------
+if [ $# -ne 1 ]; then
+    echo "usage: filter-last-sessions.sh <secretary>" >&2
+    exit 1
+fi
+
+SECRETARY="$1"
+
+# Must match [a-z]+ only
+case "$SECRETARY" in
+    *[!a-z]*)
+        echo "filter-last-sessions: invalid secretary name '${SECRETARY}' — must match [a-z]+" >&2
+        exit 1
+        ;;
+esac
+
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-LAST_SESSIONS_DIR="${REPO_ROOT}/agents/evelynn/memory/last-sessions"
-EVELYNN_MD="${REPO_ROOT}/agents/evelynn/memory/evelynn.md"
+LAST_SESSIONS_DIR="${REPO_ROOT}/agents/${SECRETARY}/memory/last-sessions"
+MEMORY_MD="${REPO_ROOT}/agents/${SECRETARY}/memory/${SECRETARY}.md"
 SENTINEL="<!-- sessions:auto-below"
+
+if [ ! -f "$MEMORY_MD" ]; then
+    echo "filter-last-sessions: no memory file found at ${MEMORY_MD} — secretary '${SECRETARY}' does not exist or is not initialised." >&2
+    exit 1
+fi
 
 # ---------------------------------------------------------------------------
 # Pre-boot validator
 # ---------------------------------------------------------------------------
 SENTINEL_COUNT=$(python3 -c "
 count = 0
-with open('${EVELYNN_MD}', 'r') as f:
+with open('${MEMORY_MD}', 'r') as f:
     for line in f:
         if line.startswith('${SENTINEL}'):
             count += 1
@@ -37,11 +63,11 @@ for f in "${LAST_SESSIONS_DIR}"/*.md; do
     TOTAL_SHARDS=$(( TOTAL_SHARDS + 1 ))
 done
 
-echo "# pre-boot-validator" >&2
+echo "# pre-boot-validator [${SECRETARY}]" >&2
 echo "sentinel_count=${SENTINEL_COUNT} total_last_session_shards=${TOTAL_SHARDS}" >&2
 
 if [ "$SENTINEL_COUNT" -eq 0 ]; then
-    echo "ERROR: sentinel '${SENTINEL}' not found in evelynn.md — memory file may be corrupted." >&2
+    echo "ERROR: sentinel '${SENTINEL}' not found in ${SECRETARY}.md — memory file may be corrupted." >&2
     exit 1
 fi
 
@@ -68,7 +94,7 @@ for f in "${LAST_SESSIONS_DIR}"/*.md; do
 done
 
 if [ -z "$SHARDS_WITH_TIME" ]; then
-    echo "# filter-last-sessions: no shards modified within the last 48h" >&2
+    echo "# filter-last-sessions [${SECRETARY}]: no shards modified within the last 48h" >&2
     exit 0
 fi
 
