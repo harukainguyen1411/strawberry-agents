@@ -2,6 +2,16 @@
 
 ## Sessions
 
+### 2026-04-20 — Orianna-gated plan lifecycle task breakdown (personal concern)
+
+- Folded 33 atomic tasks into `plans/approved/2026-04-20-orianna-gated-plan-lifecycle.md` as inline `## Tasks` section (commit `946e32d`, pushed to main).
+- Coordinator corrected mid-session from sibling-file to inline — the ADR itself mandates §D3 one-plan-one-file; applies to its own breakdown. Deleted sibling draft, inlined.
+- 11 phases, tier map 12 BUILDER / 8 REFACTOR / 9 TEST / 7 ERRAND. Shipped items inventoried (8 rows) and explicitly excluded from re-tasking via anti-duplicate rule; T6.5 retires `orianna-fact-check.sh` call site without deleting the script (it stays as the mechanism `orianna-sign.sh` reuses under §D2.1).
+- Biggest clusters: (a) signing infra — orianna-sign.sh + verify + hash-helper + signature-shape hook (Phase 1–2); (b) phase-check machinery — three pinned prompts + four shell libs (Phases 3–4); (c) promote integration + grandfather branching — five refactor tasks against `plan-promote.sh` (Phase 6).
+- Hardest ordering: T2.1 has 7 hard dependencies; T6.4 must come after T9.1; T11.2 is terminal per §D12.
+- 3 open questions for Duong (OQ-K1/K2/K3); lib-placement, CLAUDE.md slot, self-demotion of this ADR.
+- Pattern lessons: (a) "inventory-before-tasks" table as standard for breakdowns on partially-shipped ADRs; (b) anti-duplicate rule as explicit paragraph, not just implicit via task omissions; (c) sibling-vs-inline default flipped — ADRs that introduce §D3-style one-file rules apply that rule to themselves.
+
 ### 2026-04-20 — SE task file BD amendment revision (work concern, s3)
 
 - Issued inline-edits to the 36-task SE breakdown per Sona's `2026-04-20-session-state-encapsulation-bd-amendment.md`. Commit `611b52e`, pushed to `origin/feat/demo-studio-v3`.
