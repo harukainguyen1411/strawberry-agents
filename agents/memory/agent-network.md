@@ -125,7 +125,7 @@ Therefore, before invoking `/end-subagent-session`:
 - Evelynn delegates execution, moving to `plans/in-progress/`
 - On completion, move to `plans/implemented/`
 
-**Promoting plans:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv` out of `proposed/`. The Drive mirror is proposed-only; `plan-promote.sh` unpublishes the Drive doc, moves the file, rewrites `status:`, commits, and pushes.
+**Promoting plans:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv` out of `proposed/`. `plan-promote.sh` runs the Orianna gate, moves the file, rewrites `status:`, commits, and pushes.
 
 No agent self-implements their own plan without approval.
 

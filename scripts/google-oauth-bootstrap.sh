@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # google-oauth-bootstrap.sh — one-time OAuth dance to mint a refresh token
-# for the plan-gdoc-mirror scripts.
+# for Drive API access (used by plan-fetch.sh).
 #
 # Run this ONCE on a machine that has a browser (typically Mac), then transfer
 # the resulting refresh token into the encrypted secrets blob.
@@ -48,7 +48,7 @@ AUTH_URL="https://accounts.google.com/o/oauth2/v2/auth?response_type=code&access
 
 cat >&2 <<EOF
 ================================================================
-Google OAuth bootstrap for plan-gdoc-mirror.
+Google OAuth bootstrap for Drive API credentials.
 
 A local listener will start on port $PORT.
 
@@ -129,7 +129,7 @@ Next steps:
      (and likewise for the other three)
 
   3. Verify with:
-       ./scripts/plan-publish.sh plans/proposed/<some-plan>.md
+       ./scripts/plan-fetch.sh plans/proposed/<some-plan>.md
 ================================================================
 EOF
 
