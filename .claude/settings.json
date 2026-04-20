@@ -74,6 +74,17 @@
           }
         ]
       }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/pre-compact-gate.sh"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {
