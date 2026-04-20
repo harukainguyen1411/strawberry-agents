@@ -13,6 +13,9 @@ related:
   - .claude/skills/end-session/SKILL.md
   - .claude/skills/end-subagent-session/SKILL.md
   - plans/proposed/2026-04-18-evelynn-memory-sharding.md
+architecture_changes:
+  - architecture/agent-pair-taxonomy.md  # row 18 added (single-lane memory-consolidator)
+  - architecture/compact-workflow.md      # new doc (T10)
 orianna_signature_approved: "sha256:12cb5c87060926179833693a8204bdec14b7f429ea1269d72aad6636ef35f8e0:2026-04-20T15:58:00Z"
 orianna_signature_in_progress: "sha256:12cb5c87060926179833693a8204bdec14b7f429ea1269d72aad6636ef35f8e0:2026-04-20T16:01:28Z"
 ---
@@ -501,6 +504,25 @@ A shell-based fixture driver pipes representative JSON payloads (no sentinel, se
 
 **T11 — Manual E2E verification (Vi).**
 Vi runs a full `/compact` + `/pre-compact-save` flow in a disposable Evelynn session and a disposable Sona session. For each: greet coordinator, do representative work, type `/compact`, observe block message, run `/pre-compact-save`, verify handoff shard + session shard + journal entry + commit land in `agents/<coordinator>/`, re-run `/compact`, observe allow. Results written to `assessments/personal/2026-04-20-lissandra-verification.md`. T11 must pass before the plan moves to `implemented/`.
+
+## Test results
+
+All 8 acceptance checks PASS per Vi's verification assessment (`assessments/personal/2026-04-20-lissandra-verification.md`, commit `64f7e04`).
+
+| Check | Result |
+|---|---|
+| Hook matrix drift (pre-commit-agent-shared-rules.sh registers `memory-consolidator:single_lane`) | PASS |
+| Agent def validity (`.claude/agents/lissandra.md` passes pre-commit hook) | PASS |
+| Skill manifest (`.claude/skills/pre-compact-save/SKILL.md` present, `disable-model-invocation: false`) | PASS |
+| Hook unit tests — `scripts/hooks/tests/pre-compact-gate.test.sh` (5/5 cases) | PASS |
+| settings.json wiring (`PreCompact` block, `matcher: manual`) | PASS |
+| Four hook decision paths (no sentinel → block; sentinel → allow; opt-out dotfile → allow; auto-compact matcher absent → allow) | PASS |
+| Coordinator detection (Evelynn and Sona sessions both correctly identified) | PASS |
+| Taxonomy row (`architecture/agent-pair-taxonomy.md` §1.1 lists Lissandra at row 16) | PASS |
+
+Non-blocking hygiene gap noted: `scripts/hooks/pre-compact-gate.sh` not `chmod +x` (bash invocation via settings.json does not require it; no gate block).
+
+Deferred (not blocking): live `/compact` trigger end-to-end with real shard writes requires an interactive Duong session; tracked as phase-2 follow-up per Q3 resolution.
 
 ## 9. Rollback
 
