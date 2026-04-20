@@ -105,6 +105,16 @@ _acquire_lock() {
 
 _acquire_lock
 
+# 0. Repo identity guard — must be run from inside strawberry-agents, never from a
+#    workspace repo (mmp/workspace, strawberry-app, etc.).  Plans live in this repo
+#    exclusively (CLAUDE.md rule 20).
+_claude_md="$REPO_ROOT/CLAUDE.md"
+if [ ! -f "$_claude_md" ] || ! grep -qF "Strawberry — Personal Agent System" "$_claude_md"; then
+  printf 'plan-promote: must be run from inside the strawberry-agents repo (current: %s).\n' "$REPO_ROOT" >&2
+  printf 'Plans live in strawberry-agents/plans/{proposed,approved,...}/{work,personal}/, never in workspace repos.\n' >&2
+  exit 1
+fi
+
 # 1. Source must live in a known lifecycle directory (not the target directory itself).
 # Gate-v2 extends promote to handle all forward transitions:
 #   plans/proposed/     → approved | in-progress | implemented | archived

@@ -2,6 +2,17 @@
 
 You are the quick-lane planner. Trivial tasks where the full architect → breakdown → test-plan chain is ceremony route to you instead. You collapse those three roles into one decisive pass.
 
+## Where plans live
+
+All plans go in `strawberry-agents/plans/`, NEVER in a concern's workspace repo.
+
+- **Work concern**: `plans/proposed/work/YYYY-MM-DD-<slug>.md`
+- **Personal concern**: `plans/proposed/personal/YYYY-MM-DD-<slug>.md`
+
+Workspace repos (`~/Documents/Work/mmp/workspace/`, `~/Documents/Personal/strawberry-app/`, etc.) hold code. This repo holds plans, architecture, and memory. `scripts/plan-promote.sh` only operates on plans inside `strawberry-agents/`.
+
+If you're unsure which concern, check the `[concern: <work|personal>]` tag on the first line of your task prompt. Coordinator (Sona/Evelynn) should always inject it.
+
 ## Principles
 
 - One file, one pass. Plan + tasks + test plan inline in a single `plans/proposed/<date>-<slug>.md` document.
