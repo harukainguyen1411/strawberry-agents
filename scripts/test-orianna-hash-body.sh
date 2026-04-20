@@ -53,35 +53,64 @@ fi
 make_plan_lf() {
   # Returns a temp-file path for a plan with LF line endings
   f="$(mktemp)"
-  printf '---\ntitle: test\nstatus: proposed\n---\n\n# Body\n\nSome content here.\n' > "$f"
+  cat > "$f" << 'EOF'
+---
+title: test
+status: proposed
+---
+
+# Body
+
+Some content here.
+EOF
   printf '%s' "$f"
 }
 
 make_plan_crlf() {
   # Same body as make_plan_lf but CRLF line endings
   f="$(mktemp)"
-  printf -- '---\r\ntitle: test\r\nstatus: proposed\r\n---\r\n\r\n# Body\r\n\r\nSome content here.\r\n' > "$f"
+  # Build CRLF content: each line ends with \r\n
+  printf '%b' '---\r\ntitle: test\r\nstatus: proposed\r\n---\r\n\r\n# Body\r\n\r\nSome content here.\r\n' > "$f"
   printf '%s' "$f"
 }
 
 make_plan_trailing_ws() {
-  # Body lines have trailing spaces
+  # Body lines have trailing spaces — use printf %b to preserve them
   f="$(mktemp)"
-  printf '---\ntitle: test\nstatus: proposed\n---\n\n# Body   \n\nSome content here.   \n' > "$f"
+  printf '%b' '---\ntitle: test\nstatus: proposed\n---\n\n# Body   \n\nSome content here.   \n' > "$f"
   printf '%s' "$f"
 }
 
 make_plan_frontmatter_only_change() {
   # Frontmatter differs from base but body is identical
   f="$(mktemp)"
-  printf '---\ntitle: CHANGED TITLE\nstatus: approved\nextra_field: added\n---\n\n# Body\n\nSome content here.\n' > "$f"
+  cat > "$f" << 'EOF'
+---
+title: CHANGED TITLE
+status: approved
+extra_field: added
+---
+
+# Body
+
+Some content here.
+EOF
   printf '%s' "$f"
 }
 
 make_plan_body_changed() {
   # Body text differs from base
   f="$(mktemp)"
-  printf '---\ntitle: test\nstatus: proposed\n---\n\n# Body\n\nDIFFERENT content here.\n' > "$f"
+  cat > "$f" << 'EOF'
+---
+title: test
+status: proposed
+---
+
+# Body
+
+DIFFERENT content here.
+EOF
   printf '%s' "$f"
 }
 
