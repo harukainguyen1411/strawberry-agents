@@ -35,6 +35,7 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 | **Lux** | AI, Agents & MCP specialist — complex-track |
 | **Senna** | PR reviewer — code quality + security (replaced Jhin 2026-04-19) |
 | **Lucian** | PR reviewer — plan/ADR fidelity (new 2026-04-19, paired with Senna) |
+| **Karma** | Quick-lane planner — collapsed architect + breakdown + test plan in one stroke. Pair mate: Talon. new-2026-04-21 |
 
 ### Sonnet — Executors
 
@@ -48,6 +49,7 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 | **Seraphine** | Frontend implementation — executes Neeko's design specs |
 | **Soraka** | Normal-track frontend implementer — small frontend tweaks from Lulu's advice; escalates to Seraphine for Neeko-scale work. new-2026-04-20 |
 | **Syndra** | Normal-track AI/agents specialist — small AI-stack tweaks (prompt tuning, agent-def edits, MCP config); escalates complex work to Lux. new-2026-04-20 |
+| **Talon** | Quick-lane executor — collapsed build + test + light frontend. For Karma's plans. Pair mate: Karma. new-2026-04-21 |
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
@@ -56,6 +58,15 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 ### Haiku — Utilities
 
 _(none — Skarner promoted to Sonnet 2026-04-18; Haiku retiring)_
+
+## Quick Lane
+
+For trivial tasks that don't warrant the full complex/normal chain, Evelynn routes directly to Karma + Talon:
+
+- **Karma** (Opus-medium) collapses architecture, task breakdown, and test plan into a single pass.
+- **Talon** (Sonnet-low) collapses build, test, and light frontend tweaks into a single pass.
+
+Same Orianna gates apply before plan promotion. Same Senna + Lucian PR review applies before merge. Same TDD discipline (xfail-first) applies. The only difference is fewer hops — no separate Azir → Kayn → Jayce chain when the task is small enough that Karma can see the whole path at once.
 
 ## Coordination
 
@@ -70,6 +81,7 @@ Evelynn is the hub. Duong talks to Evelynn. Evelynn delegates to agents via the 
 - Duong → Evelynn → Lux (AI/MCP research)
 - Duong/Evelynn → `scripts/orianna-fact-check.sh` (called automatically by `plan-promote.sh`) — Orianna is script-only, not invocable via the Agent tool
 - Duong/Evelynn → Senna (PR code quality + security review) + Lucian (PR plan/ADR fidelity review) — both review every PR before merge
+- Duong → Evelynn → Karma (quick plan) → Talon (quick execution) — quick lane for trivial tasks
 
 **Escalate to Evelynn when:**
 - Blocker needing cross-domain coordination
