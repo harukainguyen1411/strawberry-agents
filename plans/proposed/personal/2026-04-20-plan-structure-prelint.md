@@ -9,6 +9,7 @@ tags: [orianna, hooks, plan-lifecycle, shift-left]
 related:
   - plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md
   - architecture/plan-lifecycle.md
+orianna_signature_approved: "sha256:5399af90ddec04acd6be5d7a1d4d4cdf6ec1a035313542fdd2214e1cfa0c8253:2026-04-20T16:07:41Z"
 ---
 
 # Plan-structure pre-lint (shift Orianna's deterministic checks left)
