@@ -52,6 +52,7 @@ Memory and learnings are shared across concerns; only `plans/`, `architecture/`,
 | **Talon** | Quick-lane executor — collapsed build + test + light frontend. For Karma's plans. Pair mate: Karma. new-2026-04-21 |
 | **Yuumi** | Evelynn's errand runner |
 | **Skarner** | Memory excavator — read-only searches (promoted from Haiku 2026-04-18) |
+| **Lissandra** | Memory consolidator — runs the coordinator's close protocol at compact boundaries, writing in the coordinator's voice. Profile at `agents/lissandra/profile.md`. new-2026-04-20 |
 | **Akali** | QA — Playwright flow + Figma diff before PR |
 | **Orianna** | Fact-checker & memory auditor — verifies claims in plans before promotion; runs weekly memory/learnings audits. **Script-invocable only** via `scripts/orianna-fact-check.sh` (called by `plan-promote.sh`). Not callable via the Agent tool; def lives at `.claude/_script-only-agents/orianna.md`. format exception: operational files (prompts/, claim-contract.md, allowlist.md, runbook-reconciliation.md) co-located at agent root — script-only tool. |
 
