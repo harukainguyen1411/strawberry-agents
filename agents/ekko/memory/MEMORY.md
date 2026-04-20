@@ -17,6 +17,9 @@
 
 ## Sessions
 
+- 2026-04-20 (ekko s-audit): CLAUDE.md cleanup — Lux audit items 1-5. rule5 decision tree `98f33b7`, end-session skill DMI fix `0904844`, rule19 anchor `4d4e732`, plan-fetch.sh+google-oauth-bootstrap.sh deleted (concurrent session cf2b5f2), end-session refuse-empty-arg `cd6a2ab`. All pushed.
+
+
 - 2026-04-19 (ekko s29): added `--lane <name>` to reviewer-auth.sh (Phase 3 reviewer-identity-split). Commit 306fed2. Default lane unchanged.
 - 2026-04-19 (ekko s30): encrypted senna PAT → reviewer-github-token-senna.age; round-trip verified strawberry-reviewers-2; shredded plaintext. Commit 95064e1.
 - 2026-04-19 (ekko s31): Phase 4 dry-run — PR #3 on strawberry-agents; Senna→strawberry-reviewers-2, Lucian→strawberry-reviewers; two distinct approvals confirmed; PR closed, branch deleted.
