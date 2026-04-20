@@ -3,6 +3,7 @@ title: Orianna — fact-checker agent and mandatory plan-promote fact-check gate
 status: implemented
 owner: azir
 created: 2026-04-19
+tags: [orianna, fact-check, plan-promote, agent]
 ---
 
 # Problem
@@ -10,7 +11,7 @@ created: 2026-04-19
 During the S47 public-app-repo migration session (2026-04-18), Yuumi's retro
 fact-check caught that one of Azir's plans referenced a "Firebase GitHub App"
 integration that does not exist in the repo. All four deploy workflows use
-`FIREBASE_SERVICE_ACCOUNT` key auth. Duong spent ~15 minutes hunting for a
+`FIREBASE_SERVICE_ACCOUNT`<!-- orianna: ok — example secret name in problem description prose, not a load-bearing path claim --> key auth. Duong spent ~15 minutes hunting for a
 nonexistent Firebase Console option before the claim was traced back to the
 plan text.
 
@@ -53,10 +54,10 @@ location) must cite an anchor that can be reproduced with a single `grep` or
 removed, rewritten as clearly-speculative future-state, or supplied with
 real anchors.
 
-## 1. Agent definition (`.claude/agents/orianna.md`)
+## 1. Agent definition (`.claude/_script-only-agents/orianna.md`)
 
 Standard Sonnet executor shape, matching the pattern from
-`plans/approved/2026-04-09-wire-remaining-sonnet-specialists.md` §4.
+`plans/approved/2026-04-09-wire-remaining-sonnet-specialists.md`<!-- orianna: ok — historical plan ref; plans/approved/ deleted per T9.1 of orianna-gated-plan-lifecycle ADR --> §4.
 
 Frontmatter:
 
@@ -440,7 +441,7 @@ Also add Orianna to the "Full roster" line in the
 Agent infrastructure (this repo, currently `Duongntd/strawberry`, migrating
 to `harukainguyen1411/strawberry-agents`):
 
-- **New:** `.claude/agents/orianna.md` — agent definition.
+- **New:** `.claude/_script-only-agents/orianna.md` — agent definition (landed at `_script-only-agents/` rather than `agents/` per operational classification).
 - **New:** `agents/orianna/profile.md` — persona.
 - **New:** `agents/orianna/memory/MEMORY.md` — empty scaffold.
 - **New:** `agents/orianna/learnings/index.md` — empty scaffold.
@@ -531,7 +532,7 @@ Application repo (`harukainguyen1411/strawberry-app`): **no changes.**
 
 Post-implementation checklist (for whoever Evelynn assigns):
 
-1. `.claude/agents/orianna.md` exists; `model: sonnet`; `tools:` restricted
+1. `.claude/_script-only-agents/orianna.md` exists; `model: sonnet`; `tools:` restricted
    to Read/Glob/Grep/Bash.
 2. `agents/orianna/{profile.md,memory/MEMORY.md,learnings/index.md,inbox.md}`
    all exist.
@@ -546,8 +547,7 @@ Post-implementation checklist (for whoever Evelynn assigns):
    message pointing at the strawberry-app checkout.
 8. `agents/memory/agent-network.md` shows Orianna in the Sonnet table.
 9. `agents/evelynn/CLAUDE.md` Delegation Decision Tree has an Orianna row.
-10. Smoke test: invoke Orianna manually on one of the already-approved
-    plans (e.g. `plans/approved/2026-04-19-public-app-repo-migration.md`).
+10. Smoke test: invoke Orianna manually on a plan (e.g. `plans/approved/2026-04-19-public-app-repo-migration.md`<!-- orianna: ok — historical plan ref; plans/approved/ deleted per T9.1; plan was demoted to proposed and later re-promoted -->).
     Report should emerge cleanly.
 
 # Handoff note
@@ -555,7 +555,7 @@ Post-implementation checklist (for whoever Evelynn assigns):
 This plan is scope-complete at the architecture level. **Do not assign an
 implementer in this plan.** Per `#rule-plan-writers-no-assignment`,
 Evelynn decides delegation after Duong approves and moves the plan to
-`plans/approved/`.
+`plans/approved/`<!-- orianna: ok — historical ref to promotion target; plans/approved/ was deleted per T9.1 after this plan was implemented -->.
 
 Likely breakdown once approved:
 
