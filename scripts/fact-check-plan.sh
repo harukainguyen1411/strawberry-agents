@@ -197,10 +197,12 @@ extract_tokens() {
 
     {
       # Extract inline backtick spans
+      # Skip spans that contain whitespace — those are prose examples ("scripts/foo.sh exists"),
+      # not bare path claims. Bare path claims are single tokens without spaces.
       line = $0
       while (match(line, /`[^`]+`/)) {
         tok = substr(line, RSTART+1, RLENGTH-2)
-        print tok
+        if (tok !~ /[[:space:]]/) print tok
         line = substr(line, RSTART+RLENGTH)
       }
     }
@@ -250,6 +252,15 @@ while IFS= read -r token; do
     -*) continue ;;
   esac
 
+  # Strip :line-number suffix — e.g. "scripts/plan-promote.sh:63-86" is a cross-reference
+  # annotation, not a distinct path. Strip the colon and everything after it so we check
+  # the bare file path only.
+  case "$token" in
+    *:[0-9]*) token="${token%%:*}" ;;
+  esac
+
+  [ -z "$token" ] && continue
+
   # Skip glob patterns and template placeholders — these are documentation
   # examples, not real paths to verify.
   case "$token" in
@@ -257,6 +268,7 @@ while IFS= read -r token; do
     *\<*\>*) continue ;;    # template placeholders: <name>, <timestamp>, etc.
     *\[*\]*) continue ;;    # bracket expressions
     *YYYY*|*MM-DD*) continue ;;   # date template patterns
+    *-XX-*|*-XX.*) continue ;;    # date templates with XX placeholder (e.g. 2026-04-XX-foo.md)
     *\{*|*\}*) continue ;;  # brace-expansion shorthand: agents/orianna/{a,b,c}
   esac
 
