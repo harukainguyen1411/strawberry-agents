@@ -278,3 +278,30 @@ make_agent() {
   run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
   [ "$status" -eq 0 ]
 }
+
+# ============================================================
+# T1 (Lissandra plan): memory-consolidator:single_lane slot
+# xfail: these tests FAIL until memory-consolidator:single_lane is added to is_sonnet_slot()
+# Reference: plans/in-progress/personal/2026-04-20-lissandra-precompact-consolidator.md §5
+# ============================================================
+
+@test "check3 [T1-xfail]: memory-consolidator:single_lane with model: sonnet exits 0" {
+  # Lissandra is a single-lane Sonnet agent in the memory-consolidator role slot.
+  # Until T1-impl lands, is_sonnet_slot() does not recognise this slot, so the hook
+  # incorrectly treats it as an Opus slot and rejects model: sonnet → this test FAILS (xfail).
+  make_agent "$TMP_DIR/.claude/agents/lissandra.md" "lissandra" "sonnet" "single_lane" "" "memory-consolidator" "" ""
+
+  run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
+  [ "$status" -eq 0 ]
+}
+
+@test "check3 [T1-xfail]: memory-consolidator:single_lane with model: opus exits non-zero (error)" {
+  # An agent in the memory-consolidator:single_lane slot declaring model: opus should be rejected.
+  # Until T1-impl lands, is_sonnet_slot() falls through to Opus-expected, so model: opus only
+  # produces a warning (exit 0) rather than an error → this test FAILS (xfail).
+  make_agent "$TMP_DIR/.claude/agents/lissandra.md" "lissandra" "opus" "single_lane" "" "memory-consolidator" "" ""
+
+  run bash "$HOOK_SCRIPT" --agents-dir "$TMP_DIR/.claude/agents"
+  [ "$status" -ne 0 ]
+  [[ "$output" =~ "model" ]] || [[ "$output" =~ "sonnet" ]]
+}
