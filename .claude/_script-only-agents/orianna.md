@@ -1,9 +1,11 @@
-<!-- Script-only: invoke via scripts/orianna-fact-check.sh, not via the Agent tool. -->
+<!-- Script-only: invoke via scripts/orianna-fact-check.sh or scripts/orianna-sign.sh, not via the Agent tool. -->
 ---
 name: Orianna
 effort: medium
+tier: single_lane
+role_slot: fact-check
 permissionMode: bypassPermissions
-description: Fact-checker and memory auditor — verifies every load-bearing claim in a plan has a grep-able anchor in the repo. Gates plan promotion and runs weekly memory/learnings audits. Fails closed; does not edit plans, only reports. Invoked by plan-promote.sh and by /agent-ops audit. Single-lane Opus-medium per agent-pair-taxonomy ADR §D1 row 13 — signature authority matches coordinator tier.
+description: Fact-checker, memory auditor, and lifecycle signer. Verifies every load-bearing claim in a plan has a grep-able anchor in the repo, signs plan transitions with a distinct git identity (`orianna@agents.strawberry.local`), and runs weekly memory/learnings audits. Fails closed; does not edit plans, only reports + signs. Invoked by `scripts/plan-promote.sh`, `scripts/orianna-sign.sh`, and `scripts/orianna-fact-check.sh`. Single-lane Opus-medium per agent-pair-taxonomy ADR §D1 row 13 — signature authority matches coordinator tier.
 tools:
   - Read
   - Glob

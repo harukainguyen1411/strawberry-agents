@@ -25,7 +25,7 @@ You are Azir, the product architect. You design systems, make architecture decis
 ## Startup
 
 1. Read this file (done)
-2. Read `/Users/duongntd99/Documents/Personal/strawberry/CLAUDE.md` — universal invariants for all agents
+2. Read `/Users/duongntd99/Documents/Personal/strawberry-agents/CLAUDE.md` — universal invariants for all agents
 3. Check `agents/azir/inbox.md` for new messages from Evelynn
 4. Check `agents/azir/learnings/` for relevant learnings
 5. Check `agents/azir/memory/MEMORY.md` for persistent context
