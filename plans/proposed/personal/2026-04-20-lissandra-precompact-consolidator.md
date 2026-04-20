@@ -203,7 +203,7 @@ Run the Evelynn or Sona variant of the `/end-session` protocol, minus the full-t
 - Step 7 (session shard): write `agents/evelynn/memory/sessions/<short-uuid>.md` with the `## Session YYYY-MM-DD (SN, <mode>)` heading + one-line summary + delta notes.
 - Step 8 (learnings): **conditional**. Apply the `/end-subagent-session` decision gate (is there a durable fact / generalizable lesson / resolved open question?). If yes, write `agents/evelynn/learnings/<YYYY-MM-DD>-<topic>.md` + append to `learnings/index.md`. If no, skip and note "no learnings this consolidation" in the report. **This is the key judgment call** — Lissandra must not flood the coordinator's learnings dir with routine-session noise.
 
-**For Sona:** same, with `agents/sona/` paths. Sona does **not** bypass `remember:remember` for concurrency (that bypass is Evelynn-specific per the memory-sharding plan); Lissandra still writes session + last-session shards to Sona's sharded dirs, matching Sona's own close protocol. [Open question — see §7 Q2: does Sona's close protocol match Evelynn's sharding exactly, or does Sona use the `remember:remember` plugin? Verify at implementation time.]
+**For Sona:** same, with `agents/sona/` paths. Sona does **not** bypass `remember:remember` for concurrency (that bypass is Evelynn-specific per the memory-sharding plan); Lissandra still writes session + last-session shards to Sona's sharded dirs. Verified 2026-04-20: `agents/sona/memory/last-sessions/` and `agents/sona/memory/sessions/` both exist — sharded layout is live. See §7 Q2 resolution.
 
 ### 4.3 Partial transcript excerpt
 
@@ -273,53 +273,207 @@ No other hook changes needed — the pair-mate symmetry check (§4.2 of the taxo
 
 Shift row numbers for Yuumi (→ 17) and Camille (→ 18). Stable row numbers are not referenced anywhere else in the doc, so renumbering is safe.
 
-## 6. Inline tasks (for Kayn breakdown)
+## 6. Tasks (Kayn breakdown, 2026-04-20)
 
-Ready for Kayn to expand into a tasks file. Tasks are in logical order; Kayn may split/merge as needed.
+Eleven tasks, ordered logically. Owner column resolved; TDD pairings noted
+per Rule 12. All tasks commit `chore:` per CLAUDE.md Rule 5.
 
-- **T1** Add `memory-consolidator:single_lane` case to `is_sonnet_slot()` in `scripts/hooks/pre-commit-agent-shared-rules.sh`. Add a test fixture for a fake `memory-consolidator` agent in the existing hook test suite (if one exists; otherwise add a minimal fixture). Commit `chore:`. xfail-first per Rule 12 — the test for the new case must land in a separate prior commit.
+| ID   | Task                                                                 | Owner                    | Depends on           | TDD  |
+|------|----------------------------------------------------------------------|--------------------------|----------------------|------|
+| T1   | Add `memory-consolidator:single_lane` to `is_sonnet_slot()` + test   | Ekko                     | —                    | yes  |
+| T2   | Create `.claude/agents/lissandra.md` (top-level — harness blocked)   | Evelynn (dispatch only)  | T1                   | no   |
+| T3   | Write `.claude/skills/pre-compact-save/SKILL.md`                     | Jayce                    | —                    | no   |
+| T4   | Write `scripts/hooks/pre-compact-gate.sh`                            | Jayce                    | —                    | yes  |
+| T5   | Wire PreCompact into `.claude/settings.json` + smoke-confirm         | Jayce                    | T3, T4               | no   |
+| T6   | Create `agents/lissandra/` scaffold + index + profile + MEMORY       | Yuumi                    | —                    | no   |
+| T7   | Update `architecture/agent-pair-taxonomy.md` §1.1 table (+1 row)     | Yuumi                    | —                    | no   |
+| T8   | Update `agents/memory/agent-network.md` roster entry                 | Yuumi                    | —                    | no   |
+| T9   | Documentation: `/compact` workflow blurb in `CLAUDE.md`              | Yuumi                    | T2, T3, T5           | no   |
+| T10  | (Deferred to phase 2 per OQ-Q3) `clean-jsonl.py --since-last-compact`| —                        | —                    | —    |
+| T11  | Manual E2E verification (Evelynn + Sona) + report                    | Vi                       | T1–T9                | no   |
 
-- **T2** Update `architecture/agent-pair-taxonomy.md` §1.1 single-lane table with Lissandra row; renumber downstream rows. Commit `chore:`.
+### 6.1 Task detail
 
-- **T3** Create `.claude/agents/lissandra.md` with the frontmatter shape from §2.1, personality block (3–5 lines), startup sequence, and the inline consolidation protocol body. Keep the body < 250 lines. No `_shared/` file — single-lane. Verify the pre-commit hook passes (should require T1 first). Commit `chore:`.
+- **T1 — hook slot registration (Ekko, TDD)**
+  Add `"memory-consolidator:single_lane") return 0 ;;` to `is_sonnet_slot()`
+  in `scripts/hooks/pre-commit-agent-shared-rules.sh` (after the
+  `memory:single_lane` case at line 85). Land the xfail test first:
+  create a test fixture agent file that would trip the slot check, wire
+  into whatever ad-hoc test script already exercises the hook (grep the
+  repo for existing `is_sonnet_slot` invocations before writing a new
+  harness). Xfail commit precedes impl commit on the same branch.
 
-- **T4** Create `agents/lissandra/` directory scaffold: `profile.md`, `memory/MEMORY.md` (empty), `learnings/` (empty), `learnings/index.md` (empty). Follow the pattern of `agents/skarner/` if it exists, else `agents/yuumi/`. Commit `chore:`.
+- **T2 — Lissandra agent definition (Evelynn top-level dispatch)**
+  Create `.claude/agents/lissandra.md` per §2.1 frontmatter plus 3–5 line
+  personality block, startup sequence (read CLAUDE.md → this file →
+  inbox → learnings → memory), and the inline consolidation protocol
+  body (§4). Body < 250 lines. No `_shared/` include. **This write is
+  blocked inside the subagent harness** — Evelynn executes it at top
+  level (or delegates to a sub-session Evelynn spawns with
+  `.claude/agents/*.md` write permissions). Depends on T1 so the
+  pre-commit hook recognises the new slot.
 
-- **T5** Write `.claude/skills/pre-compact-save/SKILL.md`. Mirror `end-session` skill structure but thinner — the skill prepares context and spawns Lissandra. `disable-model-invocation: false`. Takes optional coordinator argument. See §3.2 for the full flow. Commit `chore:`.
+- **T3 — `/pre-compact-save` skill (Jayce)**
+  Write `.claude/skills/pre-compact-save/SKILL.md`. Mirror the
+  `end-session` skill header but set `disable-model-invocation: false`.
+  Body: ~30 lines. Takes optional `$ARGUMENTS` = `evelynn`|`sona`. Skill
+  steps: (a) detect coordinator, (b) spawn Lissandra via Agent tool with
+  a fully-formed task prompt carrying `session_id`, `transcript_path`,
+  `coordinator`, (c) verify sentinel + commit on return, (d) report
+  artifacts.
 
-- **T6** Write `scripts/hooks/pre-compact-gate.sh` per §3.1.1. POSIX-portable bash (Rule 10). < 50 LOC. Unit-testable: given a JSON payload on stdin and presence/absence of the sentinel file, emits the right decision. Add a small test harness in `scripts/tests/` if the repo has one; otherwise defer to manual verification. Commit `chore:`. xfail-first per Rule 12.
+- **T4 — PreCompact gate script (Jayce, TDD)**
+  Write `scripts/hooks/pre-compact-gate.sh` per §3.1.1. POSIX bash (Rule
+  10), < 50 LOC. Reads JSON from stdin via `jq`, checks
+  `.no-precompact-save` at repo root and `/tmp/claude-precompact-saved-<sid>`
+  sentinel, emits `{"decision":"block",...}` JSON or exits 0. Xfail
+  test first: shell-based fixture driver that pipes representative
+  payloads in and asserts on stdout/exit-code. Park under
+  `scripts/hooks/tests/pre-compact-gate.test.sh` (create the dir; no
+  existing `scripts/tests/` — flagged).
 
-- **T7** Wire the PreCompact hook registration into `.claude/settings.json` — `"PreCompact": [{"matcher": "manual", "hooks": [{"type": "command", "command": "bash scripts/hooks/pre-compact-gate.sh"}]}]`. Commit `chore:`. Smoke-test manually by running `/compact` in a test session and verifying the block-and-prompt flow.
+- **T5 — settings.json hook registration (Jayce)**
+  Add the `PreCompact` block per §3.1.3 to `.claude/settings.json`.
+  Smoke-confirm the shape by dry-running `bash
+  scripts/hooks/pre-compact-gate.sh < sample.json` locally. No automated
+  test — settings files are not unit-testable; Rule 12 xfail-exempt per
+  the T0 precedent (usage-dashboard attribution, 2026-04-19).
 
-- **T8** Update `agents/memory/agent-network.md` to include Lissandra in the roster (under single-lane specialists, near Skarner). Describe her as "pre-compact memory consolidator, mirrors coordinator /end-session protocol when /compact is imminent." Commit `chore:`.
+- **T6 — Lissandra agent directory scaffold (Yuumi)**
+  Create `agents/lissandra/` with: `profile.md` (short bio + role +
+  mechanics recap), `memory/MEMORY.md` (header + empty sections),
+  `learnings/` (dir), `learnings/index.md` (header only),
+  `transcripts/` (dir, keep empty via `.gitkeep`). Mirror the shape of
+  `agents/skarner/` (single-lane sibling). Independent of T2.
 
-- **T9** (Optional, defer if bandwidth tight) Add `--since-last-compact` mode to `scripts/clean-jsonl.py`. Looks up the last PreCompact event in the jsonl (or the last Lissandra commit touching this session's transcripts dir) and outputs only the delta. If this task is deferred, T5's skill falls back to the "transcript excerpt deferred" message per §4.3. Commit `chore:`. xfail-first.
+- **T7 — taxonomy doc row (Yuumi)**
+  Insert new row 16 "Memory consolidator | Lissandra (Sonnet medium)"
+  between current row 15 (Skarner) and row 16 (Yuumi) in
+  `architecture/agent-pair-taxonomy.md` §1.1. Renumber Yuumi → 17,
+  Camille → 18. Verified against live file 2026-04-20: rows are
+  currently 15/16/17 as the ADR asserts.
 
-- **T10** Documentation — add a short section to `CLAUDE.md` (or the appropriate coordinator-specific doc) explaining the `/compact` workflow: "run `/pre-compact-save` before `/compact`, or the hook will block you once. To opt out, `touch .no-precompact-save`." Commit `chore:`.
+- **T8 — roster entry (Yuumi)**
+  Add Lissandra to `agents/memory/agent-network.md` under single-lane
+  specialists near Skarner: one-line description "pre-compact memory
+  consolidator; mirrors coordinator /end-session protocol when /compact
+  is imminent."
 
-- **T11** Manual end-to-end verification in a disposable session: Evelynn greeting, do some work, run `/compact`, observe block, run `/pre-compact-save`, observe consolidation, re-run `/compact`, observe success. Repeat for Sona. Document results in `assessments/personal/2026-04-20-lissandra-verification.md` (new file).
+- **T9 — `/compact` workflow docs (Yuumi)**
+  Add a short subsection to the relevant doc (most likely
+  `architecture/session-lifecycle.md` if it exists — else a new
+  `architecture/compact-workflow.md` + pointer from `CLAUDE.md` "File
+  Structure" table). Content: "Run `/pre-compact-save` before
+  `/compact`, or the PreCompact hook will block the first compact once.
+  To opt out, `touch .no-precompact-save` at repo root." Depends on T2,
+  T3, T5 so docs don't front-run the mechanism.
 
-**Task ordering note:** T1 → T2 → T3 → T4 can run in parallel after T1 lands. T5 depends on T3 and T4. T6 and T7 can run in parallel with T5. T8 can run anytime after T3. T9 is optional. T10 and T11 are last.
+- **T10 — DEFERRED** to a phase-2 follow-up plan. Per OQ-Q3 resolution
+  below, phase 1 ships without compact-transcript excerpts; Lissandra's
+  handoff shard notes "transcript excerpt deferred — requires cleaner
+  `--since-last-compact`." Kayn opens a follow-up stub after T11 passes.
 
-## 7. Open questions
+- **T11 — manual E2E verification (Vi)**
+  In a disposable session, greet Evelynn, do representative work,
+  `/compact`, observe block, `/pre-compact-save`, observe consolidation
+  artifacts (handoff + session + journal + optional learning + commit +
+  sentinel), re-run `/compact`, observe allow. Repeat with Sona
+  greeting. Report to
+  `assessments/personal/2026-04-20-lissandra-verification.md`. Must pass
+  before the plan promotes to `implemented/`.
 
-All marked "Evelynn decides during execution" unless otherwise noted.
+### 6.2 Dependency graph
 
-- **Q1 — Thinking budget: 5000 vs 6000?** §2.1 proposes 6000 (above the standard Sonnet-medium 5000). Rationale: judgment-heavy summarization + coordinator-voice extraction. Could also argue 5000 is enough if we keep the decision-gate narrow. **Evelynn decides during execution** — try 6000, drop to 5000 if Lissandra's outputs feel over-cooked.
+```
+         T1 ─────► T2 ────────────┐
+         (xfail, impl)            │
+                                  │
+  T3 ───┐                         ├──► T9 (docs)
+  T4 ───┤                         │
+  (xfail, impl)                   │
+        ├──► T5 ──────────────────┤
+  T6 (scaffold) ──────────────────┤
+  T7 (taxonomy) ──────────────────┤
+  T8 (network) ───────────────────┤
+                                  │
+                                  ▼
+                                 T11 (Vi E2E)
+```
 
-- **Q2 — Sona's close-protocol sharding parity.** §4.2 notes Sona may or may not use the same `last-sessions/` + `sessions/` sharding that Evelynn uses (memory-sharding plan explicitly scoped to Evelynn). Verify at T5 implementation time: does `agents/sona/memory/last-sessions/` exist? Does Sona's `/end-session` invocation use `remember:remember` or a sharded fallback? **Evelynn decides during execution** after inspection — Lissandra's protocol branches accordingly.
+Parallel waves:
+- **Wave 1** (no prereqs): T1-xfail, T3, T4-xfail, T6, T7, T8.
+- **Wave 2** (after Wave 1 impls land): T1-impl, T4-impl, T2 (needs T1).
+- **Wave 3** (after T2, T3, T4): T5, T9.
+- **Wave 4** (after everything): T11.
 
-- **Q3 — Compact-transcript excerpt: phase 1 skip or T9 now?** §4.3 and T9. If T9 is too much scope for the first cut, skip and leave a marker. **Evelynn decides during execution** — default to skip if Kayn's breakdown would push this plan past 10 tasks.
+## 7. Open questions — RESOLVED (Kayn, 2026-04-20)
 
-- **Q4 — Opt-out sentinel location: repo root vs `.claude/` vs env var?** §3.1.1 proposes `.no-precompact-save` in the repo root. Alternatives: `.claude/.no-precompact-save` (less visible but co-located with hook config), or `STRAWBERRY_PRECOMPACT_DISABLE=1` env var. **Evelynn decides during execution** — repo root is the most discoverable option, leaning there.
+All eight open questions resolved inline during Kayn task breakdown, per
+Duong's authorization to decide all of them. Resolutions are binding on
+execution; any deviation requires a superseding amendment.
 
-- **Q5 — Auto-compact behavior during long sessions.** §3.1.2 chose Option A (allow silently). Alternative: emit a `systemMessage` additionalContext that tells the post-compact context "the pre-compact consolidation was skipped due to auto-trigger — run `/pre-compact-save` now if you want to preserve pre-compact state." **Evelynn decides during execution** — Option A is safer; the systemMessage variant can be layered on later.
+- **Q1 — Thinking budget: 5000 vs 6000?**
+  **Resolved: 6000.** §2.1's 6000-token budget ships as-is for phase 1.
+  Matches Azir's recommendation. Rationale: coordinator-voice
+  extraction plus the learnings-vs-routine decision gate are both
+  judgment-heavy; the 1000-token headroom above Sonnet-medium standard
+  costs little and buys quality. Evelynn may drop to 5000 in a later
+  amendment if outputs feel over-cooked after 5+ real compactions.
 
-- **Q6 — Granularity of Lissandra's own memory.** Does Lissandra herself accumulate memory across invocations (e.g., "coordinator X frequently compacts 3x per session, consider advising")? Or is she stateless like Skarner? Lean stateless for now — she has a profile but empty memory, and her own close protocol (via `/end-subagent-session`) writes only when she genuinely learns something generalizable. **Evelynn decides during execution.**
+- **Q2 — Sona's close-protocol sharding parity.**
+  **Resolved: assume sharded; write flat and fix-forward if absent.**
+  Verified 2026-04-20: `agents/sona/memory/last-sessions/` and
+  `agents/sona/memory/sessions/` both exist. Lissandra writes to those
+  sharded paths uniformly for both coordinators. If at Lissandra's
+  first real Sona invocation the dirs turn out to be stubs (no shard
+  files yet), her write is still structurally valid — she populates the
+  first shard. No branching logic needed. `remember:remember` bypass is
+  Evelynn-specific; Lissandra never invokes that plugin regardless.
 
-- **Q7 — Should Lissandra also fire at `/clear`?** `/clear` is more destructive than `/compact` (dumps context entirely). Arguably needs *more* consolidation, not less. Out of scope for this ADR — propose a follow-up plan if the pattern works for `/compact`. **Evelynn decides during execution** — for this ADR, PreCompact only.
+- **Q3 — Compact-transcript excerpt: phase 1 skip or T10 now?**
+  **Resolved: skip phase 1 (T10 deferred).** Phase 1 ships six
+  artifacts per consolidation (handoff, session, journal, learning-if-
+  warranted, commit, sentinel) — no transcript excerpt. Lissandra's
+  handoff shard includes the line "transcript excerpt deferred —
+  phase 2 via `clean-jsonl.py --since-last-compact`." Follow-up plan
+  stub opens after T11 passes.
 
-- **Q8 — Hook blocking on first compact: friction tax vs. safety.** §3.1.1 always blocks the first compact per session without a sentinel. This adds one round-trip per session. Alternative: silent consolidation (fire-and-forget — the coordinator runs Lissandra automatically via a stdout systemMessage nudge, no block). Rejected for this ADR because silent fire-and-forget would mean the hook *does* need to spawn a subagent, which it can't. **Evelynn decides during execution** — if the block is annoying in practice, revisit with a post-compact "warning banner" pattern instead.
+- **Q4 — Opt-out sentinel location.**
+  **Resolved: repo root `.no-precompact-save`.** Most discoverable; a
+  visible-by-default dotfile that Duong can create or remove with one
+  command. Not under `.claude/` (harder to find) and not an env var
+  (doesn't travel with the repo, brittle under tmux / multiple shells).
+  T4's gate script stat()s `$REPO_ROOT/.no-precompact-save`.
+
+- **Q5 — Auto-compact behavior during long sessions.**
+  **Resolved: Option A (allow silently).** Per §3.1.2. Auto-compact
+  fires only on context overflow — blocking would be hostile and often
+  unobserved. T4's script registers `"matcher": "manual"` only;
+  auto-compact never touches the gate. SystemMessage variant explicitly
+  deferred — revisit in a follow-up plan only if Duong reports
+  information loss during auto-compact.
+
+- **Q6 — Lissandra's own memory.**
+  **Resolved: stateless.** Lissandra keeps a profile but her
+  `memory/MEMORY.md` stays minimal (same shape as Skarner). Her
+  `/end-subagent-session` closing protocol writes learnings only on
+  genuinely generalizable findings (same decision gate she applies to
+  the coordinator). Cross-invocation pattern detection ("coordinator X
+  compacts 3x per session, advise") is a phase-2 concern.
+
+- **Q7 — Fire at `/clear`?**
+  **Resolved: out of scope for this ADR.** `/clear` behavior tracked as
+  follow-up. If phase 1 works for `/compact`, Kayn opens a sibling ADR
+  proposing a PreClear hook (if one exists in Claude Code's hook
+  reference) or a systemMessage-based nudge. Until then, `/clear`
+  remains Duong's responsibility.
+
+- **Q8 — Hook blocking friction tax.**
+  **Resolved: ship block-and-prompt as-is.** §3.1.1 flow lands
+  unchanged. Revisit only if Duong reports concrete friction after
+  real-world use (≥ 3 sessions). Alternative patterns (silent
+  fire-and-forget, post-compact warning banner) filed as phase-2
+  candidates only.
 
 ## 8. Acceptance criteria
 
@@ -348,4 +502,8 @@ If Lissandra's consolidations produce bad artifacts (wrong coordinator voice, ov
 
 ---
 
-**Handoff:** this plan is ready for Kayn to break into tasks. The T-numbered list in §6 is the starting point; Kayn will refine ordering, add xfail test scaffolds per Rule 12, and produce the `*-tasks.md` sibling plan.
+**Handoff (updated 2026-04-20 by Kayn):** task breakdown inlined in §6
+(no sibling `-tasks.md` — this plan is the single source of truth per
+the Orianna-gated lifecycle's one-plan-one-file norm). All eight OQs
+resolved in §7. Owner column assigned. Ready for Evelynn's executor
+dispatch: T1 (Ekko) first; Waves 2–4 per §6.2.
