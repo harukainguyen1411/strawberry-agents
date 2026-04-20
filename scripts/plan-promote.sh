@@ -105,11 +105,20 @@ _acquire_lock() {
 
 _acquire_lock
 
-# 1. Source must live in plans/proposed/.
+# 1. Source must live in a known lifecycle directory (not the target directory itself).
+# Gate-v2 extends promote to handle all forward transitions:
+#   plans/proposed/     → approved | in-progress | implemented | archived
+#   plans/approved/     → in-progress | implemented | archived
+#   plans/in-progress/  → implemented | archived
+# Gate-v1 (legacy fact-check) only ran on proposed→approved; that path is preserved.
 case "$SOURCE" in
   plans/proposed/*.md) ;;
   */plans/proposed/*.md) ;;
-  *) gdoc::die "plan-promote only handles plans/proposed/*.md (got $SOURCE)" ;;
+  plans/approved/*.md) ;;
+  */plans/approved/*.md) ;;
+  plans/in-progress/*.md) ;;
+  */plans/in-progress/*.md) ;;
+  *) gdoc::die "plan-promote only handles plans from proposed/, approved/, or in-progress/ (got $SOURCE)" ;;
 esac
 [ -f "$SOURCE" ] || gdoc::die "no such file: $SOURCE"
 
@@ -275,7 +284,9 @@ fi
 git -C "$REPO_ROOT" add -- "$TARGET_PATH"
 git -C "$REPO_ROOT" commit -m "chore: promote $BASENAME to $TARGET_STATUS" >&2
 
-# 8. Push.
-git -C "$REPO_ROOT" push >&2
+# 8. Push (skipped when NO_PUSH env var is set — for test harnesses without a remote).
+if [ -z "${NO_PUSH:-}" ]; then
+  git -C "$REPO_ROOT" push >&2
+fi
 
 gdoc::log "done. $SOURCE -> $TARGET_PATH"
