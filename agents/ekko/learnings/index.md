@@ -34,3 +34,4 @@
 - 2026-04-19-branch-protection-admin-required-strawberry-agents.md — Duongntd lacks admin on harukainguyen1411/strawberry-agents; branch-protection writes are Duong-manual; no prior protection exists (classic 404, rulesets 403 Pro-required) | last_used: 2026-04-19
 - 2026-04-19-branch-protection-github-pro-required.md — branch protection (classic + rulesets) on private repos requires GitHub Pro; free plan gets 403 even as repo owner | last_used: 2026-04-19
 - 2026-04-19-gh-api-put-branch-protection-json-input.md — gh api PUT branch protection requires --input with JSON body; --field fails for nested objects (422) | last_used: 2026-04-19
+- 2026-04-20-plan-promote-proposed-only.md — plan-promote.sh refuses non-proposed sources; approved → in-progress requires manual git mv + frontmatter rewrite | last_used: 2026-04-20
