@@ -79,6 +79,16 @@ Every agent except Skarner and Yuumi **must** write to two places at session end
 2. On task completion: report results to Evelynn. Stay open and wait unless told to close.
 3. On session close: write learnings + memory, then invoke `/end-subagent-session <name>`.
 
+### Final-message rule (applies to all background subagents)
+
+Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session (Evelynn) **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
+
+Therefore, before invoking `/end-subagent-session`:
+
+- Restate your complete deliverable in your **final message** — full findings, commit SHAs, file paths, recommendations, gating questions, whatever the dispatcher needs.
+- Do not close with "report delivered above" or "see learnings file" as the final content. The parent has no "above" and will not read your learnings file.
+- Learnings files and memory updates are for *your* future sessions; the final message is for the parent.
+
 ## Plan Lifecycle
 
 `proposed/` → `approved/` → `in-progress/` → `implemented/` → `archived/`
