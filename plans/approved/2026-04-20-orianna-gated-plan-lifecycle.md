@@ -367,3 +367,427 @@ Round-2 questions raised by the earlier revision were answered by Duong on 2026-
 - **PR-level signature.** PRs to `apps/`** are a separate lifecycle governed by CLAUDE.md rules 15, 16, 18. Orianna does not sign PRs.
 - **Automation of architecture-doc updates.** §D5 requires the human (or implementing agent) to update `architecture/` — Orianna verifies the update happened but does not write architecture docs herself.
 
+---
+
+# Tasks
+
+> Execution breakdown authored by Kayn on 2026-04-20 per §D3 (one plan, one
+> file — task list lives inline, not as a sibling). Executor tiers follow the
+> Sonnet roster: **BUILDER (Jayce)** = new scripts/files; **REFACTOR (Viktor)**
+> = edits to existing files; **TEST (Vi)** = test authoring (xfail-first per
+> CLAUDE.md rule 12); **ERRAND** = Senna / Lucian / Duong-driven bookkeeping
+> and manual one-shots.
+>
+> Definition of done (universal): commits landed on `main` for plan artifacts
+> or a named branch for code; all acceptance checks in the task body pass;
+> xfail test commit precedes the paired impl commit on TDD-enabled paths;
+> `chore:` prefix for non-code commits; conventional prefixes for code.
+
+## Inventory of already-shipped work (NOT re-tasked)
+
+| ADR ref | Deliverable | Status | Evidence |
+|---------|-------------|--------|----------|
+| D2.1 (v1) | `scripts/orianna-fact-check.sh` | SHIPPED | file exists; invoked from `scripts/plan-promote.sh:66-86` |
+| D2.1 | `scripts/plan-promote.sh` wires fact-check between "require clean" and "Drive unpublish" | SHIPPED | `plan-promote.sh:63-86`; grep of `orianna-fact-check.sh` hits line 68 |
+| Invocation lockdown | Orianna def relocated to `.claude/_script-only-agents/orianna.md` with script-only header | SHIPPED | commits `36199ef` + `8373bef` |
+| Invocation lockdown | `agents/memory/agent-network.md` annotates Orianna as script-only | SHIPPED | commit `8373bef` |
+| ADR self-gate | This plan promoted to `approved/` through its own Orianna gate (0/0/22 clean) | SHIPPED | commit `618904b`; reports at `assessments/plan-fact-checks/2026-04-20-orianna-gated-plan-lifecycle-*.md` |
+| D2.1 | Pinned prompt `agents/orianna/prompts/plan-check.md` | SHIPPED | file exists; sourced by `orianna-fact-check.sh:79` |
+| D2.1 | Claim contract v1 at `agents/orianna/claim-contract.md` | SHIPPED | file exists |
+| D2.1 bypass guard | `scripts/hooks/pre-commit-plan-promote-guard.sh` blocks silent bypass | SHIPPED | file exists; accepts fact-check report OR `Orianna-Bypass:` trailer |
+
+**Anti-duplicate rule:** No task below re-creates `orianna-fact-check.sh` or
+re-wires it into `plan-promote.sh`. Tasks T6.x **replace** the fact-check call
+site with the signature-verification call site; the existing script is retired
+in-place (callers migrate, the script remains for `orianna-sign.sh` to reuse
+under §D2.1).
+
+**`plan-check.md` is extend-not-replace.** The shipped prompt covers the v1
+fact-check + gating-question scan. T3.1 extends it to full §D2.1 scope
+(frontmatter sanity + sibling-file grep). Existing v1 checks preserved.
+
+## Dependency graph (phase order)
+
+```
+Phase 1 — foundation (parallel)
+  T1.1 hash-body helper
+  T1.2 orianna git-identity policy doc
+  T1.3 frontmatter-fields doc
+
+Phase 2 — signing infrastructure
+  T2.1 orianna-sign.sh      (needs T1.1, T3.2, T3.3, T4.1, T4.2, T4.3, T4.4)
+  T2.2 orianna-verify-signature.sh (needs T1.1)
+  T2.3 signature-shape pre-commit hook
+  T2.4 install-hooks wiring
+
+Phase 3 — phase-specific Orianna prompts
+  T3.1 extend plan-check for §D2.1 full scope
+  T3.2 new task-gate-check prompt (§D2.2)
+  T3.3 new implementation-gate-check prompt (§D2.3)
+
+Phase 4 — gate logic libs (feed T2.1)
+  T4.1 §D2.2 in-progress checks lib
+  T4.2 §D2.3 implemented checks lib
+  T4.3 estimate_minutes parser (§D4)
+  T4.4 architecture-freshness verifier (§D5)
+
+Phase 5 — tests (xfail-first)
+  T5.1 hash-body
+  T5.2 verify-signature
+  T5.3 signature-shape hook
+  T5.4 estimate_minutes parser
+  T5.5 architecture verifier
+  T5.6 sibling-file grep
+  T5.7 end-to-end smoke harness
+
+Phase 6 — plan-promote.sh integration
+  T6.1 signature presence + validity (needs T2.2)
+  T6.2 carry-forward check (needs T6.1)
+  T6.3 advisory file lock (§D9.3)
+  T6.4 orianna_gate_version branching (§D8)
+  T6.5 retire fact-check call site (needs T6.4, T2.1)
+
+Phase 7 — bypass hardening
+  T7.1 extend plan-promote-guard for §D9.1 author-identity rule
+  T7.2 confirm offline-fail (§D9.2) via test
+
+Phase 8 — freeze (§D12)
+  T8.1 new-file freeze hook
+  T8.2 install + announce
+  T8.Z removal (executed via T11.2)
+
+Phase 9 — migration (§D8, MANUAL one-shot)
+  T9.1 bulk demote plans/approved/*.md → plans/proposed/
+  T9.2 sibling-file inline merges (per-plan, opportunistic)
+
+Phase 10 — architecture docs + CLAUDE.md (§D10)
+  T10.1 architecture/agent-system.md
+  T10.2 architecture/key-scripts.md
+  T10.3 new architecture/plan-lifecycle.md
+  T10.4 CLAUDE.md universal invariant
+
+Phase 11 — smoke + freeze lift
+  T11.1 end-to-end smoke on one fresh plan
+  T11.2 execute T8.Z
+```
+
+**Hard serial points**
+- T2.1 requires T3.2, T3.3, T4.1, T4.2, T4.3, T4.4 (sign.sh orchestrates phase checks)
+- T6.1 requires T2.2 (promote calls verify)
+- T6.4 requires T9.1 (grandfather logic needs demoted plans on disk to exercise)
+- T11.1 requires all of T1–T8 green (§D12 smoke criterion)
+- T11.2 (freeze lift) is terminal — final task in the ADR
+
+---
+
+### Phase 1 — Foundation (parallel)
+
+- [ ] **T1.1. Body-hash normalization helper** — `kind: impl` | `estimate_minutes: 35`
+  - executor: BUILDER (Jayce) | ADR: §D1, §D9.4
+  - files: `scripts/orianna-hash-body.sh` (new)
+  - detail: POSIX-bash; strips frontmatter (between first two `---`), normalizes line endings to `\n`, strips trailing whitespace per line, emits SHA-256 hex on stdout.
+  - DoD: identical hash for CRLF↔LF and trailing-ws variants; different hash on body change; shellcheck-clean; T5.1 xfail lands first.
+
+- [ ] **T1.2. Document Orianna git-identity policy** — `kind: docs` | `estimate_minutes: 15`
+  - executor: ERRAND | ADR: §D1.1
+  - files: `agents/orianna/profile.md` (edit)
+  - detail: section spells out `orianna@agents.strawberry.local` author email, required trailers (`Signed-by: Orianna`, `Signed-phase:`, `Signed-hash:`), one-plan-one-commit rule.
+  - DoD: section present; links back to §D1.1.
+
+- [ ] **T1.3. Document new frontmatter fields** — `kind: docs` | `estimate_minutes: 25`
+  - executor: BUILDER (Jayce — new file) | ADR: §D8
+  - files: `architecture/plan-frontmatter.md` (new)
+  - detail: enumerate `orianna_gate_version`, `orianna_signature_<phase>`, `tests_required`, `architecture_changes`, `architecture_impact` — type, values, default, enforcing gate.
+  - DoD: all five fields documented with provenance link to this ADR.
+
+### Phase 2 — Signing infrastructure
+
+- [ ] **T2.1. `scripts/orianna-sign.sh <plan> <phase>`** — `kind: impl` | `estimate_minutes: 55`
+  - executor: BUILDER (Jayce) | ADR: §D7.1
+  - files: `scripts/orianna-sign.sh` (new)
+  - detail: validate source dir for requested phase; invoke phase-appropriate prompt via `claude` CLI (no mechanical fallback — §D9.2); on clean, compute body hash (T1.1), append `orianna_signature_<phase>: "sha256:<h>:<iso>"` to frontmatter, commit with Orianna author identity + trailers (§D1.1); no push.
+  - deps: T1.1, T3.2, T3.3, T4.1, T4.2, T4.3, T4.4
+  - DoD: rejects wrong-dir phase; on check-fail plan unchanged; on check-pass exactly one frontmatter line added; shellcheck-clean.
+
+- [ ] **T2.2. `scripts/orianna-verify-signature.sh <plan> <phase>`** — `kind: impl` | `estimate_minutes: 45`
+  - executor: BUILDER (Jayce) | ADR: §D7.2, §D6.2
+  - files: `scripts/orianna-verify-signature.sh` (new)
+  - detail: four checks — body-hash match, commit-author email match, trailer presence/consistency, single-file diff scope. 0 on valid, non-zero with stderr diagnosis otherwise.
+  - deps: T1.1; T5.2 xfail first
+  - DoD: exits 0 on valid; non-zero with distinct message for each of 4 failure modes.
+
+- [ ] **T2.3. Signature-shape pre-commit hook** — `kind: impl` | `estimate_minutes: 40`
+  - executor: BUILDER (Jayce) | ADR: §D1.2, §D7.3
+  - files: `scripts/hooks/pre-commit-orianna-signature-guard.sh` (new)
+  - detail: when commit author = Orianna identity, enforce: diff touches exactly one file under `plans/`; exactly one `orianna_signature_<phase>` line added; all three trailers present and consistent.
+  - deps: T5.3 xfail first
+  - DoD: accepts valid signing commit; rejects multi-file diff; rejects missing trailer.
+
+- [ ] **T2.4. Install new hook in `scripts/install-hooks.sh`** — `kind: infra` | `estimate_minutes: 10`
+  - executor: REFACTOR (Viktor) | ADR: §D7.3
+  - files: `scripts/install-hooks.sh` (edit)
+  - deps: T2.3
+  - DoD: fresh-clone install picks up `pre-commit-orianna-signature-guard.sh`; idempotent.
+
+### Phase 3 — Phase-specific Orianna prompts
+
+- [ ] **T3.1. Extend `plan-check.md` to full §D2.1 scope** — `kind: docs` | `estimate_minutes: 25`
+  - executor: REFACTOR (Viktor) | ADR: §D2.1
+  - files: `agents/orianna/prompts/plan-check.md` (edit)
+  - detail: preserve v1 claim-contract + gating-question checks; add frontmatter sanity (`status: proposed`, `owner:`, `created:`, `tags:`) and sibling-file grep (`<basename>-tasks.md`, `<basename>-tests.md` absent under `plans/` per §D3 grandfather rule).
+  - DoD: all §D2.1 bullets covered; v1 checks still pass on plan 1.
+
+- [ ] **T3.2. New `task-gate-check.md` prompt (approved → in-progress)** — `kind: docs` | `estimate_minutes: 35`
+  - executor: BUILDER (Jayce) | ADR: §D2.2
+  - files: `agents/orianna/prompts/task-gate-check.md` (new)
+  - detail: inline `## Tasks` exists; every task has `estimate_minutes:` integer in `[1,60]` (via T4.3); `kind: test` task present when `tests_required: true`; inline `## Test plan` section present and non-empty; approved-signature carry-forward valid (via T2.2); sibling-file grep.
+  - deps: T3.1 (format parity), T4.3 reference
+  - DoD: each §D2.2 bullet represented as a concrete check with block-severity criteria.
+
+- [ ] **T3.3. New `implementation-gate-check.md` prompt (in-progress → implemented)** — `kind: docs` | `estimate_minutes: 35`
+  - executor: BUILDER (Jayce) | ADR: §D2.3
+  - files: `agents/orianna/prompts/implementation-gate-check.md` (new)
+  - detail: re-run claim-contract on current tree; enforce `architecture_changes:` OR `architecture_impact: none` (via T4.4); `## Test results` section with CI/log link if `tests_required`; carry-forward both prior signatures.
+  - deps: T3.2 parity, T4.4 reference
+  - DoD: each §D2.3 bullet represented; block-severity criteria explicit.
+
+### Phase 4 — Gate logic libs
+
+- [ ] **T4.1. In-progress gate lib** — `kind: impl` | `estimate_minutes: 50`
+  - executor: BUILDER (Jayce) | ADR: §D2.2
+  - files: `scripts/_lib_orianna_gate_inprogress.sh` (new)
+  - detail: sourceable bash functions — `check_tasks_section`, `check_estimate_minutes` (delegates to T4.3), `check_test_tasks_present`, `check_test_plan_section`, `check_sibling_absent`, `check_approved_carry_forward` (calls T2.2).
+  - deps: T2.2, T4.3
+  - DoD: each function returns 0/non-zero with stderr; sourced by `orianna-sign.sh`.
+
+- [ ] **T4.2. Implemented gate lib** — `kind: impl` | `estimate_minutes: 50`
+  - executor: BUILDER (Jayce) | ADR: §D2.3
+  - files: `scripts/_lib_orianna_gate_implemented.sh` (new)
+  - detail: `check_claim_anchors_current`, `check_architecture_declaration` (T4.4), `check_test_results_section`, `check_carry_forward_approved`, `check_carry_forward_inprogress`.
+  - deps: T2.2, T4.4
+  - DoD: all §D2.3 bullets covered; distinct stderr per failure.
+
+- [ ] **T4.3. `estimate_minutes` parser + bounds lib** — `kind: impl` | `estimate_minutes: 30`
+  - executor: BUILDER (Jayce) | ADR: §D4
+  - files: folded into T4.1's `_lib_orianna_gate_inprogress.sh` OR standalone `_lib_orianna_estimates.sh` (OQ-K1)
+  - detail: parse every task entry under `## Tasks`; verify `estimate_minutes:` present, integer, `1 ≤ n ≤ 60`; reject alt-unit literals (`hours`, `days`, `weeks`, `h)`, `(d)`) anywhere in section.
+  - deps: T5.4 xfail first
+  - DoD: rejects missing, zero, negative, 61, alt-units; clean pass on conforming fixture.
+
+- [ ] **T4.4. Architecture-freshness verifier lib** — `kind: impl` | `estimate_minutes: 45`
+  - executor: BUILDER (Jayce) | ADR: §D5
+  - files: `scripts/_lib_orianna_architecture.sh` (new) — or folded into T4.2
+  - detail: reads `architecture_changes:` list OR `architecture_impact: none`; enforces exactly one present; for list case verifies each path exists AND has git-log entry modifying it within `[approved_signature_timestamp, now]`; for none case verifies `## Architecture impact` heading exact match with non-empty body.
+  - deps: T5.5 xfail first
+  - DoD: all four §D5 failure modes rejected with distinct stderr.
+
+### Phase 5 — Tests (xfail-first per CLAUDE.md rule 12)
+
+- [ ] **T5.1. Tests for hash-body helper** — `kind: test` | `estimate_minutes: 25`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-hash-body.sh` (new)
+  - detail: CRLF↔LF parity, trailing-ws parity, frontmatter-only change same hash, body change different hash.
+  - DoD: four cases; xfail commit precedes T1.1 impl.
+
+- [ ] **T5.2. Tests for `orianna-verify-signature.sh`** — `kind: test` | `estimate_minutes: 40`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-verify-signature.sh` (new)
+  - detail: good sig; tampered body (hash mismatch); wrong author email; missing trailer; multi-file diff scope; stale sig after edit.
+  - DoD: six cases; xfail precedes T2.2.
+
+- [ ] **T5.3. Tests for signature-shape hook** — `kind: test` | `estimate_minutes: 30`
+  - executor: TEST (Vi) | files: `scripts/hooks/test-pre-commit-orianna-signature.sh` (new)
+  - detail: parity with `scripts/hooks/test-plan-promote-guard.sh` structure; valid-accept + 3 reject cases.
+  - DoD: xfail precedes T2.3.
+
+- [ ] **T5.4. Tests for estimate_minutes parser** — `kind: test` | `estimate_minutes: 25`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-estimates.sh` (new)
+  - detail: seven cases — missing, zero, negative, 61, `hours` literal, `(d)` literal, clean pass.
+  - DoD: xfail precedes T4.3.
+
+- [ ] **T5.5. Tests for architecture verifier** — `kind: test` | `estimate_minutes: 35`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-architecture.sh` (new)
+  - detail: both-fields-missing block; list with unmodified path block; list with valid mods pass; none with empty section block; none with one-line reason pass.
+  - DoD: five cases; xfail precedes T4.4.
+
+- [ ] **T5.6. Tests for sibling-file grep** — `kind: test` | `estimate_minutes: 20`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-sibling-grep.sh` (new)
+  - detail: fixture with `<basename>-tasks.md` sibling → approved gate blocks; sibling deleted → pass.
+  - DoD: two cases; xfail precedes T3.1 + T4.1 completion.
+
+- [ ] **T5.7. End-to-end smoke harness** — `kind: test` | `estimate_minutes: 55`
+  - executor: TEST (Vi) | files: `scripts/test-orianna-lifecycle-smoke.sh` (new)
+  - detail: create toy plan in `plans/proposed/`; sign approved; verify; edit body; re-sign; sign in-progress; promote; sign implemented; promote; confirm all three signatures valid post-hoc.
+  - deps: T1–T6 complete
+  - DoD: scenario green end-to-end; serves as §D12 smoke-test.
+
+### Phase 6 — `plan-promote.sh` integration
+
+- [ ] **T6.1. Signature presence + validity check** — `kind: refactor` | `estimate_minutes: 30`
+  - executor: REFACTOR (Viktor) | ADR: §D6.1, §D6.2
+  - files: `scripts/plan-promote.sh` (edit)
+  - detail: for target phase, assert `orianna_signature_<target>` in frontmatter; invoke `orianna-verify-signature.sh`; halt with error pointing to `orianna-sign.sh`.
+  - deps: T2.2
+  - DoD: missing/invalid signature halts promote with targeted error.
+
+- [ ] **T6.2. Carry-forward check** — `kind: refactor` | `estimate_minutes: 25`
+  - executor: REFACTOR (Viktor) | ADR: §D6.3
+  - files: `scripts/plan-promote.sh` (edit)
+  - detail: for transitions past approved, verify all prior-phase signatures still valid against current body hash.
+  - deps: T6.1
+  - DoD: tampered approved-body blocks in-progress promote.
+
+- [ ] **T6.3. Advisory file-lock** — `kind: refactor` | `estimate_minutes: 30`
+  - executor: REFACTOR (Viktor) | ADR: §D9.3
+  - files: `scripts/plan-promote.sh` (edit)
+  - detail: wrap promote body in `flock` on `<repo-root>/.plan-promote.lock` with `mkdir`-fallback for portability (CLAUDE.md rule 10).
+  - DoD: concurrent invocation: second fails fast with PID-of-holder error.
+
+- [ ] **T6.4. `orianna_gate_version` grandfather branching** — `kind: refactor` | `estimate_minutes: 35`
+  - executor: REFACTOR (Viktor) | ADR: §D8
+  - files: `scripts/plan-promote.sh` (edit)
+  - detail: read `orianna_gate_version` from source; absent → log warning + retain legacy fact-check behavior; `= 2` → enforce T6.1/T6.2 gates.
+  - deps: T6.1, T6.2
+  - DoD: grandfathered plan promotes under v1; v2 plan only on valid signature.
+
+- [ ] **T6.5. Retire fact-check call site (v2 path only)** — `kind: refactor` | `estimate_minutes: 20`
+  - executor: REFACTOR (Viktor) | ADR: §D6
+  - files: `scripts/plan-promote.sh` (edit)
+  - detail: on v2 branch, remove direct `orianna-fact-check.sh` invocation — fact-check now runs inside `orianna-sign.sh` as precondition. Keep legacy call on the grandfather branch (T6.4). **Do NOT delete `orianna-fact-check.sh`** — it remains the mechanism `orianna-sign.sh` reuses under §D2.1.
+  - deps: T6.4, T2.1
+  - DoD: v2 plans: no redundant fact-check; v1 grandfathered: legacy path preserved.
+
+### Phase 7 — Bypass hardening
+
+- [ ] **T7.1. Restrict `Orianna-Bypass` to admin identity** — `kind: refactor` | `estimate_minutes: 25`
+  - executor: REFACTOR (Viktor) | ADR: §D9.1
+  - files: `scripts/hooks/pre-commit-plan-promote-guard.sh` (edit), plus test update
+  - detail: reject any commit carrying `Orianna-Bypass:` trailer when author email = `duong.nguyen.thai.duy@gmail.com` (agent account). Only Duong's admin identity (`harukainguyen1411` / personal email) may use the trailer. Update `scripts/hooks/test-plan-promote-guard.sh` to cover both cases.
+  - DoD: agent-identity bypass blocked; admin-identity bypass allowed; existing tests still green.
+
+- [ ] **T7.2. Confirm offline-fail via test** — `kind: test` | `estimate_minutes: 15`
+  - executor: TEST (Vi) | ADR: §D9.2
+  - files: extend T5.7 smoke harness
+  - detail: in a hermetic env with `claude` CLI absent, `orianna-sign.sh` exits non-zero emitting "signature unavailable"; no mechanical fallback written.
+  - deps: T2.1
+  - DoD: test case confirms: missing CLI → no signature → promote halts.
+
+### Phase 8 — Freeze infrastructure (§D12)
+
+- [ ] **T8.1. Temporary new-file freeze hook** — `kind: impl` | `estimate_minutes: 25`
+  - executor: BUILDER (Jayce) | ADR: §D12
+  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh` (new)
+  - detail: `git diff --cached --name-status | awk '$1=="A" && $2 ~ /^plans\/proposed\//'` — any match fails commit with message pointing at §D12. `M`/`R`/`D` entries passthrough.
+  - DoD: new file under `plans/proposed/` blocked; edits passthrough.
+
+- [ ] **T8.2. Install + announce freeze** — `kind: infra` | `estimate_minutes: 15`
+  - executor: ERRAND | ADR: §D12
+  - files: `scripts/install-hooks.sh` (edit), `agents/memory/last-session.md` (edit)
+  - deps: T8.1
+  - DoD: fresh-clone installs freeze hook; Evelynn sees notice at startup.
+
+- [ ] **T8.Z. Removal task — lift freeze** — `kind: chore` | `estimate_minutes: 10`
+  - executor: ERRAND (execute only after T11.1 passes) | ADR: §D12
+  - files: `scripts/hooks/pre-commit-plan-authoring-freeze.sh` (delete), `scripts/install-hooks.sh` (edit)
+  - deps: T11.1
+  - DoD: freeze hook deleted; install-hooks wiring removed; commit `chore: lift §D12 freeze`.
+
+### Phase 9 — Migration (§D8, MANUAL one-shot)
+
+- [ ] **T9.1. Bulk demote `plans/approved/*.md` → `plans/proposed/`** — `kind: chore` | `estimate_minutes: 60`
+  - executor: ERRAND (human-driven — Duong; §D8 Q9 = manual, no new script) | ADR: §D8
+  - files: every `plans/approved/*.md` except this ADR itself (OQ-K3)
+  - detail: enumerate files first (drift-catch); `git mv` each into `plans/proposed/`; rewrite `status: approved` → `status: proposed`; batch into ONE `chore:` commit direct to main; re-publish to Drive per-file via `scripts/plan-publish.sh` (proposed-only mirror).
+  - deps: T8.1 installed (freeze active first)
+  - DoD: `plans/approved/` empty except this ADR (self-referential exception pending OQ-K3); each demoted plan's `status:` matches new dir; Drive mirror re-published; batch commit lists all demoted plans for audit.
+
+- [ ] **T9.2. Sibling-file inline merges (per-plan, opportunistic)** — `kind: chore` | `estimate_minutes: 20` (per affected plan)
+  - executor: ERRAND (author-driven per plan — NOT a single task; one per affected plan) | ADR: §D3, §D8 Q10
+  - files: per-plan (parent + sibling)
+  - detail: for any plan returning to `proposed/` with a grandfathered `<basename>-tasks.md` or `<basename>-tests.md` sibling still on disk — manually inline sibling content into parent's `## Tasks` / `## Test plan` sections; delete sibling. Approved-gate blocks re-promotion until sibling gone (T3.1 grep).
+  - deps: T9.1, T3.1
+  - DoD per plan: sibling deleted; parent contains inlined content; Orianna approved-gate passes.
+  - **Tracking:** Evelynn maintains the list of plans needing this merge in her inbox; not enumerated here because §D8 explicitly says "author's discretion" and the full 56-plan audit would pre-decide author judgment.
+
+### Phase 10 — Architecture docs + CLAUDE.md (§D10)
+
+- [ ] **T10.1. Add Orianna signing role to `architecture/agent-system.md`** — `kind: docs` | `estimate_minutes: 25`
+  - executor: REFACTOR (Viktor) | ADR: §D10
+  - deps: T2.1, T2.2 exist (for accurate script refs)
+  - DoD: section present describing signing role, three signatures, distinct git identity.
+
+- [ ] **T10.2. Document 4 new scripts in `architecture/key-scripts.md`** — `kind: docs` | `estimate_minutes: 25`
+  - executor: REFACTOR (Viktor) | ADR: §D10
+  - files: `architecture/key-scripts.md` (edit)
+  - deps: T1.1, T2.1, T2.2, T2.3
+  - detail: entries for `orianna-sign.sh`, `orianna-verify-signature.sh`, `orianna-hash-body.sh`, `pre-commit-orianna-signature-guard.sh`.
+  - DoD: four entries with one-line purpose + usage + exit codes.
+
+- [ ] **T10.3. New `architecture/plan-lifecycle.md`** — `kind: docs` | `estimate_minutes: 45`
+  - executor: BUILDER (Jayce) | ADR: §D10
+  - files: `architecture/plan-lifecycle.md` (new)
+  - detail: operator-facing doc — phases, gates, what Orianna checks at each, signature format, grandfather rules.
+  - deps: T1–T8 complete (content stable)
+  - DoD: readable without the ADR; references ADR as source of truth.
+
+- [ ] **T10.4. CLAUDE.md universal invariant** — `kind: docs` | `estimate_minutes: 20`
+  - executor: ERRAND (Duong approval required — rule addition) | ADR: §D10
+  - files: `CLAUDE.md` (edit)
+  - detail: add rule (likely #19 — see OQ-K2) stating "Plan promotions past `proposed → approved` require valid Orianna signatures on every transition; no bypass except human-admin-identity."
+  - deps: T10.3 (so rule can cite arch doc)
+  - DoD: rule present; cross-links to `architecture/plan-lifecycle.md` + §D9.1.
+
+### Phase 11 — Smoke + freeze lift
+
+- [ ] **T11.1. End-to-end smoke: fresh plan through all three gates** — `kind: test` | `estimate_minutes: 40`
+  - executor: TEST (Vi) | ADR: §D12
+  - files: `assessments/2026-04-XX-orianna-gate-smoke.md` (new report)
+  - deps: all of T1–T10 + T9.1
+  - detail: create synthetic plan in `plans/proposed/`; sign approved → promote; sign in-progress → promote; sign implemented → promote; re-verify all three signatures post-hoc.
+  - DoD: smoke green; report written; signatures verifiable via `orianna-verify-signature.sh` on each phase.
+
+- [ ] **T11.2. Lift freeze (execute T8.Z)** — `kind: chore` | `estimate_minutes: 10`
+  - executor: ERRAND | ADR: §D12
+  - deps: T11.1 green
+  - DoD: freeze gone; new-plan authoring works again; ADR implementation complete.
+
+---
+
+## Executor-tier assignment summary
+
+| Tier | Count | Tasks |
+|------|-------|-------|
+| BUILDER (Jayce) | 12 | T1.1, T1.3, T2.1, T2.2, T2.3, T3.2, T3.3, T4.1, T4.2, T4.3, T4.4, T8.1, T10.3 |
+| REFACTOR (Viktor) | 8 | T2.4, T3.1, T6.1, T6.2, T6.3, T6.4, T6.5, T7.1, T10.1, T10.2 |
+| TEST (Vi) | 9 | T5.1–T5.7, T7.2, T11.1 |
+| ERRAND | 7 | T1.2, T8.2, T8.Z, T9.1, T9.2 (per-plan pattern), T10.4, T11.2 |
+
+**Total atomic tasks: 33** (T9.2 counted once as a pattern; per-plan instances
+tracked opportunistically by Evelynn).
+
+## Cross-cutting call-outs for Evelynn (dispatch hints)
+
+1. **Phase 9 is HUMAN work.** T9.1 is a manual 56-file batch per §D8 Q9 — do not spawn an agent. T9.2 is per-plan and opportunistic.
+2. **Phase 5 is xfail-first (CLAUDE.md rule 12).** Every test task commits its xfail before the paired impl lands on the same branch.
+3. **T3.1 is extend-not-replace.** Shipped `plan-check.md` is load-bearing (plan 1 passed through it); preserve v1 checks while adding §D2.1 scope.
+4. **T6.5 retires the call site — does NOT delete the script.** `orianna-fact-check.sh` remains the machinery `orianna-sign.sh` reuses under §D2.1.
+5. **Freeze window is LONG.** T8.1 activates; T11.2 lifts. No new-plan authoring agents spawn in between. Edits to existing drafts are fine (§D12 Q11).
+6. **Duong-blockers.** T9.1 (manual demotion), T10.4 (rule addition), any §D9.1 bypass decisions. Everything else is agent-dispatchable.
+7. **`orianna_gate_version: 2` is the switch.** Plans authored after this ADR carry it; demoted plans (T9.1) don't yet — they acquire it on first re-sign. T6.4 is the branching point.
+
+## Deliverables explicitly deferred / out of scope
+
+- **D11 test-plan schema ADR** — follow-up ADR owned by test-plan role.
+- **Architecture-doc authoring automation** (§"Out of scope") — Orianna verifies, humans/agents write.
+- **Cross-repo extension** to strawberry-app lifecycle — deferred.
+- **Task-execution gates during in-progress** — deferred.
+- **PR-level Orianna signatures** — explicitly out of scope.
+
+## Open questions raised by the breakdown
+
+- **OQ-K1.** T4.3 lib placement — bundle into `_lib_orianna_gate_inprogress.sh` vs separate `_lib_orianna_estimates.sh`? Recommend bundle; flagged for Jayce at build time.
+- **OQ-K2.** T10.4 rule slot number — CLAUDE.md currently has rules through #18. Rule #19 is the natural next slot. Flagged for Duong.
+- **OQ-K3.** T9.1 demotion scope — does this ADR itself (now in `approved/`) demote alongside the others, or stay as reference artifact? Breakdown assumes it stays (self-referential exception); flagged for Duong.
+
+## Revision log
+
+- 2026-04-20 — Kayn — initial inline breakdown (replaces earlier sibling-file draft per §D3 one-plan-one-file rule). 33 atomic tasks across 11 phases; 8 shipped items inventoried and excluded from re-tasking; anti-duplicate rule on `orianna-fact-check.sh` (retire call site, preserve script).
+
