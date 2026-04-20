@@ -33,10 +33,12 @@
 
 - [Orianna gate v2 xfail tests](../learnings/2026-04-20-orianna-gate-v2-xfail-tests.md) — xfail guard pattern for absent scripts; sourceable lib test pattern; T5.7 multi-phase smoke harness; T7.2 hermetic PATH offline-fail; cross-platform date fallback
 - [Orianna smoke 11/11 debug](../learnings/2026-04-20-orianna-smoke-11-11-debug.md) — body hash frozen at signing; test results must be final before in_progress sign; plan-promote.sh must handle all forward lifecycle stages; REPO env var must be honored in _lib_gdoc.sh
+- [Orianna gate-v1 false-positive fix](../learnings/2026-04-20-orianna-gate-v1-false-positive-fix.md) — 3 FP classes: whitespace-in-backtick, path:line-number suffix, XX-date-template; smoke fix: copy CLAUDE.md into temp repo; regression test 4/4; smoke 11/11
 
 ## Sessions
 - 2026-04-20: Orianna gate v2 xfail tests — wrote T5.1–T5.7, T7.2, T11.1; 38 cases across 7 scripts + 1 stub; PR #5 open (feat/orianna-gate-v2-tests); all scripts confirmed xfail-on-absent
 - 2026-04-20: Orianna smoke 11/11 debug — fixed 4 failures in test-orianna-lifecycle-smoke.sh; 3 commits (79e2298 + 3ddac26 + 9541b0c); 11/11 PASS
+- 2026-04-20: Orianna gate-v1 false-positive fix — fixed 3 FP classes in fact-check-plan.sh; smoke fix for CLAUDE.md identity guard; 11/11 PASS; commit 4e2e1ed pushed to main
 
 ## Archive Note
 
