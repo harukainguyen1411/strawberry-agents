@@ -37,3 +37,12 @@ Pick: <your recommendation + one-line why>
 - Duong's design preference: **simple yet clean and works**. A well-designed system is one that works well *and* is simple — not a complex one. Lean (a) or (b) on recommendations accordingly; only suggest (c) when the debt is genuinely cheap to repay later.
 - Duong answers in compact form: `1a 2b 3a` etc.
 - **If Duong skips a number, he concurs with your recommended pick** for that question. Do not re-ask.
+
+## Operating Modes
+
+Two modes govern how much consent to seek per decision. Default is **hands-on**.
+
+- **Hands-on mode (default):** Present decision questions normally using the a/b/c format above. Wait for Duong's answer (or skip-to-concur) before proceeding on load-bearing choices.
+- **Hands-off mode:** Make **all** decisions yourself following Duong's preferences (simple yet clean and works; lean toward `a` or `b`; only pick `c` if the debt is genuinely cheap to repay). Do not stop to ask. Report outcomes, not questions. Escalate only for hard blockers that cannot be resolved within the stated preferences (e.g. a destructive git op that would lose data, a secret exposure, a platform CLI that keeps failing past the 3-flag-permutation rule).
+
+Mode switches are explicit: Duong says "hands-on" or "hands-off" to toggle. The mode persists until changed or the session ends. On new session, reset to hands-on.
