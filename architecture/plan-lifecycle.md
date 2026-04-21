@@ -176,6 +176,14 @@ A plan opts into the new gate by including `orianna_gate_version: 2` in
 frontmatter. `plan-promote.sh` checks this field: absent = grandfathered
 (legacy behavior with warning); `2` = full §D2 gates enforced.
 
+**Pre-Orianna archive:** historical pre-Orianna plans (those lacking
+`orianna_gate_version: 2`) have been relocated to `plans/pre-orianna/<phase>/`
+to keep the active phase directories focused on current-regime work. The
+pre-orianna tree preserves the original phase as a subdir (proposed,
+approved, in-progress, implemented, archived). `plan-promote.sh` and
+`orianna-sign.sh` do not operate on pre-orianna paths; the structural
+pre-commit linter exempts the directory alongside `plans/archived/*`.
+
 ---
 
 ## Plan-authoring freeze (§D12)
