@@ -14,6 +14,7 @@ tags:
   - work
 tests_required: true
 orianna_signature_approved: "sha256:2685a2f5876ac4231bfd949630fbd9b584ca87a909331d1913802efecb782ea7:2026-04-21T05:54:25Z"
+orianna_signature_in_progress: "sha256:2685a2f5876ac4231bfd949630fbd9b584ca87a909331d1913802efecb782ea7:2026-04-21T05:58:17Z"
 ---
 
 # ADR: Managed Agent Control — Dashboard Tab (Demo Studio v3 Service 1)
