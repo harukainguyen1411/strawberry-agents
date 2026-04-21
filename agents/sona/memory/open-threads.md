@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-21 (fourth-leg shard 2026-04-21-4c6f055d; prior shards 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-21 (fifth-leg shard 2026-04-21-3f9a8c58; prior shards 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
@@ -106,50 +106,33 @@ Last updated: 2026-04-21 (fourth-leg shard 2026-04-21-4c6f055d; prior shards 202
 **Shard pointers:** 2026-04-20-pre-migration.
 **Next action:** Commit workspace-local Sona memory fixes early next session.
 
-## Architecture decision — MCP in-process (Option A) vs vanilla API (Option B)
+## Wave 1 impl — Viktor (MCP-merge) + Jayce (S3) + Jayce (S5) — in flight
 
-**Status:** Open — Duong chose Option A initially ("ok let's still try A first") but also requested Swain write Option B plan. Both Azir #60 (god plan v2, Option A) and Swain #62 (vanilla-API, Option B) are in flight. Decision pending final plan reads.
-**Options:**
-- A: Merge MCP into S1 process — keeps managed agent, removes separate Cloud Run service
-- B: Vanilla Messages API — ditch managed/MCP/MAL/MAD, keeps SE/BD, synchronous client-side tools
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Read Azir #60 + Swain #62 final messages when they land. Surface both plans to Duong for architectural decision before any impl begins.
+**Status:** Three background agents running at fifth-leg consolidation, all based on `feat/demo-studio-v3`.
+- Viktor — MCP in-process merge (mcp-inprocess-merge plan, in-progress/)
+- Jayce — S3 projectId reuse + S4 auto-trigger (s3-project-reuse-and-s4-trigger plan, in-progress/)
+- Jayce — S5 fullview route (s5-preview-fullview-route plan, in-progress/)
+**Key caveat:** S3 plan assumed non-streaming `POST /build`; actual endpoint is SSE-streaming `POST /v1/build`. Dispatched Jayce was corrected pre-dispatch; verify result targets correct endpoint.
+**Shard pointers:** 2026-04-21-3f9a8c58.
+**Next action:** Read final messages on wake. If any bailed on Bash-deny, retry with verbatim-error instruction. After Wave 1 lands, verify on `feat/demo-studio-v3` and open PRs.
 
-## Karma #59 MCP-merge plan — structure violations blocking Karma #61 S5 commit
+## S1 new-flow ADR — Wave 2, not yet dispatched
 
-**Status:** Karma #59's plan (`plans/proposed/work/2026-04-21-mcp-inprocess-merge.md`) has structure-check violations: "h)" time-unit notation + missing `## Test plan` section. This blocked Karma #61's S5 fullview plan from committing (pre-commit is shared state). S5 plan file (`plans/proposed/work/2026-04-21-s5-preview-fullview-route.md`) is clean but untracked on disk.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Dispatch Ekko to fix Karma #59's MCP plan structure (replace "h)" with minutes, add `## Test plan` section), then re-attempt staging both plan files. Or wait for Karma #59 to self-resolve before Karma #61 retries.
+**Status:** `plans/in-progress/work/2026-04-21-s1-new-flow.md` promoted to in-progress but no impl agent dispatched. Biggest scope among the 4 Wave 1-2 ADRs.
+**Shard pointers:** 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d.
+**Next action:** Dispatch after Wave 1 (Viktor + 2x Jayce) results verified. Likely complex-track → Viktor.
 
-## Azir #60 god plan v2 — in flight
+## Swain Option B plan — parked
 
-**Status:** In flight at consolidation. Plan at `plans/proposed/work/2026-04-21-demo-studio-v3-e2e-ship-v2.md`. Names 4 ADR scopes: MCP-merge, S3-projectId+S4-trigger, S5-fullview, S1-new-flow.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Read Azir's final message. If plan committed, surface to Duong for approval. Decompose into 4 ADRs after approval.
+**Status:** `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md` parked in proposed/ per Duong directive "ship Azir plan first". No promotion, no impl.
+**Shard pointers:** 2026-04-21-3f9a8c58.
+**Next action:** Revisit only if Option A hits a hard blocker.
 
-## Swain #62 vanilla-API god plan B — in flight
+## MCP 503 — resolves with MCP-merge Wave 1
 
-**Status:** In flight at consolidation. Plan at `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Deletes MAL/MAD/MCP/setup_agent. Keeps SE/BD. Full re-architecture.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Read Swain's final message. Surface alongside Azir #60 for Duong's architecture decision.
-
-## MCP 503 — demo-studio-mcp Cloud Run unreachable
-
-**Status:** Open — `demo-studio-mcp` Cloud Run returns 503; source project `ds-v3-workspace-2026` deleted. Not a ship-day regression; pre-existing infra gap. Blocks local E2E test.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** If Option A (MCP-merge) accepted, this resolves when MCP-merge impl lands. If Option B (vanilla API), MCP decommissioned. If neither in time, dispatch Heimerdinger to redeploy MCP to a new project for interim local testing.
-
-## S3 ADR — projectId reuse + S4 auto-trigger
-
-**Status:** Not yet dispatched. Azir's god plan will name the scope.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Decompose after Azir #60 god plan is approved and architecture decision made.
-
-## S1 new-flow ADR — empty session, route cleanup, S5 iframe, session schema, /logs SSE, S4 polling
-
-**Status:** Not yet dispatched. Biggest scope among the 4 ADRs in Azir's god plan.
-**Shard pointers:** 2026-04-21-4c6f055d.
-**Next action:** Decompose after Azir #60 god plan is approved. Likely complex-track → Swain.
+**Status:** `demo-studio-mcp` Cloud Run 503 (project `ds-v3-workspace-2026` deleted) will resolve when Viktor's MCP in-process merge lands. No interim action needed.
+**Shard pointers:** 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d.
+**Next action:** Verify MCP 503 is gone after Viktor's MCP-merge PR lands and deploys.
 
 ---
 
