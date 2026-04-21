@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -10,8 +10,6 @@ architecture_impact: none
 tags: [plans, lifecycle, cleanup, orianna-gate]
 related:
   - plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md
-orianna_signature_approved: "sha256:6b4dcafad4b52ec3238d0bc3758229e3eb44ecd0563f80bdce8af0171cd0047b:2026-04-21T11:44:06Z"
-orianna_signature_in_progress: "sha256:6b4dcafad4b52ec3238d0bc3758229e3eb44ecd0563f80bdce8af0171cd0047b:2026-04-21T11:45:23Z"
 ---
 
 # Pre-Orianna plan archive — declutter plan phase directories
@@ -159,6 +157,10 @@ behavior change and no new code paths. Sanity checks instead of tests:
 - plan-promote unaffected: invoke it with a pre-orianna source path and confirm it rejects with the existing "plan-promote only handles plans from proposed/..." error — matching pre-change behavior.
 - orianna-sign unaffected: invoke it on a pre-orianna plan; it fails with its normal "plan not in the correct source directory" error — no new code path reached.
 - Hook exemption: stage a pre-orianna plan with a no-op touch and confirm the structural hook exits 0.
+
+## Architecture impact
+
+No new architecture concepts introduced. `architecture/plan-lifecycle.md` receives a one-paragraph note (T4) pointing readers to the `plans/pre-orianna/` directory for grandfathered plans. This is a documentation-only update; no lifecycle rules, script interfaces, or behavioral contracts change.
 
 ## Rollback
 

@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: swain
 created: 2026-04-21
