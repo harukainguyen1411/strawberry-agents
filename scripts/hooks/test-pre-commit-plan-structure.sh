@@ -927,6 +927,296 @@ _assert "(5b) forward self-reference with orianna:ok suppression passes (exit 0)
 rm -rf "$t5b_dir"
 
 # ---------------------------------------------------------------------------
+# C1 — RCE regression: metacharacter-bearing backtick token must NOT create sentinel
+# xfail before fix: the hook shells out via awk cmd|getline, allowing injection
+# ---------------------------------------------------------------------------
+tc1_dir="$(_setup_repo)"
+mkdir -p "$tc1_dir/plans/proposed"
+rm -f /tmp/senna-rce-sentinel.flag
+cat > "$tc1_dir/plans/proposed/rce-test.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# RCE regression test plan
+
+## 1. Problem
+
+`foo/";{touch,/tmp/senna-rce-sentinel.flag};:;#`
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+_run_hook_with_staged "$tc1_dir" "plans/proposed/rce-test.md" >/dev/null 2>&1 || true
+if [ ! -e /tmp/senna-rce-sentinel.flag ]; then
+  _assert "(C1) metacharacter token does NOT create RCE sentinel" "yes" "yes"
+else
+  _assert "(C1) metacharacter token does NOT create RCE sentinel" "yes" "no"
+  rm -f /tmp/senna-rce-sentinel.flag
+fi
+rm -rf "$tc1_dir"
+
+# ---------------------------------------------------------------------------
+# I1 — rename detection: renamed-and-edited plan must be checked
+# xfail before fix: --diff-filter=ACM misses R (renamed) plans
+# ---------------------------------------------------------------------------
+ti1_dir="$(_setup_repo)"
+mkdir -p "$ti1_dir/plans/proposed"
+# Write a good plan, commit it, then rename+edit to inject a violation
+cat > "$ti1_dir/plans/proposed/original.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Original plan
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$ti1_dir" add plans/proposed/original.md
+git -C "$ti1_dir" commit -q -m "add original plan"
+# Rename to new path and inject a violation (missing estimate_minutes)
+mkdir -p "$ti1_dir/plans/proposed/personal"
+cat > "$ti1_dir/plans/proposed/personal/renamed.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Renamed plan with violation
+
+## Tasks
+
+- [ ] **T1** — Missing estimate field. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$ti1_dir" mv plans/proposed/original.md plans/proposed/personal/renamed.md 2>/dev/null || \
+  { cp "$ti1_dir/plans/proposed/personal/renamed.md" "$ti1_dir/plans/proposed/personal/renamed.md.tmp" && \
+    git -C "$ti1_dir" rm plans/proposed/original.md && \
+    mv "$ti1_dir/plans/proposed/personal/renamed.md.tmp" "$ti1_dir/plans/proposed/personal/renamed.md" && \
+    git -C "$ti1_dir" add plans/proposed/personal/renamed.md; }
+# Overwrite with violating content after staging the rename
+cat > "$ti1_dir/plans/proposed/personal/renamed.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Renamed plan with violation
+
+## Tasks
+
+- [ ] **T1** — Missing estimate field. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$ti1_dir" add plans/proposed/personal/renamed.md
+ti1_local_hook="$ti1_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+ti1_rc="$( (cd "$ti1_dir" && bash "$ti1_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(I1) renamed-and-edited plan with violation is checked (exit 1)" 1 "$ti1_rc"
+rm -rf "$ti1_dir"
+
+# ---------------------------------------------------------------------------
+# I2 — false positives: prose "h)" and "(d)" without digit prefix must PASS
+# xfail before fix: bare index() match trips on any "h)" or "(d)" in prose
+# ---------------------------------------------------------------------------
+ti2_dir="$(_setup_repo)"
+mkdir -p "$ti2_dir/plans/proposed"
+cat > "$ti2_dir/plans/proposed/prose-enumeration.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Prose enumeration
+
+## Tasks
+
+- [ ] **T1** — Options are a) foo b) bar c) baz d) end e) more f) even g) lots h) done. estimate_minutes: 10. DoD: done.
+- [ ] **T2** — Cover cases (a), (b), (c), (d) in the implementation. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$ti2_dir" "plans/proposed/prose-enumeration.md")"
+_assert "(I2a) prose 'h)' without digit prefix does not block (exit 0)" 0 "$rc"
+_assert "(I2b) prose '(d)' without digit prefix does not block (exit 0)" 0 "$rc"
+rm -rf "$ti2_dir"
+
+# Also verify that "10h)" and "5(d)" still block (digit-prefixed time units)
+ti2b_dir="$(_setup_repo)"
+mkdir -p "$ti2b_dir/plans/proposed"
+cat > "$ti2b_dir/plans/proposed/digit-time-unit.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Digit-prefixed time unit
+
+## Tasks
+
+- [ ] **T1** — Takes about 10h) to complete. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$ti2b_dir" "plans/proposed/digit-time-unit.md")"
+_assert "(I2c) '10h)' digit-prefixed time unit blocks (exit 1)" 1 "$rc"
+rm -rf "$ti2b_dir"
+
+# ---------------------------------------------------------------------------
+# I3 — absolute paths like /etc/passwd must not be flagged by rule-4
+# xfail before fix: is_path check includes absolute paths
+# ---------------------------------------------------------------------------
+ti3_dir="$(_setup_repo)"
+mkdir -p "$ti3_dir/plans/proposed"
+cat > "$ti3_dir/plans/proposed/absolute-path.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Absolute path reference
+
+## 1. Problem
+
+The hook reads `/etc/hosts` for network config examples.
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$ti3_dir" "plans/proposed/absolute-path.md")"
+_assert "(I3) absolute path /etc/hosts in prose does not block (exit 0)" 0 "$rc"
+rm -rf "$ti3_dir"
+
+# ---------------------------------------------------------------------------
+# I4 — YAML frontmatter trailing # comment must not break field parsing
+# xfail before fix: tests_required: false  # infra only → parsed as "false  # infra only"
+# ---------------------------------------------------------------------------
+ti4_dir="$(_setup_repo)"
+mkdir -p "$ti4_dir/plans/proposed"
+cat > "$ti4_dir/plans/proposed/frontmatter-comment.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false  # infra only
+tags: [test]
+---
+
+# Frontmatter comment plan
+
+## 1. Problem
+
+YAML comment in frontmatter.
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$ti4_dir" "plans/proposed/frontmatter-comment.md")"
+_assert "(I4) tests_required: false with trailing # comment does not require Test plan section (exit 0)" 0 "$rc"
+rm -rf "$ti4_dir"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
