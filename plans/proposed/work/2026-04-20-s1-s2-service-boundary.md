@@ -19,8 +19,8 @@ tests_required: true
 
 **Date:** 2026-04-20
 **Author:** Azir (architecture)
-**Scope:** `company-os/tools/demo-studio-v3` (S1) boundary vs `demo-studio-config-mgmt` (S2).
-**Companion ADR:** `plans/2026-04-20-session-state-encapsulation.md` (and task file `plans/2026-04-20-session-state-encapsulation-tasks.md`). Both live on `feat/demo-studio-v3` at `d327581`. This ADR **extends** the session-state ADR for most decisions; where §11 resolutions contradict SE (Session dataclass scope, `/session/new` body shape, status response shape, `configVersion` placement), the contradictions are enumerated in the companion amendment file `plans/proposed/2026-04-20-session-state-encapsulation-bd-amendment.md`.
+**Scope:** `company-os/tools/demo-studio-v3` (S1) boundary vs `demo-studio-config-mgmt` <!-- orianna: ok — internal service name in missmp/company-os; not a filesystem path --> (S2).
+**Companion ADR:** `plans/proposed/work/2026-04-20-session-state-encapsulation.md` (and task file `plans/2026-04-20-session-state-encapsulation-tasks.md` <!-- orianna: ok — future task file in missmp/company-os -->). Both live on `feat/demo-studio-v3` at `d327581`. This ADR **extends** the session-state ADR for most decisions; where §11 resolutions contradict SE (Session dataclass scope, `/session/new` body shape, status response shape, `configVersion` placement), the contradictions are enumerated in the companion amendment file `company-os/plans/2026-04-20-session-state-encapsulation-bd-amendment.md`. <!-- orianna: ok — cross-repo amendment file in missmp/company-os -->
 
 ## 1. Context and posture
 
@@ -32,10 +32,10 @@ Interpreted as S1's scope: (a) host the Anthropic managed agent, (b) track the a
 
 - **S1 owns session lifecycle only — strictly.** The S1 session document holds: `sessionId`, `createdAt`, `updatedAt`, `phase`, `status`, agent pointer (`managedSessionId`), `factoryRunId`, `projectId`, `outputUrls`, `qcResult`, Slack coordinates, `archivedAt`, events subcollection. **NOT** `brand`, `market`, `languages`, `shortcode`, `configVersion` (absent unless independently justified — see §5.1), `colors`, `logos`, `card`, `params`, `ipadDemo`, `journey`, `tokenUi`. Identity fields (`brand`, `market`, `languages`, `shortcode`) are agent-input — passed in on creation so the managed agent boots with them — but are **not persisted on the session doc**.
 - **S2 owns config CRUD.** Schema, full-snapshot `DemoConfig`, version history, validation (structural + cross-field), `tokenUi` overrides, brand/market/languages/shortcode fields, `params`, `colors`, `logos`, `card`, `ipadDemo`, `journey`.
-- **S3 (Factory) owns translation.** S3 fetches config from S2 itself per `tools/demo-factory/api/factory.yaml` line 192 (`required: [sessionId]`). S1 never translates `DemoConfig` → factory params; that family of functions (`map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`) deletes from S1.
+- **S3 (Factory) owns translation.** S3 fetches config from S2 itself per `company-os/tools/demo-factory/api/factory.yaml` <!-- orianna: ok — cross-repo file in missmp/company-os --> line 192 (`required: [sessionId]`). S1 never translates `DemoConfig` → factory params; that family of functions (`map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`) deletes from S1.
 - After this ADR + the session-state ADR land, **S1 has no Firestore writes for config, no config business logic, no factory-param translation, and no identity-field persistence**; anything config-shaped is an HTTP call to S2, anything factory-shaped is a thin `POST /build {sessionId}` to S3.
 
-The session-state ADR enforces the Firestore-side boundary for S1 via a single `session_store.py` plus the SE.E grep gate. That gate is scoped to `from google.cloud import firestore`, so it catches "S1 writing config to Firestore" only *if and because* S1 is reading or writing the legacy `config` field via Firestore at all. The grep gate does not flag, e.g., a call site that reads `session["config"]["brand"]` after `session_store.get_session(...)` — that path would quietly carry config through the boundary. This ADR closes that gap by making the `config`/`configVersion`-shaped fields illegal on the S1 session document *at the domain level*, not only at the storage level.
+The session-state ADR enforces the Firestore-side boundary for S1 via a single `session_store.py` <!-- orianna: ok — company-os module name, not a local file --> plus the SE.E grep gate. That gate is scoped to `from google.cloud import firestore`, so it catches "S1 writing config to Firestore" only *if and because* S1 is reading or writing the legacy `config` field via Firestore at all. The grep gate does not flag, e.g., a call site that reads `session["config"]["brand"]` after `session_store.get_session(...)` — that path would quietly carry config through the boundary. This ADR closes that gap by making the `config`/`configVersion`-shaped fields illegal on the S1 session document *at the domain level*, not only at the storage level.
 
 ### 1.1 Why now
 
@@ -45,7 +45,7 @@ The session-state ADR's SE.B phase (call-site migration) rewrites every site whe
 
 - **NOT** a redesign of S2. S2's spec (`reference/2-config-mgmt.yaml`) is authoritative; where S1 needs a capability S2 doesn't expose, we flag it as a blocker on the S2 side, not work around it.
 - **NOT** a change to the S1 HTTP surface beyond what `reference/1-content-gen.yaml` already prescribes. Session-state ADR §5 and §6.3 already track the spec-drift list; this ADR only adds the items that fall out of config ejection.
-- **NOT** a change to the MCP server (`demo-studio-mcp`). The MCP tools (`get_schema`, `get_config`, `set_config`) already target S2 directly; S1 is not in that path and should not become one.
+- **NOT** a change to the MCP server (`demo-studio-mcp` <!-- orianna: ok — internal MCP server name in missmp/company-os; not a filesystem path -->). The MCP tools (`get_schema`, `get_config`, `set_config`) already target S2 directly; S1 is not in that path and should not become one.
 - **NOT** a migration plan for existing `config`-bearing session documents. Section 8 covers the backfill-or-orphan question and hands live-data handling to ops.
 
 ## 2. Decision
@@ -71,7 +71,9 @@ Gate exceptions are whitelisted by a single `# azir: config-boundary` comment, m
 
 All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-check this inventory before the task file is decomposed.
 
-### 3.1 `tools/demo-studio-v3/session.py`
+<!-- orianna: ok — all file paths in §3 (tools/demo-studio-v3/session.py, main.py, factory_bridge.py, factory_bridge_v2.py, factory_v2/validate_v2.py, preview.py, config_mgmt_client.py, sample-config.json, dashboard_service.py, phase.py, agent_proxy.py, logo_upload.py, setup_agent.py) are cross-repo files in missmp/company-os; this section is an architectural audit, not a local file inventory -->
+
+### 3.1 `tools/demo-studio-v3/session.py` <!-- orianna: ok — company-os file; all §3 tool paths are in missmp/company-os/tools/demo-studio-v3/ -->
 | Line | Function | Shape | Verdict | Notes |
 |---|---|---|---|---|
 | 42 | `create_session(...)` | writes `"config": initial_context or {}` into the new session doc | **Delete from S1** | Session doc has no business holding a config snapshot. Creation is a bare `{sessionId, status, phase, managedSessionId: null, slack*, factoryVersion, createdAt, updatedAt}` — no `configVersion`, no `config`. The caller does NOT create a first config version on S2 at creation time (per OQ-BD-5 (c)). First version is created when the agent's first `set_config` MCP call lands on S2. See §5.1. |
@@ -79,7 +81,7 @@ All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-
 | 118–128 | `list_recent_sessions(...)` | reads `config.brand`, `config.insuranceLine`, `config.market` out of each session doc to compose the result | **Delete from S1** | Strict BD-1: brand/market/languages/shortcode are not on the session doc. Consumers of `/sessions` that want identity fields call S2 directly (N+1 accepted) or the UI does. `list_recent_sessions` returns lifecycle fields only. See §5.5. |
 | 133 | `_UPDATABLE_FIELDS` | allowlist includes `eventHistory`, `archivedAt`, `workerJobId`, `projectId`, `factoryRunId`, `outputUrls`, `managedSessionId` — all session-lifecycle-only | **Keep as-is** | None of these are config. Allowlist is already clean. The config-boundary gate from §2 will reject any future PR that tries to add `"config"`, `configVersion`, or config-shaped keys to this set. Also reject `brand`, `market`, `languages`, `shortcode` — those are agent-input, not session-persisted. |
 
-### 3.2 `tools/demo-studio-v3/main.py`
+### 3.2 `tools/demo-studio-v3/main.py` <!-- orianna: ok — company-os file -->
 
 | Line | Route / function | Shape | Verdict |
 |---|---|---|---|
