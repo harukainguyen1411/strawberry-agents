@@ -39,7 +39,7 @@ The session-state ADR enforces the Firestore-side boundary for S1 via a single `
 
 ### 1.1 Why now
 
-The session-state ADR's SE.B phase (call-site migration) rewrites every site where `main.py` / `factory_bridge*.py` / `dashboard_service.py` / `phase.py` read `session.get("config", …)` or write `update_session_field(..., "config", …)`. If we don't settle the S1/S2 boundary first, SE.B is migrating legacy config code through a boundary that is about to disappear — producing two migrations for the same call sites and guaranteeing a rebase storm. This ADR must land **before SE.B.2** (the `main.py` call-site migration) to avoid that waste; it may land in parallel with SE.A (the additive `session_store.py` module), since SE.A is purely additive on the storage surface.
+The session-state ADR's SE.B phase (call-site migration) rewrites every site where `main.py` <!-- orianna: ok — company-os file --> / `factory_bridge*.py` <!-- orianna: ok — company-os file glob --> / `dashboard_service.py` <!-- orianna: ok — company-os file --> / `phase.py` <!-- orianna: ok — company-os file --> read `session.get("config", …)` or write `update_session_field(..., "config", …)`. If we don't settle the S1/S2 boundary first, SE.B is migrating legacy config code through a boundary that is about to disappear — producing two migrations for the same call sites and guaranteeing a rebase storm. This ADR must land **before SE.B.2** (the `main.py` call-site migration) to avoid that waste; it may land in parallel with SE.A (the additive `session_store.py` <!-- orianna: ok — company-os module; see line 38 suppressor --> module), since SE.A is purely additive on the storage surface.
 
 ### 1.2 What this ADR is NOT
 
