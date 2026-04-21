@@ -306,11 +306,11 @@ awk -v REPO_ROOT="$REPO_ROOT" '
       print "[lib-plan-structure] BLOCK: alternative time unit \"weeks\" found in ## Tasks section; use estimate_minutes only (§D4)" > "/dev/stderr"
       file_fail = 1; weeks_flagged = 1
     }
-    if (!hparen_flagged && index(prose, "h)") > 0) {
+    if (!hparen_flagged && prose ~ /[0-9][[:space:]]*h\)/) {
       print "[lib-plan-structure] BLOCK: alternative time unit \"h)\" found in ## Tasks section; use estimate_minutes only (§D4)" > "/dev/stderr"
       file_fail = 1; hparen_flagged = 1
     }
-    if (!dparen_flagged && index(prose, "(d)") > 0) {
+    if (!dparen_flagged && prose ~ /[0-9][[:space:]]*\(d\)/) {
       print "[lib-plan-structure] BLOCK: alternative time unit \"(d)\" found in ## Tasks section; use estimate_minutes only (§D4)" > "/dev/stderr"
       file_fail = 1; dparen_flagged = 1
     }
