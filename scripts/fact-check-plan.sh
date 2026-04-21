@@ -67,7 +67,11 @@ esac
 # ---- constants -------------------------------------------------------------
 
 STRAWBERRY_APP="${STRAWBERRY_APP:-$HOME/Documents/Personal/strawberry-app}"
-WORK_CONCERN_REPO="${WORK_CONCERN_REPO:-$HOME/Documents/Work/mmp/workspace/company-os}"
+# WORK_CONCERN_ROOT: default resolution root for all work-concern path tokens.
+# Overridable via env for testing. WORK_CONCERN_REPO kept as alias for callers
+# that set the old name; WORK_CONCERN_ROOT takes precedence when set explicitly.
+WORK_CONCERN_ROOT="${WORK_CONCERN_ROOT:-$HOME/Documents/Work/mmp/workspace}"
+WORK_CONCERN_REPO="$WORK_CONCERN_ROOT"
 REPORT_DIR="$REPO_ROOT/assessments/plan-fact-checks"
 PLAN_BASENAME="$(basename "$PLAN_PATH" .md)"
 TIMESTAMP="$(date -u '+%Y-%m-%dT%H-%M-%SZ' 2>/dev/null || date '+%Y-%m-%dT%H-%M-%SZ')"
@@ -136,22 +140,53 @@ is_allowlisted() {
 
 # ---- concern-aware routing -------------------------------------------------
 
+# Opt-back list: these prefixes and exact file tokens always resolve against
+# REPO_ROOT (strawberry-agents), even when PLAN_CONCERN is "work".
+# Must match the list in agents/orianna/claim-contract.md §5 and
+# agents/orianna/prompts/plan-check.md Step C.
+_is_optback() {
+  local tok="$1"
+  case "$tok" in
+    agents/*|plans/*|scripts/*|architecture/*|assessments/*|.claude/*|secrets/*)
+      return 0 ;;
+    tools/decrypt.sh|tools/encrypt.sh)
+      return 0 ;;
+    *)
+      return 1 ;;
+  esac
+}
+
 # Given a path token, return the repo root to check against, or "unknown".
-# When PLAN_CONCERN is "work", apps/, dashboards/, and .github/workflows/ resolve
-# against WORK_CONCERN_REPO instead of STRAWBERRY_APP. All other prefixes and all
-# non-work concerns use the original two-repo routing (backward-compatible default).
+#
+# Resolution-root flip (concern: work):
+#   - Tokens on the opt-back list (strawberry-agents infra) always resolve
+#     against REPO_ROOT.
+#   - Every other path-shaped token resolves against WORK_CONCERN_ROOT.
+#     A miss there is a block finding (not an "unknown prefix" info finding).
+#
+# Non-work plans (concern: personal, unlabeled, or any other value):
+#   - Original two-repo routing applies unchanged (backward-compatible default).
 route_path() {
   local tok="$1"
+
+  if [ "$PLAN_CONCERN" = "work" ]; then
+    # Opt-back list: strawberry-agents infra paths always stay local.
+    if _is_optback "$tok"; then
+      printf '%s' "$REPO_ROOT"
+      return
+    fi
+    # Root flip: all other paths resolve against the work monorepo root.
+    printf '%s' "$WORK_CONCERN_ROOT"
+    return
+  fi
+
+  # Non-work (personal / unlabeled): original two-repo routing.
   case "$tok" in
     agents/*|plans/*|scripts/*|architecture/*|assessments/*|.claude/*|tools/*)
       printf '%s' "$REPO_ROOT"
       ;;
     apps/*|dashboards/*|.github/workflows/*)
-      if [ "$PLAN_CONCERN" = "work" ]; then
-        printf '%s' "$WORK_CONCERN_REPO"
-      else
-        printf '%s' "$STRAWBERRY_APP"
-      fi
+      printf '%s' "$STRAWBERRY_APP"
       ;;
     *)
       printf '%s' "unknown"
@@ -254,7 +289,7 @@ cross_repo_missing_root=""
 app_checkout_present=0
 [ -d "$STRAWBERRY_APP" ] && app_checkout_present=1
 work_concern_checkout_present=0
-[ -d "$WORK_CONCERN_REPO" ] && work_concern_checkout_present=1
+[ -d "$WORK_CONCERN_ROOT" ] && work_concern_checkout_present=1
 
 # Process each extracted token
 while IFS= read -r token; do
@@ -318,10 +353,10 @@ $((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result
       continue
     fi
   fi
-  if [ "$repo_root" = "$WORK_CONCERN_REPO" ]; then
+  if [ "$repo_root" = "$WORK_CONCERN_ROOT" ]; then
     if [ "$work_concern_checkout_present" -eq 0 ]; then
       cross_repo_missing_count=$((cross_repo_missing_count + 1))
-      cross_repo_missing_root="$WORK_CONCERN_REPO"
+      cross_repo_missing_root="$WORK_CONCERN_ROOT"
       continue
     fi
   fi
@@ -337,8 +372,8 @@ $((info_count)). **Claim:** \`${token}\` | **Anchor:** \`test -e ${repo_root}/${
     block_count=$((block_count + 1))
     if [ "$repo_root" = "$STRAWBERRY_APP" ]; then
       checkout_note=" (checked against strawberry-app checkout at ${STRAWBERRY_APP})"
-    elif [ "$repo_root" = "$WORK_CONCERN_REPO" ]; then
-      checkout_note=" (checked against work-concern checkout at ${WORK_CONCERN_REPO})"
+    elif [ "$repo_root" = "$WORK_CONCERN_ROOT" ]; then
+      checkout_note=" (checked against work-concern checkout at ${WORK_CONCERN_ROOT})"
     else
       checkout_note=""
     fi
@@ -352,7 +387,7 @@ done < <(extract_tokens "$PLAN_PATH")
 if [ "$cross_repo_missing_count" -gt 0 ]; then
   warn_count=$((warn_count + 1))
   _missing_repo="${cross_repo_missing_root:-$STRAWBERRY_APP}"
-  if [ "$_missing_repo" = "$WORK_CONCERN_REPO" ]; then
+  if [ "$_missing_repo" = "$WORK_CONCERN_ROOT" ]; then
     _repo_label="work-concern checkout"
   else
     _repo_label="strawberry-app checkout"

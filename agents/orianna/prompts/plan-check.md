@@ -65,32 +65,52 @@ sections (e.g. a casual "TODO: nice-to-have") are `warn`, not `block`.
    - Command?
 4. For each path-shaped token, apply the routing rules from
    `claim-contract.md` §5:
+
+   **When the plan frontmatter declares `concern: work` — resolution-root flip:**
+
+   The default resolution root for every path-shaped token is the work
+   monorepo at `~/Documents/Work/mmp/workspace/`. The following opt-back
+   prefixes and exact file tokens always resolve against this repo
+   (strawberry-agents) regardless of concern:
+
    - `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`,
-     `.claude/`, `tools/` → check against this repo (your working
-     directory).
-   - `apps/`, `dashboards/`, `.github/workflows/` → route depends on the
-     plan's `concern:` frontmatter field:
-       - If the plan frontmatter declares `concern: work`, route these prefixes
-         to the work-concern checkout at `~/Documents/Work/mmp/workspace/company-os/`.
-         Before checking, run:
-           `git -C ~/Documents/Work/mmp/workspace/company-os fetch origin main 2>/dev/null || true`
-         Then verify using `test -e` against that checkout path.
-         If the checkout does not exist, emit a `warn` finding:
-         "could not verify N cross-repo path(s); work-concern checkout not
-         found at ~/Documents/Work/mmp/workspace/company-os/" — and continue.
-       - Otherwise (plan has `concern: personal`, no `concern:` field, or any
-         other value), route to the strawberry-app checkout at
-         `~/Documents/Personal/strawberry-app/`.
-         Before checking, run:
-           `git -C ~/Documents/Personal/strawberry-app fetch origin main 2>/dev/null || true`
-         Then verify using `test -e` against the checkout path.
-         If the checkout does not exist, emit a `warn` finding:
-         "could not verify N cross-repo path(s); strawberry-app checkout not
-         found at ~/Documents/Personal/strawberry-app/" — and continue.
+     `.claude/`, `secrets/`
+   - Exact files: `tools/decrypt.sh`, `tools/encrypt.sh`
+
+   Note: bare `tools/` is NOT on the opt-back list. Work-concern plans cite
+   paths like `tools/demo-studio-v3/...` which live in the workspace monorepo.
+
+   For opt-back tokens: verify with `test -e <repo-root>/<path>` against
+   this repo's working tree.
+
+   For all other path-shaped tokens (not on the opt-back list): resolve
+   against `~/Documents/Work/mmp/workspace/`. Before checking, run:
+     `git -C ~/Documents/Work/mmp/workspace fetch origin main 2>/dev/null || true`
+   Then verify using `test -e ~/Documents/Work/mmp/workspace/<path>`.
+   If the workspace checkout does not exist, emit a `warn` finding:
+   "could not verify N cross-repo path(s); work-concern checkout not
+   found at ~/Documents/Work/mmp/workspace/" — and continue.
+   A path that fails `test -e` against the workspace root is a `block`
+   finding (not an `info` unknown-prefix finding).
+
+   **When the plan frontmatter declares `concern: personal`, no `concern:`
+   field, or any other value — original two-repo routing (unchanged):**
+
+   - `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`,
+     `.claude/`, `tools/` → check against this repo (your working directory).
+   - `apps/`, `dashboards/`, `.github/workflows/` → route to the
+     strawberry-app checkout at `~/Documents/Personal/strawberry-app/`.
+     Before checking, run:
+       `git -C ~/Documents/Personal/strawberry-app fetch origin main 2>/dev/null || true`
+     Then verify using `test -e` against the checkout path.
+     If the checkout does not exist, emit a `warn` finding:
+     "could not verify N cross-repo path(s); strawberry-app checkout not
+     found at ~/Documents/Personal/strawberry-app/" — and continue.
    - Unknown prefixes → emit an `info` finding: "unknown path prefix
      `<prefix>/`; add to contract if load-bearing."
-   - Run `test -e <repo-root>/<path>` for each routed path. Does not exist
-     → `block`. Exists → `info` (clean pass, anchor confirmed).
+
+   Run `test -e <repo-root>/<path>` for each routed path. Does not exist
+   → `block`. Exists → `info` (clean pass, anchor confirmed).
 5. For each integration-shaped token:
    - Check `agents/orianna/allowlist.md` Section 1.
    - If it is on the allowlist as a bare vendor name → pass silently.
