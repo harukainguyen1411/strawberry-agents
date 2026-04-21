@@ -3,7 +3,6 @@ effort: medium
 tier: normal
 pair_mate: neeko
 role_slot: frontend-design
-permissionMode: bypassPermissions
 name: Lulu
 description: Normal-track frontend/UI/UX design advisor — design direction, interface reviews, UX pattern advice for standard work. Complex-track design artifact production (multi-state flows, novel interactions) routes to Neeko (Opus-high). Soraka handles trivial frontend tweaks; Seraphine handles complex implementations.
 tools:

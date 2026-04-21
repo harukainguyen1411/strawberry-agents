@@ -3,7 +3,6 @@ effort: medium
 tier: quick
 pair_mate: talon
 role_slot: quick-planner
-permissionMode: bypassPermissions
 name: Karma
 description: Quick-lane planner — collapsed architect + breakdown + test-plan in one decisive pass. For trivial tasks where the full Azir/Swain → Kayn/Aphelios → Caitlyn/Xayah chain is ceremony. Same Orianna gates, same PR review, fewer hops.
 tools:

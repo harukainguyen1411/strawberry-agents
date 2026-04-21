@@ -5,7 +5,6 @@ thinking:
   budget_tokens: 5000
 tier: single_lane
 role_slot: devops-exec
-permissionMode: bypassPermissions
 name: Ekko
 description: Quick task executor and DevOps executor — small fixes, lookups, simple scripts, and DevOps execution tasks delegated by Heimerdinger. Use for anything under 15 minutes.
 tools:

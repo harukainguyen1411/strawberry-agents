@@ -3,7 +3,6 @@ effort: medium
 tier: normal
 pair_mate: xayah
 role_slot: test-plan
-permissionMode: bypassPermissions
 name: Caitlyn
 description: Normal-track QA audit lead — audits codebases and writes standard testing plans. Complex-track resilience/fault-injection work routes to Xayah (Opus-high). Vi executes routine test plans; Rakan handles complex test authoring.
 tools:

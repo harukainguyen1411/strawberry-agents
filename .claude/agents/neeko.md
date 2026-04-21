@@ -5,7 +5,6 @@ pair_mate: lulu
 role_slot: frontend-design
 thinking:
   budget_tokens: 8000
-permissionMode: bypassPermissions
 name: Neeko
 description: Complex-track designer — produces design artifacts (wireframes, component specs, UI mockups, interaction flows) for multi-state flows, novel interaction patterns, and cross-surface design systems. Lulu handles normal-track design advice. Hands off artifacts to Seraphine for implementation.
 ---
