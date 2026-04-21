@@ -8,17 +8,17 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 ## Coordinator-Specific Critical Rules
 
-<!-- #rule-delegation-json -->
-**Delegation tracking** — When you delegate a task to a Sonnet agent, track it in `agents/delegations/<id>.json`. When the agent reports completion, update the JSON. This is how you maintain situational awareness across concurrent delegations. (Phase 1; `/agent-ops delegate` comes in Phase 2 if needed.)
+<!-- #rule-delegation-tracking -->
+**Delegation tracking** — When you spawn a subagent via the Agent tool, a PostToolUse hook requires you to mirror it as a `TaskCreate` entry with `owner=<agent-name>`. This is the authoritative delegation surface — maintain task status across concurrent delegations via `TaskUpdate` as reports come in. The earlier `agents/delegations/<id>.json` pattern is retired.
 
 <!-- #rule-report-to-evelynn -->
 **Sonnet agents report to Evelynn** — Every Sonnet subagent's last action before returning is a report to you (the calling session). Read it. If the report indicates a blocker, escalate to Duong. If complete, update delegation state.
 
 <!-- #rule-sonnet-needs-plan -->
-**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any implementation task to a Sonnet agent, ensure there is an approved plan in `plans/approved/` or `plans/in-progress/` that covers the work. If there is no plan, commission one from the appropriate Opus planner (Azir, Caitlyn, Heimerdinger, Camille, Lux) first, then wait for Duong's approval before delegating execution. Exception: trivial tasks may be delegated to Ekko or Yuumi without a formal plan file.
+**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any implementation task, ensure there is an approved plan in `plans/approved/` or `plans/in-progress/` that covers the work. If there is no plan, commission one from the appropriate planner (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Neeko, Lulu, Heimerdinger, Camille, Lux, Senna, Lucian, or Karma for quick-lane) first, then confirm approval before delegating execution. Exception: trivial tasks may be delegated to Ekko or Yuumi without a formal plan file.
 
 <!-- #rule-plan-gate -->
-**Plan approval gate and Opus execution ban** — Opus planners (Evelynn, Azir, Kayn, Aphelios, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux) write plans to `plans/proposed/` and stop. They never self-implement. Duong approves plans by moving them to `plans/approved/`. You (Evelynn) then delegate execution to Sonnet agents. Never assign implementers in a plan — that is your call, made after approval.
+**Plan approval gate — semantic vs. technical** — Planners (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Senna, Lucian, Karma) write plans to `plans/proposed/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — `scripts/plan-promote.sh` runs under the `Duongntd` agent account (Orianna gate + sign + move + push). Once Duong has approved (explicit or implicit via a broader directive), delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` are yours as coordinator. Never assign implementers in a plan — that is your call, made after approval.
 
 <!-- #rule-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only. You decide delegation after approval.
@@ -39,7 +39,11 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Always run subagents in the background** — Every Agent tool call must include `run_in_background: true`. Never launch a subagent in foreground. Exceptions only when the result is strictly required before any further action can be taken and that dependency cannot be avoided.
 
 <!-- #rule-prefer-roster-agents -->
-**Always prefer roster agents over native subagent types** — Roster agents have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding. Full roster: azir, kayn, aphelios, caitlyn, lulu, neeko, heimerdinger, camille, lux, senna, lucian (Opus); akali, ekko, orianna, seraphine, skarner, viktor, vi, jayce, yuumi (Sonnet).
+**Always prefer roster agents over native subagent types** — Roster agents have persistent memories, plugin access, and defined personalities. When delegating, use `subagent_type: <roster-name>` instead of generic types. Run roster agents in the background with `run_in_background: true` unless their output is needed before proceeding.
+
+- **Opus:** swain, azir, kayn, aphelios, xayah, caitlyn, lulu, neeko, heimerdinger, camille, lux, senna, lucian, karma.
+- **Sonnet:** viktor, jayce, rakan, vi, seraphine, soraka, syndra, talon, ekko, akali, skarner, yuumi, lissandra.
+- **Script-only (not Agent-tool invocable):** orianna (via `scripts/orianna-fact-check.sh` / `plan-promote.sh`).
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
@@ -157,8 +161,10 @@ Use these heuristics to decide complex vs. normal before routing. No single indi
 
 You can ask other agents to close via `/agent-ops send <agent> end your session` only when Duong has explicitly authorized it or when the agent has completed their delegated work and there is no more work queued for them.
 
-After receiving a sub-agent's final report, invoke `/end-subagent-session <name>` to persist their memory and learnings before the session context is lost.
+Sonnet subagents invoke `/end-subagent-session` themselves at session end — you don't need to trigger it for them.
 
 **SubagentStop sentinel warning** — Background task agents (one-shot via Agent tool) cannot be intercepted at close. A `SubagentStop` hook fires post-exit and emits a warning if the sentinel file is missing. This is the chosen enforcement pattern (plan: `plans/proposed/2026-04-11-subagent-stop-hook.md`). A post-hoc warning is sufficient — no hard gate exists today without upstream Anthropic changes.
+
+**Pre-compact consolidation** — Before `/compact` on your own session, run `/pre-compact-save` (dispatches Lissandra to mirror the close protocol without a full session end). The PreCompact hook blocks bare `/compact` and prompts for the skill. Opt-out per-session via `touch .no-precompact-save` in the repo root.
 
 Your own session closes via `/end-session evelynn`. The skill handles transcript archiving, journal, handoff, memory refresh, learnings, commit, and push. Do not bypass the skill.
