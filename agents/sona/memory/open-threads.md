@@ -1,15 +1,20 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-21 (seventh-leg shard 2026-04-21-c83020ad; prior shards 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (eighth-leg shard 2026-04-22-9835724c; prior shards 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
-## Akali live e2e QA — in flight
+## Swain Option B — PRIMARY ship path (overnight)
 
-**Status:** In-flight at seventh-leg consolidation. Akali dispatched for browser-driven Playwright MCP e2e QA against deployed revisions (S1 `00016-5rw`, S3 `00007-qjd`, S5 `00006-57w`). User directive: "don't stop until it works."
-**Target:** `assessments/qa-reports/2026-04-21-s1-new-flow-e2e-mcp-driven-post-ship.md`
-**Shard pointers:** 2026-04-21-c83020ad.
-**Next action:** Read Akali final message. If stuck, fire Talon/Viktor fix dispatches per all-TS.GOD-green directive.
+**Status:** Active. Architecture pivot by Duong at ~18:10 UTC-7 2026-04-21. Managed agent ditched. Vanilla-API native chat is the new primary. Plan: `plans/in-progress/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Compass: `assessments/work/2026-04-22-overnight-ship-plan.md` (commit `021e28a`).
+**Shard pointers:** 2026-04-22-9835724c.
+**Next action:** Dispatch Aphelios (task decomposition) → Rakan (xfails) → Viktor (impl) → Vi (tests) → Senna → Lucian → Ekko (deploy) → Akali (QA). SERIAL, one at a time.
+
+## Aphelios decomposition — queued
+
+**Status:** Queued at eighth-leg boundary. Not yet dispatched. Compass file committed.
+**Shard pointers:** 2026-04-22-9835724c.
+**Next action:** Dispatch Aphelios immediately after this shard commits.
 
 ## 60-min post-deploy observation window
 
@@ -19,9 +24,9 @@ Last updated: 2026-04-21 (seventh-leg shard 2026-04-21-c83020ad; prior shards 20
 
 ## Legacy MCP Cloud Run retirement
 
-**Status:** Deferred pending Akali e2e green confirmation. `demo-studio-mcp` Cloud Run service.
-**Shard pointers:** 2026-04-21-c83020ad.
-**Next action:** After Akali confirms all TS.GOD green, decommission `demo-studio-mcp` Cloud Run service (in-process path proven stable).
+**Status:** Deferred — pending native chat (Option B) proving stable in prod. `demo-studio-mcp` Cloud Run service.
+**Shard pointers:** 2026-04-22-9835724c.
+**Next action:** After Akali confirms Option B e2e green, decommission `demo-studio-mcp` Cloud Run service.
 
 ## Idle-threshold env var discrepancy
 
@@ -118,7 +123,12 @@ Last updated: 2026-04-21 (seventh-leg shard 2026-04-21-c83020ad; prior shards 20
 
 ---
 
-## RESOLVED this leg (seventh leg)
+## RESOLVED this leg (eighth leg)
+
+- **Akali e2e QA (Azir Option A)** — completed. Report at `assessments/qa-reports/2026-04-21-s1-new-flow-e2e-mcp-driven-post-ship.md`. Senna and Lucian produced learnings. Thread closed.
+- **Compass file committed** — `assessments/work/2026-04-22-overnight-ship-plan.md` at commit `021e28a`. Session re-entry anchor for overnight ship.
+
+## RESOLVED in seventh leg
 
 - **Wave 2 Viktor S1-new-flow** — PR #61 merged onto `feat/demo-studio-v3`. Senna C1/C2/I6 critical fixes applied by Talon. Lucian approved. User merged.
 - **Deploy.sh secret name fixes + firestore dep** — PR #63 merged. B1 (5 secret swaps to DS_* uppercase) and B2 (google-cloud-firestore dep) resolved.

@@ -4,6 +4,7 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-22 Serial dispatch for overnight autonomous sessions](2026-04-22-serial-dispatch-overnight-sessions.md) — when operating overnight in hands-off mode with no human available to triage, use serial dispatch (one subagent at a time); usage ceiling, not time, is the primary risk; companion: commit a re-entry compass file before first dispatch.
 - [2026-04-21 Pre-preflight audit catches deploy blockers before preflight burns time](2026-04-21-pre-preflight-audit-pattern.md) — dispatch Camille/Heimerdinger for static audit (wrong secret names, missing deps, env var drift) before Ekko runs actual preflight; splits ship-day into correctness pass → runtime preflight → deploy.
 - [2026-04-21 Structural fix beats re-instruction for repeated agent violations](2026-04-21-structural-fix-beats-re-instruction.md) — when an agent repeats the same violation despite task-prompt instructions, patch the agent-def file directly; re-instruction is per-dispatch only; the durable fix is in the startup read path.
 - [2026-04-21 Coordinator parallelism is now mandatory](2026-04-21-coordinator-parallelism-mandatory.md) — "never parallelize same agent" restriction retired; coordinators must maximize parallelism; task independence (not agent identity) is the dispatch criterion.
