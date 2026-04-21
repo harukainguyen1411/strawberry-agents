@@ -190,7 +190,11 @@ agents/<coordinator>/
   inbox/archive/YYYY-MM/*.md              # read messages, month-bucketed
 ```
 
-v2's `scripts/hooks/inbox-nudge.sh` is **not created**. The
+<!-- orianna: ok --> `.claude/skills/check-inbox/SKILL.md` — prospective (to be recovered from fb1bd4f)
+<!-- orianna: ok --> `scripts/hooks/inbox-watch.sh` — prospective (new deliverable)
+<!-- orianna: ok --> `scripts/hooks/tests/inbox-watch-test.sh` — prospective (new unit harness)
+
+v2's `scripts/hooks/inbox-nudge.sh` is **not created**. <!-- orianna: ok --> The
 `UserPromptSubmit` hook described in v2 is **not wired**. The
 `SessionStart` hook continues to host resume-suppression logic, and we
 add one additional `SessionStart` entry for the watcher bootstrap.
@@ -371,6 +375,8 @@ existing resume-suppression entry):
 }
 ```
 
+<!-- orianna: ok --> `scripts/hooks/inbox-watch-bootstrap.sh` — prospective (new deliverable, §3.5)
+
 `inbox-watch-bootstrap.sh` is a tiny wrapper (can be inlined as a jq <!-- orianna: ok -->
 one-liner if simple enough; we keep it a script for testability) that:
 
@@ -541,7 +547,7 @@ All criteria empirically testable against a live session.
 10. **No v2 nudge regressions.**
     - `.claude/settings.json` has no `UserPromptSubmit` entry
       referencing `inbox-nudge` or `inbox-watch`.
-    - `scripts/hooks/` does not contain `inbox-nudge.sh`.
+    - `scripts/hooks/` does not contain `inbox-nudge.sh`. <!-- orianna: ok -->
     - No `additionalContext` string anywhere in `scripts/hooks/`
       matches the v2 phrasing `"pending message(s).*Run /check-inbox
       to read them."`.
@@ -706,7 +712,7 @@ Three layers of test evidence.
     scripts/ .claude/` → no matches.
   - `grep -rn "UserPromptSubmit" .claude/settings.json` does not name
     an inbox-nudge / inbox-watch command.
-  - `scripts/hooks/inbox-nudge.sh` does not exist.
+  - `scripts/hooks/inbox-nudge.sh` does not exist. <!-- orianna: ok -->
   - No string `"pending message(s). Run /check-inbox to read them."`
     appears in `scripts/hooks/` (v2 phrasing fingerprint).
 
