@@ -773,7 +773,9 @@ For completeness:
 | 5 | Opt-out filename | **`.no-inbox-watch`** at repo root. Total opt-out (suppresses cleanup *and* sweep *and* live watch). | §3.2 Opt-out block, §4.4 |
 | 6 | Scope of first cut | **Single commit.** Watcher script + bootstrap script + skill recovery (with archive semantics) + `settings.json` wiring + unit harness ship as one interlocked deliverable. | §9 |
 
-## Task breakdown (Aphelios)
+## Tasks
+
+_Task breakdown authored by Aphelios._
 
 Executable task list for this ADR (v3.1, Orianna-signed
 `sha256:d5979ae9013e1af1748366f0f0b837047082730681eb35a9640b7abcbee90e4a:2026-04-21T03:59:37Z`).
@@ -825,14 +827,14 @@ picks it up for IW.1 – IW.5 and opens the PR.
 minimum (xfail + impl); additional fixup commits are fine as long as
 the xfail-first ordering is preserved (Rule 12).
 
-| #     | Task                                                                      | Owner  | Commit slot | Depends on |
-|-------|---------------------------------------------------------------------------|--------|-------------|------------|
-| IW.0  | xfail harness — watcher, skill archive flow, retention, regression floor  | Rakan  | commit 1    | —          |
-| IW.1  | `scripts/hooks/inbox-watch.sh` — watcher script (Phase 0/1/2 + oneshot)   | Viktor | commit 2    | IW.0       |
-| IW.2  | `scripts/hooks/inbox-watch-bootstrap.sh` — SessionStart nudge emitter     | Viktor | commit 2    | IW.0       |
-| IW.3  | `.claude/skills/check-inbox/SKILL.md` — recover from `fb1bd4f` + archive  | Viktor | commit 2    | IW.0       |
-| IW.4  | `.claude/settings.json` — append SessionStart entry for bootstrap         | Viktor | commit 2    | IW.1–IW.3  |
-| IW.5  | Flip `scripts/hooks/tests/inbox-watch-test.sh` green + regression grep    | Viktor | commit 2    | IW.1–IW.4  |
+| #     | Task                                                                                    | kind   | estimate_minutes | Owner  | Commit slot | Depends on |
+|-------|-----------------------------------------------------------------------------------------|--------|-----------------|--------|-------------|------------|
+| IW.0  | Write xfail harness — watcher, skill archive flow, retention, regression floor          | test   | 30              | Rakan  | commit 1    | —          |
+| IW.1  | `scripts/hooks/inbox-watch.sh` — watcher script (Phase 0/1/2 + oneshot)                |        | 45              | Viktor | commit 2    | IW.0       |
+| IW.2  | `scripts/hooks/inbox-watch-bootstrap.sh` — SessionStart nudge emitter                  |        | 45              | Viktor | commit 2    | IW.0       |
+| IW.3  | `.claude/skills/check-inbox/SKILL.md` — recover from `fb1bd4f` + archive               |        | 45              | Viktor | commit 2    | IW.0       |
+| IW.4  | `.claude/settings.json` — append SessionStart entry for bootstrap                      |        | 45              | Viktor | commit 2    | IW.1–IW.3  |
+| IW.5  | Flip `scripts/hooks/tests/inbox-watch-test.sh` green + regression grep                 |        | 30              | Viktor | commit 2    | IW.1–IW.4  |
 
 **Xfail-first ordering (Rule 12):** IW.0 MUST be the first commit on
 the branch. IW.1 – IW.5 land in a second commit (or squash-amenable
@@ -889,7 +891,7 @@ EOF
 
 ---
 
-### IW.0 — xfail harness (Rakan)
+### IW.0 — Write xfail harness (Rakan)
 
 **Repo:** `strawberry-agents`
 **Commit slot:** commit 1 (xfail, first on branch)
