@@ -230,6 +230,39 @@ reviewer on one real plan in `plans/proposed/`):
   `warn` with "budget exhausted; verify manually" and no block finding
   is emitted from Step E.
 
+## Architecture impact
+
+This plan is additive only — no new components, no schema changes outside
+the plan-check prompt. The only behavioral change is that Orianna's
+`plan-check` gate may now make live external tool calls (WebFetch,
+WebSearch, context7) when Step E triggers. The invocation contract
+(`scripts/orianna-fact-check.sh` calling `claude -p
+--dangerously-skip-permissions`) is unchanged. Exit-code semantics are
+unchanged. The report schema gains `external_calls_used:` in frontmatter
+and `## External claims` in the body; downstream consumers that parse
+reports must tolerate the new fields (additive, not breaking).
+
+## Test results
+
+Structural regression test passes on the implementation commit:
+
+```
+bash scripts/test-orianna-plan-check-step-e.sh
+# Results: 16 passed, 0 failed
+# exit: 0
+```
+
+Test script: `scripts/test-orianna-plan-check-step-e.sh`
+
+All 16 assertions verified:
+- Step E section exists in prompt, positioned after Step D and before `## Report format`
+- `ORIANNA_EXTERNAL_BUDGET`, `WebFetch`, `WebSearch`, `context7` referenced in prompt
+- `scripts/orianna-fact-check.sh` exports `ORIANNA_EXTERNAL_BUDGET` with default 15
+- `check_version: 3` appears exactly once in report template
+- `external_calls_used:` appears exactly once in frontmatter example
+- No new severity tokens (`critical`, `fatal`) introduced
+- Profile references `ORIANNA_EXTERNAL_BUDGET` and `Step E`
+
 ## Related work
 
 - `plans/proposed/2026-04-19-orianna-role-redesign.md` — larger two-phase
