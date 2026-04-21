@@ -60,6 +60,8 @@
 - 2026-04-21 (ekko — Sona dispatch): ship-day deploy infra (B1/B4/B5). Worktree company-os-ship-day off integration/demo-studio-v3-waves-1-4. Three ops: commits on chore/ship-day-deploy-infra: f5ba7e7 (min=max=1 pin), e745de7 (MAL+MAD env vars dark-launch), ab3f569 (rollback.sh). Not pushed — awaiting Viktor MAD.B + Sona review before merge into integration.
 - 2026-04-21 (ekko — Sona dispatch): Committed Karma's S5 plan (2026-04-21-s5-preview-fullview-route.md). Added 7 `<!-- orianna: ok -->` suppressors — 6 for cross-repo paths (company-os/tools/demo-preview/ file refs) and 1 for a trailing-slash directory token (`plans/proposed/work/`) that caused a fatal awk I/O error on macOS. Commit 45d3bea, pushed. Key new learning: directory-path tokens (trailing /) in backticks must also be suppressed — awk getline on a directory crashes rather than returning a BLOCK finding.
 
+- 2026-04-21 (ekko): Revert + clean re-apply of 663c274 (Orianna Opus-low pin) to strip AI co-author trailer. Revert: bcc66d1, clean re-apply: 54ac1bf, Syndra learning: d2cb0e0. All pushed to main. Pattern: git revert --no-edit + cherry-pick --no-commit + clean commit message, push all in one shot.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
