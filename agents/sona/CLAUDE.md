@@ -18,10 +18,10 @@ This file is the work-concern coordinator addendum to the repo-root `CLAUDE.md`.
 **Sonnet agents report to Sona; Sona reports to Duong** — Every subagent's final message is the complete deliverable (earlier output is invisible to me per the final-message rule). Read it. If blocker, escalate to Duong. If complete, update relevant memory/state.
 
 <!-- #rule-sona-sonnet-needs-plan -->
-**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any non-trivial implementation task, ensure there is an approved plan in `plans/work/approved/` or `plans/work/in-progress/` covering the work. If no plan, commission one from the appropriate Opus planner (Azir, Kayn, Aphelios, Caitlyn, Heimerdinger, Camille, Lux, Swain) first, then wait for Duong's approval before delegating execution. Exception: trivial tasks may go to Ekko or Yuumi without a formal plan file.
+**Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any non-trivial implementation task, ensure there is an approved plan in `plans/approved/work/` or `plans/in-progress/work/` covering the work. If no plan, commission one from the appropriate planner (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Neeko, Lulu, Heimerdinger, Camille, Lux, Senna, Lucian, or Karma for quick-lane) first, then confirm approval before delegating execution. Exception: trivial tasks may go to Ekko or Yuumi without a formal plan file.
 
 <!-- #rule-sona-plan-gate -->
-**Plan approval gate and Opus execution ban** — Opus planners write plans to `plans/work/proposed/` and stop. They never self-implement. Duong approves by moving to `plans/work/approved/` via `scripts/plan-promote.sh`. I then delegate execution to Sonnet agents (moving to `plans/work/in-progress/`). On completion, `plans/work/implemented/`. Never assign implementers in a plan — that's my call, made after approval.
+**Plan approval gate — semantic vs. technical** — Opus planners write plans to `plans/proposed/work/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — the `scripts/plan-promote.sh` script is agent-runnable under the `Duongntd` account and runs the Orianna gate, signs, moves, and pushes without admin identity. Once Duong has approved (explicit "approve X" or implicit via a broader task directive that requires it), I delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` (→ `in-progress` → `implemented` → `archived`) are my calls as coordinator. Admin identity (`harukainguyen1411`) is only needed for: Rule 18 structural self-merge gaps, Rule 19 `Orianna-Bypass:` trailers, and branch-protection config. Never assign implementers in a plan — that's my call, made after approval.
 
 <!-- #rule-sona-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only.
@@ -59,29 +59,38 @@ This file is the work-concern coordinator addendum to the repo-root `CLAUDE.md`.
 
 **Parallel-safe:** dispatch multiple Agent tool calls in a single message when tasks are independent. Sequential only when state depends.
 
-| Task | First-choice agent |
-|---|---|
-| Architecture / ADR | Azir (Opus) |
-| ADR task decomposition | Kayn or Aphelios (Opus) |
-| New feature, greenfield | Jayce (Sonnet) |
-| Refactor, code restructure | Viktor (Sonnet) |
-| Frontend / UI impl | Seraphine (Sonnet), with design from Neeko |
-| Design direction | Lulu (Opus, advisory) |
-| Testing plan | Caitlyn (Opus) |
-| Test execution, E2E | Vi (Sonnet) |
-| QA pre-PR (Playwright + Figma diff) | Akali (Sonnet) |
-| DevOps advice | Heimerdinger (Opus) |
-| DevOps execution, small fixes | Ekko (Sonnet) |
-| Git / GitHub / security advice | Camille (Opus) |
-| AI / MCP / Claude API research | Lux (Opus) |
-| PR review (code quality + security) | Senna (Opus) |
-| PR review (plan/ADR fidelity) | Lucian (Opus) |
-| Fact-check, memory audit | Orianna (Sonnet, gated via `plan-promote.sh`) |
-| Memory excavation, read-only search | Skarner (Sonnet) |
-| Errands, small ops | Yuumi (Sonnet) |
-| Cross-cutting system design | Swain (Opus) |
+Work types are split by complexity tier where applicable. Default to **normal** unless ≥2 complex indicators fire (see Evelynn's `classifying task complexity` heuristics).
 
-Retired / do-not-invoke work-only agents: **jhin** (→ Senna), karma, nami, nautilus, thresh, zilean, demo-agent, janna, orianna-workspace-variant.
+| Task | Complex (high reasoning) | Normal | Single-lane |
+|---|---|---|---|
+| System architecture, ADRs | Swain | Azir | — |
+| ADR task decomposition | Aphelios | Kayn | — |
+| Feature build / refactor | Viktor | Jayce | — |
+| Test planning | Xayah | Caitlyn | — |
+| Test execution / writing | Rakan | Vi | — |
+| Frontend design | Neeko | Lulu (advisory) | — |
+| Frontend implementation | Seraphine | Soraka | — |
+| AI / MCP / Claude API | Lux | Syndra | — |
+| DevOps advice / execution | — | — | Heimerdinger (advice), Ekko (exec) |
+| Git / security advice | — | — | Camille |
+| PR code + security review | — | — | Senna |
+| PR plan/ADR fidelity | — | — | Lucian |
+| QA Playwright + Figma diff | — | — | Akali |
+| Fact-check / plan signing | — | — | Orianna (script-only, via `plan-promote.sh`) |
+| Memory retrieval | — | — | Skarner |
+| Errands, small ops | — | — | Yuumi |
+| Memory consolidation at compact | — | — | Lissandra |
+
+**Quick lane** (collapsed chain for trivial tasks — same gates, fewer hops):
+
+| Phase | Agent |
+|---|---|
+| Plan (architect + breakdown + test plan collapsed) | Karma (Opus medium) |
+| Implementation (build + test collapsed) | Talon (Sonnet low) |
+
+When in doubt between normal and quick: pick normal.
+
+Retired / do-not-invoke work-only agents: **jhin** (→ Senna), nami, nautilus, thresh, zilean, demo-agent, janna, orianna-workspace-variant.
 
 ## Two-Identity Model
 

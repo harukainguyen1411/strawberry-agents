@@ -44,7 +44,7 @@ See `agents/memory/agent-network.md` for the full roster.
 
 <!-- #rule-chore-commit-prefix -->
 5. **Conventional commit prefixes — scoped by diff** —
-   - **Touches `apps/**`?** Use one of: `feat:`, `fix:`, `perf:`, `refactor:`, `chore:`. Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer. (These feed release-please versioning — see `plans/approved/2026-04-17-deployment-pipeline.md` §6.)
+   - **Touches `apps/**`?** Use one of: `feat:`, `fix:`, `perf:`, `refactor:`, `chore:`. Breaking changes use `feat!:` or a `BREAKING CHANGE:` footer. (These feed release-please versioning — see `plans/in-progress/2026-04-17-deployment-pipeline.md` §6.)
    - **Touches infra / ops only (deploys, GCP, CI)?** Use `ops:`.
    - **Everything else** (plans, agent definitions, scripts outside `apps/**`, docs)? Use `chore:`.
    - **Never** use `docs:` / `plan:` / other non-conventional prefixes.
@@ -105,10 +105,10 @@ See `agents/memory/agent-network.md` for the full roster.
     must NOT merge a PR they authored. Every merge requires (a) all required status
     checks green, (b) one approving review from an account other than the PR author,
     and (c) no red required check. Break-glass admin merges are a human-only Duong
-    procedure (see `plans/approved/2026-04-17-branch-protection-enforcement.md` §3).
+    procedure (see `plans/proposed/2026-04-17-branch-protection-enforcement.md` §3).
 
 <!-- #rule-orianna-signature-required -->
-19. **Plan promotions past `proposed → approved` require valid Orianna signatures on every transition** — `scripts/plan-promote.sh` invokes `scripts/orianna-verify-signature.sh` for the target phase plus carry-forward verification of all prior signatures. Plans authored under the v2 regime (`orianna_gate_version: 2`) are blocked from any transition without a valid signature; grandfathered plans (no `orianna_gate_version` field) fall back to legacy fact-check behavior. The only bypass is the `Orianna-Bypass: <reason>` commit trailer, valid only when the commit author is Duong's admin identity (`harukainguyen1411`); agent-identity bypass attempts are rejected by the pre-commit hook. See `architecture/plan-lifecycle.md` for the full lifecycle, `architecture/key-scripts.md` for the helper scripts, and `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md` §D9.1 for the bypass rationale.
+19. **Plan promotions past `proposed → approved` require valid Orianna signatures on every transition** — `scripts/plan-promote.sh` invokes `scripts/orianna-verify-signature.sh` for the target phase plus carry-forward verification of all prior signatures. Plans authored under the v2 regime (`orianna_gate_version: 2`) are blocked from any transition without a valid signature; grandfathered plans (no `orianna_gate_version` field) fall back to legacy fact-check behavior. The only bypass is the `Orianna-Bypass: <reason>` commit trailer, valid only when the commit author is Duong's admin identity (`harukainguyen1411`); agent-identity bypass attempts are rejected by the pre-commit hook. See `architecture/plan-lifecycle.md` for the full lifecycle, `architecture/key-scripts.md` for the helper scripts, and `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md` §D9.1 for the bypass rationale.
 
 ## File Structure
 
@@ -122,4 +122,8 @@ See `agents/memory/agent-network.md` for the full roster.
 | `tools/` | Helper binaries (e.g. `tools/decrypt.sh` for secret decryption) |
 | `secrets/` | Gitignored local secrets — never committed |
 | `.claude/agents/` | Agent definition files (`.md` with frontmatter) |
+| `.claude/_script-only-agents/` | Script-only agent defs (Orianna lives here — not callable via Agent tool) |
+| `agents/<name>/memory/<name>.md` | Persistent memory, section-structured |
+| `agents/<name>/memory/last-sessions/` | Per-session handoff shards (folded into main memory after 48h) |
 | `agents/<name>/learnings/` | Session learnings per agent, named `YYYY-MM-DD-<topic>.md` |
+| `agents/<name>/inbox/` | Fire-and-forget messages from other agents (scan on startup) |
