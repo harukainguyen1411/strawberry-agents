@@ -12,6 +12,7 @@ related:
   - scripts/hooks/pre-commit-agent-shared-rules.sh
   - scripts/hooks/pre-commit-secrets-guard.sh
   - architecture/key-scripts.md
+orianna_signature_approved: "sha256:c5f0ee4bf77d841220dbd4175fcc8693f5e43f62e54597451d0cd853c3bda993:2026-04-21T12:10:13Z"
 ---
 
 # Pre-commit staged-scope guard — prevent cross-agent commit sweeping
