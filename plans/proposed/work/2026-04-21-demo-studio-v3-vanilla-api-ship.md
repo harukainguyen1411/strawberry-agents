@@ -11,7 +11,6 @@ tags:
   - re-architecture
   - work
 tests_required: true
-orianna_signature_approved: "sha256:7865a9765df96b2804052a418f61a82e9112f8be5d7e9ba95988b8716b3b31ee:2026-04-21T11:56:13Z"
 ---
 
 # ADR: Demo Studio v3 — Vanilla Messages API Ship (Option B)
