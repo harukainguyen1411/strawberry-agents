@@ -127,6 +127,69 @@ This check implements the §D3 grandfather-rule enforcement: Orianna's approved
 gate ensures all sibling content has been merged into the single-file layout
 before the plan earns its first signature.
 
+### Step E — External-claim verification
+
+#### E.1 Trigger heuristic (conservative)
+
+Step E fires on a token only when the plan sentence containing the token
+includes **at least one** of:
+
+- (a) A named library, SDK, API, or framework (proper noun not on the
+  path-prefix routing table, e.g. "Next.js", "Anthropic SDK",
+  "firebase-cli").
+- (b) A version number or range (e.g. `v15.2`, `>=0.30`, `RFC 9110`).
+- (c) An explicit `http(s)://` URL.
+- (d) An RFC or spec citation (e.g. "RFC 9110", "WHATWG Fetch spec").
+
+Purely internal claims (path anchors, integration names already handled by
+Step C, gating markers from Step B) continue to use Step C only and do NOT
+trigger Step E.
+
+#### E.2 Tool routing per claim
+
+- **Has URL →** use `WebFetch`: fetch the cited URL; flag HTTP 404, DNS
+  failure, explicit deprecation/sunset redirect, or HTTP 410.
+- **Names a library/SDK/framework →** use `context7`:
+  1. Call `mcp__context7__resolve-library-id` with the library name.
+  2. Call `mcp__context7__get-library-docs` for the relevant symbol,
+     flag, or version described in the plan.
+  3. Compare what the docs say against what the plan asserts.
+- **Bare factual assertion (no URL, no recognized library) →** use
+  `WebSearch`: run one query; if a canonical URL surfaces in the results,
+  follow up with `WebFetch`. Snippets can inform but are never the sole
+  `block` signal — require a canonical source for a `block` verdict.
+
+The `<!-- orianna: ok -->` suppression syntax from Step C carries over: a
+claim on a suppressed line (or the line following a standalone suppression
+marker) is logged as `info` (author-suppressed) and Step E does not emit
+a `block` or `warn` for it.
+
+#### E.3 Severity mapping
+
+| Signal | Severity |
+|--------|----------|
+| Cited URL redirects to an explicit deprecation/sunset page (HTTP 301/302 to a page titled "deprecated" or "sunset", or HTTP 410) | `block` |
+| context7 reports the cited symbol is `@deprecated` or removed at/below the cited version; library is sunset | `block` |
+| Cited URL returns HTTP 404 or DNS failure | `warn` |
+| Library has a major-version bump with breaking changes and the plan pins no version | `warn` |
+| WebSearch returns strong contradicting signal without an authoritative source | `warn` |
+| Budget exhausted (see §E.4) — remaining triggered claims unverified | `warn` |
+| Vendor rebrand — old name redirects cleanly to new; tool still exists under another name | `info` |
+| context7 resolved cleanly with no contradiction | `info` |
+
+#### E.4 Budget cap
+
+Per-plan cap: **`ORIANNA_EXTERNAL_BUDGET`** total external-tool calls
+across WebFetch + WebSearch + context7 combined. Default value: **15**.
+The invoking script (`scripts/orianna-fact-check.sh`) reads this env var
+and exports it into the child process so Orianna sees it as a concrete
+number.
+
+When the cap is reached, all remaining Step-E-triggered claims that have
+not yet been verified emit a `warn` finding: "budget exhausted; verify
+manually" — not `block`. The cap is a call-count ceiling, not a
+cost ceiling.
+
 ## Report format
 
 Write the report to:
@@ -142,15 +205,16 @@ The report MUST use this exact frontmatter:
 plan: <relative path to plan from repo root>
 checked_at: <ISO 8601 timestamp, e.g. 2026-04-19T14:30:00Z>
 auditor: orianna
-check_version: 2
+check_version: 3
 claude_cli: present
-block_findings: <integer count — total across all steps A–D>
+block_findings: <integer count — total across all steps A–E>
 warn_findings: <integer count>
 info_findings: <integer count>
+external_calls_used: <integer count of external tool invocations made in Step E>
 ---
 ```
 
-Body (always include all four sections, even if empty):
+Body (always include all five sections, even if empty):
 
 ```markdown
 ## Block findings
@@ -164,6 +228,8 @@ Body (always include all four sections, even if empty):
 3. **Step C — Claim:** `scripts/foo.sh` | **Anchor:** `test -e scripts/foo.sh` | **Result:** not found | **Severity:** block
 <!-- Step D (sibling files): -->
 4. **Step D — Sibling:** `plans/proposed/2026-04-20-foo-tasks.md` exists; must be inlined | **Severity:** block
+<!-- Step E (external claims): -->
+5. **Step E — External:** `firebase functions:config:set` | **Tool:** WebFetch → https://firebase.google.com/docs/functions/config-env | **Result:** page returns HTTP 410 sunset | **Severity:** block
 
 (or "None." if zero block findings)
 
@@ -174,13 +240,20 @@ Body (always include all four sections, even if empty):
 ## Info findings
 
 (same shape with step prefix, or "None.")
+
+## External claims
+
+<!-- Each entry: claim text | tool used | result | severity -->
+1. **Step E — External:** `next@15.2` | **Tool:** context7 → next.js | **Result:** resolved cleanly; v15.2 is current stable | **Severity:** info
+
+(or "None." if Step E triggered zero claims)
 ```
 
 ## Exit behavior
 
 After writing the report:
-- Exit with status 0 if `block_findings` is 0 (across all steps A–D).
-- Exit with status 1 if `block_findings` is >= 1 (across all steps A–D).
+- Exit with status 0 if `block_findings` is 0 (across all steps A–E).
+- Exit with status 1 if `block_findings` is >= 1 (across all steps A–E).
 - Exit with status 2 if you encountered an error that prevented the check
   (e.g. the plan file could not be read).
 
@@ -194,6 +267,7 @@ You are checking structural verifiability and mandatory metadata only:
 - **Step B:** Are all gating questions resolved?
 - **Step C:** Does this path exist? Is this integration name anchored or on the allowlist?
 - **Step D:** Are sibling task/test files absent (already inlined)?
+- **Step E:** Does this external claim still hold against live docs?
 
 You are NOT:
 - Checking prose quality, tone, or opinion.

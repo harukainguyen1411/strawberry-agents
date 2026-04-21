@@ -56,6 +56,9 @@ Orianna passes them without requiring a file/line anchor.
 - Interactive Brokers
 - IB
 - vue-virtual-scroller
+- WebFetch
+- WebSearch
+- context7
 
 ---
 
