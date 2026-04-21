@@ -224,7 +224,7 @@ Terminate is destructive. Mitigations:
 
 ## 10. Open questions
 
-**Q1. Confirmation-modal copy.** Proposed: _"Terminate managed session {id}? This ends the Anthropic session immediately and marks the DB row cancelled. Orphans have no DB row and cannot be recovered. Type TERMINATE to confirm."_ — is the type-to-confirm gate warranted, or is a single-click-with-modal enough? Owner: Duong + Lulu.
+**Q1. Confirmation-modal copy.** **DEFERRED (2026-04-20 Duong + Lulu): use single-click-with-modal (no type-to-confirm gate) for v1; revisit at QA if UX deems it insufficient.** The proposed "Type TERMINATE" gate is warranted only for bulk or irreversible multi-step actions; a single-session terminate with a confirmation modal is sufficient for v1.
 
 **Q2. Orphan visibility default.** **LOCKED (2026-04-20 Duong): show by default, tagged.** The dashboard is a debugger for when the scanner fails or lags — orphans must be visible without requiring a filter toggle.
 
@@ -250,7 +250,7 @@ Four layers per ADR §11 handoff (Caitlyn / Vi):
 
 ## Amendments
 
-_Source: `plans/2026-04-20-managed-agent-dashboard-tab-bd-amendment.md` in `missmp/company-os`. Inlined verbatim._
+_Source: `company-os/plans/2026-04-20-managed-agent-dashboard-tab-bd-amendment.md` in `missmp/company-os`. Inlined verbatim._ <!-- orianna: ok — cross-repo reference; file exists at ~/Documents/Work/mmp/workspace/company-os/plans/ -->
 
 **Date:** 2026-04-20 (s3)
 **Author:** Sona (coordinator, fastlane edit)
@@ -258,7 +258,7 @@ _Source: `plans/2026-04-20-managed-agent-dashboard-tab-bd-amendment.md` in `miss
 
 ### 1. Why this amendment exists
 
-The dashboard-tab ADR pre-dates BD §11 (strict resolutions). Its enrichment join reads `brand` and `insuranceLine` from the S1 Firestore session doc. Per BD-1 (strict, no denormalisation), `brand` is **not** on the S1 session doc — it lives only on S2 under `configs/{sessionId}`. Per BD's deletion list, `insuranceLine` is not a field at all in the S2 `DemoConfig` schema and is subject to the grep-gate (BD §2 Rule 4) across `tools/demo-studio-v3/`.
+The dashboard-tab ADR pre-dates BD §11 (strict resolutions). Its enrichment join reads `brand` and `insuranceLine` from the S1 Firestore session doc. Per BD-1 (strict, no denormalisation), `brand` is **not** on the S1 session doc — it lives only on S2 under `configs/{sessionId}`. Per BD's deletion list, `insuranceLine` is not a field at all in the S2 `DemoConfig` schema and is subject to the grep-gate (BD §2 Rule 4) across `tools/demo-studio-v3/`. <!-- orianna: ok — cross-repo path; tools/demo-studio-v3/ lives in missmp/company-os, not this repo -->
 
 The ADR's core (Anthropic-side control — list/retrieve/terminate — and the `managed_session_client.py` SDK wrapper) is architecturally sound and orthogonal to BD.
 
