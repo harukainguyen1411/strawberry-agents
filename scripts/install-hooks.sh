@@ -7,7 +7,6 @@
 #   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
 #   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
 #   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2)
-#   pre-commit-plan-authoring-freeze.sh — blocks new plans during Orianna freeze window
 #   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
