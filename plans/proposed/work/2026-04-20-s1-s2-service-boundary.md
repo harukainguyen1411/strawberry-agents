@@ -13,6 +13,7 @@ tags:
   - boundary
   - work
 tests_required: true
+orianna_signature_approved: "sha256:e1b224de5be55e4f4db11f727303715ef7a66d050b516bfb186f27982594aa10:2026-04-21T04:22:15Z"
 ---
 
 # ADR: Demo Studio — S1/S2 Service Boundary (Config-Management Delimitation)
