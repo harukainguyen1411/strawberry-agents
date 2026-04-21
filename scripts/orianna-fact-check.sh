@@ -95,6 +95,12 @@ and write the report to assessments/plan-fact-checks/ as specified above.
 Then exit with the appropriate status code (0=clean, 1=block, 2=error).
 "
 
+# ---- external budget env var -----------------------------------------------
+
+ORIANNA_EXTERNAL_BUDGET="${ORIANNA_EXTERNAL_BUDGET:-15}"
+export ORIANNA_EXTERNAL_BUDGET
+log_stderr "external budget: ${ORIANNA_EXTERNAL_BUDGET}"
+
 # ---- invoke orianna ---------------------------------------------------------
 
 log_stderr "invoking Orianna (claude CLI) on: $PLAN_REL"
