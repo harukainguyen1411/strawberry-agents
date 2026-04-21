@@ -27,6 +27,8 @@ Session state lives on Service 1 and stays there. Our team owns Service 1; Servi
 
 ### 1.1 Concrete scattering (audit, 2026-04-20)
 
+<!-- orianna: ok — all bare module names in this section (session.py, main.py, auth.py, factory_bridge.py, factory_bridge_v2.py, dashboard_service.py, session_store.py, phase.py) are company-os files under missmp/company-os/tools/demo-studio-v3/; this is an architecture audit listing call-site locations -->
+
 - `session.py` — partial wrapper: `get_db`, `create_session`, `get_session`, `update_session_status`, `transition_session_status`, `list_recent_sessions`, `update_session_field`. Imports `google.cloud.firestore` at module scope.
 - `main.py:36` — imports `get_db` and calls it directly at lines `80`, `247`, `2043`. Line `2046` re-imports `google.cloud.firestore` inline to build a `Query.DESCENDING` cursor for `GET /sessions`.
 - `auth.py:24-27` — `_get_db()` reaches back into `session.get_db()` to run a Firestore transaction against `demo-studio-used-tokens` (one-time URL tokens).
@@ -161,7 +163,7 @@ def try_consume_token(token_hash: str, *, ttl_seconds: int = 3600) -> bool:
     """One-time URL token consume. In-process TTL cache; see §4.1 Phase D."""
 ```
 
-**Call-site expectations** after migration:
+**Call-site expectations** after migration: <!-- orianna: ok — all bare module names below (main.py, auth.py, factory_bridge.py, factory_bridge_v2.py, dashboard_service.py, session_store.py) are company-os files under missmp/company-os/tools/demo-studio-v3/ -->
 
 - `main.py` removes every `get_db()` call and every `from google.cloud import firestore` import.
 - `auth.py` loses `_get_db()` entirely and calls `session_store.try_consume_token(...)`.
@@ -172,6 +174,7 @@ def try_consume_token(token_hash: str, *, ttl_seconds: int = 3600) -> bool:
 
 Under Service 1's existing Firestore project. No new databases. The `demo-studio-sessions` collection is reused in place.
 
+<!-- orianna: ok — the paths below are Firestore collection paths, not filesystem paths -->
 ```
 demo-studio-sessions/{sessionId}
 demo-studio-sessions/{sessionId}/events/{seq}
@@ -242,6 +245,8 @@ Each phase is an independently mergeable PR. No service moves, no data moves —
 
 ### 6.1 Phase A — Introduce `session_store.py` (additive)
 
+<!-- orianna: ok — session_store.py, session.py, main.py, auth.py, factory_bridge.py, factory_bridge_v2.py, dashboard_service.py, phase.py in this section are company-os files under missmp/company-os/tools/demo-studio-v3/ -->
+
 - Create `session_store.py`. Implement every function in §3 against the existing `demo-studio-sessions` collection. Preserve the current document shape (no schema change yet).
 - Add a typed `Session` dataclass; existing call sites still work off raw dicts at this phase — `session_store` accepts both and returns a dict view through a `to_dict()` for compatibility.
 - Unit tests mock `session_store` module, not Firestore.
@@ -263,7 +268,7 @@ Swap every direct-Firestore call and every `session.py` import to `session_store
 
 ### 6.3 Phase C — Status-enum migration (one-shot script)
 
-- Script: `company-os/tools/demo-studio-v3/scripts/migrate_session_status.py`.
+- Script: `company-os/tools/demo-studio-v3/scripts/migrate_session_status.py` <!-- orianna: ok — future company-os script file under missmp/company-os/tools/demo-studio-v3/scripts/ -->.
 - Reads every doc in `demo-studio-sessions`. Applies the §4.2 mapping. Writes back in place. Dry-run mode first.
 - Handles `approved` → `configuring`, `complete` → `completed`, `failed` → `build_failed`, `archived` → `completed` or `cancelled` per heuristic.
 - Backfill report: counts per old→new pair, plus any rows the heuristic couldn't resolve.
