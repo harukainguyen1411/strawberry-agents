@@ -57,10 +57,68 @@ if [ ! -s "$_filter_tmp" ]; then
   exit 0
 fi
 
+# 3a. Build staged-line map: for each staged plan file, record which absolute
+#     line numbers appear in the diff hunk (rule 4 only validates those lines).
+#     Format written to temp file: "<abs_path>:<linenum>" (one per line).
+#     New files (entire content is staged) include every line via +N,M hunks.
+_staged_lines_tmp="$(mktemp /tmp/pre-commit-zz-staged-lines-XXXXXX.tmp)"
+trap 'rm -f "$_filter_tmp" "$_staged_lines_tmp"' EXIT INT HUP TERM
+while IFS= read -r abs; do
+  rel="${abs#$REPO_ROOT/}"
+  # git diff --cached --unified=0 shows only hunk headers with no context.
+  # Hunk header format: @@ -old +new_start[,new_count] @@
+  # Extract new-side line ranges and enumerate individual line numbers.
+  git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
+    awk -v abs="$abs" '
+      /^@@ / {
+        # Extract +start[,count] from hunk header
+        if (match($0, /\+([0-9]+)(,([0-9]+))?/, m)) {
+          start = m[1] + 0
+          count = (m[3] != "") ? m[3] + 0 : 1
+          # count==0 means the hunk only deleted lines; skip
+          for (i = 0; i < count; i++) {
+            print abs ":" (start + i)
+          }
+        }
+      }
+    ' 2>/dev/null || \
+  # Fallback: POSIX awk may not support 3-arg match. Use a simpler pattern.
+  git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
+    grep '^@@' | \
+    while IFS= read -r hunk; do
+      # Extract the +N or +N,M token
+      new_part="$(printf '%s' "$hunk" | sed 's/.*+\([0-9,]*\).*/\1/')"
+      start="$(printf '%s' "$new_part" | cut -d, -f1)"
+      count_part="$(printf '%s' "$new_part" | cut -s -d, -f2)"
+      count="${count_part:-1}"
+      i=0
+      while [ "$i" -lt "$count" ]; do
+        printf '%s:%d\n' "$abs" "$((start + i))"
+        i=$((i + 1))
+      done
+    done
+done < "$_filter_tmp" > "$_staged_lines_tmp"
+
 # 3. Single awk pass over all plan files (POSIX awk — no ENDFILE extension).
 #    Tracks file boundaries via FNR==1 to flush per-file state.
 _awk_rc=0
-awk -v REPO_ROOT="$REPO_ROOT" '
+awk -v REPO_ROOT="$REPO_ROOT" -v STAGED_LINES_FILE="$_staged_lines_tmp" '
+  BEGIN {
+    # Load staged-line map from temp file into staged[filepath SUBSEP linenum]=1.
+    # Rule 4 uses this to skip validation on lines not in the staged diff.
+    while ((getline _sl < STAGED_LINES_FILE) > 0) {
+      # _sl is "abs_path:linenum"
+      _colon = length(_sl)
+      while (_colon > 0 && substr(_sl, _colon, 1) != ":") _colon--
+      if (_colon > 1) {
+        _slpath = substr(_sl, 1, _colon - 1)
+        _slnum  = substr(_sl, _colon + 1) + 0
+        staged[_slpath SUBSEP _slnum] = 1
+      }
+    }
+    close(STAGED_LINES_FILE)
+  }
+
   function flush_file(fname,    i, path, cmd, rc) {
     if (!_started) return
 
@@ -368,17 +426,24 @@ awk -v REPO_ROOT="$REPO_ROOT" '
           }
         }
 
-        # Rule 4: check path exists on disk (awk-native open — no shell exec)
-        full_path = REPO_ROOT "/" token
-        # Avoid shell-command injection: use awk file-read attempt instead of
-        # piping through a subshell.  getline returns -1 on open failure (file
-        # absent or unreadable) and >= 0 on success.  close() is a no-op when
-        # getline returned -1 so it is safe to call unconditionally.
-        _gl_rc = (getline _ < full_path)
-        if (_gl_rc >= 0) { exists = "y"; close(full_path) } else { exists = "n" }
-        if (exists != "y") {
-          print "[lib-plan-structure] BLOCK: cited path does not exist: " token " (add <!-- orianna: ok --> to suppress for prospective paths): " line > "/dev/stderr"
-          file_fail = 1
+        # Rule 4: check path exists on disk — only for lines in the staged diff.
+        # Lines that were not modified in this commit are grandfathered: they
+        # may contain legacy prose with path-like tokens that predate this hook.
+        # (staged[] was populated in BEGIN from STAGED_LINES_FILE.)
+        if (!(FILENAME SUBSEP NR in staged)) {
+          # This line is not in the staged diff; skip rule-4 for it.
+        } else {
+          full_path = REPO_ROOT "/" token
+          # Avoid shell-command injection: use awk file-read attempt instead of
+          # piping through a subshell.  getline returns -1 on open failure (file
+          # absent or unreadable) and >= 0 on success.  close() is a no-op when
+          # getline returned -1 so it is safe to call unconditionally.
+          _gl_rc = (getline _ < full_path)
+          if (_gl_rc >= 0) { exists = "y"; close(full_path) } else { exists = "n" }
+          if (exists != "y") {
+            print "[lib-plan-structure] BLOCK: cited path does not exist: " token " (add <!-- orianna: ok --> to suppress for prospective paths): " line > "/dev/stderr"
+            file_fail = 1
+          }
         }
       }
     }
