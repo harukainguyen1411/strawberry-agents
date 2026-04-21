@@ -127,6 +127,22 @@ Every agent except Skarner and Yuumi **must** write to two places at session end
 2. On task completion: report results to Evelynn. Stay open and wait unless told to close.
 3. On session close: write learnings + memory, then invoke `/end-subagent-session <name>`.
 
+## Memory Consumption
+
+Coordinators (Evelynn, Sona) use a two-layer memory shape. Subagents MUST NOT eagerly load coordinator last-sessions at their own startup.
+
+**Eager (always loaded at coordinator boot):**
+- `agents/<coordinator>/memory/open-threads.md` — hand-maintained live thread state; one `## <thread>` section per active thread with status, shard UUID pointers, next action.
+- `agents/<coordinator>/memory/last-sessions/INDEX.md` — auto-generated 3-line-per-shard TL;DR, newest first; regenerated on every `/end-session` write.
+
+**Lazy (on demand only):**
+- `agents/<coordinator>/memory/last-sessions/<uuid>.md` — full handoff shards; pull only if `open-threads.md` references the UUID or the current prompt touches a known thread.
+- `agents/<coordinator>/memory/last-sessions/archive/<uuid>.md` — shards past 14 days OR beyond #20 in the active set; same read path, different directory.
+
+**To search across historical shards:** delegate to Skarner (read-only memory excavator). Do not load shards in bulk at startup.
+
+**Full design:** `architecture/coordinator-memory.md`.
+
 ### Final-message rule (applies to all background subagents)
 
 Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
