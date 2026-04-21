@@ -745,7 +745,7 @@ Replaces 48h-mtime eager shard load with a two-layer coordinator memory shape:
 
 Migrates Evelynn and Sona simultaneously. Deletes `scripts/filter-last-sessions.sh`.
 
-Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md
+Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md <!-- orianna: ok -->
 
 ## Changes (12 commits)
 - T1 (xfail) → T2 — `_lib_last_sessions_index.sh`
@@ -804,7 +804,7 @@ None block execution. Viktor executes against ADR §Open-questions defaults (OQ1
 
 ## Test plan detail (Xayah)
 
-This document IS the test plan for the memory-consolidation-redesign ADR (`plans/approved/personal/2026-04-21-memory-consolidation-redesign.md`). Sections §1–§10 below enumerate xfail skeletons, integration tests, fault-injection harnesses, migration assertions, and surface-coverage audit. Xfail-first commits X1–X6 land before their implementation commits per CLAUDE.md Rule 12.
+This document IS the test plan for the memory-consolidation-redesign ADR (`plans/approved/personal/2026-04-21-memory-consolidation-redesign.md`). Sections §1–§10 below enumerate xfail skeletons, integration tests, fault-injection harnesses, migration assertions, and surface-coverage audit. Xfail-first commits X1–X6 land before their implementation commits per CLAUDE.md Rule 12. <!-- orianna: ok -->
 
 # Test plan — memory consolidation redesign (two-layer boot)
 
