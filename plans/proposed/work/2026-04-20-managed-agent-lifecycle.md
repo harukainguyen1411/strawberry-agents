@@ -29,7 +29,7 @@ Today, Service 1 creates a managed session in two places and almost never tears 
 
 - `agent_proxy.py::create_managed_session` — called during session bootstrap.
 - `main.py` line 2046-area — wires the managed session into Firestore and hands it to the browser SSE proxy.
-- The only existing stop path is `POST /session/{session_id}/cancel-build` (`main.py:2084`), which calls `client.beta.sessions.delete(...)` — but only when the user explicitly cancels a build.
+- The only existing stop path is `POST /session/{session_id}/cancel-build` <!-- orianna: ok — HTTP route, not a filesystem path --> (`main.py:2084`), which calls `client.beta.sessions.delete(...)` — but only when the user explicitly cancels a build.
 
 Any other exit path (user closes tab, demo completes, QC fails, backend crashes, build_failed, orphan record) leaves the managed session running until Anthropic internally expires it. We have observed drift between our Firestore `status` and Anthropic's view: partial writes and crashed transitions mean our DB cannot be trusted as source of truth for "what is actually running".
 
@@ -62,7 +62,7 @@ Explicitly rejected: 2/4/6/12/24h absolute-age thresholds. An active-but-long de
 
 ## 3. Anthropic API research needed
 
-Based on `platform.claude.com/docs/en/managed-agents/sessions` (fetched 2026-04-20):
+Based on `https://platform.claude.com/docs/en/managed-agents/sessions` <!-- orianna: ok — external URL; Anthropic managed sessions docs, fetched 2026-04-20 --> (fetched 2026-04-20):
 
 | Need | Documented surface | Gap / fallback |
 | --- | --- | --- |
@@ -189,7 +189,7 @@ Explicitly out of scope:
 - **Kayn / Aphelios:** break into tasks. Spike 1 (SDK gap confirmation) is the first task and gates the rest. The module boundary in section 4 is load-bearing — do not merge `stop_managed_session` into `main.py`.
 - **Depends on:** `2026-04-20-session-api-adr.md` (session-state-encapsulation). Terminal-state hook in section 2.1 lives inside that ADR's `transition_status`. If that ADR slips, ship scanner without the eager path and accept the degraded cost floor.
 - **Test strategy (for Caitlyn):** three layers. (i) Unit: `stop_managed_session` idempotency, interrupt-before-delete when running, 404 swallow. (ii) Unit: `ManagedSessionMonitor` decision logic with a stubbed SDK (< warn = no-op, warn-only = 1 slack call, terminate = delete + slack + Firestore). The enrichment unit test must stub both `session_store.get_session` (for slack/user fields) and `config_mgmt_client.fetch_config` (for brand), covering three enrichment states (success, 404 cold, 5xx degraded). (iii) Integration: real Anthropic SDK against a throwaway session; S2 stubbed at the integration-test boundary (no cross-service HTTP).
-- **Regression test for existing `/cancel-build` path:** existing call site at `main.py:2111-2115` inlines the delete. Refactor it to call `stop_managed_session` and add a test asserting equivalence (no behaviour change for end users).
+- **Regression test for existing `/cancel-build` <!-- orianna: ok — HTTP route name, not a filesystem path --> path:** existing call site at `main.py:2111-2115` inlines the delete. Refactor it to call `stop_managed_session` and add a test asserting equivalence (no behaviour change for end users).
 - **Observability:** structured logs with event types `managed_session_warned`, `managed_session_terminated`, `orphan_terminated`, `scan_cycle_complete` (with counts), `slack_enrichment_degraded`. Feed to existing `logger` in `main.py`. No new metrics infra.
 
 ## Appendix: Files touched
@@ -212,8 +212,8 @@ _Source: `company-os/plans/2026-04-20-managed-agent-lifecycle-tasks.md` in `miss
 - `plans/proposed/work/2026-04-20-s1-s2-service-boundary.md` (BD — approved) — S1 is session-lifecycle + agent-hosting only. Identity fields (`brand`, `market`, `languages`, `shortcode`) are NOT on the S1 session doc.
 
 **TDD gate active:** every impl task must be preceded on the same branch by an xfail test commit referencing the task ID. Pre-push hook enforces; agents may not bypass.
-**Regression-test rule:** the refactor of `/cancel-build` (MAL.C.2) must carry a paired regression test (see MAL.C.1) per universal invariant 13 — behaviour must be preserved end-to-end.
-**Conventional-commit prefix:** impl commits under `tools/demo-studio-v3/**` use `feat:` / `refactor:` / `fix:`; test-only commits use `chore:`; plan edits use `chore:`.
+**Regression-test rule:** the refactor of `/cancel-build` <!-- orianna: ok — HTTP route name, not a filesystem path --> (MAL.C.2) must carry a paired regression test (see MAL.C.1) per universal invariant 13 — behaviour must be preserved end-to-end.
+**Conventional-commit prefix:** impl commits under `tools/demo-studio-v3/**` <!-- orianna: ok — glob pattern referring to missmp/company-os/tools/demo-studio-v3/; not a local filesystem path --> use `feat:` / `refactor:` / `fix:`; test-only commits use `chore:`; plan edits use `chore:`.
 
 ### Scope and sequencing rationale
 
@@ -228,7 +228,7 @@ The work splits into two sub-ADRs that ship independently:
 - `MAL.0.*` — preflight (SDK spike, Slack bot membership check)
 - `MAL.A.*` — `stop_managed_session` primitive in `agent_proxy.py`
 - `MAL.B.*` — terminal-state hook in `session_store.transition_status`
-- `MAL.C.*` — refactor `/cancel-build` and `/close` call sites to use the primitive
+- `MAL.C.*` — refactor `/cancel-build` <!-- orianna: ok — HTTP route name --> and `/close` <!-- orianna: ok — HTTP route name --> call sites to use the primitive
 - `MAL.D.*` — `ManagedSessionMonitor` class (scan loop, dedup cache, decision logic)
 - `MAL.E.*` — Slack warning/termination messaging
 - `MAL.F.*` — `main.py` startup/shutdown wiring
@@ -317,19 +317,19 @@ Depends on SE.A.6 (`session_store.transition_status` exists). If SE slips, MAL.B
 
 ---
 
-### MAL.C — Refactor `/cancel-build` and `/close` to use primitive
+### MAL.C — Refactor `/cancel-build` <!-- orianna: ok — HTTP route name --> and `/close` <!-- orianna: ok — HTTP route name --> to use primitive
 
 Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to call `agent_proxy.stop_managed_session`. Required for DRY and so the interrupt-before-delete behaviour (MAL.A.4) applies uniformly.
 
-#### MAL.C.1 — Regression test for `/cancel-build` equivalence
-- **What:** add `tests/test_cancel_build_uses_stop_primitive.py` <!-- orianna: ok — future company-os test; path relative to tools/demo-studio-v3/ -->. Tests assert (i) `POST /session/{id}/cancel-build` still returns 200 on `building` status, still sets `_stop_flags[session_id] = True`, still deletes the managed session — but now via `agent_proxy.stop_managed_session` (mock target moves from `main.Anthropic` / `_client.beta.sessions.delete` to `main.stop_managed_session`); (ii) the response body is byte-identical to the pre-refactor baseline; (iii) 5s timeout behaviour preserved.
+#### MAL.C.1 — Regression test for `/cancel-build` <!-- orianna: ok — HTTP route name --> equivalence
+- **What:** add `tests/test_cancel_build_uses_stop_primitive.py` <!-- orianna: ok — future company-os test; path relative to tools/demo-studio-v3/ -->. Tests assert (i) `POST /session/{id}/cancel-build` <!-- orianna: ok — HTTP route, not a filesystem path --> still returns 200 on `building` status, still sets `_stop_flags[session_id] = True`, still deletes the managed session — but now via `agent_proxy.stop_managed_session` (mock target moves from `main.Anthropic` / `_client.beta.sessions.delete` to `main.stop_managed_session`); (ii) the response body is byte-identical to the pre-refactor baseline; (iii) 5s timeout behaviour preserved.
 - **Where:** new test file.
 - **Why:** universal invariant 13 — refactor touching the stop path needs a regression test.
 - **Acceptance:** tests xfail against current inline-delete code; xfail/strict → MAL.C.2.
 - **TDD:** xfail + regression commit for MAL.C.2.
 - **Depends on:** MAL.A.2.
 
-#### MAL.C.2 — Refactor `/cancel-build` handler to call `stop_managed_session`
+#### MAL.C.2 — Refactor `/cancel-build` <!-- orianna: ok — HTTP route name --> handler to call `stop_managed_session`
 - **What:** in `tools/demo-studio-v3/main.py` <!-- orianna: ok — company-os file --> around lines 2084–2120, replace the inline `_client.beta.sessions.delete(managed_session_id)` block with `await stop_managed_session(managed_session_id, reason="cancel_build")`. Keep the 5s timeout (now enforced inside the primitive). Remove the local `_client` construction if no longer used at that call site.
 - **Where:** `tools/demo-studio-v3/main.py`. <!-- orianna: ok — company-os file -->
 - **Why:** ADR §10 handoff. DRY with scanner path and MAL.B hook.
@@ -337,8 +337,8 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **TDD:** preceded by MAL.C.1.
 - **Depends on:** MAL.C.1.
 
-#### MAL.C.3 — Regression test + refactor for `/close` (line 2204 inline delete)
-- **What:** same pattern as MAL.C.1+C.2 but for the `/session/{id}/close` route at `main.py:2204`. One xfail regression test + one impl commit.
+#### MAL.C.3 — Regression test + refactor for `/close` <!-- orianna: ok — HTTP route name --> (line 2204 inline delete)
+- **What:** same pattern as MAL.C.1+C.2 but for the `/session/{id}/close` <!-- orianna: ok — HTTP route, not a filesystem path --> route at `main.py:2204`. One xfail regression test + one impl commit.
 - **Where:** new test `tests/test_close_uses_stop_primitive.py`; edit `tools/demo-studio-v3/main.py:2200–2215` area. <!-- orianna: ok — company-os file paths -->
 - **Why:** same as MAL.C.2 — DRY and timeout uniformity.
 - **Acceptance:** regression test passes; `test_stop_and_archive.py` <!-- orianna: ok — pre-existing company-os test file relative to tools/demo-studio-v3/tests/ --> mock-target rewritten and passing.
@@ -397,7 +397,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **Depends on:** MAL.D.2.
 
 #### MAL.E.1b — Grep-gate self-check for `insuranceLine`
-- **What:** CI asserts the literal `insuranceLine` is absent from every file Kayn's decomposition touches under `tools/demo-studio-v3/`. Pairs with SE.E.2's grep-gate.
+- **What:** CI asserts the literal `insuranceLine` is absent from every file Kayn's decomposition touches under `tools/demo-studio-v3/` <!-- orianna: ok — grep-gate scope string referring to missmp/company-os/tools/demo-studio-v3/; not a local filesystem path -->. Pairs with SE.E.2's grep-gate.
 - **Where:** CI check (wired alongside SE.E.2's grep-gate).
 - **Why:** BD §2 Rule 4 + BDC-MAL-2 resolution.
 - **Acceptance:** CI fails if `insuranceLine` appears in any non-test, non-migration file.
@@ -532,7 +532,7 @@ MAL.0.1 → MAL.D.1 → MAL.D.2 → MAL.G.1 → MAL.G.2 → MAL.D.3 → MAL.D.4 
 - `main.py`
 - `factory_bridge*.py` handful (per BD §2 Rule 4)
 - `managed_session_monitor.py` (this amendment)
-- Dashboard handler for `GET /api/managed-sessions` (dashboard amendment §4)
+- Dashboard handler for `GET /api/managed-sessions` <!-- orianna: ok — HTTP route, not a filesystem path --> (dashboard amendment §4)
 
 Kayn must consolidate this list in the SE.E.2 task acceptance criteria.
 
@@ -633,5 +633,5 @@ The monitor's Slack-enrichment unit test must also stub `config_mgmt_client.fetc
 
 - **Duong:** promote this file via the work-concern convention. Then invoke Kayn to revise the MAL task file per §4 above.
 - **Kayn:** on Duong's signal, issue the task-file revision per §4. Cross-coordinate with SE.E.2 in the SE task file for the grep-gate allow-set. Commit with `chore:` prefix.
-- **Orianna:** optional fact-check on four load-bearing claims: `config.brand` path shape on S2; S2 `/v1/config` returns 404 before first `set_config`; `insuranceLine` absent from S2 `DemoConfig` schema; `config_mgmt_client` exists with async `fetch_config(sessionId)`.
+- **Orianna:** optional fact-check on four load-bearing claims: `config.brand` path shape on S2; S2 `/v1/config` <!-- orianna: ok — HTTP API path on S2 service, not a filesystem path --> returns 404 before first `set_config`; `insuranceLine` absent from S2 `DemoConfig` schema; `config_mgmt_client` exists with async `fetch_config(sessionId)`.
 - **Camille:** SE.E grep-gate extends to this module's allow-set; coordinate with Kayn's SE.E.2 revision.
