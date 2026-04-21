@@ -191,11 +191,37 @@ case_E() {
   return 0
 }
 
+########################################
+# Case F — STAGED_SCOPE unset, .git/COMMIT_SCOPE file fallback → exit 0, file cleared
+########################################
+case_F() {
+  local repo
+  repo="$(make_repo)"
+  stage_file "$repo" "a.txt"
+  # Write scope via file instead of env var
+  printf 'a.txt\n' > "$repo/.git/COMMIT_SCOPE"
+  local hook_rc=0
+  (cd "$repo" && unset STAGED_SCOPE; "$HOOK_ABS" >/dev/null 2>/dev/null) || hook_rc=$?
+  local scope_exists=0
+  [ -f "$repo/.git/COMMIT_SCOPE" ] && scope_exists=1
+  rm -rf "$repo"
+  if [ "$hook_rc" -ne 0 ]; then
+    printf 'Case F: expected exit 0, got %d\n' "$hook_rc" >&2
+    return 1
+  fi
+  if [ "$scope_exists" -eq 1 ]; then
+    printf 'Case F: expected .git/COMMIT_SCOPE to be cleared after match, but it still exists\n' >&2
+    return 1
+  fi
+  return 0
+}
+
 run_case "A (hard block on out-of-scope)" case_A
 run_case "B (unscoped trivial commit silent)" case_B
 run_case "C (unscoped bulk commit warns)" case_C
 run_case "D (escape hatch *)" case_D
 run_case "E (exact match, COMMIT_SCOPE cleared)" case_E
+run_case "F (file fallback when env unset)" case_F
 
 printf '\nResults: %d passed, %d failed\n' "$pass" "$fail"
 [ "$fail" -eq 0 ]
