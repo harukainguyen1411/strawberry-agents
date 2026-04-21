@@ -1,15 +1,15 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-21 (third-leg shard 2026-04-21-a0a51dd8; prior shards 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-21 (fourth-leg shard 2026-04-21-4c6f055d; prior shards 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
 ## Vi pytest audit — integration HEAD `bda562e`
 
-**Status:** In flight at consolidation — Vi `a604c23c978c4820c` running full pytest on `integration/demo-studio-v3-waves-1-4` HEAD `bda562e`. Check result on wake.
+**Status:** Killed mid-run during /exit interaction. Reported "Collection clean — 856 tests, no errors" but no full suite result. Ship-ready greenlight still unissued.
 **Plans:** All four ADRs now `implemented`. Audit is the gate to ship sequence.
-**Shard pointers:** 2026-04-21-a0a51dd8.
-**Next action:** Read Vi's final message. If green, proceed to merge `chore/ship-day-deploy-infra` into integration branch. If red, triage failures before merge.
+**Shard pointers:** 2026-04-21-a0a51dd8, 2026-04-21-4c6f055d.
+**Next action:** Redispatch Vi for full pytest audit on integration HEAD `bda562e` before merging deploy-infra or proceeding with ship sequence.
 
 ## Merge deploy-infra into integration branch
 
@@ -105,6 +105,51 @@ Last updated: 2026-04-21 (third-leg shard 2026-04-21-a0a51dd8; prior shards 2026
 **Status:** Open — uncommitted Ekko changes in workspace from pre-migration session.
 **Shard pointers:** 2026-04-20-pre-migration.
 **Next action:** Commit workspace-local Sona memory fixes early next session.
+
+## Architecture decision — MCP in-process (Option A) vs vanilla API (Option B)
+
+**Status:** Open — Duong chose Option A initially ("ok let's still try A first") but also requested Swain write Option B plan. Both Azir #60 (god plan v2, Option A) and Swain #62 (vanilla-API, Option B) are in flight. Decision pending final plan reads.
+**Options:**
+- A: Merge MCP into S1 process — keeps managed agent, removes separate Cloud Run service
+- B: Vanilla Messages API — ditch managed/MCP/MAL/MAD, keeps SE/BD, synchronous client-side tools
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Read Azir #60 + Swain #62 final messages when they land. Surface both plans to Duong for architectural decision before any impl begins.
+
+## Karma #59 MCP-merge plan — structure violations blocking Karma #61 S5 commit
+
+**Status:** Karma #59's plan (`plans/proposed/work/2026-04-21-mcp-inprocess-merge.md`) has structure-check violations: "h)" time-unit notation + missing `## Test plan` section. This blocked Karma #61's S5 fullview plan from committing (pre-commit is shared state). S5 plan file (`plans/proposed/work/2026-04-21-s5-preview-fullview-route.md`) is clean but untracked on disk.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Dispatch Ekko to fix Karma #59's MCP plan structure (replace "h)" with minutes, add `## Test plan` section), then re-attempt staging both plan files. Or wait for Karma #59 to self-resolve before Karma #61 retries.
+
+## Azir #60 god plan v2 — in flight
+
+**Status:** In flight at consolidation. Plan at `plans/proposed/work/2026-04-21-demo-studio-v3-e2e-ship-v2.md`. Names 4 ADR scopes: MCP-merge, S3-projectId+S4-trigger, S5-fullview, S1-new-flow.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Read Azir's final message. If plan committed, surface to Duong for approval. Decompose into 4 ADRs after approval.
+
+## Swain #62 vanilla-API god plan B — in flight
+
+**Status:** In flight at consolidation. Plan at `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Deletes MAL/MAD/MCP/setup_agent. Keeps SE/BD. Full re-architecture.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Read Swain's final message. Surface alongside Azir #60 for Duong's architecture decision.
+
+## MCP 503 — demo-studio-mcp Cloud Run unreachable
+
+**Status:** Open — `demo-studio-mcp` Cloud Run returns 503; source project `ds-v3-workspace-2026` deleted. Not a ship-day regression; pre-existing infra gap. Blocks local E2E test.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** If Option A (MCP-merge) accepted, this resolves when MCP-merge impl lands. If Option B (vanilla API), MCP decommissioned. If neither in time, dispatch Heimerdinger to redeploy MCP to a new project for interim local testing.
+
+## S3 ADR — projectId reuse + S4 auto-trigger
+
+**Status:** Not yet dispatched. Azir's god plan will name the scope.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Decompose after Azir #60 god plan is approved and architecture decision made.
+
+## S1 new-flow ADR — empty session, route cleanup, S5 iframe, session schema, /logs SSE, S4 polling
+
+**Status:** Not yet dispatched. Biggest scope among the 4 ADRs in Azir's god plan.
+**Shard pointers:** 2026-04-21-4c6f055d.
+**Next action:** Decompose after Azir #60 god plan is approved. Likely complex-track → Swain.
 
 ---
 
