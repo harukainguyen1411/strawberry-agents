@@ -10,6 +10,7 @@ orianna_gate_version: 2
 tags: [orianna, claim-contract, routing, work-concern, infra]
 tests_required: true
 orianna_signature_approved: "sha256:1cad242a7570404c6cae2da3c283e20b9f40dfeef6d644c2aac5f3cf7300fd14:2026-04-21T03:09:19Z"
+orianna_signature_in_progress: "sha256:1cad242a7570404c6cae2da3c283e20b9f40dfeef6d644c2aac5f3cf7300fd14:2026-04-21T03:10:27Z"
 ---
 
 ## Context
