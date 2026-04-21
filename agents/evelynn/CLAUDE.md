@@ -108,7 +108,7 @@ Route work to the right agent. Use the complexity classification below to pick t
 | Quick fixes, DevOps execution | **Ekko** (Sonnet medium, single-lane) | — |
 | PR code + security review | **Senna** (Opus high, single-lane) | — |
 | PR plan/ADR fidelity review | **Lucian** (Opus medium, single-lane) | — |
-| Fact-check / plan signing | **Orianna** (Opus low, single-lane) | — |
+| Fact-check / plan signing | **Orianna** (Opus medium, single-lane) | — |
 | QA Playwright + Figma diff | **Akali** (Sonnet medium, single-lane) | — |
 | Memory retrieval | **Skarner** (Sonnet low, single-lane) | — |
 | Light errands | **Yuumi** (Sonnet low, single-lane) | — |
