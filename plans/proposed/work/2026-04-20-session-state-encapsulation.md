@@ -16,6 +16,8 @@ tests_required: true
 
 # ADR: Demo Studio v3 — Session State Encapsulation (Service 1)
 
+<!-- orianna: ok — all bare module names throughout this plan (session.py, session_store.py, main.py, auth.py, factory_bridge.py, factory_bridge_v2.py, dashboard_service.py, phase.py, test_session_store_types.py, test_session_store_crud.py, test_firestore_boundary_gate.py, firestore-boundary-gate.sh) are company-os files under missmp/company-os/tools/demo-studio-v3/; this plan is an architectural spec for that repo -->
+
 **Date:** 2026-04-20
 **Author:** Azir (architecture)
 **Scope:** Service 1 only. Service 2 (`demo-config-mgmt`) is **not** touched.
@@ -633,7 +635,7 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 - **Depends on:** SE.B.7.
 
 #### SE.E.2 — Implement grep-gate script + CI wiring
-- **What:** bash script `scripts/ci/firestore-boundary-gate.sh` that grep-scans `tools/demo-studio-v3/*.py` and fails if any file other than `session_store.py` contains `from google.cloud import firestore` or `import google.cloud.firestore`. Wire into `.github/workflows/`.
+- **What:** bash script `company-os/scripts/ci/firestore-boundary-gate.sh` <!-- orianna: ok — future company-os CI script under missmp/company-os/scripts/ci/; not a local strawberry-agents script --> that grep-scans `company-os/tools/demo-studio-v3/*.py` <!-- orianna: ok — company-os glob pattern under missmp/company-os/; not a local filesystem path --> and fails if any file other than `session_store.py` contains `from google.cloud import firestore` or `import google.cloud.firestore`. Wire into `.github/workflows/` <!-- orianna: ok — company-os workflow directory under missmp/company-os/.github/workflows/ -->.
   **BD amendment (Sona, 2026-04-20 s3 — see §4 item 8 of amendment file + BD §2 Rule 4):** the gate script extends to two additional patterns:
   1. **`config_mgmt_client` import scope.** Disallow outside an explicit allowlist of files. Allowlist (cumulative across all BD amendments): `main.py`, `factory_bridge*.py` handful, `managed_session_monitor.py`, dashboard handler for `GET /api/managed-sessions`. Gate exception convention: `# azir: config-boundary` comment on the import line.
   2. **`insuranceLine` literal ban.** Disallow the literal string `insuranceLine` anywhere under `tools/demo-studio-v3/` (excluding `tests/` for legacy fixtures and migration scripts).
