@@ -68,26 +68,20 @@ while IFS= read -r abs; do
   # git diff --cached --unified=0 shows only hunk headers with no context.
   # Hunk header format: @@ -old +new_start[,new_count] @@
   # Extract new-side line ranges and enumerate individual line numbers.
-  git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
-    awk -v abs="$abs" '
-      /^@@ / {
-        # Extract +start[,count] from hunk header
-        if (match($0, /\+([0-9]+)(,([0-9]+))?/, m)) {
-          start = m[1] + 0
-          count = (m[3] != "") ? m[3] + 0 : 1
-          # count==0 means the hunk only deleted lines; skip
-          for (i = 0; i < count; i++) {
-            print abs ":" (start + i)
-          }
-        }
-      }
-    ' 2>/dev/null || \
-  # Fallback: POSIX awk may not support 3-arg match. Use a simpler pattern.
+  # Parse hunk headers with a single anchored sed — works on BSD and GNU sed.
+  # Pattern is anchored to `^@@ -<old> +<new> @@` so the trailing context
+  # (which may contain arbitrary `+<digits>` strings) cannot confuse parsing.
+  # The gawk 3-arg match() primary + greedy-sed fallback is removed: the
+  # primary was dead code on macOS (BSD awk rejects 3-arg match at parse time),
+  # and the greedy sed misparses any hunk header whose context contained `+N`.
   git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
     grep '^@@' | \
     while IFS= read -r hunk; do
-      # Extract the +N or +N,M token
-      new_part="$(printf '%s' "$hunk" | sed 's/.*+\([0-9,]*\).*/\1/')"
+      # Anchored extraction: `@@ -<old> +<start>[,<count>] @@ <context>`
+      # sed -E captures group 1 = start, group 2 = ,count (optional).
+      new_part="$(printf '%s' "$hunk" | sed -E 's/^@@ -[^ ]+ \+([0-9]+(,[0-9]+)?) @@.*/\1/')"
+      # If sed found no match new_part equals the original hunk line — skip.
+      case "$new_part" in @@*) continue ;; esac
       start="$(printf '%s' "$new_part" | cut -d, -f1)"
       count_part="$(printf '%s' "$new_part" | cut -s -d, -f2)"
       count="${count_part:-1}"

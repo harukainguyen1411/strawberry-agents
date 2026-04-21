@@ -52,7 +52,10 @@ _run_hook_with_staged() {
 _setup_repo() {
   local dir _empty_hooks
   dir="$(mktemp -d /tmp/plan-struct-test-XXXXXX)"
-  _empty_hooks="$(mktemp -d /tmp/plan-struct-test-hooks-XXXXXX)"
+  # Place the empty hooks dir inside the repo tmpdir so a single `rm -rf "$dir"`
+  # cleans both (no /tmp accumulation across test runs).
+  _empty_hooks="$dir/.empty-hooks"
+  mkdir -p "$_empty_hooks"
   git -C "$dir" init -q
   git -C "$dir" config user.email "test@example.com"
   git -C "$dir" config user.name "Test"
