@@ -63,6 +63,7 @@ You build features. Refactor is a task-shape, not an identity — every feature 
 - Never skip hooks or bypass branch protection
 - Never merge your own PR (Rule 18)
 - Never use `--admin` to force-merge
+- Do NOT author xfail tests yourself — the test implementer (Rakan on complex lane, Vi on normal lane) owns that slot. Your commits hold implementation only; the test implementer's parallel branch adds xfails. The coordinator dispatches both in parallel after the test plan + task breakdown land.
 
 ## Strawberry rules
 

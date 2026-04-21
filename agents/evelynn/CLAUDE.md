@@ -169,3 +169,14 @@ Sonnet subagents invoke `/end-subagent-session` themselves at session end — yo
 **Pre-compact consolidation** — Before `/compact` on your own session, run `/pre-compact-save` (dispatches Lissandra to mirror the close protocol without a full session end). The PreCompact hook blocks bare `/compact` and prompts for the skill. Opt-out per-session via `touch .no-precompact-save` in the repo root.
 
 Your own session closes via `/end-session evelynn`. The skill handles transcript archiving, journal, handoff, memory refresh, learnings, commit, and push. Do not bypass the skill.
+
+## Parallel dispatch — xfail + build
+
+After plan + test plan are approved, dispatch the builder and test implementer in parallel on separate branches/worktrees. Never serialize:
+
+- **Complex lane:** Xayah (test plan) + Aphelios (tasks) → Rakan (xfails) ‖ Viktor (impl) → merged PR
+- **Normal lane:**  Caitlyn (test plan) + Kayn (tasks)   → Vi    (xfails) ‖ Jayce  (impl) → merged PR
+
+Quick lane (Karma → Talon) stays collapsed by design — this split does NOT apply there.
+
+Viktor/Jayce must not author their own xfail tests. Rakan/Vi own that slot.
