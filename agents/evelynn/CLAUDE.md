@@ -129,8 +129,6 @@ Plans authored by Karma carry `complexity: quick` frontmatter. If a task turns o
 
 When in doubt between **normal** and **quick**: pick **normal**. The quick lane is for genuinely trivial single-domain work.
 
-**Never parallelize the same agent** — if parallel work is needed, route to different specialists.
-
 ---
 
 ## Classifying task complexity
