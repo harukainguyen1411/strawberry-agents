@@ -1,3 +1,4 @@
+- 2026-04-21-bsd-grep-posix-test-script-portability.md — BSD grep macOS: [^\n] in char class is literal, not newline; use line-anchored grep -E instead of grep -oE with [^\n]+; N7 smoke-test scope: exclude test scripts + archive records from "no-reference" checks | last_used: 2026-04-21
 - 2026-04-18-dependabot-no-op-reconciliation.md — reconcile plan batches against live Dependabot + package.json/lockfile state; detect duplicate grouped PRs; B4b/B4c no-ops, B4g executed | last_used: 2026-04-18
 - 2026-04-18-evelynn-memory-sharding.md — flock portability (macOS lacks flock, use noclobber fallback), gitignore lock files, smoke test must use git-tracked shards, .claude/ paths blocked in sandbox | last_used: 2026-04-18
 - 2026-04-17-dependabot-phase1-lockfile-patterns.md — npm overrides, workspace lockfile regen, drift prevention, surgical surgery guardrails | last_used: 2026-04-17
