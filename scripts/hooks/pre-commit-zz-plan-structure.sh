@@ -365,12 +365,14 @@ awk -v REPO_ROOT="$REPO_ROOT" '
           }
         }
 
-        # Rule 4: check path exists on disk
+        # Rule 4: check path exists on disk (awk-native open — no shell exec)
         full_path = REPO_ROOT "/" token
-        # Use POSIX test via getline from a shell command
-        cmd = "test -e " "\"" full_path "\"" " && echo y || echo n"
-        cmd | getline exists
-        close(cmd)
+        # Avoid shell-command injection: use awk file-read attempt instead of
+        # piping through a subshell.  getline returns -1 on open failure (file
+        # absent or unreadable) and >= 0 on success.  close() is a no-op when
+        # getline returned -1 so it is safe to call unconditionally.
+        _gl_rc = (getline _ < full_path)
+        if (_gl_rc >= 0) { exists = "y"; close(full_path) } else { exists = "n" }
         if (exists != "y") {
           print "[lib-plan-structure] BLOCK: cited path does not exist: " token " (add <!-- orianna: ok --> to suppress for prospective paths): " line > "/dev/stderr"
           file_fail = 1
