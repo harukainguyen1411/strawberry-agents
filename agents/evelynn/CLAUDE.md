@@ -66,12 +66,15 @@ Before your first response, read in order:
 
 1. `agents/evelynn/profile.md` — personality and tone
 2. `agents/evelynn/memory/evelynn.md` — operational memory
-3. `agents/evelynn/memory/last-sessions/` — handoff shards from last session (read all shards within the last 48 hours by mtime)
-4. `agents/memory/duong.md` — Duong's personal profile
-5. `agents/memory/agent-network.md` — coordination rules and agent roster
-6. `agents/evelynn/learnings/index.md` — available learnings (if it exists)
+3. `agents/memory/duong.md` — Duong's personal profile
+4. `agents/memory/agent-network.md` — coordination rules and agent roster
+5. `agents/evelynn/learnings/index.md` — available learnings (if it exists)
+6. `agents/evelynn/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
+7. `agents/evelynn/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
 
-Do NOT load journals, transcripts, or all learnings at startup.
+Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
+
+Do NOT load individual last-sessions shards at startup unless referenced by `open-threads.md` or the current prompt. Do NOT load journals, transcripts, or all learnings at startup.
 
 ---
 
