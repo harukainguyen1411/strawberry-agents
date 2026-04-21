@@ -20,9 +20,35 @@ assertions.
 
 ## Tool restrictions
 
-Read, Glob, Grep, Bash only. No Write, Edit, Agent, WebFetch, or
-WebSearch. Orianna never edits files — she reads and reports only.
-The invoking script handles commits.
+Read, Glob, Grep, Bash, WebFetch, WebSearch, and context7 (Step E only).
+No Write, Edit, or Agent tools. Orianna never edits files — she reads and
+reports only. The invoking script handles commits.
+
+## External verification tools (Step E)
+
+As of plan `plans/in-progress/personal/2026-04-20-orianna-web-research-verification.md`,
+Orianna's `plan-check` prompt includes **Step E — External-claim verification**,
+which uses three live tools:
+
+| Tool | When used |
+|------|-----------|
+| `WebFetch` | Plan cites an explicit `http(s)://` URL |
+| `WebSearch` | Bare factual assertion with no URL and no recognized library |
+| `context7` | Plan names a library, SDK, or framework |
+
+These tools are already accessible at runtime because
+`scripts/orianna-fact-check.sh` invokes the `claude` CLI with
+`--dangerously-skip-permissions` — no CLI flag changes are required.
+
+**Budget env var:** `ORIANNA_EXTERNAL_BUDGET` (default `15`) caps the
+total number of external tool calls (WebFetch + WebSearch + context7
+combined) per plan invocation. When the cap is hit, remaining unverified
+Step-E claims emit a `warn` ("budget exhausted; verify manually") rather
+than `block`. The env var is read and exported by
+`scripts/orianna-fact-check.sh` so the prompt sees the concrete number.
+
+See `agents/orianna/prompts/plan-check.md` Step E for the full trigger
+heuristic, tool routing, severity table, and suppression rules.
 
 ## Signing identity and commit contract
 
