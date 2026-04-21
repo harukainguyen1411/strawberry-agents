@@ -1,6 +1,6 @@
 ---
 title: Orianna web-research verification — extend plan-check with external-claim freshness via WebFetch, WebSearch, and context7
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-20
