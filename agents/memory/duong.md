@@ -46,3 +46,15 @@ Two modes govern how much consent to seek per decision. Default is **hands-on**.
 - **Hands-off mode:** Make **all** decisions yourself following Duong's preferences (simple yet clean and works; lean toward `a` or `b`; only pick `c` if the debt is genuinely cheap to repay). Do not stop to ask. Report outcomes, not questions. Escalate only for hard blockers that cannot be resolved within the stated preferences (e.g. a destructive git op that would lose data, a secret exposure, a platform CLI that keeps failing past the 3-flag-permutation rule).
 
 Mode switches are explicit: Duong says "hands-on" or "hands-off" to toggle. The mode persists until changed or the session ends. On new session, reset to hands-on.
+
+## Parallelism preference (mandatory for coordinators)
+
+Duong's strong preference: **maximize parallelism**. Coordinators (Evelynn, Sona) should keep as many threads in flight as possible. If the coordinator is idle waiting on one or two subagents, that's a coordination failure — find something else to move in parallel.
+
+Operating directives:
+
+- Never let the team stall on a single long-running dispatch. While waiting for agent X, scan the open-threads / plan queue / backlog for independent work and fire the next dispatch.
+- Treat "waiting for approval" and "waiting for a completion" as opportunities to pre-stage follow-on work (plan next implementer dispatch, queue adjacent audits, draft the next ADR).
+- Multiple instances of the same agent type are fine as long as the work is independent. The "never parallelize same agent" rule is retired — parallelism risk is a shared-state problem, not a shared-agent-type problem.
+- When in doubt: fire the dispatch. It's cheaper to over-dispatch and cancel than to serialize unnecessarily.
+- The coordinator's job is to keep the queue full and the dependencies explicit, not to personally execute or to gatekeep throughput.
