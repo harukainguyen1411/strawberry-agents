@@ -1,8 +1,41 @@
 {
   "permissions": {
-    "allow": [],
+    "allow": [
+      "Edit",
+      "Write",
+      "Read",
+      "Grep",
+      "Glob",
+      "Bash(git *)",
+      "Bash(gh *)",
+      "Bash(bash scripts/*)",
+      "Bash(python3 *)",
+      "Bash(cat *)",
+      "Bash(ls *)",
+      "Bash(echo *)",
+      "Bash(mkdir *)",
+      "Bash(touch *)",
+      "Bash(cp *)",
+      "Bash(mv *)",
+      "Bash(find * -type *)",
+      "Bash(jq *)",
+      "Bash(pwd)",
+      "Bash(test *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(node *)",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill",
+      "Task*"
+    ],
     "deny": [],
-    "defaultMode": "bypassPermissions"
+    "defaultMode": "auto"
   },
   "hooks": {
     "SessionStart": [
@@ -10,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session — skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION — do not re-read startup files. Reply only: Session resumed.\"}}'; fi; }"
+            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session \u2014 skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION \u2014 do not re-read startup files. Reply only: Session resumed.\"}}'; fi; }"
           }
         ]
       }

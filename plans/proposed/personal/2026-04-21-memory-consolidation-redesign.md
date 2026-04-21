@@ -12,6 +12,7 @@ related:
   - plans/proposed/2026-04-18-evelynn-memory-sharding.md
   - plans/implemented/personal/2026-04-20-lissandra-precompact-consolidator.md
 architecture_impact: refactor
+orianna_signature_approved: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T04:49:00Z"
 ---
 
 # Memory consolidation redesign — two-layer boot (eager manifest + lazy archive)
