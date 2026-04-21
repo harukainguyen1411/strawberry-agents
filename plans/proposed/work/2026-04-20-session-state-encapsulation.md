@@ -422,6 +422,7 @@ Merges independently. Old `session.py` still in place at end of phase.
 
 #### SE.A.6 — Implement `update_session` + `transition_status`
 - **What:** flesh out `update_session` (allowlist: `managedSessionId`, `projectId`, `factoryRunId`, `outputUrls`, `eventHistory`, `archivedAt`, `workerJobId`, `qcResult`, `cancelReason`) and `transition_status` (Firestore transactional CAS + ADR §4.3 validation).
+  **Signature (OQ-MAL-6 / OQ-MAD-1 resolution — Sona 2026-04-21):** `transition_status(session_id, new_status, *, cancel_reason: str | None = None)`. When `cancel_reason` is not None, persist it as `cancelReason` on the session doc atomically with the status flip. When None, leave any existing `cancelReason` field unchanged. Kwarg is additive; all existing callers unaffected.
 - **Where:** `tools/demo-studio-v3/session_store.py`. <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §3.
 - **Acceptance:** SE.A.5 passes.
@@ -841,3 +842,7 @@ Unchanged from BD §7. This amendment promotes with the BD ADR; both move to the
 - **Kayn:** on Duong's signal, issue the task-file revision per §4 above. Write a "BD amendments (Sona, 2026-04-20 s3)" block at the end of `plans/2026-04-20-session-state-encapsulation-tasks.md`, plus inline edits. Commit with `chore:` prefix.
 - **Orianna:** fact-check §2 claims against the SE ADR on `feat/demo-studio-v3` as part of the promotion gate.
 - **Camille:** SE.E grep-gate will absorb the two new patterns when SE.E.2 decomposes post-promotion.
+
+### 8. Decision log
+
+- **OQ-MAL-6 / OQ-MAD-1 — RESOLVED — Sona 2026-04-21:** `transition_status` accepts `cancel_reason: str | None = None` as a keyword-only argument. Additive; no existing caller changes. See SE.A.6 signature note above.

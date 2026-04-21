@@ -339,8 +339,8 @@ Per ADR §Test plan I4.
 
 ## Open questions (OQ-MAD-*)
 
-### OQ-MAD-1 — `cancel_reason` kwarg on `session_store.transition_status`
-MAD.C.2 hard-requires `transition_status(sessionId, to_status, cancel_reason=…)`. This is OQ-MAL-6 verbatim (lifecycle ADR §Q), flagged OPEN. **Resolution path:** SE task-file owner (Kayn, existing SE breakdown) adds `cancel_reason: str | None = None` kwarg to SE.A.6 implementation as a non-breaking addition. Requires a one-line amendment to the SE task file — NOT a new ADR. **Escalated to Duong for a yes/no.**
+### OQ-MAD-1 — `cancel_reason` kwarg on `session_store.transition_status` — RESOLVED (Sona 2026-04-21)
+SE.A.6 amended: signature is `transition_status(session_id, new_status, *, cancel_reason: str | None = None)`. Persisted as `cancelReason` on the session doc when set; unchanged when None. Additive — no existing callers affected. See SE ADR §8 decision log.
 
 ### OQ-MAD-2 — Stale-cache window for Anthropic-5xx fallback
 ADR §7 row 1 says "last good cache if within 5 min". MAD.B.6 takes this literally. Confirm 5 min is the intended ceiling (vs. 10 min, vs. TTL × N). Low-stakes; defaulted to 5 min unless Duong overrides.
@@ -355,7 +355,7 @@ The golden regression file requires a reproducible seed. If the existing Session
 
 ## Semantic gaps found in the ADR during breakdown
 
-1. **OQ-MAD-1 (cancel_reason kwarg)** surfaced as an OQ-MAL-6 dependency — the ADR says "flips DB row to cancelled with cancelReason: manual_dashboard" but the SE task file does not yet define the kwarg. Escalated.
+1. **OQ-MAD-1 (cancel_reason kwarg) — RESOLVED (Sona 2026-04-21):** SE.A.6 extended with `cancel_reason: str | None = None` kwarg. See OQ-MAD-1 above and SE ADR §8.
 2. **Idle-duration cell fallback when `idleMinutesAvailable: false`** — ADR §3 shows `—` in the cell; the degraded-pill in tab header is described; but ADR does not specify whether `Sort: idle desc` should treat `null` idle as first or last. **Choice made in MAD.D.3:** treat `null` as last (i.e. known-idle-longest surfaces on top). Flag for QA sign-off.
 3. **Drift flagging on DB Status column** — ADR §3 column list says "Flags drift if `terminated` on Anthropic but not a terminal status in our DB" — visual treatment (red text? icon? tooltip?) not specified. **Choice made in MAD.D.3:** `⚠️` glyph + tooltip "DB out of sync with Anthropic". Flag for QA.
 4. **Audit-log `dbSessionId` on orphan** — ADR §8 payload shows `dbSessionId?` (optional). On orphan termination it's absent. Implemented as-written; no ambiguity.
