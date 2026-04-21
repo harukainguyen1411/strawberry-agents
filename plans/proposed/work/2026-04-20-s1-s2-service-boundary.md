@@ -43,8 +43,8 @@ The session-state ADR's SE.B phase (call-site migration) rewrites every site whe
 
 ### 1.2 What this ADR is NOT
 
-- **NOT** a redesign of S2. S2's spec (`reference/2-config-mgmt.yaml`) is authoritative; where S1 needs a capability S2 doesn't expose, we flag it as a blocker on the S2 side, not work around it.
-- **NOT** a change to the S1 HTTP surface beyond what `reference/1-content-gen.yaml` already prescribes. Session-state ADR §5 and §6.3 already track the spec-drift list; this ADR only adds the items that fall out of config ejection.
+- **NOT** a redesign of S2. S2's spec (`reference/2-config-mgmt.yaml` <!-- orianna: ok — company-os reference spec; lives at missmp/company-os/reference/ -->) is authoritative; where S1 needs a capability S2 doesn't expose, we flag it as a blocker on the S2 side, not work around it.
+- **NOT** a change to the S1 HTTP surface beyond what `reference/1-content-gen.yaml` <!-- orianna: ok — company-os reference spec; lives at missmp/company-os/reference/ --> already prescribes. Session-state ADR §5 and §6.3 already track the spec-drift list; this ADR only adds the items that fall out of config ejection.
 - **NOT** a change to the MCP server (`demo-studio-mcp` <!-- orianna: ok — internal MCP server name in missmp/company-os; not a filesystem path -->). The MCP tools (`get_schema`, `get_config`, `set_config`) already target S2 directly; S1 is not in that path and should not become one.
 - **NOT** a migration plan for existing `config`-bearing session documents. Section 8 covers the backfill-or-orphan question and hands live-data handling to ops.
 
@@ -62,8 +62,8 @@ The session-state ADR's SE.B phase (call-site migration) rewrites every site whe
 **Rule 3 (pointer rule).** `configVersion` is **not** carried on the S1 session doc by default. S1 does not POST to S2 at session creation (per OQ-BD-5 resolution (c)); there is no version to mirror at creation time. The first version is created when the agent's first `set_config` MCP call lands on S2. If a downstream path needs to know "which config version did this session use?", it queries S2 (`GET /v1/config/{sessionId}` → `version`) at the moment of use. If, after this ADR lands, a concrete S1-only caller requires `configVersion` on the session doc (e.g. for a pinned-build audit trail that cannot be reconstructed from S2 events), that caller must justify the field explicitly; otherwise the field is absent. The build-reproducibility argument in the old §5.3 no longer applies to S1 because S1 no longer triggers a translated build — S3 fetches the latest from S2 itself per its own spec (§5.3).
 
 **Rule 4 (enforcement).** Extend the SE.E grep gate with two additional patterns:
-  - Disallow `session\[?["\']config["\']\]?\s*=` (assignment) and `"config"\s*:` as a Firestore write field inside any file under `tools/demo-studio-v3/` other than tests and an explicit migration script.
-  - Disallow literal string `insuranceLine` anywhere under `tools/demo-studio-v3/` (it's not in the S2 schema; it is the canonical symptom of legacy-config drift).
+  - Disallow `session\[?["\']config["\']\]?\s*=` (assignment) and `"config"\s*:` as a Firestore write field inside any file under `tools/demo-studio-v3/` <!-- orianna: ok — grep-gate pattern string; refers to company-os repo not this repo --> other than tests and an explicit migration script.
+  - Disallow literal string `insuranceLine` anywhere under `tools/demo-studio-v3/` <!-- orianna: ok — grep-gate pattern string; refers to company-os repo not this repo --> (it's not in the S2 schema; it is the canonical symptom of legacy-config drift).
 
 Gate exceptions are whitelisted by a single `# azir: config-boundary` comment, mirroring the SE.E convention.
 
@@ -99,7 +99,7 @@ All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-
 | 1987–2001 | `session_history` | reads `cfg = session.get("config") or {}` and `cfg.get("brand", "")` for the summary | **Refactor-to-S2-API-call** — history view fetches the latest config from S2. If version-pinned history is needed, call `GET /v1/config/{sessionId}/versions` (S2) and per-version `GET /v1/config/{sessionId}?version=N`. History is a cold path — N+1 acceptable. |
 | 2055–2065 | `list_sessions` | same brand/market/insuranceLine-from-session-doc pattern as `session.list_recent_sessions` | **Delete from S1 (identity-field extraction)** — list response returns lifecycle-only `SessionSummary` rows: `{sessionId, status, phase, createdAt, updatedAt, managedSessionId?, factoryRunId?, projectId?}`. Consumers that want `brand/market/shortcode` call S2 per session (N+1) or fan out client-side. S2 batch-get remains a deferred ask (§6.1). |
 
-### 3.3 `tools/demo-studio-v3/factory_bridge.py`
+### 3.3 `tools/demo-studio-v3/factory_bridge.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 | Line | Code | Shape | Verdict |
 |---|---|---|---|
@@ -110,7 +110,7 @@ All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-
 | 210–211 | `trigger_factory` | `factory_params = map_config_to_factory_params(config); content = _build_content_from_config(config, factory_params)` | **Delete from S1** — factory call becomes a thin `POST /build {sessionId}` (no `configVersion`, no translated payload). S3 handles the rest. |
 | 250, 253 | `trigger_factory` | `logos = config.get("logos", {})`, `bg_color = config.get("colors", {}).get("primary", ...)` | **Delete from S1** — no config read on the factory path at all. If S1 needs visual context for, e.g., a Slack notification, fetch from S2 (`config_mgmt_client.fetch_config`) on the notification code path — not the build path. |
 
-### 3.4 `tools/demo-studio-v3/factory_bridge_v2.py`
+### 3.4 `tools/demo-studio-v3/factory_bridge_v2.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 | Line | Code | Shape | Verdict |
 |---|---|---|---|
@@ -121,17 +121,17 @@ All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-
 | 118 | `trigger_factory_v2` | `demo = prepare_demo_dict(config)` | **Delete from S1** |
 | 140–143 | `trigger_factory_v2` | `logos = demo.get("logos", {})`, `bg_color = demo.get("colors", {}).get("primary", ...)` | **Delete from S1** |
 
-### 3.5 `tools/demo-studio-v3/factory_v2/validate_v2.py`
+### 3.5 `tools/demo-studio-v3/factory_v2/validate_v2.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 Entire file (73 LOC). Validates `brand`, `persona.{firstName,lastName}`, `colors.primary`, `journey[*].{name,triggerType,triggerEvent,triggerTiming,changeMessage}`. **Delete from S1.** Validation is S2's contract per `POST /v1/config`.
 
-### 3.6 `tools/demo-studio-v3/preview.py`
+### 3.6 `tools/demo-studio-v3/preview.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 | Line | Code | Shape | Verdict |
 |---|---|---|---|
 | 16–22 | `render_preview(config, config_version)` | takes a config dict + version, renders Jinja | **Delete from S1** — preview is S5 scope (iframe) per OQ-BD-3 resolution. S1 does not render previews. Entire `preview.py` file deletes from S1; its owning route (`main.py:1439–1445`) also deletes. |
 
-### 3.7 `tools/demo-studio-v3/config_mgmt_client.py`
+### 3.7 `tools/demo-studio-v3/config_mgmt_client.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 Entire file (109 LOC) is the S1→S2 HTTP client. Currently **imported only by tests** — runtime code never calls it. Two specific concerns:
 
@@ -139,29 +139,29 @@ Entire file (109 LOC) is the S1→S2 HTTP client. Currently **imported only by t
 |---|---|---|---|
 | 71–79 | `fetch_schema()` | `GET /v1/schema` — well-aligned with S2 spec `getSchema` | **Keep** — canonical way S1 obtains the schema if needed. |
 | 82–91 | `fetch_config(sid)` | `GET /v1/config/{session_id}` — well-aligned with S2 spec `getConfig` | **Keep** — this is the integration path §2 Rule 2 mandates. A `version: int \| None = None` query parameter is available for any caller that wants a pinned version; default latest. No build-path caller (per §5.3, S3 fetches its own config); remaining callers are render/history paths. |
-| 94–108 | `patch_config(sid, path, value)` | sends `PATCH /v1/config/{session_id}` with `{updates: [{path, value}]}` | **Delete from S1** — OQ-BD-4 resolution: match S2's contract (no PATCH endpoint). `patch_config` is a phantom against `reference/2-config-mgmt.yaml` and is not called at runtime. Delete the function outright. If S2 ever ships PATCH, re-add with the then-specified shape. |
+| 94–108 | `patch_config(sid, path, value)` | sends `PATCH /v1/config/{session_id}` with `{updates: [{path, value}]}` | **Delete from S1** — OQ-BD-4 resolution: match S2's contract (no PATCH endpoint). `patch_config` is a phantom against `reference/2-config-mgmt.yaml` <!-- orianna: ok — company-os reference spec --> and is not called at runtime. Delete the function outright. If S2 ever ships PATCH, re-add with the then-specified shape. |
 
-### 3.8 `tools/demo-studio-v3/sample-config.json`
+### 3.8 `tools/demo-studio-v3/sample-config.json` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
-105 LOC. Pre-existing "Step 1 cleanup" test (`tests/test_no_local_validation.py:41-47`) already asserts this file must be deleted; Jayce never completed that cleanup. **Delete from S1.** The file is dead.
+105 LOC. Pre-existing "Step 1 cleanup" test (`tests/test_no_local_validation.py:41-47` <!-- orianna: ok — company-os test file -->) already asserts this file must be deleted; Jayce never completed that cleanup. **Delete from S1.** The file is dead.
 
-### 3.9 `tools/demo-studio-v3/dashboard_service.py`
+### 3.9 `tools/demo-studio-v3/dashboard_service.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 No config touches. Dashboard aggregates logs across services (`/logs` endpoints) only. **No change.**
 
-### 3.10 `tools/demo-studio-v3/phase.py`
+### 3.10 `tools/demo-studio-v3/phase.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 No config touches — only reads/writes `phase` field. `phase` is a session-lifecycle field. **No change.**
 
-### 3.11 `tools/demo-studio-v3/agent_proxy.py`
+### 3.11 `tools/demo-studio-v3/agent_proxy.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 No config touches. **No change.**
 
-### 3.12 `tools/demo-studio-v3/logo_upload.py`
+### 3.12 `tools/demo-studio-v3/logo_upload.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 Uploads image bytes to Wallet Studio; returns CDN URL. The caller (agent, via `set_config`) is responsible for persisting that URL into the config on S2. S1 itself never writes `logos` to a session doc. **No change.**
 
-### 3.13 `tools/demo-studio-v3/setup_agent.py`
+### 3.13 `tools/demo-studio-v3/setup_agent.py` <!-- orianna: ok — company-os file; all §3 sub-section file paths are in missmp/company-os -->
 
 System-prompt refers to `set_config`, `get_config`, `get_schema` MCP tools that target S2 directly. Not a config touchpoint in S1 runtime. **No change.**
 
@@ -262,7 +262,7 @@ Per-endpoint latency: one extra GET to S2 per render. For hot paths (status poll
 
 Current: `config = session.get("config", {})` followed by `map_config_to_factory_params(config)` and `_build_content_from_config(config, params)`.
 
-Target (per OQ-BD-6 resolution, authoritative against `tools/demo-factory/api/factory.yaml:192` `required: [sessionId]`):
+Target (per OQ-BD-6 resolution, authoritative against `tools/demo-factory/api/factory.yaml:192` <!-- orianna: ok — company-os reference spec --> `required: [sessionId]`):
 
 ```
 POST /session/{id}/build (S1)
@@ -274,7 +274,7 @@ POST /session/{id}/build (S1)
   └── return accepted
 ```
 
-- **S3 spec cite:** `tools/demo-factory/api/factory.yaml` lines 186–203 define the `/build` POST body as `required: [sessionId]` with an optional `configVersion`. Per Duong's OQ-BD-6 resolution ("Factory always reads the latest version"), S1 supplies `{sessionId}` only; S3 fetches the latest config from S2 itself.
+- **S3 spec cite:** `tools/demo-factory/api/factory.yaml` <!-- orianna: ok — company-os reference spec --> lines 186–203 define the `/build` POST body as `required: [sessionId]` with an optional `configVersion`. Per Duong's OQ-BD-6 resolution ("Factory always reads the latest version"), S1 supplies `{sessionId}` only; S3 fetches the latest config from S2 itself.
 - **All translation deletes:** `map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`, `validate_v2.py`, and every factory-path config read in `factory_bridge.py` / `factory_bridge_v2.py` delete from S1.
 - **Build reproducibility** is no longer an S1 concern. If S3 needs version pinning for reproducibility it handles it via its own `configVersion` parameter against S2.
 
@@ -347,7 +347,7 @@ Phase each endpoint independently:
 - `POST /session` (internal) — flip atomically. Same reasoning.
 - `GET /session/{id}/preview` — **deletes** as an S1 route (OQ-BD-3). Traffic redirect/410 handling is an S5 concern.
 - `GET /session/{id}/status`, `/history`, `/session/{id}` (page) — flip atomically per deploy. Read paths tolerate S2-fetch or fall back to "New Session" on S2 404 / 5xx.
-- `POST /session/{id}/build` — flip atomically to the thin `POST /build {sessionId}` pass-through. S3 is already contract-aligned on `{sessionId}` per `tools/demo-factory/api/factory.yaml:192` (§5.3), so no S3-side coordination is strictly required for payload compatibility — only confirmation that S3's self-fetch path is live. Sona to confirm with S3 team before flip.
+- `POST /session/{id}/build` — flip atomically to the thin `POST /build {sessionId}` pass-through. S3 is already contract-aligned on `{sessionId}` per `tools/demo-factory/api/factory.yaml:192` <!-- orianna: ok — company-os reference spec --> (§5.3), so no S3-side coordination is strictly required for payload compatibility — only confirmation that S3's self-fetch path is live. Sona to confirm with S3 team before flip.
 - `POST /session/{id}/approve` — scheduled for delete per SE.B.8; BD does not change that posture.
 
 ### 8.3 Rollback
@@ -380,15 +380,15 @@ All seven open questions resolved. Revisions incorporated above; this section re
 
 - **OQ-BD-1 — RESOLVED: Strict.** No denormalisation. S1 session doc holds lifecycle fields only (`sessionId`, `createdAt`, `updatedAt`, `status`, `phase`, agent pointer, `factoryRunId`). `brand`, `market`, `languages`, `shortcode` are NOT session-persisted — they are config/agent-input. Any consumer that needs identity fields (`/sessions` list, titles in `main.session_page` / `main.chat`, `main.session_history` summary) fetches from S2. N+1 is accepted for now; S2 batch-get remains a deferred ask (§6.1). Amended sections: §2 Rule 1, §3.14, §5.5, §6.1.
 - **OQ-BD-2 — RESOLVED: Drop.** `GET /session/{id}/status` no longer returns `logos`. Response shrinks to lifecycle-only (`sessionId`, `status`, `phase`, `createdAt`, `updatedAt`, `factoryRunId?`). Aligns with session-state ADR SE.F.3 follow-up. Amended: §3.2 row 1461–1472, §3.14 Refactor entry for `session_status`.
-- **OQ-BD-3 — RESOLVED: Out of scope for S1.** Preview is S5 (iframe; see `reference/5-preview.yaml`). S1 does not track `configVersion` for UI pinning. `configVersion` is not required on the S1 session doc and is removed. Amended: §3.1 `configVersion` write now in Delete list; §5.3 build trigger does not pin version.
+- **OQ-BD-3 — RESOLVED: Out of scope for S1.** Preview is S5 (iframe; see `reference/5-preview.yaml` <!-- orianna: ok — company-os reference spec -->). S1 does not track `configVersion` for UI pinning. `configVersion` is not required on the S1 session doc and is removed. Amended: §3.1 `configVersion` write now in Delete list; §5.3 build trigger does not pin version.
 - **OQ-BD-4 — RESOLVED: Delete.** `config_mgmt_client.patch_config` removed. S2's contract is canonical: `POST /v1/config` full-snapshot with immutable monotonic versioning. Amended: §3.7 row 94–108 → Delete; §6.2.
 - **OQ-BD-5 — RESOLVED: Option (c).** S1 does NOT `POST /v1/config` at session creation. `configVersion` is absent on the session doc; the first config version is produced by the agent's first `set_config` MCP tool call landing on S2. Amended: §4.2 ("REMOVED"), §5.1, §5.5.
-- **OQ-BD-6 — RESOLVED: Confirmed from spec.** `reference/3-factory.yaml` `/build` requestBody schema is `{required: [sessionId]}`. Description: "Factory always reads the latest version; pinning to a historical version is out of scope." S1 passes only `sessionId` to S3. S3 self-fetches config from S2. All S1 translation code deletes. `trigger_factory*` reduces to: read session → `POST /build {sessionId}` → persist `factoryRunId`. Amended: §3.3, §3.4, §3.5, §3.14, §5.3.
+- **OQ-BD-6 — RESOLVED: Confirmed from spec.** `reference/3-factory.yaml` <!-- orianna: ok — company-os reference spec --> `/build` requestBody schema is `{required: [sessionId]}`. Description: "Factory always reads the latest version; pinning to a historical version is out of scope." S1 passes only `sessionId` to S3. S3 self-fetches config from S2. All S1 translation code deletes. `trigger_factory*` reduces to: read session → `POST /build {sessionId}` → persist `factoryRunId`. Amended: §3.3, §3.4, §3.5, §3.14, §5.3.
 - **OQ-BD-7 — RESOLVED: Confirmed.** BD lands before SE.B.2 and SE.B.4. SE.A is additive and proceeds in parallel. SE.B call-site migrations must see the post-BD shape. Amended: §7 sequencing table stands.
 
 **Net scope redefinition (Duong, verbatim):** "we only care about creation of the config and manage sessions of the managed agent." Interpretation locked in: S1 = (a) host the Anthropic managed agent, (b) track the agent's session lifecycle, (c) forward requests to/from the agent. Nothing else. The §3.14 delete list (17 rows) executes this scope.
 
-**See also:** `plans/proposed/2026-04-20-session-state-encapsulation-bd-amendment.md` — companion amendment that names the session-state ADR sections and tasks that change as a consequence of these resolutions.
+**See also:** `company-os/plans/2026-04-20-session-state-encapsulation-bd-amendment.md` <!-- orianna: ok — cross-repo amendment; lives in missmp/company-os --> — companion amendment that names the session-state ADR sections and tasks that change as a consequence of these resolutions.
 
 ## 12. Handoff
 

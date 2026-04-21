@@ -197,7 +197,7 @@ Explicitly out of scope:
 - NEW `company-os/tools/demo-studio-v3/managed_session_monitor.py`
 - MODIFY `company-os/tools/demo-studio-v3/agent_proxy.py` — add `stop_managed_session`.
 - MODIFY `company-os/tools/demo-studio-v3/main.py` — wire monitor startup/shutdown; refactor `cancel_build` to use `stop_managed_session`.
-- MODIFY `company-os/tools/demo-studio-v3/session_store.py` — add terminal-state hook (per session-state-encapsulation ADR).
+- MODIFY `company-os/tools/demo-studio-v3/session_store.py` <!-- orianna: ok — company-os file; exists at feat/demo-studio-v3 per SE ADR; terminal-state hook (MAL.B) depends on SE.A.6 --> — add terminal-state hook (per session-state-encapsulation ADR).
 - MODIFY `company-os/tools/demo-studio-v3/tests/` — new test files per section 10 test strategy.
 
 ## Tasks
@@ -248,7 +248,7 @@ The work splits into two sub-ADRs that ship independently:
 - **Depends on:** none.
 
 #### MAL.0.2 — Confirm `#demo-studio-alerts` Slack channel + bot membership
-- **What:** verify the target Slack channel exists and that the `slack-relay` MCP bot is a member. If not, either request invite or fall back to `#demos` with `[alert]` prefix per ADR §5 fallback.
+- **What:** verify the target Slack channel exists and that the `slack-relay` <!-- orianna: ok — internal MCP server name in missmp/company-os --> MCP bot is a member. If not, either request invite or fall back to `#demos` with `[alert]` prefix per ADR §5 fallback.
 - **Where:** append finding to `company-os/plans/2026-04-20-managed-agent-lifecycle-spike1.md`. <!-- orianna: ok — same future file as MAL.0.1 -->
 - **Why:** ADR §5 / Q2. Without bot membership, MAL.E.2 fails silently in prod.
 - **Acceptance:** channel name locked in for `SLACK_ALERT_CHANNEL` default; bot membership confirmed or fallback chosen.
