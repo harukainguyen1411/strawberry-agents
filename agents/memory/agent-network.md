@@ -190,15 +190,6 @@ The system uses two GitHub identities for PR lifecycle operations:
 
 This model satisfies CLAUDE.md Rule 18 structurally: executor-authored PRs are approved by a distinct GitHub identity, so GitHub's author-cannot-approve-own-PR check passes without requiring human intervention on every PR.
 
-## Plan-authoring freeze (2026-04-21 → smoke-pass)
-
-The pre-commit hook `scripts/hooks/pre-commit-plan-authoring-freeze.sh` (§D12 of `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md`) blocks any newly-added (`A` status) files under `plans/proposed/`. This freeze is temporary and covers the window while the Orianna gate v2 infrastructure (`scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, updated `scripts/plan-promote.sh`) is being built and validated.
-
-- **What is blocked:** Creating new plan files under `plans/proposed/`.
-- **What passes through:** Edits (`M`), moves (`R`), and deletes (`D`) to existing proposed drafts.
-- **Lift condition:** T11.1 smoke test passes end-to-end, then T11.2 removes the hook and commits `chore: lift §D12 plan-authoring freeze`.
-- **Emergency bypass:** Duong (admin identity `harukainguyen1411`) may use the `Orianna-Bypass: <reason>` commit trailer (§D9.1) or temporarily disable the hook.
-
 ## Inbox Protocol
 
 `[inbox]` → read file → update status `pending` → `read` → respond.
