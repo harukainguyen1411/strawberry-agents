@@ -1,21 +1,53 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact consolidation, session 34b4f5e7).
+Last updated: 2026-04-21 (updated from shard ef2bbc31 — fifth pre-compact consolidation, session 0cf7b28e).
+
+---
+
+## PR #61 — Viktor S1-new-flow Wave 2
+
+**Current status (2026-04-21):** MERGEABLE/CLEAN. Talon hotfix landed (`3995de5`) — C1 SSE auth + C2 MCP session_id validation fixed. Akali QA report at `assessments/qa-reports/2026-04-21-s1-new-flow-wave2-pr61.md`. Lucian fidelity-clean. Senna LGTM. **Needs Duong approve+merge under `harukainguyen1411`.**
+**Shards:** ef2bbc31.
+**Next:** Duong merges. Rule 18 blocks agent self-merge.
+
+---
+
+## PR #62 — Rakan Wave 2 xfails
+
+**Current status (2026-04-21):** Open. All F-I xfail tests authored, Senna LGTM.
+**Shards:** ef2bbc31.
+**Next:** Decision on resume — close-and-absorb into #61, or merge standalone.
+
+---
+
+## Akali live e2e QA
+
+**Current status (2026-04-21):** In flight at compact time. Akali dispatched post-deploy against live shipped services (new revisions: S5 00006-57w, S3 00007-qjd, S1 00016-5rw).
+**Shards:** ef2bbc31.
+**Next:** Check Akali output on resume. Dispatch Talon for any fixes found.
+
+---
+
+## Swain Option B impl (vanilla Messages API)
+
+**Current status (2026-04-21):** Plan at `plans/in-progress/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. 60 tasks (Aphelios), 30 test cases (Xayah), all inlined per D1A. Ready for Viktor.
+**Shards:** ef2bbc31.
+**Next:** Assign Viktor once ship state is stable and #61 is merged.
 
 ---
 
 ## Viktor inbox PR
 
 **Current status (2026-04-21):** BLOCKED on PR creation. Implementation done — branch `inbox-watch-v3`, 27/27 tests green. Pre-push hook blocked auto `gh pr create`. Needs manual PR creation by Duong or explicit delegation of the gh pr create call.
-**Shards:** 2cb962cd, 002efe6a, e49b10d8, 31a158e4.
-**Next:** Manually create PR for `inbox-watch-v3`. This is top priority — implementation is done.
+**Shards:** 2cb962cd, 002efe6a, e49b10d8, 31a158e4, ef2bbc31.
+**Next:** Manually create PR for `inbox-watch-v3`. High priority — implementation is done.
 
 ---
 
 ## Orianna-gate-speedups plan impl
 
 **Current status (2026-04-21):** Approved, queued. Plan commit `0d218f4`, OQ decisions folded via `45fcd56`. 16 tasks / 440 min. Body-hash guard, signed-fix commit shape, lock auto-recovery, §D3 enforcement are sub-tasks.
-**Shards:** 31a158e4.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Assign Viktor once inbox PR is handled.
 
 ---
@@ -23,7 +55,7 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 ## Prompt-caching impl
 
 **Current status (2026-04-21):** Karma plan `c796b21` approved. Lux audit (`97a05d5`) identifies 15–25M tokens/month savings via boot-chain reorder + cache_control: ephemeral markers.
-**Shards:** e49b10d8, 31a158e4.
+**Shards:** e49b10d8, 31a158e4, ef2bbc31.
 **Next:** Assign Talon or Viktor to implement per Lux's audit.
 
 ---
@@ -31,7 +63,7 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 ## Staged-scope-guard impl
 
 **Current status (2026-04-21):** Approved by Duong (`8b24ad2`). Addresses 4 git-add-A sweep-up incidents today.
-**Shards:** 31a158e4.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Queue after inbox PR. Assign Ekko or Viktor.
 
 ---
@@ -39,15 +71,15 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 ## Rename-aware pre-lint impl
 
 **Current status (2026-04-21):** Approved (`2a71045`). git-mv full-body bug blocked Ekko #65 for 2h.
-**Shards:** 31a158e4.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Queue after staged-scope-guard (or in parallel).
 
 ---
 
 ## Commit-msg hook for AI co-author trailer
 
-**Current status (2026-04-21):** Karma plan in flight. Two incidents today — Syndra auto-appended `Co-Authored-By: Claude` trailers without instruction; remediated via revert/reapply (`bcc66d1` / `54ac1af`).
-**Shards:** 31a158e4.
+**Current status (2026-04-21):** Karma plan in flight. Syndra def patched with explicit prohibition (`76b3158`). Still need hook to land for permanent enforcement. Pattern recurred in this session.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Assign Ekko to implement hook. Until then: explicitly prohibit co-author trailers in every Syndra delegation prompt.
 
 ---
@@ -55,7 +87,7 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 ## Orianna-Bypass semantic gap ADR
 
 **Current status (2026-04-21):** Open — follow-up ADR needed. Admin `--no-verify` bypass only suppresses signature hook, not structure hook. Both must be explicitly named for a complete bypass. Currently undocumented and fragile.
-**Shards:** 31a158e4.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Commission Swain or Karma for ADR consolidating admin-bypass semantics across all hooks.
 
 ---
@@ -63,7 +95,7 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 ## P2/P3/P1/P4 plan impl
 
 **Current status (2026-04-21):** Still in proposed. Ekko #67 did not reach them. Awaiting Duong explicit call to proceed.
-**Shards:** 31a158e4.
+**Shards:** 31a158e4, ef2bbc31.
 **Next:** Wait for Duong to call the shot on sequencing.
 
 ---
@@ -72,7 +104,7 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 
 **Status:** Open. Plans at `plans/proposed/personal/`: agent-feedback-system (Lux, `b9dbc8c`), retrospection-dashboard (Swain), coordinator-decision-feedback (Swain), daily-agent-repo-audit-routine (Lux), pre-orianna-plan-archive (Karma — implemented via PR #14, needs retroactive sign + promote).
 **Next:** Duong reviews and approves. Use plan-promote.sh for each transition.
-**Shard:** e49b10d8, 31a158e4.
+**Shard:** e49b10d8, 31a158e4, ef2bbc31.
 
 ---
 
@@ -125,4 +157,4 @@ Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact con
 
 **Status:** Open. `plans/approved/work/2026-04-20-session-state-encapsulation.md` rename is staged in Sona's concurrent workspace. Caused Senna learnings write to bounce.
 **Next:** Before next Sona session, verify which branch/state is authoritative and resolve the staged rename. Do not commit to plans/approved/work/ cross-coordinator without checking first.
-**Shard:** e49b10d8, 31a158e4.
+**Shard:** e49b10d8, 31a158e4, ef2bbc31.
