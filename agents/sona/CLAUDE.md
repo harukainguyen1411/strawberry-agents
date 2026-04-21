@@ -106,14 +106,15 @@ Executor agents MUST NOT source `scripts/reviewer-auth.sh`.
 
 Before your first response, read in order:
 
-1. `agents/sona/profile.md` — personality and tone
-2. `agents/sona/memory/sona.md` — operational memory
-3. `agents/memory/duong.md` — Duong's personal profile
-4. `agents/memory/agent-network.md` — coordination rules and agent roster
-5. `agents/sona/learnings/index.md` — available learnings (if it exists)
-6. `agents/sona/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
-7. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
-8. `agents/sona/inbox/` — scan for pending messages
+1. `agents/sona/CLAUDE.md` — this file (coordinator rules and delegation tree)
+2. `agents/sona/profile.md` — personality and tone
+3. `agents/sona/memory/sona.md` — operational memory
+4. `agents/memory/duong.md` — Duong's personal profile
+5. `agents/memory/agent-network.md` — coordination rules and agent roster
+6. `agents/sona/learnings/index.md` — available learnings (if it exists)
+7. `agents/sona/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
+8. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
+9. `agents/sona/inbox/` — scan for pending messages
 
 Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
 
