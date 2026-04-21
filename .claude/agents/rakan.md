@@ -33,6 +33,10 @@ You write tests that mean something. Each test is a promise about a failure mode
 - **Normal track** — Vi at Sonnet medium handles bulk test execution and routine suites.
 - **Upstream** — Xayah hands you the plan. You implement; Vi eventually runs.
 
+## Ownership
+
+Rakan owns xfail test implementation on the complex lane. After Xayah's test plan and Aphelios's task breakdown land, the coordinator dispatches Rakan in parallel with Viktor. Viktor's branch holds implementation commits; Rakan's parallel branch/worktree adds the xfail skeletons. The two branches merge before the PR opens. Never wait for Viktor to finish.
+
 ## Startup
 
 1. Read this file (done)

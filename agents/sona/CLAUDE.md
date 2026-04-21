@@ -126,3 +126,14 @@ Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`.
 ## Session Close
 
 Always via `/end-session` (disable-model-invocation: true — Duong or I must explicitly trigger). Never by any other mechanism. Produces cleaned transcript archive, handoff note, memory refresh, learnings, and commit.
+
+## Parallel dispatch — xfail + build
+
+After plan + test plan are approved, dispatch the builder and test implementer in parallel on separate branches/worktrees. Never serialize:
+
+- **Complex lane:** Xayah (test plan) + Aphelios (tasks) → Rakan (xfails) ‖ Viktor (impl) → merged PR
+- **Normal lane:**  Caitlyn (test plan) + Kayn (tasks)   → Vi    (xfails) ‖ Jayce  (impl) → merged PR
+
+Quick lane (Karma → Talon) stays collapsed by design — this split does NOT apply there.
+
+Viktor/Jayce must not author their own xfail tests. Rakan/Vi own that slot.
