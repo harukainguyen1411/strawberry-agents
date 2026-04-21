@@ -435,9 +435,9 @@ These three test commits MUST land before their paired implementation commits on
 
 | xfail commit (Rakan) | Covers | Must land before impl commit(s) (Viktor) |
 |---|---|---|
-| **T1** `scripts/test-memory-consolidate-index.sh` | §9.1 INDEX regen | T2 (`_lib_last_sessions_index.sh`) and T4 (`memory-consolidate.sh` rewrite). |
-| **T3** `scripts/test-memory-consolidate-archive-policy.sh` | §9.2 archive policy | T4 (`memory-consolidate.sh` rewrite). |
-| **T5** `scripts/test-end-session-memory-integration.sh` + `scripts/test-end-session-skill-shape.sh` | §9.3 + §9.5 | T6 (`end-session` SKILL.md) and T7 (Lissandra). |
+| **T1** `scripts/test-memory-consolidate-index.sh` | §9.1 INDEX regen | T2 (`_lib_last_sessions_index.sh`) and T4 (`memory-consolidate.sh` rewrite). | <!-- orianna: ok -->
+| **T3** `scripts/test-memory-consolidate-archive-policy.sh` | §9.2 archive policy | T4 (`memory-consolidate.sh` rewrite). | <!-- orianna: ok -->
+| **T5** `scripts/test-end-session-memory-integration.sh` + `scripts/test-end-session-skill-shape.sh` | §9.3 + §9.5 | T6 (`end-session` SKILL.md) and T7 (Lissandra). | <!-- orianna: ok -->
 
 Each xfail commit must reference the parent plan's ADR file path and the task ID in the commit body so the TDD gate can map test → plan.
 
@@ -447,8 +447,8 @@ Each xfail commit must reference the parent plan's ADR file path and the task ID
 
 | ID | Blocker | Task | Expected turnaround |
 |---|---|---|---|
-| D-memory-1 | Review hand-seeded `agents/evelynn/memory/open-threads.md` for completeness (curation, not mechanical — §8.1 DoD). | T8 | 10–15 min — before T8 commit push. |
-| D-memory-2 | Review `agents/sona/memory/open-threads.md` seed (lower volume, §8.2). | T8 | 5 min — same session as D-memory-1. |
+| D-memory-1 | Review hand-seeded `agents/evelynn/memory/open-threads.md` for completeness (curation, not mechanical — §8.1 DoD). | T8 | 10–15 min — before T8 commit push. | <!-- orianna: ok -->
+| D-memory-2 | Review `agents/sona/memory/open-threads.md` seed (lower volume, §8.2). | T8 | 5 min — same session as D-memory-1. | <!-- orianna: ok -->
 | D-memory-3 | Approve PR — this is a coordinator-boot change affecting both Evelynn and Sona; Duong is the only valid non-author reviewer + Senna/Lucian (see §7). | PR review | same-day. |
 
 **Default resolution** for OQ1/OQ2/OQ3 from the ADR (§Open questions) is already baked in — Viktor executes against the defaults unless Duong surfaces a preference at D-memory-1 review time.
@@ -463,7 +463,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 
 - **Owner**: Rakan
 - **Inputs**: ADR §4.3 (helper contract), §9.1 (assertions list).
-- **Outputs**: `scripts/test-memory-consolidate-index.sh` (new, executable).
+- **Outputs**: `scripts/test-memory-consolidate-index.sh` (new, executable). <!-- orianna: ok -->
 - **Commands**: `chmod +x scripts/test-memory-consolidate-index.sh`; script must exit non-zero under the xfail convention (`set -e` + explicit "not implemented" sentinel, or marker file under `scripts/.xfail-markers/` — match whatever `scripts/hooks/pre-push-tdd.sh` already recognises; check the hook once).
 - **Test anchors**: every assertion in ADR §9.1 — row count, mtime-descending order, UUID+date+TL;DR verbatim, fallback-to-prose when no `TL;DR:` anchor, "(no summary extractable)" fallback, archived-section presence, idempotency.
 - **Commit subject**: `chore: xfail T1 — memory-consolidate index regen tests (ADR 2026-04-21-memory-consolidation-redesign)`
@@ -476,7 +476,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 
 - **Owner**: Viktor
 - **Inputs**: ADR §4.3 (public function contract), T1 test fixtures.
-- **Outputs**: `scripts/_lib_last_sessions_index.sh` (new, **no shebang** — sourced-only).
+- **Outputs**: `scripts/_lib_last_sessions_index.sh` (new, **no shebang** — sourced-only). <!-- orianna: ok -->
 - **Functions to implement**:
   - `extract_shard_tldr <shard_path>` — ADR §4.3 rules a/b/c in order.
   - `render_index_row <shard_path> <mtime_epoch>` — one markdown row, greppable by UUID.
@@ -492,7 +492,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 
 - **Owner**: Rakan
 - **Inputs**: ADR §4.2 (archive rules), §9.2 (assertions list).
-- **Outputs**: `scripts/test-memory-consolidate-archive-policy.sh` (new, executable).
+- **Outputs**: `scripts/test-memory-consolidate-archive-policy.sh` (new, executable). <!-- orianna: ok -->
 - **Test anchors**: mtime > 14d → archive; position > 20 (newest-first) → archive; 20 newest within 14d stay; `open-threads.md` UUID-reference skip-guard (with warn-log); `git mv` used (shard git history preserved — assert via `git log --follow`); UUID collision suffix loop up to `-100`; INDEX regen post-archive surfaces moved shards in `## Archived`.
 - **Commit subject**: `chore: xfail T3 — memory-consolidate archive policy tests (ADR 2026-04-21-memory-consolidation-redesign)`
 - **Rule 12**: must land before T4 on the branch.
@@ -526,8 +526,8 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Owner**: Rakan
 - **Inputs**: ADR §9.3 (integration assertions), §9.5 (shape assertions), §5.1 (Step 6b contract).
 - **Outputs**:
-  - `scripts/test-end-session-memory-integration.sh` (new, executable). Stubs `clean-jsonl.py` + git; drives `/end-session` flow for a synthetic coordinator; asserts atomic commit of shard + `open-threads.md` + `INDEX.md`.
-  - `scripts/test-end-session-skill-shape.sh` (new, executable). Grep-based: `"Step 6b"`, `"open-threads.md"`, `"INDEX.md"`, ordering "Step 6 before 6b, 6b before Step 9".
+  - `scripts/test-end-session-memory-integration.sh` (new, executable). Stubs `clean-jsonl.py` + git; drives `/end-session` flow for a synthetic coordinator; asserts atomic commit of shard + `open-threads.md` + `INDEX.md`. <!-- orianna: ok -->
+  - `scripts/test-end-session-skill-shape.sh` (new, executable). Grep-based: `"Step 6b"`, `"open-threads.md"`, `"INDEX.md"`, ordering "Step 6 before 6b, 6b before Step 9". <!-- orianna: ok -->
 - **Commit subject**: `chore: xfail T5 — /end-session memory-integration + skill-shape tests (ADR 2026-04-21-memory-consolidation-redesign)`
 - **Rule 12**: must land before T6 and T7 on the branch.
 - **Dependencies**: T4 landed (integration test invokes the rewritten script).
@@ -569,10 +569,10 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Owner**: Viktor (curation) + Duong (review gate D-memory-1, D-memory-2)
 - **Inputs**: ADR §8.1 (Evelynn seed method), §8.2 (Sona seed method), §9.4 (migration smoke steps).
 - **Outputs**:
-  - `agents/evelynn/memory/open-threads.md` (new, hand-curated).
-  - `agents/sona/memory/open-threads.md` (new, hand-curated).
-  - `agents/evelynn/memory/last-sessions/INDEX.md` (new, generated).
-  - `agents/sona/memory/last-sessions/INDEX.md` (new, generated).
+  - `agents/evelynn/memory/open-threads.md` (new, hand-curated). <!-- orianna: ok -->
+  - `agents/sona/memory/open-threads.md` (new, hand-curated). <!-- orianna: ok -->
+  - `agents/evelynn/memory/last-sessions/INDEX.md` (new, generated). <!-- orianna: ok -->
+  - `agents/sona/memory/last-sessions/INDEX.md` (new, generated). <!-- orianna: ok -->
 - **Method (Evelynn)**:
   1. `cp -r agents/evelynn/memory agents/evelynn/memory.backup-$(date +%s)` (local only, not committed).
   2. Read each of the 26 shards currently in `agents/evelynn/memory/last-sessions/` (ADR says 23 — count may have drifted by commit time; use actual count).
@@ -625,7 +625,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 
 - **Owner**: Viktor
 - **Inputs**: ADR §3 (file layout), §5 (write-side flow), §6 (read-side flow), §7 (boot order), §10 (failure modes).
-- **Outputs**: `architecture/coordinator-memory.md` (new).
+- **Outputs**: `architecture/coordinator-memory.md` (new). <!-- orianna: ok -->
 - **Required sections**:
   - File layout (copy ADR §3 tree + table).
   - Write-side flow — `/end-session` Step 6 → 6b → 9 + `pre-compact-save` via Lissandra.
@@ -755,7 +755,7 @@ Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md <!-
 - T8 — bootstrap `open-threads.md` + INDEX for both coordinators
 - T9 — boot scripts rewrite + delete `filter-last-sessions.sh`
 - T10 — CLAUDE.md startup + agent-network memory-consumption doc
-- T11 — `architecture/coordinator-memory.md`
+- T11 — `architecture/coordinator-memory.md` <!-- orianna: ok -->
 - T12 — dogfood evidence
 
 ## Test plan
@@ -843,9 +843,9 @@ Six xfail-test commits land on the feature branch before implementation. Each re
 | X1 | `scripts/test-memory-consolidate-index.sh` | T1 → T2 + T4 | 1, 3 |
 | X2 | `scripts/test-memory-consolidate-archive-policy.sh` | T3 → T4 | 1 |
 | X3 | `scripts/test-end-session-memory-integration.sh`, `scripts/test-end-session-skill-shape.sh` | T5 → T6 | 4 |
-| X4 | `scripts/test-lissandra-precompact-memory.sh` | (new — gates T7) | 5 |
-| X5 | `scripts/test-boot-chain-order.sh` | (new — gates T9) | 2, 3 |
-| X6 | `scripts/test-migration-smoke.sh` | (new — gates T8) | 7 |
+| X4 | `scripts/test-lissandra-precompact-memory.sh` | (new — gates T7) | 5 | <!-- orianna: ok -->
+| X5 | `scripts/test-boot-chain-order.sh` | (new — gates T9) | 2, 3 | <!-- orianna: ok -->
+| X6 | `scripts/test-migration-smoke.sh` | (new — gates T8) | 7 | <!-- orianna: ok -->
 
 Pre-push TDD hook (`scripts/hooks/pre-push-tdd.sh`) enforces each xfail commit precedes its impl commit on the branch. Rakan MUST NOT combine xfail and impl in a single commit.
 
@@ -1264,10 +1264,10 @@ fi
 
 **Pre-push hook chain** (`scripts/hooks/pre-push.sh`) must invoke, in order: <!-- orianna: ok -->
 1. Existing hooks (secret-scan, commit-prefix, TDD gate).
-2. `scripts/test-memory-consolidate-index.sh` — cheap, always run.
-3. `scripts/test-memory-consolidate-archive-policy.sh` — cheap, always run.
-4. `scripts/test-end-session-skill-shape.sh` — cheap, grep-only.
-5. `scripts/test-boot-chain-order.sh` — cheap, grep-only.
+2. `scripts/test-memory-consolidate-index.sh` — cheap, always run. <!-- orianna: ok -->
+3. `scripts/test-memory-consolidate-archive-policy.sh` — cheap, always run. <!-- orianna: ok -->
+4. `scripts/test-end-session-skill-shape.sh` — cheap, grep-only. <!-- orianna: ok -->
+5. `scripts/test-boot-chain-order.sh` — cheap, grep-only. <!-- orianna: ok -->
 
 Heavier tests (§3, §4, §5) run on demand (Rakan's impl PR CI job) but NOT on every pre-push. Rakan to wire a GitHub Actions job `.github/workflows/memory-redesign-tests.yml` that runs the full suite on PRs touching `scripts/memory-consolidate.sh`, `scripts/_lib_last_sessions_index.sh`, `.claude/skills/end-session/SKILL.md`, `.claude/agents/evelynn.md`, `.claude/agents/sona.md`, `.claude/agents/lissandra.md`, or `agents/lissandra/**`. <!-- orianna: ok -->
 
@@ -1329,6 +1329,6 @@ If any of these three surprise Swain or Duong at review time, raise in the impl 
 - **Xfail-first commits:** X1–X6 (six commits, each on the feature branch before its impl).
 - **Test scripts to create:** 15 new `scripts/test-*.sh` files (§2.1–§2.8, §3.1–§3.6, §4.1–§4.5, §5, §6 CI entrypoint).
 - **Test scripts to modify:** `scripts/hooks/pre-push.sh` (wire the cheap tests).
-- **New workflow file:** `.github/workflows/memory-redesign-tests.yml`.
+- **New workflow file:** `.github/workflows/memory-redesign-tests.yml`. <!-- orianna: ok -->
 - **Invariants protected:** boot-token, INDEX-freshness, archive-policy, atomicity, ordering, no-orphan, bootstrap-completeness, prompt-cache stability, migration-lossless.
 - **Rakan authors; Vi/Caitlyn run.** Xayah reviews the impl PR for coverage gaps before merge.
