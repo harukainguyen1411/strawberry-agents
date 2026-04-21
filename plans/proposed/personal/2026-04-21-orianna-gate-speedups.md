@@ -35,9 +35,9 @@ are the scope of this plan.
 
 ## 2. Decision
 
-Ship five independent mechanical fixes to the scripts and hooks directories.
-None touch Orianna's prompt; none change what Orianna checks. All are
-POSIX-portable per Rule 10.
+Ship six independent fixes to the scripts, hooks, and agent-definition directories.
+Five are mechanical process fixes; one is Orianna prompt tuning. All POSIX-portable
+per Rule 10 except the prompt-tuning tasks which modify a markdown agent definition.
 
 1. **Body-hash pre-commit guard** — new hook `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` <!-- orianna: ok -->
    that re-computes the body hash for every staged plan file carrying any
@@ -64,6 +64,15 @@ POSIX-portable per Rule 10.
    (default on for `concern: work`, off for `concern: personal`) before the
    first `claude` call. This is the permanent form of #4; the standalone
    script remains available for manual batch runs over multiple ADRs.
+6. **Orianna prompt tuning** (Sona latency option (c)) — patch `.claude/_script-only-agents/orianna.md` <!-- orianna: ok -->
+   and its plan-check prompt to reduce false-positive citation noise and improve
+   throughput. Three sub-goals: (a) reduce over-citation on prose-mode path tokens
+   (e.g. bare filenames like `main.py` <!-- orianna: ok --> in narrative sentences flagged as unresolvable
+   paths); (b) batch anchor greps so one Orianna pass handles N claims rather than
+   N sequential grep calls; (c) cache claim-contract resolution across iterations of
+   the same plan so a re-sign after a minor body fix does not re-verify unchanged claims.
+   Target file: `.claude/_script-only-agents/orianna.md`. <!-- orianna: ok -->
+   See T-prompt-1/2/3.
 
 ### Body-hash reproducibility — shared dependency for #1 and #2
 
@@ -88,10 +97,9 @@ dependency on the hash pipeline and can ship in any order relative to #1/#2.
 
 ### Scope — out
 
-- Orianna prompt tuning (Sona latency option (c)) — deferred, see §10.
-- New suppression-governance policy — acknowledged in Sona's latency doc §Governance
-  as a separate concern; not in this plan.
-- Any change to what Orianna checks. All fixes are mechanical/process.
+- New suppression-governance policy (full) — count cap, audit trail, and expiry review
+  acknowledged in Sona's latency doc §Governance as a separate concern; not in this plan.
+  Minimal reason-required enforcement is folded in as T11.c (see §Tasks).
 - Sibling `-tasks.md` enforcement (Sona followup #4) — already addressed by
   pre-lint shift-left (PR #15); this plan does not re-touch it.
 
@@ -112,8 +120,13 @@ paired implementation task (Rule 12).
 - [ ] **T9** — Implement the pre-fix script at `scripts/orianna-pre-fix.sh` accepting a plan path and optional concern flag. Infer concern from frontmatter if the flag is absent. Apply rewrites in three passes: pass A is concern-scoped legacy-prefix rewriting only on lines that lack the workspace prefix already; pass B appends `<!-- orianna: ok -->` to lines carrying backticked tokens in a small allowlist (the claude platform docs host, the anthropic docs host, and github); pass C reports question-mark markers in §10 or §11 to stderr without mutating the file. Exit 0 unless invocation error. Emit a rewrites summary to stdout for the caller to capture. kind: implementation. estimate_minutes: 45. Files: `scripts/orianna-pre-fix.sh` (new). DoD: T8 tests pass; a second invocation on the same file produces a zero-diff no-op. <!-- orianna: ok -->
 - [ ] **T10** — Add `--pre-fix` and `--no-pre-fix` flags to `scripts/orianna-sign.sh`. Default ON when plan frontmatter carries `concern: work`; default OFF otherwise. When ON, invoke the pre-fix script before the `claude` call and, if any body edits were produced, mark the run for the shape B commit path from T5. When OFF, preserve today's control flow byte-for-byte. kind: implementation. estimate_minutes: 20. Files: `scripts/orianna-sign.sh` (updated). DoD: manual smoke on a work-concern plan emits one atomic shape B commit; manual smoke on a personal-concern plan emits the unchanged shape A commit.
 - [ ] **T11** — Update `architecture/key-scripts.md` with one paragraph each for the body-hash guard, the pre-fix script, the shape B commit contract, and the stale-lock helper. Update `architecture/plan-lifecycle.md` §D1.2 and §D7.3 to cross-reference the shape B clause and the body-hash guard. kind: docs. estimate_minutes: 15. Files: `architecture/key-scripts.md` (updated), `architecture/plan-lifecycle.md` (updated). DoD: both docs reflect shipped behavior and link back to this plan.
+- [ ] **T11.b** — Grep past fact-check reports under `assessments/plan-fact-checks` <!-- orianna: ok --> for URL-shaped tokens Orianna flagged in the last 30 days. Produce a ranked top-5 hosts table at `assessments/orianna-url-host-frequency-2026-04-21.md`. <!-- orianna: ok --> Output is evidence for a v2 allowlist expansion PR, not a code change in this plan. kind: research. estimate_minutes: 20. Files: `assessments/orianna-url-host-frequency-2026-04-21.md` <!-- orianna: ok --> (new). DoD: top-5 table produced with raw count per host; any host already in the T9 allowlist noted as confirmed.
+- [ ] **T11.c** — Require reason text on `<!-- orianna: ok -->` suppression markers. Extend `scripts/hooks/pre-commit-zz-plan-structure.sh` to reject any new `<!-- orianna: ok -->` marker that lacks a `-- <reason>` suffix. Pattern enforced: `<!-- orianna: ok -- <non-empty reason> -->`. xfail-first: add a plan-fixture test that stages a bare `<!-- orianna: ok -->` and asserts the hook rejects it. Update T9 (batch-fix pre-pass) to emit canned reasons like `-- URL-shaped prose token (claude.com)` when auto-inserting suppressors. kind: implementation. estimate_minutes: 15. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh` (updated), `scripts/orianna-pre-fix.sh` (updated per T9). DoD: bare marker on a newly staged plan line is rejected at commit time; markers with a reason pass; existing bare markers in already-committed files are not retroactively flagged (only staged lines are checked).
+- [ ] **T-prompt-1** — Audit Orianna prompt for over-citation patterns. Read `.claude/_script-only-agents/orianna.md`, <!-- orianna: ok --> sample the last 10 fact-check reports under `assessments/plan-fact-checks/`, <!-- orianna: ok --> categorize false-positive patterns (prose-mode path tokens, URL-tokens, inline code like `main.py` in narrative sentences). Produce a short findings doc at `assessments/orianna-prompt-audit-2026-04-21.md`. <!-- orianna: ok --> No prompt edit yet. kind: research. estimate_minutes: 45. Files: `assessments/orianna-prompt-audit-2026-04-21.md` (new). DoD: findings doc lists at least three false-positive categories with example claims from real reports; recommended prompt patches are listed but not applied.
+- [ ] **T-prompt-2** — Implement prompt-tuning patch based on T-prompt-1 audit. Update `.claude/_script-only-agents/orianna.md` <!-- orianna: ok --> to apply recommendations: tightened claim-extraction rules, anchor-batch lookup instruction, claim-contract caching instruction. xfail-first: a test plan fixture that asserts a prose-mode `main.py` is NOT flagged. Pairs with T-prompt-1. kind: implementation. estimate_minutes: 60. Files: `.claude/_script-only-agents/orianna.md` (updated). <!-- orianna: ok --> DoD: the xfail fixture now passes; at least one false-positive category from T-prompt-1 is eliminated in a manual spot-check; existing Orianna signing smoke test is unaffected.
+- [ ] **T-prompt-3** — Regression-verify prompt changes against past plans. Re-run Orianna sign on 3 recently-signed plans (pick from `plans/implemented/` last 7 days) and diff findings against the original fact-check reports. Expect: fewer false positives, same true positives. Commit the regression report at `assessments/orianna-prompt-regression-2026-04-21.md`. <!-- orianna: ok --> kind: verification. estimate_minutes: 30. Files: `assessments/orianna-prompt-regression-2026-04-21.md` (new). DoD: regression report shows no new false negatives introduced; false-positive count equal or lower than baseline on all three plans.
 
-**Total: 11 tasks, 270 estimate_minutes.**
+**Total: 16 tasks, 440 estimate_minutes.**
 
 ## Test plan
 
@@ -161,26 +174,32 @@ beside their scripts).
   on the first try (T9 + T10).
 - Median sign iterations per ADR drops from ~3 to ~1 on the next batched
   signing session; commits per iteration drop from 2 to 1 for pre-fix cases.
+- Median Orianna single-pass fact-check time drops by ≥25%, or if not,
+  the T-prompt-1 audit doc explains why and defers the target.
 
 ## 10. Open questions
 
-1. **Orianna prompt tuning (Sona latency (c)) deferred.** Explicitly out
-   of scope for this plan. If the mechanical fixes don't bring median
-   sign-time under 5 min per ADR, a separate plan targets the prompt
-   (over-citation reduction, anchor-batch lookups, claim-contract caching).
+1. **Orianna prompt tuning (Sona latency (c)).** If the mechanical fixes don't bring
+   median sign-time under 5 min per ADR, a prompt-level intervention is needed
+   (over-citation reduction, anchor-batch lookups, claim-contract caching). —
+   IN SCOPE — see T-prompt-1/2/3.
 2. **URL-token allowlist scope.** T9 enumerates three well-known prose hosts
    (the claude platform docs, the anthropic docs, and the github host). Are
    there others that have fired in past fact-check reports that should seed
-   the initial list? — LOCKED to this trio for v1; additions go through a
-   follow-up PR with evidence.
+   the initial list? — LOCKED to this trio for v1. Expansion path defined:
+   T11.b produces host-frequency evidence; a v2 allowlist expansion PR follows
+   with that data.
 3. **`lsof` absence on Git Bash Windows.** T7 treats missing `lsof` as
    "cannot verify — do not clear." On Windows this means stale locks are
    never auto-cleared. Accept this for v1; Windows usage of these scripts
-   is rare and manual clearing remains available. — LOCKED.
+   is rare and manual clearing remains available. Strawberry-agents is
+   macOS-primary (Duong's laptops); Windows support is not a goal for this
+   script. — LOCKED.
 4. **Suppression-governance policy.** Sona's latency doc §Governance flags
    that `<!-- orianna: ok -->` markers have no audit / count cap / reason
-   requirement, and T9 will add more of them. Noted but out of scope. —
-   DEFERRED to a separate plan.
+   requirement, and T9 will add more of them. — Minimal reason-required
+   enforcement folded in as T11.c. Full governance (count cap, audit trail,
+   expiry review) remains DEFERRED to a separate plan.
 
 ## 11. References
 
