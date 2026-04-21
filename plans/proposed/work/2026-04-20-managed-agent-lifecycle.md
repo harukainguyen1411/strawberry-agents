@@ -27,8 +27,8 @@ Anthropic Managed Agent sessions created under `MANAGED_AGENT_ID=agent_011Ca9Dk3
 
 Today, Service 1 creates a managed session in two places and almost never tears one down:
 
-- `agent_proxy.py::create_managed_session` — called during session bootstrap.
-- `main.py` line 2046-area — wires the managed session into Firestore and hands it to the browser SSE proxy.
+- `agent_proxy.py::create_managed_session` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> — called during session bootstrap.
+- `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> line 2046-area — wires the managed session into Firestore and hands it to the browser SSE proxy.
 - The only existing stop path is `POST /session/{session_id}/cancel-build` <!-- orianna: ok — HTTP route, not a filesystem path --> (`main.py:2084`), which calls `client.beta.sessions.delete(...)` — but only when the user explicitly cancels a build.
 
 Any other exit path (user closes tab, demo completes, QC fails, backend crashes, build_failed, orphan record) leaves the managed session running until Anthropic internally expires it. We have observed drift between our Firestore `status` and Anthropic's view: partial writes and crashed transitions mean our DB cannot be trusted as source of truth for "what is actually running".
@@ -78,10 +78,10 @@ New file: `company-os/tools/demo-studio-v3/managed_session_monitor.py` <!-- oria
 
 - `ManagedSessionMonitor` class with async `run_forever()` loop.
 - TTL dedup cache: `dict[str, float]` keyed by `managed_session_id`, value = expiry epoch. Warnings suppressed if entry is present and not expired.
-- Started as an asyncio background task in `main.py` FastAPI `startup` event. Cancelled on `shutdown` event.
+- Started as an asyncio background task in `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> FastAPI `startup` event. Cancelled on `shutdown` event.
 - Single-instance assumption: Cloud Run Service 1 runs `--min-instances=1 --max-instances=1`. If that changes, a second instance would double-scan; collision is safe (deletes are idempotent) but warnings could duplicate. Mitigation: migrate dedup cache to Firestore if we ever scale out. Out of scope for this ADR.
 
-New function in `agent_proxy.py`:
+New function in `agent_proxy.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->:
 
 ```python
 async def stop_managed_session(session_id: str, reason: str = "") -> bool:
