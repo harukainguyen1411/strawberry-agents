@@ -51,3 +51,14 @@ When reviewing shell parsers of git-produced data:
 
 - Prior RCE fix on this hook (`0f5dd15`, `cmd | getline` → `getline _ < full_path`) confirmed untouched in PR #15.
 - Lucian's plan-fidelity review approved the PR; Senna's CHANGES_REQUESTED stood independently thanks to the `--lane senna` (`strawberry-reviewers-2`) lane-split that Rule 18/PR #45 incident motivated.
+
+## Follow-up: re-review verdict (15ca3e2, 3f02851)
+
+Talon's fix landed cleanly:
+- Anchored sed verified against 8 hunk-header variants (trailing `+N`, single-line `+N`, pure-deletion `+N,0`, multi-digit, context with `a=b+c`, no-context, boundary cases). All correct.
+- Dropped the gawk 3-arg match() primary entirely — removing dead code rather than fixing it is the right call.
+- R4-trailer regression test (line 1352-1396) reproduces the exact failure mode: initial file ending in `+42` context, then staged append produces a hunk header with `+42` in the xfuncname position. Under greedy sed: staged[] would track line 42 only (beyond EOF), new bad-path line grandfathered, silent exit 0. Under anchored sed: correct start-line captured, rule-4 blocks.
+- Tmpdir fix: `_empty_hooks="$dir/.empty-hooks"` nests inside the per-test repo tmpdir so one `rm -rf "$dir"` cleans both. Fresh run added 0 new `/tmp` directories.
+- 39/39 tests pass. APPROVED at 2026-04-21T06:37:58Z.
+
+Takeaway for future re-reviews: verifying the exact failure mode (not just "new test exists") by running the old buggy pattern against the new test fixture catches ghost-regression cases where a test passes for the wrong reason.
