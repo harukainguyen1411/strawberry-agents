@@ -74,7 +74,7 @@ Based on `platform.claude.com/docs/en/managed-agents/sessions` (fetched 2026-04-
 
 ## 4. Module shape
 
-New file: `company-os/tools/demo-studio-v3/managed_session_monitor.py`
+New file: `company-os/tools/demo-studio-v3/managed_session_monitor.py` <!-- orianna: ok — future file in missmp/company-os -->
 
 - `ManagedSessionMonitor` class with async `run_forever()` loop.
 - TTL dedup cache: `dict[str, float]` keyed by `managed_session_id`, value = expiry epoch. Warnings suppressed if entry is present and not expired.
@@ -178,11 +178,11 @@ Explicitly out of scope:
 
 ## 9. Open questions
 
-**Q1. SDK signatures for list and retrieve.** Does `client.beta.sessions.list()` accept an `agent` filter param? Does `retrieve()` return a `lastActivityAt` / `updated_at` / equivalent timestamp? If neither holds, does `client.beta.sessions.events.list(session_id)` exist to pull the latest event timestamp? Resolution: Spike 1 in section 4. Owner: Kayn / executor. Blocker for implementation.
+**Q1. SDK signatures for list and retrieve.** **DEFERRED to Spike 1 (MAL.0.1):** whether `client.beta.sessions.list()` accepts an `agent` filter param, whether `retrieve()` returns a `lastActivityAt`/`updated_at` equivalent, and whether `client.beta.sessions.events.list(session_id)` exists — all three are resolved by Kayn's SDK inspection in Spike 1. Resolution: see MAL.0.1. Owner: Kayn / executor. Blocker for MAL.D implementation only.
 
-**Q2. Slack alert channel.** Is `#demo-studio-alerts` the correct channel? Does the slack-relay bot have membership? Needs confirmation from Duong before ship. Fallback: reuse `#demos` with a `[alert]` prefix.
+**Q2. Slack alert channel.** **DEFERRED to MAL.0.2:** whether `#demo-studio-alerts` is the correct channel and the `slack-relay` bot has membership is confirmed in MAL.0.2. Fallback: reuse `#demos` with a `[alert]` prefix. Owner: Duong / ops.
 
-**Q3. Terminate on Service 1 shutdown?** When Cloud Run scales Service 1 down or deploys a new revision, should we proactively terminate all active managed sessions? Lean: do **not** terminate on shutdown. Flagged for Duong confirmation.
+**Q3. Terminate on Service 1 shutdown?** **DEFERRED (lean: do NOT terminate).** Cloud Run auto-restart is fast (~60s); in-process scanner handles reaping on next cycle. Duong may override; tracked as out-of-scope for this ADR. If override needed, add SE-style terminal-hook to the SIGTERM handler.
 
 ## 10. Handoff notes
 
@@ -194,7 +194,7 @@ Explicitly out of scope:
 
 ## Appendix: Files touched
 
-- NEW `company-os/tools/demo-studio-v3/managed_session_monitor.py`
+- NEW `company-os/tools/demo-studio-v3/managed_session_monitor.py` <!-- orianna: ok — future file in missmp/company-os; does not exist until MAL.D.2 -->
 - MODIFY `company-os/tools/demo-studio-v3/agent_proxy.py` — add `stop_managed_session`.
 - MODIFY `company-os/tools/demo-studio-v3/main.py` — wire monitor startup/shutdown; refactor `cancel_build` to use `stop_managed_session`.
 - MODIFY `company-os/tools/demo-studio-v3/session_store.py` <!-- orianna: ok — company-os file; exists at feat/demo-studio-v3 per SE ADR; terminal-state hook (MAL.B) depends on SE.A.6 --> — add terminal-state hook (per session-state-encapsulation ADR).
@@ -205,7 +205,7 @@ Explicitly out of scope:
 _Source: `company-os/plans/2026-04-20-managed-agent-lifecycle-tasks.md` in `missmp/company-os`. Inlined verbatim._ <!-- orianna: ok — cross-repo task file; future file in missmp/company-os -->
 
 **ADR:** `plans/proposed/work/2026-04-20-managed-agent-lifecycle.md`
-**Branch:** `feat/demo-studio-v3`
+**Branch:** `feat/demo-studio-v3` <!-- orianna: ok — git branch name in missmp/company-os; not a filesystem path -->
 **Repo:** `missmp/company-os`, all work under `tools/demo-studio-v3/`. <!-- orianna: ok — cross-repo path prefix; all tools/demo-studio-v3/ refs in this Tasks section refer to missmp/company-os -->
 **Sister plans on the same branch:**
 - `plans/proposed/work/2026-04-20-session-state-encapsulation.md` + `…-tasks.md` (SE) — provides `session_store.py` and `session_store.transition_status`. MAL's terminal-state hook (ADR §2.1) plugs into SE.A.6 `transition_status`.
@@ -322,7 +322,7 @@ Depends on SE.A.6 (`session_store.transition_status` exists). If SE slips, MAL.B
 Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to call `agent_proxy.stop_managed_session`. Required for DRY and so the interrupt-before-delete behaviour (MAL.A.4) applies uniformly.
 
 #### MAL.C.1 — Regression test for `/cancel-build` equivalence
-- **What:** add `tests/test_cancel_build_uses_stop_primitive.py`. Tests assert (i) `POST /session/{id}/cancel-build` still returns 200 on `building` status, still sets `_stop_flags[session_id] = True`, still deletes the managed session — but now via `agent_proxy.stop_managed_session` (mock target moves from `main.Anthropic` / `_client.beta.sessions.delete` to `main.stop_managed_session`); (ii) the response body is byte-identical to the pre-refactor baseline; (iii) 5s timeout behaviour preserved.
+- **What:** add `tests/test_cancel_build_uses_stop_primitive.py` <!-- orianna: ok — future company-os test; path relative to tools/demo-studio-v3/ -->. Tests assert (i) `POST /session/{id}/cancel-build` still returns 200 on `building` status, still sets `_stop_flags[session_id] = True`, still deletes the managed session — but now via `agent_proxy.stop_managed_session` (mock target moves from `main.Anthropic` / `_client.beta.sessions.delete` to `main.stop_managed_session`); (ii) the response body is byte-identical to the pre-refactor baseline; (iii) 5s timeout behaviour preserved.
 - **Where:** new test file.
 - **Why:** universal invariant 13 — refactor touching the stop path needs a regression test.
 - **Acceptance:** tests xfail against current inline-delete code; xfail/strict → MAL.C.2.
@@ -333,7 +333,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **What:** in `tools/demo-studio-v3/main.py` <!-- orianna: ok — company-os file --> around lines 2084–2120, replace the inline `_client.beta.sessions.delete(managed_session_id)` block with `await stop_managed_session(managed_session_id, reason="cancel_build")`. Keep the 5s timeout (now enforced inside the primitive). Remove the local `_client` construction if no longer used at that call site.
 - **Where:** `tools/demo-studio-v3/main.py`. <!-- orianna: ok — company-os file -->
 - **Why:** ADR §10 handoff. DRY with scanner path and MAL.B hook.
-- **Acceptance:** MAL.C.1 passes. Pre-existing `tests/test_stop_build_phase.py` passes after mock-target rewrite.
+- **Acceptance:** MAL.C.1 passes. Pre-existing `tests/test_stop_build_phase.py` <!-- orianna: ok — pre-existing company-os test file; path relative to tools/demo-studio-v3/ --> passes after mock-target rewrite.
 - **TDD:** preceded by MAL.C.1.
 - **Depends on:** MAL.C.1.
 
@@ -341,7 +341,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **What:** same pattern as MAL.C.1+C.2 but for the `/session/{id}/close` route at `main.py:2204`. One xfail regression test + one impl commit.
 - **Where:** new test `tests/test_close_uses_stop_primitive.py`; edit `tools/demo-studio-v3/main.py:2200–2215` area. <!-- orianna: ok — company-os file paths -->
 - **Why:** same as MAL.C.2 — DRY and timeout uniformity.
-- **Acceptance:** regression test passes; `test_stop_and_archive.py` mock-target rewritten and passing.
+- **Acceptance:** regression test passes; `test_stop_and_archive.py` <!-- orianna: ok — pre-existing company-os test file relative to tools/demo-studio-v3/tests/ --> mock-target rewritten and passing.
 - **TDD:** xfail-paired test commit precedes impl.
 - **Depends on:** MAL.A.2. Independent of MAL.C.2.
 
@@ -424,7 +424,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 ### MAL.F — FastAPI startup/shutdown wiring
 
 #### MAL.F.1 — xfail test for monitor lifecycle binding
-- **What:** `tests/test_monitor_lifecycle_wiring.py`. Tests: FastAPI `startup` event instantiates `ManagedSessionMonitor` and schedules `run_forever()` as an asyncio background task; `shutdown` event cancels that task; when `MANAGED_SESSION_MONITOR_ENABLED=false`, startup does NOT schedule the task.
+- **What:** `tests/test_monitor_lifecycle_wiring.py` <!-- orianna: ok — future company-os test file relative to tools/demo-studio-v3/ -->. Tests: FastAPI `startup` event instantiates `ManagedSessionMonitor` and schedules `run_forever()` as an asyncio background task; `shutdown` event cancels that task; when `MANAGED_SESSION_MONITOR_ENABLED=false`, startup does NOT schedule the task.
 - **Where:** new test file.
 - **Why:** ADR §4 startup/shutdown model.
 - **Acceptance:** tests fail against current `main.py`; xfail/strict → MAL.F.2.
@@ -444,7 +444,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 ### MAL.G — Config plumbing + startup invariant check
 
 #### MAL.G.1 — xfail test for `MonitorConfig.from_env()` + invariant
-- **What:** `tests/test_monitor_config.py`. Tests: reads each ADR §6 env var with listed default; `IDLE_WARN_MINUTES >= IDLE_TERMINATE_MINUTES` raises `ConfigError`; `SCAN_INTERVAL_SECONDS < 60` raises `ConfigError`; `MANAGED_SESSION_MONITOR_ENABLED` accepts `true/false/1/0` case-insensitive.
+- **What:** `tests/test_monitor_config.py` <!-- orianna: ok — future company-os test file relative to tools/demo-studio-v3/ -->. Tests: reads each ADR §6 env var with listed default; `IDLE_WARN_MINUTES >= IDLE_TERMINATE_MINUTES` raises `ConfigError`; `SCAN_INTERVAL_SECONDS < 60` raises `ConfigError`; `MANAGED_SESSION_MONITOR_ENABLED` accepts `true/false/1/0` case-insensitive.
 - **Where:** new test file.
 - **Why:** ADR §6 invariant check.
 - **Acceptance:** tests fail — `MonitorConfig.from_env()` does not exist; xfail/strict → MAL.G.2.
@@ -464,7 +464,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 ### MAL.H — Integration test + observability
 
 #### MAL.H.1 — Structured-log event assertions (unit)
-- **What:** `tests/test_monitor_observability.py`. Assert that every ADR §10 event type fires exactly once per triggering condition: `managed_session_warned`, `managed_session_terminated`, `orphan_terminated`, `scan_cycle_complete`, `terminal_hook_failed`, `terminal_hook_skipped_no_managed_session`, `slack_enrichment_degraded` (new per BD amendment §2.5). Use `caplog` with a JSON log extractor.
+- **What:** `tests/test_monitor_observability.py` <!-- orianna: ok — future company-os test file relative to tools/demo-studio-v3/ -->. Assert that every ADR §10 event type fires exactly once per triggering condition: `managed_session_warned`, `managed_session_terminated`, `orphan_terminated`, `scan_cycle_complete`, `terminal_hook_failed`, `terminal_hook_skipped_no_managed_session`, `slack_enrichment_degraded` (new per BD amendment §2.5). Use `caplog` with a JSON log extractor.
 - **Where:** new test file.
 - **Why:** ADR §10 observability bullet.
 - **Acceptance:** all log events discoverable by `event_type`.
@@ -472,7 +472,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **Depends on:** MAL.B.2, MAL.D.3, MAL.E.2.
 
 #### MAL.H.2 — Integration test against real Anthropic SDK
-- **What:** `tests/integration/test_stop_managed_session_integration.py`. Creates a throwaway managed session, confirms it's `idle`, calls `stop_managed_session`, then asserts `retrieve()` returns `terminated` (or `404`). S2 stubbed at integration-test boundary (no cross-service HTTP). Skipped when `ANTHROPIC_API_KEY` is absent.
+- **What:** `tests/integration/test_stop_managed_session_integration.py` <!-- orianna: ok — future company-os integration test relative to tools/demo-studio-v3/ -->. Creates a throwaway managed session, confirms it's `idle`, calls `stop_managed_session`, then asserts `retrieve()` returns `terminated` (or `404`). S2 stubbed at integration-test boundary (no cross-service HTTP). Skipped when `ANTHROPIC_API_KEY` is absent.
 - **Where:** new file.
 - **Why:** ADR §10 test strategy layer (iii); BD amendment §2.5 clarification (S2 stubbed, Anthropic is real).
 - **Acceptance:** test passes locally with a real API key; CI skips cleanly when unset.
