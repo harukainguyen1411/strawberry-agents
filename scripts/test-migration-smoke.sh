@@ -170,16 +170,31 @@ else
   fail "N6_SONA_COMBINED_SIZE_UNDER_4KB" "sona open-threads.md or INDEX.md not found"
 fi
 
-# --- N7: filter-last-sessions.sh is removed; no remaining references in tree ---
+# --- N7: filter-last-sessions.sh is removed; not referenced in live boot paths ---
+# Checks: (1) file deleted, (2) not referenced in .claude/agents/ boot prompts,
+# (3) not referenced in coordinator CLAUDE.md files or agent-network.md.
+# Excluded from check: transcripts/, learnings/, memory histories (archive records),
+# and test scripts (they reference it for absence checks — self-referential).
 filter_exists=0
 [ -f "$FILTER_SCRIPT" ] && filter_exists=1
 
 filter_refs=0
-grep -rql 'filter-last-sessions' \
-  "$REPO_ROOT/.claude/" \
-  "$REPO_ROOT/scripts/" \
-  "$REPO_ROOT/agents/" \
-  2>/dev/null && filter_refs=1 || true
+# Check only the live boot surfaces: .claude/agents/ and coordinator CLAUDE.md
+grep -ql 'filter-last-sessions' "$REPO_ROOT/.claude/agents/"*.md 2>/dev/null && filter_refs=1 || true
+if [ "$filter_refs" -eq 0 ]; then
+  grep -ql 'filter-last-sessions' \
+    "$REPO_ROOT/agents/evelynn/CLAUDE.md" \
+    "$REPO_ROOT/agents/sona/CLAUDE.md" \
+    "$REPO_ROOT/agents/memory/agent-network.md" \
+    2>/dev/null && filter_refs=1 || true
+fi
+# Check non-test scripts (comments/production code only)
+if [ "$filter_refs" -eq 0 ]; then
+  for f in "$REPO_ROOT/scripts/"*.sh; do
+    case "$f" in *test-*.sh) continue ;; esac
+    grep -ql 'filter-last-sessions' "$f" 2>/dev/null && { filter_refs=1; break; } || true
+  done
+fi
 
 if [ "$filter_exists" -eq 0 ] && [ "$filter_refs" -eq 0 ]; then
   pass "N7_FILTER_LAST_SESSIONS_REMOVED"

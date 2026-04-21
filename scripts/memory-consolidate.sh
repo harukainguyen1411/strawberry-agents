@@ -182,7 +182,7 @@ if [ -n "${STRAWBERRY_MEMORY_ROOT:-}" ] && [ ! -f "$MEMORY_MD" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# Pre-boot validator (moved from filter-last-sessions.sh)
+# Pre-boot validator
 # Verify sentinel + last-sessions/ exists; log shard counts.
 # ---------------------------------------------------------------------------
 
