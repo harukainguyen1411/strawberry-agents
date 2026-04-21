@@ -4,6 +4,7 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-21 Coordinator parallelism is now mandatory](2026-04-21-coordinator-parallelism-mandatory.md) — "never parallelize same agent" restriction retired; coordinators must maximize parallelism; task independence (not agent identity) is the dispatch criterion.
 - [2026-04-21 Batch admin-bypass for approved→in-progress](2026-04-21-batch-admin-bypass-approved-to-in-progress.md) — when multiple clean plans need the same unguarded phase transition simultaneously, batch all renames + one suppressor edit into a single commit; avoids N sequential hook runs and keeps phase reality atomic.
 - [2026-04-21 ADR scope vs impl surface contract](2026-04-21-adr-scope-vs-impl-surface-contract.md) — plans authored from ADR-level scope without reading target code risk endpoint contract mismatches (e.g. non-streaming vs SSE); executor must validate API signature against actual source before implementing.
 - [2026-04-21 feat/demo-studio-v3 canonical impl base](2026-04-21-feat-demo-studio-v3-canonical-base.md) — all demo-studio-v3 impl agents must base on `feat/demo-studio-v3` (474 commits ahead of main); always inject branch name explicitly in delegation prompt.
