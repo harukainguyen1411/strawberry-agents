@@ -1,6 +1,6 @@
 ---
 title: Orianna claim-contract — concern-based resolution root flip
-status: approved
+status: in-progress
 owner: karma
 created: 2026-04-21
 date: 2026-04-21
