@@ -525,7 +525,7 @@ Covers the 11 delete-rows in §3.14 that are session-creation + factory-translat
   3. `POST /session/new` flow: the Firestore write payload contains NO `config`, NO `configVersion`, NO `brand`/`market`/`languages`/`shortcode` keys (identity fields are agent-input only).
   4. Internal `POST /session` variant: same assertions.
   5. `main.create_new_session_ui` no longer calls `create_session(initial_context=...)` — either the kwarg is gone from the call, or the function signature itself has dropped it (paired w/ SE.A.4).
-- **Acceptance:** all xfail strict. Test file references `plans/approved/work/2026-04-20-s1-s2-service-boundary.md §3.2`.
+- **Acceptance:** all xfail strict. Test file references `plans/approved/work/2026-04-20-s1-s2-service-boundary.md §3.2`. <!-- orianna: ok — future plan location; currently in proposed/work/ during re-sign -->
 - **Commit:** `chore: add xfail tests for main.py session-create config-plumbing deletion (BD.B.1)`.
 - **AI-min:** 30.
 
@@ -676,7 +676,7 @@ Covers the 5 refactor-rows in §3.14 that stay on S1 but rewrite to fetch from S
 ### BD.D.2 — impl: delete `patch_config` + `sample-config.json` (BUILDER) <!-- orianna: ok -->
 - **What:** execute ADR §3.7 row 94–108 + §3.8.
   - Remove `patch_config` function from `config_mgmt_client.py`. <!-- orianna: ok -->
-  - `git rm tools/demo-studio-v3/sample-config.json`.
+  - `git rm tools/demo-studio-v3/sample-config.json`. <!-- orianna: ok — cross-repo file in missmp/company-os; not a local path -->
   - Remove any imports/references of `patch_config` (runtime had none per ADR; test references fold into BD.A.2's "must delete" list).
 - **Acceptance:** BD.D.1 tests pass.
 - **Depends on:** BD.D.1.
