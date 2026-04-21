@@ -9,7 +9,6 @@ amended: 2026-04-21
 orianna_gate_version: 2
 tests_required: true
 tags: [inbox, coordinator, hooks, monitor]
-orianna_signature_approved: ""
 ---
 
 # Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
