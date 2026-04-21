@@ -548,6 +548,385 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Rule 1 — canonical ## Tasks heading
+# (1a) plan with only ## Task breakdown (Foo) variant → BLOCK (exit 1)
+# (1b) plan with both variant and canonical heading → PASS (exit 0)
+# ---------------------------------------------------------------------------
+
+# (1a) variant-only heading
+t1a_dir="$(_setup_repo)"
+mkdir -p "$t1a_dir/plans/proposed"
+cat > "$t1a_dir/plans/proposed/variant-heading.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Variant heading only
+
+## Task breakdown (Aphelios)
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t1a_dir" "plans/proposed/variant-heading.md")"
+_assert "(1a) variant-only ## Task breakdown heading blocks (exit 1)" 1 "$rc"
+rm -rf "$t1a_dir"
+
+# (1b) both variant AND canonical heading → PASS
+t1b_dir="$(_setup_repo)"
+mkdir -p "$t1b_dir/plans/proposed"
+cat > "$t1b_dir/plans/proposed/both-headings.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Both headings
+
+## Task breakdown (notes)
+
+Some prose here.
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t1b_dir" "plans/proposed/both-headings.md")"
+_assert "(1b) plan with both variant and canonical heading passes (exit 0)" 0 "$rc"
+rm -rf "$t1b_dir"
+
+# ---------------------------------------------------------------------------
+# Rule 2 regression pin — table-column estimate (no key:value) → BLOCK
+# ---------------------------------------------------------------------------
+t2r_dir="$(_setup_repo)"
+mkdir -p "$t2r_dir/plans/proposed"
+cat > "$t2r_dir/plans/proposed/table-estimate.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Table estimate only
+
+## Tasks
+
+| Task | estimate_minutes |
+|------|-----------------|
+| T1   | 10              |
+
+- [ ] **T1** — Do the thing. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t2r_dir" "plans/proposed/table-estimate.md")"
+_assert "(2r) task row with table-column estimate but no key:value blocks (exit 1)" 1 "$rc"
+rm -rf "$t2r_dir"
+
+# ---------------------------------------------------------------------------
+# Rule 3 — test-task title qualifier
+# (3a) task titled "**T1** — xfail hook behaviour" (no kind:test, no approved verb) → BLOCK
+# (3b) same task with kind: test on line → PASS
+# (3c) task titled "**T1** — Write xfail for hook" → PASS
+# ---------------------------------------------------------------------------
+
+# (3a) xfail qualifier, no kind:test, no approved verb → BLOCK
+t3a_dir="$(_setup_repo)"
+mkdir -p "$t3a_dir/plans/proposed"
+cat > "$t3a_dir/plans/proposed/test-task-no-verb.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Test task no approved verb
+
+## Tasks
+
+- [ ] **T1** — xfail hook behaviour. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t3a_dir" "plans/proposed/test-task-no-verb.md")"
+_assert "(3a) xfail-qualified task without kind:test or approved verb blocks (exit 1)" 1 "$rc"
+rm -rf "$t3a_dir"
+
+# (3b) xfail qualifier with kind: test → PASS
+t3b_dir="$(_setup_repo)"
+mkdir -p "$t3b_dir/plans/proposed"
+cat > "$t3b_dir/plans/proposed/test-task-kind-test.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Test task with kind:test
+
+## Tasks
+
+- [ ] **T1** — xfail hook behaviour. kind: test. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t3b_dir" "plans/proposed/test-task-kind-test.md")"
+_assert "(3b) xfail-qualified task with kind: test passes (exit 0)" 0 "$rc"
+rm -rf "$t3b_dir"
+
+# (3c) task titled with Write as first word after qualifier → PASS
+t3c_dir="$(_setup_repo)"
+mkdir -p "$t3c_dir/plans/proposed"
+cat > "$t3c_dir/plans/proposed/test-task-write-verb.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Test task with Write verb
+
+## Tasks
+
+- [ ] **T1** — Write xfail for hook. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t3c_dir" "plans/proposed/test-task-write-verb.md")"
+_assert "(3c) Write-prefixed xfail task passes (exit 0)" 0 "$rc"
+rm -rf "$t3c_dir"
+
+# ---------------------------------------------------------------------------
+# Rule 4 — cited backtick paths must exist
+# (4a) plan citing scripts/does-not-exist.sh without suppression → BLOCK
+# (4b) same with <!-- orianna: ok --> on same line → PASS
+# ---------------------------------------------------------------------------
+
+# (4a) missing path, no suppression → BLOCK
+t4a_dir="$(_setup_repo)"
+mkdir -p "$t4a_dir/plans/proposed"
+# Create a real file so repo root is populated for path checks
+mkdir -p "$t4a_dir/scripts"
+touch "$t4a_dir/scripts/real-file.sh"
+git -C "$t4a_dir" add scripts/real-file.sh && git -C "$t4a_dir" commit -q -m "add real file"
+cat > "$t4a_dir/plans/proposed/cite-missing-path.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Cite missing path
+
+## 1. Problem
+
+See `scripts/does-not-exist.sh` for details.
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t4a_dir" "plans/proposed/cite-missing-path.md")"
+_assert "(4a) cited backtick path that does not exist blocks (exit 1)" 1 "$rc"
+rm -rf "$t4a_dir"
+
+# (4b) missing path with orianna:ok suppression → PASS
+t4b_dir="$(_setup_repo)"
+mkdir -p "$t4b_dir/plans/proposed"
+mkdir -p "$t4b_dir/scripts"
+touch "$t4b_dir/scripts/real-file.sh"
+git -C "$t4b_dir" add scripts/real-file.sh && git -C "$t4b_dir" commit -q -m "add real file"
+cat > "$t4b_dir/plans/proposed/cite-missing-suppressed.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Cite missing path suppressed
+
+## 1. Problem
+
+See `scripts/does-not-exist.sh` for details. <!-- orianna: ok -->
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t4b_dir" "plans/proposed/cite-missing-suppressed.md")"
+_assert "(4b) missing backtick path with orianna:ok suppression passes (exit 0)" 0 "$rc"
+rm -rf "$t4b_dir"
+
+# ---------------------------------------------------------------------------
+# Rule 5 — forward self-reference
+# (5a) plan in plans/proposed/personal/2026-04-21-foo.md citing
+#      plans/approved/personal/2026-04-21-foo.md without suppression → BLOCK
+# (5b) same with suppression → PASS
+# ---------------------------------------------------------------------------
+
+# (5a) forward self-reference, no suppression → BLOCK
+t5a_dir="$(_setup_repo)"
+mkdir -p "$t5a_dir/plans/proposed/personal"
+cat > "$t5a_dir/plans/proposed/personal/2026-04-21-foo.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Foo plan
+
+## 1. Problem
+
+This plan will be promoted to `plans/approved/personal/2026-04-21-foo.md`.
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t5a_dir" "plans/proposed/personal/2026-04-21-foo.md")"
+_assert "(5a) forward self-reference without suppression blocks (exit 1)" 1 "$rc"
+rm -rf "$t5a_dir"
+
+# (5b) forward self-reference with suppression → PASS
+t5b_dir="$(_setup_repo)"
+mkdir -p "$t5b_dir/plans/proposed/personal"
+cat > "$t5b_dir/plans/proposed/personal/2026-04-21-foo.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Foo plan
+
+## 1. Problem
+
+This plan will be promoted to `plans/approved/personal/2026-04-21-foo.md`. <!-- orianna: ok -->
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+rc="$(_run_hook_with_staged "$t5b_dir" "plans/proposed/personal/2026-04-21-foo.md")"
+_assert "(5b) forward self-reference with orianna:ok suppression passes (exit 0)" 0 "$rc"
+rm -rf "$t5b_dir"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
