@@ -25,11 +25,18 @@ This is the third iteration of the plan:
 - **v2** (a3ff998): SessionStart + UserPromptSubmit hooks injecting a
   count-and-nudge `additionalContext` reminder. Correct shape, wrong
   latency — superseded before implementation by this v3 amendment.
-- **v3** (this amendment, 2026-04-21): `Monitor` tool running an inbox
+- **v3** (2026-04-21, first amendment): `Monitor` tool running an inbox
   watcher script for the lifetime of the coordinator session. Real-time
   event delivery with no dependency on user turns. Bootstrap via a
   `SessionStart` additionalContext nudge instructing the coordinator to
   invoke `Monitor` on its first turn.
+- **v3.1** (this amendment, 2026-04-21, second amendment): Duong's
+  answers to the v3 gating questions inlined into the design. Archive
+  retention policy added — `inbox/archive/**` entries older than 7 days
+  are deleted on next watcher boot (cleanup runs once per session, at
+  the top of `inbox-watch.sh`, before the initial pending sweep). §8
+  gating block closed; answers preserved as a v3 table in §10 alongside
+  the v1 / v2 tables.
 
 ## 0. Amendment context — why v1 and v2 were insufficient
 
@@ -190,9 +197,30 @@ add one additional `SessionStart` entry for the watcher bootstrap.
 
 ### 3.2 The watcher script — `scripts/hooks/inbox-watch.sh`
 
-POSIX-portable bash (Rule 10 compliance). Two phases:
+POSIX-portable bash (Rule 10 compliance). Three phases, run in order:
 
-**Phase 1: boot-time sweep.** Runs once at script start. Lists
+**Phase 0: archive cleanup (one-shot, per session boot).** Runs once at
+script start, before any emission. Deletes files in
+`agents/<coordinator>/inbox/archive/**` whose mtime is older than 7
+days, then prunes empty month-bucket directories:
+
+```sh
+find "agents/${coord}/inbox/archive" -type f -name '*.md' -mtime +7 -delete 2>/dev/null
+find "agents/${coord}/inbox/archive" -type d -empty -delete 2>/dev/null
+```
+
+`-mtime +7` is POSIX-defined as "more than 7 full 24-hour periods ago"
+relative to the file's mtime — a well-defined wall-clock rule that does
+not drift on DST transitions. The `2>/dev/null` suppresses noise when
+the archive dir does not exist yet (fresh coordinator, first boot). If
+the watcher never boots for > 7 days (e.g. coordinator offline for a
+long trip), cleanup simply runs later on the next boot: no data loss,
+slight retention overshoot. This behaviour is deliberate — we do not
+add a cron, a systemd timer, or a scheduled skill; the watcher is the
+sole enforcer of the retention TTL and it only runs when the
+coordinator is live. See §4.4 for the retention model.
+
+**Phase 1: boot-time pending sweep.** Runs once after Phase 0. Lists
 `agents/<coordinator>/inbox/*.md` (top-level only — `archive/` is
 excluded by pattern, since month-bucket subdirs are not matched by a
 flat glob). For each file with `status: pending` in frontmatter, emit
@@ -217,7 +245,7 @@ it prevents re-emitting on incidental frontmatter edits (e.g., during
 the `/check-inbox` flow we briefly flip `status` before moving the file —
 any inotify event on that edit must not trigger a re-ping).
 
-**Line format (contract):**
+**Line format (contract, settled §10 v3 table Q3):**
 
 ```
 INBOX: <filename> — from <sender> — <priority>
@@ -242,9 +270,11 @@ the Monitor event stream and defeat `/check-inbox`'s archiving flow.
    case-insensitive.
 4. If none resolve, exit 0 silently (no coordinator = no target).
 
-**Opt-out:** if `.no-inbox-watch` exists at repo root, exit 0 silently
-before phase 1. Per-session escape hatch (touch it, restart the
-session; Monitor dies with the session anyway).
+**Opt-out (settled §10 v3 table Q5):** if `.no-inbox-watch` exists at
+repo root, exit 0 silently before Phase 0 (so opt-out also suppresses
+the archive-cleanup sweep — the opt-out is total, not partial). Per-
+session escape hatch (touch it, restart the session; Monitor dies with
+the session anyway).
 
 **Lifecycle:** script runs until Monitor is stopped (TaskStop) or the
 session ends. If `fswatch`/`inotifywait` exits nonzero (rare —
@@ -254,7 +284,9 @@ add internal restart logic — keep the script simple; let the tool
 surface the failure.
 
 **One-shot mode (for tests):** if `INBOX_WATCH_ONESHOT=1` is set, run
-phase 1 only and exit. The regression harness uses this path.
+Phase 0 (archive cleanup) + Phase 1 (pending sweep) and exit — Phase 2
+is skipped. The regression harness uses this path to cover both the
+cleanup and the sweep in a single invocation.
 
 ### 3.3 The bootstrap nudge — `SessionStart` additionalContext
 
@@ -289,6 +321,11 @@ failure (it's visible and self-correcting — the coordinator can
 
 ### 3.4 `/check-inbox` skill — recover and extend
 
+Read-flow disposition is **archive** (settled §10 v3 table Q1) — not
+hard-delete — with a 7-day TTL on archived entries enforced by the
+watcher (§3.2 Phase 0, §4.4). Archive bucket granularity is
+`YYYY-MM/` (settled §10 v3 table Q2).
+
 Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f`, then
 rewrite the disposition step. New behaviour:
 
@@ -318,7 +355,9 @@ scanning the archive a month later (`ls inbox/archive/2026-04/`
 immediately answers "what did I get in April?"). Year buckets
 (`YYYY/`) accumulate too fast; day buckets (`YYYY-MM-DD/`) fragment
 too much. Month also matches how Duong already organizes transcripts
-(daily → month folder on archive).
+(daily → month folder on archive). The 7-day retention (§4.4) means
+each bucket typically holds at most one month's trailing week of read
+messages — small enough that `mv` and `find` stay O(ms).
 
 ### 3.5 `.claude/settings.json` wiring
 
@@ -359,17 +398,22 @@ the session is on a supported platform).
            /agent-ops send                        /check-inbox
 (no file)  ───────────────▶  inbox/<name>.md  ───────────────▶  inbox/archive/YYYY-MM/<name>.md
                              status: pending                     status: read, read_at: ...
-                                    │
-                                    │  (inbox-watch.sh observes, emits Monitor event)
-                                    ▼
-                             coordinator sees
-                             "INBOX: <name> ..."
+                                    │                                           │
+                                    │  (inbox-watch.sh observes)                │  (inbox-watch.sh Phase 0,
+                                    ▼                                           ▼   next session boot,
+                             coordinator sees                               mtime > 7 days:
+                             "INBOX: <name> ..."                            find … -delete)
+                                                                                │
+                                                                                ▼
+                                                                           (no file)
 ```
 
 Invariant: the top level of `agents/<coord>/inbox/` contains **only**
 `status: pending` files. `archive/` contains **only** `status: read`
 files. `/agent-ops send` always writes to `inbox/` (flat, never
-`archive/`). `/check-inbox` is the only writer of `archive/`.
+`archive/`). `/check-inbox` is the only writer of `archive/`. The
+watcher's Phase 0 is the only **deleter** of `archive/` entries (see
+§4.4).
 
 ### 4.2 Timing
 
@@ -394,6 +438,38 @@ watcher's "only emit on `status: pending`" filter keeps the event rate
 bounded. The Monitor auto-kill rule ("noisy monitors are auto-killed")
 should not trigger in practice; if it does, the coordinator restarts
 the Monitor (same mechanic as the initial bootstrap, invoked by hand).
+
+### 4.4 Retention — 7-day TTL on `inbox/archive/**`
+
+Archive retention is **7 days from file mtime**, enforced by the
+watcher's Phase 0 at every session boot (§3.2). Semantics:
+
+- **TTL basis**: file mtime. `/check-inbox` creates the archived file
+  via `mv`; `mv` preserves mtime from the pre-archive file, which was
+  last written when `/check-inbox` rewrote its frontmatter (status →
+  read, read_at: …). So the effective TTL clock starts the moment the
+  coordinator read the message. That is the right anchor: "keep read
+  messages for 7 days after they were read."
+- **Enforcement cadence**: once per session boot of the receiving
+  coordinator. No cron, no systemd timer, no scheduled skill.
+- **Overshoot bound**: if the coordinator session boots every day,
+  retention is 7 days ± hours. If the coordinator stays offline for
+  N days (N > 7), retention overshoots to N days on the late bookings.
+  Next boot catches up; nothing is leaked to a remote system.
+  Acceptable — this is a local audit trail, not a compliance
+  obligation.
+- **Undershoot bound**: never. `-mtime +7` is strictly "more than 7
+  full 24-hour periods" (POSIX), so a file read less than 7×24 h ago
+  cannot be deleted, even if a session boots 6 days 23 hours later.
+- **Opt-out interaction**: if `.no-inbox-watch` exists, the watcher
+  exits before Phase 0, so cleanup is **also** suspended. A user who
+  wants to freeze the archive (e.g. for a specific debug session)
+  gets that by opting out of the whole watcher; there is no finer-
+  grained opt-out for cleanup alone. Documented in §3.2.
+- **No retention on the pending set**: `inbox/*.md` (pending messages)
+  are not subject to any TTL. A message that was never read sits until
+  `/check-inbox` moves it. That is the correct semantic — we must not
+  silently drop unread mail.
 
 ## 5. Acceptance criteria
 
@@ -480,6 +556,24 @@ All criteria empirically testable against a live session.
       in-flight `read` rewrite fails that check; the post-move file is
       no longer in the watched path.)
 
+12. **Archive retention — 7-day TTL on next watcher boot.**
+    - Setup:
+      `agents/<coord>/inbox/archive/2026-03/old-msg.md` with mtime
+      backdated to 10 days ago (e.g. `touch -t` or
+      `-d '10 days ago'`), and
+      `agents/<coord>/inbox/archive/2026-04/fresh-msg.md` with mtime
+      within the last 24 h.
+    - Action: run `scripts/hooks/inbox-watch.sh` with
+      `INBOX_WATCH_ONESHOT=1` (runs Phase 0 then Phase 1).
+    - Expected:
+      (a) `old-msg.md` is deleted.
+      (b) `fresh-msg.md` remains.
+      (c) If `archive/2026-03/` is now empty, the directory itself is
+          also pruned; `archive/2026-04/` survives because it still
+          has a child.
+      (d) Phase 1 still executes correctly afterward (pending sweep
+          unchanged by Phase 0's work).
+
 ## 6. Failure modes and tradeoffs
 
 - **Monitor not available** (Bedrock / Vertex / Foundry / telemetry
@@ -519,6 +613,18 @@ All criteria empirically testable against a live session.
   computation falls back to file mtime's `YYYY-MM`. No failure, but
   sender-side `/agent-ops send` always writes `timestamp:`, so the
   fallback is a belt-and-braces.
+- **Retention TTL + timezone / DST.** `find -mtime +N` uses the file
+  mtime and 24-hour arithmetic against the *current* clock. POSIX
+  guarantees the semantics ("more than N full 24-hour periods ago"),
+  independent of local timezone or DST transitions. Confirmed on
+  macOS BSD `find` and GNU `find` both. No caveat required.
+- **Coordinator offline > 7 days.** If the coordinator session is not
+  booted for longer than the retention window, archive cleanup simply
+  runs at the next boot. Files overshoot the 7-day window by however
+  long the offline period lasted, then are collected in the next
+  sweep. No data loss. No risk of the archive growing unbounded
+  (catch-up is O(n) over the archive tree, and the tree is small —
+  inbox traffic is low volume).
 - **Cross-host sync.** Out of scope. Same as v1 / v2.
 
 ## 7. Out of scope (deferred)
@@ -531,7 +637,7 @@ All criteria empirically testable against a live session.
   lifts; strictly mechanical swap at the bootstrap layer.
 - Windows parity — `scripts/hooks/inbox-watch.sh` will be POSIX, but
   `fswatch`/`inotifywait` detection + PowerShell equivalents are a
-  follow-up. Default: defer (§8 Q4).
+  follow-up. Deferred (settled §10 v3 table Q4).
 - Slack/SMS/push bridges. In-session only.
 - A richer notification schema than the one-line contract (e.g. JSON
   events with structured fields). Keep v3 minimal; revisit if Duong
@@ -539,48 +645,13 @@ All criteria empirically testable against a live session.
 
 ## 8. Gating questions for Duong (v3)
 
-Carry-forward decisions from v1 (table below in §10) remain binding
-unless noted here. New or revisited for v3:
+**Closed.** Duong answered all six v3 gating questions on 2026-04-21.
+Answers are inlined into the design body (§3.2, §3.4, §4.4) and
+preserved in the v3 gating-answers table in §10.
 
-1. **Read-flow disposition — archive vs. hard-delete?**
-   (a) Archive under `inbox/archive/<YYYY-MM>/` with `status: read` +
-       `read_at` (default — full audit trail, browsable).
-   (b) Hard-delete after display (zero clutter, no history).
-   Proposal defaults to (a). Duong's v3 briefing wording
-   ("archived or deleted entirely") signals he is open to either.
-   **Pick one.**
-
-2. **Archive bucket granularity — `YYYY-MM/` / `YYYY/` / flat?**
-   Default: `YYYY-MM/` (§3.4 rationale). Confirm or override.
-
-3. **Monitor event line format.**
-   Default: `INBOX: <filename> — from <sender> — <priority>`.
-   Alternatives:
-   (a) Add message first-line preview (richer but costs stream
-       budget and body may contain noise).
-   (b) Strip priority (shorter but loses the triage hint that
-       Sona/Evelynn priority protocols rely on).
-   (c) JSON-encoded line (structured but requires coordinator to
-       parse; Claude handles JSON fine but adds verbosity).
-   Pick one; proposal defaults to the minimal three-field form.
-
-4. **Windows parity scope.**
-   (a) Defer — mac/linux first, Windows follow-up after v3 is green
-       (proposal default).
-   (b) Bundle — add PowerShell watcher equivalent in the same cut.
-
-5. **Opt-out filename.**
-   (a) `.no-inbox-watch` — explicit scoping, mirrors
-       `.no-precompact-save` (proposal default).
-   (b) `.no-nudges` — shared file for all future nudge mechanisms.
-   Pick one.
-
-6. **Scope of first cut — single commit?**
-   The watcher script, the bootstrap script, the `check-inbox` skill
-   recovery + archive semantics, the `settings.json` wiring, and the
-   unit harness are interlocked (none works in isolation). Proposal:
-   single commit (or a tight stack of PR-gated commits, per the
-   implementer's TDD preference). Confirm.
+No open gating questions remain for this plan. Next transition:
+`proposed → approved` via `scripts/plan-promote.sh`, which runs the
+Orianna gate (Rule 19).
 
 ## Test plan
 
@@ -596,10 +667,26 @@ Three layers of test evidence.
     [^ ]+ — [a-z]+$`.
   - Identity resolution chain: each of the three sources in turn, plus
     the unresolved-exit case.
-  - `.no-inbox-watch` opt-out honored.
-  - `archive/` subdirs are not swept.
+  - `.no-inbox-watch` opt-out honored (and no archive cleanup runs
+    when opted out — Phase 0 is skipped along with everything else).
+  - `archive/` subdirs are not swept by Phase 1.
   - Frontmatter without `status:` field never emits.
   - Frontmatter with `status: read` never emits.
+
+- **Archive-retention unit test (same harness, dedicated case).**
+  - Fixture: archive dir populated with one file mtime-backdated > 7
+    days (`touch -t 202604100000` or equivalent `-mtime +7` satisfier
+    on the test host) and one file with fresh mtime
+    (default `touch`).
+  - Run: `INBOX_WATCH_ONESHOT=1 bash scripts/hooks/inbox-watch.sh`.
+  - Assert:
+    - Stale file gone.
+    - Fresh file present, bit-identical to pre-run state.
+    - Empty month-bucket dir pruned; non-empty bucket retained.
+    - Exit 0; stderr empty (no `find: permission denied` noise).
+  - Edge: no `archive/` dir at all → Phase 0 silently no-ops (the
+    `2>/dev/null` redirect absorbs the "no such file" error from
+    `find`).
 
 - **`/check-inbox` archive-flow test (same harness, separate case).**
   - Create a pending file with a known `timestamp:` (say
@@ -635,10 +722,11 @@ Three layers of test evidence.
 
 ## 9. Handoff
 
-Once Duong answers the v3 gating questions (§8), this plan promotes
-`proposed → approved` via `scripts/plan-promote.sh`, which re-opens
-the Orianna gate (Rule 19). A task-breakdown agent picks up execution
-— plan writer does not assign.
+All v3 gating questions are closed (§8 and §10 v3 table). The next
+step is `scripts/orianna-fact-check.sh` against this plan followed by
+`scripts/plan-promote.sh proposed → approved`, which re-opens the
+Orianna gate (Rule 19). A task-breakdown agent picks up execution
+post-approval — plan writer does not assign.
 
 ## 10. Prior gating answers and v3 status
 
@@ -661,8 +749,19 @@ For completeness:
 
 | # | Question (v2) | v2 proposed default | v3 disposition |
 |---|---|---|---|
-| 1 | Nudge phrasing | `INBOX: <N> pending message(s) for <agent>. Run /check-inbox to read them.` | **Obsolete**: v3 emits per-message Monitor events, not a count. New line contract in §8 Q3. |
-| 2 | Opt-out filename | `.no-inbox-nudge` | **Renamed** to `.no-inbox-watch`; question re-asked in §8 Q5 |
-| 3 | First-cut scope | Single commit | **Carried forward** (§8 Q6) |
-| 4 | Windows parity | Defer | **Carried forward** (§8 Q4) |
-| 5 | Regression guard | Yes, under `scripts/hooks/tests/` | **Carried forward and expanded** (now covers archive-flow as well as watcher) |
+| 1 | Nudge phrasing | `INBOX: <N> pending message(s) for <agent>. Run /check-inbox to read them.` | **Obsolete**: v3 emits per-message Monitor events, not a count. New line contract in v3 table Q3. |
+| 2 | Opt-out filename | `.no-inbox-nudge` | **Renamed** to `.no-inbox-watch`; see v3 table Q5. |
+| 3 | First-cut scope | Single commit | **Carried forward** to v3 table Q6. |
+| 4 | Windows parity | Defer | **Carried forward** to v3 table Q4. |
+| 5 | Regression guard | Yes, under `scripts/hooks/tests/` | **Carried forward and expanded** (watcher + archive-flow + retention). |
+
+### v3 gating answers (approved by Duong 2026-04-21)
+
+| # | Question (v3) | Answer | Where inlined |
+|---|---|---|---|
+| 1 | Read-flow disposition (archive vs. hard-delete) | **Archive** to `inbox/archive/<YYYY-MM>/` with `status: read` + `read_at`. **Additional requirement:** archived entries are auto-deleted after **7 days** (TTL enforced by the watcher's Phase 0 at session boot — see §3.2, §4.4). | §3.2 Phase 0, §3.4, §4.1, §4.4, §5 item 12 |
+| 2 | Archive bucket granularity | **`YYYY-MM/`** month buckets. | §3.4 |
+| 3 | Monitor event line format | **`INBOX: <filename> — from <sender> — <priority>`** (minimal three-field form). | §3.2 Line format block |
+| 4 | Windows parity scope | **Defer.** POSIX-only for v3; PowerShell follow-up after v3 is green. | §7 |
+| 5 | Opt-out filename | **`.no-inbox-watch`** at repo root. Total opt-out (suppresses cleanup *and* sweep *and* live watch). | §3.2 Opt-out block, §4.4 |
+| 6 | Scope of first cut | **Single commit.** Watcher script + bootstrap script + skill recovery (with archive semantics) + `settings.json` wiring + unit harness ship as one interlocked deliverable. | §9 |
