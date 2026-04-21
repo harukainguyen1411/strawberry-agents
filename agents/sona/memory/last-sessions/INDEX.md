@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-22 · 2026-04-22-9835724c · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch)
 - 2026-04-22 · 2026-04-21-c83020ad · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch, plan-in-progress signs)
 - 2026-04-21 · 2026-04-21-da7d5b12 · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch, plan-in-progress signs)
 - 2026-04-21 · 2026-04-21-3f9a8c58 · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch, plan-in-progress signs)
