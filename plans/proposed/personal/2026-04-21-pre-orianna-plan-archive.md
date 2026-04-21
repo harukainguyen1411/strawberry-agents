@@ -25,7 +25,7 @@ in directory listings.
 
 ## 2. Decision
 
-Relocate every pre-Orianna plan into a new top-level plans/pre-orianna/
+Relocate every pre-Orianna plan into a new top-level plans/pre-orianna/ <!-- orianna: ok -- directory path, not file -->
 directory, preserving the original phase as a subfolder (pre-orianna/proposed,
 pre-orianna/approved, pre-orianna/in-progress, pre-orianna/implemented,
 pre-orianna/archived).
@@ -86,7 +86,7 @@ One commit captures all moves. The script is git-mv only; no body edits.
 
 Two hooks, `scripts/hooks/pre-commit-zz-plan-structure.sh` <!-- orianna: ok --> and its predecessor
 `scripts/hooks/pre-commit-t-plan-structure.sh` <!-- orianna: ok -->, both exempt
-plans/_template.md and plans/archived/. Add plans/pre-orianna/ to the same
+plans/_template.md and plans/archived/. Add plans/pre-orianna/ <!-- orianna: ok -- directory path token --> to the same
 exempt case in both hooks so staged renames of pre-Orianna plans do not fail
 structural lint. This is the only hook/script change required.
 
@@ -94,7 +94,7 @@ The promote-guard at `scripts/hooks/pre-commit-plan-promote-guard.sh` <!-- orian
 NOT fire on this move — its trigger condition is a delete from
 plans/proposed/*.md paired with an add in
 plans/{approved,in-progress,implemented,archived}/*. Destination
-plans/pre-orianna/* is none of those, so the guard is silent by design.
+plans/pre-orianna/* <!-- orianna: ok -- glob pattern, not file path --> is none of those, so the guard is silent by design.
 
 `scripts/plan-promote.sh` <!-- orianna: ok --> is unaffected: it only accepts source paths
 from proposed, approved, or in-progress phase dirs. It will never see a
@@ -104,7 +104,7 @@ pre-orianna path.
 the phase directories, not the archive sibling.
 
 `architecture/plan-lifecycle.md` <!-- orianna: ok --> gets a one-paragraph note pointing
-readers to plans/pre-orianna/ for grandfathered plans. No other architecture
+readers to plans/pre-orianna/ <!-- orianna: ok -- directory path token --> for grandfathered plans. No other architecture
 docs reference the phase directories in a way that needs updating.
 
 CLAUDE.md — no change needed. The File Structure table describes plans/ with
@@ -141,7 +141,7 @@ low-risk.
 
 - [ ] **T1** — Identify pre-Orianna plans and write the move list to a tmp file. kind: chore. estimate_minutes: 5. Files: none (transient tmp). DoD: list contains 131 entries, each an absolute path to a plan file lacking the v2 gate field.
 - [ ] **T2** — Add a pre-orianna case to the exempt branch in both plan-structure hooks (the current zz hook and the legacy t hook). kind: refactor. estimate_minutes: 10. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh` (updated), `scripts/hooks/pre-commit-t-plan-structure.sh` (updated). DoD: both hooks skip pre-orianna files the same way they skip archived files; smoke-tested by staging a known-bad plan at a pre-orianna destination and confirming the hook returns 0.
-- [ ] **T3** — Create pre-orianna phase subfolders and move all 131 pre-Orianna plans via git mv, preserving phase-subdir. kind: chore. estimate_minutes: 20. Files: 131 plan files renamed into plans/pre-orianna/<phase>/. DoD: git status shows 131 renames; git diff --cached --stat shows zero content changes; git log --follow on three sampled plans still traverses pre-move history.
+- [ ] **T3** — Create pre-orianna phase subfolders and move all 131 pre-Orianna plans via git mv, preserving phase-subdir. kind: chore. estimate_minutes: 20. Files: 131 plan files renamed into plans/pre-orianna/<phase>/ <!-- orianna: ok -- directory path pattern -->. DoD: git status shows 131 renames; git diff --cached --stat shows zero content changes; git log --follow on three sampled plans still traverses pre-move history.
 - [ ] **T4** — Update `architecture/plan-lifecycle.md` — add a Grandfathered-plans note pointing to the pre-orianna directory. kind: docs. estimate_minutes: 5. Files: `architecture/plan-lifecycle.md` (updated). DoD: the doc's Grandfather-rules section mentions the new directory with a one-line pointer.
 - [ ] **T5** — Commit, push the branch, open the PR, request Senna and Lucian review. kind: chore. estimate_minutes: 5. Files: none new. DoD: PR opened with a move summary; dual reviewers requested; no self-merge.
 
@@ -160,7 +160,7 @@ behavior change and no new code paths. Sanity checks instead of tests:
 
 ## Architecture impact
 
-No new architecture concepts introduced. `architecture/plan-lifecycle.md` receives a one-paragraph note (T4) pointing readers to the `plans/pre-orianna/` directory for grandfathered plans. This is a documentation-only update; no lifecycle rules, script interfaces, or behavioral contracts change.
+No new architecture concepts introduced. `architecture/plan-lifecycle.md` receives a one-paragraph note (T4) pointing readers to the plans/pre-orianna <!-- orianna: ok -- directory path prose, not backtick to avoid awk getline crash on dir --> directory for grandfathered plans. This is a documentation-only update; no lifecycle rules, script interfaces, or behavioral contracts change.
 
 ## Rollback
 
