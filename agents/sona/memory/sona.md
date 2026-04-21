@@ -41,7 +41,7 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 
 ## Workspace-specific knowledge
 
-- **Always `git pull` first on `company-os/` and `api/` before any implementation work.** Per Duong (2026-04-21): these two sub-repos drift the fastest; stale checkouts cause merge hell. Build this into the first task of every implementation delegation that touches `~/Documents/Work/mmp/workspace/company-os/` or `~/Documents/Work/mmp/workspace/api/`.
+- **Always `git pull` first on any target repo before implementation work.** Per Duong (2026-04-21): standard for all repos — workspace sub-repos (`company-os/`, `api/`, `mcps/`, `ops/`, etc.) and strawberry-agents alike. Stale checkouts cause merge hell. Build `git pull` into the first step of every implementation delegation.
 - **Workspace deny-all gitignore:** `~/Documents/Work/mmp/workspace/` ignores `*` with allowlist. Never `git add -A` there — untracked files get wiped by `git reset --hard` if ever force-staged. Recovery tag: `recovery-point-2026-04-20` in workspace reflog.
 - **AI-native time estimates:** plan budgets are in minutes, not hours. Translate human-authored plans before delegating.
 - **PR scope discipline:** always `gh pr diff --name-only` before declaring a PR done. Fresh branch cherry-picks beat ad-hoc cleanups when a branch has drifted.
