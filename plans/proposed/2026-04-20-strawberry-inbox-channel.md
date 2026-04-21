@@ -1,6 +1,6 @@
 ---
 title: Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
-status: approved
+status: proposed
 concern: personal
 owner: azir
 created: 2026-04-20
@@ -9,7 +9,6 @@ amended: 2026-04-21
 orianna_gate_version: 2
 tests_required: true
 tags: [inbox, coordinator, hooks, monitor]
-orianna_signature_approved: "sha256:d5979ae9013e1af1748366f0f0b837047082730681eb35a9640b7abcbee90e4a:2026-04-21T03:59:37Z"
 ---
 
 # Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
