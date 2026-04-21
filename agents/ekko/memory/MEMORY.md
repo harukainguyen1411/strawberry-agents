@@ -57,6 +57,8 @@
 
 - 2026-04-21 (ekko — Sona dispatch): Re-signed MAD + BD at approved after Yuumi's Tasks inlining (commits 26bfe59/1fbbec8). Recovery: moved each plan back to proposed/work/, changed status to proposed, fixed 2 block findings in BD (path-self-ref suppressor + cross-repo git rm suppressor), signed approved + promoted to approved + signed in_progress + promoted to in-progress. Both plans now in plans/in-progress/work/. MAD approved sig: b6e239b, in_progress sig: 23b9673, promotion: 465c01a. BD approved sig: eea4a43, in_progress sig: 2ae4b37, promotion: 2d0fbe0. Key learning: orianna-signature-guard hook requires signing commit to touch ONLY the signature line — commit suppressor fixes separately before signing.
 
+- 2026-04-21 (ekko — Sona dispatch): ship-day deploy infra (B1/B4/B5). Worktree company-os-ship-day off integration/demo-studio-v3-waves-1-4. Three ops: commits on chore/ship-day-deploy-infra: f5ba7e7 (min=max=1 pin), e745de7 (MAL+MAD env vars dark-launch), ab3f569 (rollback.sh). Not pushed — awaiting Viktor MAD.B + Sona review before merge into integration.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
