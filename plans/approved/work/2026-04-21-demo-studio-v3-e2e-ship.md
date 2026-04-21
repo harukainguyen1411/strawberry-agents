@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 orianna_gate_version: 2
 complexity: complex
 concern: work
@@ -23,16 +23,16 @@ tests_required: true
 
 ## 0. Context
 
-Four sibling ADRs converge on the same branch — `feat/demo-studio-v3` at `company-os/tools/demo-studio-v3/` — and together constitute a shippable end-to-end product. This plan is not a new feature; it is the **integration contract and ship gate** that sequences their landing, defines the E2E narrative that must pass before `MANAGED_AGENT_DASHBOARD` flips to default-on, and specifies rollback.
+Four sibling ADRs converge on the same branch — `feat/demo-studio-v3` at `company-os/tools/demo-studio-v3/` — and together constitute a shippable end-to-end product. This plan is not a new feature; it is the **integration contract and ship gate** that sequences their landing, defines the E2E narrative that must pass before `MANAGED_AGENT_DASHBOARD` flips to default-on, and specifies rollback. <!-- orianna: ok -->
 
 The four ADRs are:
 
-- **SE** — `plans/proposed/work/2026-04-20-session-state-encapsulation.md` (still `proposed/`; signing in flight). Extracts `session_store.py` as the single Firestore boundary; locks the `SessionStatus` enum to `{configuring, building, built, qc_passed, qc_failed, build_failed, completed, cancelled}`; introduces `transition_status(..., cancel_reason=...)`.
-- **BD** — `plans/approved/work/2026-04-20-s1-s2-service-boundary.md` (approved; Orianna-signed). Ejects all config state + translation from S1; enforces "S1 = session lifecycle + agent hosting only"; extends the SE grep-gate.
-- **MAL** — `plans/approved/work/2026-04-20-managed-agent-lifecycle.md` (approved). Eager terminal-state teardown via `transition_status` hook + in-process idle scanner; shared `managed_session_client.py` wrapper.
-- **MAD** — `plans/approved/work/2026-04-20-managed-agent-dashboard-tab.md` (+ `-tasks.md`) (approved). Second `/dashboard` tab listing live Anthropic managed sessions with two-source enrichment join; per-row terminate action behind a confirmation modal.
+- **SE** — `plans/proposed/work/2026-04-20-session-state-encapsulation.md` (still `proposed/`; signing in flight). Extracts `session_store.py` as the single Firestore boundary; locks the `SessionStatus` enum to `{configuring, building, built, qc_passed, qc_failed, build_failed, completed, cancelled}`; introduces `transition_status(..., cancel_reason=...)`. <!-- orianna: ok -->
+- **BD** — `plans/approved/work/2026-04-20-s1-s2-service-boundary.md` (approved; Orianna-signed). Ejects all config state + translation from S1; enforces "S1 = session lifecycle + agent hosting only"; extends the SE grep-gate. <!-- orianna: ok -->
+- **MAL** — `plans/approved/work/2026-04-20-managed-agent-lifecycle.md` (approved). Eager terminal-state teardown via `transition_status` hook + in-process idle scanner; shared `managed_session_client.py` wrapper. <!-- orianna: ok -->
+- **MAD** — `plans/approved/work/2026-04-20-managed-agent-dashboard-tab.md` (+ `-tasks.md`) (approved). Second `/dashboard` tab listing live Anthropic managed sessions with two-source enrichment join; per-row terminate action behind a confirmation modal. <!-- orianna: ok -->
 
-Current code state on `feat/demo-studio-v3` (verified 2026-04-21 during plan authoring — see §1.3 for HEAD SHAs): MAD is the furthest along — route scaffolding, `async_ttl_cache.py`, and the Managed Agents tab UI are committed in the local worktree at `~/Documents/Work/mmp/workspace/company-os-mad-xfail` on branch `chore/mad-a1-a3-d6-xfail`. BD deletion work has not started. SE `session_store.py` does not yet exist on the branch. MAL `managed_session_client.py` and `managed_session_monitor.py` do not yet exist on the branch.
+Current code state on `feat/demo-studio-v3` (verified 2026-04-21 during plan authoring — see §1.3 for HEAD SHAs): MAD is the furthest along — route scaffolding, `async_ttl_cache.py`, and the Managed Agents tab UI are committed in the local worktree at `~/Documents/Work/mmp/workspace/company-os-mad-xfail` on branch `chore/mad-a1-a3-d6-xfail`. BD deletion work has not started. SE `session_store.py` does not yet exist on the branch. MAL `managed_session_client.py` and `managed_session_monitor.py` do not yet exist on the branch. <!-- orianna: ok -->
 
 Duong's directive for this plan: **"All other services are already available and this is already possible."** The E2E is shippable today in the sense that every external dependency (Anthropic managed agents, S2 `demo-config-mgmt`, S3 `demo-factory-cloud`, slack-relay MCP, Firestore) is live. What is missing is the internal wiring across SE/BD/MAL/MAD, the tests that prove the wiring holds, and the gate that decides the feature flag is ready to flip.
 
@@ -51,24 +51,24 @@ This ADR does not re-decide anything the four sibling ADRs already decided. It o
 
 | Repo / worktree | Branch | HEAD SHA | Status |
 |---|---|---|---|
-| `company-os/` | `feat/demo-studio-v3` | `13fc893` | clean; "chore: promote lifecycle BD amendment to approved" |
-| `company-os-mad-xfail/` (worktree) | `chore/mad-a1-a3-d6-xfail` | `1de8549` | MAD.A.1/A.2/A.3/A.4 + MAD.D.1-D.6 committed; `test-results.json` + `test-run-history.json` dirty |
-| `api/` | `main` | `4056ac9` | clean |
-| `mcps/` | `ws-mcp-param-type-guards` | `4ccf08d` | unrelated branch; slack-relay MCP already in place |
-| `ops/` | `main` | `854445c` | unrelated work |
+| `company-os/` | `feat/demo-studio-v3` | `13fc893` | clean; "chore: promote lifecycle BD amendment to approved" | <!-- orianna: ok -->
+| `company-os-mad-xfail/` (worktree) | `chore/mad-a1-a3-d6-xfail` | `1de8549` | MAD.A.1/A.2/A.3/A.4 + MAD.D.1-D.6 committed; `test-results.json` + `test-run-history.json` dirty | <!-- orianna: ok -->
+| `api/` | `main` | `4056ac9` | clean | <!-- orianna: ok -->
+| `mcps/` | `ws-mcp-param-type-guards` | `4ccf08d` | unrelated branch; slack-relay MCP already in place | <!-- orianna: ok -->
+| `ops/` | `main` | `854445c` | unrelated work | <!-- orianna: ok -->
 
 ### 1.2 Sub-repos touched by the E2E flow
 
-- **`company-os/tools/demo-studio-v3/`** — S1. Owns all changes in this plan. Single Cloud Run service `demo-studio` per `deploy.sh`.
-- **`company-os/tools/demo-config-mgmt/`** — S2. No code changes required; S1's `config_mgmt_client.fetch_config(sessionId)` hits it. Already deployed at `https://demo-config-mgmt-4nvufhmjiq-ew.a.run.app` per S1's `deploy.sh` env wire.
-- **`company-os/tools/demo-factory-cloud/`** — S3. No code changes required; S1's new `trigger_factory` is a thin `POST /build {sessionId}` per BD §5.3. Already deployed at `https://demo-factory-4nvufhmjiq-ew.a.run.app`.
-- **`company-os/tools/demo-studio-mcp/`** — MCP server. No code changes; already targets S2 directly per its existing tool definitions.
-- **`company-os/tools/demo-preview/`** — S5. Out of scope per BD OQ-BD-3. This plan does not migrate the preview route away from S1 — that handoff is tracked separately (see OQ-SHIP-4).
-- **`mcps/slack-relay/`** — slack-relay MCP, already live; MAL scanner posts to `#demo-studio-alerts` via it.
+- **`company-os/tools/demo-studio-v3/`** — S1. Owns all changes in this plan. Single Cloud Run service `demo-studio` per `deploy.sh`. <!-- orianna: ok -->
+- **`company-os/tools/demo-config-mgmt/`** — S2. No code changes required; S1's `config_mgmt_client.fetch_config(sessionId)` hits it. Already deployed at `https://demo-config-mgmt-4nvufhmjiq-ew.a.run.app` per S1's `deploy.sh` env wire. <!-- orianna: ok -->
+- **`company-os/tools/demo-factory-cloud/`** — S3. No code changes required; S1's new `trigger_factory` is a thin `POST /build {sessionId}` per BD §5.3. Already deployed at `https://demo-factory-4nvufhmjiq-ew.a.run.app`. <!-- orianna: ok -->
+- **`company-os/tools/demo-studio-mcp/`** — MCP server. No code changes; already targets S2 directly per its existing tool definitions. <!-- orianna: ok -->
+- **`company-os/tools/demo-preview/`** — S5. Out of scope per BD OQ-BD-3. This plan does not migrate the preview route away from S1 — that handoff is tracked separately (see OQ-SHIP-4). <!-- orianna: ok -->
+- **`mcps/slack-relay/`** — slack-relay MCP, already live; MAL scanner posts to `#demo-studio-alerts` via it. <!-- orianna: ok -->
 
 ### 1.3 Pre-existing MAD work on the worktree
 
-Committed on `chore/mad-a1-a3-d6-xfail` (base: `feat/demo-studio-v3@13fc893`):
+Committed on `chore/mad-a1-a3-d6-xfail` (base: `feat/demo-studio-v3@13fc893`): <!-- orianna: ok -->
 
 ```
 1de8549 test(demo-studio-v3): remove xfail markers from MAD.D.6 — all 5 tests green
@@ -142,7 +142,7 @@ Strictly ordered by earliest-mergeable-without-breaking-main. Each row is indepe
 |---|---|---|
 | **W0** | MAL.0.1 spike appendix committed; MAD.0.1 / MAD.0.2 errands done; SE.0.1 / SE.0.2 audit | — |
 | **W1** | SE.A.1 → SE.A.6 (session_store scaffold + dataclasses + create/get/update/transition_status) | W0 |
-| **W2** | BD delete-from-S1 Wave A: `sample-config.json`, `validate_v2.py`, `preview.py` + `/session/{id}/preview` route, `patch_config` fn (removable-without-call-site-change items) | W1 (not strictly required but avoids rebase) |
+| **W2** | BD delete-from-S1 Wave A: `sample-config.json`, `validate_v2.py`, `preview.py` + `/session/{id}/preview` route, `patch_config` fn (removable-without-call-site-change items) | W1 (not strictly required but avoids rebase) | <!-- orianna: ok -->
 | **W3** | SE.A.7 → SE.A.8 (list_sessions); MAL.A.1 → MAL.A.4 (stop_managed_session + wrapper); MAL.C.1 → MAL.C.3 (refactor /cancel-build, /close to use wrapper) | W1 |
 | **W4** | SE.B.2 (main.py call-site migration) AND BD delete-from-S1 Wave B (main.py create-session paths, session_page/chat/history brand fetches refactored to S2) — **single coordinated PR** | W1, W2, W3 |
 | **W5** | SE.B.4 (factory_bridge*.py migration) AND BD delete-from-S1 Wave C (map_config_to_factory_params, _build_content_from_config, prepare_demo_dict deleted) — **single coordinated PR** | W4 |
@@ -152,7 +152,7 @@ Strictly ordered by earliest-mergeable-without-breaking-main. Each row is indepe
 | **W9** | MAL.H.1 / MAL.H.2 (observability + integration test); MAD.F.1 / MAD.F.2 (integration E2E); MAD.G.1 (runbook doc) | W6, W7 |
 | **W10** | **Ship gate §4** — flip `MANAGED_AGENT_DASHBOARD=1` as default in deploy.sh | W9 |
 
-Waves W2 and W6+W7 may be executed in parallel provided the worktree-checkout rule holds (single branch `feat/demo-studio-v3`; serialised merges via CI).
+Waves W2 and W6+W7 may be executed in parallel provided the worktree-checkout rule holds (single branch `feat/demo-studio-v3`; serialised merges via CI). <!-- orianna: ok -->
 
 ## 3. E2E narrative
 
@@ -163,9 +163,9 @@ The shippable E2E is one continuous user journey, traced across SE/BD/MAL/MAD on
 1. **Session creation.** User (Duong, via the Slack `/demo` command) posts `brand=Allianz, market=DE, languages=[de, en]` to the demo-studio Slack entry point.
    - Service 1 `POST /session/new` — SE-aligned: writes a bare lifecycle doc to `demo-studio-sessions` via `session_store.create_session(slack_user_id, slack_channel, slack_thread_ts)`. **No `config`, no `configVersion`, no `brand`/`market`/`languages`/`shortcode` on the session doc** (BD Rule 1).
    - S1 boots an Anthropic managed agent via `agent_proxy.create_managed_session`; seeds it with identity fields as agent-init metadata (BD §5.1). The `managedSessionId` is written back to the session doc via `session_store.update_session`.
-   - S1 does **not** `POST /v1/config` at this point (BD OQ-BD-5 resolution (c)). S2 has no config for this session until the agent's first `set_config` MCP call lands.
+   - S1 does **not** `POST /v1/config` at this point (BD OQ-BD-5 resolution (c)). S2 has no config for this session until the agent's first `set_config` MCP call lands. <!-- orianna: ok -->
 
-2. **Agent configures via MCP.** The managed agent calls `set_config` → S2 `POST /v1/config` directly via the `demo-studio-mcp` server. S1 is not in this path. S2 writes `configs/{sessionId}` version 1.
+2. **Agent configures via MCP.** The managed agent calls `set_config` → S2 `POST /v1/config` directly via the `demo-studio-mcp` server. S1 is not in this path. S2 writes `configs/{sessionId}` version 1. <!-- orianna: ok -->
 
 3. **Build trigger.** User approves; UI posts `POST /session/{id}/build`.
    - S1 handler: `session_store.transition_status(sessionId, "building")` (CAS enforced per SE §4.3). Then a thin `POST /build {sessionId}` to S3 per BD §5.3. **No translation, no `map_config_to_factory_params`, no `configVersion` pin** (BD §3.3/§3.4). S3 fetches config from S2 itself.
@@ -176,7 +176,7 @@ The shippable E2E is one continuous user journey, traced across SE/BD/MAL/MAD on
    - Anthropic session deleted eagerly. Cost bounded.
 
 5. **Dashboard visibility.** Operator opens `/dashboard`, clicks the Managed Agents tab.
-   - `GET /api/managed-sessions` (MAD route). `managed_session_client.list_active()` hits Anthropic. For each returned row, `asyncio.gather` of (a) `session_store.batch_get_by_managed_ids` (lifecycle enrichment: slackChannel, slackUserId, dbStatus), (b) `config_mgmt_client.fetch_config(sessionId)` (S2 enrichment: brand only). Orphan rows (no Firestore match) render with `— ORPHAN`; cold rows (S2 404) render `—` with tooltip.
+   - `GET /api/managed-sessions` (MAD route). `managed_session_client.list_active()` hits Anthropic. For each returned row, `asyncio.gather` of (a) `session_store.batch_get_by_managed_ids` (lifecycle enrichment: slackChannel, slackUserId, dbStatus), (b) `config_mgmt_client.fetch_config(sessionId)` (S2 enrichment: brand only). Orphan rows (no Firestore match) render with `— ORPHAN`; cold rows (S2 404) render `—` with tooltip. <!-- orianna: ok -->
    - Response is cached 10s via `async_ttl_cache`. Auto-refresh polls every 10s while tab is visible.
 
 6. **Idle scanner kicks in (for long-running sessions).** A long-running session (user started it, forgot to close it) trips the MAL scanner's 60min warn threshold → one slack warning to `#demo-studio-alerts` (MAL §5). At 120min idle → `agent_proxy.stop_managed_session` + `session_store.transition_status(sessionId, "cancelled", cancel_reason="idle_timeout")`.
@@ -200,19 +200,19 @@ The shippable E2E is one continuous user journey, traced across SE/BD/MAL/MAD on
 
 ## 4. Ship gate
 
-`MANAGED_AGENT_DASHBOARD=1` must be the **default** in `company-os/tools/demo-studio-v3/deploy.sh` before a release is cut. The flag ships default-off until this gate is green.
+`MANAGED_AGENT_DASHBOARD=1` must be the **default** in `company-os/tools/demo-studio-v3/deploy.sh` before a release is cut. The flag ships default-off until this gate is green. <!-- orianna: ok -->
 
 ### 4.1 Per-service green-check list
 
-All items must be green on `feat/demo-studio-v3@HEAD` before flipping the flag. Each is owned by the corresponding ADR's task file; this plan only enumerates.
+All items must be green on `feat/demo-studio-v3@HEAD` before flipping the flag. Each is owned by the corresponding ADR's task file; this plan only enumerates. <!-- orianna: ok -->
 
 **S1 — `demo-studio` Cloud Run service:**
 
 - [ ] SE.A unit tests all pass (dataclasses, create/get/update/transition_status, list_sessions).
-- [ ] SE.B migration tests all pass (every `main.py` / `auth.py` / `factory_bridge*.py` / `dashboard_service.py` call-site rewired through `session_store`; old `session.py` deleted or re-export-only).
+- [ ] SE.B migration tests all pass (every `main.py` / `auth.py` / `factory_bridge*.py` / `dashboard_service.py` call-site rewired through `session_store`; old `session.py` deleted or re-export-only). <!-- orianna: ok -->
 - [ ] SE.C migration script dry-run report shows zero heuristic-unresolved rows on the current `demo-studio-sessions` collection snapshot (or all unresolved rows are explicitly hand-walked and documented in the deploy runbook).
-- [ ] SE.E.2 grep-gate green on the branch: no `from google.cloud import firestore` outside `session_store.py` (one `# azir: boundary` exception); no `session\[?["\']config["\']\]?\s*=` assignments outside tests/migrations; no literal `insuranceLine` anywhere under `tools/demo-studio-v3/`; no `from config_mgmt_client import fetch_config` outside the MAD allowlist + existing S1 callers.
-- [ ] BD delete-from-S1 complete: `sample-config.json`, `validate_v2.py`, `preview.py`, `map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`, `patch_config` all absent. Pre-existing test `tests/test_no_local_validation.py` passes without skip.
+- [ ] SE.E.2 grep-gate green on the branch: no `from google.cloud import firestore` outside `session_store.py` (one `# azir: boundary` exception); no `session\[?["\']config["\']\]?\s*=` assignments outside tests/migrations; no literal `insuranceLine` anywhere under `tools/demo-studio-v3/`; no `from config_mgmt_client import fetch_config` outside the MAD allowlist + existing S1 callers. <!-- orianna: ok -->
+- [ ] BD delete-from-S1 complete: `sample-config.json`, `validate_v2.py`, `preview.py`, `map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`, `patch_config` all absent. Pre-existing test `tests/test_no_local_validation.py` passes without skip. <!-- orianna: ok -->
 - [ ] MAL unit tests all pass (stop_managed_session idempotency, ManagedSessionMonitor decision matrix, Slack enrichment two-source join, MonitorConfig invariant).
 - [ ] MAL.0.1 spike appendix exists and documents idle-timestamp resolution (path a/b/c).
 - [ ] MAL.0.2 confirms `#demo-studio-alerts` + slack-relay bot membership, or fallback channel committed to `SLACK_ALERT_CHANNEL` default.
@@ -228,13 +228,13 @@ All items must be green on `feat/demo-studio-v3@HEAD` before flipping the flag. 
 
 **CI gates:**
 
-- [ ] `tdd-gate.yml` green — every impl commit on the branch preceded by an xfail test commit.
-- [ ] `e2e.yml` green — Playwright smoke on stg includes the MAD tab path.
+- [ ] `tdd-gate.yml` green — every impl commit on the branch preceded by an xfail test commit. <!-- orianna: ok -->
+- [ ] `e2e.yml` green — Playwright smoke on stg includes the MAD tab path. <!-- orianna: ok -->
 - [ ] Pre-merge Senna (code) + Lucian (plan-fidelity) reviews approved.
 
 ### 4.2 Release criteria
 
-A single release PR from `feat/demo-studio-v3` → `main` once the §4.1 list is green. The release PR body must link:
+A single release PR from `feat/demo-studio-v3` → `main` once the §4.1 list is green. The release PR body must link: <!-- orianna: ok -->
 
 1. The MAL.0.1 spike appendix.
 2. The SE.C migration dry-run report.
@@ -246,15 +246,15 @@ Per CLAUDE.md Rule 18, merge requires one distinct-identity review + all checks 
 
 ### 4.3 Flag-flip commit
 
-After the release PR merges, a **separate** follow-up PR flips `MANAGED_AGENT_DASHBOARD=1` in `deploy.sh` (or the equivalent Cloud Run env var in the `set-env-vars` line). This is a one-line change. Wave W10.
+After the release PR merges, a **separate** follow-up PR flips `MANAGED_AGENT_DASHBOARD=1` in `deploy.sh` (or the equivalent Cloud Run env var in the `set-env-vars` line). This is a one-line change. Wave W10. <!-- orianna: ok -->
 
 This keeps the PR that deploys the code atom-ically separable from the PR that exposes it to operators — if the deploy smoke surfaces a hidden regression, reverting the flag-flip leaves the code in place for triage.
 
 ## 5. E2E smoke test surface
 
-Runs on stg after every deploy that touches `feat/demo-studio-v3`; required for prod flip per CLAUDE.md Rule 17.
+Runs on stg after every deploy that touches `feat/demo-studio-v3`; required for prod flip per CLAUDE.md Rule 17. <!-- orianna: ok -->
 
-Smoke script lives under `company-os/tools/demo-studio-v3/tests/smoke/test_e2e_ship.py` (added by this plan's implementers, owner TBD by Evelynn). Not a pytest-marker on the existing suite — a standalone script runnable via `python tests/smoke/test_e2e_ship.py --env=stg`.
+Smoke script lives under `company-os/tools/demo-studio-v3/tests/smoke/test_e2e_ship.py` (added by this plan's implementers, owner TBD by Evelynn). Not a pytest-marker on the existing suite — a standalone script runnable via `python tests/smoke/test_e2e_ship.py --env=stg`. <!-- orianna: ok -->
 
 ### 5.1 Scenarios
 
@@ -275,11 +275,11 @@ Each scenario is ~30–60s wall-clock against stg. The smoke creates real manage
 
 ### 5.2 Prod smoke
 
-S1, S3, S4, S5, S6 only (no S2 MCP call, no S7 orphan injection, no S8 scanner patch). On prod-smoke failure, `scripts/deploy/rollback.sh` auto-invokes per CLAUDE.md Rule 17.
+S1, S3, S4, S5, S6 only (no S2 MCP call, no S7 orphan injection, no S8 scanner patch). On prod-smoke failure, `scripts/deploy/rollback.sh` auto-invokes per CLAUDE.md Rule 17. <!-- orianna: ok -->
 
 ## 6. Deployment sequencing
 
-S1 is a single Cloud Run service (`demo-studio`, project `mmpt-233505`, region `europe-west1`) deployed via `company-os/tools/demo-studio-v3/deploy.sh`. S2/S3/S4/S5 are already deployed and unchanged.
+S1 is a single Cloud Run service (`demo-studio`, project `mmpt-233505`, region `europe-west1`) deployed via `company-os/tools/demo-studio-v3/deploy.sh`. S2/S3/S4/S5 are already deployed and unchanged. <!-- orianna: ok -->
 
 ### 6.1 Deploy order
 
@@ -287,8 +287,8 @@ Only one service deploys: `demo-studio`. A single `gcloud run deploy` per wave-b
 
 | Wave on main | Deploy? | Reason |
 |---|---|---|
-| W1 (SE.A) | Yes | `session_store` is additive; old `session.py` still serves traffic; safe to canary. |
-| W2 (BD Wave A: passive deletes) | Yes | `sample-config.json`, `validate_v2.py`, `preview.py`, `patch_config` have no runtime callers; `/preview` route returns 410 (see OQ-SHIP-4 for handoff to S5). |
+| W1 (SE.A) | Yes | `session_store` is additive; old `session.py` still serves traffic; safe to canary. | <!-- orianna: ok -->
+| W2 (BD Wave A: passive deletes) | Yes | `sample-config.json`, `validate_v2.py`, `preview.py`, `patch_config` have no runtime callers; `/preview` route returns 410 (see OQ-SHIP-4 for handoff to S5). | <!-- orianna: ok -->
 | W3 (MAL.A + SE.A.8 + MAL.C refactor) | Yes | wrapper + refactored routes are internal; no external surface change. |
 | W4 (SE.B.2 + BD main.py sites) | **Canary** | first user-facing change. Deploy with `--no-traffic` + 10% traffic split for 1h smoke before 100%. |
 | W5 (SE.B.4 + BD factory_bridge) | **Canary** | factory path changes from translated to thin pass-through. Requires S3 team confirmation that S3 self-fetch is live (OQ-SHIP-2). 10% traffic split for 2h. |
@@ -300,7 +300,7 @@ Only one service deploys: `demo-studio`. A single `gcloud run deploy` per wave-b
 
 ### 6.2 Single-instance assumption
 
-MAL §4 and MAD §6 both assume Cloud Run is pinned to `--min-instances=1 --max-instances=1`. Current `deploy.sh` does not set these flags explicitly (they default to Cloud Run's `min=0, max=100`). **This is a gap** and is raised as OQ-SHIP-1.
+MAL §4 and MAD §6 both assume Cloud Run is pinned to `--min-instances=1 --max-instances=1`. Current `deploy.sh` does not set these flags explicitly (they default to Cloud Run's `min=0, max=100`). **This is a gap** and is raised as OQ-SHIP-1. <!-- orianna: ok -->
 
 ### 6.3 Env-var changes in deploy.sh
 
@@ -315,7 +315,7 @@ MANAGED_SESSION_MONITOR_ENABLED=true,
 MANAGED_AGENT_DASHBOARD=0,  <!-- orianna: ok — env var name; flipped to 1 in W10 -->
 ```
 
-`CONFIG_MGMT_URL`, `FACTORY_URL`, `PREVIEW_URL`, `VERIFICATION_URL`, `WALLET_STUDIO_BASE_URL` — all already present. No new secrets; `CONFIG_MGMT_TOKEN` is already bound via `secrets-mapping.txt`.
+`CONFIG_MGMT_URL`, `FACTORY_URL`, `PREVIEW_URL`, `VERIFICATION_URL`, `WALLET_STUDIO_BASE_URL` — all already present. No new secrets; `CONFIG_MGMT_TOKEN` is already bound via `secrets-mapping.txt`. <!-- orianna: ok -->
 
 ## 7. Data migration + backfill coordination
 
@@ -323,12 +323,12 @@ Two migrations converge. They must run in a specific order.
 
 ### 7.1 SE.C — status-enum migration
 
-Owner: SE task file. Script: `company-os/tools/demo-studio-v3/scripts/migrate_session_status.py`.
+Owner: SE task file. Script: `company-os/tools/demo-studio-v3/scripts/migrate_session_status.py`. <!-- orianna: ok -->
 
 - Reads every doc in `demo-studio-sessions`.
 - Applies the SE §4.2 mapping: `approved` → `configuring`, `complete` → `completed`, `failed` → `build_failed`, `archived`+`outputUrls` → `completed`|`cancelled` per heuristic.
 - Idempotent on re-run.
-- Dry-run mode first; production run logged + report committed under `company-os/tools/demo-studio-v3/docs/session-store-audit.md`.
+- Dry-run mode first; production run logged + report committed under `company-os/tools/demo-studio-v3/docs/session-store-audit.md`. <!-- orianna: ok -->
 
 ### 7.2 BD — legacy-config orphan
 
@@ -341,10 +341,10 @@ Per BD §8.1, recommendation B (orphan). **No backfill of embedded `config` to S
 
 ### 7.3 Migration order
 
-1. **Before W4 deploy:** run `migrate_session_status.py --dry-run` on staging. Review report.
-2. **Between W4 deploy and W5 deploy:** run `migrate_session_status.py` on staging. Smoke.
-3. **Before W4 prod deploy:** run `migrate_session_status.py --dry-run` on prod. Review report.
-4. **During W4 prod deploy window:** Slack-hand-walk active sessions per §7.2; run `migrate_session_status.py` on prod immediately after canary flips to 100%.
+1. **Before W4 deploy:** run `migrate_session_status.py --dry-run` on staging. Review report. <!-- orianna: ok -->
+2. **Between W4 deploy and W5 deploy:** run `migrate_session_status.py` on staging. Smoke. <!-- orianna: ok -->
+3. **Before W4 prod deploy:** run `migrate_session_status.py --dry-run` on prod. Review report. <!-- orianna: ok -->
+4. **During W4 prod deploy window:** Slack-hand-walk active sessions per §7.2; run `migrate_session_status.py` on prod immediately after canary flips to 100%. <!-- orianna: ok -->
 
 ### 7.4 Coordination with other ADRs
 
@@ -358,10 +358,10 @@ Each wave is independently revertible; no wave's rollback is blocked by a later 
 
 | Wave | Rollback | Impact |
 |---|---|---|
-| W1 (SE.A) | `git revert <sha>` on main; redeploy | `session_store.py` disappears; no call-sites use it yet. Safe. |
+| W1 (SE.A) | `git revert <sha>` on main; redeploy | `session_store.py` disappears; no call-sites use it yet. Safe. | <!-- orianna: ok -->
 | W2 (BD Wave A) | Revert commit that deletes the four files; redeploy | `/preview` route returns to old behaviour; no code calls `patch_config`. Safe. |
 | W3 (MAL.A + SE.A.8 + MAL.C refactor) | Revert + redeploy | `cancel-build` and `close` go back to inline delete; wrapper removed. Safe. |
-| W4 (SE.B.2 + BD main.py) | Revert + redeploy; re-run `migrate_session_status.py --reverse` (script adds reverse-mapping mode — OQ-SHIP-3) | Traffic switches back to `session.py` / direct-Firestore. BD-deleted lines regenerate. **Data risk**: enum values mid-revert. Canary traffic split keeps this to 10%. |
+| W4 (SE.B.2 + BD main.py) | Revert + redeploy; re-run `migrate_session_status.py --reverse` (script adds reverse-mapping mode — OQ-SHIP-3) | Traffic switches back to `session.py` / direct-Firestore. BD-deleted lines regenerate. **Data risk**: enum values mid-revert. Canary traffic split keeps this to 10%. | <!-- orianna: ok -->
 | W5 (SE.B.4 + BD factory) | Revert + redeploy | Factory path reverts to translated. S3 must continue to accept translated payloads — confirm with S3 team before W5 (see OQ-SHIP-2). |
 | W6 (MAL full) | Revert + redeploy; OR set `MANAGED_SESSION_MONITOR_ENABLED=false` via `gcloud run services update` (no code change) | Scanner + terminal hook disabled; eager teardown via inline deletes still works via MAL.C refactor which stays live. |
 | W7 (MAD full) | Revert + redeploy; OR keep code + flag off (`MANAGED_AGENT_DASHBOARD=0`) | UI tab disappears; routes return 404. |
@@ -373,7 +373,7 @@ Each wave is independently revertible; no wave's rollback is blocked by a later 
 
 If a prod smoke fails at W4–W10, the composite rollback path is:
 
-1. `scripts/deploy/rollback.sh` auto-triggers (CLAUDE.md Rule 17).
+1. `scripts/deploy/rollback.sh` auto-triggers (CLAUDE.md Rule 17). <!-- orianna: ok -->
 2. `gcloud run services update-traffic demo-studio --to-revisions=PREVIOUS=100` routes 100% back to the pre-deploy revision.
 3. Slack alert to `#demo-studio-alerts` + Duong + Heimerdinger.
 4. Post-mortem runbook entry committed within 24h.
@@ -390,7 +390,7 @@ SE.C enum migration is idempotent but not losslessly reversible — the mapping 
 
 Gating questions. Each carries a **LOCKED** decision, a **DEFERRED** flag with a trigger, or an **OPEN** label requiring a Duong decision before W-n commences. Using the canonical Duong decision format.
 
-**OQ-SHIP-1. Cloud Run min-instances pinning.** MAL and MAD both assume `--min-instances=1 --max-instances=1`; current `deploy.sh` does not set these, defaulting to Cloud Run's `min=0, max=100`. In-process scanner dedup cache and MAD list cache both break on multi-instance: warnings duplicate, cache coherence is lost.
+**OQ-SHIP-1. Cloud Run min-instances pinning.** MAL and MAD both assume `--min-instances=1 --max-instances=1`; current `deploy.sh` does not set these, defaulting to Cloud Run's `min=0, max=100`. In-process scanner dedup cache and MAD list cache both break on multi-instance: warnings duplicate, cache coherence is lost. <!-- orianna: ok -->
 
 ```
 OQ-SHIP-1. Pin demo-studio Cloud Run to min=max=1?
@@ -420,7 +420,7 @@ OQ-SHIP-3. Add a --reverse mode to migrate_session_status.py for W4 rollback?
 Pick: b — the snapshot is cheap, universal, and works for any rollback scenario (not just enum), and doesn't require writing reverse-mapping logic that would only be exercised under duress. §7.3 wave note already recommends the dry-run → snapshot → run → smoke sequence; this just codifies it.
 ```
 
-**OQ-SHIP-4. `/session/{id}/preview` route deprecation during W2.** BD §3.6 deletes `preview.py` outright. Operators may have existing bookmarks or preview-tab inline previews that link to `/session/{id}/preview` on S1.
+**OQ-SHIP-4. `/session/{id}/preview` route deprecation during W2.** BD §3.6 deletes `preview.py` outright. Operators may have existing bookmarks or preview-tab inline previews that link to `/session/{id}/preview` on S1. <!-- orianna: ok -->
 
 ```
 OQ-SHIP-4. How to handle /session/{id}/preview deprecation at W2?
@@ -467,7 +467,7 @@ Per CLAUDE.md Rule 12 (TDD) + Rule 13 (regression). This plan itself is an orche
 - **T1 — Unit coverage from sibling ADRs.** Green-check items in §4.1 constitute the unit-test surface; each sibling task file owns its own xfail-impl pairs. This plan does not duplicate them.
 - **T2 — Integration test: MAL.H.2 stop_managed_session round-trip.** Real Anthropic API key, throwaway session, stop → retrieve → assert terminated or 404. Owner: MAL task file. Gate-list item in §4.1.
 - **T3 — Integration test: MAD.F.1 end-to-end list + terminate.** Real Anthropic, Firestore emulator, stubbed S2. Asserts list shows the session, terminate flips DB + writes audit log + invalidates cache. Owner: MAD task file. Gate-list item in §4.1.
-- **T4 — E2E smoke test: `tests/smoke/test_e2e_ship.py`.** Ten scenarios S1–S10 per §5.1. Runs against stg after every deploy that touches `feat/demo-studio-v3`; runs against prod (subset — §5.2) after prod deploys; prod-smoke failure triggers `scripts/deploy/rollback.sh`. This test file is the one net-new test surface this plan adds.
+- **T4 — E2E smoke test: `tests/smoke/test_e2e_ship.py`.** Ten scenarios S1–S10 per §5.1. Runs against stg after every deploy that touches `feat/demo-studio-v3`; runs against prod (subset — §5.2) after prod deploys; prod-smoke failure triggers `scripts/deploy/rollback.sh`. This test file is the one net-new test surface this plan adds. <!-- orianna: ok -->
 - **T5 — Regression: existing Sessions tab byte-identical.** MAD.E.2 golden-fixture test. Gate-list item in §4.1.
 - **T6 — Grep-gate CI check.** SE.E.2 + BD Rule 4 + MAL.E.1b + MAD.E.1 allowlist. CI-level enforcement; must be green on the release PR.
 - **T7 — Ship-gate manual checklist review.** §4.1 list reviewed by Evelynn (coordinator) + Duong before W10 flag flip. Not a test in the CI sense, but the final gate — documented in the runbook entry added by MAD.G.1 / this plan's handoff.
@@ -477,10 +477,10 @@ Per CLAUDE.md Rule 12 (TDD) + Rule 13 (regression). This plan itself is an orche
 - **Duong:** resolve OQ-SHIP-1 through OQ-SHIP-7. W0 (spikes + audits) can start immediately after resolutions; W1 cannot begin until SE is Orianna-signed at `approved` (signing in flight per agent-network note; Evelynn tracks).
 - **Evelynn:** owns wave sequencing + PR-granularity decisions (once OQ-SHIP-7 resolves). Spawns implementers per the sibling task files. Runs the §4.1 gate-list review before W10 flip.
 - **Orianna:** fact-check the §1.1 HEAD SHAs and the §1.3 pre-existing MAD work tree if this plan is promoted before W0 starts (line-number drift is expected; the ADR is point-in-time). Verify cross-plan references to SE/BD/MAL/MAD ADR paths are valid at sign-time.
-- **Kayn / Aphelios:** no new task files from this plan. Each sibling ADR's existing task file stands. If SE promotes to `approved/` and any task-file amendments are needed to align with the §2.2 wave sequencing, those amendments land in the SE task file, not here.
+- **Kayn / Aphelios:** no new task files from this plan. Each sibling ADR's existing task file stands. If SE promotes to `approved/` and any task-file amendments are needed to align with the §2.2 wave sequencing, those amendments land in the SE task file, not here. <!-- orianna: ok -->
 - **Heimerdinger:** owns §6.1 deploy sequencing + §6.3 env-var wire + §7 migration runbook. Confirm Firestore export + Cloud Run traffic-split recipes before W4.
 - **Senna + Lucian:** review the four cluster PRs (assuming OQ-SHIP-7b) against the cluster's ADR(s). Regression-lock: the MAD PR's Senna review must verify the allowlist row per advisory §1.
-- **Akali:** run Playwright flow + Figma diff against the Managed Agents tab before the MAD PR merges, per CLAUDE.md Rule 16. Report under `assessments/work/qa-reports/`.
+- **Akali:** run Playwright flow + Figma diff against the Managed Agents tab before the MAD PR merges, per CLAUDE.md Rule 16. Report under `assessments/work/qa-reports/`. <!-- orianna: ok -->
 
 ## Non-goals (explicit)
 
@@ -490,4 +490,11 @@ Per CLAUDE.md Rule 12 (TDD) + Rule 13 (regression). This plan itself is an orche
 - **NOT** an admin-identity-per-operator for MAD terminate audit logs. MAD ADR §8 known-gap; this plan inherits.
 - **NOT** a bulk-terminate UI. MAD ADR §9 non-goal; this plan inherits.
 - **NOT** cross-region HA for demo-studio. Single-region Cloud Run pinned; if traffic grows, a separate ADR owns that question.
-- **NOT** an alternative deployment target (GKE, Cloud Functions). `gcloud run deploy` as in the existing `deploy.sh`.
+- **NOT** an alternative deployment target (GKE, Cloud Functions). `gcloud run deploy` as in the existing `deploy.sh`. <!-- orianna: ok -->
+
+## Tasks
+
+- [ ] **T.COORD.1** — Resolve OQ-SHIP-1 through OQ-SHIP-7 with Duong and record picks in this plan. estimate_minutes: 30
+- [ ] **T.COORD.2** — Confirm SE is Orianna-signed at approved before W1 commences. estimate_minutes: 5
+- [ ] **T.COORD.3** — Sequence wave merges W0–W10 per §2.2 once OQ resolutions land; spawn implementers per sibling task files. estimate_minutes: 20
+- [ ] **T.COORD.4** — Run §4.1 ship-gate checklist review before W10 flag flip. estimate_minutes: 30
