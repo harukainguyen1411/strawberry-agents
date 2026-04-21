@@ -11,6 +11,7 @@ tags:
   - re-architecture
   - work
 tests_required: true
+orianna_signature_approved: "sha256:7865a9765df96b2804052a418f61a82e9112f8be5d7e9ba95988b8716b3b31ee:2026-04-21T11:49:46Z"
 ---
 
 # ADR: Demo Studio v3 — Vanilla Messages API Ship (Option B)
@@ -39,7 +40,7 @@ It also introduced costs that have compounded:
 
 - **Two new ADRs** exist only because of it: MAL (managed-agent-lifecycle — idle scanner, terminate-on-terminal hook, Slack relay for billing alarm) and MAD (managed-agent-dashboard-tab — `/dashboard` surface that reconciles Firestore with Anthropic's view). Both landed at `plans/implemented/work/2026-04-20-managed-agent-lifecycle.md` and `plans/implemented/work/2026-04-20-managed-agent-dashboard-tab.md`. <!-- orianna: ok -->
 - **A separate Cloud Run service** (`demo-studio-mcp`, TypeScript) that is currently **503** — its container image was orphaned when its GCR project was deleted (per the snapshot referenced in Karma's plan `plans/proposed/work/2026-04-21-mcp-inprocess-merge.md`). While 503, the managed agent cannot write to S2. The entire flow is gated on an MCP service that can break independently of S1. <!-- orianna: ok -->
-- **Three auth surfaces to keep in sync** — Anthropic vault (`MANAGED_VAULT_ID`), MCP bearer (`DEMO_STUDIO_MCP_TOKEN`), S1 operator cookie. `setup_agent.py --force` must rewrite the vault on every URL/token rotation.
+- **Three auth surfaces to keep in sync** — Anthropic vault (`MANAGED_VAULT_ID`), MCP bearer (`DEMO_STUDIO_MCP_TOKEN`), S1 operator cookie. `setup_agent.py --force` must rewrite the vault on every URL/token rotation. <!-- orianna: ok -->
 - **Drift risk between Firestore and Anthropic** — documented at length in MAL §1: partial writes leave managed sessions running until Anthropic internally expires them, so we built idle-scan + terminal-hook machinery to counteract a problem the managed model itself introduced.
 
 Duong's actual use case is **synchronous human-in-the-loop**: browser open, user chats, iterates, builds. No "agent works autonomously overnight" scenario exists or is planned. Every benefit of the managed model that matters (long-running autonomy, detached observability, fleet management) is paying for capability we do not use.
