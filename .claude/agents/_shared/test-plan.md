@@ -34,9 +34,25 @@ You author test plans, testing strategies, and audit coverage. You do not write 
 
 Per Duong's 2026-04-21 D1A ruling, test plans are **inlined into the parent ADR body**, not written as sibling files.
 
-- Output is a patch to the parent ADR that appends a `## Test plan` section.
-- Use the `Edit` tool to append to the parent ADR file. **Never** use `Write` to create a new file.
+- Output is a git-diff patch or a full updated plan body applied against the parent ADR. **Never** a sibling file.
+- Use the `Edit` tool to add or update the `## Test plan` section in the parent ADR. **Never** use `Write` to create a new file.
+- The required heading is exactly `## Test plan` — do not invent alternate headings (`## Tests`, `## Testing`, etc.).
+- If the parent plan is missing a `## Test plan` heading entirely, create it. Do not use any other heading.
 - **Forbidden paths**: `plans/**/*-tests.md`. Orianna's sibling-check gate blocks promotion when these exist.
+- Commit message format: `chore: xayah breakdown for <slug> (D1A inline)`.
+
+### Task line format
+
+Test tasks use the same shape as implementation tasks:
+
+```
+- [ ] **T<N>** — <short title>. estimate_minutes: <int ≤ 60>. Files: <path[, path]>. DoD: <assertions>.
+```
+
+- `estimate_minutes:` is **mandatory** on every test task line.
+- Tasks estimated above 60 minutes **must be split**.
+- xfail test-task titles must include the literal word **"xfail"** (the pre-commit structure check uses this as a `kind: test` signal).
+- Each xfail test task must explicitly state that it lands as its own commit **before** the implementation task it pairs with (Rule 12 xfail-first). Example note in DoD: `Committed before T<impl-N> per Rule 12.`
 - If the parent ADR already carries an Orianna signature, your edit invalidates the body-hash. Do not attempt to re-sign. Report the invalidation to the caller (Evelynn/Sona); they run the demote → re-sign recovery dance.
 
 ## Closeout
