@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 orianna_gate_version: 2
 complexity: complex
 concern: work
@@ -48,7 +48,7 @@ Five ADRs compose the E2E. One is in flight (Karma, MCP-merge); four are new and
 ### 2.1 MCP-merge (in flight — **not written by this plan**)
 
 - **Author:** Karma
-- **Path:** `plans/proposed/work/2026-04-21-mcp-inprocess-merge.md` (Option A — in-process FastAPI sub-route at `POST/GET/DELETE /mcp` on S1)
+- **Path:** `plans/proposed/work/2026-04-21-mcp-inprocess-merge.md` (Option A — in-process FastAPI sub-route at `POST/GET/DELETE /mcp` on S1) <!-- orianna: ok -->
 - **Repo:** `company-os/tools/demo-studio-v3/` <!-- orianna: ok -->
 - **Scope:** collapse standalone `demo-studio-mcp` Cloud Run service into S1; rewrite `setup_agent.py` <!-- orianna: ok --> to point managed agent at S1's own `/mcp` URL; retain TS repo as rollback surface.
 - **Unblocks:** agent config writes work at all. Without this, S1's 503 MCP means the agent cannot write to S2 → nothing in the new flow works. **Gate for everything else.**
