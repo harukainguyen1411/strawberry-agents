@@ -30,7 +30,7 @@ _hook_dir="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$_hook_dir/../.." && pwd)"
 
 # 1. Get list of staged plan files (added, copied, modified)
-staged_plans="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep '^plans/.*\.md$' || true)"
+staged_plans="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '^plans/.*\.md$' || true)"
 
 if [ -z "$staged_plans" ]; then
   exit 0
