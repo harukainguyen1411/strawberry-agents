@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-21 (fifth-leg shard 2026-04-21-3f9a8c58; prior shards 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-21 (sixth-leg shard 2026-04-21-da7d5b12; prior shards 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
@@ -106,33 +106,37 @@ Last updated: 2026-04-21 (fifth-leg shard 2026-04-21-3f9a8c58; prior shards 2026
 **Shard pointers:** 2026-04-20-pre-migration.
 **Next action:** Commit workspace-local Sona memory fixes early next session.
 
-## Wave 1 impl — Viktor (MCP-merge) + Jayce (S3) + Jayce (S5) — in flight
+## Wave 2 — Viktor S1-new-flow — in flight
 
-**Status:** Three background agents running at fifth-leg consolidation, all based on `feat/demo-studio-v3`.
-- Viktor — MCP in-process merge (mcp-inprocess-merge plan, in-progress/)
-- Jayce — S3 projectId reuse + S4 auto-trigger (s3-project-reuse-and-s4-trigger plan, in-progress/)
-- Jayce — S5 fullview route (s5-preview-fullview-route plan, in-progress/)
-**Key caveat:** S3 plan assumed non-streaming `POST /build`; actual endpoint is SSE-streaming `POST /v1/build`. Dispatched Jayce was corrected pre-dispatch; verify result targets correct endpoint.
-**Shard pointers:** 2026-04-21-3f9a8c58.
-**Next action:** Read final messages on wake. If any bailed on Bash-deny, retry with verbatim-error instruction. After Wave 1 lands, verify on `feat/demo-studio-v3` and open PRs.
+**Status:** Viktor dispatched for S1 new-flow impl, merge-forward onto `feat/demo-studio-v3` after Wave 1 PRs landed. In-flight at sixth-leg consolidation. Largest ADR scope.
+**Shard pointers:** 2026-04-21-da7d5b12.
+**Next action:** Read Viktor final message on wake. If bailed on Bash-deny, retry with verbatim-error instruction. After Viktor lands, open PR and dispatch Senna + Lucian review.
 
-## S1 new-flow ADR — Wave 2, not yet dispatched
+## Swain Option B — signature-hash mismatch blocker
 
-**Status:** `plans/in-progress/work/2026-04-21-s1-new-flow.md` promoted to in-progress but no impl agent dispatched. Biggest scope among the 4 Wave 1-2 ADRs.
-**Shard pointers:** 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d.
-**Next action:** Dispatch after Wave 1 (Viktor + 2x Jayce) results verified. Likely complex-track → Viktor.
+**Status:** `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md` Orianna-signed but promote loop stuck — frontmatter hash vs signed-hash trailer mismatched. Aphelios + Xayah decomp/test-plan agents dispatched anyway (they can read `proposed/` without promotion completing).
+**Shard pointers:** 2026-04-21-da7d5b12.
+**Next action:** Diagnose mismatch (likely plan body was touched post-signing). Resolve before any Option B promotion. Deprioritize Option B entirely if Option A (Viktor S1) lands cleanly.
 
-## Swain Option B plan — parked
+## Aphelios + Xayah — Option B decomp/test-plan — in flight
 
-**Status:** `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md` parked in proposed/ per Duong directive "ship Azir plan first". No promotion, no impl.
-**Shard pointers:** 2026-04-21-3f9a8c58.
-**Next action:** Revisit only if Option A hits a hard blocker.
+**Status:** In-flight at sixth-leg consolidation. Reading from `proposed/`. Not blocked on promote-loop fix.
+**Shard pointers:** 2026-04-21-da7d5b12.
+**Next action:** Read final messages. If Option A lands cleanly, deprioritize but retain decomp artifacts for reference.
 
-## MCP 503 — resolves with MCP-merge Wave 1
+## Xayah #2 + Heimerdinger — Azir ship-gate (E2E test plan + deploy checklist) — in flight
 
-**Status:** `demo-studio-mcp` Cloud Run 503 (project `ds-v3-workspace-2026` deleted) will resolve when Viktor's MCP in-process merge lands. No interim action needed.
-**Shard pointers:** 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d.
-**Next action:** Verify MCP 503 is gone after Viktor's MCP-merge PR lands and deploys.
+**Status:** In-flight at sixth-leg consolidation. Dispatched per §50 parallelism mandate from `agents/memory/duong.md`.
+**Shard pointers:** 2026-04-21-da7d5b12.
+**Next action:** Read final messages. These gate the ship sequence.
+
+## PR #58 — demo-preview-v2 (dlo1788) — do not merge
+
+**Status:** Analyzed this leg. Scope conflict with demo-studio-v3 architecture. Flagged as "do not merge as-is."
+**Shard pointers:** 2026-04-21-da7d5b12.
+**Next action:** Duong decision: block, request revision, or close. Do not merge until resolved.
+
+## S1 new-flow ADR — Wave 2 Viktor in flight (see above)
 
 ---
 
@@ -143,3 +147,6 @@ Last updated: 2026-04-21 (fifth-leg shard 2026-04-21-3f9a8c58; prior shards 2026
 - **Deploy-infra blockers B1/B4/B5** — cleared by Ekko `ade924ce2cc830382`.
 - **`.orianna-sign-stderr.tmp` hygiene** — resolved at `b11ce6f` (added to `.gitignore`).
 - **SE / MAL approved→in-progress** — done at `e0d7941`, `99fae12`.
+- **Wave 1 impl (MCP-merge, S3, S5)** — all three PRs reviewed (Senna + Lucian), hotfixed (Talon), and merged by user. S5 PR #55, S3 PR #57, MCP-merge PR #59 all landed on `feat/demo-studio-v3`.
+- **MCP 503** — resolved: MCP in-process merge (PR #59) landed and merged. Cloud Run 503 from deleted project `ds-v3-workspace-2026` is no longer the path.
+- **API doc /fullview route** — documented in `missmp/api` PR #41, merged.
