@@ -1331,6 +1331,68 @@ fi
 rm -rf "$tR4m_dir"
 
 # ---------------------------------------------------------------------------
+# R4-trailer: hunk header with +<digits> in trailing context must not confuse
+#             start-line parsing — rule 4 must still block the new bad token.
+#
+# Regression for the greedy sed fallback bug: `sed 's/.*+\([0-9,]*\).*/\1/'`
+# matches the LAST `+` in the line, so `@@ -5,0 +6 @@ prefix +42 suffix`
+# returns 42 instead of 6, causing staged[] to miss the real new lines and
+# silently grandfather the bad path token.
+#
+# Fix: use anchored sed `sed -E 's/^@@ -[^ ]+ \+([0-9]+(,[0-9]+)?) @@.*/\1/'`
+# which always anchors to the hunk-coordinate `+`.
+#
+# xfail before fix: with the greedy sed, start=42 > actual last line so
+# staged[] is empty and R4 grandfathers the new bad token → hook exits 0
+# instead of blocking.
+# ---------------------------------------------------------------------------
+tR4t_dir="$(_setup_repo)"
+mkdir -p "$tR4t_dir/scripts"
+touch "$tR4t_dir/scripts/real.sh"
+git -C "$tR4t_dir" add scripts/real.sh && git -C "$tR4t_dir" commit -q -m "real file"
+# Initial plan whose last line contains "+42" — this becomes the trailing
+# context in the hunk header for the next append.
+mkdir -p "$tR4t_dir/plans/proposed/personal"
+cat > "$tR4t_dir/plans/proposed/personal/trailer-test.md" <<'PLANEOF'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Trailer context test
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+Context line with prefix +42 suffix.
+PLANEOF
+git -C "$tR4t_dir" add "plans/proposed/personal/trailer-test.md"
+git -C "$tR4t_dir" commit -q -m "initial plan"
+# Append a new line with a bad path token — this is the staged change.
+# The hunk header will look like:
+#   @@ -N,0 +M @@ Context line with prefix +42 suffix.
+# Greedy sed misparses this as start=42; anchored sed returns the correct M.
+printf 'See `scripts/nonexistent-trailer-path.sh` for details.\n' \
+  >> "$tR4t_dir/plans/proposed/personal/trailer-test.md"
+git -C "$tR4t_dir" add "plans/proposed/personal/trailer-test.md"
+tR4t_local_hook="$tR4t_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tR4t_rc="$( (cd "$tR4t_dir" && bash "$tR4t_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R4-trailer) hunk header with +digits in trailing context: new bad token still blocks (exit 1)" 1 "$tR4t_rc"
+rm -rf "$tR4t_dir"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
