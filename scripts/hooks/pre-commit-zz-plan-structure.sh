@@ -198,6 +198,7 @@ awk -v REPO_ROOT="$REPO_ROOT" '
     }
     if ($0 ~ /^tests_required:/) {
       v = $0; sub(/^tests_required:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
+      sub(/[[:space:]]*#.*$/, "", v)
       if (length(v) > 0) { has_tests_required = 1; tests_required_val = v }
     }
     next
