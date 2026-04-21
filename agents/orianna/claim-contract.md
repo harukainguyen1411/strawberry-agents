@@ -112,8 +112,47 @@ time. Leniency on integration names defeats the purpose of the gate.
 
 ## 5. Repo routing rules
 
-When classifying a path-shaped token, use the following prefix rules to
-determine which repo checkout to check against:
+Routing is concern-aware. The plan's `concern:` frontmatter field determines
+which resolution root applies.
+
+### 5a. Plans with `concern: work` — resolution root flip
+
+When a plan's frontmatter declares `concern: work`, the **default resolution
+root** for every path-shaped token is the work monorepo:
+
+> `~/Documents/Work/mmp/workspace/`
+
+**Opt-back list** — these strawberry-agents infra prefixes and exact file
+tokens always resolve against this repo (working tree) regardless of concern:
+
+- `agents/`
+- `plans/`
+- `scripts/`
+- `assessments/`
+- `architecture/`
+- `.claude/`
+- `secrets/`
+- Exact files: `tools/decrypt.sh`, `tools/encrypt.sh`
+
+Note: bare `tools/` is **NOT** on the opt-back list. Work-concern plans
+frequently cite `tools/demo-studio-v3/...` and similar paths that live inside
+the workspace monorepo, not in this repo. Only the two specific helper files
+above are opted back.
+
+**Routing logic for `concern: work`:**
+
+1. Check if the token matches any opt-back entry above. If yes, verify with
+   `test -e` against the strawberry-agents working tree.
+2. Otherwise, verify with `test -e` against `~/Documents/Work/mmp/workspace/`.
+   A miss is a **block** finding — not an `info` unknown-prefix finding.
+   The block finding's anchor text names the workspace root as the expected
+   location.
+
+If the workspace checkout is absent, emit a `warn` finding:
+"could not verify N cross-repo path(s); work-concern checkout not found at
+`~/Documents/Work/mmp/workspace/`." Do not silently skip (ADR §4.5).
+
+### 5b. Plans with `concern: personal`, no `concern:` field, or any other value — original two-repo routing (unchanged)
 
 **This repo (`Duongntd/strawberry`, checkout: working tree):**
 
@@ -133,30 +172,18 @@ determine which repo checkout to check against:
 - `scripts/usage-dashboard/` (local path `~/Documents/Personal/strawberry-app/scripts/usage-dashboard/`)
 - `tests/e2e/` (local path `~/Documents/Personal/strawberry-app/tests/e2e/`)
 
-**work-concern repo (checkout: `~/Documents/Work/mmp/workspace/company-os/`):**
-
-The work-concern root activates **only** when the plan's YAML frontmatter declares
-`concern: work`. When active, the following prefixes resolve against
-`~/Documents/Work/mmp/workspace/company-os/` instead of the strawberry-app
-checkout:
-
-- `apps/`
-- `dashboards/`
-- `.github/workflows/`
-
 **Unknown prefix:** emit an `info` finding: "unknown path prefix `<prefix>/`;
 add to this contract's routing table if the path is load-bearing."
 
-**Default-safe behavior:** Plans without a `concern:` field, or with any value
-other than `work` (including `concern: personal`), keep the original two-repo
-routing — `apps/`, `dashboards/`, and `.github/workflows/` resolve against the
-strawberry-app checkout. The work-concern root is additive and does not affect
-legacy plans or personal-concern plans.
+If the strawberry-app checkout is absent, emit a `warn` finding naming it. Do
+not silently skip cross-repo checks (ADR §4.5).
 
-If a cross-repo checkout is absent at the expected path, emit a `warn` finding
-naming whichever checkout was expected: "could not verify N cross-repo path(s);
-<checkout-label> not found at `<path>`." Do not silently skip cross-repo checks
-(ADR §4.5).
+### 5c. `grep "resolution root" agents/orianna/claim-contract.md` test
+
+The resolution root for `concern: work` plans is `~/Documents/Work/mmp/workspace/`.
+The opt-back list above (§5a) is the single exception. The opt-back list in this
+file, in `scripts/fact-check-plan.sh`, and in `agents/orianna/prompts/plan-check.md`
+must enumerate identical entries.
 
 ---
 
