@@ -14,6 +14,7 @@ related:
 architecture_impact: refactor
 orianna_signature_approved: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T05:01:21Z"
 orianna_signature_in_progress: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T05:03:18Z"
+orianna_signature_implemented: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T11:32:24Z"
 ---
 
 # Memory consolidation redesign — two-layer boot (eager manifest + lazy archive)
