@@ -766,7 +766,7 @@ _Source: `company-os/plans/2026-04-20-session-state-encapsulation-bd-amendment.m
 
 **Date:** 2026-04-20 (s3)
 **Author:** Sona (coordinator, fastlane edit)
-**Scope:** names the sections of `plans/2026-04-20-session-state-encapsulation.md` <!-- orianna: ok — self-ref under company-os naming; this plan is at plans/proposed/work/ in this repo --> (and tasks in `plans/2026-04-20-session-state-encapsulation-tasks.md` <!-- orianna: ok — future task file in missmp/company-os -->) that change as a consequence of the §11 resolutions in `plans/proposed/work/2026-04-20-s1-s2-service-boundary.md` (BD ADR).
+**Scope:** names the sections of `plans/2026-04-20-session-state-encapsulation.md` <!-- orianna: ok — self-ref under company-os naming; this plan is at plans/proposed/work/ in this repo --> (and tasks in `plans/2026-04-20-session-state-encapsulation-tasks.md` <!-- orianna: ok — future task file in missmp/company-os -->) that change as a consequence of the §11 resolutions in `plans/approved/work/2026-04-20-s1-s2-service-boundary.md` (BD ADR).
 
 ### 1. Why this amendment exists
 
