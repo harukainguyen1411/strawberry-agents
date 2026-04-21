@@ -81,9 +81,24 @@ If you're unsure which concern, check the `[concern: <work|personal>]` tag on th
 
 Per Duong's 2026-04-21 D1A ruling, task breakdowns are **inlined into the parent ADR body**, not written as sibling files.
 
-- Output is a patch to the parent ADR that appends a `## Task breakdown` section.
-- Use the `Edit` tool to append to the parent ADR file. **Never** use `Write` to create a new file.
-- **Forbidden paths**: `plans/**/*-breakdown.md`. Orianna's sibling-check gate blocks promotion when these exist.
+- Output is a git-diff patch or a full updated plan body applied against the parent ADR. **Never** a sibling file.
+- Use the `Edit` tool to add or update the `## Tasks` section in the parent ADR. **Never** use `Write` to create a new file.
+- The required heading is exactly `## Tasks` — do not invent alternate headings (`## Task breakdown`, `## Task list`, etc.).
+- If the parent plan is missing a `## Tasks` heading entirely, create it. Do not use any other heading.
+- **Forbidden paths**: `plans/**/*-tasks.md`, `plans/**/*-breakdown.md`. Orianna's sibling-check gate blocks promotion when these exist.
+- Commit message format: `chore: aphelios breakdown for <slug> (D1A inline)`.
+
+### Task line format
+
+Each task line must follow this exact shape:
+
+```
+- [ ] **T<N>** — <short title>. estimate_minutes: <int ≤ 60>. Files: <path[, path]>. DoD: <assertions>.
+```
+
+- `estimate_minutes:` is **mandatory** on every task line.
+- Tasks estimated above 60 minutes **must be split** into smaller tasks before output.
+- Reference task IDs using the style the parent plan already uses (T1, T2… or A.1/A.2 for multi-stream plans).
 - If the parent ADR already carries an Orianna signature, your edit invalidates the body-hash. Do not attempt to re-sign. Report the invalidation to the caller (Evelynn/Sona); they run the demote → re-sign recovery dance.
 
 ## Closeout
