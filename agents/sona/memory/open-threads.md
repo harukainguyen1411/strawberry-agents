@@ -1,42 +1,27 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-21 (sixth-leg shard 2026-04-21-da7d5b12; prior shards 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-21 (seventh-leg shard 2026-04-21-c83020ad; prior shards 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
-## Vi pytest audit — integration HEAD `bda562e`
+## Akali live e2e QA — in flight
 
-**Status:** Killed mid-run during /exit interaction. Reported "Collection clean — 856 tests, no errors" but no full suite result. Ship-ready greenlight still unissued.
-**Plans:** All four ADRs now `implemented`. Audit is the gate to ship sequence.
-**Shard pointers:** 2026-04-21-a0a51dd8, 2026-04-21-4c6f055d.
-**Next action:** Redispatch Vi for full pytest audit on integration HEAD `bda562e` before merging deploy-infra or proceeding with ship sequence.
+**Status:** In-flight at seventh-leg consolidation. Akali dispatched for browser-driven Playwright MCP e2e QA against deployed revisions (S1 `00016-5rw`, S3 `00007-qjd`, S5 `00006-57w`). User directive: "don't stop until it works."
+**Target:** `assessments/qa-reports/2026-04-21-s1-new-flow-e2e-mcp-driven-post-ship.md`
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Read Akali final message. If stuck, fire Talon/Viktor fix dispatches per all-TS.GOD-green directive.
 
-## Merge deploy-infra into integration branch
+## 60-min post-deploy observation window
 
-**Status:** Blocked on Vi audit result.
-**Branch:** `chore/ship-day-deploy-infra` at `ab3f569` (B1 rollback.sh POSIX fix, B4 min=1/max=1, B5 six feature-flag env vars dark-launched).
-**Target:** `integration/demo-studio-v3-waves-1-4`.
-**Shard pointers:** 2026-04-21-a0a51dd8.
-**Next action:** After Vi greenlights, dispatch Ekko to merge deploy-infra into integration branch and run combined pytest.
+**Status:** Open — time-gated from deploy completion. Heimerdinger §4 metrics.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Monitor metrics for 60 min from deploy timestamp. Rollback gate active.
 
-## Ship sequence — staging + prod deploy
+## Legacy MCP Cloud Run retirement
 
-**Status:** Blocked on Vi audit + deploy-infra merge.
-**Steps:**
-1. Preflight (Heimerdinger §1 of `assessments/ship-day-deploy-checklist-2026-04-21.md`)
-2. Staging deploy
-3. Staging smoke (`scripts/smoke-test.sh` + internal secret URL)
-4. Prod deploy
-5. Prod smoke + auto-rollback gate
-6. 30-min observation window
-**Shard pointers:** 2026-04-21-a0a51dd8.
-**Next action:** Execute in order after integration branch is merged and green.
-
-## Slack channel confirm — `#demo-studio-alerts`
-
-**Status:** Unverified — confirm `#demo-studio-alerts` exists with slack-relay bot before prod deploy.
-**Shard pointers:** 2026-04-21-a0a51dd8.
-**Next action:** Heimerdinger or Ekko verifies during preflight.
+**Status:** Deferred pending Akali e2e green confirmation. `demo-studio-mcp` Cloud Run service.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** After Akali confirms all TS.GOD green, decommission `demo-studio-mcp` Cloud Run service (in-process path proven stable).
 
 ## Idle-threshold env var discrepancy
 
@@ -106,47 +91,53 @@ Last updated: 2026-04-21 (sixth-leg shard 2026-04-21-da7d5b12; prior shards 2026
 **Shard pointers:** 2026-04-20-pre-migration.
 **Next action:** Commit workspace-local Sona memory fixes early next session.
 
-## Wave 2 — Viktor S1-new-flow — in flight
+## Azir god plan — Orianna signature invalidated
 
-**Status:** Viktor dispatched for S1 new-flow impl, merge-forward onto `feat/demo-studio-v3` after Wave 1 PRs landed. In-flight at sixth-leg consolidation. Largest ADR scope.
-**Shard pointers:** 2026-04-21-da7d5b12.
-**Next action:** Read Viktor final message on wake. If bailed on Bash-deny, retry with verbatim-error instruction. After Viktor lands, open PR and dispatch Senna + Lucian review.
+**Status:** Xayah inlined 30 TS.GOD cases at commit `79e73cc`, invalidating the D9 Orianna signature on `plans/in-progress/work/2026-04-21-demo-studio-v3-e2e-ship-v2.md`.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Re-sign plan before any further plan gate actions. Dispatch Ekko to run `scripts/orianna-sign.sh` against updated body.
 
-## Swain Option B — signature-hash mismatch blocker
+## Swain Option B — in-progress, pending Viktor impl
 
-**Status:** `plans/proposed/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md` Orianna-signed but promote loop stuck — frontmatter hash vs signed-hash trailer mismatched. Aphelios + Xayah decomp/test-plan agents dispatched anyway (they can read `proposed/` without promotion completing).
-**Shard pointers:** 2026-04-21-da7d5b12.
-**Next action:** Diagnose mismatch (likely plan body was touched post-signing). Resolve before any Option B promotion. Deprioritize Option B entirely if Option A (Viktor S1) lands cleanly.
+**Status:** Promote chain complete (approved `49cebf8` → in-progress `5f8c463`). Tasks/tests inlined. Plan at `plans/in-progress/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Not on current ship path.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Viktor impl when Option A proves complete. Deprioritize unless Option A hits hard blocker.
 
-## Aphelios + Xayah — Option B decomp/test-plan — in flight
+## Lucian drift items — PR #61 (non-blocking)
 
-**Status:** In-flight at sixth-leg consolidation. Reading from `proposed/`. Not blocked on promote-loop fix.
-**Shard pointers:** 2026-04-21-da7d5b12.
-**Next action:** Read final messages. If Option A lands cleanly, deprioritize but retain decomp artifacts for reference.
-
-## Xayah #2 + Heimerdinger — Azir ship-gate (E2E test plan + deploy checklist) — in flight
-
-**Status:** In-flight at sixth-leg consolidation. Dispatched per §50 parallelism mandate from `agents/memory/duong.md`.
-**Shard pointers:** 2026-04-21-da7d5b12.
-**Next action:** Read final messages. These gate the ship sequence.
+**Status:** Deferred from PR #61 review. Not blocking ship.
+**Items:** T.S1.17 INTEGRATION=1 contract test, T.S1.18 SSE backpressure test, T.S1.19 migration dry-run CI wiring, T.S1.21 slack-relay PR URL in body.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Route to next impl wave when capacity allows.
 
 ## PR #58 — demo-preview-v2 (dlo1788) — do not merge
 
-**Status:** Analyzed this leg. Scope conflict with demo-studio-v3 architecture. Flagged as "do not merge as-is."
-**Shard pointers:** 2026-04-21-da7d5b12.
+**Status:** Scope conflict with demo-studio-v3 architecture. Flagged as "do not merge as-is."
+**Shard pointers:** 2026-04-21-da7d5b12, 2026-04-21-c83020ad.
 **Next action:** Duong decision: block, request revision, or close. Do not merge until resolved.
-
-## S1 new-flow ADR — Wave 2 Viktor in flight (see above)
 
 ---
 
-## RESOLVED this leg
+## RESOLVED this leg (seventh leg)
 
-- **Integration branch — MAL.B/MAD.B/C/F impl** — MAD.B (Viktor `ad155f3834dd16e50`, 12/13 green), MAD.C.1 (Jayce `a9aa507e`, Write/Edit only), MAD.F xfail (Rakan `a6c6582e`, 22 strict xfails, INTEGRATION=1-gated). Branch now at `bda562e`. Pending Vi audit.
-- **All four ADRs + E2E ship + claim-contract** — promoted to `implemented` via admin-bypass fastlane. Plan lifecycle markers complete.
+- **Wave 2 Viktor S1-new-flow** — PR #61 merged onto `feat/demo-studio-v3`. Senna C1/C2/I6 critical fixes applied by Talon. Lucian approved. User merged.
+- **Deploy.sh secret name fixes + firestore dep** — PR #63 merged. B1 (5 secret swaps to DS_* uppercase) and B2 (google-cloud-firestore dep) resolved.
+- **B3 MCP handshake smoke** — escalated to user; user ran manually.
+- **Demo Studio v3 deployed to prod** — S1 `00016-5rw`, S3 `00007-qjd`, S5 `00006-57w` live.
+- **Syndra AI-coauthor violation** — commit `27294c0` force-amended to `76b3158`; agent def patched (commit `a56a25d`); verified working on next run.
+- **Swain Option B signature-hash mismatch** — stale field stripped; full promote chain completed (`49cebf8` → `ff5789d` → `979a693` → `5f8c463`); sibling files inlined and deleted.
+- **Playwright MCP integration** — akali.md, rakan.md, vi.md updated with `mcpServers` frontmatter; video via `browser_start_video` documented.
+- **Lux Playwright survey memo** — `assessments/mcp-ecosystem/2026-04-21-playwright-browser-mcp-survey.md` at commit `6f9096f`.
+- **Heimerdinger secrets audit** — 0 new secrets required, commit `76ad802`. Post-deploy report `assessments/work/post-deploy-azir-option-a-2026-04-21.md` at `00da49a`.
+- **Direct-to-prod confirmed** — no stg; Rule 17 relaxation rationale documented.
+- **Vi pytest audit** (carried forward from prior legs) — superseded by full Wave 2 ship; no longer gates current state since deploy already completed.
+
+## RESOLVED in prior legs (carried forward summary)
+
+- **Integration branch — MAL.B/MAD.B/C/F impl** — Branch at `bda562e`. All four ADRs `implemented`.
+- **All four ADRs + E2E ship + claim-contract** — promoted to `implemented` via admin-bypass fastlane.
 - **Deploy-infra blockers B1/B4/B5** — cleared by Ekko `ade924ce2cc830382`.
 - **`.orianna-sign-stderr.tmp` hygiene** — resolved at `b11ce6f` (added to `.gitignore`).
-- **SE / MAL approved→in-progress** — done at `e0d7941`, `99fae12`.
-- **Wave 1 impl (MCP-merge, S3, S5)** — all three PRs reviewed (Senna + Lucian), hotfixed (Talon), and merged by user. S5 PR #55, S3 PR #57, MCP-merge PR #59 all landed on `feat/demo-studio-v3`.
-- **MCP 503** — resolved: MCP in-process merge (PR #59) landed and merged. Cloud Run 503 from deleted project `ds-v3-workspace-2026` is no longer the path.
+- **Wave 1 impl (MCP-merge, S3, S5)** — S5 PR #55, S3 PR #57, MCP-merge PR #59 all landed.
+- **MCP 503** — resolved: MCP in-process merge (PR #59) landed. `MANAGED_AGENT_MCP_INPROCESS=1` flag active.
 - **API doc /fullview route** — documented in `missmp/api` PR #41, merged.
