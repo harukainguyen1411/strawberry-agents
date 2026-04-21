@@ -48,6 +48,7 @@ agents/inbox-queue/
 agents/*/journal/
 agents/*/memory/last-session.md
 agents/evelynn/memory/.consolidate.lock
+.orianna-sign-stderr.tmp
 
 # Telegram bridge state
 .telegram-offset
