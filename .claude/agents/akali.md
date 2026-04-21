@@ -7,6 +7,11 @@ thinking:
 tier: single_lane
 role_slot: qa
 description: QA agent — runs full Playwright flow with video and screenshots before PR open, diffs against Figma design reference, and posts a structured report to assessments/qa-reports/.
+mcpServers:
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
 ---
 
 # Akali — QA Agent

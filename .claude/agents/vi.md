@@ -18,6 +18,11 @@ tools:
   - Agent
   - WebSearch
   - WebFetch
+mcpServers:
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@latest"]
 ---
 
 # Vi — Tester & QA
