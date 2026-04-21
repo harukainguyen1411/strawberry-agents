@@ -1,40 +1,93 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-21 (updated from shard e49b10d8 — third pre-compact consolidation, session d9b7f645).
+Last updated: 2026-04-21 (updated from shard 31a158e4 — fourth pre-compact consolidation, session 34b4f5e7).
+
+---
+
+## Viktor inbox PR
+
+**Current status (2026-04-21):** BLOCKED on PR creation. Implementation done — branch `inbox-watch-v3`, 27/27 tests green. Pre-push hook blocked auto `gh pr create`. Needs manual PR creation by Duong or explicit delegation of the gh pr create call.
+**Shards:** 2cb962cd, 002efe6a, e49b10d8, 31a158e4.
+**Next:** Manually create PR for `inbox-watch-v3`. This is top priority — implementation is done.
+
+---
+
+## Orianna-gate-speedups plan impl
+
+**Current status (2026-04-21):** Approved, queued. Plan commit `0d218f4`, OQ decisions folded via `45fcd56`. 16 tasks / 440 min. Body-hash guard, signed-fix commit shape, lock auto-recovery, §D3 enforcement are sub-tasks.
+**Shards:** 31a158e4.
+**Next:** Assign Viktor once inbox PR is handled.
+
+---
+
+## Prompt-caching impl
+
+**Current status (2026-04-21):** Karma plan `c796b21` approved. Lux audit (`97a05d5`) identifies 15–25M tokens/month savings via boot-chain reorder + cache_control: ephemeral markers.
+**Shards:** e49b10d8, 31a158e4.
+**Next:** Assign Talon or Viktor to implement per Lux's audit.
+
+---
+
+## Staged-scope-guard impl
+
+**Current status (2026-04-21):** Approved by Duong (`8b24ad2`). Addresses 4 git-add-A sweep-up incidents today.
+**Shards:** 31a158e4.
+**Next:** Queue after inbox PR. Assign Ekko or Viktor.
+
+---
+
+## Rename-aware pre-lint impl
+
+**Current status (2026-04-21):** Approved (`2a71045`). git-mv full-body bug blocked Ekko #65 for 2h.
+**Shards:** 31a158e4.
+**Next:** Queue after staged-scope-guard (or in parallel).
+
+---
+
+## Commit-msg hook for AI co-author trailer
+
+**Current status (2026-04-21):** Karma plan in flight. Two incidents today — Syndra auto-appended `Co-Authored-By: Claude` trailers without instruction; remediated via revert/reapply (`bcc66d1` / `54ac1af`).
+**Shards:** 31a158e4.
+**Next:** Assign Ekko to implement hook. Until then: explicitly prohibit co-author trailers in every Syndra delegation prompt.
+
+---
+
+## Orianna-Bypass semantic gap ADR
+
+**Current status (2026-04-21):** Open — follow-up ADR needed. Admin `--no-verify` bypass only suppresses signature hook, not structure hook. Both must be explicitly named for a complete bypass. Currently undocumented and fragile.
+**Shards:** 31a158e4.
+**Next:** Commission Swain or Karma for ADR consolidating admin-bypass semantics across all hooks.
+
+---
+
+## P2/P3/P1/P4 plan impl
+
+**Current status (2026-04-21):** Still in proposed. Ekko #67 did not reach them. Awaiting Duong explicit call to proceed.
+**Shards:** 31a158e4.
+**Next:** Wait for Duong to call the shot on sequencing.
+
+---
+
+## 5 proposed plans awaiting Duong review (carry-forward)
+
+**Status:** Open. Plans at `plans/proposed/personal/`: agent-feedback-system (Lux, `b9dbc8c`), retrospection-dashboard (Swain), coordinator-decision-feedback (Swain), daily-agent-repo-audit-routine (Lux), pre-orianna-plan-archive (Karma — implemented via PR #14, needs retroactive sign + promote).
+**Next:** Duong reviews and approves. Use plan-promote.sh for each transition.
+**Shard:** e49b10d8, 31a158e4.
 
 ---
 
 ## Memory-consolidation redesign execution
 
-3. **Memory-consolidation redesign execution** — two-layer boot shipped.
-
-**Current status (2026-04-21):** RESOLVED — PR #13 merged. T1–T12 complete. Two-layer boot (open-threads.md + INDEX + lazy shards) is live for both Evelynn and Sona.
-**Shards:** 2cb962cd, e49b10d8.
-**Next:** Dogfood in practice; flag any edge cases to Swain.
+**Current status (2026-04-21):** RESOLVED — PR #13 merged. T1–T12 complete. Promoted to implemented via admin `--no-verify` (`536ec0d` + `a31cb78`). Revealed Orianna-Bypass semantic gap (sig hook only, not structure hook).
+**Shards:** 2cb962cd, e49b10d8, 31a158e4.
+**Next:** Dogfood in practice; flag edge cases to Swain. Follow-up ADR for bypass semantics gap.
 
 ---
 
-## Inbox plan (strawberry-inbox channel)
+## PR #15 — rule-4 staged-diff scoping fix
 
-**Current status (2026-04-21):** Approved + in-progress. Plan at `plans/in-progress/personal/2026-04-20-strawberry-inbox-channel.md`. Awaiting Viktor implementation. E2E test needs `npm install` in `.claude/plugins/strawberry-inbox/` + session restart.
-**Shards:** 2cb962cd, 002efe6a, e49b10d8.
-
----
-
-## Swain ADR commit (resolved)
-
-2. **Swain ADR commit** — Duong needs to commit Swain's memory-consolidation ADR with admin bypass (agent-identity blocked from adding to `proposed/`). Once committed, Orianna fact-check → promote.
-
-**Current status (2026-04-21):** Resolved — ADR committed, promoted to in-progress.
-
----
-
-## Talon: Orianna web-research plan (resolved)
-
-1. **Talon: execute Orianna web-research plan.** Quick-lane, breakdown + tests inline. Ready to pick up from `plans/approved/personal/2026-04-20-orianna-web-research-verification.md`.
-2. **Pending from pre-compact S63 body:** hot threads Lissandra noted — none reopened after compact. (Long pending-task list in task tool is stale; most are done.)
-
-**Current status (2026-04-21):** Resolved — Talon executed, plan implemented, ORIANNA_EXTERNAL_BUDGET=15 live.
+**Status:** MERGED at `7b3a3f3`. Closed.
+**Shard:** e49b10d8, 31a158e4.
 
 ---
 
@@ -68,32 +121,8 @@ Last updated: 2026-04-21 (updated from shard e49b10d8 — third pre-compact cons
 
 ---
 
-## PR #15 — rule-4 staged-diff scoping fix
-
-**Status:** APPROVED (Senna + Lucian both approved, 39 tests pass). NOT YET MERGED.
-**Next:** Merge immediately on session restart. No further review needed.
-**Shard:** e49b10d8.
-
----
-
-## 5 proposed plans awaiting Duong review
-
-**Status:** Open. Plans at `plans/proposed/personal/`: agent-feedback-system (Lux, `b9dbc8c`), retrospection-dashboard (Swain), coordinator-decision-feedback (Swain), daily-agent-repo-audit-routine (Lux), pre-orianna-plan-archive (Karma — implemented via PR #14, needs retroactive sign + promote).
-**Next:** Duong reviews and approves. Use plan-promote.sh for each transition. Pre-orianna-plan-archive path is proposed → implemented directly (retroactive).
-**Shard:** e49b10d8.
-
----
-
-## Prompt-caching audit
-
-**Status:** Open. Lux advisory identifies cache_control: ephemeral as highest-ROI unexercised lever for Claude capacity (90% cached input token discount). No audit has been run yet.
-**Next:** Assign Lux or Syndra to audit `_shared/` includes and large system prompts for cacheable sections.
-**Shard:** e49b10d8.
-
----
-
 ## Sona workspace staged-rename hygiene
 
 **Status:** Open. `plans/approved/work/2026-04-20-session-state-encapsulation.md` rename is staged in Sona's concurrent workspace. Caused Senna learnings write to bounce.
 **Next:** Before next Sona session, verify which branch/state is authoritative and resolve the staged rename. Do not commit to plans/approved/work/ cross-coordinator without checking first.
-**Shard:** e49b10d8.
+**Shard:** e49b10d8, 31a158e4.
