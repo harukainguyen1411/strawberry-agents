@@ -87,11 +87,8 @@ fi
 
 # --- D2: open-threads.md is position 7, INDEX.md is position 8 (last two) ---
 # Extract numbered list entries from initialPrompt (lines like "7. ..." or "  7. ...")
-PROMPT_LINES="$(grep -oE '[0-9]+\. [^\n]+' "$EVELYNN_AGENT" 2>/dev/null || echo '')"
-if [ -z "$PROMPT_LINES" ]; then
-  # Try to find the tail-2 entries another way: the last two distinct file references
-  PROMPT_LINES="$(grep -E '^\s*[0-9]+\.' "$EVELYNN_AGENT" 2>/dev/null || echo '')"
-fi
+# Use grep -E on whole lines (POSIX-portable; avoids BSD grep -oE [^\n]+ bug on macOS).
+PROMPT_LINES="$(grep -E '^\s*[0-9]+\.' "$EVELYNN_AGENT" 2>/dev/null || echo '')"
 pos7_has_openthreads=0
 pos8_has_index=0
 printf '%s\n' "$PROMPT_LINES" | grep -q '^7\. .*open-threads\|^  7\. .*open-threads\|7\..*open-threads' && pos7_has_openthreads=1
