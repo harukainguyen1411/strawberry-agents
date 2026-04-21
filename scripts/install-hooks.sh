@@ -9,6 +9,7 @@
 #   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2)
 #   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
+#   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
 #   pre-commit-t-plan-structure.sh      — structural lint for staged plans/**/*.md (shift-left, after secrets)
 #
