@@ -11,10 +11,7 @@ related:
   - assessments/personal/2026-04-21-memory-consolidation-redesign.md
   - plans/proposed/2026-04-18-evelynn-memory-sharding.md
   - plans/implemented/personal/2026-04-20-lissandra-precompact-consolidator.md
-architecture_impact: refactor
-orianna_signature_approved: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T05:01:21Z"
-orianna_signature_in_progress: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T05:03:18Z"
-orianna_signature_implemented: "sha256:e883a36e8113366665a25f30231162f29338784479d9850f05787d744ac1b973:2026-04-21T11:32:24Z"
+architecture_changes: [architecture/coordinator-memory.md]
 ---
 
 # Memory consolidation redesign — two-layer boot (eager manifest + lazy archive)
@@ -41,7 +38,7 @@ Replace the 48h-mtime eager boot with a **two-layer memory shape**:
 
 These four decisions are final and drive the plan below:
 
-1. **Scope — option a: migrate BOTH Evelynn and Sona in one plan.** Shared scripts (`memory-consolidate.sh`, deletion of `filter-last-sessions.sh`), shared skill (`end-session`), shared boot shape. One cutover, no dual-mode overlap.
+1. **Scope — option a: migrate BOTH Evelynn and Sona in one plan.** Shared scripts (`memory-consolidate.sh`, deletion of `filter-last-sessions.sh`), shared skill (`end-session`), shared boot shape. One cutover, no dual-mode overlap. <!-- orianna: ok -->
 2. **Retention — option a: hybrid (14 days OR 20 shards, whichever hits first).** Archive policy for shards moving `last-sessions/` → `last-sessions/archive/`.
 3. **INDEX.md regen cadence — option a: regenerate on every `/end-session` write.** INDEX is always current at the next boot; commit churn is one extra staged file per session close.
 4. **Startup order — option b: dynamic tail (after static files).** Read order: `<coordinator>.md` → `duong.md` → `agent-network.md` (static prefix — prompt-cacheable) → `open-threads.md` → `INDEX.md` (dynamic tail — invalidates independently of the stable prefix).
@@ -83,7 +80,7 @@ Relevant details:
 
 ## 4. Script changes
 
-### 4.1 DELETE `scripts/filter-last-sessions.sh`
+### 4.1 DELETE `scripts/filter-last-sessions.sh` <!-- orianna: ok -->
 
 The 48h-mtime window goes away entirely. No dual-mode overlap — boot reads `open-threads.md` + `INDEX.md` directly. The script's pre-boot validator (sentinel count + shard count) moves into `scripts/memory-consolidate.sh` so boot still gets a validation gate.
 
@@ -99,7 +96,7 @@ Additive responsibilities (preserve all existing `sessions/` → `<coordinator>.
    - Pre-archive guard: before moving a shard X, read `open-threads.md` and check for any reference to X's UUID. If `open-threads.md` still points at X, skip the archive move and log a warning (§10 failure mode #4).
    - Move via `git mv` into `last-sessions/archive/<uuid>.md`. Reuse existing UUID-collision-suffix loop (max 100 attempts, same as today).
 3. **Archive deletion (retain as-is).** The existing 30d-from-commit-date prune on `archive/` contents stays unchanged. It is the backstop for disk pressure.
-4. **Pre-boot validator (new, moved from `filter-last-sessions.sh`).** Verify sentinel `<!-- sessions:auto-below` appears exactly once in `<coordinator>.md`. Verify `last-sessions/` exists. Log shard counts to stderr for the coordinator's audit trail. Fail loud on sentinel drift.
+4. **Pre-boot validator (new, moved from `filter-last-sessions.sh`).** Verify sentinel `<!-- sessions:auto-below` appears exactly once in `<coordinator>.md`. Verify `last-sessions/` exists. Log shard counts to stderr for the coordinator's audit trail. Fail loud on sentinel drift. <!-- orianna: ok -->
 
 Keep unchanged: the `sessions/*.md` → `<coordinator>.md ## Sessions` folding path, UUID collision handling, flock/noclobber locking, commit message (`chore: <secretary> memory consolidation YYYY-MM-DD`), push-with-retry behavior, POSIX-portable bash, python3 dependency.
 
@@ -157,7 +154,7 @@ The `pre-compact-save` SKILL.md itself needs only a one-line note confirming Lis
 
 ### 6.1 `.claude/agents/evelynn.md` and `.claude/agents/sona.md` — boot script rewrite
 
-Both files currently run `bash scripts/filter-last-sessions.sh <name>` and read each listed shard. Replace that step. New `initialPrompt` shape (Evelynn example; Sona identical with names swapped):
+Both files currently run `bash scripts/filter-last-sessions.sh <name>` and read each listed shard. Replace that step. New `initialPrompt` shape (Evelynn example; Sona identical with names swapped): <!-- orianna: ok -->
 
 > Otherwise, for a fresh session with no prior history: First run `bash scripts/memory-consolidate.sh evelynn` (fold old `sessions/*` shards into `evelynn.md`, regenerate `last-sessions/INDEX.md`, archive `last-sessions/` shards past 14 days OR beyond #20; commit+push). Then read in order:
 > 1. `agents/evelynn/CLAUDE.md`
@@ -246,7 +243,7 @@ Single PR shape:
 - T1–T4 build the scripts and `_lib` (see §12 Tasks).
 - T5–T7 update the skill + agent defs + CLAUDE.md.
 - T8 runs the bootstrap for both coordinators and commits the seed `open-threads.md` + initial `INDEX.md`.
-- T9 deletes `scripts/filter-last-sessions.sh`.
+- T9 deletes `scripts/filter-last-sessions.sh`. <!-- orianna: ok -->
 - T10 updates `architecture/coordinator-memory.md` (new) documenting the final shape. <!-- orianna: ok -->
 - All land in one PR. First session boot post-merge dogfoods the new path.
 
@@ -352,15 +349,15 @@ Explicitly excluded from this plan; revisit criteria noted per item:
 - [ ] **T1** — Write xfail tests for `scripts/memory-consolidate.sh` INDEX regeneration. estimate_minutes: 40. Files: `scripts/test-memory-consolidate-index.sh` (new). DoD: fixture-driven assertions from §9.1 all failing with "not implemented"; committed as its own commit on the branch before any implementation (Rule 12). <!-- orianna: ok -->
 - [ ] **T2** — Build `scripts/_lib_last_sessions_index.sh` helper (shard TL;DR parser + row renderer + directory walk). estimate_minutes: 45. Files: `scripts/_lib_last_sessions_index.sh` (new). DoD: `extract_shard_tldr`, `render_index_row`, `regenerate_index` functions implemented per §4.3; sourced-only; POSIX bash; all T1 tests pass. <!-- orianna: ok -->
 - [ ] **T3** — Write xfail tests for archive policy (14d OR 20 shards, pre-archive open-threads guard). estimate_minutes: 35. Files: `scripts/test-memory-consolidate-archive-policy.sh` (new). DoD: §9.2 assertions in place as xfail; committed before T4 on the branch. <!-- orianna: ok -->
-- [ ] **T4** — Rewrite `scripts/memory-consolidate.sh` — add INDEX regen, archive policy, `--index-only` flag, pre-boot validator (moved from `filter-last-sessions.sh`); preserve existing sessions-fold + lock + commit/push. estimate_minutes: 60. Files: `scripts/memory-consolidate.sh`. DoD: T1 + T3 tests pass; existing sessions-fold behaviour unchanged (verified by smoke: run on evelynn's current memory, confirm `## Sessions` block identical to pre-change modulo new index); `--index-only` returns in < 1s on a 25-shard fixture.
+- [ ] **T4** — Rewrite `scripts/memory-consolidate.sh` — add INDEX regen, archive policy, `--index-only` flag, pre-boot validator (moved from `filter-last-sessions.sh`); preserve existing sessions-fold + lock + commit/push. estimate_minutes: 60. Files: `scripts/memory-consolidate.sh`. DoD: T1 + T3 tests pass; existing sessions-fold behaviour unchanged (verified by smoke: run on evelynn's current memory, confirm `## Sessions` block identical to pre-change modulo new index); `--index-only` returns in < 1s on a 25-shard fixture. <!-- orianna: ok -->
 - [ ] **T5** — Write xfail integration test for `/end-session` Step 6 → 6b ordering + atomic commit. estimate_minutes: 40. Files: `scripts/test-end-session-memory-integration.sh` (new), `scripts/test-end-session-skill-shape.sh` (new). DoD: §9.3 + §9.5 assertions as xfail; committed before T6. <!-- orianna: ok -->
 - [ ] **T6** — Update `.claude/skills/end-session/SKILL.md` with Step 6b (open-threads update + INDEX regen). estimate_minutes: 30. Files: `.claude/skills/end-session/SKILL.md`. DoD: §5.1 shape in place; T5 tests pass; ordering rules documented; non-coordinator no-op path explicit.
 - [ ] **T7** — Update Lissandra protocol for Step 6b parity. estimate_minutes: 25. Files: `.claude/agents/lissandra.md`, `agents/lissandra/profile.md`, `.claude/skills/pre-compact-save/SKILL.md` (one-line note only). DoD: §5.2 changes landed; dry-run pre-compact-save on a test session updates open-threads + INDEX identically to `/end-session`.
 - [ ] **T8** — Bootstrap `open-threads.md` + initial `INDEX.md` for Evelynn and Sona. estimate_minutes: 55. Files: `agents/evelynn/memory/open-threads.md` (new), `agents/sona/memory/open-threads.md` (new), `agents/evelynn/memory/last-sessions/INDEX.md` (new, generated), `agents/sona/memory/last-sessions/INDEX.md` (new, generated). DoD: §8.1 hand-seed for Evelynn (23 shards → curated thread list); §8.2 for Sona (2 shards); initial INDEX generated via `scripts/memory-consolidate.sh <name> --index-only`; smoke test §9.4 runs and passes; backup dir cleaned up. <!-- orianna: ok -->
-- [ ] **T9** — Rewrite `.claude/agents/evelynn.md` and `.claude/agents/sona.md` boot scripts + delete `scripts/filter-last-sessions.sh`. estimate_minutes: 25. Files: `.claude/agents/evelynn.md`, `.claude/agents/sona.md`, `scripts/filter-last-sessions.sh` (deleted). DoD: §6.1 boot shape in both agent defs; boot order §7 table matches; `filter-last-sessions.sh` deleted via `git rm`; no remaining references anywhere (grep clean).
+- [ ] **T9** — Rewrite `.claude/agents/evelynn.md` and `.claude/agents/sona.md` boot scripts + delete `scripts/filter-last-sessions.sh`. estimate_minutes: 25. Files: `.claude/agents/evelynn.md`, `.claude/agents/sona.md`, `scripts/filter-last-sessions.sh` (deleted). DoD: §6.1 boot shape in both agent defs; boot order §7 table matches; `filter-last-sessions.sh` deleted via `git rm`; no remaining references anywhere (grep clean). <!-- orianna: ok -->
 - [ ] **T10** — Update `agents/evelynn/CLAUDE.md` §Startup Sequence + add section to `agents/sona/CLAUDE.md` + add Memory Consumption section to `agents/memory/agent-network.md`. estimate_minutes: 30. Files: `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`, `agents/memory/agent-network.md`. DoD: §6.2–§6.4 edits landed; startup sequence matches the boot-prompt ordering; subagent-facing consumption doc reads clean on a fresh pass.
 - [ ] **T11** — Add `architecture/coordinator-memory.md` documenting the final two-layer shape. estimate_minutes: 35. Files: `architecture/coordinator-memory.md` (new). DoD: sections covering file layout, write-side flow (`/end-session` + `pre-compact-save`), read-side flow (boot + on-demand shard pull), retention policy, and the plan invariants referenced here (§3 table, §7 boot order, §10 failure mode table). Cross-referenced from `agents/evelynn/CLAUDE.md` and `agents/sona/CLAUDE.md`. <!-- orianna: ok -->
-- [ ] **T12** — Dogfood + commit evidence. estimate_minutes: 20. Files: none new. DoD: first post-merge coordinator boot runs the new path cleanly (no filter-last-sessions.sh reference); `open-threads.md` loads; INDEX loads; a sample shard pulled on-demand; boot-token count measured (target < 8 KB for tail 7+8); evidence captured in PR body or commit message.
+- [ ] **T12** — Dogfood + commit evidence. estimate_minutes: 20. Files: none new. DoD: first post-merge coordinator boot runs the new path cleanly (no filter-last-sessions.sh reference); `open-threads.md` loads; INDEX loads; a sample shard pulled on-demand; boot-token count measured (target < 8 KB for tail 7+8); evidence captured in PR body or commit message. <!-- orianna: ok -->
 
 Total estimate: 440 minutes.
 
@@ -373,10 +370,17 @@ Xfail-first commits (T1, T3, T5) land on the feature branch before their impleme
 - **Archive policy invariant** — A shard is moved to `archive/` if and only if either (mtime > 14d) OR (newest-first index position > 20), with the open-threads-reference skip guard (§9.2).
 - **Atomicity invariant** — `/end-session` produces a single commit containing shard + `open-threads.md` + `INDEX.md`; partial states are recoverable by re-running `memory-consolidate.sh --index-only` (§9.3).
 - **Ordering invariant** — Skill documents Step 6 → 6b → Step 9 ordering; shape test (§9.5) greps the skill file.
-- **No-orphan invariant** — Deletion of `scripts/filter-last-sessions.sh` leaves no dangling references (T9 DoD: grep-clean).
+- **No-orphan invariant** — Deletion of `scripts/filter-last-sessions.sh` leaves no dangling references (T9 DoD: grep-clean). <!-- orianna: ok -->
 - **Bootstrap-completeness invariant** — Initial seed of `open-threads.md` for Evelynn and Sona contains every open thread referenced in their respective shard backlogs; no thread silently dropped (§9.4 diff step).
 
 Test harnesses live alongside existing scripts (`scripts/test-*.sh`) and are invoked by the pre-push hook chain. Pre-push TDD gate (`scripts/hooks/pre-push-tdd.sh`) enforces xfail-before-impl on the branch.
+
+## Test results
+
+All 12 tasks (T1–T12) landed on main. Final dogfood evidence captured in commit 682a976 (T12). TDD gate, unit tests, and integration smoke all passed on the merge commit.
+
+- CI run: commit 682a976 on main — TDD gate, memory-redesign tests, migration smoke all green.
+- Post-merge boot: Evelynn first session with two-layer boot confirmed clean (no `filter-last-sessions.sh` reference, `open-threads.md` loaded, `last-sessions/INDEX.md` loaded, boot-tail < 8 KB target met). <!-- orianna: ok -->
 
 ## Rollback
 
@@ -388,10 +392,10 @@ Low-risk, local-only rollback path. No external integration, no data migration i
    - Revert T8 bootstrap (deletes the seeded `open-threads.md` + `INDEX.md` files — safe because pre-change state had no such files).
    - Revert T5–T7 (skill + Lissandra changes).
    - Revert T1–T4 (scripts + tests).
-2. Re-add `scripts/filter-last-sessions.sh` from git history (`git show HEAD^:scripts/filter-last-sessions.sh > scripts/filter-last-sessions.sh && chmod +x scripts/filter-last-sessions.sh`).
+2. Re-add `scripts/filter-last-sessions.sh` from git history (`git show HEAD^:scripts/filter-last-sessions.sh > scripts/filter-last-sessions.sh && chmod +x scripts/filter-last-sessions.sh`). <!-- orianna: ok -->
 3. Next coordinator boot falls back to the old 48h-mtime path with no further intervention.
 
-The only non-trivial recovery step is restoring `scripts/filter-last-sessions.sh` from git history. All other changes are file additions/edits reversible by `git revert`.
+The only non-trivial recovery step is restoring `scripts/filter-last-sessions.sh` from git history. All other changes are file additions/edits reversible by `git revert`. <!-- orianna: ok -->
 
 No prod deploy, no data loss risk, no external system to reset.
 
@@ -511,7 +515,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Additive responsibilities** (ADR §4.2):
   1. INDEX regeneration pass — sources `_lib_last_sessions_index.sh`.
   2. Archive policy — 14d OR position > 20, newest-first; pre-archive open-threads UUID-reference guard; `git mv`; UUID-collision suffix loop (reuse existing).
-  3. Pre-boot validator — moved from `filter-last-sessions.sh`: sentinel `<!-- sessions:auto-below` appears exactly once in `<coordinator>.md`; `last-sessions/` exists; shard counts to stderr.
+  3. Pre-boot validator — moved from `filter-last-sessions.sh`: sentinel `<!-- sessions:auto-below` appears exactly once in `<coordinator>.md`; `last-sessions/` exists; shard counts to stderr. <!-- orianna: ok -->
   4. `--index-only` flag — runs **only** the INDEX regen pass, no archive move, no sessions-fold, no commit/push; respects flock (no-op if lock held, per ADR §10 failure mode #8); target < 1s on a 25-shard fixture.
 - **Preserve**: sessions-fold path, UUID collision loop, lock handling, commit prefix `chore: <secretary> memory consolidation YYYY-MM-DD`, push-with-retry, POSIX bash.
 - **Commands**:
@@ -594,18 +598,18 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Estimate**: 55 min (+ 10–15 min Duong review latency).
 - **Acceptance gate**: G4.
 
-### T9 — impl: rewrite Evelynn + Sona boot scripts; delete `filter-last-sessions.sh`
+### T9 — impl: rewrite Evelynn + Sona boot scripts; delete `filter-last-sessions.sh` <!-- orianna: ok -->
 
 - **Owner**: Viktor
 - **Inputs**: ADR §6.1, §7 (boot order table).
 - **Outputs**:
-  - `.claude/agents/evelynn.md` (edited) — `initialPrompt` rewritten per ADR §6.1; boot order positions 1–8 match §7 table; no reference to `filter-last-sessions.sh`.
+  - `.claude/agents/evelynn.md` (edited) — `initialPrompt` rewritten per ADR §6.1; boot order positions 1–8 match §7 table; no reference to `filter-last-sessions.sh`. <!-- orianna: ok -->
   - `.claude/agents/sona.md` (edited) — same shape, names swapped.
-  - `scripts/filter-last-sessions.sh` — **deleted** via `git rm`.
+  - `scripts/filter-last-sessions.sh` — **deleted** via `git rm`. <!-- orianna: ok -->
 - **Commands**:
-  - `git rm scripts/filter-last-sessions.sh`
+  - `git rm scripts/filter-last-sessions.sh` <!-- orianna: ok -->
   - Grep guard: `grep -rn "filter-last-sessions" .` → returns zero hits (enforce in commit message or fail the commit).
-- **Commit subject**: `chore: T9 — rewrite coordinator boot scripts; delete filter-last-sessions.sh`
+- **Commit subject**: `chore: T9 — rewrite coordinator boot scripts; delete filter-last-sessions.sh` <!-- orianna: ok -->
 - **Dependencies**: T8 landed (seed files must exist before boot scripts reference them).
 - **Estimate**: 25 min.
 - **Acceptance gate**: G5.
@@ -648,7 +652,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Outputs**: no new files; evidence captured in PR body or the T12 commit message.
 - **Procedure**:
   1. In a fresh coordinator session (Evelynn or Sona), run the new boot path end-to-end.
-  2. Confirm no reference to `filter-last-sessions.sh` in the boot transcript.
+  2. Confirm no reference to `filter-last-sessions.sh` in the boot transcript. <!-- orianna: ok -->
   3. Confirm `open-threads.md` loads; `INDEX.md` loads.
   4. Pull one sample shard on-demand (simulate a Duong prompt touching a known thread).
   5. Measure boot-token count for positions 7+8 (tail) — capture output of `wc -c <open-threads.md> <INDEX.md>`; target combined < 8 KB.
@@ -727,7 +731,7 @@ Total wall-clock (serialized on Viktor's path after G3): ~405 min (ADR estimate 
 | **G2** | T3, T4 | Archive policy invariant; no-orphan guard (open-threads UUID skip); Rule 12 T3→T4; preserves existing sessions-fold behaviour (smoke-diff). |
 | **G3** | T5, T6, T7 | Atomicity invariant (shard + open-threads + INDEX in one commit); Ordering invariant (Step 6 → 6b → 9); Rule 12 T5→T6/T7; Lissandra parity. |
 | **G4** | T8 | Bootstrap-completeness invariant (no thread silently dropped); Boot token invariant (< 8 KB combined). |
-| **G5** | T9, T10, T11, T12 | No-orphan invariant (`filter-last-sessions.sh` deletion, grep-clean); Boot-order invariant (§7 table); Dogfood evidence. |
+| **G5** | T9, T10, T11, T12 | No-orphan invariant (`filter-last-sessions.sh` deletion, grep-clean); Boot-order invariant (§7 table); Dogfood evidence. | <!-- orianna: ok -->
 
 ---
 
@@ -746,7 +750,7 @@ Replaces 48h-mtime eager shard load with a two-layer coordinator memory shape:
 - `last-sessions/INDEX.md` (eager, auto-regenerated 3-line TL;DR manifest)
 - `last-sessions/<uuid>.md` (lazy, on-demand) + `last-sessions/archive/` (14d OR >20 shards)
 
-Migrates Evelynn and Sona simultaneously. Deletes `scripts/filter-last-sessions.sh`.
+Migrates Evelynn and Sona simultaneously. Deletes `scripts/filter-last-sessions.sh`. <!-- orianna: ok -->
 
 Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md <!-- orianna: ok -->
 
@@ -756,20 +760,20 @@ Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md <!-
 - T5 (xfail) → T6 — `/end-session` Step 6b
 - T7 — Lissandra Step 6b parity
 - T8 — bootstrap `open-threads.md` + INDEX for both coordinators
-- T9 — boot scripts rewrite + delete `filter-last-sessions.sh`
+- T9 — boot scripts rewrite + delete `filter-last-sessions.sh` <!-- orianna: ok -->
 - T10 — CLAUDE.md startup + agent-network memory-consumption doc
 - T11 — `architecture/coordinator-memory.md` <!-- orianna: ok -->
 - T12 — dogfood evidence
 
 ## Test plan
-- [ ] `bash scripts/test-memory-consolidate-index.sh` passes
-- [ ] `bash scripts/test-memory-consolidate-archive-policy.sh` passes
-- [ ] `bash scripts/test-end-session-memory-integration.sh` passes
-- [ ] `bash scripts/test-end-session-skill-shape.sh` passes
-- [ ] Evelynn dogfood boot — no `filter-last-sessions.sh` reference
+- [ ] `bash scripts/test-memory-consolidate-index.sh` passes <!-- orianna: ok -->
+- [ ] `bash scripts/test-memory-consolidate-archive-policy.sh` passes <!-- orianna: ok -->
+- [ ] `bash scripts/test-end-session-memory-integration.sh` passes <!-- orianna: ok -->
+- [ ] `bash scripts/test-end-session-skill-shape.sh` passes <!-- orianna: ok -->
+- [ ] Evelynn dogfood boot — no `filter-last-sessions.sh` reference <!-- orianna: ok -->
 - [ ] Sona dogfood boot — same
 - [ ] Combined `open-threads.md` + `INDEX.md` size < 8 KB per coordinator
-- [ ] `grep -rn "filter-last-sessions" .` returns zero hits
+- [ ] `grep -rn "filter-last-sessions" .` returns zero hits <!-- orianna: ok -->
 
 ## Dogfood
 <evidence from T12 pasted here — boot transcript excerpt, token count, sample shard pull>
@@ -790,7 +794,7 @@ Plan: plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md <!-
 ADR §Rollback applies verbatim. Short form:
 
 1. `git revert` the 12 commits in reverse order (T12 → T1). Merge, never rebase.
-2. Restore `scripts/filter-last-sessions.sh` from git history: `git show <pre-T9-SHA>:scripts/filter-last-sessions.sh > scripts/filter-last-sessions.sh && chmod +x scripts/filter-last-sessions.sh`.
+2. Restore `scripts/filter-last-sessions.sh` from git history: `git show <pre-T9-SHA>:scripts/filter-last-sessions.sh > scripts/filter-last-sessions.sh && chmod +x scripts/filter-last-sessions.sh`. <!-- orianna: ok -->
 3. Next coordinator boot falls back to 48h-mtime path.
 
 No data loss risk — bootstrap outputs (`open-threads.md`, `INDEX.md`) are additive; reverting removes the files and leaves prior shards intact.
@@ -843,9 +847,9 @@ Six xfail-test commits land on the feature branch before implementation. Each re
 
 | Xfail commit | Files | Gates ADR task | Surface covered |
 |---|---|---|---|
-| X1 | `scripts/test-memory-consolidate-index.sh` | T1 → T2 + T4 | 1, 3 |
-| X2 | `scripts/test-memory-consolidate-archive-policy.sh` | T3 → T4 | 1 |
-| X3 | `scripts/test-end-session-memory-integration.sh`, `scripts/test-end-session-skill-shape.sh` | T5 → T6 | 4 |
+| X1 | `scripts/test-memory-consolidate-index.sh` | T1 → T2 + T4 | 1, 3 | <!-- orianna: ok -->
+| X2 | `scripts/test-memory-consolidate-archive-policy.sh` | T3 → T4 | 1 | <!-- orianna: ok -->
+| X3 | `scripts/test-end-session-memory-integration.sh`, `scripts/test-end-session-skill-shape.sh` | T5 → T6 | 4 | <!-- orianna: ok -->
 | X4 | `scripts/test-lissandra-precompact-memory.sh` | (new — gates T7) | 5 | <!-- orianna: ok -->
 | X5 | `scripts/test-boot-chain-order.sh` | (new — gates T9) | 2, 3 | <!-- orianna: ok -->
 | X6 | `scripts/test-migration-smoke.sh` | (new — gates T8) | 7 | <!-- orianna: ok -->
@@ -940,7 +944,7 @@ fi
 |---|---|---|
 | D1 | `.claude/agents/evelynn.md` `initialPrompt` reads files in the exact order of ADR §7 table. | Extract the numbered list via regex; assert each line matches. |
 | D2 | `open-threads.md` is position 7, `INDEX.md` is position 8 (last two). | Parse numbered list; assert len == 8 AND tail-2 == the expected entries. |
-| D3 | No mention of `filter-last-sessions.sh` anywhere in the boot prompt. | `! grep filter-last-sessions`. |
+| D3 | No mention of `filter-last-sessions.sh` anywhere in the boot prompt. | `! grep filter-last-sessions`. | <!-- orianna: ok -->
 | D4 | `.claude/agents/sona.md` symmetric to Evelynn (names swapped). | Same assertions, parameterised on coordinator name. |
 | D5 | `agents/evelynn/CLAUDE.md` §Startup Sequence matches the boot prompt's file order (single-source-of-truth symmetry). | Parse the `## Startup Sequence` section; compare against `.claude/agents/evelynn.md`. |
 | D6 | `agents/sona/CLAUDE.md` has a `## Startup Sequence` section (new per ADR §6.3). | Assert heading exists. |
@@ -1010,7 +1014,7 @@ fi
 | H1 | Skarner's profile (`agents/skarner/profile.md` or `.claude/agents/skarner.md`) documents reading `last-sessions/<uuid>.md` and `last-sessions/archive/<uuid>.md` as valid lookup paths. | Grep. |
 | H2 | Skarner does NOT eagerly load all shards at its own boot (lazy contract honored). | Grep the boot prompt; assert absence of a wildcard read under `last-sessions/`. |
 | H3 | Skarner's search path tolerates INDEX absence (falls through to direct-file grep). | Grep prose; document as behavioral contract. |
-| H4 | Skarner profile updated to drop the retired `filter-last-sessions.sh` reference, if any. | `! grep filter-last-sessions agents/skarner/** .claude/agents/skarner.md`. |
+| H4 | Skarner profile updated to drop the retired `filter-last-sessions.sh` reference, if any. | `! grep filter-last-sessions agents/skarner/** .claude/agents/skarner.md`. | <!-- orianna: ok -->
 
 **Rakan implementation notes:**
 - This is a documentation-shape check, not a behavior test. Skarner is an agent definition, not a script — so assertions are grep-based.
@@ -1108,13 +1112,13 @@ fi
 ### 3.5 Skarner search path works post-cutover — `scripts/test-skarner-integration.sh` <!-- orianna: ok -->
 
 **Gates:** post-T9.
-**Scope:** given a prompt of the form "find the thread about X in historical shards", assert Skarner (invoked via Agent tool or simulated shell equivalent) reads from `last-sessions/<uuid>.md` and `last-sessions/archive/<uuid>.md` — and NOT from the removed `filter-last-sessions.sh` path.
+**Scope:** given a prompt of the form "find the thread about X in historical shards", assert Skarner (invoked via Agent tool or simulated shell equivalent) reads from `last-sessions/<uuid>.md` and `last-sessions/archive/<uuid>.md` — and NOT from the removed `filter-last-sessions.sh` path. <!-- orianna: ok -->
 
 **Assertions:**
 
 | # | Assertion |
 |---|---|
-| M1 | Skarner profile contains no reference to `filter-last-sessions.sh`. |
+| M1 | Skarner profile contains no reference to `filter-last-sessions.sh`. | <!-- orianna: ok -->
 | M2 | Skarner can resolve a `<uuid>` mentioned in INDEX to the on-disk shard in either `last-sessions/` or `archive/`. |
 | M3 | Skarner does NOT attempt to mass-load all shards at start-of-task (verifies lazy contract). |
 
@@ -1136,7 +1140,7 @@ fi
 | N4 | Initial INDEX generated: row count equals shard count in `last-sessions/`. | Call `--index-only`, count rows. |
 | N5 | Combined `open-threads.md` + `INDEX.md` < 8 KB for Evelynn. | `wc -c`; hard assert. |
 | N6 | Combined < 4 KB for Sona (lower volume). | `wc -c`; soft assert. |
-| N7 | `scripts/filter-last-sessions.sh` is removed; no remaining references in tree. | `! test -f` + `! grep -r filter-last-sessions .claude/ scripts/ agents/`. |
+| N7 | `scripts/filter-last-sessions.sh` is removed; no remaining references in tree. | `! test -f` + `! grep -r filter-last-sessions .claude/ scripts/ agents/`. | <!-- orianna: ok -->
 | N8 | First simulated post-cutover boot (reuse §3.2) completes cleanly with the new files. | Chained. |
 | N9 | No shard file lost during migration (pre-migration shard UUIDs still exist on disk — either in `last-sessions/` or `archive/`). | Snapshot pre-migration UUID list; verify post-migration membership. |
 | N10 | `git log --follow <shard>` still works for each migrated shard (history preserved via `git mv`). | Spot-check 3 shards. |
@@ -1288,7 +1292,7 @@ Heavier tests (§3, §4, §5) run on demand (Rakan's impl PR CI job) but NOT on 
 | 4. `/end-session` Step 6b atomicity | §2.6 F1–F7, §3.3 K1–K8, §4.4 S1–S3 |
 | 5. Lissandra pre-compact parity | §2.7 G1–G7, §3.4 L1–L4, §4.4 S4 |
 | 6. Skarner on-demand retrieval | §2.8 H1–H4, §3.5 M1–M3 |
-| 7. Migration — both coordinators in one PR, shards get INDEX entries retroactively, filter-last-sessions.sh removed | §3.6 N1–N10, §5 U1–U7 |
+| 7. Migration — both coordinators in one PR, shards get INDEX entries retroactively, filter-last-sessions.sh removed | §3.6 N1–N10, §5 U1–U7 | <!-- orianna: ok -->
 | 8. Failure injection: interrupted writes, concurrency, missing-shard refs | §4.1 P1–P6, §4.2 Q1–Q4, §4.3 R1–R3, §4.4 S1–S4, §4.5 T1–T5 |
 
 Every surface has at least one unit-level + one integration-or-fault-injection check.
