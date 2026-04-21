@@ -291,7 +291,7 @@ Swap every direct-Firestore call and every `session.py` import to `session_store
 
 ### 6.5 Phase E — Camille audit (grep gate)
 
-CI gate: fail the build if any file under `company-os/tools/demo-studio-v3/` other than `session_store.py` imports `google.cloud.firestore` (string match `from google.cloud import firestore` or `import google.cloud.firestore`).
+CI gate: fail the build if any file under `company-os/tools/demo-studio-v3/` <!-- orianna: ok — grep-gate scope string referring to missmp/company-os; not a local filesystem path --> other than `session_store.py` imports `google.cloud.firestore` (string match `from google.cloud import firestore` or `import google.cloud.firestore`).
 
 - Permits exactly one occurrence, tagged with `# azir: boundary`.
 - Runs on every PR.
@@ -492,23 +492,23 @@ Merges independently. Old `session.py` still in place at end of phase.
 After Phase A merges, every Firestore touchpoint outside `session_store.py` moves to the module boundary. Can be parallelised per file after SE.B.1.
 
 #### SE.B.1 — xfail tests asserting call-site rewrites
-- **What:** `test_call_site_boundary.py`. Covers: (i) `main.py` no longer imports `from session import ...` or `from google.cloud import firestore`; (ii) `auth.py` no longer imports from `session`; (iii) `factory_bridge.py` / `factory_bridge_v2.py` import only from `session_store`; (iv) `dashboard_service.py` imports only from `session_store`. Pure `ast.parse` + import-grep test — no runtime.
+- **What:** `test_call_site_boundary.py`. Covers: (i) `main.py` <!-- orianna: ok — company-os file --> no longer imports `from session import ...` or `from google.cloud import firestore`; (ii) `auth.py` <!-- orianna: ok — company-os file --> no longer imports from `session`; (iii) `factory_bridge.py` <!-- orianna: ok — company-os file --> / `factory_bridge_v2.py` <!-- orianna: ok — company-os file --> import only from `session_store`; (iv) `dashboard_service.py` <!-- orianna: ok — company-os file --> imports only from `session_store`. Pure `ast.parse` + import-grep test — no runtime.
 - **Where:** new test file.
 - **Why:** mechanical assertion so reviewers don't have to grep by hand, and so regressions fail CI.
 - **Acceptance:** tests fail on current code; xfail/strict → SE.B.2.
 - **TDD:** xfail commit for SE.B.2 through SE.B.6 collectively (one xfail covers a spread of impl commits per pre-push hook semantics).
 - **Depends on:** SE.A.2.
 
-#### SE.B.2 — Migrate `main.py` to `session_store`
+#### SE.B.2 — Migrate `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> to `session_store`
 - **What:** replace `from session import create_session, get_session, get_db, transition_session_status, update_session_field, update_session_status` with `import session_store`. Replace every call. Replace the inline `from google.cloud import firestore as _fs` at line 2046 by moving that query into `session_store.list_sessions(status=None, limit=..., offset=...)` (signature per SE.A.8 post-OQ-SE-4). Remove the `_check_firestore()` / `healthz` direct `get_db()` checks by adding a `session_store.healthcheck()` helper.
-  **BD amendment (Sona, 2026-04-20 s3 — see §2.5 of amendment file + BD §3.2):** every identity-field read on `main.py` MUST route to S2 via `config_mgmt_client.fetch_config(session_id)`, NOT to the session doc. Specifically:
-  - `main.py:1349` `session_page` brand-in-title — replace `session.get("config", {}).get("brand", ...)` with `config_mgmt_client.fetch_config(session_id).config.get("brand", "New Session")`. Catch `NotFoundError` (cold session, pre-first-`set_config`) and fall back to "New Session". (BD §3.2 row 1349 — Refactor-to-S2-API-call.)
-  - `main.py:1395–1397` `chat` lazy-create title derivation — same treatment; brand/market come from S2; `insuranceLine` is removed entirely (not in S2 schema). (BD §3.2 row 1395–1397.)
-  - `main.py:1461–1472` `session_status` — drop `brand`/`market`/`shortcode`/`logos`/`configVersion` from response. Response is lifecycle-only. (Detailed shape rewrite is SE.F.3 — this task only ensures `main.py` no longer reads those keys off the session doc.) (BD §3.2 row 1461–1472.)
-  - `main.py:1987–2001` `session_history` summary — same treatment; brand for summary fetched from S2 on render. (BD §3.2 row 1987–2001.)
-  - `main.py:2055–2065` `list_sessions` route — relies entirely on lifecycle-only rows from `session_store.list_sessions` (per SE.A.8 amended); no per-row identity-field projection in this route. Identity-field fan-out (if any caller needs it) is client-side or in SE.F.5 follow-up.
+  **BD amendment (Sona, 2026-04-20 s3 — see §2.5 of amendment file + BD §3.2):** every identity-field read on `main.py` <!-- orianna: ok — company-os file --> MUST route to S2 via `config_mgmt_client.fetch_config(session_id)`, NOT to the session doc. Specifically:
+  - `main.py:1349` <!-- orianna: ok — company-os file line ref --> `session_page` brand-in-title — replace `session.get("config", {}).get("brand", ...)` with `config_mgmt_client.fetch_config(session_id).config.get("brand", "New Session")`. Catch `NotFoundError` (cold session, pre-first-`set_config`) and fall back to "New Session". (BD §3.2 row 1349 — Refactor-to-S2-API-call.)
+  - `main.py:1395–1397` <!-- orianna: ok — company-os file line ref --> `chat` lazy-create title derivation — same treatment; brand/market come from S2; `insuranceLine` is removed entirely (not in S2 schema). (BD §3.2 row 1395–1397.)
+  - `main.py:1461–1472` <!-- orianna: ok — company-os file line ref --> `session_status` — drop `brand`/`market`/`shortcode`/`logos`/`configVersion` from response. Response is lifecycle-only. (Detailed shape rewrite is SE.F.3 — this task only ensures `main.py` <!-- orianna: ok — company-os file --> no longer reads those keys off the session doc.) (BD §3.2 row 1461–1472.)
+  - `main.py:1987–2001` <!-- orianna: ok — company-os file line ref --> `session_history` summary — same treatment; brand for summary fetched from S2 on render. (BD §3.2 row 1987–2001.)
+  - `main.py:2055–2065` <!-- orianna: ok — company-os file line ref --> `list_sessions` route — relies entirely on lifecycle-only rows from `session_store.list_sessions` (per SE.A.8 amended); no per-row identity-field projection in this route. Identity-field fan-out (if any caller needs it) is client-side or in SE.F.5 follow-up.
   Routes that BD §3.2 marks **Delete from S1** (preview at lines 1439–1445; `SAMPLE_CONFIG` plumbing at lines 53/1190/1192/1196–1201/1250–1254/1284) are NOT this task's responsibility — they are Aphelios's BD task scope per the BD ADR §3.14 Delete list. SE.B.2 limits itself to the boundary migration plus the four Refactor-to-S2 reads above.
-  Add `import config_mgmt_client` at the top of `main.py` (already present? grep before adding).
+  Add `import config_mgmt_client` at the top of `main.py` <!-- orianna: ok — company-os file --> (already present? grep before adding).
 - **Where:** `tools/demo-studio-v3/main.py`, `tools/demo-studio-v3/session_store.py` (add `healthcheck()`). <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2, §2.1 boundary; BD §2 Rule 2 (integration rule — identity reads via `config_mgmt_client.fetch_config`).
 - **Acceptance:** `test_call_site_boundary` passes for `main.py`. Existing route-level tests pass after mock-target rename. New assertion in SE.B.1 boundary test (or paired with SE.B.2): `grep -n 'session.*\.get("config"' tools/demo-studio-v3/main.py` returns 0 matches on the four Refactor paths after this lands.
@@ -556,10 +556,10 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 - **Depends on:** SE.B.1, SE.B.2, SE.B.3, SE.B.4, SE.B.5, SE.B.6.
 
 #### SE.B.8 — Delete `POST /session/{id}/approve` route and `approved` enum references
-- **What:** remove the `approve()` handler in `main.py:1482` and the `status not in ("approved", "configuring")` branch in `main.py:1565`. Update `build_session` to only accept `status == "configuring"` and call `session_store.transition_status(..., to_status="building")` directly. Update the archive-check in `/session/new` at line 1185 to use `to_status="cancelled"` instead of `"archived"`. Update `main.py:1473` `"archived": status == "archived"` to `"cancelled": status == "cancelled"` (or retire the field if dead; confirm with callers).
+- **What:** remove the `approve()` handler in `main.py:1482` <!-- orianna: ok — company-os file line refs; main.py is under missmp/company-os/tools/demo-studio-v3/ --> and the `status not in ("approved", "configuring")` branch in `main.py:1565` <!-- orianna: ok — company-os file line ref -->. Update `build_session` to only accept `status == "configuring"` and call `session_store.transition_status(..., to_status="building")` directly. Update the archive-check in `/session/new` at line 1185 to use `to_status="cancelled"` instead of `"archived"`. Update `main.py:1473` <!-- orianna: ok — company-os file line ref --> `"archived": status == "archived"` to `"cancelled": status == "cancelled"` (or retire the field if dead; confirm with callers).
 - **Where:** `tools/demo-studio-v3/main.py`. <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §4.2 drops `approved`; §5 flags `POST /session/{id}/approve` as **Delete**; `/session/{id}/close` sets `cancelled` (not `archived`).
-- **Acceptance:** grep `approved\|archived` in `main.py` returns 0 non-comment hits. Affected test files renamed or updated. A fresh xfail test asserting the route is absent must precede this.
+- **Acceptance:** grep `approved\|archived` in `main.py` <!-- orianna: ok — company-os file --> returns 0 non-comment hits. Affected test files renamed or updated. A fresh xfail test asserting the route is absent must precede this.
 - **TDD:** preceded by SE.B.1 (boundary test) **plus** a fresh xfail test `test_approve_route_gone.py`.
 - **Depends on:** SE.B.2, SE.C.* (live migration) — do NOT merge this before SE.C.2 runs against prod.
 
@@ -627,7 +627,7 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 ### SE.E — Phase E: Camille grep gate
 
 #### SE.E.1 — xfail test for grep-gate script
-- **What:** `tests/test_firestore_boundary_gate.py`. Covers: the CI script detects a planted `from google.cloud import firestore` in a throwaway file under `tools/demo-studio-v3/` and exits non-zero; exits zero when only `session_store.py` has the import tagged `# azir: boundary`.
+- **What:** `tests/test_firestore_boundary_gate.py` <!-- orianna: ok — company-os future test file under missmp/company-os/tools/demo-studio-v3/tests/ -->. Covers: the CI script detects a planted `from google.cloud import firestore` in a throwaway file under `tools/demo-studio-v3/` <!-- orianna: ok — company-os path; refers to missmp/company-os/tools/demo-studio-v3/ --> and exits non-zero; exits zero when only `session_store.py` has the import tagged `# azir: boundary`.
 - **Where:** new test file + a throwaway fixture module.
 - **Why:** ADR §6.5.
 - **Acceptance:** test fails because the gate script does not exist yet; xfail/strict → SE.E.2.
