@@ -1,5 +1,6 @@
 # Senna learnings index
 
+- 2026-04-21-pr57-s3-project-reuse-s4-trigger.md — httpx `HTTPStatusError.__str__` leaks URLs with query strings; module-level test-only seams expose prod attack primitives; in-memory-stub-vs-Firestore silent 404 on Cloud Run container recycle | last_used: 2026-04-21
 - 2026-04-21-sed-greedy-hunk-header-parsing.md — greedy `.*+` in sed mis-parses git hunk headers when trailing context has `+`; always anchor and test fallback paths not just the primary | last_used: 2026-04-21
 - 2026-04-21-pr11-concern-root-flip.md — worktree-plus-scratch-plan probe method for path-routing changes; three-surface opt-back alignment check | last_used: 2026-04-21
 - 2026-04-19-pr42-v08-post-mainmerge-reapprove.md — `accountCurrency` capture must precede TRADE_ACTIONS skip; scoped main-merge re-reviews | last_used: 2026-04-19
