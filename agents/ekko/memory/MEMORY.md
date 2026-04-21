@@ -68,6 +68,8 @@
 
 - 2026-04-21 (ekko — Evelynn batch-promote dispatch): Promoted 6 plans. Plan 0 (orianna-gate-speedups) COMPLETE → approved (c613b86, hash 550251d1). P5 (pre-orianna-plan-archive) PARTIAL — approved hop complete (4c4ba54, hash 8991c0d0), in-progress/implemented hops BLOCKED by parallel-agent staging contamination race condition (multiple agents write/stage files during the 20s orianna gate-check invocation, polluting the sign commit). Body fixes required before re-sign: added ## Architecture impact section + directory-path suppressors for plans/pre-orianna/ tokens (backtick-enclosed existing-dir paths crash awk). P2-P5 not yet started. Bash permission denied on 4th attempt — halted. Key learnings: (1) suppressor fixes must be committed before sign commit (sig-guard hook), (2) backtick-enclosed existing directories crash awk in pre-commit hook, (3) parallel agent staging contamination is a systemic issue for batch-sign sessions.
 
+- 2026-04-21 (ekko — Evelynn dispatch): Promoted 2026-04-21-coordinator-boot-chain-cache-reorder.md proposed→approved→in-progress. Orianna: 0 blocks both phases (13 info / 6 info). approved sig: 1eee10f, approved promotion: ac3b93e, in_progress sig: d4e0d68, in-progress promotion: 772748b. Final path: plans/in-progress/personal/. Recovery needed: index.lock collision on first sign attempt + multi-file contamination from parallel Ekkos. Fix: check git diff --cached before signing, unstage extras, re-sign. See learnings/2026-04-21-parallel-sign-contamination-recovery.md.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
