@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 orianna_gate_version: 2
 complexity: normal
 concern: work
@@ -338,7 +338,7 @@ Upgrade path: when SE.E.2 graduates, replace the grep with a 30-line `ast.Import
 
 _Source: `company-os/plans/2026-04-20-session-state-encapsulation-tasks.md` in `missmp/company-os`. Inlined verbatim._ <!-- orianna: ok — future task file in missmp/company-os --> <!-- orianna: ok -->
 
-**ADR:** `plans/proposed/work/2026-04-20-session-state-encapsulation.md`
+**ADR:** `plans/approved/work/2026-04-20-session-state-encapsulation.md`
 **Branch:** `feat/demo-studio-v3` <!-- orianna: ok -->
 **Repo:** `missmp/company-os`, all work under `tools/demo-studio-v3/` <!-- orianna: ok — all tools/demo-studio-v3/ refs in this Tasks section are in missmp/company-os --> <!-- orianna: ok -->
 **TDD:** `company-os/.github/workflows/tdd-gate.yml` <!-- orianna: ok — future CI workflow in missmp/company-os; not a local strawberry-agents file --> is active — every implementation task must be preceded on the same branch by an xfail test commit referencing the task ID. Pre-push hook enforces; agents may never bypass. <!-- orianna: ok -->
