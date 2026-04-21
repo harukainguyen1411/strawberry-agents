@@ -337,6 +337,8 @@ awk -v REPO_ROOT="$REPO_ROOT" '
         is_path = 0
       } else if (substr(token, 1, 1) == "-") {
         is_path = 0  # flag/option
+      } else if (substr(token, 1, 1) == "/") {
+        is_path = 0  # absolute path — not validated (repo-relative only)
       } else if (token ~ /^[-a-zA-Z0-9_.\/]+[.][a-zA-Z0-9]+$/ || (index(token, "/") > 0 && token !~ /[[:space:]]/)) {
         is_path = 1
       }
