@@ -94,7 +94,7 @@ All line numbers are against `feat/demo-studio-v3@d327581` <!-- orianna: ok — 
 | 1284 | `create_new_session` | sends `json.dumps(seeded_context)` into Managed Agent | **Refactor** — same as 1219 (identity fields only, as agent-init metadata). |
 | 1349 | `session_page` | `session.get("config", {}).get("brand", "New Session")` for HTML `<title>` | **Refactor-to-S2-API-call** — session doc no longer has `brand`. Call `config_mgmt_client.fetch_config(session_id)` on render, fall back to "New Session" on S2 404 (cold session, pre-first-set_config). Single-page-load cost. |
 | 1395–1397 | `chat` (lazy managed-session create) | reads `session.get("config", {}).get("brand"/"insuranceLine"/"market")` to build the managed-agent title | **Refactor-to-S2-API-call** — fetch from S2 on the lazy-create path. `insuranceLine` is not in the S2 schema at all (see §3.2 line 1192) and disappears entirely. |
-| 1439–1445 | `preview` route + `render_preview(config, config_version)` | reads `session.get("config", {})` and `session.get("configVersion", 0)` and renders Jinja template | **Delete from S1** — preview is S5 (iframe) scope per OQ-BD-3 resolution. S1 does not render previews, does not serve preview routes, does not track `configVersion` for UI pinning. The `/preview` route deletes from S1; any preview concern moves to S5. Note: this route was already flagged for S5 handoff prior to this ADR; BD codifies the handoff. |
+| 1439–1445 | `preview` route + `render_preview(config, config_version)` | reads `session.get("config", {})` and `session.get("configVersion", 0)` and renders Jinja template | **Delete from S1** — preview is S5 (iframe) scope per OQ-BD-3 resolution. S1 does not render previews, does not serve preview routes, does not track `configVersion` for UI pinning. The `/preview` <!-- orianna: ok — HTTP route name, not a filesystem path --> route deletes from S1; any preview concern moves to S5. Note: this route was already flagged for S5 handoff prior to this ADR; BD codifies the handoff. |
 | 1461–1472 | `session_status` | reads `session.get("config") or {}` and `logos = config.get("logos") or {}` plus `configVersion` from the session doc | **Refactor** — drop `logos` from the response (per OQ-BD-2 resolution). `configVersion` also drops: not on the session doc by default, and the status response does not need it. Status response shrinks to lifecycle fields only (`status`, `phase`, timestamps, agent pointer, `factoryRunId`, `projectId`, `outputUrls`, `qcResult`). |
 | 1987–2001 | `session_history` | reads `cfg = session.get("config") or {}` and `cfg.get("brand", "")` for the summary | **Refactor-to-S2-API-call** — history view fetches the latest config from S2. If version-pinned history is needed, call `GET /v1/config/{sessionId}/versions` (S2) and per-version `GET /v1/config/{sessionId}?version=N`. History is a cold path — N+1 acceptable. |
 | 2055–2065 | `list_sessions` | same brand/market/insuranceLine-from-session-doc pattern as `session.list_recent_sessions` | **Delete from S1 (identity-field extraction)** — list response returns lifecycle-only `SessionSummary` rows: `{sessionId, status, phase, createdAt, updatedAt, managedSessionId?, factoryRunId?, projectId?}`. Consumers that want `brand/market/shortcode` call S2 per session (N+1) or fan out client-side. S2 batch-get remains a deferred ask (§6.1). |
@@ -176,7 +176,7 @@ System-prompt refers to `set_config`, `get_config`, `get_schema` MCP tools that 
   - `main.create_new_session_ui` `insuranceLine` plumbing (§3.2 line 1192)
   - `main.create_new_session_ui` `initial_context` persistence (§3.2 line 1196–1201)
   - `main.create_new_session` (internal) seeded-context persistence (§3.2 line 1250–1254)
-  - `main.preview` route + `preview.py::render_preview` (§3.2 line 1439–1445, §3.6 — preview is S5, per BD-3)
+  - `main.preview` route + `preview.py::render_preview` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/; cross-repo audit ref --> (§3.2 line 1439–1445, §3.6 — preview is S5, per BD-3)
   - `main.list_sessions` identity-field extraction (§3.2 line 2055–2065)
   - `factory_bridge.map_config_to_factory_params` (§3.3 line 33–129)
   - `factory_bridge._build_content_from_config` (§3.3 line 142–190)
@@ -313,10 +313,10 @@ Under BD-1 strict, S1 does not denormalise any config-shaped fields, so there is
 | BD.decide (this ADR) | SE.0, SE.A (audit + additive module) | Parallel — SE.A is purely additive storage plumbing; this ADR decides what data flows through it. |
 | BD.implement: delete config writes in `session.py::create_session` | SE.A.4 (implement `session_store.create_session`) | **BD implementation must land INSIDE SE.A.4.** |
 | BD.implement: delete `SAMPLE_CONFIG` + UI/internal create-session config plumbing in `main.py` | SE.B.2 (migrate `main.py` call sites) | **BD must land BEFORE SE.B.2.** |
-| BD.implement: delete `map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`, `validate_v2.py` | SE.B.4 (migrate `factory_bridge*.py`) | **BD must land BEFORE SE.B.4.** |
+| BD.implement: delete `map_config_to_factory_params`, `_build_content_from_config`, `prepare_demo_dict`, `validate_v2.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/factory_v2/ --> | SE.B.4 (migrate `factory_bridge*.py` <!-- orianna: ok — company-os file glob under missmp/company-os/tools/demo-studio-v3/ -->) | **BD must land BEFORE SE.B.4.** |
 | BD.implement: add `config_mgmt_client` call sites for `preview` / `session_status` / `session_history` | SE.B.2 (same file) | **Parallelisable with SE.B.2.** |
 | BD.implement: extend SE.E grep gate with config-boundary patterns | SE.E.2 (implement grep-gate CI) | **BD must land INSIDE SE.E.2.** |
-| BD.implement: delete `sample-config.json` | SE.* (unrelated) | Any time. |
+| BD.implement: delete `sample-config.json` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> | SE.* (unrelated) | Any time. |
 | BD.implement: initial config POST to S2 at session creation | SE.F.1 (`/session/new` spec alignment) | **Parallelisable.** |
 | BD.implement: identity-field denormalisation (brand/market/languages/shortcode) | SE.A.4 / SE.A.6 (`session_store` fields) | **BD must land INSIDE SE.A.4.** |
 
@@ -361,7 +361,7 @@ Per-phase revert is straight git revert, same as session-state ADR §7. Because 
 - **S2 becomes a hard runtime dependency for S1 UI renders that include identity fields.** Today, S1 renders even if S2 is down (reads cached config out of session doc). Post-migration, those renders degrade to "New Session" fallback on S2 404 / 5xx. Acceptable per Duong's posture; S2 is infrastructure, not a soft dependency.
 - **Factory builds are determinism-agnostic at the S1 boundary.** S1 does not capture `configVersion` at build start; S3's self-fetch reads latest. If build reproducibility is required, it's an S3 concern.
 - **The MCP server is unchanged.** It already writes to S2 directly; S1 was never in that path.
-- **Tests simplify.** `test_config_mgmt_client.py` tests become live-integration. `test_no_local_validation.py` finally passes without further action. ~15 call-sites stop mocking `session.get("config", ...)`.
+- **Tests simplify.** `test_config_mgmt_client.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> tests become live-integration. `test_no_local_validation.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> finally passes without further action. ~15 call-sites stop mocking `session.get("config", ...)`.
 - **SE ADR `Session` dataclass shrinks.** `brand`, `market`, `languages`, `shortcode` drop. `configVersion` drops. See sibling amendment file.
 - **`/preview` route goes away on S1.** S5 picks it up. Out of scope for this ADR; flagged for whoever owns S5.
 - **No S2 writes from S1 at creation.** S1 becomes a pure session-lifecycle service + agent host. Every config mutation is agent-initiated via MCP → S2.
@@ -396,7 +396,7 @@ All seven open questions resolved. Revisions incorporated above; this section re
 - **Orianna:** fact-check the 15-path enumeration in §3 against `feat/demo-studio-v3@d327581`. Line numbers drift; rebaseline on task-file promotion.
 - **Sona:** coordinate OQ-BD-6 with the S3 team, and surface §6.1 (batch GET), §6.2 (PATCH fate), §6.3 (change notifications) to the S2 team.
 - **Camille:** owns the SE.E grep gate; will absorb the two extra patterns from §2 Rule 4 when SE.E.2 is decomposed.
-- **Jayce / Viktor:** no action yet — plan only. Once tasks land, the deletion work (per §3) is a week or two of mostly-mechanical surgery across `main.py`, `factory_bridge*.py`, `session.py`, `factory_v2/`.
+- **Jayce / Viktor:** no action yet — plan only. Once tasks land, the deletion work (per §3) is a week or two of mostly-mechanical surgery across `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->, `factory_bridge*.py` <!-- orianna: ok — company-os file glob under missmp/company-os/tools/demo-studio-v3/ -->, `session.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->, `factory_v2/` <!-- orianna: ok — company-os directory under missmp/company-os/tools/demo-studio-v3/ -->.
 
 ## Test plan
 
