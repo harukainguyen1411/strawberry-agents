@@ -62,6 +62,8 @@
 
 - 2026-04-21 (ekko): Revert + clean re-apply of 663c274 (Orianna Opus-low pin) to strip AI co-author trailer. Revert: bcc66d1, clean re-apply: 54ac1bf, Syndra learning: d2cb0e0. All pushed to main. Pattern: git revert --no-edit + cherry-pick --no-commit + clean commit message, push all in one shot.
 
+- 2026-04-21 (ekko — Evelynn dispatch): Attempted promotion of 2026-04-21-memory-consolidation-redesign to implemented. BLOCKED — full analysis in learnings/2026-04-21-memory-consolidation-promote-analysis.md. Left plan at plans/in-progress/personal/ with status: in-progress, all suppressors added, ## Test results added, architecture_changes fixed, NO signatures (requires re-sign chain). Key blocker: git mv (plan rename) makes ALL lines appear in staged diff → pre-commit hook checks all path tokens → many template paths like agents/<coordinator>/memory/... block the commit. Needs Duong admin bypass OR manual re-sign chain.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
