@@ -12,6 +12,7 @@ related:
   - scripts/hooks/pre-commit-secrets-guard.sh
   - architecture/key-scripts.md
   - agents/syndra/learnings/
+orianna_signature_approved: "sha256:6c56b283a94c45e764f007982e892f1bf4e28092ea08d697a4ef7dad61036603:2026-04-21T13:06:29Z"
 ---
 
 # Block AI co-author trailers at commit-msg time
