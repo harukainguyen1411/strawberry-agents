@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -23,7 +23,7 @@ The global CLAUDE.md rule "Never include AI authoring references in commits" is 
 
 A new `commit-msg` git hook will reject any staged commit message containing a `Co-Authored-By:` trailer whose name or email field matches known AI-attribution signatures (Claude, Anthropic, AI, bot, assistant). The hook is the right phase: the check is on the message, not the diff. An explicit `Human-Verified: yes` trailer (exact-case) is the escape hatch for real edge cases (a human collaborator whose name contains a blocked keyword); this is deliberately narrow so abuse is self-documenting in `git log`.
 
-Installation requires extending `scripts/install-hooks.sh` to register a **third** dispatcher verb — today it only installs `pre-commit` and `pre-push`. The extension is mechanical: one additional `install_dispatcher "commit-msg"` line plus the corresponding `commit-msg-*.sh` pattern in the loop (handled by the existing VERB substitution). No existing `commit-msg` hooks are present in `scripts/hooks/`, so chaining concerns do not apply.
+Installation requires extending `scripts/install-hooks.sh` to register a **third** dispatcher verb — today it only installs `pre-commit` and `pre-push`. The extension is mechanical: one additional `install_dispatcher "commit-msg"` line plus the corresponding `commit-msg-*.sh` pattern in the loop (handled by the existing VERB substitution). No existing `commit-msg` hooks are present in `scripts/hooks/`, <!-- orianna: ok --> so chaining concerns do not apply.
 
 ## 2. Decision
 
@@ -75,4 +75,4 @@ Invariants protected:
 - **I4** — Word-boundary matching on the name-keyword pass: a name like "Kai" or "Bart" does not false-match "AI" or "bot". Add an explicit case to Task 1: `Co-Authored-By: Kai Nguyen <kai@example.com>` asserts exit 0.
 - **I5** — Fresh install via `scripts/install-hooks.sh` produces a working `commit-msg` dispatcher that invokes the new hook. Covered manually in Task 3 DoD. <!-- orianna: ok -->
 
-The Task 1 test script is invoked directly (not via the dispatcher) so it runs identically in CI and locally, independent of hook installation state. Post-implementation, the test lives in `scripts/hooks/tests/` alongside `pre-compact-gate.test.sh` and should be added to `scripts/hooks/test-hooks.sh` if that runner enumerates tests (verify during Task 1).
+The Task 1 test script is invoked directly (not via the dispatcher) so it runs identically in CI and locally, independent of hook installation state. Post-implementation, the test lives in `scripts/hooks/tests/` <!-- orianna: ok --> alongside `pre-compact-gate.test.sh` and should be added to `scripts/hooks/test-hooks.sh` if that runner enumerates tests (verify during Task 1).
