@@ -55,6 +55,8 @@
 
 - 2026-04-21 (ekko — Sona dispatch): Promoted session-state-encapsulation ADR (2026-04-20-session-state-encapsulation.md) proposed→approved. Started with 29 block findings. Fixed all by adding inline <!-- orianna: ok --> suppressors (line-scoped per §8), requalifying bare paths (tdd-gate.yml, tools/demo-studio-v3/ paths, plan-promote.sh, reference/1-content-gen.yaml), updating stale BD ADR path (proposed→approved for s1-s2-service-boundary). Added task #17 Camille advisory note to §6.5 grep-gate covering symbol-level bypass vectors, star-import ban, and non-literal importlib ban. 2 iterations: first pass cleared 28/29, second fixed 1 stale path. Gate: 0 blocks. Signed + promoted + pushed. Plan now at plans/approved/work/. Commits: 2cce465, 2014b19, cfd5d68, f4263d9.
 
+- 2026-04-21 (ekko — Sona dispatch): Re-signed MAD + BD at approved after Yuumi's Tasks inlining (commits 26bfe59/1fbbec8). Recovery: moved each plan back to proposed/work/, changed status to proposed, fixed 2 block findings in BD (path-self-ref suppressor + cross-repo git rm suppressor), signed approved + promoted to approved + signed in_progress + promoted to in-progress. Both plans now in plans/in-progress/work/. MAD approved sig: b6e239b, in_progress sig: 23b9673, promotion: 465c01a. BD approved sig: eea4a43, in_progress sig: 2ae4b37, promotion: 2d0fbe0. Key learning: orianna-signature-guard hook requires signing commit to touch ONLY the signature line — commit suppressor fixes separately before signing.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
