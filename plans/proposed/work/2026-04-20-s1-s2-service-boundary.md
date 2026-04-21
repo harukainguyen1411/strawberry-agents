@@ -69,7 +69,7 @@ Gate exceptions are whitelisted by a single `# azir: config-boundary` comment, m
 
 ## 3. Evidence — enumeration of every S1 config touchpoint
 
-All line numbers are against `feat/demo-studio-v3@d327581`. Orianna should fact-check this inventory before the task file is decomposed.
+All line numbers are against `feat/demo-studio-v3@d327581` <!-- orianna: ok — git branch@commit ref, not a filesystem path -->. Orianna should fact-check this inventory before the task file is decomposed.
 
 <!-- orianna: ok — all file paths in §3 (tools/demo-studio-v3/session.py, main.py, factory_bridge.py, factory_bridge_v2.py, factory_v2/validate_v2.py, preview.py, config_mgmt_client.py, sample-config.json, dashboard_service.py, phase.py, agent_proxy.py, logo_upload.py, setup_agent.py) are cross-repo files in missmp/company-os; this section is an architectural audit, not a local file inventory -->
 
@@ -183,8 +183,8 @@ System-prompt refers to `set_config`, `get_config`, `get_schema` MCP tools that 
   - `factory_bridge.trigger_factory` config-fetch + translation (§3.3 line 209 + 210–211 + 250/253 — previously refactor-to-S2)
   - `factory_bridge_v2.prepare_demo_dict` (§3.4 line 35–63)
   - `factory_bridge_v2.trigger_factory_v2` config-fetch + translation (§3.4 line 82 + 97/109–115 + 118 + 140–143 — previously refactor-to-S2)
-  - `factory_v2/validate_v2.py` (entire file, §3.5)
-  - `sample-config.json` (§3.8)
+  - `factory_v2/validate_v2.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/factory_v2/; cross-repo audit ref --> (entire file, §3.5)
+  - `sample-config.json` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/; cross-repo audit ref --> (§3.8)
   - `config_mgmt_client.patch_config` (§3.7 line 94–108 — previously refactor-capability-gap, per BD-4)
 - **Refactor (keep-in-S1-but-rewrite) (5):**
   - `main.create_new_session_ui` agent-init send (§3.2 line 1219 — send identity fields as agent-init metadata only, no config)
@@ -402,7 +402,7 @@ All seven open questions resolved. Revisions incorporated above; this section re
 
 Enforcement is structural and gate-based rather than runtime; per ADR §2 Rule 4 and the SE.E grep gate:
 
-- **I1 — Config-boundary gate:** the extended SE.E.2 grep gate asserts no file under `tools/demo-studio-v3/` (other than tests and migration scripts) reads or writes `session["config"]` or holds the literal `insuranceLine`; CI fails on any violation.
+- **I1 — Config-boundary gate:** the extended SE.E.2 grep gate asserts no file under `company-os/tools/demo-studio-v3/` <!-- orianna: ok — grep-gate scope string referring to missmp/company-os; not a local filesystem path --> (other than tests and migration scripts) reads or writes `session["config"]` or holds the literal `insuranceLine`; CI fails on any violation.
 - **I2 — Identity-field exclusion:** SE.A.3/A.4 tests (in the session-state ADR) assert the Firestore write payload for `create_session` contains no `brand`, `market`, `languages`, `shortcode`, or `configVersion` keys; `update_session` rejects those names as unknown fields.
 - **I3 — Factory pass-through shape:** SE.B.4 regression tests assert `trigger_factory*` functions no longer call `map_config_to_factory_params`, `_build_content_from_config`, or `prepare_demo_dict`, and that the outbound S3 call carries `{sessionId}` only.
-- **I4 — Deleted symbols absent:** SE.B.4 acceptance criteria assert `validate_v2.py` and `sample-config.json` no longer exist in the repo after the deletion PR merges.
+- **I4 — Deleted symbols absent:** SE.B.4 acceptance criteria assert `validate_v2.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/factory_v2/; deletion acceptance criterion --> and `sample-config.json` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/; deletion acceptance criterion --> no longer exist in the repo after the deletion PR merges.
