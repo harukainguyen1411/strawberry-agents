@@ -10,6 +10,7 @@ tags: [plans, lifecycle, cleanup, orianna-gate]
 related:
   - plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md
 orianna_signature_approved: "sha256:6b4dcafad4b52ec3238d0bc3758229e3eb44ecd0563f80bdce8af0171cd0047b:2026-04-21T11:44:06Z"
+orianna_signature_in_progress: "sha256:6b4dcafad4b52ec3238d0bc3758229e3eb44ecd0563f80bdce8af0171cd0047b:2026-04-21T11:45:23Z"
 ---
 
 # Pre-Orianna plan archive — declutter plan phase directories
