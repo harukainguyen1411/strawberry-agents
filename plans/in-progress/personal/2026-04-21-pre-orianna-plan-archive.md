@@ -6,6 +6,7 @@ created: 2026-04-21
 complexity: quick
 orianna_gate_version: 2
 tests_required: false
+architecture_impact: none
 tags: [plans, lifecycle, cleanup, orianna-gate]
 related:
   - plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md
