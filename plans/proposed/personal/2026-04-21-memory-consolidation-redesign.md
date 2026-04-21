@@ -340,7 +340,7 @@ Explicitly excluded from this plan; revisit criteria noted per item:
 - **Cross-session real-time memory sharing between coordinators** — Evelynn and Sona stay single-writer per their own memory dirs. No real-time mirror.
 - **Automatic `open-threads.md` generation from LLM summarization** — rejected. The hand-curation IS the value: coordinators decide what's "live" and what's "resolved," and that judgment is why `open-threads.md` beats mtime-window load. An LLM auto-summarizer would reintroduce the same noise problem at higher token cost.
 - **Rewriting existing shards to add `TL;DR:` anchors** — parser falls back to prose, no retro-fix needed.
-- **A separate `scripts/lint-open-threads.sh`** — `open-threads.md` is markdown; drift detection is human-visible at next `/end-session`.
+- **A separate `scripts/lint-open-threads.sh`** — `open-threads.md` is markdown; drift detection is human-visible at next `/end-session`. <!-- orianna: ok -->
 - **Exposing `open-threads.md` to subagents at their own boot** — subagents do not boot-load coordinator memory. This remains a coordinator-local surface.
 - **MCP-based memory reads** — no new MCP. Local files + Skarner delegation only.
 
@@ -464,7 +464,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Owner**: Rakan
 - **Inputs**: ADR §4.3 (helper contract), §9.1 (assertions list).
 - **Outputs**: `scripts/test-memory-consolidate-index.sh` (new, executable). <!-- orianna: ok -->
-- **Commands**: `chmod +x scripts/test-memory-consolidate-index.sh`; script must exit non-zero under the xfail convention (`set -e` + explicit "not implemented" sentinel, or marker file under `scripts/.xfail-markers/` — match whatever `scripts/hooks/pre-push-tdd.sh` already recognises; check the hook once).
+- **Commands**: `chmod +x scripts/test-memory-consolidate-index.sh`; script must exit non-zero under the xfail convention (`set -e` + explicit "not implemented" sentinel, or marker file under `scripts/.xfail-markers/` — match whatever `scripts/hooks/pre-push-tdd.sh` already recognises; check the hook once). <!-- orianna: ok -->
 - **Test anchors**: every assertion in ADR §9.1 — row count, mtime-descending order, UUID+date+TL;DR verbatim, fallback-to-prose when no `TL;DR:` anchor, "(no summary extractable)" fallback, archived-section presence, idempotency.
 - **Commit subject**: `chore: xfail T1 — memory-consolidate index regen tests (ADR 2026-04-21-memory-consolidation-redesign)`
 - **Rule 12**: must land before T2 and T4 on the branch.
@@ -472,7 +472,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Estimate**: 40 min.
 - **Acceptance gate**: G1.
 
-### T2 — impl: `scripts/_lib_last_sessions_index.sh` helper
+### T2 — impl: `scripts/_lib_last_sessions_index.sh` helper <!-- orianna: ok -->
 
 - **Owner**: Viktor
 - **Inputs**: ADR §4.3 (public function contract), T1 test fixtures.
@@ -482,7 +482,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
   - `render_index_row <shard_path> <mtime_epoch>` — one markdown row, greppable by UUID.
   - `regenerate_index <last_sessions_dir> <output_file>` — newest-first walk + `## Archived` pointer section.
 - **Constraints**: POSIX-portable bash (Rule 10); python3 usage OK (already a dep of `memory-consolidate.sh`); no external binaries beyond `git`, `date`, `stat`, `python3`, `awk`, `sed`, `grep`.
-- **Commands**: run `bash scripts/test-memory-consolidate-index.sh` locally — must pass (converts T1's xfail to pass).
+- **Commands**: run `bash scripts/test-memory-consolidate-index.sh` locally — must pass (converts T1's xfail to pass). <!-- orianna: ok -->
 - **Commit subject**: `chore: T2 — add _lib_last_sessions_index.sh helper (shard TL;DR + index row + regen)`
 - **Dependencies**: T1 committed.
 - **Estimate**: 45 min.
@@ -512,8 +512,8 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
   4. `--index-only` flag — runs **only** the INDEX regen pass, no archive move, no sessions-fold, no commit/push; respects flock (no-op if lock held, per ADR §10 failure mode #8); target < 1s on a 25-shard fixture.
 - **Preserve**: sessions-fold path, UUID collision loop, lock handling, commit prefix `chore: <secretary> memory consolidation YYYY-MM-DD`, push-with-retry, POSIX bash.
 - **Commands**:
-  - `bash scripts/test-memory-consolidate-index.sh` → passes.
-  - `bash scripts/test-memory-consolidate-archive-policy.sh` → passes.
+  - `bash scripts/test-memory-consolidate-index.sh` → passes. <!-- orianna: ok -->
+  - `bash scripts/test-memory-consolidate-archive-policy.sh` → passes. <!-- orianna: ok -->
   - Smoke: dry-run on Evelynn's current memory — confirm `## Sessions` block in `agents/evelynn/memory/evelynn.md` is **byte-identical** pre/post modulo the INDEX additions (grep-diff to verify).
   - Timing: `time bash scripts/memory-consolidate.sh evelynn --index-only` < 1s.
 - **Commit subject**: `chore: T4 — rewrite memory-consolidate.sh with INDEX regen + archive policy + --index-only`
@@ -544,7 +544,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
   - Document the ordering invariant explicitly: "Step 6 MUST complete before 6b; Step 6b MUST complete before Step 9 (commit+push)."
   - Add explicit no-op clause for non-coordinator agents (Sonnet subagents via `/end-subagent-session`).
   - Include the recovery note: "If Step 6b fails partway, the shard write already landed. Recover by running `bash scripts/memory-consolidate.sh <coordinator> --index-only` and re-staging `open-threads.md` + `INDEX.md` before next commit."
-- **Commands**: `bash scripts/test-end-session-skill-shape.sh` → passes (T5 shape xfail flips to pass).
+- **Commands**: `bash scripts/test-end-session-skill-shape.sh` → passes (T5 shape xfail flips to pass). <!-- orianna: ok -->
 - **Commit subject**: `chore: T6 — add /end-session Step 6b (open-threads update + INDEX regen)`
 - **Dependencies**: T5 landed.
 - **Estimate**: 30 min.
@@ -584,7 +584,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Method (Sona)**: same shape, lower volume (2 shards + `sona.md` Paused-work entries).
 - **Smoke test (ADR §9.4)**:
   - Diff seeded `open-threads.md` against union of shards' Open-threads sections — no thread lost.
-  - `wc -c agents/evelynn/memory/open-threads.md agents/evelynn/memory/last-sessions/INDEX.md` → combined < 8 KB.
+  - `wc -c agents/evelynn/memory/open-threads.md agents/evelynn/memory/last-sessions/INDEX.md` → combined < 8 KB. <!-- orianna: ok -->
   - Delete `agents/evelynn/memory.backup-*` after smoke passes.
 - **Commit subject**: `chore: T8 — bootstrap open-threads.md + INDEX.md for Evelynn and Sona`
 - **Dependencies**: T4 landed (needs `--index-only`); T7 landed (so skill+Lissandra are ready; bootstrap + skill land together).
@@ -621,7 +621,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
 - **Estimate**: 30 min.
 - **Acceptance gate**: G5.
 
-### T11 — impl: `architecture/coordinator-memory.md`
+### T11 — impl: `architecture/coordinator-memory.md` <!-- orianna: ok -->
 
 - **Owner**: Viktor
 - **Inputs**: ADR §3 (file layout), §5 (write-side flow), §6 (read-side flow), §7 (boot order), §10 (failure modes).
@@ -633,7 +633,7 @@ All paths absolute-from-repo-root. DoD = Definition of Done.
   - Retention policy — 14d OR 20-shards + 30d archive prune.
   - Failure modes — copy ADR §10 table.
   - Cross-references: link from `agents/evelynn/CLAUDE.md` and `agents/sona/CLAUDE.md` (add the link in the Startup Sequence sections from T10 — coordinate with that commit if T10 not yet in).
-- **Commit subject**: `chore: T11 — add architecture/coordinator-memory.md (two-layer boot doc)`
+- **Commit subject**: `chore: T11 — add architecture/coordinator-memory.md (two-layer boot doc)` <!-- orianna: ok -->
 - **Dependencies**: T10 landed (CLAUDE.md cross-refs).
 - **Estimate**: 35 min.
 - **Acceptance gate**: G5.
@@ -1038,7 +1038,7 @@ fi
 
 **Rakan implementation notes:**
 - Use a scratch repo under `$(mktemp -d)`; copy the real `scripts/memory-consolidate.sh` into it and point the script at the scratch `agents/` tree via a `STRAWBERRY_MEMORY_ROOT` env shim (Rakan may need to add this shim to the script itself during T4 impl — call out in the PR).
-- Snapshot golden files under `scripts/fixtures/memory-consolidate-e2e/` (create via git, not gitignored).
+- Snapshot golden files under `scripts/fixtures/memory-consolidate-e2e/` (create via git, not gitignored). <!-- orianna: ok -->
 
 ### 3.2 Boot simulation — `scripts/test-coordinator-boot-simulation.sh` <!-- orianna: ok -->
 
@@ -1307,7 +1307,7 @@ Every surface has at least one unit-level + one integration-or-fault-injection c
 11. X6 (§3.6 + §5) — xfail commit for migration.
 12. T8 — bootstrap; X6 goes green.
 13. Fault-injection suites (§4.1–§4.5) — commit post-impl as regression guards.
-14. CI wiring (`scripts/test-memory-redesign-all.sh` + GitHub Actions workflow).
+14. CI wiring (`scripts/test-memory-redesign-all.sh` + GitHub Actions workflow). <!-- orianna: ok -->
 15. T12 — dogfood + commit evidence.
 
 ---
@@ -1328,7 +1328,7 @@ If any of these three surprise Swain or Duong at review time, raise in the impl 
 
 - **Xfail-first commits:** X1–X6 (six commits, each on the feature branch before its impl).
 - **Test scripts to create:** 15 new `scripts/test-*.sh` files (§2.1–§2.8, §3.1–§3.6, §4.1–§4.5, §5, §6 CI entrypoint).
-- **Test scripts to modify:** `scripts/hooks/pre-push.sh` (wire the cheap tests).
+- **Test scripts to modify:** `scripts/hooks/pre-push.sh` (wire the cheap tests). <!-- orianna: ok -->
 - **New workflow file:** `.github/workflows/memory-redesign-tests.yml`. <!-- orianna: ok -->
 - **Invariants protected:** boot-token, INDEX-freshness, archive-policy, atomicity, ordering, no-orphan, bootstrap-completeness, prompt-cache stability, migration-lossless.
 - **Rakan authors; Vi/Caitlyn run.** Xayah reviews the impl PR for coverage gaps before merge.
