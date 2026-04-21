@@ -15,7 +15,6 @@ related:
   - agents/sona/CLAUDE.md
   - scripts/test-boot-chain-order.sh
   - plans/approved/personal/2026-04-21-memory-consolidation-redesign.md
-orianna_signature_approved: "sha256:954e940262613ab7581e85629b16cbbff3bff3dcf6d3c9d1c14a2e7d31cc6696:2026-04-21T12:11:05Z"
 ---
 
 # Coordinator boot-chain cache reorder — stable prefix, mutable suffix
