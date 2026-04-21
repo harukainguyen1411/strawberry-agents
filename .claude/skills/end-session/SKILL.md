@@ -103,6 +103,37 @@ git add .remember/remember.md
 
 If the `remember` plugin is not installed or the skill is unavailable, fall back to writing `agents/<agent>/memory/last-session.md` manually with a 5–10 line terse handoff (date, what happened, open threads, dangling commits or PRs, blockers). Stage with `git add -f agents/<agent>/memory/last-session.md`. Note "remember step skipped — plugin not available, used last-session.md fallback" in the final report.
 
+## Step 6b — Update open-threads.md + regenerate INDEX.md (coordinators only)
+
+**Ordering invariant:** Step 6 (write shard) MUST complete before Step 6b because the shard is the source for both open-threads.md and INDEX.md updates. Step 6b MUST complete before Step 9 (commit + push) so all three artifacts land atomically in one commit.
+
+**If agent is a coordinator (evelynn OR sona):** Run the following after Step 6 completes.
+
+1. Parse the shard's `## Open threads into next session` section (or `## Open threads` section). For each thread listed:
+   - If resolved/closed: remove or mark closed the matching `## <thread>` section in `agents/<agent>/memory/open-threads.md`.
+   - If new or still-open: add or update its `## <thread>` section with the shard UUID as a pointer and a status one-liner.
+   - You are the coordinator — you confirm the diff before writing. Hand-curation is the value here.
+   - If `open-threads.md` does not exist yet, create it from scratch.
+
+2. Stage:
+   ```
+   git add agents/<agent>/memory/open-threads.md
+   ```
+
+3. Regenerate `last-sessions/INDEX.md`:
+   ```
+   bash scripts/memory-consolidate.sh <agent> --index-only
+   ```
+
+4. Stage:
+   ```
+   git add agents/<agent>/memory/last-sessions/INDEX.md
+   ```
+
+If Step 6b fails partway (e.g., `--index-only` errors), the shard written in Step 6 is already staged and recoverable. Do NOT abort the session close — log the failure and proceed to Step 9 with only the shard staged. Recovery path: run `bash scripts/memory-consolidate.sh <agent> --index-only`, stage `INDEX.md`, and amend the next commit manually.
+
+**If agent is NOT a coordinator (non-coordinator agents — Sonnet subagents, Lissandra standalone, etc.):** Step 6b is a no-op. Skip entirely and proceed to Step 7.
+
 ## Step 7 — Memory refresh
 
 **If agent == evelynn:** Do NOT touch `agents/evelynn/memory/evelynn.md`. Instead, write a new shard at `agents/evelynn/memory/sessions/<short-uuid>.md` (same UUID from Step 2) containing:
