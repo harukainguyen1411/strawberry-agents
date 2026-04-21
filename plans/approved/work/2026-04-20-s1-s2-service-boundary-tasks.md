@@ -496,3 +496,53 @@ Rule 12 (xfail-first) applied to every BUILDER task per the pairing table above.
 - **Orianna:** BD.0.1 (line-number rebaseline) can surface drift against ADR §3's pinned `d327581`. If drift is material, ADR may need a minor patch — not a plan re-sign unless shape changes.
 - **Jayce / Viktor / Viktor-flavour Sonnet builders:** tasks dispatched individually by Sona once SE/MAL breakdowns land.
 - **Senna (reviewer):** the deletion manifest (BD.A.1 fixture) is your PR-review checklist; BD.H.1 is the automated sentinel.
+
+---
+
+## BD.0.1 Result — Line-number rebaseline
+
+**Branch HEAD at rebaseline:** `13fc893` (feat/demo-studio-v3 after lifecycle BD amendment promotion)
+**ADR pinned commit:** `d327581`
+**Rebaseline date:** 2026-04-21
+
+| ADR §3 row | file | ADR-cited line(s) | current line(s) | drift? | notes |
+|---|---|---|---|---|---|
+| §3.1 line 42 | session.py | 42 | 42 | n | `"config": initial_context or {}` write in `create_session` |
+| §3.1 line 43 | session.py | 43 | 43 | n | `"configVersion": 1` write in `create_session` |
+| §3.1 line 118–128 | session.py | 118–128 | 118–129 | y (minor) | `list_recent_sessions` identity-field reads. One extra line (line 129 is the closing of the `results.append` dict). Shape unchanged; ADR cited range is slightly narrow. Builders target 118–129 or read by symbol. |
+| §3.1 line 133 | session.py | 133 | 133 | n | `_UPDATABLE_FIELDS` keep-as-is |
+| §3.2 line 53 | main.py | 53 | 53 | n | `SAMPLE_CONFIG: dict = {}` module-level |
+| §3.2 line 1190 | main.py | 1190 | 1190 | n | `initial_context = json.loads(json.dumps(SAMPLE_CONFIG))` deep-copy in `create_new_session_ui` |
+| §3.2 line 1192 | main.py | 1192 | 1192 | n | `initial_context["insuranceLine"] = body.insuranceLine` |
+| §3.2 line 1196–1201 | main.py | 1196–1201 | 1196–1201 | n | `create_session(..., initial_context=initial_context)` call block |
+| §3.2 line 1219 | main.py | 1219 | 1219 | n | `send_message(..., f"Session started. Initial context: {json.dumps(initial_context)}...")` refactor target |
+| §3.2 line 1250–1254 | main.py | 1250–1254 | 1250–1254 | n | `_brand/_line/_market` extraction + `seeded_context` deep-copy block in `create_new_session` (internal) |
+| §3.2 line 1284 | main.py | 1284 | 1284 | n | `context_parts.append(f"Initial context: {json.dumps(seeded_context)}")` — refactor target |
+| §3.2 line 1349 | main.py | 1349 | 1349 | n | `session.get("config", {}).get("brand", "New Session")` in `session_page` |
+| §3.2 line 1395–1397 | main.py | 1395–1397 | 1395–1397 | n | `session.get("config", {}).get("brand"/"insuranceLine"/"market")` in `chat` lazy-create |
+| §3.2 line 1439–1445 | main.py | 1439–1445 | 1439–1445 | n | Config-read body in `preview` function (decorator at 1431; ADR cited body lines which are correct) |
+| §3.2 line 1461–1472 | main.py | 1461–1472 | 1461–1472 | n | `config = session.get("config")` + logos + `configVersion` reads in `session_status` (function starts at 1455) |
+| §3.2 line 1987–2001 | main.py | 1987–2001 | 1987–2001 | n | `cfg = session.get("config")` + brand read in `session_history` |
+| §3.2 line 2055–2065 | main.py | 2055–2065 | 2055–2065 | n | `config = d.get("config")` + identity reads in `list_sessions` |
+| §3.3 line 33–129 | factory_bridge.py | 33–129 | 33–129 | n | `map_config_to_factory_params` function |
+| §3.3 line 142–190 | factory_bridge.py | 142–190 | 142–190 | n | `_build_content_from_config` function |
+| §3.3 line 209 | factory_bridge.py | 209 | 209 | n | `config = session.get("config", {})` in `trigger_factory` |
+| §3.3 line 210–211 | factory_bridge.py | 210–211 | 210–211 | n | `factory_params = map_config_to_factory_params(config)` + `content = _build_content_from_config(...)` |
+| §3.3 line 250, 253 | factory_bridge.py | 250, 253 | 250, 253 | n | `logos = config.get("logos", {})` and `bg_color = config.get("colors", {}).get("primary", ...)` |
+| §3.4 line 35–63 | factory_bridge_v2.py | 35–63 | 35–63 | n | `prepare_demo_dict` function |
+| §3.4 line 82 | factory_bridge_v2.py | 82 | 82 | n | `config = session.get("config", {})` in `trigger_factory_v2` |
+| §3.4 line 97, 109–115 | factory_bridge_v2.py | 97, 109–115 | 97, 109–115 | n | `validate(config)` call + error handling block |
+| §3.4 line 118 | factory_bridge_v2.py | 118 | 118 | n | `demo = prepare_demo_dict(config)` |
+| §3.4 line 140–143 | factory_bridge_v2.py | 140–143 | 140–143 | n | `logos = demo.get("logos", {})` + `bg_color = demo.get("colors", ...)` |
+| §3.5 entire file | factory_v2/validate_v2.py | entire | entire | n | File exists; 73 LOC, `validate()` function at line 24 |
+| §3.6 entire file | preview.py | entire | entire | n | File exists; `render_preview` at line 16 |
+| §3.7 line 94–108 | config_mgmt_client.py | 94–108 | 94–108 | n | `patch_config` function |
+| §3.8 entire file | sample-config.json | entire | entire | n | File exists at tools/demo-studio-v3/sample-config.json |
+
+**Summary:** 1 minor drift (§3.1 line 118–128 — actual range is 118–129). All other ADR-cited lines confirmed exact at `13fc893`. No function shapes changed. Builders may use symbol-based targeting (`list_recent_sessions`, `prepare_demo_dict`, etc.) and ignore the line-number discrepancy on the session.py row.
+
+**Operational checklist item (Risk 3 from task file):** Pre-deploy count of in-flight sessions with `status IN ('configuring', 'building')` should be run before BD.B phases merge. Flag to Sona — not a BD task, but an ops gate.
+
+## BD.0.2 Result — Worktree hygiene
+
+Worktree `~/Documents/Work/mmp/workspace/company-os-bd-0-a` created at `chore/bd-0-a-preflight` off `feat/demo-studio-v3@13fc893`. Status clean. Branch `feat/demo-studio-v3` main worktree at `~/Documents/Work/mmp/workspace/company-os` also clean on same HEAD.
