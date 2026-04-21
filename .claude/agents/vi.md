@@ -22,7 +22,7 @@ mcpServers:
   - playwright:
       type: stdio
       command: npx
-      args: ["-y", "@playwright/mcp@latest"]
+      args: ["-y", "@playwright/mcp@latest", "--caps", "devtools", "--output-dir", "assessments/qa-artifacts/vi"]
 ---
 
 # Vi — Tester & QA
