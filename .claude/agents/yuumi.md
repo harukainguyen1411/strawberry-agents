@@ -5,7 +5,6 @@ thinking:
   budget_tokens: 2000
 tier: single_lane
 role_slot: errand
-permissionMode: bypassPermissions
 name: Yuumi
 description: Evelynn's errand runner — file reads, edits, memory updates, state file management, and any small operational tasks the coordinator needs done. Always attached to Evelynn.
 tools:

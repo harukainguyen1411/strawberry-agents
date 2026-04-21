@@ -1,6 +1,5 @@
 ---
 effort: high
-permissionMode: bypassPermissions
 name: Xayah
 description: Complex-track test planner — writes resilience, fault-injection, and cross-service test plans for ADRs Swain authors or plans Evelynn classifies complex. Pair-mate of Caitlyn (normal-track).
 tier: complex

@@ -3,7 +3,6 @@ model: sonnet
 effort: high
 thinking:
   budget_tokens: 10000
-permissionMode: bypassPermissions
 name: Syndra
 description: Normal-track AI/Agents/MCP specialist — single-file or few-line tweaks to agent defs, prompts, MCP config. Pair-mate of Lux (complex-track).
 tier: normal

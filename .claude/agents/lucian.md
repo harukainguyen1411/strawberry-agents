@@ -2,7 +2,6 @@
 effort: medium
 tier: single_lane
 role_slot: pr-fidelity
-permissionMode: bypassPermissions
 name: Lucian
 description: PR plan/ADR fidelity reviewer — verifies PRs honor the approved plan, ADR decisions, and architectural invariants. Paired with Senna (code quality).
 tools:

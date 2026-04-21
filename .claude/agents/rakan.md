@@ -3,7 +3,6 @@ model: sonnet
 effort: high
 thinking:
   budget_tokens: 10000
-permissionMode: bypassPermissions
 name: Rakan
 description: Complex-track test implementer — authors xfail test skeletons, fault-injection harnesses, and non-routine test fixtures from Xayah's plans. Pair-mate of Vi (normal-track).
 tier: complex

@@ -2,7 +2,6 @@
 effort: medium
 tier: single_lane
 role_slot: devops-advice
-permissionMode: bypassPermissions
 name: Heimerdinger
 description: DevOps advisor — advises on CI/CD, infrastructure, Docker, Cloud Run, GCP, and build systems. Does not execute. Ekko handles execution.
 tools:

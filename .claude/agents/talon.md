@@ -6,7 +6,6 @@ thinking:
 tier: quick
 pair_mate: karma
 role_slot: quick-executor
-permissionMode: bypassPermissions
 name: Talon
 description: Quick-lane executor — collapsed builder + test implementer for Karma's plans. Trivial tasks only. Same Orianna gate, same Senna+Lucian PR review, same TDD discipline as the standard executor lanes.
 tools:

@@ -6,7 +6,6 @@ thinking:
 tier: complex
 pair_mate: jayce
 role_slot: builder
-permissionMode: bypassPermissions
 name: Viktor
 description: Complex-track feature builder — invasive features, migrations, cross-module work, and refactor-as-part-of-build. Paired with Jayce (normal-track, Sonnet-medium). Refactor is a task-shape both agents do as needed; the split is by reasoning depth required, not by feature-vs-refactor.
 tools:

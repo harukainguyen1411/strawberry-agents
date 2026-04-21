@@ -6,7 +6,6 @@ thinking:
 tier: normal
 pair_mate: viktor
 role_slot: builder
-permissionMode: bypassPermissions
 name: Jayce
 description: Normal-track builder — greenfield, additive, single-module features. Complex-track invasive features, migrations, and cross-module work routes to Viktor (Sonnet-high). Refactor is a task-shape both agents do as needed.
 tools:

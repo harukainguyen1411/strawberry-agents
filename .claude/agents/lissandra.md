@@ -5,7 +5,6 @@ thinking:
   budget_tokens: 6000
 tier: single_lane
 role_slot: memory-consolidator
-permissionMode: bypassPermissions
 name: Lissandra
 description: Pre-compact memory consolidator — mirrors the coordinator's /end-session protocol on their behalf when /compact is imminent. Reads the live transcript jsonl, detects the active coordinator (Evelynn or Sona), and writes the handoff note, memory shard, session shard, journal entry, learnings, and commit in that coordinator's voice. Invoked via the /pre-compact-save skill, which is nudged by the PreCompact hook.
 tools:
