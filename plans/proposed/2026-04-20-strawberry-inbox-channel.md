@@ -34,7 +34,7 @@ This is the third iteration of the plan:
   answers to the v3 gating questions inlined into the design. Archive
   retention policy added — `inbox/archive/**` entries older than 7 days
   are deleted on next watcher boot (cleanup runs once per session, at
-  the top of `inbox-watch.sh`, before the initial pending sweep). §8
+  the top of `inbox-watch.sh`, before the initial pending sweep). §8 <!-- orianna: ok -->
   gating block closed; answers preserved as a v3 table in §10 alongside
   the v1 / v2 tables.
 
@@ -151,9 +151,9 @@ Three moving parts:
 
 | Component | Role |
 |---|---|
-| `SessionStart` hook (`additionalContext` only) | **Bootstrap.** Detects coordinator identity; if inbox exists, injects context instructing the coordinator to invoke `Monitor` on its first turn with `bash scripts/hooks/inbox-watch.sh` as the target script. |
-| `scripts/hooks/inbox-watch.sh` | **Watcher.** POSIX-portable script the Monitor runs. Emits one stdout line per `status: pending` message — at boot (initial sweep) and on each create/move-in event. Runs for session lifetime. |
-| `.claude/skills/check-inbox/SKILL.md` | **Reader + archiver.** Recovered from fb1bd4f and extended. Displays each pending message, then **moves** it to `inbox/archive/YYYY-MM/` with `status: read` + `read_at` set in frontmatter. Enforces the pending-only invariant of the main inbox dir. |
+| `SessionStart` hook (`additionalContext` only) | **Bootstrap.** Detects coordinator identity; if inbox exists, injects context instructing the coordinator to invoke `Monitor` on its first turn with `bash scripts/hooks/inbox-watch.sh` as the target script. | <!-- orianna: ok -->
+| `scripts/hooks/inbox-watch.sh` | **Watcher.** POSIX-portable script the Monitor runs. Emits one stdout line per `status: pending` message — at boot (initial sweep) and on each create/move-in event. Runs for session lifetime. | <!-- orianna: ok -->
+| `.claude/skills/check-inbox/SKILL.md` | **Reader + archiver.** Recovered from fb1bd4f and extended. Displays each pending message, then **moves** it to `inbox/archive/YYYY-MM/` with `status: read` + `read_at` set in frontmatter. Enforces the pending-only invariant of the main inbox dir. | <!-- orianna: ok -->
 
 No plugin, no MCP, no channels, no `--dangerously` flag, no daemon. Every
 piece is either already supported today or is a POSIX shell script.
@@ -195,7 +195,7 @@ v2's `scripts/hooks/inbox-nudge.sh` is **not created**. The
 `SessionStart` hook continues to host resume-suppression logic, and we
 add one additional `SessionStart` entry for the watcher bootstrap.
 
-### 3.2 The watcher script — `scripts/hooks/inbox-watch.sh`
+### 3.2 The watcher script — `scripts/hooks/inbox-watch.sh` <!-- orianna: ok -->
 
 POSIX-portable bash (Rule 10 compliance). Three phases, run in order:
 
@@ -326,7 +326,7 @@ hard-delete — with a 7-day TTL on archived entries enforced by the
 watcher (§3.2 Phase 0, §4.4). Archive bucket granularity is
 `YYYY-MM/` (settled §10 v3 table Q2).
 
-Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f`, then
+Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f`, then <!-- orianna: ok -->
 rewrite the disposition step. New behaviour:
 
 For each file matching `agents/<coord>/inbox/*.md` with `status:
@@ -371,7 +371,7 @@ existing resume-suppression entry):
 }
 ```
 
-`inbox-watch-bootstrap.sh` is a tiny wrapper (can be inlined as a jq
+`inbox-watch-bootstrap.sh` is a tiny wrapper (can be inlined as a jq <!-- orianna: ok -->
 one-liner if simple enough; we keep it a script for testability) that:
 
 - Reads stdin; if `source != startup`, exits 0.
@@ -481,7 +481,7 @@ All criteria empirically testable against a live session.
      messages.
    - Action: launch `evelynn`. Observe the model's first turn.
    - Expected: the model's first turn invokes `Monitor` with
-     `bash scripts/hooks/inbox-watch.sh`. Within a few seconds of
+     `bash scripts/hooks/inbox-watch.sh`. Within a few seconds of <!-- orianna: ok -->
      Monitor starting, the session receives an `INBOX: <filename> —
      from <sender> — <priority>` notification event.
 
@@ -563,7 +563,7 @@ All criteria empirically testable against a live session.
       `-d '10 days ago'`), and
       `agents/<coord>/inbox/archive/2026-04/fresh-msg.md` with mtime
       within the last 24 h.
-    - Action: run `scripts/hooks/inbox-watch.sh` with
+    - Action: run `scripts/hooks/inbox-watch.sh` with <!-- orianna: ok -->
       `INBOX_WATCH_ONESHOT=1` (runs Phase 0 then Phase 1).
     - Expected:
       (a) `old-msg.md` is deleted.
@@ -635,7 +635,7 @@ All criteria empirically testable against a live session.
   support `plugins-reference#monitors`, but requires plugin
   infrastructure we do not have today. Revisit if Channels block
   lifts; strictly mechanical swap at the bootstrap layer.
-- Windows parity — `scripts/hooks/inbox-watch.sh` will be POSIX, but
+- Windows parity — `scripts/hooks/inbox-watch.sh` will be POSIX, but <!-- orianna: ok -->
   `fswatch`/`inotifywait` detection + PowerShell equivalents are a
   follow-up. Deferred (settled §10 v3 table Q4).
 - Slack/SMS/push bridges. In-session only.
@@ -657,7 +657,7 @@ Orianna gate (Rule 19).
 
 Three layers of test evidence.
 
-- **Unit-level (`scripts/hooks/tests/inbox-watch-test.sh`).**
+- **Unit-level (`scripts/hooks/tests/inbox-watch-test.sh`).** <!-- orianna: ok -->
   Covers:
   - Initial-sweep correctness (`INBOX_WATCH_ONESHOT=1`): fixture inbox
     dirs with 0 / 1 / N pending files, mixed pending + read (archive
@@ -678,7 +678,7 @@ Three layers of test evidence.
     days (`touch -t 202604100000` or equivalent `-mtime +7` satisfier
     on the test host) and one file with fresh mtime
     (default `touch`).
-  - Run: `INBOX_WATCH_ONESHOT=1 bash scripts/hooks/inbox-watch.sh`.
+  - Run: `INBOX_WATCH_ONESHOT=1 bash scripts/hooks/inbox-watch.sh`. <!-- orianna: ok -->
   - Assert:
     - Stale file gone.
     - Fresh file present, bit-identical to pre-run state.
