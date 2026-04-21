@@ -12,6 +12,7 @@ tags:
   - refactor
   - work
 tests_required: true
+orianna_signature_approved: "sha256:3d5171843e986b44bbe0ea76a189f2e190b58bd00c5b5daef465e3c15b5c9999:2026-04-21T06:59:48Z"
 ---
 
 # ADR: Demo Studio v3 — Session State Encapsulation (Service 1)
