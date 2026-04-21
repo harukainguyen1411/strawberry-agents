@@ -11,6 +11,7 @@ related:
   - plans/approved/personal/2026-04-20-plan-structure-prelint.md
   - architecture/plan-lifecycle.md
   - scripts/hooks/pre-commit-t-plan-structure.sh
+orianna_signature_approved: "sha256:7347316a9dcc3cd6f760e580039dafa85dbb43b66d8e1a923a438fb97f455857:2026-04-21T04:38:24Z"
 ---
 
 # Plan pre-lint: shift all of Orianna's deterministic structural checks left
