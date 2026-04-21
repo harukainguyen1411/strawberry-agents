@@ -49,6 +49,36 @@ The plan you write must include:
 - Never raw `age -d` — `tools/decrypt.sh`
 - Never rebase
 
+## Plan structure hook — quick checklist
+
+The `pre-commit-zz-plan-structure.sh` hook matches heading strings literally. Getting these wrong produces misleading BLOCK findings at commit time.
+
+**Section headings — canonical shape:**
+
+- `## Tasks` — accepted as-is, or with a leading number: `## 7. Tasks`. NOT accepted: `## Task breakdown`, `## Tasks (Karma)`.
+- `## Test plan` — must be exactly this string, with no number prefix. `## 10. Test plan` fails. No other trailing qualifier.
+- Other sections (`## Decision`, `## Open questions`, `## References`) — use unnumbered form; numbered variants are tolerated but the hook does not validate them so they won't trigger false positives.
+
+**Prospective-path citation (`<!-- orianna: ok -->`):**
+
+When a plan cites a path that doesn't exist yet (a file the plan itself will create), suppress the path-existence check by adding `<!-- orianna: ok -->` on the SAME line as the backtick citation:
+
+```
+- Files: `scripts/hooks/new-hook.sh` (new). <!-- orianna: ok -->
+```
+
+Do NOT put the suppressor on its own line — it only suppresses the line it appears on.
+
+Future note: plan `2026-04-21-orianna-gate-speedups.md` T11.c will require a reason suffix — `<!-- orianna: ok -- prospective path, created by this plan -->`. Until T11.c ships, the bare form above is correct. Migrate after T11.c lands.
+
+**Path citation style:**
+
+Prefer full repo-root-relative paths (`scripts/hooks/foo.sh`) over bare filenames (`foo.sh`). The hook's path-existence check resolves tokens relative to the repo root; a bare filename without a `/` is only recognized as path-like if it contains a `.` with an extension, so full paths are more reliably validated and suppressed.
+
+**Time-unit literals in `## Tasks`:**
+
+The hook bans `hours`, `days`, `weeks` (word boundaries) and the patterns `Nh)` (e.g. `2h)`) and `N(d)` (digit then `(d)`) as alternative time-unit forms. If you enumerate sub-points in a task description using letters or abbreviations, avoid patterns that match these — use `-` or word form (`(a)` is safe; `1d)` is not).
+
 ## Closeout
 
 Default clean exit per `.claude/skills/end-subagent-session/SKILL.md`. Write learnings only when a quick-lane pattern emerged that's worth reusing.
