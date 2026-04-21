@@ -13,6 +13,7 @@ tags:
   - cost-control
   - work
 tests_required: true
+orianna_signature_approved: "sha256:920d96c350f1e5fcd8bd392dde3ab03960ebc06ec6e6746167186bfbeed7eed8:2026-04-21T04:36:31Z"
 ---
 
 # ADR: Managed-Agent Session Lifecycle Control (Demo Studio v3 Service 1)
