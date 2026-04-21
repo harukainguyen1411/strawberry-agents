@@ -37,7 +37,7 @@ Tier values: `complex` | `normal` | `quick` | `single_lane` | `concern` (coordin
 | **Skarner**      | single_lane       | memory           | —         | sonnet      | low    | `.claude/agents/skarner.md`              | active               |
 | **Yuumi**        | single_lane       | errand           | —         | sonnet      | low    | `.claude/agents/yuumi.md`                | active               |
 | **Camille**      | single_lane       | git-security     | —         | opus (omit) | medium | `.claude/agents/camille.md`              | active               |
-| **Orianna**      | single_lane       | fact-check       | —         | opus (pin)  | low    | `.claude/_script-only-agents/orianna.md` | active (script-only) |
+| **Orianna**      | single_lane       | fact-check       | —         | opus (omit) | medium | `.claude/_script-only-agents/orianna.md` | active (script-only) |
 | **Jhin**         | —                 | pr-review        | —         | sonnet      | —      | `.claude/_retired-agents/jhin.md`        | retired-2026-04-19   |
 
 

@@ -41,7 +41,7 @@ Single-lane roles:
 | 10 | DevOps exec | Ekko (Sonnet medium) |
 | 11 | PR code/security | Senna (Opus high) |
 | 12 | PR plan fidelity | Lucian (Opus medium) |
-| 13 | Fact-check / signer | Orianna (Opus low, script-only) |
+| 13 | Fact-check / signer | Orianna (Opus medium, script-only) |
 | 14 | QA Playwright | Akali (Sonnet medium) |
 | 15 | Memory excavator | Skarner (Sonnet low) |
 | 16 | Errand runner | Yuumi (Sonnet low) |
@@ -80,8 +80,6 @@ The canonical preference ordering is:
 Opus-low sits **outside** this ordering. It pays Opus token rates for under-reasoned output — the worst `$/quality` point on the frontier. Any role that wants careful reasoning at lower token spend goes to **Sonnet-high** instead.
 
 Practical effect: Rakan (test-impl complex) is Sonnet-high. Syndra (AI specialist normal) is Sonnet-high. Lulu (frontend-design normal) was bumped from Opus-low to Opus-medium when this rule was adopted.
-
-**Sanctioned exception — Orianna (Opus-low, 2026-04-21):** Orianna's task is deterministic extract-grep-report, not open-ended reasoning. Claude 4.7's instruction-following makes low-effort Opus sufficient. Model is pinned to `model: opus` explicitly to prevent silent downgrade to Sonnet when invoked from non-coordinator contexts (CI workflows, Sonnet-default shells). The "never Opus-low" rule targets roles where reasoning depth determines output quality; Orianna's output quality depends on grep accuracy, not thinking budget.
 
 ---
 
@@ -144,7 +142,7 @@ This gives single-source-of-truth without requiring loader changes.
 
 ### 3.1 Model convention
 
-- **Opus agents: omit `model:` entirely.** They inherit the session default (Opus 4.7 1M today) and auto-upgrade when newer Opus tiers ship. Exception: Orianna explicitly declares `model: opus` to prevent silent downgrade when invoked from non-coordinator contexts (see §1.4 sanctioned exception).
+- **Opus agents: omit `model:` entirely.** They inherit the session default (Opus 4.7 1M today) and auto-upgrade when newer Opus tiers ship.
 - **Sonnet agents: declare `model: sonnet`.** The alias resolves to Sonnet 4.6; never pin a specific ID like `sonnet-4-6`.
 - **`effort:` is always explicit.** Tags: `low | medium | high | xhigh`. It is a budget ceiling-plus-tendency, not a floor — `effort: high` does not mean "always think hard," it means "reach for thought when the task warrants it."
 
