@@ -44,7 +44,7 @@ Tests reflect the sprawl: ~15 test files `patch("session.get_db", ...)`. Every o
 
 Firestore stays. Service 1 stays stateful. The only thing that changes is who is allowed to talk to Firestore.
 
-### 1.3 Spec drift vs PR #40 `reference/1-content-gen.yaml`
+### 1.3 Spec drift vs PR #40 `reference/1-content-gen.yaml` <!-- orianna: ok — company-os reference spec under missmp/company-os/reference/; not a local filesystem path -->
 
 Noted here because aligning the HTTP layer is part of this ADR's scope (§6). Not blocking for the module extraction itself.
 
@@ -185,7 +185,7 @@ Locked per Q3: `sessions/{id}/events/{seq}` subcollection. No embedded `eventHis
 
 ### 4.2 SessionStatus normalization (locked per Q5)
 
-Canonical enum — matches PR #40 `reference/1-content-gen.yaml`:
+Canonical enum — matches PR #40 `reference/1-content-gen.yaml` <!-- orianna: ok — company-os reference spec; see §1.3 suppressor -->:
 
 ```
 configuring | building | built | qc_passed | qc_failed | build_failed | completed | cancelled
@@ -218,7 +218,7 @@ Enforced inside `transition_status` (CAS + validation). Illegal transitions rais
 
 ## 5. HTTP surface (existing Service 1 routes)
 
-No new routes. Align these existing routes to PR #40 `reference/1-content-gen.yaml` as follow-up work (outside the `session_store.py` extraction PRs):
+No new routes. Align these existing routes to PR #40 `reference/1-content-gen.yaml` <!-- orianna: ok — company-os reference spec; see §1.3 suppressor --> as follow-up work (outside the `session_store.py` extraction PRs):
 
 | Route | Source | Status vs spec |
 |---|---|---|
@@ -329,7 +329,7 @@ _Source: `company-os/plans/2026-04-20-session-state-encapsulation-tasks.md` in `
 
 This decomposition turns ADR §6.1–§6.5 into pairwise TDD tasks (xfail test → impl) plus one enum backfill and one CI grep gate. The only HTTP-surface work included is the delete-of-`/session/{id}/approve` route that falls out of the `approved` enum retirement — all other spec-drift items from §5 are captured as follow-up tasks (`SE.F.*`) sequenced **after** the extraction lands.
 
-This ADR must land before `plans/proposed/work/2026-04-20-managed-agent-lifecycle.md` and `plans/approved/work/2026-04-20-managed-agent-dashboard-tab.md`. Both siblings consume the terminal-status set `{completed, cancelled, qc_failed, build_failed, built}` from §4.3 and both call `session_store.transition_status(...)` for their teardown hooks. Shipping the enum migration first reduces the blast radius — surface area is still small on `feat/demo-studio-v3`.
+This ADR must land before `plans/approved/work/2026-04-20-managed-agent-lifecycle.md` and `plans/approved/work/2026-04-20-managed-agent-dashboard-tab.md`. Both siblings consume the terminal-status set `{completed, cancelled, qc_failed, build_failed, built}` from §4.3 and both call `session_store.transition_status(...)` for their teardown hooks. Shipping the enum migration first reduces the blast radius — surface area is still small on `feat/demo-studio-v3`.
 
 ### Task ID scheme
 
@@ -386,8 +386,8 @@ Merges independently. Old `session.py` still in place at end of phase.
 - **Depends on:** SE.A.1.
 
 #### SE.A.3 — xfail tests for `session_store.create_session` / `get_session`
-- **What:** `test_session_store_crud.py` with Firestore mocks (pattern from existing `tests/test_session.py`). Covers: new-session doc shape matches ADR §3 Session dataclass fields; `get_session` returns `Session | None`; `get_session` returns None when Firestore unavailable.
-- **Where:** new test file, mirrors `tests/test_session.py` style.
+- **What:** `test_session_store_crud.py` with Firestore mocks (pattern from existing `tests/test_session.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ -->). Covers: new-session doc shape matches ADR §3 Session dataclass fields; `get_session` returns `Session | None`; `get_session` returns None when Firestore unavailable.
+- **Where:** new test file, mirrors `tests/test_session.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> style.
 - **Why:** locks the Firestore doc shape before the write path is real.
 - **Acceptance:** tests fail (stubs raise `NotImplementedError`); marked xfail/strict referencing SE.A.4.
 - **TDD:** xfail commit for SE.A.4.
@@ -512,12 +512,12 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 - **What:** delete `_get_db()` from `auth.py:24-27`. Replace the `verify_and_consume_token` Firestore block with `session_store.try_consume_token(token_hash, ttl_seconds=TOKEN_EXPIRY)`. Remove the lazy `from session import get_db` import and the inline `from google.cloud.firestore import transactional`.
 - **Where:** `tools/demo-studio-v3/auth.py`. <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2; also sets up the Phase D TTL-cache flip (backing changes inside `session_store`, not `auth.py`).
-- **Acceptance:** `test_call_site_boundary` passes for `auth.py`; `tests/test_auth.py` passes (mock target moves from `session.get_db` to `session_store.try_consume_token`).
+- **Acceptance:** `test_call_site_boundary` passes for `auth.py`; `tests/test_auth.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> passes (mock target moves from `session.get_db` to `session_store.try_consume_token`).
 - **TDD:** preceded by SE.B.1.
 - **Depends on:** SE.B.1, SE.A.12.
 
 #### SE.B.4 — Reduce `factory_bridge.py` / `factory_bridge_v2.py` to thin pass-through (mostly deletion)
-- **What:** **BD amendment (Sona, 2026-04-20 s3 — see §4 item 6 of amendment file + BD §3.3, §3.4, §3.14):** the original SE.B.4 scope (boundary migration + enum rename) collapses to mostly **deletion**, because BD §3.14 Delete-from-S1 list removes nearly all of factory_bridge*'s code surface. The post-BD shape of each `trigger_factory*` function is a thin pass-through: read session, POST `/build {sessionId}` to S3, write `factoryRunId`. Concrete delete list includes `factory_bridge.map_config_to_factory_params`, `factory_bridge._build_content_from_config`, `factory_bridge_v2.prepare_demo_dict`, `factory_v2/validate_v2.py` (entire file), `sample-config.json` (entire file), plus all config-fetch + translation blocks in `trigger_factory*`. Keep + rewrite only the boundary-migration sliver.
+- **What:** **BD amendment (Sona, 2026-04-20 s3 — see §4 item 6 of amendment file + BD §3.3, §3.4, §3.14):** the original SE.B.4 scope (boundary migration + enum rename) collapses to mostly **deletion**, because BD §3.14 Delete-from-S1 list removes nearly all of factory_bridge*'s code surface. The post-BD shape of each `trigger_factory*` function is a thin pass-through: read session, POST `/build {sessionId}` to S3, write `factoryRunId`. Concrete delete list includes `factory_bridge.map_config_to_factory_params`, `factory_bridge._build_content_from_config`, `factory_bridge_v2.prepare_demo_dict`, `factory_v2/validate_v2.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/factory_v2/ --> (entire file), `sample-config.json` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> (entire file), plus all config-fetch + translation blocks in `trigger_factory*`. Keep + rewrite only the boundary-migration sliver.
 - **Where:** `tools/demo-studio-v3/factory_bridge.py`, `tools/demo-studio-v3/factory_bridge_v2.py`, `tools/demo-studio-v3/factory_v2/validate_v2.py` (deleted), `tools/demo-studio-v3/sample-config.json` (deleted). <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2 boundary + §4.2 enum renames; BD §2 Rule 1, Rule 2, §3.14 Delete-from-S1 list.
 - **Acceptance:** `test_call_site_boundary` passes for both bridge files. New assertions: deleted symbols are absent from the codebase. `validate_v2.py` and `sample-config.json` no longer exist.
@@ -528,12 +528,12 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 - **What:** swap `list_recent_sessions` for `session_store.list_sessions(...)` in `dashboard_service.py`. In `phase.py:27`, replace `main.update_session_field` with `session_store.update_session`.
 - **Where:** `tools/demo-studio-v3/dashboard_service.py`, `tools/demo-studio-v3/phase.py`. <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2.
-- **Acceptance:** `test_call_site_boundary` passes for both files. `tests/test_dashboard_service.py` and `tests/test_phase.py` pass.
+- **Acceptance:** `test_call_site_boundary` passes for both files. `tests/test_dashboard_service.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> and `tests/test_phase.py` <!-- orianna: ok — company-os test file under missmp/company-os/tools/demo-studio-v3/tests/ --> pass.
 - **TDD:** preceded by SE.B.1.
 - **Depends on:** SE.B.1.
 
 #### SE.B.6 — Bulk mock-target rename in legacy test files
-- **What:** mechanical rename across all tests currently patching `session.get_db` or `main.update_session_status` / `main.update_session_field` / `main.transition_session_status`. New targets: `session_store.<fn>` or `main.session_store.<fn>` as the call-site dictates. Target files: `tests/conftest.py`, `tests/test_sse_server_l1.py` (15 occurrences), `tests/test_preview.py` (11 occurrences), `tests/test_integration.py`, `tests/test_integration_l3.py`, `tests/test_session.py`, `tests/test_tdd_issues.py`, `tests/test_routes.py`.
+- **What:** mechanical rename across all tests currently patching `session.get_db` or `main.update_session_status` / `main.update_session_field` / `main.transition_session_status`. New targets: `session_store.<fn>` or `main.session_store.<fn>` as the call-site dictates. Target files: `tests/conftest.py` <!-- orianna: ok — company-os test files under missmp/company-os/tools/demo-studio-v3/tests/ -->, `tests/test_sse_server_l1.py` (15 occurrences), `tests/test_preview.py` (11 occurrences), `tests/test_integration.py`, `tests/test_integration_l3.py`, `tests/test_session.py`, `tests/test_tdd_issues.py`, `tests/test_routes.py`.
 - **Where:** `tools/demo-studio-v3/tests/*.py`. <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2 last bullet — the mock target shifts from `session.get_db` to the module.
 - **Acceptance:** full pytest run green. `grep -rn 'session.get_db' tests/` returns zero results.
@@ -541,7 +541,7 @@ After Phase A merges, every Firestore touchpoint outside `session_store.py` move
 - **Depends on:** SE.B.2 through SE.B.5.
 
 #### SE.B.7 — Delete `session.py` (or convert to re-export shim)
-- **What:** replace `tools/demo-studio-v3/session.py` with a one-line re-export shim or delete the file outright. ADR §6.2 says "re-exported during a short deprecation window, then removed"; on this branch the short window is the PR review cycle. Recommend **delete** once SE.B.1 through SE.B.6 are green.
+- **What:** replace `tools/demo-studio-v3/session.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> with a one-line re-export shim or delete the file outright. ADR §6.2 says "re-exported during a short deprecation window, then removed"; on this branch the short window is the PR review cycle. Recommend **delete** once SE.B.1 through SE.B.6 are green.
 - **Where:** `tools/demo-studio-v3/session.py` (removed). <!-- orianna: ok — company-os file(s); all tools/demo-studio-v3/ paths in this Tasks section are in missmp/company-os -->
 - **Why:** ADR §6.2 final bullet.
 - **Acceptance:** `python -c 'import session'` raises `ModuleNotFoundError`; `test_call_site_boundary` still green.
