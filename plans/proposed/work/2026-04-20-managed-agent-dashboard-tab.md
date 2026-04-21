@@ -20,7 +20,7 @@ tests_required: true
 Date: 2026-04-20
 Scope: `company-os/tools/demo-studio-v3` (Service 1 only), `/dashboard` UI.
 Related:
-- `plans/2026-04-20-managed-agent-lifecycle.md` — automated monitor (idle warn + auto-terminate). Shares the SDK wrapper introduced below.
+- `plans/proposed/work/2026-04-20-managed-agent-lifecycle.md` — automated monitor (idle warn + auto-terminate). Shares the SDK wrapper introduced below.
 - `secretary/agents/azir/learnings/2026-04-20-managed-agent-lifecycle-adr.md` — SDK-gap context.
 
 ## 1. Context
@@ -254,7 +254,7 @@ _Source: `company-os/plans/2026-04-20-managed-agent-dashboard-tab-bd-amendment.m
 
 **Date:** 2026-04-20 (s3)
 **Author:** Sona (coordinator, fastlane edit)
-**Scope:** names the sections of `plans/2026-04-20-managed-agent-dashboard-tab.md` that change as a consequence of the §11 resolutions in `plans/2026-04-20-s1-s2-service-boundary.md` (BD ADR).
+**Scope:** names the sections of `plans/2026-04-20-managed-agent-dashboard-tab.md` <!-- orianna: ok — inlined amendment from company-os; self-ref under company-os plan naming convention --> that change as a consequence of the §11 resolutions in `plans/2026-04-20-s1-s2-service-boundary.md` <!-- orianna: ok — inlined from company-os; plan exists in this repo at plans/proposed/work/ --> (BD ADR).
 
 ### 1. Why this amendment exists
 
