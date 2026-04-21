@@ -1,5 +1,5 @@
 ---
-status: approved
+status: proposed
 orianna_gate_version: 2
 complexity: normal
 concern: work
@@ -12,7 +12,6 @@ tags:
   - refactor
   - work
 tests_required: true
-orianna_signature_approved: "sha256:3d5171843e986b44bbe0ea76a189f2e190b58bd00c5b5daef465e3c15b5c9999:2026-04-21T06:59:48Z"
 ---
 
 # ADR: Demo Studio v3 — Session State Encapsulation (Service 1)
@@ -387,7 +386,7 @@ Sub-letters (`SE.A.1a`, `SE.A.1b`) reserved for amendments within a step. Test c
 
 Merges independently. Old `session.py` <!-- orianna: ok --> still in place at end of phase.
 
-#### SE.A.1 — xfail tests for `session_store` dataclasses and types
+#### SE.A.1 — xfail tests for `session_store` dataclasses and types kind: test
 - **What:** write `tools/demo-studio-v3/tests/test_session_store_types.py` <!-- orianna: ok — company-os future test file --> asserting: `Session`, `SessionEvent`, `Page` are frozen dataclasses with the fields listed in ADR §3; `SessionStatus` is the exact 8-value `Literal` from §4.2 in order. <!-- orianna: ok -->
 - **Where:** new test file.
 - **Why:** locks the public shape before the impl starts.
@@ -739,7 +738,7 @@ SE.0.1 → SE.A.1 → SE.A.2 → SE.A.3 → SE.A.4 → SE.A.5 → SE.A.6 → SE.
 
 ### Estimates
 
-| Phase | Tasks | Estimate (person-hours) |
+| Phase | Tasks | Estimate (AI-min per phase) |
 |---|---|---|
 | SE.0 | 2 | 1.0 |
 | SE.A | 12 (6 xfail + 6 impl) | 6.0 |
@@ -748,7 +747,7 @@ SE.0.1 → SE.A.1 → SE.A.2 → SE.A.3 → SE.A.4 → SE.A.5 → SE.A.6 → SE.
 | SE.D | 3 | 1.5 |
 | SE.E | 2 | 0.5 |
 | SE.F | 6 | 4.0 (follow-up, separate PRs) |
-| **Total extraction PRs (SE.0–SE.E)** | **30** | **~16 person-hours** |
+| **Total extraction PRs (SE.0–SE.E)** | **30** | **~960 AI-min** |
 
 **36 total tasks** (30 extraction + 6 follow-up HTTP-alignment).
 
