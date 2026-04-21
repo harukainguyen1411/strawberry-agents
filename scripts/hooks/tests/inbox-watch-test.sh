@@ -1,21 +1,13 @@
 #!/usr/bin/env bash
-# xfail: implements plans/in-progress/2026-04-20-strawberry-inbox-channel.md
-#
 # Unit harness for inbox-watch.sh, inbox-watch-bootstrap.sh, and
 # the check-inbox archive flow.
 #
+# Implements plans/in-progress/2026-04-20-strawberry-inbox-channel.md
+#
 # Run: bash scripts/hooks/tests/inbox-watch-test.sh
 #
-# xfail wrapper semantics (per ADR §Tasks IW.0):
-#   run_xfail <fn>: if fn exits 0 (passes), print XFAIL (expected before impl).
-#                   If fn exits non-0 (fails), print FAIL (unexpected even now).
-#   run_real <fn>:  regression floor tests — always run as real assertions.
-#
-# The harness exits 0 when:
-#   - No FAIL (real assertion failures)
-#   - No XPASS (tests that should be xfail but already pass unexpectedly)
-#
-# Viktor strips the xfail wrapper in IW.5 once all scripts are in place.
+# All tests are real assertions (xfail wrappers removed in IW.5).
+# Harness exits 0 iff all tests pass.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -24,8 +16,6 @@ BOOTSTRAP="$REPO_ROOT/scripts/hooks/inbox-watch-bootstrap.sh"
 
 PASS=0
 FAIL=0
-XFAIL_COUNT=0
-XPASS_COUNT=0
 
 # ────────────────────────────────────────────────────────────────
 # Helpers
@@ -33,24 +23,8 @@ XPASS_COUNT=0
 
 pass() { printf 'PASS: %s\n' "$1"; PASS=$((PASS+1)); }
 fail() { printf 'FAIL: %s\n' "$1"; FAIL=$((FAIL+1)); }
-xfail() { printf 'XFAIL: %s\n' "$1"; XFAIL_COUNT=$((XFAIL_COUNT+1)); }
-xpass() { printf 'XPASS (unexpected): %s\n' "$1"; XPASS_COUNT=$((XPASS_COUNT+1)); }
 
-# run_xfail <fn>
-# For impl-dependent tests: we expect them to FAIL right now (impl not landed).
-# If the function exits non-0 (assertion fails) → XFAIL (expected, good).
-# If the function exits 0 (assertion passes) → XPASS (unexpected before impl, bad).
-run_xfail() {
-  local fn="$1"
-  if "$fn" 2>/dev/null; then
-    xpass "$fn"
-  else
-    xfail "$fn"
-  fi
-}
-
-# run_real <fn>
-# For regression / invariant tests that should always pass regardless of impl.
+# run_real <fn> — run a test as a real assertion
 run_real() {
   local fn="$1"
   if "$fn" 2>/dev/null; then
@@ -59,6 +33,9 @@ run_real() {
     fail "$fn"
   fi
 }
+
+# Alias — all tests are now real (xfail wrappers removed in IW.5)
+run_xfail() { run_real "$1"; }
 
 # Create a minimal pending inbox message file
 make_pending_msg() {
@@ -507,7 +484,6 @@ run_real test_regression_no_inbox_nudge_sh
 run_real test_regression_no_user_prompt_submit_inbox_entry
 run_real test_regression_no_v2_nudge_phrasing
 
-printf '\nResults: %d passed, %d failed, %d xfail, %d xpass\n' \
-  "$PASS" "$FAIL" "$XFAIL_COUNT" "$XPASS_COUNT"
+printf '\nResults: %d passed, %d failed\n' "$PASS" "$FAIL"
 
-[ "$FAIL" -eq 0 ] && [ "$XPASS_COUNT" -eq 0 ]
+[ "$FAIL" -eq 0 ]
