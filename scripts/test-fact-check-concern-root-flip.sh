@@ -216,12 +216,4 @@ fi
 rm -rf "$SCRATCH"
 
 printf '\nResults: %d passed, %d failed\n' "$PASS" "$FAIL"
-
-# Pre-impl: print XFAIL and exit 0 to satisfy Rule 12 xfail requirement.
-# Post-impl: this block is removed (or the guard below is removed) when all pass.
-if [ "$FAIL" -gt 0 ]; then
-  printf 'XFAIL: orianna-concern-root-flip\n'
-  exit 0
-fi
-
-exit 0
+[ "$FAIL" -eq 0 ]
