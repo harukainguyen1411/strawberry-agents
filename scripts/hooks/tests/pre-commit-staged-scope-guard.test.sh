@@ -69,11 +69,6 @@ case_A() {
   repo="$(make_repo)"
   stage_file "$repo" "a.txt"
   stage_file "$repo" "b.txt"
-  local stderr_out
-  stderr_out="$(STAGED_SCOPE="a.txt" "$HOOK_ABS" 2>&1 >/dev/null)" || true
-  local rc=0
-  STAGED_SCOPE="a.txt" "$HOOK_ABS" >/dev/null 2>/dev/null; rc=$?
-  stderr_out="$(STAGED_SCOPE="a.txt" GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" "$HOOK_ABS" 2>&1 >/dev/null || true)"
   local hook_rc=0
   (cd "$repo" && STAGED_SCOPE="a.txt" "$HOOK_ABS" >/dev/null 2>/dev/null) || hook_rc=$?
   local hook_stderr
