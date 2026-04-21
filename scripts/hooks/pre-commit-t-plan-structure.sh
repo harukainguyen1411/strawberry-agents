@@ -32,7 +32,7 @@ _filter_tmp="$(mktemp /tmp/pre-commit-plan-structure-XXXXXX.tmp)"
 trap 'rm -f "$_filter_tmp"' EXIT INT HUP TERM
 printf '%s\n' "$staged_plans" | while IFS= read -r rel; do
   case "$rel" in
-    plans/_template.md|plans/archived/*) continue ;;
+    plans/_template.md|plans/archived/*|plans/pre-orianna/*) continue ;;
   esac
   # Block paths with spaces — plan naming convention forbids them; a space here
   # is a sign something is very wrong (or a symlink attack). Fail loud.
