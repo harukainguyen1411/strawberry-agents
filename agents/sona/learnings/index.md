@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-21 Signing ceremony cost scales with body edits](2026-04-21-signing-ceremony-cost-scales-with-body-edits.md) — body-edit distance since last signature multiplies sign iterations; recently-edited ADRs warrant separate Ekko dispatches even within the ≤2 ADR limit. Also documents `.orianna-sign-stderr.tmp` hygiene gap.
+- [2026-04-21 Integration branch as cross-ADR unblocker](2026-04-21-integration-branch-as-unblocker.md) — deliberate integration branch (topological merge order + Viktor pytest pass) surfaces cross-ADR compatibility failures before any branch hits remote; prevents N-simultaneous triage on first shared-branch merge.
 - [2026-04-21 Ekko signing context ceiling](2026-04-21-ekko-signing-context-ceiling.md) — signing-heavy loops burn Ekko's context fast (173 and 263 tool uses before "Prompt is too long"); partition multi-ADR signing into batches of ≤2 ADRs per Ekko dispatch.
 - [2026-04-21 Phase leads implementation](2026-04-21-phase-leads-implementation.md) — flip ADR approved→in-progress at first impl-agent dispatch, same coordinator turn, not after. Phase must lead or match reality; never lag. Standing Yuumi delegation.
 - [2026-04-21 plan-promote.sh is agent-runnable](2026-04-21-plan-promote-agent-runnable.md) — `scripts/plan-promote.sh` runs under `Duongntd` executor account; admin identity only for Rule 18 self-merge gaps, Rule 19 Orianna-Bypass trailers, and branch-protection config. Duong's plan approval is semantic, not a credential requirement.

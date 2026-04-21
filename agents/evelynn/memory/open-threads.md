@@ -1,26 +1,23 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-21 (seeded from 24 shards 002efe6a–2cb962cd).
+Last updated: 2026-04-21 (updated from shard e49b10d8 — third pre-compact consolidation, session d9b7f645).
 
 ---
 
 ## Memory-consolidation redesign execution
 
-3. **Memory-consolidation redesign execution** — after ADR is approved, commission implementation agents. Duong chose answers: 1a (manifest file), 2a (immediate), 3a (shard files stay), 4b (defer cross-agent index).
+3. **Memory-consolidation redesign execution** — two-layer boot shipped.
 
-**Current status (2026-04-21):** In progress — T1–T7 shipped, T8–T12 executing (Viktor, branch `feat/coordinator-memory-two-layer-boot`).
-**Shards:** 2cb962cd (ADR kick-off + Duong gating answers).
-**Next:** Viktor completes T8–T12; PR against main; Senna + Lucian review; Duong merges; dogfood post-merge.
+**Current status (2026-04-21):** RESOLVED — PR #13 merged. T1–T12 complete. Two-layer boot (open-threads.md + INDEX + lazy shards) is live for both Evelynn and Sona.
+**Shards:** 2cb962cd, e49b10d8.
+**Next:** Dogfood in practice; flag any edge cases to Swain.
 
 ---
 
 ## Inbox plan (strawberry-inbox channel)
 
-1. **Ekko fact-check result** — retrieve result from Ekko's Orianna run on inbox plan. If clean, promote. If concerns, amend and re-run.
-4. **Inbox plan next steps** — contingent on Ekko's fact-check. Plan is at `proposed/`, v3.1 (Monitor-based watcher + 7-day archive TTL).
-
-**Current status (2026-04-21):** Approved + in-progress — plan at `plans/in-progress/personal/2026-04-20-strawberry-inbox-channel.md`. Ekko fact-check completed; plan promoted. Execute approved task breakdown. E2E test needs `npm install` in `.claude/plugins/strawberry-inbox/` + session restart.
-**Shards:** 2cb962cd, 002efe6a.
+**Current status (2026-04-21):** Approved + in-progress. Plan at `plans/in-progress/personal/2026-04-20-strawberry-inbox-channel.md`. Awaiting Viktor implementation. E2E test needs `npm install` in `.claude/plugins/strawberry-inbox/` + session restart.
+**Shards:** 2cb962cd, 002efe6a, e49b10d8.
 
 ---
 
@@ -68,3 +65,35 @@ Last updated: 2026-04-21 (seeded from 24 shards 002efe6a–2cb962cd).
 
 **Status:** Calendar — strawberry-reviewers PAT expires 90d from 2026-04-19 (2026-07-18).
 **Next:** Duong rotates by day 80 (2026-07-08).
+
+---
+
+## PR #15 — rule-4 staged-diff scoping fix
+
+**Status:** APPROVED (Senna + Lucian both approved, 39 tests pass). NOT YET MERGED.
+**Next:** Merge immediately on session restart. No further review needed.
+**Shard:** e49b10d8.
+
+---
+
+## 5 proposed plans awaiting Duong review
+
+**Status:** Open. Plans at `plans/proposed/personal/`: agent-feedback-system (Lux, `b9dbc8c`), retrospection-dashboard (Swain), coordinator-decision-feedback (Swain), daily-agent-repo-audit-routine (Lux), pre-orianna-plan-archive (Karma — implemented via PR #14, needs retroactive sign + promote).
+**Next:** Duong reviews and approves. Use plan-promote.sh for each transition. Pre-orianna-plan-archive path is proposed → implemented directly (retroactive).
+**Shard:** e49b10d8.
+
+---
+
+## Prompt-caching audit
+
+**Status:** Open. Lux advisory identifies cache_control: ephemeral as highest-ROI unexercised lever for Claude capacity (90% cached input token discount). No audit has been run yet.
+**Next:** Assign Lux or Syndra to audit `_shared/` includes and large system prompts for cacheable sections.
+**Shard:** e49b10d8.
+
+---
+
+## Sona workspace staged-rename hygiene
+
+**Status:** Open. `plans/approved/work/2026-04-20-session-state-encapsulation.md` rename is staged in Sona's concurrent workspace. Caused Senna learnings write to bounce.
+**Next:** Before next Sona session, verify which branch/state is authoritative and resolve the staged rename. Do not commit to plans/approved/work/ cross-coordinator without checking first.
+**Shard:** e49b10d8.
