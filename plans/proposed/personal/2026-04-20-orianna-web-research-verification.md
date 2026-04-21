@@ -1,19 +1,18 @@
 ---
 title: Orianna web-research verification — extend plan-check with external-claim freshness via WebFetch, WebSearch, and context7
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-20
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
+architecture_impact: none
 tags:
   - orianna
   - fact-check
   - tooling
   - quick-lane
-orianna_signature_approved: "sha256:f685578e8b8d2ff7631864c087bcb94c835e7af00055f66471805eca90a6c4e4:2026-04-20T17:14:45Z"
-orianna_signature_in_progress: "sha256:f685578e8b8d2ff7631864c087bcb94c835e7af00055f66471805eca90a6c4e4:2026-04-21T02:37:46Z"
 ---
 
 ## Context
@@ -244,24 +243,10 @@ reports must tolerate the new fields (additive, not breaking).
 
 ## Test results
 
-Structural regression test passes on the implementation commit:
+Structural regression test passes:
+`assessments/plan-fact-checks/2026-04-20-orianna-web-research-verification-2026-04-21T02-37-29Z.md`
 
-```
-bash scripts/test-orianna-plan-check-step-e.sh
-# Results: 16 passed, 0 failed
-# exit: 0
-```
-
-Test script: `scripts/test-orianna-plan-check-step-e.sh`
-
-All 16 assertions verified:
-- Step E section exists in prompt, positioned after Step D and before `## Report format`
-- `ORIANNA_EXTERNAL_BUDGET`, `WebFetch`, `WebSearch`, `context7` referenced in prompt
-- `scripts/orianna-fact-check.sh` exports `ORIANNA_EXTERNAL_BUDGET` with default 15
-- `check_version: 3` appears exactly once in report template
-- `external_calls_used:` appears exactly once in frontmatter example
-- No new severity tokens (`critical`, `fatal`) introduced
-- Profile references `ORIANNA_EXTERNAL_BUDGET` and `Step E`
+Local run: `bash scripts/test-orianna-plan-check-step-e.sh` — 16/16 passed.
 
 ## Related work
 
