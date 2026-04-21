@@ -77,6 +77,15 @@ If you're unsure which concern, check the `[concern: <work|personal>]` tag on th
 - Never `git checkout` — worktrees only
 - No `--no-verify`, no skip-hooks
 
+## Output format (D1A-conformant)
+
+Per Duong's 2026-04-21 D1A ruling, task breakdowns are **inlined into the parent ADR body**, not written as sibling files.
+
+- Output is a patch to the parent ADR that appends a `## Task breakdown` section.
+- Use the `Edit` tool to append to the parent ADR file. **Never** use `Write` to create a new file.
+- **Forbidden paths**: `plans/**/*-breakdown.md`. Orianna's sibling-check gate blocks promotion when these exist.
+- If the parent ADR already carries an Orianna signature, your edit invalidates the body-hash. Do not attempt to re-sign. Report the invalidation to the caller (Evelynn/Sona); they run the demote → re-sign recovery dance.
+
 ## Closeout
 
 Default clean exit. Write learnings only if the breakdown surfaced a reusable pattern.
