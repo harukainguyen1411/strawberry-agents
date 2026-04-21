@@ -26,7 +26,7 @@ reports only. The invoking script handles commits.
 
 ## External verification tools (Step E)
 
-As of plan `plans/in-progress/personal/2026-04-20-orianna-web-research-verification.md`,
+As of plan `plans/implemented/personal/2026-04-20-orianna-web-research-verification.md`,
 Orianna's `plan-check` prompt includes **Step E — External-claim verification**,
 which uses three live tools:
 
