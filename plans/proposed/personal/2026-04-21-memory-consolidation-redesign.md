@@ -9,7 +9,7 @@ complexity: complex
 tags: [memory, boot, coordinator, evelynn, sona, shards]
 related:
   - assessments/personal/2026-04-21-memory-consolidation-redesign.md
-  - plans/approved/2026-04-18-evelynn-memory-sharding.md
+  - plans/proposed/2026-04-18-evelynn-memory-sharding.md
   - plans/implemented/personal/2026-04-20-lissandra-precompact-consolidator.md
 architecture_impact: refactor
 ---
@@ -100,7 +100,7 @@ Additive responsibilities (preserve all existing `sessions/` → `<coordinator>.
 
 Keep unchanged: the `sessions/*.md` → `<coordinator>.md ## Sessions` folding path, UUID collision handling, flock/noclobber locking, commit message (`chore: <secretary> memory consolidation YYYY-MM-DD`), push-with-retry behavior, POSIX-portable bash, python3 dependency.
 
-### 4.3 NEW helper `scripts/_lib_last_sessions_index.sh` (sourced-only)
+### 4.3 NEW helper `scripts/_lib_last_sessions_index.sh` (sourced-only) <!-- orianna: ok -->
 
 Single source of truth for INDEX row generation from a shard path. Public functions:
 
@@ -112,7 +112,7 @@ Sourced by `memory-consolidate.sh`; no shebang. POSIX bash.
 
 ### 4.4 Shard header convention (documented, not enforced)
 
-Shards today begin with a plain `# <one-line title>` and free-form content. To keep INDEX generation deterministic, document an optional convention in `.claude/skills/end-session/SKILL.md` Step 6 and in `architecture/coordinator-memory.md` (new, see §6.2): coordinators MAY include a `TL;DR: <line>` trio immediately after the H1. If absent, §4.3 rule (b) falls back to prose parsing. Pre-existing shards continue to work without rewriting.
+Shards today begin with a plain `# <one-line title>` and free-form content. To keep INDEX generation deterministic, document an optional convention in `.claude/skills/end-session/SKILL.md` Step 6 and in `architecture/coordinator-memory.md` (new, see §6.2): coordinators MAY include a `TL;DR: <line>` trio immediately after the H1. <!-- orianna: ok --> If absent, §4.3 rule (b) falls back to prose parsing. Pre-existing shards continue to work without rewriting.
 
 ## 5. Skill changes
 
@@ -163,8 +163,8 @@ Both files currently run `bash scripts/filter-last-sessions.sh <name>` and read 
 > 4. `agents/memory/duong.md`
 > 5. `agents/memory/agent-network.md`
 > 6. `agents/evelynn/learnings/index.md` (if exists)
-> 7. `agents/evelynn/memory/open-threads.md`
-> 8. `agents/evelynn/memory/last-sessions/INDEX.md`
+> 7. `agents/evelynn/memory/open-threads.md` <!-- orianna: ok -->
+> 8. `agents/evelynn/memory/last-sessions/INDEX.md` <!-- orianna: ok -->
 >
 > Pull individual shards (`agents/evelynn/memory/last-sessions/<uuid>.md`) only if `open-threads.md` references them or Duong's first message touches a thread not in `open-threads.md`. For topic searches across historical shards, delegate to Skarner.
 >
@@ -174,8 +174,8 @@ Both files currently run `bash scripts/filter-last-sessions.sh <name>` and read 
 
 Current step 3: "read all shards within the last 48 hours by mtime". Replace with a two-line description mirroring the boot script:
 
-> 3. `agents/evelynn/memory/open-threads.md` — live thread state (eager).
-> 4. `agents/evelynn/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated).
+> 3. `agents/evelynn/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
+> 4. `agents/evelynn/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
 > 5. Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner.
 
 Renumber subsequent entries. Also amend the "Do NOT load journals, transcripts, or all learnings at startup" line to "Do NOT load individual last-sessions shards at startup unless referenced by open-threads.md or the current prompt."
@@ -219,7 +219,7 @@ Single PR, single cutover. No phased rollout, no dual-mode overlap (per §D12 de
 
 ### 8.1 Evelynn bootstrap — hand-seed `open-threads.md`
 
-Before merge, produce a one-shot seed of `agents/evelynn/memory/open-threads.md` by consolidating the "Open threads into next session" sections across the current 23 shards in `agents/evelynn/memory/last-sessions/`. Method:
+Before merge, produce a one-shot seed of `agents/evelynn/memory/open-threads.md` by consolidating the "Open threads into next session" sections across the current 23 shards in `agents/evelynn/memory/last-sessions/`. Method: <!-- orianna: ok -->
 
 1. Read each shard's `## Open threads into next session` (or equivalent) section.
 2. De-dup threads across shards, keeping the most recent status per thread.
@@ -244,7 +244,7 @@ Single PR shape:
 - T5–T7 update the skill + agent defs + CLAUDE.md.
 - T8 runs the bootstrap for both coordinators and commits the seed `open-threads.md` + initial `INDEX.md`.
 - T9 deletes `scripts/filter-last-sessions.sh`.
-- T10 updates `architecture/coordinator-memory.md` (new) documenting the final shape.
+- T10 updates `architecture/coordinator-memory.md` (new) documenting the final shape. <!-- orianna: ok -->
 - All land in one PR. First session boot post-merge dogfoods the new path.
 
 No feature flag, no environment variable, no conditional "if --legacy use old path". The old script is gone and the boot prompt no longer references it.
@@ -255,7 +255,7 @@ No feature flag, no environment variable, no conditional "if --legacy use old pa
 
 ### 9.1 Unit tests for `scripts/memory-consolidate.sh` INDEX regeneration
 
-Test file: `scripts/test-memory-consolidate-index.sh`. Fixture: a temp `last-sessions/` dir populated with a known set of shards with known TL;DR sections. Assertions:
+Test file: `scripts/test-memory-consolidate-index.sh`. Fixture: a temp `last-sessions/` dir populated with a known set of shards with known TL;DR sections. Assertions: <!-- orianna: ok -->
 
 - INDEX row count == fixture shard count.
 - Row ordering == mtime-descending (newest first).
@@ -269,7 +269,7 @@ xfail-first per Rule 12 — test committed in a prior commit on the same branch,
 
 ### 9.2 Unit tests for the archive policy
 
-Test file: `scripts/test-memory-consolidate-archive-policy.sh`. Fixture: temp `last-sessions/` with 25 shards at varied mtimes and one shard referenced by a fake `open-threads.md`. Assertions:
+Test file: `scripts/test-memory-consolidate-archive-policy.sh`. Fixture: temp `last-sessions/` with 25 shards at varied mtimes and one shard referenced by a fake `open-threads.md`. Assertions: <!-- orianna: ok -->
 
 - Shards with mtime > 14d ago move to `archive/`.
 - Shards at positions 21+ by newest-first ordering move to `archive/` regardless of age.
@@ -283,7 +283,7 @@ xfail-first, same branch.
 
 ### 9.3 Integration test — full `/end-session` close lands atomically
 
-Test file: `scripts/test-end-session-memory-integration.sh`. Sets up a temp agent dir, stubs `clean-jsonl.py` and git, then drives the `/end-session` flow for a synthetic coordinator. Assertions:
+Test file: `scripts/test-end-session-memory-integration.sh`. Sets up a temp agent dir, stubs `clean-jsonl.py` and git, then drives the `/end-session` flow for a synthetic coordinator. Assertions: <!-- orianna: ok -->
 
 - On success: `open-threads.md` update + `INDEX.md` regen + shard write all present in the final commit.
 - On failure of any step in 6 → 6b → 6b-continued: the commit does NOT land (prior steps staged but not committed; recoverable by running `memory-consolidate.sh --index-only` + re-staging + re-committing manually).
@@ -294,7 +294,7 @@ xfail-first, same branch.
 
 ### 9.4 Migration smoke test — Evelynn real-memory backup
 
-Smoke test script: `scripts/test-migration-smoke.sh`. Steps:
+Smoke test script: `scripts/test-migration-smoke.sh`. Steps: <!-- orianna: ok -->
 
 1. `cp -r agents/evelynn/memory agents/evelynn/memory.backup-$(date +%s)` — preserve pre-migration state.
 2. Run the bootstrap: hand-seed `open-threads.md` + initial `INDEX.md`.
@@ -306,7 +306,7 @@ Runs once at T8 time, output captured in commit message. Not part of CI.
 
 ### 9.5 Skill-file shape assertion
 
-Test file: `scripts/test-end-session-skill-shape.sh`. Grep-based assertion that `.claude/skills/end-session/SKILL.md` contains:
+Test file: `scripts/test-end-session-skill-shape.sh`. Grep-based assertion that `.claude/skills/end-session/SKILL.md` contains: <!-- orianna: ok -->
 
 - A "Step 6b" heading.
 - Reference to `open-threads.md`.
@@ -346,17 +346,17 @@ Explicitly excluded from this plan; revisit criteria noted per item:
 
 ## 12. Tasks
 
-- [ ] **T1** — Write xfail tests for `scripts/memory-consolidate.sh` INDEX regeneration. estimate_minutes: 40. Files: `scripts/test-memory-consolidate-index.sh` (new). DoD: fixture-driven assertions from §9.1 all failing with "not implemented"; committed as its own commit on the branch before any implementation (Rule 12).
-- [ ] **T2** — Build `scripts/_lib_last_sessions_index.sh` helper (shard TL;DR parser + row renderer + directory walk). estimate_minutes: 45. Files: `scripts/_lib_last_sessions_index.sh` (new). DoD: `extract_shard_tldr`, `render_index_row`, `regenerate_index` functions implemented per §4.3; sourced-only; POSIX bash; all T1 tests pass.
-- [ ] **T3** — Write xfail tests for archive policy (14d OR 20 shards, pre-archive open-threads guard). estimate_minutes: 35. Files: `scripts/test-memory-consolidate-archive-policy.sh` (new). DoD: §9.2 assertions in place as xfail; committed before T4 on the branch.
+- [ ] **T1** — Write xfail tests for `scripts/memory-consolidate.sh` INDEX regeneration. estimate_minutes: 40. Files: `scripts/test-memory-consolidate-index.sh` (new). DoD: fixture-driven assertions from §9.1 all failing with "not implemented"; committed as its own commit on the branch before any implementation (Rule 12). <!-- orianna: ok -->
+- [ ] **T2** — Build `scripts/_lib_last_sessions_index.sh` helper (shard TL;DR parser + row renderer + directory walk). estimate_minutes: 45. Files: `scripts/_lib_last_sessions_index.sh` (new). DoD: `extract_shard_tldr`, `render_index_row`, `regenerate_index` functions implemented per §4.3; sourced-only; POSIX bash; all T1 tests pass. <!-- orianna: ok -->
+- [ ] **T3** — Write xfail tests for archive policy (14d OR 20 shards, pre-archive open-threads guard). estimate_minutes: 35. Files: `scripts/test-memory-consolidate-archive-policy.sh` (new). DoD: §9.2 assertions in place as xfail; committed before T4 on the branch. <!-- orianna: ok -->
 - [ ] **T4** — Rewrite `scripts/memory-consolidate.sh` — add INDEX regen, archive policy, `--index-only` flag, pre-boot validator (moved from `filter-last-sessions.sh`); preserve existing sessions-fold + lock + commit/push. estimate_minutes: 60. Files: `scripts/memory-consolidate.sh`. DoD: T1 + T3 tests pass; existing sessions-fold behaviour unchanged (verified by smoke: run on evelynn's current memory, confirm `## Sessions` block identical to pre-change modulo new index); `--index-only` returns in < 1s on a 25-shard fixture.
-- [ ] **T5** — Write xfail integration test for `/end-session` Step 6 → 6b ordering + atomic commit. estimate_minutes: 40. Files: `scripts/test-end-session-memory-integration.sh` (new), `scripts/test-end-session-skill-shape.sh` (new). DoD: §9.3 + §9.5 assertions as xfail; committed before T6.
+- [ ] **T5** — Write xfail integration test for `/end-session` Step 6 → 6b ordering + atomic commit. estimate_minutes: 40. Files: `scripts/test-end-session-memory-integration.sh` (new), `scripts/test-end-session-skill-shape.sh` (new). DoD: §9.3 + §9.5 assertions as xfail; committed before T6. <!-- orianna: ok -->
 - [ ] **T6** — Update `.claude/skills/end-session/SKILL.md` with Step 6b (open-threads update + INDEX regen). estimate_minutes: 30. Files: `.claude/skills/end-session/SKILL.md`. DoD: §5.1 shape in place; T5 tests pass; ordering rules documented; non-coordinator no-op path explicit.
 - [ ] **T7** — Update Lissandra protocol for Step 6b parity. estimate_minutes: 25. Files: `.claude/agents/lissandra.md`, `agents/lissandra/profile.md`, `.claude/skills/pre-compact-save/SKILL.md` (one-line note only). DoD: §5.2 changes landed; dry-run pre-compact-save on a test session updates open-threads + INDEX identically to `/end-session`.
-- [ ] **T8** — Bootstrap `open-threads.md` + initial `INDEX.md` for Evelynn and Sona. estimate_minutes: 55. Files: `agents/evelynn/memory/open-threads.md` (new), `agents/sona/memory/open-threads.md` (new), `agents/evelynn/memory/last-sessions/INDEX.md` (new, generated), `agents/sona/memory/last-sessions/INDEX.md` (new, generated). DoD: §8.1 hand-seed for Evelynn (23 shards → curated thread list); §8.2 for Sona (2 shards); initial INDEX generated via `scripts/memory-consolidate.sh <name> --index-only`; smoke test §9.4 runs and passes; backup dir cleaned up.
+- [ ] **T8** — Bootstrap `open-threads.md` + initial `INDEX.md` for Evelynn and Sona. estimate_minutes: 55. Files: `agents/evelynn/memory/open-threads.md` (new), `agents/sona/memory/open-threads.md` (new), `agents/evelynn/memory/last-sessions/INDEX.md` (new, generated), `agents/sona/memory/last-sessions/INDEX.md` (new, generated). DoD: §8.1 hand-seed for Evelynn (23 shards → curated thread list); §8.2 for Sona (2 shards); initial INDEX generated via `scripts/memory-consolidate.sh <name> --index-only`; smoke test §9.4 runs and passes; backup dir cleaned up. <!-- orianna: ok -->
 - [ ] **T9** — Rewrite `.claude/agents/evelynn.md` and `.claude/agents/sona.md` boot scripts + delete `scripts/filter-last-sessions.sh`. estimate_minutes: 25. Files: `.claude/agents/evelynn.md`, `.claude/agents/sona.md`, `scripts/filter-last-sessions.sh` (deleted). DoD: §6.1 boot shape in both agent defs; boot order §7 table matches; `filter-last-sessions.sh` deleted via `git rm`; no remaining references anywhere (grep clean).
 - [ ] **T10** — Update `agents/evelynn/CLAUDE.md` §Startup Sequence + add section to `agents/sona/CLAUDE.md` + add Memory Consumption section to `agents/memory/agent-network.md`. estimate_minutes: 30. Files: `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`, `agents/memory/agent-network.md`. DoD: §6.2–§6.4 edits landed; startup sequence matches the boot-prompt ordering; subagent-facing consumption doc reads clean on a fresh pass.
-- [ ] **T11** — Add `architecture/coordinator-memory.md` documenting the final two-layer shape. estimate_minutes: 35. Files: `architecture/coordinator-memory.md` (new). DoD: sections covering file layout, write-side flow (`/end-session` + `pre-compact-save`), read-side flow (boot + on-demand shard pull), retention policy, and the plan invariants referenced here (§3 table, §7 boot order, §10 failure mode table). Cross-referenced from `agents/evelynn/CLAUDE.md` and `agents/sona/CLAUDE.md`.
+- [ ] **T11** — Add `architecture/coordinator-memory.md` documenting the final two-layer shape. estimate_minutes: 35. Files: `architecture/coordinator-memory.md` (new). DoD: sections covering file layout, write-side flow (`/end-session` + `pre-compact-save`), read-side flow (boot + on-demand shard pull), retention policy, and the plan invariants referenced here (§3 table, §7 boot order, §10 failure mode table). Cross-referenced from `agents/evelynn/CLAUDE.md` and `agents/sona/CLAUDE.md`. <!-- orianna: ok -->
 - [ ] **T12** — Dogfood + commit evidence. estimate_minutes: 20. Files: none new. DoD: first post-merge coordinator boot runs the new path cleanly (no filter-last-sessions.sh reference); `open-threads.md` loads; INDEX loads; a sample shard pulled on-demand; boot-token count measured (target < 8 KB for tail 7+8); evidence captured in PR body or commit message.
 
 Total estimate: 440 minutes.
