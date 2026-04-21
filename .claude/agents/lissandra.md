@@ -40,7 +40,25 @@ Run a mid-session equivalent of the coordinator's `/end-session` protocol, minus
    - Otherwise → coordinator = `evelynn` (repo default per CLAUDE.md Caller Routing)
    - Cross-check `[concern: work]` vs `[concern: personal]` tags on spawned subagent prompts. If they contradict the greeting, refuse and surface the inconsistency.
 
-2. **Write the handoff shard** at `agents/<coordinator>/memory/last-sessions/<short-uuid>.md` — 5–10 structured lines covering active threads, blockers, and what a future instance needs.
+2. **Write the handoff shard** at `agents/<coordinator>/memory/last-sessions/<short-uuid>.md` — 5–10 structured lines covering active threads, blockers, and what a future instance needs. Stage:
+   ```
+   git add agents/<coordinator>/memory/last-sessions/<short-uuid>.md
+   ```
+
+2b. **Step 6b — Update open-threads.md + regenerate INDEX.md** (mirrors `/end-session` Step 6b exactly, in the coordinator's voice):
+   1. Parse the shard's `## Open threads into next session` section. Apply deltas to `agents/<coordinator>/memory/open-threads.md` — add/update open threads, close resolved ones. Both **evelynn** and **sona** use this path.
+   2. Stage:
+      ```
+      git add agents/<coordinator>/memory/open-threads.md
+      ```
+   3. Regenerate `last-sessions/INDEX.md`:
+      ```
+      bash scripts/memory-consolidate.sh <coordinator> --index-only
+      ```
+   4. Stage:
+      ```
+      git add agents/<coordinator>/memory/last-sessions/INDEX.md
+      ```
 
 3. **Write the session shard** at `agents/<coordinator>/memory/sessions/<short-uuid>.md` — `## Session YYYY-MM-DD (SN, <mode>)` heading + one-line summary + delta notes.
 
