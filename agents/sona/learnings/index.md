@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-21 Ekko signing context ceiling](2026-04-21-ekko-signing-context-ceiling.md) — signing-heavy loops burn Ekko's context fast (173 and 263 tool uses before "Prompt is too long"); partition multi-ADR signing into batches of ≤2 ADRs per Ekko dispatch.
+- [2026-04-21 Phase leads implementation](2026-04-21-phase-leads-implementation.md) — flip ADR approved→in-progress at first impl-agent dispatch, same coordinator turn, not after. Phase must lead or match reality; never lag. Standing Yuumi delegation.
 - [2026-04-21 plan-promote.sh is agent-runnable](2026-04-21-plan-promote-agent-runnable.md) — `scripts/plan-promote.sh` runs under `Duongntd` executor account; admin identity only for Rule 18 self-merge gaps, Rule 19 Orianna-Bypass trailers, and branch-protection config. Duong's plan approval is semantic, not a credential requirement.
 
 - [2026-04-20 Orianna suppression gap](2026-04-20-orianna-suppression-gap.md) — `<!-- orianna: ok -->` is an unpoliced trust primitive; can bypass claim-contract Step C entirely with no audit trail.
