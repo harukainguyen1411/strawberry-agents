@@ -50,11 +50,18 @@ _run_hook_with_staged() {
 
 # Setup a minimal git repo in /tmp
 _setup_repo() {
-  local dir
+  local dir _empty_hooks
   dir="$(mktemp -d /tmp/plan-struct-test-XXXXXX)"
+  # Place the empty hooks dir inside the repo tmpdir so a single `rm -rf "$dir"`
+  # cleans both (no /tmp accumulation across test runs).
+  _empty_hooks="$dir/.empty-hooks"
+  mkdir -p "$_empty_hooks"
   git -C "$dir" init -q
   git -C "$dir" config user.email "test@example.com"
   git -C "$dir" config user.name "Test"
+  # Point core.hooksPath to an empty dir so the global dispatcher does not
+  # run production hooks on test-harness setup commits (test isolation).
+  git -C "$dir" config core.hooksPath "$_empty_hooks"
   touch "$dir/README"
   git -C "$dir" add README
   git -C "$dir" commit -q -m "init"
@@ -1215,6 +1222,178 @@ PLAN
 rc="$(_run_hook_with_staged "$ti4_dir" "plans/proposed/frontmatter-comment.md")"
 _assert "(I4) tests_required: false with trailing # comment does not require Test plan section (exit 0)" 0 "$rc"
 rm -rf "$ti4_dir"
+
+# ---------------------------------------------------------------------------
+# Rule 4 — staged-diff scope (grandfathering tests)
+#
+# R4-grand: plan with pre-existing bad token on unchanged line + signature
+#           append as the only staged change → hook PASSES (rule 4 skips
+#           unchanged lines; old bad token is grandfathered).
+# R4-new:   plan where the staged diff introduces a new line with a bad token
+#           → hook BLOCKS.
+# R4-mixed: plan with a legacy bad token on an unchanged line AND a new bad
+#           token on a staged line → hook BLOCKS (only new line cited).
+#
+# xfail before implementation: all three will fail because the current hook
+# scans the whole file body for rule 4, not just staged diff lines.
+# ---------------------------------------------------------------------------
+
+# Helper: write a minimal valid plan with the given body appended
+_write_plan_with_body() {
+  local dir="$1" path="$2" body="$3"
+  mkdir -p "$dir/$(dirname "$path")"
+  cat > "$dir/$path" <<PLANEOF
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Staged-diff scope test
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+$body
+PLANEOF
+}
+
+# R4-grand: unchanged bad line + signature-append as staged change → PASS
+tR4g_dir="$(_setup_repo)"
+# Create a directory that looks like a real path in the repo so there IS something real
+mkdir -p "$tR4g_dir/scripts"
+touch "$tR4g_dir/scripts/real.sh"
+git -C "$tR4g_dir" add scripts/real.sh && git -C "$tR4g_dir" commit -q -m "real file"
+# Write plan with a non-existent path token on an already-committed line
+_write_plan_with_body "$tR4g_dir" "plans/proposed/personal/grand-test.md" \
+  "See \`scripts/nonexistent-legacy-path.sh\` for background."
+git -C "$tR4g_dir" add "plans/proposed/personal/grand-test.md"
+git -C "$tR4g_dir" commit -q -m "initial plan"
+# Now simulate orianna-sign.sh: append a signature line (the only staged change)
+printf '\n<!-- orianna-signature: abc123 -->\n' >> "$tR4g_dir/plans/proposed/personal/grand-test.md"
+git -C "$tR4g_dir" add "plans/proposed/personal/grand-test.md"
+tR4g_local_hook="$tR4g_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tR4g_rc="$( (cd "$tR4g_dir" && bash "$tR4g_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R4-grand) pre-existing bad token on unchanged line is grandfathered (exit 0)" 0 "$tR4g_rc"
+rm -rf "$tR4g_dir"
+
+# R4-new: new line in staged diff introduces a bad token → BLOCK
+tR4n_dir="$(_setup_repo)"
+mkdir -p "$tR4n_dir/scripts"
+touch "$tR4n_dir/scripts/real.sh"
+git -C "$tR4n_dir" add scripts/real.sh && git -C "$tR4n_dir" commit -q -m "real file"
+_write_plan_with_body "$tR4n_dir" "plans/proposed/personal/new-violation.md" "No bad tokens yet."
+git -C "$tR4n_dir" add "plans/proposed/personal/new-violation.md"
+git -C "$tR4n_dir" commit -q -m "initial plan"
+# Append a new line with a bad token (this line will be in the staged diff)
+printf 'See `scripts/nonexistent-new-path.sh` for context.\n' >> "$tR4n_dir/plans/proposed/personal/new-violation.md"
+git -C "$tR4n_dir" add "plans/proposed/personal/new-violation.md"
+tR4n_local_hook="$tR4n_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tR4n_rc="$( (cd "$tR4n_dir" && bash "$tR4n_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R4-new) new staged line with bad token blocks (exit 1)" 1 "$tR4n_rc"
+rm -rf "$tR4n_dir"
+
+# R4-mixed: legacy bad token on unchanged line + new bad token on staged line → BLOCK
+tR4m_dir="$(_setup_repo)"
+mkdir -p "$tR4m_dir/scripts"
+touch "$tR4m_dir/scripts/real.sh"
+git -C "$tR4m_dir" add scripts/real.sh && git -C "$tR4m_dir" commit -q -m "real file"
+_write_plan_with_body "$tR4m_dir" "plans/proposed/personal/mixed-violation.md" \
+  "See \`scripts/nonexistent-legacy.sh\` for background."
+git -C "$tR4m_dir" add "plans/proposed/personal/mixed-violation.md"
+git -C "$tR4m_dir" commit -q -m "initial plan"
+# Append a new line with its own bad token
+printf 'Also see `scripts/nonexistent-staged.sh`.\n' >> "$tR4m_dir/plans/proposed/personal/mixed-violation.md"
+git -C "$tR4m_dir" add "plans/proposed/personal/mixed-violation.md"
+tR4m_local_hook="$tR4m_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tR4m_stderr="$( (cd "$tR4m_dir" && bash "$tR4m_local_hook") 2>&1 1>/dev/null || true )"
+tR4m_rc="$( (cd "$tR4m_dir" && bash "$tR4m_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R4-mixed) mixed: new staged bad token blocks (exit 1)" 1 "$tR4m_rc"
+# Only the new-line token should be cited, not the legacy one
+if printf '%s' "$tR4m_stderr" | grep -q 'nonexistent-staged'; then
+  _assert "(R4-mixed) error cites new-line token" "yes" "yes"
+else
+  _assert "(R4-mixed) error cites new-line token" "yes" "no"
+fi
+if printf '%s' "$tR4m_stderr" | grep -q 'nonexistent-legacy'; then
+  _assert "(R4-mixed) error does NOT cite legacy token" "yes" "no"
+else
+  _assert "(R4-mixed) error does NOT cite legacy token" "yes" "yes"
+fi
+rm -rf "$tR4m_dir"
+
+# ---------------------------------------------------------------------------
+# R4-trailer: hunk header with +<digits> in trailing context must not confuse
+#             start-line parsing — rule 4 must still block the new bad token.
+#
+# Regression for the greedy sed fallback bug: `sed 's/.*+\([0-9,]*\).*/\1/'`
+# matches the LAST `+` in the line, so `@@ -5,0 +6 @@ prefix +42 suffix`
+# returns 42 instead of 6, causing staged[] to miss the real new lines and
+# silently grandfather the bad path token.
+#
+# Fix: use anchored sed `sed -E 's/^@@ -[^ ]+ \+([0-9]+(,[0-9]+)?) @@.*/\1/'`
+# which always anchors to the hunk-coordinate `+`.
+#
+# xfail before fix: with the greedy sed, start=42 > actual last line so
+# staged[] is empty and R4 grandfathers the new bad token → hook exits 0
+# instead of blocking.
+# ---------------------------------------------------------------------------
+tR4t_dir="$(_setup_repo)"
+mkdir -p "$tR4t_dir/scripts"
+touch "$tR4t_dir/scripts/real.sh"
+git -C "$tR4t_dir" add scripts/real.sh && git -C "$tR4t_dir" commit -q -m "real file"
+# Initial plan whose last line contains "+42" — this becomes the trailing
+# context in the hunk header for the next append.
+mkdir -p "$tR4t_dir/plans/proposed/personal"
+cat > "$tR4t_dir/plans/proposed/personal/trailer-test.md" <<'PLANEOF'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+orianna_gate_version: 2
+tests_required: false
+tags: [test]
+---
+
+# Trailer context test
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+Context line with prefix +42 suffix.
+PLANEOF
+git -C "$tR4t_dir" add "plans/proposed/personal/trailer-test.md"
+git -C "$tR4t_dir" commit -q -m "initial plan"
+# Append a new line with a bad path token — this is the staged change.
+# The hunk header will look like:
+#   @@ -N,0 +M @@ Context line with prefix +42 suffix.
+# Greedy sed misparses this as start=42; anchored sed returns the correct M.
+printf 'See `scripts/nonexistent-trailer-path.sh` for details.\n' \
+  >> "$tR4t_dir/plans/proposed/personal/trailer-test.md"
+git -C "$tR4t_dir" add "plans/proposed/personal/trailer-test.md"
+tR4t_local_hook="$tR4t_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tR4t_rc="$( (cd "$tR4t_dir" && bash "$tR4t_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R4-trailer) hunk header with +digits in trailing context: new bad token still blocks (exit 1)" 1 "$tR4t_rc"
+rm -rf "$tR4t_dir"
 
 # ---------------------------------------------------------------------------
 # Summary
