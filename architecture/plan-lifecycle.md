@@ -205,43 +205,65 @@ by `scripts/hooks/pre-commit-plan-promote-guard.sh`).
 
 ## Pre-commit structural lint
 
-**Shift-left rationale:** Orianna's structural plan checks (required frontmatter,
-`estimate_minutes:` on every task, `## Test plan` presence when `tests_required: true`)
-are deterministic and fast. Running them only at promotion-time means a planner can push
-a structurally broken plan and find out late. `scripts/hooks/pre-commit-plan-structure.sh`
-runs the same deterministic checks at `git commit`, before any LLM invocation.
+**Shift-left rationale:** Orianna's structural plan checks are deterministic and fast.
+Running them only at promotion-time means a planner can push a structurally broken plan
+and find out hours later. `scripts/hooks/pre-commit-zz-plan-structure.sh` runs all
+deterministic Orianna-parity checks at `git commit`, before any LLM invocation.
 
-**What the hook checks:**
+**What the hook checks (all five rules, Orianna-parity):**
 
-- **Frontmatter:** all six required keys present (`status`, `concern`, `owner`, `created`,
-  `orianna_gate_version`, `tests_required`).
-- **Task estimates:** every `- [ ]` / `- [x]` task entry has `estimate_minutes:` with an
-  integer in `[1, 60]`. Banned alternative literals (`hours`, `days`, `weeks`, `h)`, `(d)`)
-  are rejected outside backtick spans.
-- **Test plan section:** when `tests_required: true`, a `## Test plan` heading with at least
-  one non-blank, non-heading line must be present.
+- **Rule 1 — Canonical `## Tasks` heading:** a plan body must contain exactly `## Tasks`
+  or `## N. Tasks` (where N is an integer). Variant spellings like `## Task breakdown (Foo)`
+  are rejected with `no canonical ## Tasks heading found`. Both a canonical heading and a
+  variant may coexist; only the canonical heading satisfies the rule.
+- **Rule 2 — Per-task estimate_minutes key:value:** every `- [ ]` / `- [x]` task entry
+  must carry `estimate_minutes: <int>` as a key:value on the task line (not just a table column).
+  Integer must be in `[1, 60]`. Banned alternative literals (`hours`, `days`, `weeks`, `h)`,
+  `(d)`) are rejected outside backtick spans.
+- **Rule 3 — Test-task title qualifier:** any task whose first word after the em-dash is one
+  of `xfail`, `test`, or `regression` (case-insensitive) must either (a) begin with an approved
+  action verb (`Write`, `Add`, `Create`, `Update`) OR (b) carry `kind: test` on the task line.
+  This rule prevents ambiguous test-task titles that Orianna would reject at sign time.
+- **Rule 4 — Cited backtick paths must exist:** every `` `path/like/this.ext` `` token in the
+  plan body that looks like a file path (contains `/` or has a file extension, not starting with
+  `http`) is resolved relative to the repo root. Missing paths block with `cited path does not
+  exist: <path>`. Suppress with `<!-- orianna: ok -->` on the same line for prospective paths
+  (files that do not exist yet).
+- **Rule 5 — Forward self-reference:** if a plan in `plans/proposed/` cites its own future
+  promoted path (e.g. `plans/approved/.../<same-slug>.md`), that line requires
+  `<!-- orianna: ok -->`. Forward self-references without suppression are blocked.
 
 **What the hook does NOT check:**
 
-- Path-shaped claim verification (LLM-only; Orianna's `plan-check.md` at `proposed → approved`).
+- Body-hash carry-forward freshness (Orianna's sixth check — the signature is appended after
+  the commit, so this stays Orianna-only).
 - Semantic correctness, prose quality, or gating-question resolution.
-- Plans under `plans/archived/**` (grandfathered) or `plans/_template.md` (has placeholder values
-  by design).
+- Plans under `plans/archived/**` (grandfathered) or `plans/_template.md`.
+
+**Suppression marker:** `<!-- orianna: ok -->` anywhere on a line suppresses rules 4 and 5
+for that line. Use it for prospective paths and intentional forward self-references. The marker
+is per-line and must appear on the same line as the backtick-quoted path.
+
+**Grandfathering policy:** the hook only runs on staged diffs. Existing plans that pre-date
+this rule set are not retroactively blocked; they stay quiet on disk until their next edit
+triggers a staged diff. Authors with plans that have variant headings or cross-repo path
+citations should add `<!-- orianna: ok -->` suppressions (rule 4) or rename the heading
+(rule 1) when next editing.
 
 **Split of responsibilities:**
 
 | Layer | Tool | Trigger | Checks |
 |-------|------|---------|--------|
-| Pre-commit (this) | `scripts/hooks/pre-commit-plan-structure.sh` | `git commit` | Structural (fast, deterministic) |
-| Promotion gate | Orianna via `scripts/orianna-sign.sh` | `plan-promote.sh` | Full: structural + semantic + path claims |
+| Pre-commit | `scripts/hooks/pre-commit-zz-plan-structure.sh` | `git commit` | Structural (all 5 rules, fast, deterministic) |
+| Promotion gate | Orianna via `scripts/orianna-sign.sh` | `plan-promote.sh` | Full: structural + semantic + body-hash carry-forward |
 
 **Entry point:** copy `plans/_template.md` for new plans. All required frontmatter keys and
 section headings are pre-filled with `<placeholder>` values that fail the linter until filled in.
 
 **Shared library:** `scripts/_lib_plan_structure.sh` exposes `check_plan_frontmatter`,
-`check_task_estimates`, `check_test_plan_present`, and `check_plan_structure`. Both the hook
-and any other caller source this lib. The estimate validation rules match
-`scripts/_lib_orianna_estimates.sh` (§D4).
+`check_task_estimates`, `check_test_plan_present`, and `check_plan_structure`. The estimate
+validation rules match `scripts/_lib_orianna_estimates.sh` (§D4). The new hook does not
+source the lib (single-file awk pass); the lib remains available for standalone callers.
 
 **Performance:** single awk pass over all staged plan files; < 200ms for 10 staged plans.
 
@@ -257,7 +279,8 @@ and any other caller source this lib. The estimate validation rules match
 | `scripts/plan-promote.sh` | Move plan between phase directories (verifies signatures) |
 | `scripts/hooks/pre-commit-orianna-signature-guard.sh` | Enforce signing commit shape |
 | `scripts/hooks/pre-commit-plan-authoring-freeze.sh` | Block new plan creation during freeze window |
-| `scripts/hooks/pre-commit-plan-structure.sh` | Pre-commit structural lint for staged plans/**/*.md |
+| `scripts/hooks/pre-commit-zz-plan-structure.sh` | Pre-commit structural lint for staged plans/**/*.md (rules 1–5, Orianna-parity) |
+| `scripts/hooks/pre-commit-t-plan-structure.sh` | Legacy pre-commit linter (rules 1–2 only); superseded by `pre-commit-zz-plan-structure.sh` |
 | `scripts/_lib_plan_structure.sh` | Shared lib: check_plan_frontmatter, check_task_estimates, check_test_plan_present, check_plan_structure |
 | `plans/_template.md` | Plan authoring template; correct-by-construction frontmatter + section skeletons |
 | `agents/orianna/prompts/plan-check.md` | proposed→approved gate prompt |
