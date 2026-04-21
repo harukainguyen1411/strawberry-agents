@@ -12,6 +12,7 @@ tags:
   - integration
   - work
 tests_required: true
+orianna_signature_approved: "sha256:0c6587607f0e86a322039555dfcec1f1f58a26f51b08f929603fdb9695643f89:2026-04-21T09:56:29Z"
 ---
 
 # ADR: Demo Studio v3 — E2E Integration and Ship Gate (v2)
