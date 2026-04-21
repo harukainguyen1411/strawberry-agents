@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-21 plan-promote.sh is agent-runnable](2026-04-21-plan-promote-agent-runnable.md) — `scripts/plan-promote.sh` runs under `Duongntd` executor account; admin identity only for Rule 18 self-merge gaps, Rule 19 Orianna-Bypass trailers, and branch-protection config. Duong's plan approval is semantic, not a credential requirement.
+
 - [2026-04-20 Orianna suppression gap](2026-04-20-orianna-suppression-gap.md) — `<!-- orianna: ok -->` is an unpoliced trust primitive; can bypass claim-contract Step C entirely with no audit trail.
 - [2026-04-20 Plan-structure hook false-positives](2026-04-20-plan-structure-hook-false-positives.md) — `(d)` and `h)` substrings in prose trigger the estimates hook; brief planners to self-verify `check_plan_structure` before handoff.
 - [2026-04-20 Concurrent coordinator close](2026-04-20-concurrent-coordinator-close.md) — shared working tree + multiple closes = staging collisions; use agent-scoped paths, never leave work staged across turns.
