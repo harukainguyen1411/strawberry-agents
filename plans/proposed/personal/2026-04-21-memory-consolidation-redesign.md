@@ -404,7 +404,7 @@ Flag any of these if the default runs counter to Duong's preference; otherwise t
 
 ## Task breakdown (Aphelios)
 
-Companion breakdown for `plans/approved/personal/2026-04-21-memory-consolidation-redesign.md`. Twelve tasks (T1–T12) executed by a complex-track pair on a single feature branch, single PR.
+Companion breakdown for `plans/approved/personal/2026-04-21-memory-consolidation-redesign.md`. Twelve tasks (T1–T12) executed by a complex-track pair on a single feature branch, single PR. <!-- orianna: ok -->
 
 ---
 
@@ -808,7 +808,7 @@ This document IS the test plan for the memory-consolidation-redesign ADR (`plans
 
 # Test plan — memory consolidation redesign (two-layer boot)
 
-**ADR:** `plans/approved/personal/2026-04-21-memory-consolidation-redesign.md`
+**ADR:** `plans/approved/personal/2026-04-21-memory-consolidation-redesign.md` <!-- orianna: ok -->
 **Implementer:** Rakan (complex-track test implementer)
 **Runners:** Vi / Caitlyn
 **Authoring agent:** Xayah
@@ -1262,7 +1262,7 @@ fi
 
 ## 6. Test-runner integration
 
-**Pre-push hook chain** (`scripts/hooks/pre-push.sh`) must invoke, in order:
+**Pre-push hook chain** (`scripts/hooks/pre-push.sh`) must invoke, in order: <!-- orianna: ok -->
 1. Existing hooks (secret-scan, commit-prefix, TDD gate).
 2. `scripts/test-memory-consolidate-index.sh` — cheap, always run.
 3. `scripts/test-memory-consolidate-archive-policy.sh` — cheap, always run.
