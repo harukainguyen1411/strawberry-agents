@@ -68,7 +68,7 @@ Based on `https://platform.claude.com/docs/en/managed-agents/sessions` <!-- oria
 | --- | --- | --- |
 | (a) List active sessions for an `agent_id` | `client.beta.sessions.list()` — paginated, returns `{id, status}` | **Docs do not show an `agent` filter param.** Fallback: list all, then either (i) filter client-side by retrieving each session's `agent.id` via `retrieve()`, or (ii) persist the managed_session_id -> agent_id map in Firestore and filter using our own data. Implementers (Kayn) must confirm the SDK signature by reading `anthropic` Python package source before finalising. |
 | (b) Get session with last activity timestamp | `client.beta.sessions.retrieve(session_id)` returns status and other fields | **`lastActivityAt` is not shown in docs.** The statuses listed are `{idle, running, rescheduling, terminated}`. Fallback: compute idle via events — `client.beta.sessions.events.list(session_id)` (or equivalent) sorted by `created_at` desc; idle duration = `now - latest_event.created_at`. Implementers must verify the events-list endpoint name and `created_at` field during Spike 1 (see section 4). If events list is also unavailable, second fallback: persist `lastActivityAt` ourselves on every inbound SSE event in Service 1, accepting the DB-drift risk on this one field only. |
-| (c) Stop / end a session | `client.beta.sessions.delete(session_id)` (documented; already used in `main.py:2113`) | Deleting a `running` session requires an interrupt event first. `stop_managed_session()` must send an `interrupt` event before delete when status is `running`, or catch the error and retry. |
+| (c) Stop / end a session | `client.beta.sessions.delete(session_id)` (documented; already used in `main.py:2113` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->) | Deleting a `running` session requires an interrupt event first. `stop_managed_session()` must send an `interrupt` event before delete when status is `running`, or catch the error and retry. |
 
 **Blocker assessment:** Gap (a) is solvable with a client-side filter at our current session volume (<100 concurrent). Gap (b) is the real risk: if neither `lastActivityAt` nor an events-list endpoint exposes a usable timestamp, we fall back to Service-1-maintained idle tracking, which reintroduces DB-drift risk for the scanner's core input. This is flagged as Q1 below and must be resolved before implementation.
 
@@ -92,7 +92,7 @@ async def stop_managed_session(session_id: str, reason: str = "") -> bool:
     """
 ```
 
-Terminal-state wiring: `session_store.transition_status` (per session-state-encapsulation ADR) calls `stop_managed_session` as a post-commit hook inside the same code path that fires status-change webhooks. The hook is `await`-ed but wrapped in a per-call timeout (5s, matching the existing `cancel_build` pattern in `main.py:2112`) so a slow Anthropic response cannot block the transition.
+Terminal-state wiring: `session_store.transition_status` (per session-state-encapsulation ADR) calls `stop_managed_session` as a post-commit hook inside the same code path that fires status-change webhooks. The hook is `await`-ed but wrapped in a per-call timeout (5s, matching the existing `cancel_build` pattern in `main.py:2112` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->) so a slow Anthropic response cannot block the transition.
 
 ### Spike 1 (before implementation)
 
@@ -186,11 +186,11 @@ Explicitly out of scope:
 
 ## 10. Handoff notes
 
-- **Kayn / Aphelios:** break into tasks. Spike 1 (SDK gap confirmation) is the first task and gates the rest. The module boundary in section 4 is load-bearing — do not merge `stop_managed_session` into `main.py`.
-- **Depends on:** `2026-04-20-session-api-adr.md` (session-state-encapsulation). Terminal-state hook in section 2.1 lives inside that ADR's `transition_status`. If that ADR slips, ship scanner without the eager path and accept the degraded cost floor.
+- **Kayn / Aphelios:** break into tasks. Spike 1 (SDK gap confirmation) is the first task and gates the rest. The module boundary in section 4 is load-bearing — do not merge `stop_managed_session` into `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->.
+- **Depends on:** `secretary/agents/azir/learnings/2026-04-20-session-api-adr.md` <!-- orianna: ok — company-os workspace file; cross-repo ref --> (session-state-encapsulation). Terminal-state hook in section 2.1 lives inside that ADR's `transition_status`. If that ADR slips, ship scanner without the eager path and accept the degraded cost floor.
 - **Test strategy (for Caitlyn):** three layers. (i) Unit: `stop_managed_session` idempotency, interrupt-before-delete when running, 404 swallow. (ii) Unit: `ManagedSessionMonitor` decision logic with a stubbed SDK (< warn = no-op, warn-only = 1 slack call, terminate = delete + slack + Firestore). The enrichment unit test must stub both `session_store.get_session` (for slack/user fields) and `config_mgmt_client.fetch_config` (for brand), covering three enrichment states (success, 404 cold, 5xx degraded). (iii) Integration: real Anthropic SDK against a throwaway session; S2 stubbed at the integration-test boundary (no cross-service HTTP).
-- **Regression test for existing `/cancel-build` <!-- orianna: ok — HTTP route name, not a filesystem path --> path:** existing call site at `main.py:2111-2115` inlines the delete. Refactor it to call `stop_managed_session` and add a test asserting equivalence (no behaviour change for end users).
-- **Observability:** structured logs with event types `managed_session_warned`, `managed_session_terminated`, `orphan_terminated`, `scan_cycle_complete` (with counts), `slack_enrichment_degraded`. Feed to existing `logger` in `main.py`. No new metrics infra.
+- **Regression test for existing `/cancel-build` <!-- orianna: ok — HTTP route name, not a filesystem path --> path:** existing call site at `main.py:2111-2115` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> inlines the delete. Refactor it to call `stop_managed_session` and add a test asserting equivalence (no behaviour change for end users).
+- **Observability:** structured logs with event types `managed_session_warned`, `managed_session_terminated`, `orphan_terminated`, `scan_cycle_complete` (with counts), `slack_enrichment_degraded`. Feed to existing `logger` in `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->. No new metrics infra.
 
 ## Appendix: Files touched
 
@@ -208,8 +208,8 @@ _Source: `company-os/plans/2026-04-20-managed-agent-lifecycle-tasks.md` in `miss
 **Branch:** `feat/demo-studio-v3` <!-- orianna: ok — git branch name in missmp/company-os; not a filesystem path -->
 **Repo:** `missmp/company-os`, all work under `tools/demo-studio-v3/`. <!-- orianna: ok — cross-repo path prefix; all tools/demo-studio-v3/ refs in this Tasks section refer to missmp/company-os -->
 **Sister plans on the same branch:**
-- `plans/proposed/work/2026-04-20-session-state-encapsulation.md` + `…-tasks.md` (SE) — provides `session_store.py` and `session_store.transition_status`. MAL's terminal-state hook (ADR §2.1) plugs into SE.A.6 `transition_status`.
-- `plans/proposed/work/2026-04-20-s1-s2-service-boundary.md` (BD — approved) — S1 is session-lifecycle + agent-hosting only. Identity fields (`brand`, `market`, `languages`, `shortcode`) are NOT on the S1 session doc.
+- `plans/proposed/work/2026-04-20-session-state-encapsulation.md` (SE) <!-- orianna: ok — sibling plan; session-state-encapsulation tasks are inlined in that plan per one-plan-one-file rule --> — provides `session_store.py` <!-- orianna: ok — company-os module under missmp/company-os/tools/demo-studio-v3/ --> and `session_store.transition_status`. MAL's terminal-state hook (ADR §2.1) plugs into SE.A.6 `transition_status`.
+- `plans/approved/work/2026-04-20-s1-s2-service-boundary.md` (BD — approved) — S1 is session-lifecycle + agent-hosting only. Identity fields (`brand`, `market`, `languages`, `shortcode`) are NOT on the S1 session doc.
 
 **TDD gate active:** every impl task must be preceded on the same branch by an xfail test commit referencing the task ID. Pre-push hook enforces; agents may not bypass.
 **Regression-test rule:** the refactor of `/cancel-build` <!-- orianna: ok — HTTP route name, not a filesystem path --> (MAL.C.2) must carry a paired regression test (see MAL.C.1) per universal invariant 13 — behaviour must be preserved end-to-end.
@@ -226,12 +226,12 @@ The work splits into two sub-ADRs that ship independently:
 ### Task ID scheme
 
 - `MAL.0.*` — preflight (SDK spike, Slack bot membership check)
-- `MAL.A.*` — `stop_managed_session` primitive in `agent_proxy.py`
+- `MAL.A.*` — `stop_managed_session` primitive in `agent_proxy.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->
 - `MAL.B.*` — terminal-state hook in `session_store.transition_status`
 - `MAL.C.*` — refactor `/cancel-build` <!-- orianna: ok — HTTP route name --> and `/close` <!-- orianna: ok — HTTP route name --> call sites to use the primitive
 - `MAL.D.*` — `ManagedSessionMonitor` class (scan loop, dedup cache, decision logic)
 - `MAL.E.*` — Slack warning/termination messaging
-- `MAL.F.*` — `main.py` startup/shutdown wiring
+- `MAL.F.*` — `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> startup/shutdown wiring
 - `MAL.G.*` — config plumbing + startup invariant check
 - `MAL.H.*` — integration tests + observability
 
@@ -263,7 +263,7 @@ Merges independently. Pure additive; no call-site changes yet.
 
 #### MAL.A.1 — xfail tests for `stop_managed_session` idempotency + 404 swallow
 - **What:** create `tools/demo-studio-v3/tests/test_stop_managed_session.py` <!-- orianna: ok — company-os future test file --> with four tests covering: delete on idle status, 404 swallow, idempotent second call, outcome logging.
-- **Where:** new test file in `missmp/company-os`.
+- **Where:** new test file in `missmp/company-os` <!-- orianna: ok — GitHub org/repo name, not a filesystem path; test file lives in missmp/company-os/tools/demo-studio-v3/tests/ -->.
 - **Why:** ADR §4 module shape — locks the idempotency contract before impl.
 - **Acceptance:** tests import `agent_proxy.stop_managed_session` and fail with `AttributeError` or `ImportError`. Marked `@pytest.mark.xfail(reason="MAL.A.2", strict=True)`.
 - **TDD:** xfail commit for MAL.A.2.
@@ -272,13 +272,13 @@ Merges independently. Pure additive; no call-site changes yet.
 #### MAL.A.2 — Implement `stop_managed_session` idempotent delete path
 - **What:** add `async def stop_managed_session(session_id: str, reason: str = "") -> bool` in `tools/demo-studio-v3/agent_proxy.py` <!-- orianna: ok — company-os file -->. Signature and docstring verbatim from ADR §4. For the simple path (non-running status): call `client.beta.sessions.delete(session_id)`. Swallow `NotFoundError` → return `False`. Log success as structured event `managed_session_terminated` with `reason` field.
 - **Where:** `tools/demo-studio-v3/agent_proxy.py`. <!-- orianna: ok — company-os file; missmp/company-os/tools/demo-studio-v3/agent_proxy.py -->
-- **Why:** ADR §4 — primitive owned by `agent_proxy`, not `main.py`. Module boundary is load-bearing per ADR §10 handoff.
+- **Why:** ADR §4 — primitive owned by `agent_proxy`, not `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->. Module boundary is load-bearing per ADR §10 handoff.
 - **Acceptance:** MAL.A.1 tests 1, 2, 3, 4 pass.
 - **TDD:** preceded by MAL.A.1.
 - **Depends on:** MAL.A.1.
 
 #### MAL.A.3 — xfail tests for interrupt-before-delete on `running` status
-- **What:** extend `test_stop_managed_session.py` with tests covering: interrupt event sent before delete on running status, retry after delete error on running, 5s timeout.
+- **What:** extend `test_stop_managed_session.py` <!-- orianna: ok — company-os future test file under missmp/company-os/tools/demo-studio-v3/tests/ --> with tests covering: interrupt event sent before delete on running status, retry after delete error on running, 5s timeout.
 - **Where:** same file as MAL.A.1.
 - **Why:** ADR §3 Gap (c) + §4 "5s timeout matching `cancel_build` pattern".
 - **Acceptance:** new tests fail (impl does not yet send interrupt); xfail/strict → MAL.A.4. Exact interrupt SDK call comes from MAL.0.1 spike appendix.
@@ -301,7 +301,7 @@ Depends on SE.A.6 (`session_store.transition_status` exists). If SE slips, MAL.B
 
 #### MAL.B.1 — xfail test for terminal-state hook invocation
 - **What:** create `tools/demo-studio-v3/tests/test_transition_status_terminal_hook.py` <!-- orianna: ok — company-os future test file -->. Tests covering: hook called on transition to each terminal status in `{completed, cancelled, qc_failed, build_failed, built}`; hook NOT called on transition to non-terminal status; hook failure does not block the transition; 5s timeout bound.
-- **Where:** new test file in `missmp/company-os`.
+- **Where:** new test file in `missmp/company-os` <!-- orianna: ok — GitHub org/repo name, not a filesystem path; test file lives in missmp/company-os/tools/demo-studio-v3/tests/ -->.
 - **Why:** ADR §2.1 + §4 "post-commit hook … wrapped in a per-call timeout".
 - **Acceptance:** tests fail because the hook does not exist yet; xfail/strict → MAL.B.2.
 - **TDD:** xfail commit for MAL.B.2.
@@ -351,7 +351,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 
 #### MAL.D.1 — xfail tests for `ManagedSessionMonitor` decision matrix
 - **What:** create `tools/demo-studio-v3/tests/test_managed_session_monitor.py` <!-- orianna: ok — company-os future test file -->. Stubbed Anthropic SDK + stubbed clock. Parametric cases: idle < warn → no-op; warn ≤ idle < terminate → one Slack warning; idle ≥ terminate → stop + Slack + Firestore transition; no Firestore row (orphan) → stop + orphan Slack; agent filter: only acts on `MANAGED_AGENT_ID` ones; scan cycle logs `scan_cycle_complete`.
-- **Where:** new test file in `missmp/company-os`.
+- **Where:** new test file in `missmp/company-os` <!-- orianna: ok — GitHub org/repo name, not a filesystem path; test file lives in missmp/company-os/tools/demo-studio-v3/tests/ -->.
 - **Why:** ADR §2.2 + §10 test strategy layer (ii).
 - **Acceptance:** tests fail because class does not exist; xfail/strict → MAL.D.2 + D.3.
 - **TDD:** xfail commit for MAL.D.2 and MAL.D.3.
@@ -367,7 +367,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 
 #### MAL.D.3 — Implement `scan_once()` decision logic
 - **What:** body out `scan_once()` per ADR §2.2. For each active session: (i) resolve idle duration via the mechanism chosen in MAL.0.1; (ii) apply decision matrix from MAL.D.1; (iii) for terminations call `agent_proxy.stop_managed_session` + attempt `session_store.transition_status(..., to_status="cancelled", cancel_reason="idle_timeout")` — swallow transition failure, Anthropic is authoritative; (iv) emit `scan_cycle_complete` log with counts.
-- **Where:** `tools/demo-studio-v3/managed_session_monitor.py`.
+- **Where:** `tools/demo-studio-v3/managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ -->.
 - **Why:** ADR §2.2, §2.3.
 - **Acceptance:** MAL.D.1 tests all pass.
 - **TDD:** preceded by MAL.D.1.
@@ -378,7 +378,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
   - (a) spike confirms `retrieve().last_activity_at` — no fallback task needed; fold into MAL.D.3.
   - (b) spike confirms `events.list()` — add xfail + impl for "fetch latest event timestamp and compute idle = now - latest.created_at".
   - (c) spike shows neither — add xfail + impl for "Service-1-maintained `lastActivityAt` on every inbound SSE event in Service 1, write to session doc via `session_store.update_session`". **BD-consistency note:** permitted as a pure lifecycle field (per BD amendment §2.4 pre-conditions) if spike returns (c).
-- **Where:** either `managed_session_monitor.py` (cases a/b) or `agent_proxy.py` + `main.py` SSE proxy (case c).
+- **Where:** either `managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ --> (cases a/b) or `agent_proxy.py` <!-- orianna: ok — company-os file --> + `main.py` <!-- orianna: ok — company-os file --> SSE proxy (case c).
 - **Why:** ADR §3 Gap (b) is the real risk.
 - **Acceptance:** scan uses a deterministic idle value regardless of spike outcome.
 - **TDD:** paired xfail test.
@@ -390,7 +390,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 
 #### MAL.E.1 — xfail tests for Slack message formatting
 - **What:** `tools/demo-studio-v3/tests/test_monitor_slack_format.py` <!-- orianna: ok — company-os future test file -->. Tests render each of the message variants (warn, orphan warn, termination) with mocked enrichment data per BD amendment §2.2 field sources. Tests assert exact string shape. The literal `insuranceLine` must NOT appear in any format string or test assertion (BD grep-gate compliance).
-- **Where:** new test file in `missmp/company-os`.
+- **Where:** new test file in `missmp/company-os` <!-- orianna: ok — GitHub org/repo name, not a filesystem path; test file lives in missmp/company-os/tools/demo-studio-v3/tests/ -->.
 - **Why:** ADR §5 message shape, as amended by BD amendment §2.2.
 - **Acceptance:** tests fail — formatting helpers don't exist yet; xfail/strict → MAL.E.2.
 - **TDD:** xfail commit for MAL.E.2.
@@ -404,7 +404,7 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **TDD:** N/A — CI wiring.
 
 #### MAL.E.2 — Implement Slack messaging + enrichment lookup
-- **What:** add `_format_warning`, `_format_orphan_warning`, `_format_termination` helpers in `managed_session_monitor.py`. The enrichment helper makes **two** calls in parallel (`asyncio.gather`): (a) `session_store.get_session(sessionId)` → slack/user fields; (b) `config_mgmt_client.fetch_config(sessionId)` → brand. Returns a `SlackEnrichment` struct with `brand: str | None` where `None` signals 404 (render "config not yet set") or 5xx (render "brand unavailable", log `slack_enrichment_degraded`). Note: `config_mgmt_client` import in this module is permitted per BD §2 Rule 4 allowed-set; add `# azir: config-boundary` comment on the import line.
+- **What:** add `_format_warning`, `_format_orphan_warning`, `_format_termination` helpers in `managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ -->. The enrichment helper makes **two** calls in parallel (`asyncio.gather`): (a) `session_store.get_session(sessionId)` → slack/user fields; (b) `config_mgmt_client.fetch_config(sessionId)` → brand. Returns a `SlackEnrichment` struct with `brand: str | None` where `None` signals 404 (render "config not yet set") or 5xx (render "brand unavailable", log `slack_enrichment_degraded`). Note: `config_mgmt_client` import in this module is permitted per BD §2 Rule 4 allowed-set; add `# azir: config-boundary` comment on the import line.
 - **Where:** `tools/demo-studio-v3/managed_session_monitor.py`. <!-- orianna: ok — company-os file -->
 - **Why:** ADR §5; BD amendment §2.1 + §2.2 (two-source join).
 - **Acceptance:** MAL.E.1 tests pass. Literal `insuranceLine` is absent from all scanner code paths.
@@ -427,11 +427,11 @@ Both routes currently inline `_client.beta.sessions.delete(...)`. Refactor to ca
 - **What:** `tests/test_monitor_lifecycle_wiring.py` <!-- orianna: ok — future company-os test file relative to tools/demo-studio-v3/ -->. Tests: FastAPI `startup` event instantiates `ManagedSessionMonitor` and schedules `run_forever()` as an asyncio background task; `shutdown` event cancels that task; when `MANAGED_SESSION_MONITOR_ENABLED=false`, startup does NOT schedule the task.
 - **Where:** new test file.
 - **Why:** ADR §4 startup/shutdown model.
-- **Acceptance:** tests fail against current `main.py`; xfail/strict → MAL.F.2.
+- **Acceptance:** tests fail against current `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->; xfail/strict → MAL.F.2.
 - **TDD:** xfail commit for MAL.F.2.
 - **Depends on:** MAL.D.2.
 
-#### MAL.F.2 — Wire monitor into `main.py` startup/shutdown
+#### MAL.F.2 — Wire monitor into `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ --> startup/shutdown
 - **What:** in `tools/demo-studio-v3/main.py` <!-- orianna: ok — company-os file -->, add startup + shutdown event handlers for the monitor. Respect the `MANAGED_SESSION_MONITOR_ENABLED` env var.
 - **Where:** `tools/demo-studio-v3/main.py`. <!-- orianna: ok — company-os file -->
 - **Why:** ADR §4.
@@ -514,7 +514,7 @@ MAL.0.1 → MAL.D.1 → MAL.D.2 → MAL.G.1 → MAL.G.2 → MAL.D.3 → MAL.D.4 
 
 **BDC-MAL-3 — MAL.D.4 fallback (c) would persist `lastActivityAt` on the S1 session doc**
 
-**Resolution (per BD amendment §2.4):** Permitted as a pure lifecycle field if the spike returns case (c), with four pre-conditions: (1) spike documents why (a) and (b) are unworkable; (2) field is written only by the SSE event handler in `main.py`; (3) field is read only by `ManagedSessionMonitor`; (4) SE.A.4 Session dataclass revision appends this field (Kayn coordinates). Resolves OQ-MAL-5 conditionally.
+**Resolution (per BD amendment §2.4):** Permitted as a pure lifecycle field if the spike returns case (c), with four pre-conditions: (1) spike documents why (a) and (b) are unworkable; (2) field is written only by the SSE event handler in `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->; (3) field is read only by `ManagedSessionMonitor`; (4) SE.A.4 Session dataclass revision appends this field (Kayn coordinates). Resolves OQ-MAL-5 conditionally.
 
 ---
 
@@ -529,9 +529,9 @@ MAL.0.1 → MAL.D.1 → MAL.D.2 → MAL.G.1 → MAL.G.2 → MAL.D.3 → MAL.D.4 
 
 ### Grep-gate allow-set for `config_mgmt_client` (cumulative across all BD amendments)
 
-- `main.py`
-- `factory_bridge*.py` handful (per BD §2 Rule 4)
-- `managed_session_monitor.py` (this amendment)
+- `main.py` <!-- orianna: ok — company-os file under missmp/company-os/tools/demo-studio-v3/ -->
+- `factory_bridge*.py` <!-- orianna: ok — company-os file glob under missmp/company-os/tools/demo-studio-v3/ --> handful (per BD §2 Rule 4)
+- `managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ --> (this amendment)
 - Dashboard handler for `GET /api/managed-sessions` <!-- orianna: ok — HTTP route, not a filesystem path --> (dashboard amendment §4)
 
 Kayn must consolidate this list in the SE.E.2 task acceptance criteria.
@@ -593,7 +593,7 @@ The monitor's Slack-enrichment unit test must also stub `config_mgmt_client.fetc
 
 #### 2.6 Module boundary — unchanged
 
-`managed_session_monitor.py` imports `config_mgmt_client`. Per BD §3.14 (allowed callers), this module joins the allowed set. **SE.E grep-gate must not false-positive on this import.** Kayn's MAL task-file revision adds this file to the grep-gate allow-set.
+`managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ --> imports `config_mgmt_client`. Per BD §3.14 (allowed callers), this module joins the allowed set. **SE.E grep-gate must not false-positive on this import.** Kayn's MAL task-file revision adds this file to the grep-gate allow-set.
 
 ### 3. OQ-MAL resolutions affected
 
@@ -614,7 +614,7 @@ The monitor's Slack-enrichment unit test must also stub `config_mgmt_client.fetc
 8. **New MAL.E.1b sub-task** — grep-gate self-check: CI asserts `insuranceLine` absent from all touched files.
 9. **OQ-MAL-4** — marked RESOLVED with pointer to this amendment.
 10. **OQ-MAL-5** — marked CONDITIONALLY RESOLVED.
-11. **Grep-gate allow-set coordination** — MAL task file acknowledges `managed_session_monitor.py` is added to the allow-set for `config_mgmt_client` imports.
+11. **Grep-gate allow-set coordination** — MAL task file acknowledges `managed_session_monitor.py` <!-- orianna: ok — company-os future file under missmp/company-os/tools/demo-studio-v3/ --> is added to the allow-set for `config_mgmt_client` imports.
 
 ### 5. Sequencing
 
