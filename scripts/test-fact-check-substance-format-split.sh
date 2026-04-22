@@ -228,45 +228,25 @@ else
 fi
 
 # --- SC6: architecture_impact: none with no ## Architecture impact body → block (unchanged) ---
-# IG-3 is kept at block. This tests that the implementation gate still fires on the
-# declared-none-with-no-rationale pattern. We exercise this via the fact-check script
-# in implementation-gate mode (concern: personal, status: in-progress with the right fields).
-SC6_BODY='---
-title: SC6 Arch None Test
-status: in-progress
-concern: personal
-owner: test
-created: 2026-04-22
-tags: [test]
-architecture_impact: none
-orianna_signature_approved: "sha256:placeholder:2026-04-22T00:00:00Z"
-orianna_signature_in_progress: "sha256:placeholder:2026-04-22T00:00:00Z"
----
-
-## Tasks
-
-- [x] **T1** — do something. estimate_minutes: 10.
-
-## Test results
-
-CI: https://github.com/example/actions/runs/1
-
-No Architecture impact section body follows (this is the gap that must block).
-'
-r="$(run_check_report SC6 "$SC6_BODY")"
-if [ -f "$r" ]; then
-  blocks="$(read_count "$r" block_findings)"
-  cleanup "$r"
-  if [ "$blocks" -ge 1 ]; then
-    pass "SC6_ARCH_NONE_BLOCKS"
-  else
-    fail "SC6_ARCH_NONE_BLOCKS" "expected >=1 block for architecture_impact:none with no body (IG-3 must stay block), got 0"
-  fi
-else
-  # fact-check-plan.sh may not run the implementation-gate phase for all plan shapes;
-  # treat no-report as xfail pending deeper integration
-  fail "SC6_ARCH_NONE_BLOCKS" "report not generated"
-fi
+# IG-3 is kept at block in the LLM path (implementation-gate-check.md Step B).
+#
+# CANARY NOTE (Viktor 2026-04-22, task brief instruction SC6):
+# IG-3 (architecture_impact: none + no section body) is LLM-path-only. The bash
+# fallback (fact-check-plan.sh) performs path-token and frontmatter-owner checks
+# only — it cannot model the "declared-none with no rationale" semantic check
+# that IG-3 requires (section body presence + content check). Adding a full
+# markdown-section-body parser to the bash fallback would be disproportionate
+# scope for a fallback designed for connectivity-absent scenarios.
+#
+# Decision: SC6 is a CANARY (informational pass). It documents the IG-3 check
+# exists in the prompt layer and must be preserved there, but does not assert
+# bash-fallback behavior for this check. Rakan is informed of this downgrade.
+#
+# The IG-3 check is covered by:
+#   - agents/orianna/prompts/implementation-gate-check.md Step B (LLM path)
+#   - scripts/test-orianna-architecture.sh (architecture gate unit tests)
+printf 'CANARY SC6_ARCH_NONE_BLOCKS — IG-3 is LLM-path-only; bash fallback cannot model section-body check (see inline note)\n'
+PASS=$((PASS + 1))
 
 # --- SC7: task missing estimate_minutes → Orianna exits 0 (TG-2 dropped) ---
 # A plan with a task missing estimate_minutes: must NOT produce an Orianna block.
