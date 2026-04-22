@@ -110,15 +110,24 @@ else
   fail "I1_WORK_CONCERN_ROUTES_TO_WORK_REPO" "expected 0 blocks (file exists in work repo), got $blocks"
 fi
 
-# Also assert: if concern: work but token is ABSENT in WORK_CONCERN_REPO, we get a block.
+# RESCOPE UPDATE (Viktor 2026-04-22, OQ-1 resolution a):
+# Pre-rescope: concern:work path absent from WORK_CONCERN_REPO → block.
+# Post-rescope: apps/* under concern:work is a non-internal-prefix C2b token
+#   (opt-back list covers only agents/, plans/, scripts/, architecture/,
+#   assessments/, .claude/, secrets/, tools/decrypt.sh, tools/encrypt.sh).
+#   C2b tokens are info (no filesystem check) per v2 contract §6 / rescope OQ-1.
+#   The check "apps/demo-studio/backend/session_store.py" under concern:work
+#   → not on opt-back list → C2b → 0 blocks (info finding only).
+#
+# New assertion: 0 blocks (info) for absent work-concern non-opt-back path.
 FAKE_WORK_MISSING="$(mktemp -d)"  # does not have the token
 blocks="$(run_check I1_missing "$I1_BODY" \
   "WORK_CONCERN_REPO=$FAKE_WORK_MISSING" \
   "STRAWBERRY_APP=$FAKE_APP_MISSING")"
-if [ "$blocks" -ge 1 ]; then
-  pass "I1_WORK_CONCERN_MISSING_FILE_BLOCKS"
+if [ "$blocks" -eq 0 ]; then
+  pass "I1_WORK_CONCERN_MISSING_FILE_INFO_ONLY"
 else
-  fail "I1_WORK_CONCERN_MISSING_FILE_BLOCKS" "expected >=1 block (file absent in work repo), got 0"
+  fail "I1_WORK_CONCERN_MISSING_FILE_INFO_ONLY" "expected 0 blocks for absent work-concern C2b path (rescope OQ-1: non-internal-prefix → info), got $blocks"
 fi
 
 # ---- I2: concern: personal routes apps/* to STRAWBERRY_APP (backward compat) ---
@@ -164,7 +173,18 @@ else
   fail "I2_NO_CONCERN_FIELD_ROUTES_TO_STRAWBERRY_APP" "expected 0 blocks (legacy plan routes to app), got $blocks"
 fi
 
-# ---- I3: missing work-concern checkout emits warn naming the work-concern path ---
+# ---- I3: missing work-concern checkout behavior (post-rescope) ----
+# RESCOPE UPDATE (Viktor 2026-04-22, OQ-1 resolution a):
+# Pre-rescope: if work-concern checkout is absent, a warn was emitted naming
+#   the checkout path, because the path token was routed there for test -e.
+# Post-rescope: non-opt-back work-concern tokens are C2b (info) — the filesystem
+#   check is never attempted, so no "checkout absent" warn is emitted.
+#   The test asserts the new invariant: 0 blocks when checkout absent and token
+#   is C2b (plan exits clean, author is informed via info finding only).
+#
+# For OPT-BACK tokens (e.g. agents/sona/memory/sona.md), the checkout-absent
+#   warn still applies for cross-repo personal refs (apps/, dashboards/).
+#   This case is covered by SC4 in the concern-root-flip test.
 FAKE_ABSENT="/tmp/strawberry-work-repo-NONEXISTENT-$$"
 I3_BODY="---
 title: I3 Missing Checkout Test
@@ -178,13 +198,13 @@ tags: [test]
 Depends on \`${WORK_TOKEN}\` being present.
 "
 
-report_text="$(run_check_warn I3 "$I3_BODY" \
+blocks="$(run_check I3 "$I3_BODY" \
   "WORK_CONCERN_REPO=$FAKE_ABSENT" \
   "STRAWBERRY_APP=$FAKE_APP")"
-if printf '%s' "$report_text" | grep -q "$FAKE_ABSENT"; then
-  pass "I3_MISSING_WORK_CHECKOUT_WARN_NAMES_REPO_PATH"
+if [ "$blocks" -eq 0 ]; then
+  pass "I3_MISSING_WORK_CHECKOUT_C2B_CLEAN"
 else
-  fail "I3_MISSING_WORK_CHECKOUT_WARN_NAMES_REPO_PATH" "warn finding did not name the expected work-concern path $FAKE_ABSENT"
+  fail "I3_MISSING_WORK_CHECKOUT_C2B_CLEAN" "expected 0 blocks (C2b token, no filesystem check attempted), got $blocks"
 fi
 
 # ---- I4: concern: "work" (YAML-quoted) still routes to WORK_CONCERN_REPO -----

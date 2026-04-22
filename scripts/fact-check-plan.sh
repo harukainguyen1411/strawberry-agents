@@ -2,9 +2,10 @@
 # fact-check-plan.sh — Pure-bash mechanical fallback for plan fact-checking.
 #
 # Used when the claude CLI is unavailable. Performs deterministic grep/ls
-# checks for path-shaped tokens found in backtick spans and fenced code blocks.
+# checks for path-shaped tokens found in inline backtick spans (outside fenced
+# code blocks). Fenced blocks are illustrative and are not extracted (v2).
 #
-# Contract: agents/orianna/claim-contract.md (v1)
+# Contract: agents/orianna/claim-contract.md (v2)
 # Allowlist: agents/orianna/allowlist.md
 #
 # Usage:
@@ -36,10 +37,12 @@ usage() {
   cat >&2 <<EOF
 Usage: $0 <plan-path.md>
 
-Pure-bash mechanical fact-check fallback. Checks path-shaped tokens found in
-backtick spans and fenced-code blocks against the applicable repo checkout.
+Pure-bash mechanical fact-check fallback. Checks internal-prefix path-shaped
+tokens found in inline backtick spans against the applicable repo checkout.
+Fenced code blocks are not extracted (v2 contract). Non-internal-prefix path
+tokens are logged as info without filesystem check (C2b per v2 contract).
 Used when the claude CLI is unavailable (does not check integration names —
-that is LLM-only in v1).
+that is LLM-only).
 
 Exit codes: 0=clean, 1=block findings, 2=invocation error
 Report: assessments/plan-fact-checks/<basename>-<ISO-timestamp>.md
@@ -80,9 +83,10 @@ REPORT_PATH="$REPORT_DIR/${PLAN_BASENAME}-${TIMESTAMP}.md"
 
 mkdir -p "$REPORT_DIR"
 
-# ---- frontmatter concern parsing -------------------------------------------
-# Extract the concern: field from YAML frontmatter (between first two --- lines).
-# Result is stored in PLAN_CONCERN; defaults to empty string (personal/legacy behavior).
+# ---- frontmatter parsing ---------------------------------------------------
+# Extract fields from YAML frontmatter (between first two --- lines).
+# PLAN_CONCERN: the concern: field; defaults to empty (personal/legacy behavior).
+# PLAN_OWNER:   the owner: field; empty string means absent.
 
 PLAN_CONCERN=""
 PLAN_CONCERN="$(awk '
@@ -90,6 +94,19 @@ PLAN_CONCERN="$(awk '
   count == 1 && /^concern:/ {
     val = $0
     sub(/^concern:[[:space:]]*/, "", val)
+    gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
+    gsub(/^["'"'"']|["'"'"']$/, "", val)
+    print val
+    exit
+  }
+' "$PLAN_PATH")"
+
+PLAN_OWNER=""
+PLAN_OWNER="$(awk '
+  /^---/ { count++; if (count == 2) exit; next }
+  count == 1 && /^owner:/ {
+    val = $0
+    sub(/^owner:[[:space:]]*/, "", val)
     gsub(/^[[:space:]]+|[[:space:]]+$/, "", val)
     gsub(/^["'"'"']|["'"'"']$/, "", val)
     print val
@@ -194,20 +211,51 @@ route_path() {
   esac
 }
 
+# ---- internal-prefix classification ----------------------------------------
+# Determines if a path token is a C2a (internal-prefix) claim.
+# C2a tokens: block on miss. C2b tokens: info (no filesystem check).
+#
+# The internal-prefix list is shared with agents/orianna/claim-contract.md §1
+# and agents/orianna/prompts/plan-check.md Step C.
+#
+# Under concern: personal, apps/, dashboards/, and .github/workflows/ are also
+# internal-prefix (they resolve against strawberry-app — still load-bearing).
+# Under concern: work, only the opt-back list entries are internal-prefix.
+is_internal_prefix() {
+  local tok="$1"
+  # Base internal-prefix list (both concerns)
+  case "$tok" in
+    agents/*|plans/*|scripts/*|architecture/*|assessments/*|.claude/*|secrets/*)
+      return 0 ;;
+    tools/decrypt.sh|tools/encrypt.sh)
+      return 0 ;;
+  esac
+  # Personal-concern additions (strawberry-app paths — load-bearing cross-repo refs)
+  if [ "$PLAN_CONCERN" != "work" ]; then
+    case "$tok" in
+      apps/*|dashboards/*|.github/workflows/*)
+        return 0 ;;
+    esac
+  fi
+  return 1
+}
+
 # ---- token extraction ------------------------------------------------------
-# Extract backtick spans and fenced-code lines from the plan.
+# Extract backtick spans from the plan body (inline spans only).
 # Strategy:
-#   1. Strip orianna-suppressed tokens (<!-- orianna: ok --> pattern).
-#   2. Extract inline backtick spans: `...`.
-#   3. Extract fenced code block lines (between ``` fences).
+#   1. Track fenced code blocks (between ``` fences) and skip all content
+#      inside them — fenced blocks are illustrative and not extracted (v2
+#      contract, claim-contract.md §6, rescope OQ-2).
+#   2. Strip orianna-suppressed tokens (<!-- orianna: ok --> pattern).
+#   3. Extract inline backtick spans: `...` (outside fences only).
 #
 # For each token, check if it is path-shaped (contains '/' or ends in a
 # recognized extension). Flags (starting with '-') are skipped — not verifiable
-# by bash. Integration names are not checked (LLM-only in v1).
+# by bash. Integration names are not checked (LLM-only).
 
 extract_tokens() {
   local plan="$1"
-  # Use awk to extract inline backticks and fenced code content.
+  # Use awk to extract inline backticks from non-fenced lines only.
   # Output one token per line.
   #
   # Suppression rule: a line is suppressed (all its tokens skipped) if:
@@ -219,6 +267,11 @@ extract_tokens() {
     /^```/ {
       if (in_fence) { in_fence=0 } else { in_fence=1 }
       suppress_next = 0
+      next
+    }
+
+    in_fence {
+      # v2: fenced code blocks are illustrative — skip entirely (rescope-drop: PA-7)
       next
     }
 
@@ -241,15 +294,6 @@ extract_tokens() {
       }
 
       if (suppressed) next
-    }
-
-    in_fence {
-      # Emit each whitespace-separated word from fenced lines
-      n = split($0, words, /[[:space:]]+/)
-      for (i=1; i<=n; i++) {
-        if (words[i] != "") print words[i]
-      }
-      next
     }
 
     {
@@ -290,6 +334,17 @@ app_checkout_present=0
 [ -d "$STRAWBERRY_APP" ] && app_checkout_present=1
 work_concern_checkout_present=0
 [ -d "$WORK_CONCERN_ROOT" ] && work_concern_checkout_present=1
+
+# Step A — PA-2: owner: field must be present and non-blank (substance check)
+# rescope-drop: PA-1 PA-3 PA-4
+# PA-1 (status), PA-3 (created), PA-4 (tags) are dropped from Orianna checks
+# per OQ-4 resolution (b): the pre-commit linter is the sole authority for
+# these frontmatter fields. Only PA-2 (owner) is retained as a substance check.
+if [ -z "$PLAN_OWNER" ]; then
+  block_count=$((block_count + 1))
+  block_findings="${block_findings}
+$((block_count)). **Step A — Frontmatter:** missing required frontmatter field: \`owner:\` | **Severity:** block"
+fi
 
 # Process each extracted token
 while IFS= read -r token; do
@@ -339,9 +394,19 @@ while IFS= read -r token; do
   repo_root="$(route_path "$token")"
 
   if [ "$repo_root" = "unknown" ]; then
+    # Unknown prefix — C2b non-internal token; info only, no filesystem check (v2 §6)
     info_count=$((info_count + 1))
     info_findings="${info_findings}
-$((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result:** unknown path prefix; add to contract if load-bearing | **Severity:** info"
+$((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result:** non-internal-prefix path token; C2b category; no filesystem check performed | **Severity:** info"
+    continue
+  fi
+
+  # C2a vs C2b classification (v2 contract §1 / rescope OQ-1):
+  # Non-internal-prefix tokens (C2b) are logged as info without filesystem check.
+  if ! is_internal_prefix "$token"; then
+    info_count=$((info_count + 1))
+    info_findings="${info_findings}
+$((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result:** non-internal-prefix path token; C2b category; no filesystem check performed | **Severity:** info"
     continue
   fi
 
@@ -361,14 +426,14 @@ $((info_count)). **Claim:** \`${token}\` | **Anchor:** routing lookup | **Result
     fi
   fi
 
-  # Check existence
+  # Check existence (C2a internal-prefix token)
   if test -e "$repo_root/$token"; then
     # Exists — info finding (clean pass)
     info_count=$((info_count + 1))
     info_findings="${info_findings}
 $((info_count)). **Claim:** \`${token}\` | **Anchor:** \`test -e ${repo_root}/${token}\` | **Result:** exists | **Severity:** info"
   else
-    # Does not exist — block finding
+    # Does not exist — block finding (C2a miss is always block)
     block_count=$((block_count + 1))
     if [ "$repo_root" = "$STRAWBERRY_APP" ]; then
       checkout_note=" (checked against strawberry-app checkout at ${STRAWBERRY_APP})"

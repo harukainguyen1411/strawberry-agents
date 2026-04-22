@@ -135,14 +135,25 @@ else
   fail "SC2_OPT_BACK_AGENTS_PATH" "report not generated"
 fi
 
-# ---- Subcase 3 — I3: unknown work-concern path gets workspace root in block finding ----
-# Use a deterministic fixture: set WORK_CONCERN_ROOT to a temp dir where the file is absent.
-# Post-impl: block finding names the workspace root (not strawberry-agents or strawberry-app).
-# Pre-impl: path falls through as "unknown prefix" → info (no block), test fails.
+# ---- Subcase 3 — I3: non-opt-back work-concern path → info (not block) ----
+# RESCOPE UPDATE (Viktor 2026-04-22, OQ-1 resolution a):
+# Pre-rescope: unknown work-concern path routed to workspace root → block on miss.
+# Post-rescope: non-internal-prefix paths (C2b) are info regardless of concern.
+#   The "workspace-monorepo paths under concern:work outside the opt-back list"
+#   class is explicitly listed in plan §3.3 as demoted to info under OQ-1.
+#   Genuine filesystem paths (any/unknown/nested/path.py) that aren't on the
+#   opt-back list are C2b — no block, no filesystem check.
+#
+# The original I3 invariant (unknown work-concern path named workspace in block)
+# no longer holds after the rescope. SC3 is updated to assert the NEW invariant:
+# 0 blocks for any non-opt-back path token in a work-concern plan.
+#
+# Regression guard for the OPT-BACK path (I2, SC2) is still active above — that
+# ensures agents/ paths still resolve against REPO_ROOT with no block.
 
 SC3_FIXTURE_ROOT="$(mktemp -d)"
 mkdir -p "$SC3_FIXTURE_ROOT"
-# Do NOT create any/unknown/nested/path.py — it must be absent.
+# any/unknown/nested/path.py is absent from fixture — but under rescope this is C2b (info).
 
 SC3_BODY='---
 title: SC3 Test
@@ -166,24 +177,16 @@ WORK_CONCERN_ROOT="$SC3_FIXTURE_ROOT" bash "$FACT_CHECK" "$SC3_PLAN" >/dev/null 
 SC3_REPORT="$(ls -t "$REPORT_DIR/${SC3_SLUG}-"*.md 2>/dev/null | head -1)"
 if [ -f "$SC3_REPORT" ]; then
   sc3_blocks="$(awk '/^block_findings:/{print $2}' "$SC3_REPORT" || echo 0)"
-  # The block finding anchor text must name the workspace fixture root
-  if grep -q "$SC3_FIXTURE_ROOT" "$SC3_REPORT" 2>/dev/null; then
-    sc3_names_workspace=1
-  else
-    sc3_names_workspace=0
-  fi
   cleanup_report "$SC3_REPORT"
   rm -rf "$SC3_FIXTURE_ROOT"
-  if [ "$sc3_blocks" -ge 1 ] && [ "$sc3_names_workspace" -eq 1 ]; then
-    pass "SC3_UNKNOWN_PATH_WORKSPACE_ROOT"
-  elif [ "$sc3_blocks" -eq 0 ]; then
-    fail "SC3_UNKNOWN_PATH_WORKSPACE_ROOT" "expected >=1 block for unknown path in work-concern plan, got 0 (still routed as unknown-prefix info)"
+  if [ "$sc3_blocks" -eq 0 ]; then
+    pass "SC3_NON_OPTBACK_WORK_PATH_INFO"
   else
-    fail "SC3_UNKNOWN_PATH_WORKSPACE_ROOT" "got $sc3_blocks blocks but anchor text did not name workspace root $SC3_FIXTURE_ROOT"
+    fail "SC3_NON_OPTBACK_WORK_PATH_INFO" "expected 0 blocks for non-opt-back work-concern path (C2b → info after rescope OQ-1), got $sc3_blocks"
   fi
 else
   rm -rf "$SC3_FIXTURE_ROOT"
-  fail "SC3_UNKNOWN_PATH_WORKSPACE_ROOT" "report not generated"
+  fail "SC3_NON_OPTBACK_WORK_PATH_INFO" "report not generated"
 fi
 
 # ---- Subcase 4 — I4: personal-concern plan, apps/ still routes to strawberry-app ----
