@@ -37,39 +37,19 @@ sibling file is found under `plans/`, emit the block from Step A and also
 emit a sibling-file block (see Step E). Do NOT accept a sibling as evidence
 that tasks exist.
 
-### Step B — estimate_minutes validation (§D4)
+NOTE: `estimate_minutes` validation (TG-2/TG-3/TG-4) has been removed from
+this gate. The pre-commit structural linter
+(`scripts/hooks/pre-commit-zz-plan-structure.sh`) is the sole authority for
+`estimate_minutes` format validation. It runs at `git commit` time (fast
+feedback) and is strictly upstream of Orianna. Re-validating the same
+invariant at sign time would be tautological redundancy. (OQ-3 resolution a /
+rescope ADR §5.2)
 
-For every task entry under `## Tasks` (lines starting with `- [ ]` or `- [x]`
-or bullet entries that are part of the task list), verify:
-
-1. **`estimate_minutes:` field present.** Every task entry line that defines a
-   task (starts with `- [ ]` or `- [x]`) must contain the literal string
-   `estimate_minutes:` followed by whitespace and a number. If any task entry
-   is missing this field, emit a `block` finding:
-   "task entry missing `estimate_minutes:` field: `<task title or line>` | §D4"
-
-2. **Integer value in [1, 60].** The value after `estimate_minutes:` must be
-   a positive integer with `1 ≤ n ≤ 60`. If a value is 0, negative, or above
-   60, emit a `block` finding:
-   "`estimate_minutes: <value>` is out of range [1, 60]; values >60 require
-   task decomposition per §D4."
-
-3. **No alternative unit literals.** Grep the `## Tasks` section body for the
-   strings: `hours`, `days`, `weeks`, `h)`, `(d)`. If any match, emit a
-   `block` finding per match:
-   "alternative time unit `<literal>` found in Tasks section; AI-minutes
-   (`estimate_minutes:`) is the only accepted unit per §D4."
-
-Run this check by reading the Tasks section and processing each task entry.
-Delegate detailed parsing to `scripts/_lib_orianna_estimates.sh` if you wish
-(sourceable lib, `check_estimate_minutes <plan_file>` function), but your
-judgment takes precedence — the script is a helper, not the authority.
-
-### Step C — Test tasks present (when tests_required: true)
+### Step B — Test tasks present (when tests_required: true)
 
 Read the plan's YAML frontmatter. If `tests_required:` is absent or its value
 is `true`, apply this check. If `tests_required: false` is explicitly declared,
-skip Step C.
+skip Step B.
 
 Check that at least one task in `## Tasks` satisfies EITHER:
 - Has `kind: test` in its inline metadata, OR
@@ -81,9 +61,9 @@ If no qualifying test task is found, emit a `block` finding:
 titled `^(write|add|create|update) .* test` is required when
 `tests_required: true` (§D2.2)."
 
-### Step D — Test plan section present (when tests_required: true)
+### Step C — Test plan section present (when tests_required: true)
 
-Same `tests_required` condition as Step C.
+Same `tests_required` condition as Step B.
 
 Check that the plan file contains a `## Test plan` section in the body that is
 non-empty (has at least one line of content after the heading before the next
@@ -100,7 +80,7 @@ If `## Test plan` section exists but is empty, emit a `block` finding:
 "`## Test plan` section is empty; test plan content is required when
 `tests_required: true` (§D2.2)."
 
-### Step E — Sibling-file grep
+### Step D — Sibling-file grep
 
 Derive `<basename>` from the plan filename. Search `plans/` recursively for:
 - `<basename>-tasks.md`
@@ -112,7 +92,7 @@ If any sibling file exists, emit a `block` finding per file:
 "sibling file `<path>` must be removed; content must be inlined in the plan
 body under `## Tasks` or `## Test plan` (§D3 one-plan-one-file rule)."
 
-### Step F — Approved-signature carry-forward
+### Step E — Approved-signature carry-forward
 
 Check that the plan file's YAML frontmatter contains:
 ```
@@ -164,11 +144,10 @@ Body (include all applicable sections):
 
 <!-- Each entry: step + description | failure reason | severity -->
 1. **Step A — Tasks section:** missing `## Tasks` section | **Severity:** block
-2. **Step B — estimate_minutes:** task "T1. Do X" missing `estimate_minutes:` | **Severity:** block
-3. **Step C — Test tasks:** no `kind: test` task found | **Severity:** block
-4. **Step D — Test plan:** missing `## Test plan` section | **Severity:** block
-5. **Step E — Sibling file:** `plans/proposed/2026-04-17-foo-tasks.md` exists | **Severity:** block
-6. **Step F — Approved sig:** `orianna_signature_approved` missing | **Severity:** block
+2. **Step B — Test tasks:** no `kind: test` task found | **Severity:** block
+3. **Step C — Test plan:** missing `## Test plan` section | **Severity:** block
+4. **Step D — Sibling file:** `plans/proposed/2026-04-17-foo-tasks.md` exists | **Severity:** block
+5. **Step E — Approved sig:** `orianna_signature_approved` missing | **Severity:** block
 
 (or "None." if zero block findings)
 
@@ -192,15 +171,15 @@ The report must always be written to disk even when exiting with status 1.
 
 ## Scope guardrails
 
-You are checking structural completeness and format compliance only:
+You are checking structural completeness and substance gates only:
 - **Step A:** Does the plan have an inline task list?
-- **Step B:** Are all `estimate_minutes:` values present and in range?
-- **Step C:** Is there at least one test task (when tests_required)?
-- **Step D:** Is the `## Test plan` section present and non-empty?
-- **Step E:** Are sibling task/test files absent?
-- **Step F:** Is the approved-phase signature present and valid?
+- **Step B:** Is there at least one test task (when tests_required)?
+- **Step C:** Is the `## Test plan` section present and non-empty?
+- **Step D:** Are sibling task/test files absent?
+- **Step E:** Is the approved-phase signature present and valid?
 
 You are NOT:
+- Checking `estimate_minutes:` format or range — that is the pre-commit linter's scope.
 - Evaluating whether the tasks are well-designed or sufficient.
 - Checking prose quality or reviewing the test plan content.
 - Running the tests.

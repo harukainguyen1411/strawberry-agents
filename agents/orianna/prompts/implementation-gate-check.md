@@ -21,23 +21,37 @@ file described in the Report format section below.
 
 ## Your task
 
-### Step A — Implementation evidence (claim-contract re-check on current tree)
+### Step A — Implementation evidence (claim-contract v2 re-check on current tree)
 
-Re-run the claim-contract checks from `agents/orianna/prompts/plan-check.md`
+Re-run the claim-contract v2 checks from `agents/orianna/prompts/plan-check.md`
 Step C on the **current working tree**, not the tree at approval time.
 
-For each path-shaped claim in the plan:
-- Does the path exist NOW? Apply the two-repo routing rules from
-  `claim-contract.md` §5 (strawberry-agents vs strawberry-app).
-- If a claimed path does not exist: emit a `block` finding:
-  "claim `<path>` not found on current tree; plan claims this path exists
-  but it was not created during implementation (§D2.3 implementation evidence)."
+**Fenced code blocks are not extracted.** Track fence boundaries (` ``` `)
+and skip all content between opening and closing fences. Only inline backtick
+spans outside fences are processed. (OQ-2 / rescope §5.3 item 2)
+
+For each inline backtick token (outside fences):
+1. Apply the v2 non-claim filters (§2 of claim-contract.md): HTTP route? Dotted
+   identifier? Template/brace expression? If so → log as `info`, skip.
+2. Classify as C2a (internal-prefix) or C2b (other path-shaped token):
+   - **Internal-prefix list (C2a):** `agents/`, `plans/`, `scripts/`,
+     `architecture/`, `assessments/`, `.claude/`, `secrets/`, `tools/decrypt.sh`,
+     `tools/encrypt.sh`; and under `concern: personal` also `apps/`,
+     `dashboards/`, `.github/workflows/`.
+   - **C2a tokens:** apply routing rules from `claim-contract.md` §5 and run
+     `test -e` against the current working tree. Does not exist now →
+     emit a `block` finding: "claim `<path>` not found on current tree;
+     plan claims this path exists but it was not created during implementation
+     (§D2.3 implementation evidence)." Exists → `info` (clean pass).
+   - **C2b tokens (non-internal-prefix):** log as `info` with note
+     "non-internal-prefix path token; C2b category; no filesystem check
+     performed." No `test -e` is run. (OQ-1 / rescope §5.3 item 1)
 
 Suppression syntax (`<!-- orianna: ok -->`) still applies per plan-check.md §Step C.
 
-The intent is: plans should not claim `scripts/foo.sh exists` and land with no
-such script. Every `block`-severity path claim that existed at approval time
-must now resolve against the implemented tree.
+The intent is: plans should not claim `scripts/foo.sh` exists and land with no
+such script. Every C2a (internal-prefix) path claim that existed at approval time
+must now resolve against the implemented tree. C2b tokens are informational.
 
 ### Step B — Architecture declaration (§D5)
 
@@ -197,13 +211,16 @@ The report must always be written to disk even when exiting with status 1.
 ## Scope guardrails
 
 You are checking implementation completeness and structural evidence only:
-- **Step A:** Do claimed paths exist in the current tree?
+- **Step A:** Do internal-prefix (C2a) path claims exist in the current tree?
+  Are fenced blocks skipped? Are C2b tokens logged as info without checking?
 - **Step B:** Is the architecture declaration present and verifiable?
 - **Step C:** Is there a test results link (when tests_required)?
 - **Step D:** Is the approved-signature carry-forward valid?
 - **Step E:** Is the in-progress-signature carry-forward valid?
 
 You are NOT:
+- Blocking on non-internal-prefix path tokens (C2b) — these are info findings only.
+- Extracting tokens from fenced code blocks — fenced content is illustrative.
 - Evaluating code quality or correctness of the implementation.
 - Checking whether the tests passed (only that results are documented).
 - Editing the plan file.
