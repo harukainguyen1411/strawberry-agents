@@ -12,6 +12,7 @@ tags:
   - routes
   - work
 tests_required: true
+orianna_signature_approved: "sha256:16e8dd9305126301a01d925794a7953afa84a01e6f991c50ddd4086a14b18cbd:2026-04-22T13:10:12Z"
 ---
 
 # Loop 2c — Firebase auth route migration (`require_session` → `require_session_owner`)
