@@ -48,8 +48,8 @@ No schema, no external integration, no cross-concern change. Single-concern docs
 
 - kind: impl
 - estimate_minutes: 35
-- Files: `.github/workflows/pr-lint.yml` (new). <!-- orianna: ok -->
-- Detail: Create a GitHub Actions workflow triggered on `pull_request` events (`opened`, `edited`, `synchronize`, `reopened`) that fetches the PR body via `gh pr view --json body` and runs a single bash check script (inlined in the workflow) to: (1) classify the PR as UI / user-flow / neither by scanning the PR's changed file paths (`gh pr diff --name-only`) against a UI path allowlist (`apps/*/app/**`, `apps/*/components/**`, `apps/*/pages/**`, `apps/*/routes/**`, `apps/*/forms/**`, `apps/*/auth/**`, `apps/*/session/**`) **and** by scanning the PR body for user-flow keywords (`new route`, `new form`, `state transition`, `auth flow`, `session lifecycle`, `user flow`); (2) if classified as UI or user-flow, require either `QA-Report:` or `QA-Waiver:` to be present in the body; (3) fail with a clear message referencing Rule 16 when missing.
+- Files: `.github/workflows/pr-lint.yml` (new). <!-- orianna: ok — prospective file path -->
+- Detail: Create a GitHub Actions workflow triggered on `pull_request` events (`opened`, `edited`, `synchronize`, `reopened`) that fetches the PR body via `gh pr view --json body` and runs a single bash check script (inlined in the workflow) to: (1) classify the PR as UI / user-flow / neither by scanning the PR's changed file paths (`gh pr diff --name-only`) against a UI path allowlist (`apps/*/app/**`, `apps/*/components/**`, `apps/*/pages/**`, `apps/*/routes/**`, `apps/*/forms/**`, `apps/*/auth/**`, `apps/*/session/**`) **and** by scanning the PR body for user-flow keywords (`new route`, `new form`, `state transition`, `auth flow`, `session lifecycle`, `user flow`); (2) if classified as UI or user-flow, require either `QA-Report:` or `QA-Waiver:` to be present in the body; (3) fail with a clear message referencing Rule 16 when missing. <!-- orianna: ok — glob patterns are prospective path examples, not real paths -->
 - DoD: Workflow file parses (`yamllint` clean if available); bash script portion is POSIX-portable; failure message contains the literal string "Rule 16" and "Akali"; workflow does not fail when PR is pure docs/infra.
 
 ### T5. Update PR template QA row
@@ -62,13 +62,13 @@ No schema, no external integration, no cross-concern change. Single-concern docs
 
 ## Test plan
 
-Tests live in a new directory `scripts/hooks/tests/pr-lint/` with shell-based fixtures executed via a small runner. The linter logic from T4 is extracted to `scripts/ci/pr-lint-check.sh` so it is unit-testable outside GitHub Actions (the workflow sources the same script).
+Tests live in a new directory `scripts/hooks/tests/pr-lint/` with shell-based fixtures executed via a small runner. The linter logic from T4 is extracted to `scripts/ci/pr-lint-check.sh` so it is unit-testable outside GitHub Actions (the workflow sources the same script). <!-- orianna: ok — prospective paths not yet created -->
 
-- **T1 (xfail, protects user-flow-no-visual-delta invariant)**: fixture PR body with no `QA-Report:`/`QA-Waiver:` marker, diff touching only `apps/demo/routes/new-auth.ts` (a new route, no CSS/image changes). `pr-lint-check.sh` must exit non-zero and print a message containing "Rule 16" and "Akali". Commit this test as xfail first, then T4 flips it green.
+- **T1 (xfail, protects user-flow-no-visual-delta invariant)**: fixture PR body with no `QA-Report:`/`QA-Waiver:` marker, diff touching only `apps/demo/routes/new-auth.ts` (a new route, no CSS/image changes). `pr-lint-check.sh` must exit non-zero and print a message containing "Rule 16" and "Akali". Commit this test as xfail first, then T4 flips it green. <!-- orianna: ok — prospective fixture paths -->
 
-- **T2 (xfail, protects non-flow exemption)**: fixture PR body with no `QA-Report:` marker, diff touching only `scripts/deploy/foo.sh` and `architecture/notes.md`. `pr-lint-check.sh` must exit zero (exempt). Prevents false-positive regressions on infra/docs PRs.
+- **T2 (xfail, protects non-flow exemption)**: fixture PR body with no `QA-Report:` marker, diff touching only `scripts/deploy/foo.sh` and `architecture/notes.md`. `pr-lint-check.sh` must exit zero (exempt). Prevents false-positive regressions on infra/docs PRs. <!-- orianna: ok — prospective fixture paths -->
 
-- **T3 (sanity, UI-path classification)**: fixture PR body missing both markers, diff touching `apps/studio/components/Button.tsx`. Linter exits non-zero. Ensures the classic UI-path path still trips the rule.
+- **T3 (sanity, UI-path classification)**: fixture PR body missing both markers, diff touching `apps/studio/components/Button.tsx`. Linter exits non-zero. Ensures the classic UI-path path still trips the rule. <!-- orianna: ok — prospective fixture path -->
 
 - **T4 (sanity, waiver accepted)**: fixture PR body containing `QA-Waiver: design still in flux` plus a user-flow path. Linter exits zero.
 
