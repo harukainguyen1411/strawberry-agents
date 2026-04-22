@@ -1,20 +1,20 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (eighth-leg shard 2026-04-22-9835724c; prior shards 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (ninth-leg shard 2026-04-22-b5f123a5; prior shards 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
-## Swain Option B — PRIMARY ship path (overnight)
+## Swain Option B — Viktor hotfix in flight (CRITICAL)
 
-**Status:** Active. Architecture pivot by Duong at ~18:10 UTC-7 2026-04-21. Managed agent ditched. Vanilla-API native chat is the new primary. Plan: `plans/in-progress/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Compass: `assessments/work/2026-04-22-overnight-ship-plan.md` (commit `021e28a`).
-**Shard pointers:** 2026-04-22-9835724c.
-**Next action:** Dispatch Aphelios (task decomposition) → Rakan (xfails) → Viktor (impl) → Vi (tests) → Senna → Lucian → Ekko (deploy) → Akali (QA). SERIAL, one at a time.
+**Status:** Active. Rakan xfails done, Viktor Waves 1–5 done, Vi NO-GO (7 blockers) → Viktor-3 GO, Ekko deployed `demo-studio-00023-hjj`. ROOT CAUSE: `POST /session/new` still calls `create_managed_session()` + writes `managedSessionId`; `/chat` always branches to managed-agent path. Viktor (`a12c50af11f160a10`) running hotfix. Senna NO-GO (C1 auth-bypass, C2 multi-turn, 6 HIGHs). Lucian GO.
+**Shard pointers:** 2026-04-22-b5f123a5.
+**Next action:** Await Viktor hotfix return → Senna re-review → resolve 6 HIGHs → Ekko redeploy → Akali final QA. PR not mergeable until Senna GO.
 
-## Aphelios decomposition — queued
+## Akali parallel QA — in flight
 
-**Status:** Queued at eighth-leg boundary. Not yet dispatched. Compass file committed.
-**Shard pointers:** 2026-04-22-9835724c.
-**Next action:** Dispatch Aphelios immediately after this shard commits.
+**Status:** Akali-A (`a0754360a2719e79f`) dispatched for session lifecycle QA. Parallel QA was mid-dispatch when pre-compact fired; additional Akali instances may be pending.
+**Shard pointers:** 2026-04-22-b5f123a5.
+**Next action:** Collect Akali-A result on resume. Confirm all requested QA aspects are covered; dispatch additional Akali instances for uncovered aspects.
 
 ## 60-min post-deploy observation window
 
@@ -123,7 +123,16 @@ Last updated: 2026-04-22 (eighth-leg shard 2026-04-22-9835724c; prior shards 202
 
 ---
 
-## RESOLVED this leg (eighth leg)
+## RESOLVED this leg (ninth leg)
+
+- **Aphelios decomposition** — completed (queued at eighth-leg boundary, executed ninth leg). Tasks inlined into Option B plan.
+- **Rakan xfails** — committed. TDD gate satisfied for Option B vanilla-API surfaces.
+- **Viktor impl Waves 1–5** — native chat loop, config tools, preview, factory + verification all implemented. No managed agent, no MCP server.
+- **Vi integration** — NO-GO (7 blockers) → Viktor-3 resolved all blockers → GO. Integration test suite green post-cleanup.
+- **Ekko prod deploy** — revision `demo-studio-00023-hjj` deployed. (Pre-hotfix; redeploy pending after Viktor fix.)
+- **Root cause identified** — `create_managed_session()` + `managedSessionId` write in `POST /session/new` keeps managed-agent path active. Hotfix in flight.
+
+## RESOLVED in eighth leg
 
 - **Akali e2e QA (Azir Option A)** — completed. Report at `assessments/qa-reports/2026-04-21-s1-new-flow-e2e-mcp-driven-post-ship.md`. Senna and Lucian produced learnings. Thread closed.
 - **Compass file committed** — `assessments/work/2026-04-22-overnight-ship-plan.md` at commit `021e28a`. Session re-entry anchor for overnight ship.
