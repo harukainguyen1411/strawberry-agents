@@ -114,6 +114,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch): Promoted 2026-04-22-rule-16-akali-playwrightmcp-user-flow.md approved→in-progress. Sign commit 48478a9, promote commit fcb7654 (pushed). Final path: plans/in-progress/personal/. Gate: 0 blocks (task-gate-check). Clean single-hop, no issues.
 
+- 2026-04-22 (ekko — Sona dispatch): Deployed demo-preview from feat/demo-studio-v3 HEAD (PR #67 Allianz staleness fix). New revision: demo-preview-00010-ff4. Service URL: https://demo-preview-266692422014.europe-west1.run.app. Smoke green: /health={"status":"ok","service":"preview"} 200 with CORS, /preview/__bad__!!!=400 INVALID_SESSION_ID, /preview/nonexistent-session-123=200 HTML fallback. server.py 629 LOC stdlib confirmed, main.py absent.
+
 - 2026-04-22 (ekko — Evelynn dispatch, Task #64): Promoted 2026-04-22-work-scope-reviewer-anonymity.md proposed→approved→in_progress. Plan was untracked — initial commit required; pre-commit blocked on (1) `(d)` token in fixture labels (use `fixture-d` not `(d)` in task prose), (2) prospective paths needing `<!-- orianna: ok -- reason -->` suppressors, (3) bare suppressor markers needing reason suffix. Coordinator lock race on first sign attempt (concurrent rescope session) — cleared naturally. approved sig: 9dfdd73, in_progress sig: 2712660. Final path: plans/in-progress/personal/2026-04-22-work-scope-reviewer-anonymity.md.
 
 ## Archive Note
