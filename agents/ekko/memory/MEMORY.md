@@ -19,6 +19,13 @@
 - `git commit --trailer` appends trailers AFTER the pre-commit hook runs. COMMIT_EDITMSG at pre-commit time holds the PREVIOUS commit's message. Always embed trailers directly in `-m` message body when pre-commit hooks need to inspect them.
 - `git add <specific-file>` before every commit — staged files from failed prior operations linger and get swept into unrelated commits.
 
+## Persistent Context (additions)
+
+- `demo-studio` Cloud Run SA is `266692422014-compute@developer.gserviceaccount.com` (default compute SA), NOT `demo-runner-sa`. Only `demo-runner` service uses `demo-runner-sa`.
+- IAM `setIamPolicy` on `mmpt-233505` is blocked for both `duong.nguyen.thai@missmp.eu` and `harukainguyen1411@gmail.com` — needs a project Owner identity (manual Duong).
+- Identity Toolkit REST calls need `-H "x-goog-user-project: mmpt-233505"` with user credentials to avoid 403 quota-project error.
+- Firebase Auth authorized domains for demo-studio: `demo-studio-4nvufhmjiq-ew.a.run.app` (not the `266692422014.europe-west1.run.app` format).
+
 ## Sessions
 
 - 2026-04-20 (ekko s-audit): CLAUDE.md cleanup — Lux audit items 1-5. rule5 decision tree `98f33b7`, end-session skill DMI fix `0904844`, rule19 anchor `4d4e732`, plan-fetch.sh+google-oauth-bootstrap.sh deleted (concurrent session cf2b5f2), end-session refuse-empty-arg `cd6a2ab`. All pushed.
@@ -76,8 +83,10 @@
 - 2026-04-21 (ekko — Sona dispatch): Azir god plan preflight. STOPPED — 3 blockers found. PREV_REVISIONs: S1=demo-studio-00014-fc5, S3=demo-factory-00005-dvs, S5=demo-preview-00005-ktj. gcloud account for mmpt-233505: duong.nguyen.thai@missmp.eu. company-os/feat/demo-studio-v3 updated to e86da8e (PR #61 included). See learnings/2026-04-21-azir-ship-preflight-blockers.md for full findings.
 - 2026-04-21 (ekko — Sona dispatch): Azir god plan DEPLOYED. PR #63 (secret names + firestore dep) merged first. Pulled feat/demo-studio-v3 to 30b4851. Deployed S5→S3→S1. S5 NEW: demo-preview-00006-57w. S3 NEW: demo-factory-00007-qjd (PROJECTS_FIRESTORE=1). S1 NEW: demo-studio-00016-5rw (MANAGED_AGENT_MCP_INPROCESS=1 + S5_BASE). All services zero errors post-deploy. Smoke green (reachability/auth-layer; FACTORY_TOKEN and Caitlyn 8-scenario suite blocked by Rule 6 / live-session requirement — Duong must run manually). billing/quota_project stale override (myapps-b31ea → mmpt-233505) fixed before deploy. Report: assessments/work/post-deploy-azir-option-a-2026-04-21.md.
 
+- 2026-04-22 (ekko — Sona dispatch): Deployed demo-config-mgmt S2 to Cloud Run revision demo-config-mgmt-00009-tkb. deploy.sh secret ref was stale (ds-config-mgmt-token → DS_CONFIG_MGMT_TOKEN). Smoke green on both URLs. Wall time ~87s.
 - 2026-04-22 (ekko — Sona dispatch): Deployed demo-preview S5 picking up Jayce-2 /health endpoint (4e55a13 on feat/demo-studio-v3). New revision: demo-preview-00007-c7t. Smoke {"status":"ok"} 200. Wall time: 85s. IAM policy warning is cosmetic.
 - 2026-04-22 (ekko): Redeployed demo-studio-v3 (899db2f F-C2+BUG-B2). New revision: demo-studio-00025-lbx. Wall time ~2m10s. Smoke green. deploy.sh requires env vars at call site (no .env file read).
+- 2026-04-22 (ekko — Sona dispatch): Firebase auth infra for firebase-auth plan. Plan proposed→approved→in-progress (both Orianna gates 0 blocks). identitytoolkit.googleapis.com + firebase.googleapis.com enabled. Authorized domains set (demo-studio-4nvufhmjiq-ew.a.run.app + localhost). Google provider enabled. IAM role grant BLOCKED — manual Duong step. SA needing role: 266692422014-compute@developer.gserviceaccount.com.
 - 2026-04-21 (ekko): Relaunched demo-studio-v3 with MANAGED_AGENT_MCP_INPROCESS=1 + BASE_URL=http://localhost:8082. Killed original PID 20806 (needed kill -9). `load_dotenv(override=True)` in main.py defeats shell-level env overrides — fix: bootstrap script at /tmp/demo-studio-v3-bootstrap.py patches dotenv.load_dotenv to no-op before import. New PID: 29100 on 127.0.0.1:8082. Tool use confirmed: agent.mcp_tool_use events for get_schema on demo_studio MCP server appear in session history. See learnings/2026-04-21-demo-studio-v3-dotenv-override-bootstrap.md.
 
 ## Archive Note
