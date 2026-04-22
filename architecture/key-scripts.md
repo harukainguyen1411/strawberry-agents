@@ -33,6 +33,24 @@ These scripts implement the Orianna-signed plan lifecycle (ADR `plans/in-progres
 | `scripts/orianna-hash-body.sh` | `bash scripts/orianna-hash-body.sh <plan.md>` | Computes SHA-256 of a plan file's body (content after the second `---` frontmatter delimiter). Normalization applied before hashing: strip frontmatter, normalize CRLF→LF, strip trailing whitespace per line. Prints 64-hex SHA-256 string on stdout. Sourced (via invocation) by both `orianna-sign.sh` and `orianna-verify-signature.sh` to guarantee they agree on the hash value. | `0` — hash printed to stdout; `1` — file not found or usage error |
 | `scripts/hooks/pre-commit-orianna-signature-guard.sh` | Installed via `scripts/install-hooks.sh` | Pre-commit hook that enforces the valid shape of Orianna signing commits (§D1.2). When the commit author is `orianna@agents.strawberry.local`, asserts: diff touches exactly one file under `plans/`; diff adds exactly one `orianna_signature_<phase>:` frontmatter line (no other content changes); all three trailers (`Signed-by: Orianna`, `Signed-phase:`, `Signed-hash:`) are present and consistent with the frontmatter value. Rejects any Orianna-authored commit that does not meet this shape, preventing silent misuse of the agent identity. | `0` — commit is valid or not an Orianna signing commit; `1` — shape violation (blocks commit) |
 
+### `STAGED_SCOPE` env var for `orianna-sign.sh`
+
+When the environment variable `STAGED_SCOPE` is set to a repo-relative plan path,
+`orianna-sign.sh` scopes its signing commit to exactly that path via
+`git commit -- <pathspec>`. This leaves any other files in the index untouched,
+preventing concurrent coordinator sessions' staged work from riding into the signing
+commit and triggering the one-file guard in `pre-commit-orianna-signature-guard.sh`.
+
+Set `STAGED_SCOPE` only when the caller knows the exact destination path of the
+plan being signed. `plan-promote.sh` exports `STAGED_SCOPE` automatically before
+any `orianna-sign.sh` invocation it performs. Direct callers of `orianna-sign.sh`
+may opt in by exporting the variable; when unset, behavior is unchanged.
+
+Background: `STAGED_SCOPE` was introduced after Ekko hit the concurrent-staging race
+while promoting `plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md` — a
+second coordinator session had staged unrelated files at the moment the signing commit
+ran. See `plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md`.
+
 ## Notes
 
 - Scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) must be POSIX-portable bash — runnable on both macOS and Git Bash on Windows.
