@@ -138,24 +138,89 @@ The hash is SHA-256 of the plan body (content after the second `---`),
 with CRLF normalized to LF and trailing whitespace stripped per line.
 Normalization is implemented in `scripts/orianna-hash-body.sh`.
 
-**Tamper evidence:** the commit that introduces each signature line must:
-- Be authored by `orianna@agents.strawberry.local`.
-- Carry three trailers: `Signed-by: Orianna`, `Signed-phase: <phase>`,
-  `Signed-hash: sha256:<hash>`.
-- Touch exactly one file (the plan file).
+**Tamper evidence:** the commit that introduces each signature line must satisfy
+one of two shapes defined in §Shape B commit contract below.
 
 Verification: `bash scripts/orianna-verify-signature.sh <plan.md> <phase>`
+
+---
+
+## Shape B commit contract
+
+`scripts/orianna-sign.sh` emits two commit shapes. The
+`scripts/hooks/pre-commit-orianna-signature-guard.sh` hook accepts both.
+
+**Shape A (sig-only commit):** the default when no mechanical pre-fix edits
+were applied.
+
+- Diff adds exactly one `orianna_signature_<phase>:` frontmatter line.
+- No other lines change.
+- Trailers: `Signed-by: Orianna`, `Signed-phase: <phase>`,
+  `Signed-hash: sha256:<hash>`.
+- The commit must touch exactly one file (the plan file).
+
+**Shape B (atomic body+signature commit):** emitted when `--pre-fix` is active
+and the pre-fix script (`scripts/orianna-pre-fix.sh`) produced body edits in the
+same invocation.
+
+- Diff includes BOTH the pre-fix rewrites AND the `orianna_signature_<phase>:` insertion.
+- Commit message carries an additional `Signed-Fix: <phase>` trailer BEFORE the
+  three standard trailers.
+- The `pre-commit-orianna-signature-guard.sh` hook verifies that the body hash
+  stored in the new signature line equals the post-diff body hash (not the
+  pre-diff hash). A hash mismatch rejects the commit.
+- One-file scope is still required.
+
+Shape B halves the commit ceremony for work-concern plans with legacy
+workspace-prefix patterns: the mechanical rewrite and the signature land in a
+single atomic commit instead of two separate commits.
+
+Cross-reference: `architecture/key-scripts.md` §Shape B commit contract.
+
+---
+
+## Body-hash pre-commit guard
+
+`scripts/hooks/pre-commit-orianna-body-hash-guard.sh` prevents the most common
+silent failure mode: editing a signed plan's body after signing without
+re-signing.
+
+**How it works:** for every staged `plans/**/*.md` file that carries one or
+more `orianna_signature_*` fields, the hook recomputes the body hash via
+`scripts/orianna-hash-body.sh` and compares it to the hash stored in each
+signature field. If any field's stored hash does not match the current body
+hash, the commit is rejected.
+
+**Error message:** the hook prints a self-documenting runbook to stderr:
+
+```
+[orianna-body-hash-guard] ERROR: body-hash mismatch on <phase> signature in <plan>
+  stored:   <old-hash>
+  current:  <new-hash>
+  Recovery: remove the orianna_signature_<phase> field from frontmatter and
+            re-run: bash scripts/orianna-sign.sh <plan> <phase>
+  Bypass:   add 'Orianna-Bypass: <reason>' trailer (Duong only; hooks verify identity)
+```
+
+**Invariant preserved:** a body edit on a signed plan is blocked at commit
+time, not silently deferred to promotion time (§T2 of
+`plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md`).
+
+**Re-running install-hooks.sh** is required for existing checkouts to pick
+up this hook after the gate-speedups branch merges.
 
 ---
 
 ## What happens if you edit the plan after signing
 
 Editing the plan body changes the hash. The stored signature no longer matches
-and `orianna-verify-signature.sh` will fail.
+and `orianna-verify-signature.sh` will fail. The body-hash pre-commit guard
+(§Body-hash pre-commit guard above) catches this at commit time; without the
+hook, promotion-time verification catches it instead.
 
-**Resolution:** run `orianna-sign.sh <plan> <phase>` again. Orianna re-runs
-the gate check (which is fast for the approved gate) and re-signs with the
-new hash.
+**Resolution:** remove the stale `orianna_signature_<phase>` field from
+frontmatter and re-run `orianna-sign.sh <plan> <phase>`. The sign script
+re-runs the gate check and re-signs with the new hash.
 
 **Trivial edits** (whitespace, trailing newlines) do NOT invalidate the
 signature because `orianna-hash-body.sh` strips these during normalization.
@@ -281,11 +346,14 @@ source the lib (single-file awk pass); the lib remains available for standalone 
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/orianna-sign.sh` | Entry point: run Orianna check, append signature, commit |
+| `scripts/orianna-sign.sh` | Entry point: run Orianna check, append signature, commit. Emits shape A or shape B commits (see §Shape B commit contract). Supports `--pre-fix` / `--no-pre-fix` flags; invokes `scripts/orianna-pre-fix.sh` when active. Calls `scripts/_lib_stale_lock.sh` at startup to clear stale `.git/index.lock`. |
 | `scripts/orianna-verify-signature.sh` | Verify a signature (4-check: hash, author, trailers, single-file scope) |
 | `scripts/orianna-hash-body.sh` | Compute normalized SHA-256 of plan body |
-| `scripts/plan-promote.sh` | Move plan between phase directories (verifies signatures) |
-| `scripts/hooks/pre-commit-orianna-signature-guard.sh` | Enforce signing commit shape |
+| `scripts/orianna-pre-fix.sh` | Apply known-safe mechanical rewrites before the first Orianna invocation (concern-scoped workspace prefix, prose-host suppressors, `?`-marker detection). Idempotent. |
+| `scripts/_lib_stale_lock.sh` | Shared library: `maybe_clear_stale_lock <lockfile>` — clears a stale `.git/index.lock` when it is >60s old and has no live holder. Sourced by `orianna-sign.sh` and `plan-promote.sh` at startup. |
+| `scripts/plan-promote.sh` | Move plan between phase directories (verifies signatures). Calls `scripts/_lib_stale_lock.sh` at startup. |
+| `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` | Block commits that edit a signed plan's body without re-signing (see §Body-hash pre-commit guard). Wire via `scripts/install-hooks.sh`. |
+| `scripts/hooks/pre-commit-orianna-signature-guard.sh` | Enforce signing commit shape — accepts shape A (sig-only) and shape B (body+signature, `Signed-Fix:` trailer) |
 | `scripts/hooks/pre-commit-plan-authoring-freeze.sh` | Block new plan creation during freeze window |
 | `scripts/hooks/pre-commit-zz-plan-structure.sh` | Pre-commit structural lint for staged plans/**/*.md (rules 1–5, Orianna-parity) |
 | `scripts/hooks/pre-commit-t-plan-structure.sh` | Legacy pre-commit linter (rules 1–2 only); superseded by `pre-commit-zz-plan-structure.sh` |
