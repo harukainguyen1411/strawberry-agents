@@ -7,6 +7,16 @@
 #   I3 — unknown work-concern path goes to workspace root (block finding naming workspace)
 #   I4 — personal-concern plan: apps/bee/server.ts still routes to strawberry-app (no regression)
 #
+# RESCOPE XFAIL ADDITIONS (2026-04-22):
+# Plan: plans/in-progress/personal/2026-04-22-orianna-substance-vs-format-rescope.md §5.6
+#
+#   SC5 — work-concern plan: non-internal-prefix HTTP route token → info, NOT block
+#          (after rescope OQ-1: non-internal-prefix misses downgraded from block → info)
+#   SC6 — work-concern plan: fenced code block path token → zero findings
+#          (after rescope OQ-2: fenced tokens no longer extracted)
+#
+# xfail: SC5/SC6 fail against unmodified tree (OQ-1/OQ-2 not yet implemented).
+#
 # Run: bash scripts/test-fact-check-concern-root-flip.sh
 #
 # Initial state (xfail): all four subcases are expected to fail pre-implementation.
@@ -211,6 +221,90 @@ if [ -f "$report" ]; then
   fi
 else
   fail "SC4_PERSONAL_NO_WORKSPACE_LEAK" "report not generated"
+fi
+
+# ---- Rescope xfail block — SC5/SC6 ----------------------------------------
+# These subcases xfail until the substance-vs-format rescope lands (T5/T6).
+# They are appended here per §5.6 "updated tests" rather than a new file to
+# keep concern-routing assertions co-located.
+
+CONTRACT="$REPO_ROOT/agents/orianna/claim-contract.md"
+RESCOPE_IMPLEMENTED=0
+if grep -q 'contract-version: 2' "$CONTRACT" 2>/dev/null; then
+  RESCOPE_IMPLEMENTED=1
+fi
+
+if [ "$RESCOPE_IMPLEMENTED" -eq 0 ]; then
+  printf 'XFAIL  SC5_WORK_HTTP_ROUTE_INFO  (rescope T5/T6 not yet implemented)\n'
+  printf 'XFAIL  SC6_WORK_FENCED_NO_FINDING  (rescope T5/T6 not yet implemented)\n'
+else
+  # --- SC5: work-concern plan, HTTP route token → info not block ---
+  SC5_BODY='---
+title: SC5 Work HTTP Route Test
+status: proposed
+concern: work
+owner: test
+created: 2026-04-22
+tags: [test]
+---
+
+The session token endpoint is `/auth/session/{sid}` in the demo studio API.
+'
+  SC5_SLUG="rootfliptest-SC5-$$"
+  SC5_PLAN="$SCRATCH/${SC5_SLUG}.md"
+  printf '%s\n' "$SC5_BODY" > "$SC5_PLAN"
+  sc5_rc=0
+  bash "$FACT_CHECK" "$SC5_PLAN" >/dev/null 2>&1 || sc5_rc=$?
+  SC5_REPORT="$(ls -t "$REPORT_DIR/${SC5_SLUG}-"*.md 2>/dev/null | head -1)"
+  if [ -f "$SC5_REPORT" ]; then
+    sc5_blocks="$(awk '/^block_findings:/{print $2}' "$SC5_REPORT" || echo 0)"
+    cleanup_report "$SC5_REPORT"
+    if [ "$sc5_blocks" -eq 0 ]; then
+      pass "SC5_WORK_HTTP_ROUTE_INFO"
+    else
+      fail "SC5_WORK_HTTP_ROUTE_INFO" "expected 0 blocks for HTTP route /auth/session/{sid} in work-concern plan, got $sc5_blocks (non-internal-prefix should be info)"
+    fi
+  else
+    fail "SC5_WORK_HTTP_ROUTE_INFO" "report not generated"
+  fi
+
+  # --- SC6: work-concern plan, fenced code block path → zero findings ---
+  SC6_BODY='---
+title: SC6 Work Fenced Block Test
+status: proposed
+concern: work
+owner: test
+created: 2026-04-22
+tags: [test]
+---
+
+State machine:
+
+```
+/auth/login --> /auth/session/{sid} --> /auth/logout
+tools/demo-studio-v3/nonexistent.py --> /build/output
+```
+
+No findings should be extracted from fenced content.
+'
+  SC6_SLUG="rootfliptest-SC6-$$"
+  SC6_PLAN="$SCRATCH/${SC6_SLUG}.md"
+  printf '%s\n' "$SC6_BODY" > "$SC6_PLAN"
+  sc6_rc=0
+  bash "$FACT_CHECK" "$SC6_PLAN" >/dev/null 2>&1 || sc6_rc=$?
+  SC6_REPORT="$(ls -t "$REPORT_DIR/${SC6_SLUG}-"*.md 2>/dev/null | head -1)"
+  if [ -f "$SC6_REPORT" ]; then
+    sc6_blocks="$(awk '/^block_findings:/{print $2}' "$SC6_REPORT" || echo 0)"
+    sc6_warns="$(awk '/^warn_findings:/{print $2}' "$SC6_REPORT" || echo 0)"
+    cleanup_report "$SC6_REPORT"
+    if [ "$sc6_blocks" -eq 0 ] && [ "$sc6_warns" -eq 0 ]; then
+      pass "SC6_WORK_FENCED_NO_FINDING"
+    else
+      fail "SC6_WORK_FENCED_NO_FINDING" "expected 0 blocks+warns from fenced block in work-concern plan, got blocks=$sc6_blocks warns=$sc6_warns"
+    fi
+  else
+    fail "SC6_WORK_FENCED_NO_FINDING" "report not generated"
+  fi
 fi
 
 rm -rf "$SCRATCH"
