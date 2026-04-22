@@ -187,7 +187,7 @@ All agents must follow these rules — see `CLAUDE.md` for full detail and ancho
 15. PR creation triggers Playwright E2E; PR cannot merge red
 16. Before opening a UI PR, a QA agent must run the full Playwright flow with video + screenshots and diff against Figma — report in `assessments/qa-reports/`, linked in PR body
 17. Post-deploy smoke tests run on stg and prod; rollback on prod failure via `scripts/deploy/rollback.sh`
-18. Agents must NOT use `gh pr merge --admin` or any branch-protection bypass; every merge requires (a) all required checks green, (b) one approving review from an account other than the PR author, and (c) no `--admin` or branch-protection bypass; an agent may merge its own PR once (b) is satisfied
+18. Agents must NOT use `gh pr merge --admin` or any branch-protection bypass; every merge requires (a) all required checks green and (b) one approving review from an account other than the PR author; an agent may merge its own PR once (a) and (b) are satisfied
 19. Every plan promotion and phase transition requires an Orianna signature commit (`scripts/orianna-sign.sh`) with `Orianna-Signed-By:`, `Orianna-Phase:`, and `Orianna-Timestamp:` trailers; bypass via `Orianna-Bypass: <reason>` trailer with admin identity (`harukainguyen1411@gmail.com`)
 
 ## Two-Identity Model
