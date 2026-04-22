@@ -43,7 +43,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session \u2014 skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION \u2014 do not re-read startup files. Reply only: Session resumed.\"}}'; fi; }"
+            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session — skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION — do not re-read startup files. Reply only: Session resumed.\"}}'; fi; }"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/inbox-watch-bootstrap.sh"
           }
         ]
       }
