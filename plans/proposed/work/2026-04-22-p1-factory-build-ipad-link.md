@@ -449,37 +449,37 @@ This plan targets `orianna_gate_version: 2` as authored. No prior signatures exi
 
 ## Open questions (original)
 
-- [ ] **OQ-1** — Canary split mechanics: should the 10 % canary be on S3 Cloud Run traffic-split by revision, or a second Cloud Run service (`demo-factory-canary`)?
+- [x] **OQ-1** — Canary split mechanics: should the 10 % canary be on S3 Cloud Run traffic-split by revision, or a second Cloud Run service (`demo-factory-canary`)?
   - a: same-service traffic-split (cleanest)
   - b: second service with load-balancer fan-out
   - c: env-flag on the existing service, all traffic sees the flag rollout atomic
   - Pick: `a` — existing S3 deploys use revision traffic-split (ops team patterned in `ops/cloud-run/`); avoids a second service lifecycle. <!-- orianna: ok — ops/cloud-run/ is a company-os work-workspace directory, not strawberry-agents -->
-- [ ] **OQ-2** — Should S1 write `buildId` and `projectId` to the session synchronously (from S3's POST response) or async (wait for first SSE event)?
+- [x] **OQ-2** — Should S1 write `buildId` and `projectId` to the session synchronously (from S3's POST response) or async (wait for first SSE event)?
   - a: sync — `build_session` response already contains them; atomic with status transition (cleanest)
   - b: async — wait for `build_started` event, safer against partial failures
   - c: both — sync write, async overwrite (belt and braces)
   - Pick: `a` — S3 returns them synchronously anyway and the session doc already writes status atomically in the same handler.
-- [ ] **OQ-3** — Does the integration test T.P1.12 run against a real staging WS account, or a WSClient-level mock?
+- [x] **OQ-3** — Does the integration test T.P1.12 run against a real staging WS account, or a WSClient-level mock?
   - a: real staging (highest fidelity, slow, flaky on WS outages)
   - b: `WSClient` mocked end-to-end (fast, hermetic, doesn't catch real WS regressions)
   - c: real staging only in a nightly scheduled job; PR-time uses mock
   - Pick: `c` — keeps PR CI fast (rule 14) and still catches drift in a daily signal.
-- [ ] **OQ-4** — Orphan WS projects from abandoned or failed-before-publish builds: clean up in P1 or defer?
+- [x] **OQ-4** — Orphan WS projects from abandoned or failed-before-publish builds: clean up in P1 or defer?
   - a: defer; document known leakage (cleanest in scope-fence sense)
   - b: add a daily cleaner Cloud Run Job reading `demo-factory-projects` and archiving via `walletstudio_archive_asset`
   - c: archive on build_failed immediately
   - Pick: `a` — P1 ships the happy path; cleanup is a separate follow-up.
-- [ ] **OQ-5** — S1 SSE reconnect / fallback if the stream closes before `build_complete` is seen: add `GET /build/{buildId}` polling fallback in P1?
+- [x] **OQ-5** — S1 SSE reconnect / fallback if the stream closes before `build_complete` is seen: add `GET /build/{buildId}` polling fallback in P1?
   - a: yes, every 5 s until terminal (robust)
   - b: no, rely on Firestore snapshot (S3 does not write terminal state to Firestore today)
   - c: yes but only as a one-shot check on SSE `close` event
   - Pick: `c` — minimal additional code; covers the single realistic failure mode without polling noise. If Duong picks `b`, add a follow-up task for S3 to write terminal state to Firestore so S1 can read it.
-- [ ] **OQ-6** — URL hostnames (`app.walletstudio.com`, `demo.missmp.tech`): hardcode in S3 or env-var? <!-- orianna: ok — app.walletstudio.com/demo.missmp.tech are deployed-service hostnames, not filesystem paths -->
+- [x] **OQ-6** — URL hostnames (`app.walletstudio.com`, `demo.missmp.tech`): hardcode in S3 or env-var? <!-- orianna: ok — app.walletstudio.com/demo.missmp.tech are deployed-service hostnames, not filesystem paths -->
   - a: env vars `WS_APP_BASE_URL`, `DEMO_BASE_URL` with prod defaults (cleanest)
   - b: hardcode in `factory_build.py` for MVP, move in follow-up <!-- orianna: ok — factory_build.py is company-os/tools/demo-factory/factory_build.py, work-workspace new file -->
   - c: fetch from a runtime config service
   - Pick: `a` — trivial cost, prevents a stg/prod parity bug.
-- [ ] **OQ-7** — Lulu advises vs Neeko designs the "Demo ready" panel; which tier?
+- [x] **OQ-7** — Lulu advises vs Neeko designs the "Demo ready" panel; which tier?
   - a: Neeko designs (full component spec + mockup), Seraphine implements (complex-track)
   - b: Lulu advises in-session, Soraka implements (normal-track — quicker)
   - c: skip design review, inline with Seraphine from existing studio.css patterns
