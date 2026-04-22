@@ -39,12 +39,12 @@ fail() { printf 'FAIL  %s  (%s)\n' "$1" "$2"; FAIL=$((FAIL + 1)); }
 
 # --- XFAIL guard ---
 # T6 is implemented when plan-check.md Step A no longer checks status/created/tags.
-# Detect by presence of a phrase indicating these are handled by the linter only.
-# The marker phrase is: "pre-commit linter" AND absence of "status: proposed" as a block check.
+# Detect by presence of the sentinel comment inserted by T6:
+#   <!-- rescope-drop: PA-1 PA-3 PA-4 -->
+# This is the stable hook point referenced in the task brief (Rakan's T6 sentinel note).
 T6_IMPLEMENTED=0
 if [ -f "$PLAN_CHECK_PROMPT" ]; then
-  if grep -q 'pre-commit linter' "$PLAN_CHECK_PROMPT" 2>/dev/null && \
-     ! grep -q 'status.*block\|block.*status:' "$PLAN_CHECK_PROMPT" 2>/dev/null; then
+  if grep -q 'rescope-drop: PA-1 PA-3 PA-4' "$PLAN_CHECK_PROMPT" 2>/dev/null; then
     T6_IMPLEMENTED=1
   fi
 fi
