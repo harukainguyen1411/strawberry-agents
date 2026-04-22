@@ -16,6 +16,7 @@ related:
   - scripts/test-boot-chain-order.sh
   - plans/approved/personal/2026-04-21-memory-consolidation-redesign.md
 architecture_impact: none
+orianna_signature_approved: "sha256:d6744af4eeace3f03da9eb74234ef54c79c928b99ba2e218f10b323a226ab2b2:2026-04-22T10:49:39Z"
 ---
 
 # Coordinator boot-chain cache reorder — stable prefix, mutable suffix
