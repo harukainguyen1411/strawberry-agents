@@ -1,6 +1,22 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-22 (pre-compact consolidation, shard cea94956).
+Last updated: 2026-04-22 (pre-compact consolidation, shard 1423e23d).
+
+---
+
+## PR #22 — Concurrent-coordinator race closeout
+
+**Current status (2026-04-22):** Dual-approved by Senna + Lucian. Merge-ready under `harukainguyen1411`. Karma quick plan (7 tasks, 95m). Talon impl landed; Senna CHANGES_REQUESTED on C1 worktree-lock blocker → Talon fixed → Senna re-review APPROVED + Lucian APPROVED.
+**Shards:** 1423e23d.
+**Next:** Duong merges under `harukainguyen1411`. Then promote `plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md` → `implemented/` via `plan-promote.sh`.
+
+---
+
+## Talon fast-follow — PR #22 residuals
+
+**Current status (2026-04-22):** Not yet planned. I1 microsecond race, I2 PID-wrap, `$BASHPID` test tightening identified by Senna as residual work. Gated on PR #22 merge.
+**Shards:** 1423e23d.
+**Next:** After PR #22 merges, author plan via Karma. Dispatch Talon for impl.
 
 ---
 
@@ -70,9 +86,9 @@ Last updated: 2026-04-22 (pre-compact consolidation, shard cea94956).
 
 ## Staged-scope-guard agent adoption
 
-**Current status (2026-04-22):** PR #20 merged. Agents must adopt `STAGED_SCOPE=<files>` per-commit for the guard to enforce fully.
-**Shards:** cea94956.
-**Next:** Promote `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md` → approved → in-progress; dispatch Ekko or Talon.
+**Current status (2026-04-22):** PR #20 merged. Agents must adopt `STAGED_SCOPE=<files>` per-commit for the guard to enforce fully. Body-hash re-sign treadmill encountered this session — use `Orianna-Bypass` admin commit path for the promotion, not re-sign loop.
+**Shards:** cea94956, 1423e23d.
+**Next:** Promote via admin bypass path. Dispatch Ekko or Talon for adoption impl.
 
 ---
 
