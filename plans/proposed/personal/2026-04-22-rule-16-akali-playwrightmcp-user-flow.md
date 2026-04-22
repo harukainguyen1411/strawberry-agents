@@ -1,13 +1,13 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 complexity: quick
 orianna_gate_version: 2
 owner: Karma
 created: 2026-04-22
 tests_required: true
-orianna_signature_approved: "sha256:116d840b884eee13382fb02d57c11a5a5c318f122e1fd2d4b2523deef43d9d27:2026-04-22T11:32:12Z"
-orianna_signature_in_progress: "sha256:116d840b884eee13382fb02d57c11a5a5c318f122e1fd2d4b2523deef43d9d27:2026-04-22T13:06:54Z"
+architecture_impact: none
+orianna_signature_approved: "sha256:4d67190715780dbc9839b14979bb235fa4509606df24692d534f59745a6efcd4:2026-04-22T13:26:53Z"
 ---
 
 # Rule 16 strengthening — name Akali, require Playwright MCP, extend to user-flow changes
@@ -83,6 +83,15 @@ Tests live in a new directory `scripts/hooks/tests/pr-lint/` with shell-based fi
 - **T4 (sanity, waiver accepted)**: fixture PR body containing `QA-Waiver: design still in flux` plus a user-flow path. Linter exits zero.
 
 Invariants protected: (a) user-flow-change PRs cannot merge without Akali's report even when no pixels moved; (b) pure infra/docs PRs stay exempt; (c) the Akali+Playwright-MCP requirement is enforceable, not aspirational.
+
+## Architecture impact
+
+No architecture files modified. Rule 16 wording lives in CLAUDE.md and agent definitions; the PR body linter workflow lives in the strawberry-app repo (`.github/workflows/pr-lint.yml`). No strawberry-agents `architecture/` files changed.
+
+## Test results
+
+- PR #28 merged at 196d38a: https://github.com/harukainguyen1411/strawberry-agents/pull/28
+- All required checks green at merge (tdd-gate, unit-tests, pr-lint, validate-scope).
 
 ## References
 
