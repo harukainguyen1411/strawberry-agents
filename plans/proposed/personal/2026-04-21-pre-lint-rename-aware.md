@@ -28,8 +28,8 @@ staged, and Rule 4 flags every path-shaped backtick token in the full plan
 body. Ekko #65 spent roughly two hours (218 tool turns) mass-suppressing
 tokens with `<!-- orianna: ok -->` during a single routine `proposed →
 in-progress` promotion of
-`plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md`
-<!-- orianna: ok -->. This is the default path through plan-promote, so
+`plans/in-progress/personal/2026-04-21-memory-consolidation-redesign.md` <!-- orianna: ok -->
+(now promoted past in-progress). This is the default path through plan-promote, so
 every promotion hits it.
 
 Fix: detect renames in the hook, and for renames compute a true
@@ -92,9 +92,8 @@ actually introduced by the commit:
    not the full body."
 
 3. **Brand-new plan with bad citation** — `A` (not `R`) staging of a
-   new plan at `plans/proposed/personal/regression-new.md`
-   <!-- orianna: ok --> whose body cites `scripts/imaginary.sh`
-   <!-- orianna: ok -->. Expected: hook exits 1 with a Rule 4 BLOCK.
+   new plan at `plans/proposed/personal/regression-new.md` <!-- orianna: ok -->
+   whose body cites `scripts/imaginary.sh` <!-- orianna: ok -->. Expected: hook exits 1 with a Rule 4 BLOCK.
    Protects: PR #15's original guarantee — genuinely new plans still
    get full-body Rule 4 coverage.
 
