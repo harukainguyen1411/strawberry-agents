@@ -28,6 +28,10 @@ if [ -f "$SCRIPT_DIR/_lib_stale_lock.sh" ]; then
   GIT_DIR="$(git rev-parse --git-dir 2>/dev/null || echo '')" maybe_clear_stale_lock
 fi
 
+# Shared coordinator lock (T3 — concurrent-coordinator-race-closeout)
+# shellcheck source=_lib_coordinator_lock.sh
+. "$SCRIPT_DIR/_lib_coordinator_lock.sh"
+
 usage() {
   cat >&2 <<EOF
 Usage: $0 <plans/proposed/file.md> <target-status>
@@ -45,72 +49,15 @@ SOURCE="$1"
 TARGET_STATUS="$2"
 
 # ---------------------------------------------------------------------------
-# Advisory file lock — §D9.3
+# Advisory coordinator lock — §D9.3
 #
-# Prevents two concurrent plan-promote.sh invocations from racing on the
-# same repo state. Serialises all promotes repo-wide (promotes are seconds-
-# long; serialisation cost is negligible).
-#
-# Strategy: prefer flock(1) (available on Linux and macOS via util-linux).
-# Fall back to mkdir-based lock for environments where flock is absent
-# (Git Bash on Windows, stripped macOS setups). The lock is advisory — the
-# real corruption guard is git's push atomicity — but gives a clean error
-# message instead of a mid-promote git conflict.
+# Prevents concurrent plan-promote.sh and orianna-sign.sh invocations from
+# racing on the git index (git add → commit window). Both scripts acquire the
+# same shared lock via _lib_coordinator_lock.sh. Lockfile lives under .git/
+# (never tracked, never in the worktree).
+# See: plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md T3
 # ---------------------------------------------------------------------------
-LOCK_FILE="$REPO_ROOT/.plan-promote.lock"
-LOCK_ACQUIRED=0
-
-_plan_promote_unlock() {
-  if [ "$LOCK_ACQUIRED" -eq 1 ]; then
-    # mkdir-lock: remove the directory we created.
-    # flock-lock: flock releases automatically when the FD closes at exit,
-    # but we also clean up the lockfile body (PID).
-    rm -f "$LOCK_FILE" 2>/dev/null || true
-    LOCK_ACQUIRED=0
-  fi
-}
-trap '_plan_promote_unlock' EXIT INT TERM
-
-_acquire_lock() {
-  # --- try flock first ---
-  if command -v flock >/dev/null 2>&1; then
-    # Open (or create) the lockfile on FD 9 and acquire exclusive non-blocking lock.
-    # shellcheck disable=SC1083
-    exec 9>"$LOCK_FILE"
-    if flock -n 9; then
-      printf '%s\n' "$$" >&9
-      LOCK_ACQUIRED=1
-      return 0
-    else
-      # Another process holds the lock. Read its PID from the file.
-      _holder_pid="$(cat "$LOCK_FILE" 2>/dev/null || true)"
-      printf 'plan-promote is already running (pid %s); retry when it finishes.\n' \
-        "${_holder_pid:-unknown}" >&2
-      exit 1
-    fi
-  fi
-
-  # --- mkdir fallback (POSIX-portable, atomic on most filesystems) ---
-  # The lock directory name embeds the holder PID for diagnostics.
-  _lock_dir="${LOCK_FILE}.dir"
-  if mkdir "$_lock_dir" 2>/dev/null; then
-    printf '%s\n' "$$" > "$_lock_dir/pid"
-    LOCK_ACQUIRED=1
-    # Override unlock to remove the dir instead.
-    _plan_promote_unlock() {
-      rm -rf "$_lock_dir" 2>/dev/null || true
-      LOCK_ACQUIRED=0
-    }
-    return 0
-  else
-    _holder_pid="$(cat "$_lock_dir/pid" 2>/dev/null || true)"
-    printf 'plan-promote is already running (pid %s); retry when it finishes.\n' \
-      "${_holder_pid:-unknown}" >&2
-    exit 1
-  fi
-}
-
-_acquire_lock
+coordinator_lock_acquire "$REPO_ROOT/.git/strawberry-promote.lock"
 
 # 0. Repo identity guard — must be run from inside strawberry-agents, never from a
 #    workspace repo (mmp/workspace, strawberry-app, etc.).  Plans live in this repo
@@ -310,14 +257,8 @@ case "$SOURCE_PARENT_BASE" in
 esac
 TARGET_DIR="${PLANS_ROOT}/${TARGET_STATUS}${CONCERN_SUBDIR}"
 TARGET_PATH="$TARGET_DIR/$BASENAME"
-# DEST_REL is the repo-relative destination path, used as STAGED_SCOPE when
-# invoking orianna-sign.sh so its signing commit is scoped to exactly this file
-# and does not absorb concurrent sessions' staged work.
-# See: plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md T3
-DEST_REL="${TARGET_PATH#"$REPO_ROOT/"}"
-# Export STAGED_SCOPE scoped to child invocations of orianna-sign.sh only;
-# it is unset after this block so callers of plan-promote.sh do not inherit it.
-export STAGED_SCOPE="$DEST_REL"
+# Note: STAGED_SCOPE is no longer exported here. orianna-sign.sh auto-derives it
+# from PLAN_REL when unset (T5 — 2026-04-22-concurrent-coordinator-race-closeout.md).
 
 mkdir -p "$TARGET_DIR"
 
@@ -335,9 +276,6 @@ fi
 # 7. Commit.
 git -C "$REPO_ROOT" add -- "$TARGET_PATH"
 git -C "$REPO_ROOT" commit -m "chore: promote $BASENAME to $TARGET_STATUS" >&2
-# STAGED_SCOPE was exported above for orianna-sign.sh child invocations; unset now
-# so it does not leak to callers of plan-promote.sh or the push step.
-unset STAGED_SCOPE
 
 # 8. Push (skipped when NO_PUSH env var is set — for test harnesses without a remote).
 if [ -z "${NO_PUSH:-}" ]; then
