@@ -9,7 +9,7 @@ tests_required: true
 tags: [orianna-gate, plan-lifecycle, scripts, hooks, governance, rescope]
 related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
-  - plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md
+  - plans/implemented/personal/2026-04-21-orianna-gate-speedups.md
   - plans/approved/personal/2026-04-21-plan-prelint-shift-left.md
   - feedback/2026-04-21-orianna-signing-latency.md
   - feedback/2026-04-21-orianna-signing-followups.md
@@ -20,6 +20,8 @@ related:
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
 architecture_changes: [architecture/plan-lifecycle.md]
+orianna_signature_approved: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T10:54:34Z"
+orianna_signature_in_progress: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T10:55:29Z"
 ---
 
 # Orianna — substance-vs-format rescope
@@ -37,7 +39,7 @@ Concrete evidence from the current corpus at the time of writing:
 
 Paired with Sona's two feedback docs (`feedback/2026-04-21-orianna-signing-latency.md`, `feedback/2026-04-21-orianna-signing-followups.md`), the dominant cost pattern is ~30 min of wall time per signing session with iteration counts of 2–3 per ADR per phase; the majority of that cost is format-resolvable. Agents spend time placating the gate rather than improving the plan.
 
-The adjacent plan `plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md` addresses mechanical latency (body-hash pre-commit guard, signed-fix commit shape, stale-lock recovery, §D3 shape enforcement). It does **not** rescope the check set — every fix there is still inside the current taxonomy. This plan is the missing companion: same goal (reduce signing friction), different lever (prune the check set instead of making the current set faster to satisfy).
+The adjacent plan `plans/implemented/personal/2026-04-21-orianna-gate-speedups.md` addresses mechanical latency (body-hash pre-commit guard, signed-fix commit shape, stale-lock recovery, §D3 shape enforcement). It does **not** rescope the check set — every fix there is still inside the current taxonomy. This plan is the missing companion: same goal (reduce signing friction), different lever (prune the check set instead of making the current set faster to satisfy).
 
 ### Duong's directive (verbatim intent from the task prompt)
 
@@ -347,7 +349,7 @@ For a full rollback post-merge: revert the merge commit. Re-sign is not required
 
 ### Canary level
 
-- T11 — one live plan under `plans/proposed/personal/` signed on the rescoped gate. Qualitative success criterion: the author writes the plan with HTTP routes / ASCII diagrams / dotted identifiers in backticks, and the first `scripts/orianna-sign.sh` call returns exit 0 without any orianna suppression markers on those specific tokens.
+- T11 — one live plan under `plans/proposed/personal/` signed on the rescoped gate. Qualitative success criterion: the author writes the plan with HTTP routes / ASCII diagrams / dotted identifiers in backticks, and the first `scripts/orianna-sign.sh` call returns exit 0 without any orianna suppression markers on those specific tokens. <!-- orianna: ok — directory path, not a file existence claim -->
 
 ### Regression level (per Rule 13)
 
@@ -400,7 +402,7 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
   - Pick: a — free signal, non-blocking.
   - **Resolved:** (b) drop entirely. Duong diverges from Swain (Swain recommended warn). Step-A frontmatter checks (status/created/tags) removed from Orianna completely; the pre-commit linter is the sole authority.
 
-- **OQ-5 — Timing: when should the rescope land relative to the adjacent `plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md`?** Both ADRs rescope the same gate, differently. Speedups fixes mechanical latency (body-hash pre-commit guard, signed-fix commit shape). This plan fixes check-set scope. Recommendation: this plan lands first. Rationale: speedups assumes the current check set and optimizes the ceremony around it; if the check set shrinks, some of the speedups may be over-engineered (e.g. the signed-fix commit shape is most valuable when iteration count is high, which the check-set shrink reduces). Landing this first lets speedups' implementer measure real iteration counts on the rescoped gate before over-optimizing. Duong's pick?
+- **OQ-5 — Timing: when should the rescope land relative to the adjacent `plans/implemented/personal/2026-04-21-orianna-gate-speedups.md`?** Both ADRs rescope the same gate, differently. Speedups fixes mechanical latency (body-hash pre-commit guard, signed-fix commit shape). This plan fixes check-set scope. Recommendation: this plan lands first. Rationale: speedups assumes the current check set and optimizes the ceremony around it; if the check set shrinks, some of the speedups may be over-engineered (e.g. the signed-fix commit shape is most valuable when iteration count is high, which the check-set shrink reduces). Landing this first lets speedups' implementer measure real iteration counts on the rescoped gate before over-optimizing. Duong's pick?
   - a: this plan first, then re-scope the speedups plan based on post-rescope measurements
   - b: both in parallel (they touch different files — feasible, just riskier)
   - c: speedups first (addresses the cheaper fix first, this plan waits)
@@ -452,7 +454,7 @@ Prospective output paths (files created by this plan) carry inline orianna suppr
 ## 14. References
 
 - `plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md` — the origin ADR that defined the gate taxonomy this plan rescopes.
-- `plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md` — adjacent speedups plan (§10 OQ-5 sequencing).
+- `plans/implemented/personal/2026-04-21-orianna-gate-speedups.md` — adjacent speedups plan (§10 OQ-5 sequencing).
 - `plans/approved/personal/2026-04-21-plan-prelint-shift-left.md` — the shift-left linter ADR; creates the split-of-responsibilities table this plan relies on.
 - `feedback/2026-04-21-orianna-signing-latency.md` — session-1 latency report.
 - `feedback/2026-04-21-orianna-signing-followups.md` — session-2 report; documents the root-cause cascade.
