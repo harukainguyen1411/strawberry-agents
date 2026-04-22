@@ -9,6 +9,15 @@
 # Also asserts that REAL stale-path claims (non-existent paths without any of the
 # above patterns) still produce block findings.
 #
+# RESCOPE XFAIL ADDITIONS (2026-04-22):
+# Plan: plans/in-progress/personal/2026-04-22-orianna-substance-vs-format-rescope.md §5.6
+#
+#   FP4: HTTP route token in inline backtick → 0 blocks (OQ-1 / §3.3 rule 2)
+#   FP5: Fenced code block containing path tokens → 0 blocks (OQ-2 / §3.3 rule 3)
+#   FP6: Dotted identifier (Python/TS style) in backtick → 0 blocks (§5.4 §2 non-claim)
+#
+# FP4/FP5/FP6 are xfail until the rescope lands (T5/T6 not yet implemented).
+#
 # Run: bash scripts/test-fact-check-false-positives.sh
 
 set -euo pipefail
@@ -128,6 +137,80 @@ if [ "$blocks" -ge 1 ]; then
   pass "REAL_STALE_PATH_STILL_BLOCKS"
 else
   fail "REAL_STALE_PATH_STILL_BLOCKS" "expected >=1 block, got 0 (gate weakened)"
+fi
+
+# ---- Rescope xfail additions — FP4/FP5/FP6 --------------------------------
+# These cases xfail until the substance-vs-format rescope lands (T5/T6).
+
+CONTRACT="$REPO_ROOT/agents/orianna/claim-contract.md"
+RESCOPE_IMPLEMENTED=0
+if grep -q 'contract-version: 2' "$CONTRACT" 2>/dev/null; then
+  RESCOPE_IMPLEMENTED=1
+fi
+
+if [ "$RESCOPE_IMPLEMENTED" -eq 0 ]; then
+  printf 'XFAIL  FP4_HTTP_ROUTE_NO_BLOCK  (rescope T5/T6 not yet implemented)\n'
+  printf 'XFAIL  FP5_FENCED_PATH_NO_BLOCK  (rescope T5/T6 not yet implemented)\n'
+  printf 'XFAIL  FP6_DOTTED_IDENTIFIER_NO_BLOCK  (rescope T5/T6 not yet implemented)\n'
+else
+  # --- FP4: HTTP route token → 0 blocks (non-internal-prefix → info) ---
+  FP4_BODY='---
+title: FP4 HTTP Route Test
+status: proposed
+owner: test
+created: 2026-04-22
+tags: [test]
+---
+
+The login flow posts to `POST /auth/login` and reads from `GET /auth/session/{sid}`.
+'
+  blocks="$(run_check FP4 "$FP4_BODY")"
+  if [ "$blocks" -eq 0 ]; then
+    pass "FP4_HTTP_ROUTE_NO_BLOCK"
+  else
+    fail "FP4_HTTP_ROUTE_NO_BLOCK" "expected 0 blocks for HTTP route tokens, got $blocks (false positive)"
+  fi
+
+  # --- FP5: fenced code block path tokens → 0 blocks ---
+  FP5_BODY='---
+title: FP5 Fenced Block Test
+status: proposed
+owner: test
+created: 2026-04-22
+tags: [test]
+---
+
+Architecture diagram:
+
+```
+scripts/nonexistent-xzqq3.sh --> /foo/bar --> agents/nonexistent-xzqq4/file.md
+```
+'
+  blocks="$(run_check FP5 "$FP5_BODY")"
+  if [ "$blocks" -eq 0 ]; then
+    pass "FP5_FENCED_PATH_NO_BLOCK"
+  else
+    fail "FP5_FENCED_PATH_NO_BLOCK" "expected 0 blocks for fenced block tokens, got $blocks (false positive — PA-7 should be dropped)"
+  fi
+
+  # --- FP6: dotted identifier (non-path) → 0 blocks ---
+  # module.function style identifiers are §2 non-claim categories.
+  FP6_BODY='---
+title: FP6 Dotted Identifier Test
+status: proposed
+owner: test
+created: 2026-04-22
+tags: [test]
+---
+
+The session is verified via `firebase_admin.auth.verify_id_token` and stored in `ds_session`.
+'
+  blocks="$(run_check FP6 "$FP6_BODY")"
+  if [ "$blocks" -eq 0 ]; then
+    pass "FP6_DOTTED_IDENTIFIER_NO_BLOCK"
+  else
+    fail "FP6_DOTTED_IDENTIFIER_NO_BLOCK" "expected 0 blocks for dotted identifier tokens, got $blocks (false positive)"
+  fi
 fi
 
 rm -rf "$SCRATCH"
