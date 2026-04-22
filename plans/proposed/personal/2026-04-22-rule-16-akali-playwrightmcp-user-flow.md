@@ -1,5 +1,5 @@
 ---
-status: approved
+status: proposed
 concern: personal
 complexity: quick
 orianna_gate_version: 2
