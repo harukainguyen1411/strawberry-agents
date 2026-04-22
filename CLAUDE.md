@@ -101,11 +101,13 @@ See `agents/memory/agent-network.md` for the full roster.
     revert via `scripts/deploy/rollback.sh`. No bypass for prod.
 
 <!-- #rule-no-admin-merge -->
-18. **Agents must NOT use `gh pr merge --admin` or any branch-protection bypass**, and
-    must NOT merge a PR they authored. Every merge requires (a) all required status
-    checks green, (b) one approving review from an account other than the PR author,
-    and (c) no red required check. Break-glass admin merges are a human-only Duong
-    procedure (see `plans/proposed/2026-04-17-branch-protection-enforcement.md` §3).
+18. **Agents must NOT use `gh pr merge --admin` or any branch-protection bypass.** Every
+    merge requires (a) all required status checks green, and (b) one approving review from
+    an account other than the PR author. Gate (b) is structurally enforced by GitHub's
+    author-cannot-approve-own-PR rule plus the separate `strawberry-reviewers` /
+    `strawberry-reviewers-2` identities; an agent may merge its own PR once (a) and (b)
+    are satisfied. Break-glass admin merges are a human-only Duong procedure (see
+    `plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md` §3).
 
 <!-- #rule-orianna-signature-required -->
 19. **Plan promotions past `proposed → approved` require valid Orianna signatures on every transition** — `scripts/plan-promote.sh` invokes `scripts/orianna-verify-signature.sh` for the target phase plus carry-forward verification of all prior signatures. Plans authored under the v2 regime (`orianna_gate_version: 2`) are blocked from any transition without a valid signature; grandfathered plans (no `orianna_gate_version` field) fall back to legacy fact-check behavior. The only bypass is the `Orianna-Bypass: <reason>` commit trailer, valid only when the commit author is Duong's admin identity (`harukainguyen1411`); agent-identity bypass attempts are rejected by the pre-commit hook. See `architecture/plan-lifecycle.md` for the full lifecycle, `architecture/key-scripts.md` for the helper scripts, and `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md` §D9.1 for the bypass rationale.
