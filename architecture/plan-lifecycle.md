@@ -83,12 +83,16 @@ with a clear error. No signature is issued until connectivity is restored
 
 Full scope defined in `agents/orianna/prompts/plan-check.md`. Summary:
 
-- **Frontmatter sanity:** `status: proposed`, `owner:`, `created:`, `tags:` all
-  present.
+- **Frontmatter:** `owner:` present and non-blank. (`status:`, `created:`,
+  `tags:` are enforced at commit time by the pre-commit linter — not rechecked
+  here. Rescoped 2026-04-22: OQ-4 resolution b.)
 - **Gating questions:** no unresolved `TBD` / `TODO` / `Decision pending`
   markers in gating/open-questions sections.
-- **Claim-contract:** every path-shaped backtick token resolves via `test -e`
-  in the repo (two-repo routing: strawberry-agents vs strawberry-app).
+- **Claim-contract (v2):** internal-prefix (C2a) backtick tokens resolved via
+  `test -e` (block on miss). Non-internal-prefix (C2b) tokens — HTTP routes,
+  dotted identifiers, template expressions — logged as `info` (no filesystem
+  check). Fenced code block content not extracted. (Rescoped 2026-04-22: OQ-1,
+  OQ-2.)
 - **Sibling-file grep:** no `<basename>-tasks.md` or `<basename>-tests.md`
   files under `plans/` (one-plan-one-file rule, ADR §D3).
 
@@ -97,8 +101,9 @@ Full scope defined in `agents/orianna/prompts/plan-check.md`. Summary:
 Full scope in `agents/orianna/prompts/task-gate-check.md`. Summary:
 
 - **`## Tasks` section inline:** required, non-empty.
-- **`estimate_minutes:` on every task:** integer in `[1, 60]`; no alternative
-  unit literals (`hours`, `days`, `weeks`, `h)`, `(d)`).
+- **`estimate_minutes:`** NOT checked here — the pre-commit structural linter
+  (`scripts/hooks/pre-commit-zz-plan-structure.sh`) is the sole enforcer.
+  (Rescoped 2026-04-22: OQ-3 resolution a.)
 - **Test task present** (when `tests_required: true`): at least one task with
   `kind: test` or a title matching `write/add/create/update ... test`.
 - **`## Test plan` section inline** (when `tests_required: true`): non-empty.
@@ -110,8 +115,9 @@ Full scope in `agents/orianna/prompts/task-gate-check.md`. Summary:
 
 Full scope in `agents/orianna/prompts/implementation-gate-check.md`. Summary:
 
-- **Implementation evidence:** every path-shaped claim resolves on the current
-  tree (re-runs claim-contract on the implemented codebase).
+- **Implementation evidence (v2):** internal-prefix (C2a) path claims resolve
+  on the current tree. C2b tokens (non-internal-prefix) are info. Fenced blocks
+  not extracted. (Rescoped 2026-04-22: OQ-1, OQ-2.)
 - **Architecture declaration** (exactly one of):
   - `architecture_changes:` list — each path exists AND has a git commit
     modifying it after the approved-signature timestamp.
