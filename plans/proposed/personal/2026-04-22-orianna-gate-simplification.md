@@ -2,7 +2,7 @@
 status: proposed
 complexity: quick
 owner: karma
-title: Orianna gate simplification — agent-gated plan promotions
+title: Orianna v2 — agent-gated plan promotions (simplification)
 slug: 2026-04-22-orianna-gate-simplification
 date: 2026-04-22
 created: 2026-04-22
