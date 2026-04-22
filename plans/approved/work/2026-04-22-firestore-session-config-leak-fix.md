@@ -13,6 +13,7 @@ tags:
   - work
 tests_required: true
 orianna_signature_approved: "sha256:11a3dade9bebefea151b542c59819ca6471a83775245d300720d31ffdff0849c:2026-04-22T09:15:31Z"
+orianna_signature_in_progress: "sha256:11a3dade9bebefea151b542c59819ca6471a83775245d300720d31ffdff0849c:2026-04-22T09:16:56Z"
 ---
 
 # P0 — Firestore session-doc config-leak fix (demo-studio-v3)
