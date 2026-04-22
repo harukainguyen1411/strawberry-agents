@@ -21,7 +21,7 @@
 |-------|-------|
 | xfail test commit SHA | <!-- SHA of the xfail-first commit, or N/A --> |
 | Regression test linked | <!-- path/to/test or N/A --> |
-| QA-Report | <!-- QA-Report: https://... or QA-Waiver: <reason> for UI PRs; N/A for non-UI --> |
+| QA-Report | <!-- QA-Report: <path-or-url> | QA-Waiver: <reason> — required for any UI or user-flow PR (Rule 16); Akali via Playwright MCP. N/A only for non-UI, non-user-flow PRs. --> |
 
 - [ ] All pre-commit unit tests pass locally
 - [ ] Pre-push TDD hook passed (xfail-first + regression-test checks)
