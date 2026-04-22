@@ -12,6 +12,7 @@ tags:
   - p0
   - work
 tests_required: true
+orianna_signature_approved: "sha256:11a3dade9bebefea151b542c59819ca6471a83775245d300720d31ffdff0849c:2026-04-22T09:15:31Z"
 ---
 
 # P0 — Firestore session-doc config-leak fix (demo-studio-v3)
@@ -21,10 +22,10 @@ tests_required: true
 Investigation `assessments/work/2026-04-22-firestore-config-mgmt-leak-investigation.md`
 (commit `b3729b0`) diagnosed that every one of the 96 session docs in the
 `demo-studio-staging` Firestore DB carries a leaked full config payload. The
-leak source is `create_session` (lines 38-52 in `tools/demo-studio-v3/session.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents -->)
+leak source is `create_session` (lines 38-52 in `mmp/workspace/tools/demo-studio-v3/session.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents -->)
 which hard-codes `config`, `configVersion`, and `factoryVersion` onto every
-new session doc. The BD-1-compliant module `tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents -->
-already exists; the bug is that `tools/demo-studio-v3/main.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents --> still imports the
+new session doc. The BD-1-compliant module `mmp/workspace/tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents -->
+already exists; the bug is that `mmp/workspace/tools/demo-studio-v3/main.py` <!-- orianna: ok -- path is in the mmp work workspace, not strawberry-agents --> still imports the
 pre-refactor `session.py` module. <!-- orianna: ok -- work workspace path -->
 
 Duong's directive (verbatim): *"store only session state, no config state or
@@ -43,17 +44,17 @@ question. No backfill — wipe-and-restart only, since this is staging.
 All anchors live in the mmp work workspace at
 `~/Documents/Work/mmp/workspace/company-os/` <!-- orianna: ok -- work workspace path, not in strawberry-agents -->:
 
-- `tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path --> — `create_session` (L38-52) is the leak
+- `mmp/workspace/tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path --> — `create_session` (L38-52) is the leak
   writer; `list_recent_sessions` (L118) is a stale reader.
-- `tools/demo-studio-v3/main.py` <!-- orianna: ok -- work workspace path --> — imports `create_session` at L46;
+- `mmp/workspace/tools/demo-studio-v3/main.py` <!-- orianna: ok -- work workspace path --> — imports `create_session` at L46;
   `trigger_build` reads `factoryVersion` at L2172; `dashboard_sessions`
   (L3047-3097) already uses `config_mgmt_client.fetch_config` — the pattern
   to mirror in `list_recent_sessions`.
-- `tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path --> — BD-1-compliant; its
+- `mmp/workspace/tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path --> — BD-1-compliant; its
   `_UPDATE_ALLOWLIST` must accept `configId`.
-- `tools/demo-studio-v3/tests/conftest.py` <!-- orianna: ok -- work workspace path --> — fixture at L160 writes
+- `mmp/workspace/tools/demo-studio-v3/tests/conftest.py` <!-- orianna: ok -- work workspace path --> — fixture at L160 writes
   `configVersion` / `factoryVersion` into session docs; must be stripped.
-- `tools/demo-studio-v3/config_mgmt_client.py` <!-- orianna: ok -- work workspace path --> — `fetch_config(session_id)`
+- `mmp/workspace/tools/demo-studio-v3/config_mgmt_client.py` <!-- orianna: ok -- work workspace path --> — `fetch_config(session_id)`
   is the S2 call used by `dashboard_sessions`.
 
 ## Target schema
@@ -87,8 +88,8 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: test
 - estimate_minutes: 30
-- files: `tools/demo-studio-v3/tests/test_session_store_no_config_write.py` <!-- orianna: ok -- work workspace path, extend if present -->
-  (extend if present, create if not); `tools/demo-studio-v3/tests/test_session_create_schema.py` <!-- orianna: ok -- work workspace path, prospective new test file -->
+- files: `mmp/workspace/tools/demo-studio-v3/tests/test_session_store_no_config_write.py` <!-- orianna: ok -- work workspace path, extend if present -->
+  (extend if present, create if not); `mmp/workspace/tools/demo-studio-v3/tests/test_session_create_schema.py` <!-- orianna: ok -- work workspace path, prospective new test file -->
   (new).
 - detail: Add xfail-marked tests asserting the following, each with an xfail
   reason string that cites this plan filename.
@@ -108,7 +109,7 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: code
 - estimate_minutes: 20
-- files: `tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path -->.
+- files: `mmp/workspace/tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path -->.
 - detail: In `create_session` (L38-52) remove the three leaked keys and add
   `"configId": session_id`. Drop the `initial_context` parameter's
   pass-through into a `config` field — if the in-process caller still needs
@@ -121,7 +122,7 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: code
 - estimate_minutes: 10
-- files: `tools/demo-studio-v3/main.py` <!-- orianna: ok -- work workspace path -->.
+- files: `mmp/workspace/tools/demo-studio-v3/main.py` <!-- orianna: ok -- work workspace path -->.
 - detail: At L2172 replace `version = session.get("factoryVersion", 1)` with
   a hard-coded `version = 2`. Add an inline comment citing this plan and
   noting factory v2 is the only supported version per investigation `b3729b0`.
@@ -131,7 +132,7 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: code
 - estimate_minutes: 40
-- files: `tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path -->.
+- files: `mmp/workspace/tools/demo-studio-v3/session.py` <!-- orianna: ok -- work workspace path -->.
 - detail: At L118, replace direct `d.get("config")` brand / market /
   insuranceLine reads with per-row `config_mgmt_client.fetch_config(session_id)`
   calls. Mirror the parallel-fetch pattern already present in
@@ -146,7 +147,7 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: code
 - estimate_minutes: 10
-- files: `tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path -->.
+- files: `mmp/workspace/tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path -->.
 - detail: Add `"configId"` to `_UPDATE_ALLOWLIST` so future updates
   (e.g. rotating to an independent UUID config ID) won't be rejected by BD-1.
 - DoD: allowlist-path test passes.
@@ -155,10 +156,10 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: test
 - estimate_minutes: 15
-- files: `tools/demo-studio-v3/tests/conftest.py` <!-- orianna: ok -- work workspace path -->.
+- files: `mmp/workspace/tools/demo-studio-v3/tests/conftest.py` <!-- orianna: ok -- work workspace path -->.
 - detail: At L160, remove `configVersion: 1` and `factoryVersion: 2` from the
   session fixture. Add `configId: <fixture_session_id>`. Grep the rest of
-  `tools/demo-studio-v3/tests/` <!-- orianna: ok -- work workspace path --> for any direct field assertions on the three
+  `mmp/workspace/tools/demo-studio-v3/tests/` <!-- orianna: ok -- work workspace path --> for any direct field assertions on the three
   removed fields and update them.
 - DoD: full `pytest tools/demo-studio-v3/tests/` <!-- orianna: ok -- work workspace path --> passes locally; no grep
   hits for `configVersion` / `factoryVersion` in test assertions.
@@ -167,7 +168,7 @@ kind, estimate_minutes, files, detail, and definition of done.
 
 - kind: ops
 - estimate_minutes: 15
-- files: `tools/demo-studio-v3/scripts/wipe_staging_sessions.py` <!-- orianna: ok -- prospective new script in work workspace --> (new).
+- files: `mmp/workspace/tools/demo-studio-v3/scripts/wipe_staging_sessions.py` <!-- orianna: ok -- prospective new script in work workspace --> (new).
 - detail: One-shot Python admin-SDK script that streams the
   `demo-studio-sessions` collection in the `demo-studio-staging` DB and
   deletes every doc in batches of 500. Log the count deleted. Idempotent.
@@ -238,6 +239,6 @@ The pre-push hook's TDD gate (Rule 12) enforces the xfail-first ordering.
 ## References
 
 - Investigation: `assessments/work/2026-04-22-firestore-config-mgmt-leak-investigation.md` at commit `b3729b0`.
-- BD-1 compliance module: `tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path -->.
-- S2 client: `tools/demo-studio-v3/config_mgmt_client.py` <!-- orianna: ok -- work workspace path -->.
+- BD-1 compliance module: `mmp/workspace/tools/demo-studio-v3/session_store.py` <!-- orianna: ok -- work workspace path -->.
+- S2 client: `mmp/workspace/tools/demo-studio-v3/config_mgmt_client.py` <!-- orianna: ok -- work workspace path -->.
 - Sibling branch context: `plans/proposed/work/2026-04-22-firebase-auth-loop2c-route-migration.md`.
