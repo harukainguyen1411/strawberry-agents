@@ -38,6 +38,25 @@ All commits (including on feature branches) use `chore:` or `ops:` prefix. The p
 
 PRs are opened in `harukainguyen1411/strawberry-app`. Agents must not use `--admin` or any branch-protection bypass, and must not merge a red PR. Per rule 18, an agent may merge its own PR once (a) all required status checks are green and (b) one approving review from an account other than the PR author is in place — see `CLAUDE.md` rule 18.
 
+## QA Gate (Rule 16)
+
+Before opening a UI or user-flow PR, **Akali** (`.claude/agents/akali.md`) must
+run the full **Playwright MCP** flow (`mcp__plugin_playwright_playwright__*` tool
+family) with video + screenshots and diff against the Figma design.
+
+- Report lives under `assessments/qa-reports/` and is linked in the PR body via a
+  `QA-Report: <path-or-url>` line.
+- A `QA-Waiver: <reason>` line is accepted in lieu when Akali cannot run.
+- Enforced by `.github/workflows/pr-lint.yml` — PR cannot merge with a missing
+  marker on UI/user-flow PRs. Failure message references **Rule 16** and **Akali**.
+- **Non-UI and non-user-flow PRs are exempt.**
+
+_User-flow_ definition (glossary): new routes, new forms, state-transition changes,
+auth flows, session lifecycle changes — even when there is no visual pixel delta.
+
+See also: repo-root `CLAUDE.md` rule 16 (`#rule-qa-agent-pre-pr`) and
+`.claude/agents/akali.md` for Akali's full configuration and Playwright MCP setup.
+
 ## Review Team Protocol
 
 Every PR goes through a three-agent review team (TeamCreate):
