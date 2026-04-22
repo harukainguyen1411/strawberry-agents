@@ -10,6 +10,7 @@ tags: [orianna, plan-lifecycle, scripts, concurrency, bugfix]
 related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
+orianna_signature_approved: "sha256:1b23501714ab7fe9b92352dc3f89f7014dd15cbe426627a620aaf55450b36b82:2026-04-22T07:11:21Z"
 ---
 
 # `STAGED_SCOPE` env var for `orianna-sign.sh` — eliminate concurrent-staging race <!-- orianna: ok -->
