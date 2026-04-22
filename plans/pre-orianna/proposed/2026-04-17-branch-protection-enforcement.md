@@ -180,6 +180,12 @@ Anchor: `#rule-no-admin-merge`. Rules 1–17 preserved.
 
 ---
 
+## 9. Rule 18 amendment 2026-04-22
+
+The author-is-not-merger clause ("must NOT merge a PR they authored") was dropped from Rule 18 on 2026-04-22. The remaining prohibitions — `--admin` bypass (gate c) and the non-author-approval requirement (gate b) — are unchanged and remain load-bearing. No branch-protection-record change is needed: GitHub's own author-cannot-approve-own-PR enforcement already covers gate (b) structurally via the `strawberry-reviewers` / `strawberry-reviewers-2` identities. See `plans/in-progress/personal/2026-04-22-rule-18-self-merge-amendment.md` for the full rationale. The §3 break-glass procedure in this document is unchanged.
+
+---
+
 ## 10. Non-goals
 
 - CODEOWNERS file. Deferred — single-file review ownership is not useful when the reviewer pool is already `NOT author`.
