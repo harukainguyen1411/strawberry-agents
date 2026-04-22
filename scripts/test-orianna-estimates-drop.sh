@@ -76,21 +76,15 @@ run_check_blocks() {
   printf '%s' "$blocks"
 }
 
-BASE_FM='---
-title: %s
-status: proposed
-concern: personal
-owner: test
-created: 2026-04-22
-tags: [test]
----
-
-## Tasks
-
-'
+make_fm() {
+  local title="$1"
+  printf '%s\n' "---" "title: ${title}" "status: proposed" "concern: personal" \
+    "owner: test" "created: 2026-04-22" "tags: [test]" "---" "" "## Tasks" ""
+}
 
 # --- D1: task missing estimate_minutes entirely ---
-D1_BODY="$(printf "$BASE_FM" "D1 Missing Estimate")- [ ] **T1** — do something without estimate field."
+D1_BODY="$(make_fm "D1 Missing Estimate")
+- [ ] **T1** — do something without estimate field."
 blocks="$(run_check_blocks D1 "$D1_BODY")"
 if [ "$blocks" -eq 0 ]; then
   pass "D1_MISSING_ESTIMATE"
@@ -99,7 +93,8 @@ else
 fi
 
 # --- D2: estimate_minutes: 0 (invalid per old TG-3) ---
-D2_BODY="$(printf "$BASE_FM" "D2 Zero Estimate")- [ ] **T1** — do something. estimate_minutes: 0."
+D2_BODY="$(make_fm "D2 Zero Estimate")
+- [ ] **T1** — do something. estimate_minutes: 0."
 blocks="$(run_check_blocks D2 "$D2_BODY")"
 if [ "$blocks" -eq 0 ]; then
   pass "D2_ZERO_ESTIMATE"
@@ -108,7 +103,8 @@ else
 fi
 
 # --- D3: "hours" literal in task description (invalid per old TG-4) ---
-D3_BODY="$(printf "$BASE_FM" "D3 Hours Literal")- [ ] **T1** — do something. estimate_minutes: 30.
+D3_BODY="$(make_fm "D3 Hours Literal")
+- [ ] **T1** — do something. estimate_minutes: 30.
   - detail: this takes about 2 hours of focused work."
 blocks="$(run_check_blocks D3 "$D3_BODY")"
 if [ "$blocks" -eq 0 ]; then
