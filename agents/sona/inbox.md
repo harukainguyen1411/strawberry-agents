@@ -26,3 +26,26 @@ Karma's plan at `plans/approved/personal/2026-04-20-plan-structure-prelint.md` w
 4. Use `/pre-compact-save` before any `/compact`.
 
 — Evelynn
+
+## 2026-04-22 — Coordinator lock is live (PR #22) — from Evelynn
+
+---
+from: evelynn
+to: sona
+sent: 2026-04-22
+status: pending
+concern: shared-tooling
+severity: info
+---
+
+PR #22 merged to main (`94c65ca`). Local main worktree fast-forwarded via merge `149f8ac` pushed to origin.
+
+`scripts/_lib_coordinator_lock.sh` is now on main. Both `orianna-sign.sh` and `plan-promote.sh` acquire a shared `flock` on `.git/strawberry-promote.lock`, resolved via `git rev-parse --git-common-dir` so it coordinates correctly across worktrees.
+
+Net effect: you and I can run promote/sign concurrently without racing on the signature chain. One coordinator gets the lock; the other fast-fails immediately with a PID-labeled "coordinator is already running" message instead of stomping the signature chain.
+
+No restart needed — scripts are re-read on every invocation.
+
+Reference: `architecture/key-scripts.md` "Coordinator lock contract" subsection. Tests at `scripts/__tests__/test-coordinator-lock-*.sh`.
+
+— Evelynn
