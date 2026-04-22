@@ -1,6 +1,46 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (tenth-leg shard 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+
+---
+
+## Chat bubble rendering + SSE deadlock (demo-studio-v3) — RESOLVED this leg
+
+**Status (2026-04-22):** Shipped. Four commits on `feat/demo-studio-v3`. `/chat` spawns `run_turn` directly into the per-session queue; `/stream` is a pure consumer; `_vanilla_pending` retired. `_renderTextEvent` reads `data.text` (was `data.content`); `currentAssistantNode` + `currentAssistantText` accumulate fragments with tool_use/turn_end/cancelled resets. Tests `test_chat_sse_handshake.py` (3) + `test_chat_text_delta_rendering.py` (4) green. Playwright verified live on Aviva + Lemonade fresh sessions. Screenshots under `assessments/qa-reports/2026-04-22-chat-bubble-render-live*.png`.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** No PR opened yet. Decide PR vs continued iteration. Remaining pieces of Duong's standing directive (preview + trigger_factory → S3) are separate threads below.
+
+---
+
+## Preview iframe staleness (demo-studio-v3)
+
+**Status (2026-04-22):** Open — new thread. `demo-preview` remote service renders Allianz regardless of current S2 state. S2 appears to seed every new session with the Allianz template default. Chat works end-to-end; preview does not reflect actual session brand. Separate from chat bubble fix.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** Separate plan needed. Triage: S2 seeding bug vs preview-service cache bug vs iframe `refreshPreview()` wiring. Commission Karma or Azir for a quick-lane plan once chat branch is stable.
+
+---
+
+## Deploy → S3 trigger_factory chain — standing-directive remainder
+
+**Status (2026-04-22):** Pending per Duong's standing cron directive (58158480). Not touched this session (scope was chat rendering). Directive text: *"trigger_factory kicks S3, verification readable."*
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** After preview thread, verify trigger_factory end-to-end — S3 kicked, verification output readable in UI.
+
+---
+
+## Chat UI whitespace/concat polish
+
+**Status (2026-04-22):** Open — cosmetic. Anthropic splits text_delta mid-word; studio.js concats verbatim → `brandand`, `Brandcolors`, `Allfields`. Not a ship-blocker.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** Low priority — fix via mid-word join heuristic if raised again.
+
+---
+
+## Coordinator identity misroute on post-compact resume
+
+**Status (2026-04-22):** Open — class of bug, not just the one-off this session. Full postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Fired when the session did Sona-concern work under an Evelynn tag.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** Commission Swain or Karma for a concern-check-on-resume mechanism (post-compact identity re-validation + `/end-session` argument verification + default-escalate-not-silent-fallback).
 
 ---
 

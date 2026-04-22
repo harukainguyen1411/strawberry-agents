@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-22 · 2026-04-22-0cf7b28e · Short-UUID: `0cf7b28e` (from transcript `agents/sona/transcripts/2026-04-21-0cf7b28e.md`)
 - 2026-04-22 · 2026-04-22-68fb9cb6 · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch)
 - 2026-04-22 · 2026-04-22-b5f123a5 · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch)
 - 2026-04-22 · 2026-04-22-9835724c · **Incremental shard.** Earlier legs documented in:; - `agents/sona/memory/last-sessions/2026-04-21-a0893a81.md` — first half (signing wave, ADR approved); - `agents/sona/memory/last-sessions/2026-04-21-17a90992.md` — second half (impl wave, integration branch)
