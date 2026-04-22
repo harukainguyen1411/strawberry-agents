@@ -113,7 +113,7 @@ Firebase Auth Emulator (`FIREBASE_AUTH_EMULATOR_HOST=localhost:9099`) is the hon
 
 - **Firebase SDK version drift** — pinning to version 11.0.2 in the CDN URL prevents silent upgrades. Add a comment in the landing HTML naming the pin and review cadence.
 - **Popup blockers** — `signInWithPopup` requires a user-gesture stack. Binding directly to the button `click` is fine; avoid async work between click and popup call. If popup UX becomes an issue, `signInWithRedirect` is a one-line swap — not doing it now since redirect breaks Playwright flow hooks.
-- **CORS on `/auth/login`** — same-origin this loop (landing page and API are same Cloud Run service). If dashboard split lands (`plans/proposed/work/2026-04-22-demo-dashboard-service-split.md`) this will need CORS credentials config — not this loop's problem.
+- **CORS on `/auth/login`** — same-origin this loop (landing page and API are same Cloud Run service). If dashboard split lands (`plans/in-progress/work/2026-04-22-demo-dashboard-service-split.md` <!-- orianna: ok -- cross-plan reference, plan has since moved to in-progress -->) this will need CORS credentials config — not this loop's problem.
 - **Emulator dependency in CI** — Playwright suite requires the emulator running. Akali's existing E2E harness for demo-studio-v3 already spawns it for Loop 2a smokes per the QA report; confirm at test time, add a `beforeAll` guard if not.
 - **Legacy session form still visible** — the page still exposes the pre-Firebase session-id input. Loop 2a did not gate it. Leaving it visible; Loop 2c will gate it behind login-state. Not a regression, just incomplete.
 
