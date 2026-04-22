@@ -8,9 +8,10 @@
 # test must pass (exit 0).
 #
 # What it tests:
-#   Two concurrent invocations of scripts/orianna-sign.sh against a temp repo.
-#   The second invocation must fail fast with an "already running (pid ...)" message
-#   rather than racing the git index.
+#   Pre-acquires the shared coordinator lock in a background holder process, then
+#   invokes scripts/orianna-sign.sh. Because orianna-sign.sh now acquires the same
+#   lock before git add, it must fail fast with "already running (pid ...)" rather
+#   than racing the git index.
 #
 # Usage:
 #   bash scripts/__tests__/test-orianna-sign-lock.sh
@@ -35,11 +36,11 @@ info() { printf '[INFO] %s\n' "$*"; }
 TMPDIR_ROOT="$(mktemp -d)"
 TMPBIN="$TMPDIR_ROOT/bin"
 TMPREPO="$TMPDIR_ROOT/repo"
+HOLDER_PID=""
 
 cleanup() {
-  # Kill background signing job if still running
-  if [ -n "${SIGN1_PID:-}" ] && kill -0 "$SIGN1_PID" 2>/dev/null; then
-    kill "$SIGN1_PID" 2>/dev/null || true
+  if [ -n "$HOLDER_PID" ] && kill -0 "$HOLDER_PID" 2>/dev/null; then
+    kill "$HOLDER_PID" 2>/dev/null || true
   fi
   rm -rf "$TMPDIR_ROOT"
 }
@@ -61,13 +62,11 @@ chmod +x "$HOOKS_DIR/pre-commit"
 
 # Symlink supporting scripts
 mkdir -p "$TMPREPO/scripts"
-ln -s "$REPO_ROOT/scripts/orianna-hash-body.sh" "$TMPREPO/scripts/orianna-hash-body.sh"
+ln -s "$REPO_ROOT/scripts/orianna-hash-body.sh"        "$TMPREPO/scripts/orianna-hash-body.sh"
 ln -s "$REPO_ROOT/scripts/orianna-verify-signature.sh" "$TMPREPO/scripts/orianna-verify-signature.sh"
-# Symlink _lib_stale_lock.sh if it exists
 if [ -f "$REPO_ROOT/scripts/_lib_stale_lock.sh" ]; then
   ln -s "$REPO_ROOT/scripts/_lib_stale_lock.sh" "$TMPREPO/scripts/_lib_stale_lock.sh"
 fi
-# Symlink _lib_coordinator_lock.sh when it exists (T3 delivers this)
 if [ -f "$REPO_ROOT/scripts/_lib_coordinator_lock.sh" ]; then
   ln -s "$REPO_ROOT/scripts/_lib_coordinator_lock.sh" "$TMPREPO/scripts/_lib_coordinator_lock.sh"
 fi
@@ -76,14 +75,11 @@ mkdir -p "$TMPREPO/agents/orianna/prompts"
 printf 'Stub plan-check prompt.\n' > "$TMPREPO/agents/orianna/prompts/plan-check.md"
 mkdir -p "$TMPREPO/assessments/plan-fact-checks"
 
-# Seed two minimal plans (one per concurrent invocation)
+# Seed a minimal plan
 PLAN_DIR="$TMPREPO/plans/proposed"
 mkdir -p "$PLAN_DIR"
-
-make_plan() {
-  local slug="$1"
-  local file="$PLAN_DIR/${slug}.md"
-  cat > "$file" <<PLANEOF
+PLAN_FILE="$PLAN_DIR/2026-04-22-lock-test-plan.md"
+cat > "$PLAN_FILE" <<'PLANEOF'
 ---
 status: proposed
 concern: personal
@@ -93,25 +89,21 @@ orianna_gate_version: 2
 complexity: quick
 ---
 
-# Lock test plan ${slug}
+# Lock test plan
 
-Minimal plan for the concurrent-lock test harness.
+Minimal plan for the lock exclusion test harness.
 PLANEOF
-  git -C "$TMPREPO" add "$file"
-  git -C "$TMPREPO" commit -q -m "chore: seed plan $slug"
-  printf '%s\n' "$file"
-}
+git -C "$TMPREPO" add "$PLAN_FILE"
+git -C "$TMPREPO" commit -q -m "chore: seed lock test plan"
+PLAN_REL="plans/proposed/2026-04-22-lock-test-plan.md"
 
-PLAN1_PATH="$(make_plan "2026-04-22-lock-test-plan-a")"
-PLAN2_PATH="$(make_plan "2026-04-22-lock-test-plan-b")"
-
-# Stub claude: sleeps 3 seconds before emitting a clean report, simulating a
-# slow signing invocation. This gives the second invocation time to race.
+# Stub claude: fast, emits clean Orianna report
 cat > "$TMPBIN/claude" <<'STUBEOF'
 #!/usr/bin/env bash
-# Slow stub claude — sleeps 3s then emits clean Orianna report.
+# Fast stub claude — immediately emits a clean Orianna report.
 REPORT_REPO=""
 NEXT_IS_SYSPROMPT=0
+LAST_ARG=""
 for arg in "$@"; do
   if [ "$NEXT_IS_SYSPROMPT" -eq 1 ]; then
     REPORT_REPO="${arg#*Your working directory is }"
@@ -120,22 +112,34 @@ for arg in "$@"; do
     NEXT_IS_SYSPROMPT=0
   fi
   case "$arg" in --system-prompt) NEXT_IS_SYSPROMPT=1 ;; esac
+  LAST_ARG="$arg"
 done
 
-sleep 3
+PLAN_BASENAME=""
+while IFS= read -r line; do
+  case "$line" in
+    *"Plan path (relative to repo root):"*)
+      _rel="${line#*\`}"
+      _rel="${_rel%\`*}"
+      PLAN_BASENAME="$(basename "$_rel" .md)"
+      break
+      ;;
+  esac
+done <<EOF
+$LAST_ARG
+EOF
 
-if [ -z "$REPORT_REPO" ]; then
-  printf '[stub-claude] ERROR: could not determine repo root\n' >&2
+if [ -z "$REPORT_REPO" ] || [ -z "$PLAN_BASENAME" ]; then
+  printf '[stub-claude] ERROR: missing REPORT_REPO or PLAN_BASENAME\n' >&2
   exit 2
 fi
 
 REPORT_DIR="$REPORT_REPO/assessments/plan-fact-checks"
 mkdir -p "$REPORT_DIR"
 TS="$(date -u '+%Y-%m-%dT%H-%M-%SZ')"
-REPORT_FILE="$REPORT_DIR/lock-test-${TS}.md"
-cat > "$REPORT_FILE" <<EOF
+cat > "$REPORT_DIR/${PLAN_BASENAME}-${TS}.md" <<EOF
 ---
-plan: stub
+plan: $PLAN_BASENAME
 phase: approved
 block_findings: 0
 warn_findings: 0
@@ -155,52 +159,83 @@ exit 0
 STUBEOF
 chmod +x "$TMPBIN/claude"
 
-info "Starting first orianna-sign.sh (slow, acquires lock)"
-SIGN1_LOG="$TMPDIR_ROOT/sign1.log"
-SIGN1_RC=0
+# --- Pre-acquire the coordinator lock to simulate a concurrent holder ---------
+# We hold the lock from a background sleep process by creating the mkdir-lock
+# directory (or using flock if available). This simulates another coordinator
+# already holding the lock when orianna-sign.sh tries to acquire it.
+
+LOCKFILE="$TMPREPO/.git/strawberry-promote.lock"
+LOCK_HELD=0
+
+info "Pre-acquiring coordinator lock to simulate concurrent holder"
+if command -v flock >/dev/null 2>&1; then
+  # Use flock: open FD on lockfile and hold it in background
+  exec 9>"$LOCKFILE"
+  flock -n 9 || { fail "could not pre-acquire flock (already held?)"; }
+  printf '%s\n' "$$" >&9
+  LOCK_HELD=1
+  info "flock acquired on $LOCKFILE (held by test PID $$)"
+else
+  # mkdir fallback
+  LOCK_DIR="${LOCKFILE}.dir"
+  mkdir "$LOCK_DIR" || { fail "could not pre-acquire mkdir lock"; }
+  printf '%s\n' "$$" > "$LOCK_DIR/pid"
+  LOCK_HELD=1
+  info "mkdir lock acquired: $LOCK_DIR (held by PID $$)"
+fi
+
+# --- Invoke orianna-sign.sh — should fail fast on the held lock ---------------
+
+info "Invoking orianna-sign.sh while lock is held by test (PID $$)"
+SIGN_LOG="$TMPDIR_ROOT/sign.log"
+SIGN_RC=0
 PATH="$TMPBIN:$PATH" REPO="$TMPREPO" \
-  bash "$ORIANNA_SIGN" "$PLAN1_PATH" approved >"$SIGN1_LOG" 2>&1 &
-SIGN1_PID=$!
+  bash "$ORIANNA_SIGN" "$PLAN_FILE" approved >"$SIGN_LOG" 2>&1 || SIGN_RC=$?
 
-# Give sign1 a moment to start and hopefully acquire the lock
-sleep 0.5
+info "orianna-sign.sh exited with RC=$SIGN_RC"
+SIGN_OUT="$(cat "$SIGN_LOG")"
+info "output: $SIGN_OUT"
 
-info "Starting second orianna-sign.sh (should fail fast on locked lock)"
+# --- Assertion 1: must fail (non-zero) ----------------------------------------
+if [ "$SIGN_RC" -eq 0 ]; then
+  fail "orianna-sign.sh should have failed (lock held) but exited 0. Lock not implemented?"
+fi
+pass "orianna-sign.sh exited non-zero (RC=$SIGN_RC)"
+
+# --- Assertion 2: must emit holder-pid diagnostic -----------------------------
+if ! printf '%s\n' "$SIGN_OUT" | grep -qiE "already running \(pid [0-9]+\)"; then
+  fail "expected 'already running (pid N)' in output. Got: $SIGN_OUT"
+fi
+pass "orianna-sign.sh printed holder-pid diagnostic"
+
+# --- Release the lock and verify orianna-sign succeeds now --------------------
+info "Releasing pre-held lock"
+if command -v flock >/dev/null 2>&1; then
+  # Close FD 9 to release flock
+  exec 9>&-
+  rm -f "$LOCKFILE" 2>/dev/null || true
+else
+  rm -rf "${LOCKFILE}.dir" 2>/dev/null || true
+fi
+LOCK_HELD=0
+
+info "Invoking orianna-sign.sh again (lock released — should succeed)"
 SIGN2_LOG="$TMPDIR_ROOT/sign2.log"
 SIGN2_RC=0
 PATH="$TMPBIN:$PATH" REPO="$TMPREPO" \
-  bash "$ORIANNA_SIGN" "$PLAN2_PATH" approved >"$SIGN2_LOG" 2>&1 || SIGN2_RC=$?
+  bash "$ORIANNA_SIGN" "$PLAN_FILE" approved >"$SIGN2_LOG" 2>&1 || SIGN2_RC=$?
 
-info "Second invocation exited with RC=$SIGN2_RC"
-
-# --- Assertion 1: second invocation must fail (non-zero exit) -----------------
-if [ "$SIGN2_RC" -eq 0 ]; then
-  fail "second orianna-sign.sh should have failed (lock contention) but exited 0. Lock not implemented?"
+if [ "$SIGN2_RC" -ne 0 ]; then
+  info "sign2 log: $(cat "$SIGN2_LOG")"
+  fail "orianna-sign.sh should succeed after lock released but exited $SIGN2_RC"
 fi
-pass "second invocation exited non-zero (RC=$SIGN2_RC)"
+pass "orianna-sign.sh succeeded after lock released"
 
-# --- Assertion 2: second invocation must emit holder-pid diagnostic -----------
-SIGN2_OUT="$(cat "$SIGN2_LOG")"
-if ! printf '%s\n' "$SIGN2_OUT" | grep -qiE "already running \(pid [0-9]+\)"; then
-  fail "expected 'already running (pid N)' message in sign2 output. Got: $SIGN2_OUT"
+# --- Assertion 3: lockfile not present after normal exit ----------------------
+if [ -e "$LOCKFILE" ] || [ -d "${LOCKFILE}.dir" ]; then
+  fail "lockfile still present after orianna-sign.sh normal exit"
 fi
-pass "second invocation printed holder-pid diagnostic"
-
-# --- Assertion 3: second invocation must fail within 2 seconds ----------------
-# (The slow stub sleeps 3s; a blocking second invocation would take >3s total.)
-# We already have the exit time from above — if we got here quickly it passed.
-pass "second invocation fast-failed (lock fast-fail semantics)"
-
-# Wait for first invocation to finish
-wait "$SIGN1_PID" || SIGN1_RC=$?
-info "First invocation exited with RC=$SIGN1_RC"
-
-# --- Assertion 4: first invocation must succeed --------------------------------
-if [ "$SIGN1_RC" -ne 0 ]; then
-  info "sign1 log: $(cat "$SIGN1_LOG")"
-  fail "first orianna-sign.sh should have succeeded but exited $SIGN1_RC"
-fi
-pass "first invocation succeeded"
+pass "lockfile cleaned up after normal exit"
 
 printf '\n[ALL PASS] orianna-sign lock test passed.\n'
 exit 0

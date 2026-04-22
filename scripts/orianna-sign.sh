@@ -353,19 +353,21 @@ if ! grep -qF "$SIG_LINE" "$TMP_PLAN"; then
   die "failed to insert signature line into frontmatter — plan may lack proper --- delimiters"
 fi
 
-mv "$TMP_PLAN" "$PLAN_PATH"
-log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
-
 # ---- Coordinator advisory lock (T4 — concurrent-coordinator-race-closeout) --
-# Acquire the shared lock immediately before the git add→commit window.
-# This serialises concurrent orianna-sign.sh and plan-promote.sh invocations,
-# preventing cross-agent index races. Lockfile lives under .git/ (never tracked).
+# Acquire the shared lock before writing the signature to disk and before the
+# git add→commit window. This serialises concurrent orianna-sign.sh and
+# plan-promote.sh invocations, preventing cross-agent index races and ensuring
+# the signature write + commit is atomic relative to other coordinators.
+# Lockfile lives under .git/ (never tracked).
 # See: plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md T4
 if command -v coordinator_lock_acquire >/dev/null 2>&1; then
   coordinator_lock_acquire "$REPO_ROOT/.git/strawberry-promote.lock"
 else
   log_stderr "WARNING: coordinator_lock_acquire not available — running without coordinator lock (race risk)"
 fi
+
+mv "$TMP_PLAN" "$PLAN_PATH"
+log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
 
 # ---- Commit with Orianna's identity and required trailers ----------------
 # Shape B (T5): when pre-fix rewrites were applied in this invocation, combine
@@ -394,7 +396,7 @@ fi
 
 # Write COMMIT_EDITMSG before git commit so the pre-commit hook (which runs before
 # git prepares the message internally) can inspect the trailers.
-GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --git-dir)"
+GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --absolute-git-dir)"
 printf '%s\n' "$COMMIT_MSG" > "${GIT_DIR_PATH}/COMMIT_EDITMSG"
 
 # STAGED_SCOPE support (plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md):
