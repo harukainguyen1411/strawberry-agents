@@ -13,6 +13,7 @@ related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/approved/personal/2026-04-21-plan-prelint-shift-left.md
   - plans/approved/personal/2026-04-21-pre-orianna-plan-archive.md
+orianna_signature_approved: "sha256:55ad245a40b354349e92606cb66a9cafa180f3e3a6d83768050ca653d253ca23:2026-04-22T06:17:11Z"
 ---
 
 # Orianna gate speedups — mechanical fixes for signing latency and process failure modes
