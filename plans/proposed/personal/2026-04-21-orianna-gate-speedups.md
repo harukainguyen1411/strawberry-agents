@@ -1,5 +1,5 @@
 ---
-status: approved
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -10,10 +10,9 @@ tags: [orianna-gate, plan-lifecycle, scripts, hooks, latency]
 related:
   - feedback/2026-04-21-orianna-signing-latency.md
   - feedback/2026-04-21-orianna-signing-followups.md
-  - plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md
+  - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/approved/personal/2026-04-21-plan-prelint-shift-left.md
   - plans/approved/personal/2026-04-21-pre-orianna-plan-archive.md
-orianna_signature_approved: "sha256:550251d1004a0281a8b3539b97888c6cdba1c3d2b19426d7c633d220d6f2c999:2026-04-21T11:42:28Z"
 ---
 
 # Orianna gate speedups — mechanical fixes for signing latency and process failure modes
@@ -30,7 +29,7 @@ requires a full revert-to-proposed + re-sign round trip (~50 min).
 
 Pre-lint shift-left (`plans/approved/personal/2026-04-21-plan-prelint-shift-left.md`,
 PRs #12/#15) already ships Sona's option (b) and partial §D3 enforcement at
-commit-time. The pre-Orianna plan archive (`plans/proposed/personal/2026-04-21-pre-orianna-plan-archive.md`,
+commit-time. The pre-Orianna plan archive (`plans/approved/personal/2026-04-21-pre-orianna-plan-archive.md`,
 PR #14) decluttered grandfathered plans. Remaining gaps are all mechanical and
 are the scope of this plan.
 
@@ -206,7 +205,7 @@ beside their scripts).
 
 - `feedback/2026-04-21-orianna-signing-latency.md`
 - `feedback/2026-04-21-orianna-signing-followups.md`
-- `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md` §D1.2, §D7.3, §D9.4
+- `plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md` §D1.2, §D7.3, §D9.4
 - `plans/approved/personal/2026-04-21-plan-prelint-shift-left.md`
 - `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`,
   `scripts/orianna-hash-body.sh`, `scripts/plan-promote.sh`
