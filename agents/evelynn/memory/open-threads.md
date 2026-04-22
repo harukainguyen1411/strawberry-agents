@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-22 (pre-compact consolidation, shard f61a62e1).
+Last updated: 2026-04-23 (session close, shard 69f3fb3e).
 
 ---
 
@@ -140,11 +140,19 @@ Last updated: 2026-04-22 (pre-compact consolidation, shard f61a62e1).
 
 ---
 
-## Commit-msg hook for AI co-author trailer
+## Commit-msg hook for AI co-author trailer — RESOLVED
 
-**Current status (2026-04-22):** Plan at `plans/proposed/personal/2026-04-21-commit-msg-no-ai-coauthor-hook.md`. Orianna suppressors landed (`9627af1`, `3885b28`). Needs proposed→approved→in-progress chain (Ekko rate-limited).
-**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
-**Next:** Ekko retry post-rate-limit: `plan-promote.sh ... approved`, then `in_progress`, then Talon impl. Until hook lands: keep explicitly prohibiting co-author trailers in every Syndra delegation.
+**Current status (2026-04-23):** MERGED via PR #29 (`5138394`). Jayce xfail-first impl, 8/8 tests, Senna+Lucian APPROVE, self-merged. Plan promoted to `implemented/personal/` (`1ddf5c6`).
+**Shards:** 69f3fb3e.
+**Next:** None.
+
+---
+
+## Orianna v2 — simplification
+
+**Current status (2026-04-23):** Plan at `plans/proposed/personal/2026-04-22-orianna-gate-simplification.md` (title: "Orianna v2 — agent-gated plan promotions"). Karma drafted 7 tasks; Duong revised scope mid-flight: archive-don't-overwrite existing scripts/architecture docs rather than deleting them. Plan body still reflects delete-semantics; needs revision before execution. Talon dispatch paused by Duong.
+**Shards:** 69f3fb3e.
+**Next:** Revise plan body per archive-semantics (move old scripts under `scripts/_archive/v1-orianna-gate/`, old docs under `architecture/archive/`). Then dispatch Talon/Viktor to execute. 7 tasks, ~105 min estimate.
 
 ---
 
