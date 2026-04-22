@@ -9,6 +9,7 @@ created: 2026-04-22
 architecture_impact: none
 orianna_signature_approved: "sha256:b131ac20380ce60c121040e8d3ddf464070d934bcecfb35308c42349c5de0024:2026-04-22T13:40:39Z"
 orianna_signature_in_progress: "sha256:b131ac20380ce60c121040e8d3ddf464070d934bcecfb35308c42349c5de0024:2026-04-22T13:42:23Z"
+orianna_signature_implemented: "sha256:b131ac20380ce60c121040e8d3ddf464070d934bcecfb35308c42349c5de0024:2026-04-22T13:43:42Z"
 ---
 
 # Work-scope reviewer anonymity
