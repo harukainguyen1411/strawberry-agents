@@ -435,7 +435,19 @@ Files that will change (full list for Aphelios' breakdown):
 
 This plan targets `orianna_gate_version: 2` as authored. No prior signatures exist (new plan), so the standard Orianna fact-check + approval gate applies at each transition. No bypass anticipated.
 
-## Open questions (OQ)
+## Open questions (OQ) — Duong decisions 2026-04-22
+
+**DECIDED:**
+- OQ-1 → **no canary** (internal users, low traffic). Skip traffic-split entirely. Deploy new build code at 100% on first deploy. T.P1.14 simplifies from canary+24h-soak to deploy+smoke.
+- OQ-2 → `a` (sync write of buildId/projectId)
+- OQ-3 → **`b` full WSClient mock** (no nightly real). CI stays fast and hermetic; real WS drift accepted risk.
+- OQ-4 → `a` (defer orphan cleanup)
+- OQ-5 → `c` (one-shot GET on SSE close)
+- OQ-6 → `a` (env vars for URL hostnames)
+- OQ-7 → `b` (Lulu advises, Soraka implements)
+- Staging real-build → yes, 100% on first deploy (moot: no canary).
+
+## Open questions (original)
 
 - [ ] **OQ-1** — Canary split mechanics: should the 10 % canary be on S3 Cloud Run traffic-split by revision, or a second Cloud Run service (`demo-factory-canary`)?
   - a: same-service traffic-split (cleanest)
