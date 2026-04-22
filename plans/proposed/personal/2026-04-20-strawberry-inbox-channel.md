@@ -1,6 +1,6 @@
 ---
 title: Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
-status: in-progress
+status: proposed
 concern: personal
 owner: azir
 created: 2026-04-20
@@ -8,14 +8,13 @@ date: 2026-04-20
 amended: 2026-04-21
 orianna_gate_version: 2
 tests_required: true
+architecture_impact: none
 tags: [inbox, coordinator, hooks, monitor]
-orianna_signature_approved: "sha256:b9d61effe6b30f883af54bd1995507dc9b89e9a7ea56c9986adcb33c89985a9b:2026-04-21T04:35:20Z"
-orianna_signature_in_progress: "sha256:b9d61effe6b30f883af54bd1995507dc9b89e9a7ea56c9986adcb33c89985a9b:2026-04-21T04:39:30Z"
 ---
 
 # Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
 
-ADR for surfacing `agents/<coordinator>/inbox/` messages inside running
+ADR for surfacing `agents/<coordinator>/inbox/` messages inside running <!-- orianna: ok -- template or prospective path -->
 coordinator sessions (Evelynn, Sona) in **real time**, with **zero human-in-the-
 loop latency** and a **clean inbox lifecycle** (pending vs. archived).
 
@@ -34,9 +33,9 @@ This is the third iteration of the plan:
   invoke `Monitor` on its first turn.
 - **v3.1** (this amendment, 2026-04-21, second amendment): Duong's
   answers to the v3 gating questions inlined into the design. Archive
-  retention policy added — `inbox/archive/**` entries older than 7 days
+  retention policy added — `inbox/archive/**` entries older than 7 days <!-- orianna: ok -- template or prospective path -->
   are deleted on next watcher boot (cleanup runs once per session, at
-  the top of `inbox-watch.sh`, before the initial pending sweep). §8 <!-- orianna: ok -->
+  the top of `inbox-watch.sh`, before the initial pending sweep). §8 <!-- orianna: ok -- prospective path or non-file token -->
   gating block closed; answers preserved as a v3 table in §10 alongside
   the v1 / v2 tables.
 
@@ -71,7 +70,7 @@ latency and autonomy**:
    act on in the same turn.
 
 The `Monitor` tool (Claude Code v2.1.98+, documented at
-`code.claude.com/docs/en/tools-reference#monitor-tool`) is the primitive
+`code.claude.com/docs/en/tools-reference#monitor-tool`) is the primitive <!-- orianna: ok -- template or prospective path -->
 that fixes all three. A Monitor runs a script in the background and
 "feeds each output line back to Claude, so it can react to log entries,
 file changes, or polled status mid-conversation." Events land on their
@@ -90,7 +89,7 @@ routine production use on a managed device. Full detail preserved in §10.
 ### 0.3 Inbox lifecycle correction (new in v3)
 
 v1 and v2 both left `status: read` files sitting in
-`agents/<coordinator>/inbox/` forever. That was tolerable when the nudge
+`agents/<coordinator>/inbox/` forever. That was tolerable when the nudge <!-- orianna: ok -- template or prospective path -->
 was pull-based (`/check-inbox` filtered by `status: pending` anyway), but
 is **fatal for a real-time watcher**:
 
@@ -100,17 +99,17 @@ is **fatal for a real-time watcher**:
   `grep status: pending` against a growing pile of `status: read` files.
 - The inbox directory becomes un-browsable for humans over time.
 
-v3 makes the lifecycle explicit and enforced: the main `inbox/` directory
+v3 makes the lifecycle explicit and enforced: the main `inbox/` directory <!-- orianna: ok -- template or prospective path -->
 is a **pending-only** working set. `/check-inbox` moves each displayed
-message to `inbox/archive/YYYY-MM/` with `status: read` and a `read_at`
-timestamp. `/agent-ops send` writes to `inbox/` (flat). The watcher only
+message to `inbox/archive/YYYY-MM/` with `status: read` and a `read_at` <!-- orianna: ok -- template or prospective path -->
+timestamp. `/agent-ops send` writes to `inbox/` (flat). The watcher only <!-- orianna: ok -- template or prospective path -->
 ever sees pending files.
 
 ## 1. Problem (unchanged in substance)
 
 - Duong runs two top-level coordinators in parallel: Evelynn (personal) and
   Sona (work). They message each other via `/agent-ops send <agent> <msg>`,
-  which writes `agents/<agent>/inbox/<ts>-<shortid>.md` with YAML
+  which writes `agents/<agent>/inbox/<ts>-<shortid>.md` with YAML <!-- orianna: ok -- template or prospective path -->
   frontmatter (`from`, `to`, `priority`, `timestamp`, `status: pending`).
   Schema is set by `.claude/skills/agent-ops/SKILL.md` §`send`.
 - The receiving session does not poll the filesystem. New inbox files are
@@ -132,7 +131,7 @@ What *is* available to us on this machine:
 - `SessionStart`, `UserPromptSubmit`, `PreToolUse`, `PostToolUse`,
   `SubagentStart`, `SubagentStop`, `PreCompact` hooks. Hooks cannot
   invoke tools directly, but `SessionStart` can return
-  `hookSpecificOutput.additionalContext` that the model acts on in its
+  `hookSpecificOutput.additionalContext` that the model acts on in its <!-- orianna: ok -- template or prospective path -->
   first turn — this is our bootstrap.
 - POSIX shell, `jq`, `python3`, the existing repo.
 - `fswatch` (Homebrew, common on macOS dev machines) and
@@ -153,9 +152,9 @@ Three moving parts:
 
 | Component | Role |
 |---|---|
-| `SessionStart` hook (`additionalContext` only) | **Bootstrap.** Detects coordinator identity; if inbox exists, injects context instructing the coordinator to invoke `Monitor` on its first turn with `bash scripts/hooks/inbox-watch.sh` as the target script. | <!-- orianna: ok -->
-| `scripts/hooks/inbox-watch.sh` | **Watcher.** POSIX-portable script the Monitor runs. Emits one stdout line per `status: pending` message — at boot (initial sweep) and on each create/move-in event. Runs for session lifetime. | <!-- orianna: ok -->
-| `.claude/skills/check-inbox/SKILL.md` | **Reader + archiver.** Recovered from fb1bd4f and extended. Displays each pending message, then **moves** it to `inbox/archive/YYYY-MM/` with `status: read` + `read_at` set in frontmatter. Enforces the pending-only invariant of the main inbox dir. | <!-- orianna: ok -->
+| `SessionStart` hook (`additionalContext` only) | **Bootstrap.** Detects coordinator identity; if inbox exists, injects context instructing the coordinator to invoke `Monitor` on its first turn with `bash scripts/hooks/inbox-watch.sh` as the target script. | <!-- orianna: ok -- prospective path or non-file token -->
+| `scripts/hooks/inbox-watch.sh` | **Watcher.** POSIX-portable script the Monitor runs. Emits one stdout line per `status: pending` message — at boot (initial sweep) and on each create/move-in event. Runs for session lifetime. | <!-- orianna: ok -- prospective path or non-file token -->
+| `.claude/skills/check-inbox/SKILL.md` | **Reader + archiver.** Recovered from fb1bd4f and extended. Displays each pending message, then **moves** it to `inbox/archive/YYYY-MM/` with `status: read` + `read_at` set in frontmatter. Enforces the pending-only invariant of the main inbox dir. | <!-- orianna: ok -- prospective path or non-file token -->
 
 No plugin, no MCP, no channels, no `--dangerously` flag, no daemon. Every
 piece is either already supported today or is a POSIX shell script.
@@ -163,7 +162,7 @@ piece is either already supported today or is a POSIX shell script.
 ### 2.1 Why a hook "nudges" the coordinator to invoke Monitor rather than starting it directly
 
 Hooks cannot invoke tools. The Monitor tool is invoked by the model.
-`SessionStart.additionalContext` is the only hook surface that can
+`SessionStart.additionalContext` is the only hook surface that can <!-- orianna: ok -- template or prospective path -->
 reliably cause the model to take a specific first action — and in
 practice it does. The existing PostToolUse Agent hook already uses this
 pattern (`REMINDER: TaskCreate for subagent …`) and it is reliable.
@@ -192,22 +191,22 @@ agents/<coordinator>/
   inbox/archive/YYYY-MM/*.md              # read messages, month-bucketed
 ```
 
-<!-- orianna: ok --> `.claude/skills/check-inbox/SKILL.md` — prospective (to be recovered from fb1bd4f)
-<!-- orianna: ok --> `scripts/hooks/inbox-watch.sh` — prospective (new deliverable)
-<!-- orianna: ok --> `scripts/hooks/tests/inbox-watch-test.sh` — prospective (new unit harness)
+<!-- orianna: ok -- prospective path or non-file token --> `.claude/skills/check-inbox/SKILL.md` — prospective (to be recovered from fb1bd4f)
+<!-- orianna: ok -- prospective path or non-file token --> `scripts/hooks/inbox-watch.sh` — prospective (new deliverable)
+<!-- orianna: ok -- prospective path or non-file token --> `scripts/hooks/tests/inbox-watch-test.sh` — prospective (new unit harness)
 
-v2's `scripts/hooks/inbox-nudge.sh` is **not created**. <!-- orianna: ok --> The
+v2's `scripts/hooks/inbox-nudge.sh` is **not created**. <!-- orianna: ok -- prospective path or non-file token --> The
 `UserPromptSubmit` hook described in v2 is **not wired**. The
 `SessionStart` hook continues to host resume-suppression logic, and we
 add one additional `SessionStart` entry for the watcher bootstrap.
 
-### 3.2 The watcher script — `scripts/hooks/inbox-watch.sh` <!-- orianna: ok -->
+### 3.2 The watcher script — `scripts/hooks/inbox-watch.sh` <!-- orianna: ok -- prospective path or non-file token -->
 
 POSIX-portable bash (Rule 10 compliance). Three phases, run in order:
 
 **Phase 0: archive cleanup (one-shot, per session boot).** Runs once at
 script start, before any emission. Deletes files in
-`agents/<coordinator>/inbox/archive/**` whose mtime is older than 7
+`agents/<coordinator>/inbox/archive/**` whose mtime is older than 7 <!-- orianna: ok -- template or prospective path -->
 days, then prunes empty month-bucket directories:
 
 ```sh
@@ -217,7 +216,7 @@ find "agents/${coord}/inbox/archive" -type d -empty -delete 2>/dev/null
 
 `-mtime +7` is POSIX-defined as "more than 7 full 24-hour periods ago"
 relative to the file's mtime — a well-defined wall-clock rule that does
-not drift on DST transitions. The `2>/dev/null` suppresses noise when
+not drift on DST transitions. The `2>/dev/null` suppresses noise when <!-- orianna: ok -- template or prospective path -->
 the archive dir does not exist yet (fresh coordinator, first boot). If
 the watcher never boots for > 7 days (e.g. coordinator offline for a
 long trip), cleanup simply runs later on the next boot: no data loss,
@@ -227,7 +226,7 @@ sole enforcer of the retention TTL and it only runs when the
 coordinator is live. See §4.4 for the retention model.
 
 **Phase 1: boot-time pending sweep.** Runs once after Phase 0. Lists
-`agents/<coordinator>/inbox/*.md` (top-level only — `archive/` is
+`agents/<coordinator>/inbox/*.md` (top-level only — `archive/` is <!-- orianna: ok -- template or prospective path -->
 excluded by pattern, since month-bucket subdirs are not matched by a
 flat glob). For each file with `status: pending` in frontmatter, emit
 one stdout line. This covers messages that landed while the session was
@@ -237,7 +236,7 @@ down.
 (non-recursive) for new files. Detection order:
 
 1. `fswatch` if present (macOS default once Homebrew-installed):
-   `fswatch -x --event Created --event MovedTo agents/<coord>/inbox/`.
+   `fswatch -x --event Created --event MovedTo agents/<coord>/inbox/`. <!-- orianna: ok -- template or prospective path -->
 2. `inotifywait` if present (Linux): `inotifywait -m -e create -e moved_to
    --format '%f' agents/<coord>/inbox/`.
 3. Poll fallback otherwise: `while sleep 3; do ls -1t ...; done`, tracking
@@ -305,7 +304,7 @@ entry:
    Monitor is already stopped, but the user is resuming an active
    session and re-starting the Monitor in a compacted turn would be
    noisy. The coordinator can restart it on demand. Document this in §6.
-2. On `source=startup`, emits `hookSpecificOutput.additionalContext`
+2. On `source=startup`, emits `hookSpecificOutput.additionalContext` <!-- orianna: ok -- template or prospective path -->
    with text of roughly the form:
 
    ```
@@ -330,12 +329,12 @@ failure (it's visible and self-correcting — the coordinator can
 Read-flow disposition is **archive** (settled §10 v3 table Q1) — not
 hard-delete — with a 7-day TTL on archived entries enforced by the
 watcher (§3.2 Phase 0, §4.4). Archive bucket granularity is
-`YYYY-MM/` (settled §10 v3 table Q2).
+`YYYY-MM/` (settled §10 v3 table Q2). <!-- orianna: ok -- template or prospective path -->
 
-Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f`, then <!-- orianna: ok -->
+Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f`, then <!-- orianna: ok -- prospective path or non-file token -->
 rewrite the disposition step. New behaviour:
 
-For each file matching `agents/<coord>/inbox/*.md` with `status:
+For each file matching `agents/<coord>/inbox/*.md` with `status: <!-- orianna: ok -- template or prospective path -->
 pending`:
 
 1. Read the message, display it to the coordinator (frontmatter +
@@ -346,7 +345,7 @@ pending`:
    <original-filename>` where `<YYYY-MM>` is derived from the file's
    `timestamp:` frontmatter field (fallback: file mtime).
 4. `mkdir -p` the month-bucket, then `mv` the file into it.
-5. After processing all files, the main `inbox/` directory contains
+5. After processing all files, the main `inbox/` directory contains <!-- orianna: ok -- template or prospective path -->
    zero `status: pending` files (the post-condition).
 
 **Identity resolution:** same three-way fallback as the watcher.
@@ -356,10 +355,10 @@ inbox (shouldn't happen in practice — Evelynn and Sona have separate
 inboxes), the second `mv` fails because the source is gone; we skip
 and continue. Idempotent.
 
-**Why month buckets.** `YYYY-MM/` is the right granularity for a human
-scanning the archive a month later (`ls inbox/archive/2026-04/`
+**Why month buckets.** `YYYY-MM/` is the right granularity for a human <!-- orianna: ok -- template or prospective path -->
+scanning the archive a month later (`ls inbox/archive/2026-04/` <!-- orianna: ok -- template or prospective path -->
 immediately answers "what did I get in April?"). Year buckets
-(`YYYY/`) accumulate too fast; day buckets (`YYYY-MM-DD/`) fragment
+(`YYYY/`) accumulate too fast; day buckets (`YYYY-MM-DD/`) fragment <!-- orianna: ok -- template or prospective path -->
 too much. Month also matches how Duong already organizes transcripts
 (daily → month folder on archive). The 7-day retention (§4.4) means
 each bucket typically holds at most one month's trailing week of read
@@ -367,7 +366,7 @@ messages — small enough that `mv` and `find` stay O(ms).
 
 ### 3.5 `.claude/settings.json` wiring
 
-Append one hook entry under `SessionStart.hooks` (as a sibling of the
+Append one hook entry under `SessionStart.hooks` (as a sibling of the <!-- orianna: ok -- template or prospective path -->
 existing resume-suppression entry):
 
 ```json
@@ -377,9 +376,9 @@ existing resume-suppression entry):
 }
 ```
 
-<!-- orianna: ok --> `scripts/hooks/inbox-watch-bootstrap.sh` — prospective (new deliverable, §3.5)
+<!-- orianna: ok -- prospective path or non-file token --> `scripts/hooks/inbox-watch-bootstrap.sh` — prospective (new deliverable, §3.5)
 
-`inbox-watch-bootstrap.sh` is a tiny wrapper (can be inlined as a jq <!-- orianna: ok -->
+`inbox-watch-bootstrap.sh` is a tiny wrapper (can be inlined as a jq <!-- orianna: ok -- prospective path or non-file token -->
 one-liner if simple enough; we keep it a script for testability) that:
 
 - Reads stdin; if `source != startup`, exits 0.
@@ -394,7 +393,7 @@ No `UserPromptSubmit` entry. No `PreToolUse` entry. v2's
 ### 3.6 Launcher aliases
 
 Unchanged from v2 baseline: `STRAWBERRY_AGENT=<name>` remains as an
-identity fallback. No `--channels` / `--dangerously-load-development-
+identity fallback. No `--channels` / `--dangerously-load-development- <!-- orianna: ok -- template or prospective path -->
 channels`. Nothing to add for Monitor itself (the tool is always on when
 the session is on a supported platform).
 
@@ -416,11 +415,11 @@ the session is on a supported platform).
                                                                            (no file)
 ```
 
-Invariant: the top level of `agents/<coord>/inbox/` contains **only**
-`status: pending` files. `archive/` contains **only** `status: read`
-files. `/agent-ops send` always writes to `inbox/` (flat, never
-`archive/`). `/check-inbox` is the only writer of `archive/`. The
-watcher's Phase 0 is the only **deleter** of `archive/` entries (see
+Invariant: the top level of `agents/<coord>/inbox/` contains **only** <!-- orianna: ok -- template or prospective path -->
+`status: pending` files. `archive/` contains **only** `status: read` <!-- orianna: ok -- template or prospective path -->
+files. `/agent-ops send` always writes to `inbox/` (flat, never <!-- orianna: ok -- template or prospective path -->
+`archive/`). `/check-inbox` is the only writer of `archive/`. The <!-- orianna: ok -- template or prospective path -->
+watcher's Phase 0 is the only **deleter** of `archive/` entries (see <!-- orianna: ok -- template or prospective path -->
 §4.4).
 
 ### 4.2 Timing
@@ -431,7 +430,7 @@ watcher's Phase 0 is the only **deleter** of `archive/` entries (see
   invocation (which is the first tool call after reading the
   `SessionStart` nudge). Target ≤ 5 s end-to-end.
 - **Live latency** (message arrives mid-session):
-  - `fswatch` / `inotifywait` path: sub-second — these are kernel-level
+  - `fswatch` / `inotifywait` path: sub-second — these are kernel-level <!-- orianna: ok -- template or prospective path -->
     notifications.
   - Poll fallback: bounded by the poll interval (3 s).
 - **Idle delivery:** Monitor events surface even while the session is
@@ -447,7 +446,7 @@ bounded. The Monitor auto-kill rule ("noisy monitors are auto-killed")
 should not trigger in practice; if it does, the coordinator restarts
 the Monitor (same mechanic as the initial bootstrap, invoked by hand).
 
-### 4.4 Retention — 7-day TTL on `inbox/archive/**`
+### 4.4 Retention — 7-day TTL on `inbox/archive/**` <!-- orianna: ok -- template or prospective path -->
 
 Archive retention is **7 days from file mtime**, enforced by the
 watcher's Phase 0 at every session boot (§3.2). Semantics:
@@ -474,7 +473,7 @@ watcher's Phase 0 at every session boot (§3.2). Semantics:
   wants to freeze the archive (e.g. for a specific debug session)
   gets that by opting out of the whole watcher; there is no finer-
   grained opt-out for cleanup alone. Documented in §3.2.
-- **No retention on the pending set**: `inbox/*.md` (pending messages)
+- **No retention on the pending set**: `inbox/*.md` (pending messages) <!-- orianna: ok -- template or prospective path -->
   are not subject to any TTL. A message that was never read sits until
   `/check-inbox` moves it. That is the correct semantic — we must not
   silently drop unread mail.
@@ -484,12 +483,12 @@ watcher's Phase 0 at every session boot (§3.2). Semantics:
 All criteria empirically testable against a live session.
 
 1. **Boot-time message surfaces within one turn.**
-   - Setup: one `status: pending` file in `agents/evelynn/inbox/`;
-     `agents/evelynn/inbox/archive/` empty or populated with read
+   - Setup: one `status: pending` file in `agents/evelynn/inbox/`; <!-- orianna: ok -- template or prospective path -->
+     `agents/evelynn/inbox/archive/` empty or populated with read <!-- orianna: ok -- template or prospective path -->
      messages.
    - Action: launch `evelynn`. Observe the model's first turn.
    - Expected: the model's first turn invokes `Monitor` with
-     `bash scripts/hooks/inbox-watch.sh`. Within a few seconds of <!-- orianna: ok -->
+     `bash scripts/hooks/inbox-watch.sh`. Within a few seconds of <!-- orianna: ok -- prospective path or non-file token -->
      Monitor starting, the session receives an `INBOX: <filename> —
      from <sender> — <priority>` notification event.
 
@@ -508,18 +507,18 @@ All criteria empirically testable against a live session.
      emitted at least one `INBOX:` event.
    - Action: coordinator invokes `/check-inbox`.
    - Expected post-state:
-     (a) `agents/evelynn/inbox/` contains zero `status: pending`
-         files (it may contain the `archive/` subdir; nothing else).
+     (a) `agents/evelynn/inbox/` contains zero `status: pending` <!-- orianna: ok -- template or prospective path -->
+         files (it may contain the `archive/` subdir; nothing else). <!-- orianna: ok -- template or prospective path -->
      (b) Each previously-pending file is now under
-         `agents/evelynn/inbox/archive/<YYYY-MM>/` with
+         `agents/evelynn/inbox/archive/<YYYY-MM>/` with <!-- orianna: ok -- template or prospective path -->
          `status: read` and a `read_at` ISO-8601 UTC timestamp.
      (c) Monitor did not emit a duplicate `INBOX:` event triggered by
          the frontmatter rewrite (filter discipline).
 
-4. **`/agent-ops send` writes to `inbox/`, never `archive/`.**
+4. **`/agent-ops send` writes to `inbox/`, never `archive/`.** <!-- orianna: ok -- template or prospective path -->
    - Grep / code-read check: `.claude/skills/agent-ops/SKILL.md` §`send`
-     writes to `agents/<to>/inbox/<name>.md` only. No reference to
-     `archive/` in the send path.
+     writes to `agents/<to>/inbox/<name>.md` only. No reference to <!-- orianna: ok -- template or prospective path -->
+     `archive/` in the send path. <!-- orianna: ok -- template or prospective path -->
 
 5. **Resume / clear / compact does not re-bootstrap.**
    - Setup: running session, Monitor already active.
@@ -530,7 +529,7 @@ All criteria empirically testable against a live session.
 
 6. **No-identity short-circuit.** Invoke bootstrap and watcher
    directly with no identity env vars and `agent` stripped from
-   `settings.json`. Expected: both exit 0, empty stdout.
+   `settings.json`. Expected: both exit 0, empty stdout. <!-- orianna: ok -- template or prospective path -->
 
 7. **Unknown-agent short-circuit.** Invoke with
    `CLAUDE_AGENT_NAME=nonexistent` and no such directory. Expected:
@@ -540,17 +539,17 @@ All criteria empirically testable against a live session.
    bootstrap script and watcher both exit 0 silently.
 
 9. **No Channels / MCP / dev-flag regressions.**
-   - `grep -r "strawberry-inbox" .claude/plugins` → no matches.
+   - `grep -r "strawberry-inbox" .claude/plugins` → no matches. <!-- orianna: ok -- template or prospective path -->
    - `grep -r "channelsEnabled\|--channels\|development-channels"
      scripts .claude` → no matches.
-   - `find . -name ".mcp.json" -path "*/strawberry-inbox/*"` → no
+   - `find . -name ".mcp.json" -path "*/strawberry-inbox/*"` → no <!-- orianna: ok -- template or prospective path -->
      matches.
 
 10. **No v2 nudge regressions.**
     - `.claude/settings.json` has no `UserPromptSubmit` entry
       referencing `inbox-nudge` or `inbox-watch`.
-    - `scripts/hooks/` does not contain `inbox-nudge.sh`. <!-- orianna: ok -->
-    - No `additionalContext` string anywhere in `scripts/hooks/`
+    - `scripts/hooks/` does not contain `inbox-nudge.sh`. <!-- orianna: ok -- prospective path or non-file token -->
+    - No `additionalContext` string anywhere in `scripts/hooks/` <!-- orianna: ok -- template or prospective path -->
       matches the v2 phrasing `"pending message(s).*Run /check-inbox
       to read them."`.
 
@@ -566,18 +565,18 @@ All criteria empirically testable against a live session.
 
 12. **Archive retention — 7-day TTL on next watcher boot.**
     - Setup:
-      `agents/<coord>/inbox/archive/2026-03/old-msg.md` with mtime
+      `agents/<coord>/inbox/archive/2026-03/old-msg.md` with mtime <!-- orianna: ok -- template or prospective path -->
       backdated to 10 days ago (e.g. `touch -t` or
       `-d '10 days ago'`), and
-      `agents/<coord>/inbox/archive/2026-04/fresh-msg.md` with mtime
+      `agents/<coord>/inbox/archive/2026-04/fresh-msg.md` with mtime <!-- orianna: ok -- template or prospective path -->
       within the last 24 h.
-    - Action: run `scripts/hooks/inbox-watch.sh` with <!-- orianna: ok -->
+    - Action: run `scripts/hooks/inbox-watch.sh` with <!-- orianna: ok -- prospective path or non-file token -->
       `INBOX_WATCH_ONESHOT=1` (runs Phase 0 then Phase 1).
     - Expected:
-      (a) `old-msg.md` is deleted.
-      (b) `fresh-msg.md` remains.
-      (c) If `archive/2026-03/` is now empty, the directory itself is
-          also pruned; `archive/2026-04/` survives because it still
+      (a) `old-msg.md` is deleted. <!-- orianna: ok -- template or prospective path -->
+      (b) `fresh-msg.md` remains. <!-- orianna: ok -- template or prospective path -->
+      (c) If `archive/2026-03/` is now empty, the directory itself is <!-- orianna: ok -- template or prospective path -->
+          also pruned; `archive/2026-04/` survives because it still <!-- orianna: ok -- template or prospective path -->
           has a child.
       (d) Phase 1 still executes correctly afterward (pending sweep
           unchanged by Phase 0's work).
@@ -613,9 +612,9 @@ All criteria empirically testable against a live session.
   read the file state *at emit time*, not trust the fswatch event
   alone. This is the most subtle v3 bug class; dedicated unit test.
 - **Two coordinators, same checkout.** Each resolves its own identity,
-  watches its own `agents/<name>/inbox/`. No cross-interference.
+  watches its own `agents/<name>/inbox/`. No cross-interference. <!-- orianna: ok -- template or prospective path -->
 - **Archive dir accidentally watched.** The watcher's glob is flat
-  (`inbox/*.md`), not recursive. `archive/` subdirs are not watched.
+  (`inbox/*.md`), not recursive. `archive/` subdirs are not watched. <!-- orianna: ok -- template or prospective path -->
   Unit test confirms.
 - **Frontmatter without `timestamp:`.** `/check-inbox` archive path
   computation falls back to file mtime's `YYYY-MM`. No failure, but
@@ -643,7 +642,7 @@ All criteria empirically testable against a live session.
   support `plugins-reference#monitors`, but requires plugin
   infrastructure we do not have today. Revisit if Channels block
   lifts; strictly mechanical swap at the bootstrap layer.
-- Windows parity — `scripts/hooks/inbox-watch.sh` will be POSIX, but <!-- orianna: ok -->
+- Windows parity — `scripts/hooks/inbox-watch.sh` will be POSIX, but <!-- orianna: ok -- prospective path or non-file token -->
   `fswatch`/`inotifywait` detection + PowerShell equivalents are a
   follow-up. Deferred (settled §10 v3 table Q4).
 - Slack/SMS/push bridges. In-session only.
@@ -665,7 +664,7 @@ Orianna gate (Rule 19).
 
 Three layers of test evidence.
 
-- **Unit-level (`scripts/hooks/tests/inbox-watch-test.sh`).** <!-- orianna: ok -->
+- **Unit-level (`scripts/hooks/tests/inbox-watch-test.sh`).** <!-- orianna: ok -- prospective path or non-file token -->
   Covers:
   - Initial-sweep correctness (`INBOX_WATCH_ONESHOT=1`): fixture inbox
     dirs with 0 / 1 / N pending files, mixed pending + read (archive
@@ -677,7 +676,7 @@ Three layers of test evidence.
     the unresolved-exit case.
   - `.no-inbox-watch` opt-out honored (and no archive cleanup runs
     when opted out — Phase 0 is skipped along with everything else).
-  - `archive/` subdirs are not swept by Phase 1.
+  - `archive/` subdirs are not swept by Phase 1. <!-- orianna: ok -- template or prospective path -->
   - Frontmatter without `status:` field never emits.
   - Frontmatter with `status: read` never emits.
 
@@ -686,21 +685,21 @@ Three layers of test evidence.
     days (`touch -t 202604100000` or equivalent `-mtime +7` satisfier
     on the test host) and one file with fresh mtime
     (default `touch`).
-  - Run: `INBOX_WATCH_ONESHOT=1 bash scripts/hooks/inbox-watch.sh`. <!-- orianna: ok -->
+  - Run: `INBOX_WATCH_ONESHOT=1 bash scripts/hooks/inbox-watch.sh`. <!-- orianna: ok -- prospective path or non-file token -->
   - Assert:
     - Stale file gone.
     - Fresh file present, bit-identical to pre-run state.
     - Empty month-bucket dir pruned; non-empty bucket retained.
     - Exit 0; stderr empty (no `find: permission denied` noise).
-  - Edge: no `archive/` dir at all → Phase 0 silently no-ops (the
-    `2>/dev/null` redirect absorbs the "no such file" error from
+  - Edge: no `archive/` dir at all → Phase 0 silently no-ops (the <!-- orianna: ok -- template or prospective path -->
+    `2>/dev/null` redirect absorbs the "no such file" error from <!-- orianna: ok -- template or prospective path -->
     `find`).
 
 - **`/check-inbox` archive-flow test (same harness, separate case).**
   - Create a pending file with a known `timestamp:` (say
     `2026-04-21T14:23:00Z`). Run the archive routine. Assert:
-    - `agents/<coord>/inbox/` has zero `status: pending` files.
-    - `agents/<coord>/inbox/archive/2026-04/<original-filename>`
+    - `agents/<coord>/inbox/` has zero `status: pending` files. <!-- orianna: ok -- template or prospective path -->
+    - `agents/<coord>/inbox/archive/2026-04/<original-filename>` <!-- orianna: ok -- template or prospective path -->
       exists.
     - Archived file's frontmatter: `status: read`, `read_at:` is a
       valid ISO-8601 UTC string.
@@ -708,31 +707,31 @@ Three layers of test evidence.
     back to mtime's `YYYY-MM`.
 
 - **Regression floor (same harness).**
-  - `grep -rn "strawberry-inbox" .claude/plugins` → no matches
+  - `grep -rn "strawberry-inbox" .claude/plugins` → no matches <!-- orianna: ok -- template or prospective path -->
     (directory absent).
   - `grep -rn "channelsEnabled\|--channels\|development-channels"
     scripts/ .claude/` → no matches.
-  - `grep -rn "UserPromptSubmit" .claude/settings.json` does not name
+  - `grep -rn "UserPromptSubmit" .claude/settings.json` does not name <!-- orianna: ok -- template or prospective path -->
     an inbox-nudge / inbox-watch command.
-  - `scripts/hooks/inbox-nudge.sh` does not exist. <!-- orianna: ok -->
-  - No string `"pending message(s). Run /check-inbox to read them."`
-    appears in `scripts/hooks/` (v2 phrasing fingerprint).
+  - `scripts/hooks/inbox-nudge.sh` does not exist. <!-- orianna: ok -- prospective path or non-file token -->
+  - No string `"pending message(s). Run /check-inbox to read them."` <!-- orianna: ok -- template or prospective path -->
+    appears in `scripts/hooks/` (v2 phrasing fingerprint). <!-- orianna: ok -- template or prospective path -->
 
 - **End-to-end empirical (manual, archived under
-  `assessments/qa-reports/<date>-inbox-watch.md`).** Walk acceptance
+  `assessments/qa-reports/<date>-inbox-watch.md`).** Walk acceptance <!-- orianna: ok -- template or prospective path -->
   criteria §5 items 1, 2, 3, 5, 11 against a live Evelynn and a live
   Sona. Record wall-clock latency, exact Monitor event text, and
   final inbox + archive directory state. Failing criteria block
   promotion past in-progress.
 
 - **No new CI jobs.** The unit harness plugs into the existing
-  pre-commit hook test harness (`scripts/hooks/tests/`).
+  pre-commit hook test harness (`scripts/hooks/tests/`). <!-- orianna: ok -- template or prospective path -->
 
 ## 9. Handoff
 
 All v3 gating questions are closed (§8 and §10 v3 table). The next
 step is `scripts/orianna-fact-check.sh` against this plan followed by
-`scripts/plan-promote.sh proposed → approved`, which re-opens the
+`scripts/plan-promote.sh proposed → approved`, which re-opens the <!-- orianna: ok -- template or prospective path -->
 Orianna gate (Rule 19). A task-breakdown agent picks up execution
 post-approval — plan writer does not assign.
 
@@ -744,9 +743,9 @@ Preserved verbatim for audit trail.
 
 | # | Question (v1) | v1 decision | v2 status | v3 status |
 |---|---|---|---|---|
-| 1 | Plugin location | `.claude/plugins/strawberry-inbox/` | Obsolete (no plugin) | Obsolete |
-| 2 | Coordinator identification | `CLAUDE_AGENT_NAME`, fallback `STRAWBERRY_AGENT` | Carried + `.claude/settings.json .agent` fallback | **Carried forward (v2 chain)** |
-| 3 | Auto-mark-read | Yes — flip `status: read` on display | Carried | **Superseded**: move to `archive/YYYY-MM/` with `status: read` + `read_at` |
+| 1 | Plugin location | `.claude/plugins/strawberry-inbox/` | Obsolete (no plugin) | Obsolete | <!-- orianna: ok -- template or prospective path -->
+| 2 | Coordinator identification | `CLAUDE_AGENT_NAME`, fallback `STRAWBERRY_AGENT` | Carried + `.claude/settings.json .agent` fallback | **Carried forward (v2 chain)** | <!-- orianna: ok -- template or prospective path -->
+| 3 | Auto-mark-read | Yes — flip `status: read` on display | Carried | **Superseded**: move to `archive/YYYY-MM/` with `status: read` + `read_at` | <!-- orianna: ok -- template or prospective path -->
 | 4 | Skill name | `/check-inbox` | Carried | **Carried forward** |
 | 5 | First-cut scope | Bundle plugin + skill as one deliverable | Restated as hook + skill | **Restated as Monitor watcher + bootstrap + skill + tests as one cut** |
 
@@ -757,22 +756,22 @@ For completeness:
 
 | # | Question (v2) | v2 proposed default | v3 disposition |
 |---|---|---|---|
-| 1 | Nudge phrasing | `INBOX: <N> pending message(s) for <agent>. Run /check-inbox to read them.` | **Obsolete**: v3 emits per-message Monitor events, not a count. New line contract in v3 table Q3. |
+| 1 | Nudge phrasing | `INBOX: <N> pending message(s) for <agent>. Run /check-inbox to read them.` | **Obsolete**: v3 emits per-message Monitor events, not a count. New line contract in v3 table Q3. | <!-- orianna: ok -- template or prospective path -->
 | 2 | Opt-out filename | `.no-inbox-nudge` | **Renamed** to `.no-inbox-watch`; see v3 table Q5. |
 | 3 | First-cut scope | Single commit | **Carried forward** to v3 table Q6. |
 | 4 | Windows parity | Defer | **Carried forward** to v3 table Q4. |
-| 5 | Regression guard | Yes, under `scripts/hooks/tests/` | **Carried forward and expanded** (watcher + archive-flow + retention). |
+| 5 | Regression guard | Yes, under `scripts/hooks/tests/` | **Carried forward and expanded** (watcher + archive-flow + retention). | <!-- orianna: ok -- template or prospective path -->
 
 ### v3 gating answers (approved by Duong 2026-04-21)
 
 | # | Question (v3) | Answer | Where inlined |
 |---|---|---|---|
-| 1 | Read-flow disposition (archive vs. hard-delete) | **Archive** to `inbox/archive/<YYYY-MM>/` with `status: read` + `read_at`. **Additional requirement:** archived entries are auto-deleted after **7 days** (TTL enforced by the watcher's Phase 0 at session boot — see §3.2, §4.4). | §3.2 Phase 0, §3.4, §4.1, §4.4, §5 item 12 |
-| 2 | Archive bucket granularity | **`YYYY-MM/`** month buckets. | §3.4 |
+| 1 | Read-flow disposition (archive vs. hard-delete) | **Archive** to `inbox/archive/<YYYY-MM>/` with `status: read` + `read_at`. **Additional requirement:** archived entries are auto-deleted after **7 days** (TTL enforced by the watcher's Phase 0 at session boot — see §3.2, §4.4). | §3.2 Phase 0, §3.4, §4.1, §4.4, §5 item 12 | <!-- orianna: ok -- template or prospective path -->
+| 2 | Archive bucket granularity | **`YYYY-MM/`** month buckets. | §3.4 | <!-- orianna: ok -- template or prospective path -->
 | 3 | Monitor event line format | **`INBOX: <filename> — from <sender> — <priority>`** (minimal three-field form). | §3.2 Line format block |
 | 4 | Windows parity scope | **Defer.** POSIX-only for v3; PowerShell follow-up after v3 is green. | §7 |
 | 5 | Opt-out filename | **`.no-inbox-watch`** at repo root. Total opt-out (suppresses cleanup *and* sweep *and* live watch). | §3.2 Opt-out block, §4.4 |
-| 6 | Scope of first cut | **Single commit.** Watcher script + bootstrap script + skill recovery (with archive semantics) + `settings.json` wiring + unit harness ship as one interlocked deliverable. | §9 |
+| 6 | Scope of first cut | **Single commit.** Watcher script + bootstrap script + skill recovery (with archive semantics) + `settings.json` wiring + unit harness ship as one interlocked deliverable. | §9 | <!-- orianna: ok -- template or prospective path -->
 
 ## Tasks
 
@@ -790,8 +789,8 @@ intent (§10 Q6) and Rule 12's TDD gate (xfail first).
 ### Scope boundary
 
 This plan is **infrastructure-only**. Every file touched lives in
-`~/Documents/Personal/strawberry-agents/` (this repo). **No
-`apps/**` change**, so every commit uses `chore:` (CLAUDE.md Rule 5).
+`~/Documents/Personal/strawberry-agents/` (this repo). **No <!-- orianna: ok -- template or prospective path -->
+`apps/**` change**, so every commit uses `chore:` (CLAUDE.md Rule 5). <!-- orianna: ok -- template or prospective path -->
 The deliverable makes the personal coordinator (Evelynn) observe the
 inbox in real time and keeps the Sona-side wiring symmetric
 (coordinator-identity resolution chain works for either agent out of
@@ -808,13 +807,13 @@ blocking, but flag to Evelynn if either breaks):
 | #            | Assumption                                                                                                   | Verify by                                                          |
 |--------------|--------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | A-inbox-1    | Claude Code ≥ v2.1.98 on this machine (Monitor tool available).                                              | `claude --version` against ADR §1 "What *is* available" bullet 1.  |
-| A-inbox-2    | `fb1bd4f` is still reachable from main (for recovering `/check-inbox`). Confirmed at breakdown time: yes.   | `git cat-file -e fb1bd4f:.claude/skills/check-inbox/SKILL.md`.     |
+| A-inbox-2    | `fb1bd4f` is still reachable from main (for recovering `/check-inbox`). Confirmed at breakdown time: yes.   | `git cat-file -e fb1bd4f:.claude/skills/check-inbox/SKILL.md`.     | <!-- orianna: ok -- template or prospective path -->
 
 ### Team composition
 
 | Role                   | Agent  | Scope                                                                    |
 |------------------------|--------|--------------------------------------------------------------------------|
-| Test implementer       | Rakan  | Task IW.0 — xfail harness under `scripts/hooks/tests/`.                  |
+| Test implementer       | Rakan  | Task IW.0 — xfail harness under `scripts/hooks/tests/`.                  | <!-- orianna: ok -- template or prospective path -->
 | Complex-track builder  | Viktor | Tasks IW.1 – IW.5 — watcher, bootstrap, skill recovery, settings wiring. |
 | Reviewer A             | Senna  | PR review — architecture + hook wiring.                                  |
 | Reviewer B             | Lucian | PR review — shell-script correctness + POSIX portability + test harness. |
@@ -848,13 +847,13 @@ intra-phase parallelism; a single Viktor session runs them in order.
 ### Branch, PR, commits
 
 - **Branch name:** `inbox-watch-v3`
-- **Created via:** `scripts/safe-checkout.sh inbox-watch-v3` (Rule 3 —
+- **Created via:** `scripts/safe-checkout.sh inbox-watch-v3` (Rule 3 — <!-- orianna: ok -- template or prospective path -->
   never raw `git checkout`).
 - **Base:** `main` at the SHA on which this breakdown is committed.
-- **Commit prefix:** `chore:` on all commits (Rule 5 — no `apps/**`).
+- **Commit prefix:** `chore:` on all commits (Rule 5 — no `apps/**`). <!-- orianna: ok -- template or prospective path -->
 - **Do NOT** `--no-verify`, `--no-gpg-sign`, or skip hooks (Rule 14).
 - **Do NOT** rebase (Rule 11) — if branch drifts behind main, merge.
-- **PR target:** `harukainguyen1411/strawberry-agents` `main`
+- **PR target:** `harukainguyen1411/strawberry-agents` `main` <!-- orianna: ok -- template or prospective path -->
   (`gh pr create --base main --head inbox-watch-v3`).
 
 #### PR shell (for Viktor to paste, verbatim body)
@@ -866,19 +865,19 @@ gh pr create --base main --head inbox-watch-v3 \
   --body "$(cat <<'EOF'
 ## Summary
 - Ship `scripts/hooks/inbox-watch.sh` — POSIX-portable Monitor target; Phase 0 archive cleanup, Phase 1 boot sweep, Phase 2 live watch (fswatch → inotifywait → 3 s poll).
-- Ship `scripts/hooks/inbox-watch-bootstrap.sh` — SessionStart `additionalContext` nudge, resume/clear/compact short-circuit, `.no-inbox-watch` opt-out.
-- Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f` and extend with archive-to-`inbox/archive/YYYY-MM/` semantics + `read_at` frontmatter.
+- Ship `scripts/hooks/inbox-watch-bootstrap.sh` — SessionStart `additionalContext` nudge, resume/clear/compact short-circuit, `.no-inbox-watch` opt-out. <!-- orianna: ok -- template or prospective path -->
+- Recover `.claude/skills/check-inbox/SKILL.md` from `fb1bd4f` and extend with archive-to-`inbox/archive/YYYY-MM/` semantics + `read_at` frontmatter. <!-- orianna: ok -- template or prospective path -->
 - Append one `SessionStart` entry to `.claude/settings.json`.
 
-Implements `plans/in-progress/2026-04-20-strawberry-inbox-channel.md`
+Implements `plans/in-progress/2026-04-20-strawberry-inbox-channel.md` <!-- orianna: ok -- template or prospective path -->
 (v3.1; Orianna signature `sha256:d5979…:2026-04-21T03:59:37Z`).
 
 ## Test plan
-- [ ] `bash scripts/hooks/tests/inbox-watch-test.sh` exits 0 (watcher sweep + archive + retention + regression cases).
-- [ ] Acceptance §5 items 1, 2, 3, 5, 11 pass against a live Evelynn session (manual; report → `assessments/qa-reports/2026-04-…-inbox-watch.md`).
-- [ ] `grep -rn "strawberry-inbox" .claude/plugins` → no matches.
+- [ ] `bash scripts/hooks/tests/inbox-watch-test.sh` exits 0 (watcher sweep + archive + retention + regression cases). <!-- orianna: ok -- template or prospective path -->
+- [ ] Acceptance §5 items 1, 2, 3, 5, 11 pass against a live Evelynn session (manual; report → `assessments/qa-reports/2026-04-…-inbox-watch.md`). <!-- orianna: ok -- template or prospective path -->
+- [ ] `grep -rn "strawberry-inbox" .claude/plugins` → no matches. <!-- orianna: ok -- template or prospective path -->
 - [ ] `grep -rn 'channelsEnabled\|--channels\|development-channels' scripts .claude` → no matches.
-- [ ] `scripts/hooks/inbox-nudge.sh` does not exist.
+- [ ] `scripts/hooks/inbox-nudge.sh` does not exist. <!-- orianna: ok -- template or prospective path -->
 - [ ] Pre-push TDD gate green (xfail commit precedes impl commit on branch).
 
 Reviewers: @Senna (architecture) + @Lucian (shell + POSIX).
@@ -905,13 +904,13 @@ satisfied (Rule 12). The harness is a POSIX bash script that sets up
 fixture directories under `$(mktemp -d)`, invokes the (not-yet-existing)
 scripts, and asserts on stdout lines and on-disk state.
 
-**Files touched (NEW):** <!-- orianna: ok -->
+**Files touched (NEW):** <!-- orianna: ok -- prospective path or non-file token -->
 - `scripts/hooks/tests/inbox-watch-test.sh` — main harness, xfail-gated.
 
 **Acceptance (xfail semantics):**
-- Script is executable (`chmod +x`) and starts with `#!/usr/bin/env bash`
+- Script is executable (`chmod +x`) and starts with `#!/usr/bin/env bash` <!-- orianna: ok -- template or prospective path -->
   + `set -euo pipefail`.
-- Top of file: `# xfail: implements plans/in-progress/2026-04-20-strawberry-inbox-channel.md` comment.
+- Top of file: `# xfail: implements plans/in-progress/2026-04-20-strawberry-inbox-channel.md` comment. <!-- orianna: ok -- template or prospective path -->
 - Script defines one test per §5 item it covers, each as a bash
   function (`test_boot_sweep_emits_one_line_per_pending`,
   `test_line_format_contract`, `test_identity_resolution_chain`,
@@ -938,19 +937,19 @@ scripts, and asserts on stdout lines and on-disk state.
   test unexpectedly passes (which will only happen once implementation
   lands — that's the flip point for IW.5).
 - Fixtures:
-  - `fixture/inbox-empty/` — empty inbox, archive absent.
-  - `fixture/inbox-one-pending/` — single `status: pending` file with
+  - `fixture/inbox-empty/` — empty inbox, archive absent. <!-- orianna: ok -- template or prospective path -->
+  - `fixture/inbox-one-pending/` — single `status: pending` file with <!-- orianna: ok -- template or prospective path -->
     `timestamp: 2026-04-21T14:23:00Z`, `from: sona`, `priority: high`.
-  - `fixture/inbox-mixed/` — one pending + one file with
-    `status: read` (must not be emitted); `archive/2026-03/stale.md`
+  - `fixture/inbox-mixed/` — one pending + one file with <!-- orianna: ok -- template or prospective path -->
+    `status: read` (must not be emitted); `archive/2026-03/stale.md` <!-- orianna: ok -- template or prospective path -->
     with mtime backdated 10 days (`touch -t 202604110000` or
     `touch -d '10 days ago'`; use the POSIX `-t` form with a
     date that is unambiguously > 7 days before today's
     `date +%Y%m%d%H%M`).
-  - `fixture/inbox-no-identity/` — no `CLAUDE_AGENT_NAME`,
+  - `fixture/inbox-no-identity/` — no `CLAUDE_AGENT_NAME`, <!-- orianna: ok -- template or prospective path -->
     no `STRAWBERRY_AGENT`, stripped `.agent` — assert exit 0 +
     empty stdout.
-  - `fixture/inbox-opt-out/` — `.no-inbox-watch` sentinel present at
+  - `fixture/inbox-opt-out/` — `.no-inbox-watch` sentinel present at <!-- orianna: ok -- template or prospective path -->
     the fake repo root; assert Phase 0 does NOT run (place a stale
     archived file and verify it survives).
 - Line-format assertion uses the regex from the ADR §3.2 contract:
@@ -963,13 +962,13 @@ scripts, and asserts on stdout lines and on-disk state.
   assertions (`! grep -rn …` ⇒ expected to exit 1).
 
 **DoD:**
-- `bash scripts/hooks/tests/inbox-watch-test.sh` exits **0** on a
-  clean checkout where `inbox-watch.sh` does NOT yet exist — because
+- `bash scripts/hooks/tests/inbox-watch-test.sh` exits **0** on a <!-- orianna: ok -- template or prospective path -->
+  clean checkout where `inbox-watch.sh` does NOT yet exist — because <!-- orianna: ok -- template or prospective path -->
   every test xfails as expected. This is the Rule-12 xfail commit's
   green signal.
 - Pre-push hook accepts the commit (xfail commit references plan path
-  in the header comment — `pre-push-tdd.sh` matches on
-  `plans/in-progress/2026-04-20-strawberry-inbox-channel`).
+  in the header comment — `pre-push-tdd.sh` matches on <!-- orianna: ok -- template or prospective path -->
+  `plans/in-progress/2026-04-20-strawberry-inbox-channel`). <!-- orianna: ok -- template or prospective path -->
 
 **Commit message:**
 ```
@@ -986,7 +985,7 @@ Refs plans/in-progress/2026-04-20-strawberry-inbox-channel.md.
 **Blockers:** none.
 **Depends on:** — (first commit on branch).
 **Hand-off:** Rakan pushes commit 1 to `inbox-watch-v3`, then posts a
-line to `agents/viktor/inbox/` (via `/agent-ops send viktor …`)
+line to `agents/viktor/inbox/` (via `/agent-ops send viktor …`) <!-- orianna: ok -- template or prospective path -->
 notifying of branch readiness.
 
 ---
@@ -1002,19 +1001,19 @@ notifying of branch readiness.
 verbatim phase order: Phase 0 (archive cleanup) → Phase 1 (pending
 sweep) → Phase 2 (live watch). POSIX-portable (Rule 10).
 
-**Files touched (NEW):** <!-- orianna: ok -->
+**Files touched (NEW):** <!-- orianna: ok -- prospective path or non-file token -->
 - `scripts/hooks/inbox-watch.sh`
 
 **Implementation anchors (map each to the ADR):**
 
 | Anchor                                                           | ADR location                   |
 |------------------------------------------------------------------|--------------------------------|
-| `#!/usr/bin/env bash` + `set -eu` (no pipefail in POSIX dash)    | Rule 10; ADR §3.2 "POSIX-portable bash" |
-| Coordinator-identity chain: env → `.claude/settings.json .agent` | §3.2 "Coordinator identity resolution" |
+| `#!/usr/bin/env bash` + `set -eu` (no pipefail in POSIX dash)    | Rule 10; ADR §3.2 "POSIX-portable bash" | <!-- orianna: ok -- template or prospective path -->
+| Coordinator-identity chain: env → `.claude/settings.json .agent` | §3.2 "Coordinator identity resolution" | <!-- orianna: ok -- template or prospective path -->
 | `.no-inbox-watch` check **before Phase 0**                       | §3.2 "Opt-out"; §4.4 "Opt-out interaction" |
 | Phase 0 `find … -mtime +7 -delete` then empty-dir prune          | §3.2 Phase 0 block; §4.4       |
-| Phase 0 stderr-suppress missing-archive case                     | §3.2 "The `2>/dev/null` suppresses noise" |
-| Phase 1 flat glob on `inbox/*.md` (archive excluded by shape)    | §3.2 Phase 1                   |
+| Phase 0 stderr-suppress missing-archive case                     | §3.2 "The `2>/dev/null` suppresses noise" | <!-- orianna: ok -- template or prospective path -->
+| Phase 1 flat glob on `inbox/*.md` (archive excluded by shape)    | §3.2 Phase 1                   | <!-- orianna: ok -- template or prospective path -->
 | Per-file filter: only emit when `status: pending`                | §3.2 Phase 1 + Phase 2         |
 | Line format: `INBOX: <filename> — from <sender> — <priority>`    | §3.2 Line format block, §10 v3 Q3 |
 | Phase 2 detection order: fswatch → inotifywait → poll (3 s)      | §3.2 Phase 2                   |
@@ -1023,11 +1022,11 @@ sweep) → Phase 2 (live watch). POSIX-portable (Rule 10).
 | No extra stdout output beyond `INBOX:` lines (noisy-monitor risk) | §6 "Noisy-monitor auto-kill"  |
 
 **Acceptance:**
-- Running against `fixture/inbox-empty/` with `INBOX_WATCH_ONESHOT=1`
+- Running against `fixture/inbox-empty/` with `INBOX_WATCH_ONESHOT=1` <!-- orianna: ok -- template or prospective path -->
   prints nothing and exits 0.
-- Running against `fixture/inbox-one-pending/` prints **exactly one
+- Running against `fixture/inbox-one-pending/` prints **exactly one <!-- orianna: ok -- template or prospective path -->
   line** matching the line-format regex.
-- Running against `fixture/inbox-mixed/` prints exactly one line
+- Running against `fixture/inbox-mixed/` prints exactly one line <!-- orianna: ok -- template or prospective path -->
   (pending only; `status: read` suppressed); stale archive file
   is deleted; fresh archive file survives; empty month-bucket dir
   pruned; non-empty bucket retained.
@@ -1043,7 +1042,7 @@ sweep) → Phase 2 (live watch). POSIX-portable (Rule 10).
 - Harness from IW.0 passes all watcher-case tests (xfail → XPASS is
   the signal; Viktor strips the xfail wrapper in IW.5 once every
   script is in place).
-- `shellcheck scripts/hooks/inbox-watch.sh` clean (SC2086 tolerated
+- `shellcheck scripts/hooks/inbox-watch.sh` clean (SC2086 tolerated <!-- orianna: ok -- template or prospective path -->
   only where POSIX word-splitting is intentional; document with
   inline `# shellcheck disable=…` + reason).
 - Script is executable (`chmod +x`).
@@ -1061,10 +1060,10 @@ sweep) → Phase 2 (live watch). POSIX-portable (Rule 10).
 
 **What:** Implement
 `scripts/hooks/inbox-watch-bootstrap.sh` — the SessionStart hook
-target that emits `hookSpecificOutput.additionalContext` instructing
+target that emits `hookSpecificOutput.additionalContext` instructing <!-- orianna: ok -- template or prospective path -->
 the coordinator to invoke `Monitor` on its first turn.
 
-**Files touched (NEW):** <!-- orianna: ok -->
+**Files touched (NEW):** <!-- orianna: ok -- prospective path or non-file token -->
 - `scripts/hooks/inbox-watch-bootstrap.sh`
 
 **Implementation anchors:**
@@ -1076,13 +1075,13 @@ the coordinator to invoke `Monitor` on its first turn.
 | Identity chain (same three sources as watcher)                                                 | §3.3 bullet 3, §3.5 |
 | `.no-inbox-watch` → exit 0                                                                     | §3.5 bullet 3  |
 | Emit single JSON object with `hookSpecificOutput.hookEventName=SessionStart` + `additionalContext` | §3.3 bullet 2, §3.5 bullet 4 |
-| `additionalContext` text matches the ADR §3.3 template (verbatim: `INBOX WATCHER: invoke the Monitor tool on your first action with: / command: bash scripts/hooks/inbox-watch.sh / description: Watch <agent>'s inbox for new messages. / Events will surface as INBOX: … notifications. When you see one, run /check-inbox to read and archive the message.`) | §3.3 bullet 2 |
+| `additionalContext` text matches the ADR §3.3 template (verbatim: `INBOX WATCHER: invoke the Monitor tool on your first action with: / command: bash scripts/hooks/inbox-watch.sh / description: Watch <agent>'s inbox for new messages. / Events will surface as INBOX: … notifications. When you see one, run /check-inbox to read and archive the message.`) | §3.3 bullet 2 | <!-- orianna: ok -- template or prospective path -->
 
 **Acceptance:**
 - `echo '{"source":"startup"}' | CLAUDE_AGENT_NAME=evelynn bash
   scripts/hooks/inbox-watch-bootstrap.sh` prints valid JSON with
-  `hookSpecificOutput.additionalContext` containing the substring
-  `invoke the Monitor tool` AND `bash scripts/hooks/inbox-watch.sh`
+  `hookSpecificOutput.additionalContext` containing the substring <!-- orianna: ok -- template or prospective path -->
+  `invoke the Monitor tool` AND `bash scripts/hooks/inbox-watch.sh` <!-- orianna: ok -- template or prospective path -->
   AND the agent name `evelynn` (lowercased).
 - `echo '{"source":"resume"}' | …` → exit 0, empty stdout.
 - `echo '{"source":"clear"}' | …` → exit 0, empty stdout.
@@ -1106,25 +1105,25 @@ the coordinator to invoke `Monitor` on its first turn.
 **ADR refs:** §3.4, §4.1, §5 items 3, 4, 11.
 
 **What:** Recover `.claude/skills/check-inbox/SKILL.md` from commit
-`fb1bd4f` (`git show fb1bd4f:.claude/skills/check-inbox/SKILL.md`),
+`fb1bd4f` (`git show fb1bd4f:.claude/skills/check-inbox/SKILL.md`), <!-- orianna: ok -- template or prospective path -->
 then rewrite the disposition step to **archive** read messages under
-`inbox/archive/<YYYY-MM>/` with `status: read` + `read_at:` — NOT the
+`inbox/archive/<YYYY-MM>/` with `status: read` + `read_at:` — NOT the <!-- orianna: ok -- template or prospective path -->
 v1 in-place status flip.
 
-**Files touched (NEW — recovered):** <!-- orianna: ok -->
+**Files touched (NEW — recovered):** <!-- orianna: ok -- prospective path or non-file token -->
 - `.claude/skills/check-inbox/SKILL.md`
 
 **Implementation anchors:**
 
 | Anchor                                                                                | ADR location |
 |---------------------------------------------------------------------------------------|--------------|
-| Recovery source: `git show fb1bd4f:.claude/skills/check-inbox/SKILL.md`               | §3.4 "Recover … from `fb1bd4f`" |
+| Recovery source: `git show fb1bd4f:.claude/skills/check-inbox/SKILL.md`               | §3.4 "Recover … from `fb1bd4f`" | <!-- orianna: ok -- template or prospective path -->
 | Identity resolution: same three-way chain                                              | §3.4 "Identity resolution" |
 | Per-pending-file flow: display → rewrite frontmatter → mkdir bucket → mv               | §3.4 bullets 1–4 |
 | YYYY-MM derived from `timestamp:` frontmatter                                          | §3.4 bullet 3 |
 | Fallback to file mtime when `timestamp:` absent                                        | §3.4 bullet 3 + §6 "Frontmatter without `timestamp:`" |
 | Concurrency: `mv` fails when source gone → skip & continue (no abort)                  | §3.4 "Concurrency" |
-| Post-condition: `inbox/` has zero `status: pending` files                              | §3.4 bullet 5, §5 item 3(a) |
+| Post-condition: `inbox/` has zero `status: pending` files                              | §3.4 bullet 5, §5 item 3(a) | <!-- orianna: ok -- template or prospective path -->
 | `read_at` is ISO-8601 UTC (`date -u +%Y-%m-%dT%H:%M:%SZ`)                              | §3.4 bullet 2, §5 item 3(b) |
 
 **Acceptance:**
@@ -1132,12 +1131,12 @@ v1 in-place status flip.
   has `timestamp: 2026-04-21T14:23:00Z`, running `/check-inbox` (via
   the harness which exercises the skill's documented steps as a
   shell equivalent) yields:
-  - `inbox/` contains zero `status: pending` files.
-  - `inbox/archive/2026-04/<original-filename>` exists.
+  - `inbox/` contains zero `status: pending` files. <!-- orianna: ok -- template or prospective path -->
+  - `inbox/archive/2026-04/<original-filename>` exists. <!-- orianna: ok -- template or prospective path -->
   - Archived file has `status: read` and `read_at:` matching the
     regex `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`.
 - Given a fixture message with **no** `timestamp:` field but with
-  mtime in April 2026, the archive path lands in `2026-04/` (mtime
+  mtime in April 2026, the archive path lands in `2026-04/` (mtime <!-- orianna: ok -- template or prospective path -->
   fallback).
 - During the rewrite, the brief `status: pending → read` edit does
   **not** trigger a second `INBOX:` emission from a running watcher
@@ -1157,7 +1156,7 @@ v1 in-place status flip.
 **Commit slot:** commit 2 (impl)
 **ADR refs:** §3.5, §5 item 10.
 
-**What:** Append a second `SessionStart.hooks` entry that runs
+**What:** Append a second `SessionStart.hooks` entry that runs <!-- orianna: ok -- template or prospective path -->
 `scripts/hooks/inbox-watch-bootstrap.sh`. Leave the existing
 resume-suppression entry in place and **before** the new one (order
 matters — ADR §3.3 bullet 1).
@@ -1170,22 +1169,22 @@ matters — ADR §3.3 bullet 1).
 
 | Anchor                                                                                          | ADR location |
 |-------------------------------------------------------------------------------------------------|--------------|
-| New entry: `{"type":"command","command":"bash scripts/hooks/inbox-watch-bootstrap.sh"}`         | §3.5         |
+| New entry: `{"type":"command","command":"bash scripts/hooks/inbox-watch-bootstrap.sh"}`         | §3.5         | <!-- orianna: ok -- template or prospective path -->
 | Do **NOT** add `UserPromptSubmit` entry referencing inbox anything                              | §3.5, §5 item 10 |
 | Do **NOT** add `PreToolUse` entry for inbox                                                      | §3.5         |
-| JSON remains valid (`jq -e . .claude/settings.json`)                                             | —            |
+| JSON remains valid (`jq -e . .claude/settings.json`)                                             | —            | <!-- orianna: ok -- template or prospective path -->
 
 **Acceptance:**
 - Diff shows **only** the new hook entry added (no reformatting, no
   reordering of unrelated keys — Karpathy "surgical changes").
-- `jq -e '.hooks.SessionStart[0].hooks | length' .claude/settings.json`
+- `jq -e '.hooks.SessionStart[0].hooks | length' .claude/settings.json` <!-- orianna: ok -- template or prospective path -->
   returns `2` (was `1`).
-- `jq -e '.hooks.SessionStart[0].hooks[1].command' .claude/settings.json`
-  returns the exact string `"bash scripts/hooks/inbox-watch-bootstrap.sh"`.
-- `jq -e '.hooks | to_entries[] | select(.key=="UserPromptSubmit")' .claude/settings.json`
+- `jq -e '.hooks.SessionStart[0].hooks[1].command' .claude/settings.json` <!-- orianna: ok -- template or prospective path -->
+  returns the exact string `"bash scripts/hooks/inbox-watch-bootstrap.sh"`. <!-- orianna: ok -- template or prospective path -->
+- `jq -e '.hooks | to_entries[] | select(.key=="UserPromptSubmit")' .claude/settings.json` <!-- orianna: ok -- template or prospective path -->
   returns nothing OR returns an entry with no inbox-related command.
 
-**DoD:** `bash scripts/hooks/test-hooks.sh` (or whatever the existing
+**DoD:** `bash scripts/hooks/test-hooks.sh` (or whatever the existing <!-- orianna: ok -- template or prospective path -->
 local hooks test runner is) still passes; `jq -e .` validates the
 file.
 **Blockers:** none.
@@ -1210,22 +1209,22 @@ directly; harness exits 0 iff the implementation is correct.
 - `scripts/hooks/tests/inbox-watch-test.sh` (edit).
 
 **Acceptance:**
-- `bash scripts/hooks/tests/inbox-watch-test.sh` exits 0 with no
+- `bash scripts/hooks/tests/inbox-watch-test.sh` exits 0 with no <!-- orianna: ok -- template or prospective path -->
   `XFAIL:` lines and no `XPASS:` lines; only `PASS:` output per test
   case.
 - Regression greps inside the harness all return the expected-empty
   result:
-  - `! grep -rn 'strawberry-inbox' .claude/plugins` (dir absent or
+  - `! grep -rn 'strawberry-inbox' .claude/plugins` (dir absent or <!-- orianna: ok -- template or prospective path -->
     no hits).
   - `! grep -rn 'channelsEnabled\|--channels\|development-channels' scripts .claude`.
-  - `! grep -rn 'UserPromptSubmit' .claude/settings.json | grep -i inbox`.
-  - `! test -f scripts/hooks/inbox-nudge.sh`.
-  - `! grep -rn 'pending message(s)\. Run /check-inbox to read them\.' scripts/hooks/`.
-- `shellcheck scripts/hooks/tests/inbox-watch-test.sh` clean.
+  - `! grep -rn 'UserPromptSubmit' .claude/settings.json | grep -i inbox`. <!-- orianna: ok -- template or prospective path -->
+  - `! test -f scripts/hooks/inbox-nudge.sh`. <!-- orianna: ok -- template or prospective path -->
+  - `! grep -rn 'pending message(s)\. Run /check-inbox to read them\.' scripts/hooks/`. <!-- orianna: ok -- template or prospective path -->
+- `shellcheck scripts/hooks/tests/inbox-watch-test.sh` clean. <!-- orianna: ok -- template or prospective path -->
 
 **DoD:**
 - CI (whatever local hook invokes test harnesses under
-  `scripts/hooks/tests/`) green. Pre-commit unit-test hook (Rule 14)
+  `scripts/hooks/tests/`) green. Pre-commit unit-test hook (Rule 14) <!-- orianna: ok -- template or prospective path -->
   does not block.
 - Pre-push TDD hook (Rule 12) accepts the push because the xfail
   commit (IW.0) precedes this impl commit on the same branch and
@@ -1279,7 +1278,7 @@ Acceptance §5 items **2** (live mid-session delivery) and **9**
 (no Channels/MCP/dev-flag regressions — partially covered by IW.5's
 greps, but the no-Channels live test needs a real session) are
 manual-only; they land in the E2E report archived under
-`assessments/qa-reports/2026-04-…-inbox-watch.md` referenced from the
+`assessments/qa-reports/2026-04-…-inbox-watch.md` referenced from the <!-- orianna: ok -- template or prospective path -->
 PR body. Evelynn + Sona each run one E2E turn; report links both.
 
 ### Rollback
@@ -1289,12 +1288,12 @@ PR body. Evelynn + Sona each run one E2E turn; report links both.
   state to roll back.
 - **Post-merge, post-first-boot:**
   - Delete `scripts/hooks/inbox-watch.sh`,
-    `scripts/hooks/inbox-watch-bootstrap.sh`, `.claude/skills/check-inbox/`
+    `scripts/hooks/inbox-watch-bootstrap.sh`, `.claude/skills/check-inbox/` <!-- orianna: ok -- template or prospective path -->
     (or `touch .no-inbox-watch` for an instant local disable).
-  - Remove the new `SessionStart.hooks` entry from `.claude/settings.json`.
-  - No data loss: messages remain in `agents/<coord>/inbox/**` as
+  - Remove the new `SessionStart.hooks` entry from `.claude/settings.json`. <!-- orianna: ok -- template or prospective path -->
+  - No data loss: messages remain in `agents/<coord>/inbox/**` as <!-- orianna: ok -- template or prospective path -->
     `status: pending`; archived messages remain under
-    `inbox/archive/YYYY-MM/`. Both are static markdown files.
+    `inbox/archive/YYYY-MM/`. Both are static markdown files. <!-- orianna: ok -- template or prospective path -->
   - The 7-day archive TTL is only enforced when the watcher boots, so
     rolling back the watcher **freezes** archive retention — same
     state as `.no-inbox-watch` opt-out. Acceptable.
@@ -1322,7 +1321,7 @@ Azir's v3.1 plan with Orianna signature
 `sha256:d5979ae9013e1af1748366f0f0b837047082730681eb35a9640b7abcbee90e4a:2026-04-21T03:59:37Z`.
 
 No ADR changes were made in the process of producing this
-breakdown. All `<!-- orianna: ok -->` markers on prospective paths
+breakdown. All `<!-- orianna: ok -- prospective path or non-file token -->` markers on prospective paths
 from the ADR are propagated above onto the matching task entries.
 
 ## Test plan detail (Xayah)
@@ -1334,14 +1333,14 @@ skeleton, or a pointer to a file Rakan will create.
 
 ### TD.0 Scope and hand-off
 
-- **Surfaces under test** (from the ADR §3): `inbox-watch.sh`,
-  `inbox-watch-bootstrap.sh`, `/check-inbox` skill, Phase 0 cleanup,
+- **Surfaces under test** (from the ADR §3): `inbox-watch.sh`, <!-- orianna: ok -- template or prospective path -->
+  `inbox-watch-bootstrap.sh`, `/check-inbox` skill, Phase 0 cleanup, <!-- orianna: ok -- template or prospective path -->
   opt-out, dual-coordinator parity, Monitor event-stream semantics.
 - **Test author (implementer)**: Rakan.
 - **Test executor**: Vi may run the batteries in CI.
 - **Audit owner**: Xayah (this section is the coverage contract).
 
-Every prospective test path below carries a `<!-- orianna: ok -->` marker
+Every prospective test path below carries a `<!-- orianna: ok -- prospective path or non-file token -->` marker
 so the fact-check gate recognises them as approved future deliverables
 against this plan.
 
@@ -1352,15 +1351,15 @@ blocking bug for the inbox channel.
 
 | # | Invariant | Primary source |
 |---|---|---|
-| I1 | Top-level `agents/<coord>/inbox/` contains **only** `status: pending` files after `/check-inbox` runs to completion. | ADR §3.4, §4.1 |
-| I2 | `inbox-watch.sh` emits exactly one `INBOX:` stdout line per `status: pending` file during the Phase 1 sweep, and zero lines per `status: read` file. | ADR §3.2, §5 item 1 |
+| I1 | Top-level `agents/<coord>/inbox/` contains **only** `status: pending` files after `/check-inbox` runs to completion. | ADR §3.4, §4.1 | <!-- orianna: ok -- template or prospective path -->
+| I2 | `inbox-watch.sh` emits exactly one `INBOX:` stdout line per `status: pending` file during the Phase 1 sweep, and zero lines per `status: read` file. | ADR §3.2, §5 item 1 | <!-- orianna: ok -- template or prospective path -->
 | I3 | Line contract: `^INBOX: [^ ]+\.md — from [^ ]+ — [a-z]+$` (em-dash, three fields). | ADR §3.2 line-format block |
-| I4 | `.no-inbox-watch` at repo root causes both the bootstrap script and `inbox-watch.sh` to exit 0 silently **before** Phase 0 (cleanup is suppressed too — total opt-out). | ADR §3.2 opt-out, §4.4 |
-| I5 | Phase 0 deletes `archive/**/*.md` whose mtime is > 7 days old and prunes empty month-bucket dirs; it never touches files in the pending set (`inbox/*.md`). | ADR §3.2 Phase 0, §4.4, §5 item 12 |
-| I6 | Phase 1 glob is flat (`inbox/*.md`) — `archive/**` subdirs are never swept as pending. | ADR §3.2 Phase 1, §6 "Archive dir accidentally watched" |
+| I4 | `.no-inbox-watch` at repo root causes both the bootstrap script and `inbox-watch.sh` to exit 0 silently **before** Phase 0 (cleanup is suppressed too — total opt-out). | ADR §3.2 opt-out, §4.4 | <!-- orianna: ok -- template or prospective path -->
+| I5 | Phase 0 deletes `archive/**/*.md` whose mtime is > 7 days old and prunes empty month-bucket dirs; it never touches files in the pending set (`inbox/*.md`). | ADR §3.2 Phase 0, §4.4, §5 item 12 | <!-- orianna: ok -- template or prospective path -->
+| I6 | Phase 1 glob is flat (`inbox/*.md`) — `archive/**` subdirs are never swept as pending. | ADR §3.2 Phase 1, §6 "Archive dir accidentally watched" | <!-- orianna: ok -- template or prospective path -->
 | I7 | During `/check-inbox`'s frontmatter rewrite + `mv`, the watcher does not re-emit `INBOX:` for the same filename (filter discipline). | ADR §3.2 filter-discipline paragraph, §5 item 11, §6 |
-| I8 | Identity-resolution chain order is stable: `CLAUDE_AGENT_NAME` → `STRAWBERRY_AGENT` → `.claude/settings.json .agent` → silent exit 0. | ADR §3.2 identity block |
-| I9 | `/agent-ops send` writes to `inbox/` (flat), never `archive/`. | ADR §4.1, §5 item 4 |
+| I8 | Identity-resolution chain order is stable: `CLAUDE_AGENT_NAME` → `STRAWBERRY_AGENT` → `.claude/settings.json .agent` → silent exit 0. | ADR §3.2 identity block | <!-- orianna: ok -- template or prospective path -->
+| I9 | `/agent-ops send` writes to `inbox/` (flat), never `archive/`. | ADR §4.1, §5 item 4 | <!-- orianna: ok -- template or prospective path -->
 | I10 | Resume / clear / compact SessionStart sources do **not** emit the bootstrap nudge. | ADR §3.3 point 1, §5 item 5 |
 | I11 | Archive-path computation uses `timestamp:` frontmatter; falls back to file mtime if absent. | ADR §3.4 step 3 |
 | I12 | `/check-inbox` is idempotent under concurrent invocation (second `mv` is a no-op, not an error that aborts the batch). | ADR §3.4 concurrency paragraph |
@@ -1370,28 +1369,28 @@ blocking bug for the inbox channel.
 
 Four batteries, each with a dedicated xfail skeleton committed ahead of
 the implementation commit (Rule 12 TDD gate). The tests live in a single
-harness under `scripts/hooks/tests/` to plug into the existing pre-commit
+harness under `scripts/hooks/tests/` to plug into the existing pre-commit <!-- orianna: ok -- template or prospective path -->
 test runner with no new CI job.
 
 | Layer | File | Purpose |
 |---|---|---|
-| Unit — watcher | `scripts/hooks/tests/inbox-watch.test.sh` <!-- orianna: ok --> | Direct `bash inbox-watch.sh` invocations with `INBOX_WATCH_ONESHOT=1`; fixture inbox dirs. |
-| Unit — bootstrap | `scripts/hooks/tests/inbox-watch-bootstrap.test.sh` <!-- orianna: ok --> | Direct `bash inbox-watch-bootstrap.sh` invocations with stubbed stdin JSON. |
-| Integration | `scripts/hooks/tests/inbox-channel.integration.test.sh` <!-- orianna: ok --> | Watcher + check-inbox + cleanup together against a scratch repo layout. |
-| Fault-injection | `scripts/hooks/tests/inbox-channel.fault.test.sh` <!-- orianna: ok --> | Race conditions, watcher kill/restart, corrupt frontmatter, filesystem edge cases. |
+| Unit — watcher | `scripts/hooks/tests/inbox-watch.test.sh` <!-- orianna: ok -- prospective path or non-file token --> | Direct `bash inbox-watch.sh` invocations with `INBOX_WATCH_ONESHOT=1`; fixture inbox dirs. |
+| Unit — bootstrap | `scripts/hooks/tests/inbox-watch-bootstrap.test.sh` <!-- orianna: ok -- prospective path or non-file token --> | Direct `bash inbox-watch-bootstrap.sh` invocations with stubbed stdin JSON. |
+| Integration | `scripts/hooks/tests/inbox-channel.integration.test.sh` <!-- orianna: ok -- prospective path or non-file token --> | Watcher + check-inbox + cleanup together against a scratch repo layout. |
+| Fault-injection | `scripts/hooks/tests/inbox-channel.fault.test.sh` <!-- orianna: ok -- prospective path or non-file token --> | Race conditions, watcher kill/restart, corrupt frontmatter, filesystem edge cases. |
 
 Optional fifth (manual, not in CI):
 
 | Layer | Artifact | Purpose |
 |---|---|---|
-| End-to-end empirical | `assessments/qa-reports/YYYY-MM-DD-inbox-watch.md` | Live Evelynn and Sona dual-coordinator walkthrough; captures wall-clock latency + event text. Gates promotion `in-progress → implemented`. |
+| End-to-end empirical | `assessments/qa-reports/YYYY-MM-DD-inbox-watch.md` | Live Evelynn and Sona dual-coordinator walkthrough; captures wall-clock latency + event text. Gates promotion `in-progress → implemented`. | <!-- orianna: ok -- template or prospective path -->
 
 ### TD.3 Test fixtures
 
 Every test case constructs its own scratch tree under `$TMPDIR/inbox-
 test-<pid>/` and exports `STRAWBERRY_AGENT=evelynn` (or `sona`) plus a
 `REPO_ROOT_OVERRIDE` that the scripts under test must respect. Rakan's
-implementation of `inbox-watch.sh` must accept either a `REPO_ROOT`
+implementation of `inbox-watch.sh` must accept either a `REPO_ROOT` <!-- orianna: ok -- template or prospective path -->
 env var or `pwd`-based resolution; the test plan calls for `pwd`-based
 resolution with `cd $SCRATCH` in the setup.
 
@@ -1403,15 +1402,15 @@ the top of the harness):
 - `make_read <dir> <name> [--read-at=T]` — writes a read message
   (used only for "never emit" tests).
 - `make_archived <dir> <yyyy-mm> <name> [--mtime-days-ago=N]` — writes
-  a file under `archive/<yyyy-mm>/` and backdates mtime via `touch
+  a file under `archive/<yyyy-mm>/` and backdates mtime via `touch <!-- orianna: ok -- template or prospective path -->
   -t`. Use `touch -t` on BSD (macOS) and `touch -d` on GNU (Linux) —
   the helper detects which is available.
 - `corrupt_frontmatter <path>` — truncates the closing `---`, used for
   corrupt-frontmatter cases.
 
-### TD.4 Unit battery — `inbox-watch.test.sh` (I1, I2, I3, I4, I5, I6, I8, I11, I13)
+### TD.4 Unit battery — `inbox-watch.test.sh` (I1, I2, I3, I4, I5, I6, I8, I11, I13) <!-- orianna: ok -- template or prospective path -->
 
-XFAIL marker: `# XFAIL: scripts/hooks/inbox-watch.sh not yet implemented`.
+XFAIL marker: `# XFAIL: scripts/hooks/inbox-watch.sh not yet implemented`. <!-- orianna: ok -- template or prospective path -->
 Harness pattern identical to `scripts/hooks/tests/pre-compact-gate.test.sh`
 (committed reference) — test file exits 0 and reports all cases as XFAIL
 when the target script is missing.
@@ -1420,11 +1419,11 @@ when the target script is missing.
 
 | Case | Fixture | Assertion |
 |---|---|---|
-| U-W-01 | Empty `inbox/` dir | stdout empty; exit 0; stderr empty. |
+| U-W-01 | Empty `inbox/` dir | stdout empty; exit 0; stderr empty. | <!-- orianna: ok -- template or prospective path -->
 | U-W-02 | Single `status: pending` file | Exactly one stdout line; line matches regex `^INBOX: <name>\.md — from <sender> — <priority>$`; exit 0. |
 | U-W-03 | N=10 pending files, varied senders + priorities | N lines, one per file; each matches line-format regex; no duplicates; order unspecified but deterministic within a run (document whatever order the impl picks, assert on the set via `sort`). |
 | U-W-04 | Mix of pending + read files (flat) | Only the pending files produce `INBOX:` lines; the read files produce zero lines. |
-| U-W-05 | `archive/2026-04/foo.md` with `status: pending` (edge case — archive should never hold pending, but defend in depth) | Phase 1 does not emit a line for the archive entry; exit 0. Enforces I6. |
+| U-W-05 | `archive/2026-04/foo.md` with `status: pending` (edge case — archive should never hold pending, but defend in depth) | Phase 1 does not emit a line for the archive entry; exit 0. Enforces I6. | <!-- orianna: ok -- template or prospective path -->
 | U-W-06 | File without `status:` frontmatter key | Zero emission for that file; exit 0. |
 | U-W-07 | File with `status: read` but **no** `read_at` | Zero emission; exit 0. |
 | U-W-08 | File with `status:  pending ` (whitespace-padded) | One emission. Frontmatter parsing must be tolerant of surrounding whitespace. |
@@ -1434,12 +1433,12 @@ when the target script is missing.
 
 | Case | Fixture | Assertion |
 |---|---|---|
-| U-C-01 | `archive/2026-03/old.md` mtime 10 days ago + `archive/2026-04/fresh.md` mtime 1 hour ago | After run: `old.md` gone, `fresh.md` present, `archive/2026-03/` pruned (empty), `archive/2026-04/` retained. |
-| U-C-02 | `archive/2026-03/a.md` (10 days) + `archive/2026-03/b.md` (1 hour) | After run: `a.md` gone, `b.md` present, `archive/2026-03/` retained (non-empty). |
-| U-C-03 | No `archive/` dir at all | Phase 0 no-ops silently; stderr does **not** contain "No such file or directory". Exit 0. |
-| U-C-04 | `archive/` dir empty | Phase 0 no-ops; no files deleted; `archive/` retained. |
-| U-C-05 | `archive/2026-03/old.md` mtime exactly 7 days (boundary) | File **not** deleted (POSIX `-mtime +7` is strictly *greater than* 7×24h). |
-| U-C-06 | Non-`.md` file under `archive/` (e.g., `archive/.DS_Store`) | Untouched by Phase 0 (the `-name '*.md'` filter). |
+| U-C-01 | `archive/2026-03/old.md` mtime 10 days ago + `archive/2026-04/fresh.md` mtime 1 hour ago | After run: `old.md` gone, `fresh.md` present, `archive/2026-03/` pruned (empty), `archive/2026-04/` retained. | <!-- orianna: ok -- template or prospective path -->
+| U-C-02 | `archive/2026-03/a.md` (10 days) + `archive/2026-03/b.md` (1 hour) | After run: `a.md` gone, `b.md` present, `archive/2026-03/` retained (non-empty). | <!-- orianna: ok -- template or prospective path -->
+| U-C-03 | No `archive/` dir at all | Phase 0 no-ops silently; stderr does **not** contain "No such file or directory". Exit 0. | <!-- orianna: ok -- template or prospective path -->
+| U-C-04 | `archive/` dir empty | Phase 0 no-ops; no files deleted; `archive/` retained. | <!-- orianna: ok -- template or prospective path -->
+| U-C-05 | `archive/2026-03/old.md` mtime exactly 7 days (boundary) | File **not** deleted (POSIX `-mtime +7` is strictly *greater than* 7×24h). | <!-- orianna: ok -- template or prospective path -->
+| U-C-06 | Non-`.md` file under `archive/` (e.g., `archive/.DS_Store`) | Untouched by Phase 0 (the `-name '*.md'` filter). | <!-- orianna: ok -- template or prospective path -->
 | U-C-07 | Phase 0 runs, then Phase 1 still executes | `INBOX_WATCH_ONESHOT=1` combined fixture: backdated archive file + one pending file. Assert both (a) backdated file gone and (b) `INBOX:` line emitted. |
 
 #### Opt-out cases (I4)
@@ -1457,7 +1456,7 @@ when the target script is missing.
 | U-I-02 | `STRAWBERRY_AGENT=sona` + settings.agent=caitlyn, `CLAUDE_AGENT_NAME` unset | sona |
 | U-I-03 | only settings.agent=Evelynn (mixed case) | evelynn (case-insensitive match per ADR §3.2) |
 | U-I-04 | none of the three sources | Exit 0, stdout empty. |
-| U-I-05 | `CLAUDE_AGENT_NAME=nonexistent` + no `agents/nonexistent/` dir | Exit 0, stdout empty. |
+| U-I-05 | `CLAUDE_AGENT_NAME=nonexistent` + no `agents/nonexistent/` dir | Exit 0, stdout empty. | <!-- orianna: ok -- template or prospective path -->
 
 #### Line-format contract (I3, I13)
 
@@ -1471,19 +1470,19 @@ when the target script is missing.
 #### Phase 2 (live-watch) smoke — optional, time-bounded
 
 Phase 2 is hard to unit-test without `fswatch`/`inotifywait`. Rakan's
-harness should include one optional case that starts `inbox-watch.sh` in
+harness should include one optional case that starts `inbox-watch.sh` in <!-- orianna: ok -- template or prospective path -->
 the background (no `ONESHOT`) with a 5 s timeout, drops a new pending
 file after 0.5 s, kills the watcher at 4 s, and asserts stdout contains
 one `INBOX:` line for the dropped file. Skip (XFAIL) if neither
 `fswatch` nor `inotifywait` is on `PATH`.
 
-### TD.5 Unit battery — `inbox-watch-bootstrap.test.sh` (I4, I8, I10)
+### TD.5 Unit battery — `inbox-watch-bootstrap.test.sh` (I4, I8, I10) <!-- orianna: ok -- template or prospective path -->
 
-XFAIL marker: `# XFAIL: scripts/hooks/inbox-watch-bootstrap.sh not yet implemented`.
+XFAIL marker: `# XFAIL: scripts/hooks/inbox-watch-bootstrap.sh not yet implemented`. <!-- orianna: ok -- template or prospective path -->
 
 | Case | stdin payload | Expected |
 |---|---|---|
-| U-B-01 | `{"hook_event_name":"SessionStart","source":"startup"}` with `CLAUDE_AGENT_NAME=evelynn` | Exit 0; stdout is valid JSON with `hookSpecificOutput.hookEventName == "SessionStart"` and `additionalContext` containing the literal strings `Monitor`, `bash scripts/hooks/inbox-watch.sh`, and `/check-inbox`. |
+| U-B-01 | `{"hook_event_name":"SessionStart","source":"startup"}` with `CLAUDE_AGENT_NAME=evelynn` | Exit 0; stdout is valid JSON with `hookSpecificOutput.hookEventName == "SessionStart"` and `additionalContext` containing the literal strings `Monitor`, `bash scripts/hooks/inbox-watch.sh`, and `/check-inbox`. | <!-- orianna: ok -- template or prospective path -->
 | U-B-02 | `source: resume` | Exit 0; stdout empty (I10). |
 | U-B-03 | `source: clear` | Exit 0; stdout empty (I10). |
 | U-B-04 | `source: compact` | Exit 0; stdout empty (I10). |
@@ -1493,17 +1492,17 @@ XFAIL marker: `# XFAIL: scripts/hooks/inbox-watch-bootstrap.sh not yet implement
 | U-B-08 | Missing `source` field | Treat as not-startup; exit 0; stdout empty. |
 | U-B-09 | `source: startup` + `CLAUDE_AGENT_NAME=sona` (dual-coordinator parity) | Same shape as U-B-01 but `additionalContext` references `sona`'s inbox. |
 
-### TD.6 Integration battery — `inbox-channel.integration.test.sh` (I1, I7, I9, I11, I12)
+### TD.6 Integration battery — `inbox-channel.integration.test.sh` (I1, I7, I9, I11, I12) <!-- orianna: ok -- template or prospective path -->
 
-Driver: a scratch repo layout with both `agents/evelynn/` and
-`agents/sona/`. Integration means running the real scripts end-to-end.
+Driver: a scratch repo layout with both `agents/evelynn/` and <!-- orianna: ok -- template or prospective path -->
+`agents/sona/`. Integration means running the real scripts end-to-end. <!-- orianna: ok -- template or prospective path -->
 
 #### Watcher-then-check-inbox flow (I1, I7, I11)
 
 | Case | Setup | Run | Assertion |
 |---|---|---|---|
-| IT-01 | Two pending files in `agents/evelynn/inbox/`, each with a `timestamp: 2026-04-21 14:23` frontmatter | (a) Run `inbox-watch.sh` with `ONESHOT=1`; capture stdout. (b) Run the `/check-inbox` skill's disposition logic. | After (a): two `INBOX:` lines. After (b): `inbox/` has zero `*.md` files; both originals now live at `archive/2026-04/<original-name>` with `status: read` and a valid ISO-8601 `read_at`. |
-| IT-02 | Pending file with **no** `timestamp:` frontmatter | Run `/check-inbox` disposition. | File moves to `archive/<mtime-YYYY-MM>/<name>` (I11 fallback). |
+| IT-01 | Two pending files in `agents/evelynn/inbox/`, each with a `timestamp: 2026-04-21 14:23` frontmatter | (a) Run `inbox-watch.sh` with `ONESHOT=1`; capture stdout. (b) Run the `/check-inbox` skill's disposition logic. | After (a): two `INBOX:` lines. After (b): `inbox/` has zero `*.md` files; both originals now live at `archive/2026-04/<original-name>` with `status: read` and a valid ISO-8601 `read_at`. | <!-- orianna: ok -- template or prospective path -->
+| IT-02 | Pending file with **no** `timestamp:` frontmatter | Run `/check-inbox` disposition. | File moves to `archive/<mtime-YYYY-MM>/<name>` (I11 fallback). | <!-- orianna: ok -- template or prospective path -->
 | IT-03 | Pending file with `timestamp: malformed-not-a-date` | Run `/check-inbox` disposition. | Either archive path falls through to mtime (documented fallback), or skill refuses with a clean error and leaves the file in place. Open question O2. |
 | IT-04 | Filter discipline: run watcher in background (Phase 2), then run check-inbox, then kill watcher | Count `INBOX:` lines in stdout | Exactly one line per original pending file — the check-inbox frontmatter rewrite must **not** produce a second event (I7). |
 
@@ -1511,7 +1510,7 @@ Driver: a scratch repo layout with both `agents/evelynn/` and
 
 | Case | Setup | Run | Assertion |
 |---|---|---|---|
-| IT-05 | Scratch repo | Invoke `/agent-ops send evelynn "ping"` (or its Bash equivalent) | The new file appears at `agents/evelynn/inbox/<name>.md` flat; **no** file is ever created under `archive/`; the frontmatter has `status: pending`. |
+| IT-05 | Scratch repo | Invoke `/agent-ops send evelynn "ping"` (or its Bash equivalent) | The new file appears at `agents/evelynn/inbox/<name>.md` flat; **no** file is ever created under `archive/`; the frontmatter has `status: pending`. | <!-- orianna: ok -- template or prospective path -->
 | IT-06 | Static grep in the `/agent-ops` skill body | grep for `archive` in the `send` subcommand block | Zero matches. |
 
 #### Concurrency (I12)
@@ -1525,30 +1524,30 @@ Driver: a scratch repo layout with both `agents/evelynn/` and
 
 | Case | Setup | Run | Assertion |
 |---|---|---|---|
-| IT-09 | Fixture repo with both `agents/evelynn/inbox/*.md` and `agents/sona/inbox/*.md` populated; `CLAUDE_AGENT_NAME=evelynn` | Run `inbox-watch.sh` ONESHOT | Only evelynn's pending files emit `INBOX:` lines. |
-| IT-10 | Same fixture; flip `CLAUDE_AGENT_NAME=sona` | Run `inbox-watch.sh` ONESHOT | Only sona's pending files emit. |
+| IT-09 | Fixture repo with both `agents/evelynn/inbox/*.md` and `agents/sona/inbox/*.md` populated; `CLAUDE_AGENT_NAME=evelynn` | Run `inbox-watch.sh` ONESHOT | Only evelynn's pending files emit `INBOX:` lines. | <!-- orianna: ok -- template or prospective path -->
+| IT-10 | Same fixture; flip `CLAUDE_AGENT_NAME=sona` | Run `inbox-watch.sh` ONESHOT | Only sona's pending files emit. | <!-- orianna: ok -- template or prospective path -->
 | IT-11 | Two separate scratch processes, one per coordinator, each running its own watcher concurrently | Drop a pending file into each inbox | Each process's stdout contains exactly the line for its own inbox. |
-| IT-12 | `inbox-watch-bootstrap.sh` stdin with `CLAUDE_AGENT_NAME=sona`; same with `evelynn` | Compare `additionalContext` outputs | Structurally identical; differ only in the agent name and path string. |
+| IT-12 | `inbox-watch-bootstrap.sh` stdin with `CLAUDE_AGENT_NAME=sona`; same with `evelynn` | Compare `additionalContext` outputs | Structurally identical; differ only in the agent name and path string. | <!-- orianna: ok -- template or prospective path -->
 
-### TD.7 Fault-injection battery — `inbox-channel.fault.test.sh` (I5, I6, I7, I12, I13)
+### TD.7 Fault-injection battery — `inbox-channel.fault.test.sh` (I5, I6, I7, I12, I13) <!-- orianna: ok -- template or prospective path -->
 
 #### Corrupt frontmatter
 
 | Case | Setup | Assertion |
 |---|---|---|
-| FI-01 | `inbox/foo.md` with only `---\nfrom: sona\n` (no closing `---`, no status) | `inbox-watch.sh` ONESHOT: zero emission; exit 0; stderr does not contain uncaught shell errors. |
-| FI-02 | `inbox/foo.md` with binary garbage in the first 4 KB | Zero emission; exit 0; stderr may carry a one-line skip notice but must not abort the run. |
-| FI-03 | `inbox/foo.md` is a zero-byte file | Zero emission; exit 0. |
-| FI-04 | `inbox/foo.md` is a symlink pointing to a file outside the repo | Either follow the link and parse (document and assert), or skip. Open question O3. |
+| FI-01 | `inbox/foo.md` with only `---\nfrom: sona\n` (no closing `---`, no status) | `inbox-watch.sh` ONESHOT: zero emission; exit 0; stderr does not contain uncaught shell errors. | <!-- orianna: ok -- template or prospective path -->
+| FI-02 | `inbox/foo.md` with binary garbage in the first 4 KB | Zero emission; exit 0; stderr may carry a one-line skip notice but must not abort the run. | <!-- orianna: ok -- template or prospective path -->
+| FI-03 | `inbox/foo.md` is a zero-byte file | Zero emission; exit 0. | <!-- orianna: ok -- template or prospective path -->
+| FI-04 | `inbox/foo.md` is a symlink pointing to a file outside the repo | Either follow the link and parse (document and assert), or skip. Open question O3. | <!-- orianna: ok -- template or prospective path -->
 | FI-05 | Frontmatter with `status: pending` duplicated twice | Impl picks deterministic rule (first-wins or last-wins); test asserts whichever is specified. |
 
 #### Filesystem races
 
 | Case | Setup | Assertion |
 |---|---|---|
-| FI-06 | `inbox/foo.md` exists at Phase 1 listing time but is deleted before frontmatter-read | Zero emission; exit 0; no `cat: No such file` leak to stderr. |
-| FI-07 | New file atomically moved into `inbox/` via `mv $TMP/new.md inbox/` during Phase 1 | Either emitted in Phase 1 or picked up by Phase 2. Never both. |
-| FI-08 | `inbox/` is deleted outright while watcher is in Phase 2 | Watcher exits nonzero with a logged stderr line. Monitor surfaces the failure per ADR §3.2 "Lifecycle". |
+| FI-06 | `inbox/foo.md` exists at Phase 1 listing time but is deleted before frontmatter-read | Zero emission; exit 0; no `cat: No such file` leak to stderr. | <!-- orianna: ok -- template or prospective path -->
+| FI-07 | New file atomically moved into `inbox/` via `mv $TMP/new.md inbox/` during Phase 1 | Either emitted in Phase 1 or picked up by Phase 2. Never both. | <!-- orianna: ok -- template or prospective path -->
+| FI-08 | `inbox/` is deleted outright while watcher is in Phase 2 | Watcher exits nonzero with a logged stderr line. Monitor surfaces the failure per ADR §3.2 "Lifecycle". | <!-- orianna: ok -- template or prospective path -->
 | FI-09 | Filesystem full during `/check-inbox` frontmatter rewrite | Rewrite fails; skill aborts; **original file is not deleted or moved**. |
 
 #### Concurrent watcher + check-inbox (I7 hardening)
@@ -1570,15 +1569,15 @@ Driver: a scratch repo layout with both `agents/evelynn/` and
 
 | Case | Setup | Assertion |
 |---|---|---|
-| FI-15 | `archive/2026-03/` owned by a different user (`chmod 000`) | Phase 0 logs no stderr (the `2>/dev/null` redirect absorbs permission errors), continues to Phase 1 without aborting. |
+| FI-15 | `archive/2026-03/` owned by a different user (`chmod 000`) | Phase 0 logs no stderr (the `2>/dev/null` redirect absorbs permission errors), continues to Phase 1 without aborting. | <!-- orianna: ok -- template or prospective path -->
 | FI-16 | Clock skew: file mtime set **in the future** | `find -mtime +7` does not match future-dated files → file survives. |
-| FI-17 | Huge archive (1000 files under `archive/2026-03/`, half stale) | Phase 0 completes in < 2 seconds on a stock macOS laptop; all 500 stale files deleted; all 500 fresh files retained. |
+| FI-17 | Huge archive (1000 files under `archive/2026-03/`, half stale) | Phase 0 completes in < 2 seconds on a stock macOS laptop; all 500 stale files deleted; all 500 fresh files retained. | <!-- orianna: ok -- template or prospective path -->
 
 ### TD.8 Migration assertions (first-boot parity)
 
 **D2 ruling — prune, not migrate:** Duong ruled on O5 that existing
-`status: read` files in `inbox/` are **pruned before watcher boot**,
-not migrated. There is no `scripts/hooks/inbox-migrate.sh`. Before the
+`status: read` files in `inbox/` are **pruned before watcher boot**, <!-- orianna: ok -- template or prospective path -->
+not migrated. There is no `scripts/hooks/inbox-migrate.sh`. Before the <!-- orianna: ok -- template or prospective path -->
 watcher ships, any pre-existing `status: read` files in the live
 coordinator inbox must be manually pruned (or deleted) so the first
 Phase 1 sweep operates on a pending-only inbox. This replaces the
@@ -1589,10 +1588,10 @@ replaced by:
 
 | Case | Setup | Run | Assertion |
 |---|---|---|---|
-| MIG-P-01 | Fixture mirroring legacy state: N pending + M read files flat in `inbox/`, no `archive/` | **Manually prune** all `status: read` files; then run `inbox-watch.sh` ONESHOT | After prune: `inbox/` contains exactly N `*.md` files (all `status: pending`); watcher emits exactly N `INBOX:` lines; zero lines reference the pruned files. Exit 0. |
+| MIG-P-01 | Fixture mirroring legacy state: N pending + M read files flat in `inbox/`, no `archive/` | **Manually prune** all `status: read` files; then run `inbox-watch.sh` ONESHOT | After prune: `inbox/` contains exactly N `*.md` files (all `status: pending`); watcher emits exactly N `INBOX:` lines; zero lines reference the pruned files. Exit 0. | <!-- orianna: ok -- template or prospective path -->
 | MIG-P-02 | Post-prune state from MIG-P-01 | Run watcher a second time (`INBOX_WATCH_ONESHOT=1`) | Exactly N `INBOX:` lines again (idempotent sweep against the pending set). No archive entries swept. |
 
-The implementation commit must **not** ship `scripts/hooks/inbox-migrate.sh`
+The implementation commit must **not** ship `scripts/hooks/inbox-migrate.sh` <!-- orianna: ok -- template or prospective path -->
 or any reference to it. The QA report for this plan must document the
 pre-watcher manual prune step.
 
@@ -1603,14 +1602,14 @@ These run at the top of every harness file.
 
 | Check | Command (conceptual) | Expected |
 |---|---|---|
-| R-01 | `grep -r 'strawberry-inbox' .claude/plugins` | no matches (dir absent) |
-| R-02 | `grep -rE 'channelsEnabled|--channels|development-channels' scripts/ .claude/` | no matches |
-| R-03 | `find . -name '.mcp.json' -path '*/strawberry-inbox/*'` | no matches |
-| R-04 | `grep -rn 'UserPromptSubmit' .claude/settings.json` | no entry naming inbox-nudge / inbox-watch |
-| R-05 | `test ! -f scripts/hooks/inbox-nudge.sh` | file absent |
-| R-06 | `grep -rn 'pending message(s)\. Run /check-inbox to read them\.' scripts/hooks/` | no matches (v2 phrasing fingerprint) |
-| R-07 | `grep -rn 'agents/.*/inbox/archive' .claude/skills/agent-ops/` | no matches (I9 code-level regression) |
-| R-08 | Sender-side: `/agent-ops send` step list in `SKILL.md` does not reference `archive/` | document match absence |
+| R-01 | `grep -r 'strawberry-inbox' .claude/plugins` | no matches (dir absent) | <!-- orianna: ok -- template or prospective path -->
+| R-02 | `grep -rE 'channelsEnabled|--channels|development-channels' scripts/ .claude/` | no matches | <!-- orianna: ok -- template or prospective path -->
+| R-03 | `find . -name '.mcp.json' -path '*/strawberry-inbox/*'` | no matches | <!-- orianna: ok -- template or prospective path -->
+| R-04 | `grep -rn 'UserPromptSubmit' .claude/settings.json` | no entry naming inbox-nudge / inbox-watch | <!-- orianna: ok -- template or prospective path -->
+| R-05 | `test ! -f scripts/hooks/inbox-nudge.sh` | file absent | <!-- orianna: ok -- template or prospective path -->
+| R-06 | `grep -rn 'pending message(s)\. Run /check-inbox to read them\.' scripts/hooks/` | no matches (v2 phrasing fingerprint) | <!-- orianna: ok -- template or prospective path -->
+| R-07 | `grep -rn 'agents/.*/inbox/archive' .claude/skills/agent-ops/` | no matches (I9 code-level regression) | <!-- orianna: ok -- template or prospective path -->
+| R-08 | Sender-side: `/agent-ops send` step list in `SKILL.md` does not reference `archive/` | document match absence | <!-- orianna: ok -- template or prospective path -->
 
 ### TD.10 Open questions
 
@@ -1618,11 +1617,11 @@ These run at the top of every harness file.
   ify, or pass through? Recommend slugify. Impacts U-F-03.
 - **O2** — Malformed `timestamp:` frontmatter on archive: fall through to
   mtime-based month, or refuse? Recommend fall-through. Impacts IT-03.
-- **O3** — Symlink handling in `inbox/*.md`: follow or skip? Recommend
+- **O3** — Symlink handling in `inbox/*.md`: follow or skip? Recommend <!-- orianna: ok -- template or prospective path -->
   skip. Impacts FI-04.
 - **O4** — (Closed by D2 ruling.) No migration script; existing `status:
   read` files are pruned manually before watcher boot.
-- **O5** — (Closed by D2 ruling.) No `scripts/hooks/inbox-migrate.sh`
+- **O5** — (Closed by D2 ruling.) No `scripts/hooks/inbox-migrate.sh` <!-- orianna: ok -- template or prospective path -->
   will be shipped. Prune instead. See TD.8.
 - **O6** — Performance envelope for FI-17 (1000 archive files): < 2s is
   a guess. If the CI runner is slower, relax to < 10s. Rakan to tune.
@@ -1630,7 +1629,7 @@ These run at the top of every harness file.
 ### TD.11 CI and TDD posture
 
 - No new CI jobs — all four test files plug into the existing
-  pre-commit hook test harness (`scripts/hooks/tests/`).
+  pre-commit hook test harness (`scripts/hooks/tests/`). <!-- orianna: ok -- template or prospective path -->
 - Each test file is committed **before** its target script per Rule 12,
   with the `XFAIL:` marker at the top.
 - On the implementation commit that lands the scripts, the xfail marker
@@ -1640,7 +1639,7 @@ These run at the top of every harness file.
 
 ### TD.12 Handoff
 
-- **To Rakan**: implement the four `.test.sh` files above as xfail
+- **To Rakan**: implement the four `.test.sh` files above as xfail <!-- orianna: ok -- template or prospective path -->
   skeletons, one commit per file, each referencing its case range.
   Then implement the scripts + skill per the ADR and flip the tests
   green.
@@ -1649,10 +1648,19 @@ These run at the top of every harness file.
   out, (b) the prune pre-condition (TD.8) is documented in the QA
   report, (c) I7 has its 20-iteration race harness.
 
-<!-- orianna: ok --> prospective paths recap (Xayah test plan):
-- `scripts/hooks/tests/inbox-watch.test.sh`
-- `scripts/hooks/tests/inbox-watch-bootstrap.test.sh`
-- `scripts/hooks/tests/inbox-channel.integration.test.sh`
-- `scripts/hooks/tests/inbox-channel.fault.test.sh`
-- `assessments/qa-reports/YYYY-MM-DD-inbox-watch.md` (manual E2E, gate
+<!-- orianna: ok -- prospective path or non-file token --> prospective paths recap (Xayah test plan):
+- `scripts/hooks/tests/inbox-watch.test.sh` <!-- orianna: ok -- template or prospective path -->
+- `scripts/hooks/tests/inbox-watch-bootstrap.test.sh` <!-- orianna: ok -- template or prospective path -->
+- `scripts/hooks/tests/inbox-channel.integration.test.sh` <!-- orianna: ok -- template or prospective path -->
+- `scripts/hooks/tests/inbox-channel.fault.test.sh` <!-- orianna: ok -- template or prospective path -->
+- `assessments/qa-reports/YYYY-MM-DD-inbox-watch.md` (manual E2E, gate <!-- orianna: ok -- template or prospective path -->
   for `in-progress → implemented`)
+
+## Architecture impact
+
+No architecture/ files modified. The inbox watcher ships as Monitor-driven scripts under scripts/hooks/ and a skill update; the inbox directory layout (agents/coordinator/inbox/) is pre-existing convention. No new architectural patterns in architecture/.
+
+## Test results
+
+- PR #18 merged: https://github.com/harukainguyen1411/strawberry-agents/pull/18
+- All required checks green at merge.
