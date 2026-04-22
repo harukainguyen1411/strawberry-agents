@@ -1,5 +1,6 @@
 # Senna learnings index
 
+- 2026-04-22-pr23-orianna-speedups-fast-follow-review.md — snapshot/restore for Rule 1 must cover all abort paths (exit 2, missing-report, SIGINT) not just the xfail-reproduced one; passing xfail test can mask partial fix coverage; use `trap` after snapshot `cp` for full Rule 1 compliance | last_used: 2026-04-22
 - 2026-04-22-pr19-orianna-gate-speedups-review.md — `grep -c || echo 0` produces `"0\n0"` breaking integer compares; TTY-guard `[ ! -t 2 ]` before stderr-log hijack preserves interactive UX without breaking test harnesses; pre-fix-before-check patterns need rollback on check-failure path to honor Rule 1 | last_used: 2026-04-22
 - 2026-04-21-pr17-staged-scope-guard-rereview.md — test scripts using `git rev-parse --show-toplevel` bind to invocation cwd not script path; `git update-index --chmod=+x` is a superior sandbox-safe executable-bit workaround; strawberry-agents CI xfail-first/regression-test checks are metadata-only | last_used: 2026-04-21
 - 2026-04-21-pr57-s3-project-reuse-s4-trigger.md — httpx `HTTPStatusError.__str__` leaks URLs with query strings; module-level test-only seams expose prod attack primitives; in-memory-stub-vs-Firestore silent 404 on Cloud Run container recycle | last_used: 2026-04-21
