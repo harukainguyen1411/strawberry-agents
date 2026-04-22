@@ -368,3 +368,5 @@ source the lib (single-file awk pass); the lib remains available for standalone 
 | `agents/orianna/prompts/plan-check.md` | proposed→approved gate prompt |
 | `agents/orianna/prompts/task-gate-check.md` | approved→in-progress gate prompt |
 | `agents/orianna/prompts/implementation-gate-check.md` | in-progress→implemented gate prompt |
+
+<!-- Updated: substance-vs-format rescope landed (2026-04-22-orianna-substance-vs-format-rescope). Check set pruned along substance/format axis per §3.2; signature machinery unchanged. -->
