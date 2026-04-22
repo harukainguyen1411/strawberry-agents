@@ -78,7 +78,7 @@ Work types are split by complexity tier where applicable. Default to **normal** 
 | Git / security advice | — | — | Camille |
 | PR code + security review | — | — | Senna |
 | PR plan/ADR fidelity | — | — | Lucian |
-| QA Playwright + Figma diff | — | — | Akali |
+| QA Playwright + Figma diff (UI or user-flow PR) | — | — | Akali (Playwright MCP) |
 | Fact-check / plan signing | — | — | Orianna (script-only, via `plan-promote.sh`) |
 | Memory retrieval | — | — | Skarner |
 | Errands, small ops | — | — | Yuumi |
