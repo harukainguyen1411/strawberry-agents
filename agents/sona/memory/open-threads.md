@@ -1,20 +1,32 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (ninth-leg shard 2026-04-22-b5f123a5; prior shards 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (tenth-leg shard 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
-## Swain Option B — Viktor hotfix in flight (CRITICAL)
+## Swain Option B — Viktor F-01/F-02/F3/F4 batch in flight (CRITICAL)
 
-**Status:** Active. Rakan xfails done, Viktor Waves 1–5 done, Vi NO-GO (7 blockers) → Viktor-3 GO, Ekko deployed `demo-studio-00023-hjj`. ROOT CAUSE: `POST /session/new` still calls `create_managed_session()` + writes `managedSessionId`; `/chat` always branches to managed-agent path. Viktor (`a12c50af11f160a10`) running hotfix. Senna NO-GO (C1 auth-bypass, C2 multi-turn, 6 HIGHs). Lucian GO.
-**Shard pointers:** 2026-04-22-b5f123a5.
-**Next action:** Await Viktor hotfix return → Senna re-review → resolve 6 HIGHs → Ekko redeploy → Akali final QA. PR not mergeable until Senna GO.
+**Status:** Hotfix landed — `create_managed_session()` stripped, `managedSessionId` removed, `/chat` routes vanilla-only. Prod `demo-studio-00026-2wv` has Soraka fixes. NEW CRITICAL: `web_search_20241022` deprecated tool type → every chat turn returns 400. Viktor batch F-01 (tool version), F-02 (silent UI fail), F3 (SSE nonce abort), F4 (brand race) in-flight at consolidation boundary. Senna: CONDITIONAL GO (C1 deferred, C2/H1/H2/H4 resolved). Lucian: GO-WITH-NITS.
+**Shard pointers:** 2026-04-22-68fb9cb6, 2026-04-22-b5f123a5.
+**Next action:** Await Viktor F-01/F-02/F3/F4 → Ekko redeploy → Akali-chat re-run → confirm chat works → PR merge gate. C1 auth-bypass tracked as accepted-risk per Duong directive.
 
-## Akali parallel QA — in flight
+## Akali scoped parallel QA — results pending
 
-**Status:** Akali-A (`a0754360a2719e79f`) dispatched for session lifecycle QA. Parallel QA was mid-dispatch when pre-compact fired; additional Akali instances may be pending.
-**Shard pointers:** 2026-04-22-b5f123a5.
-**Next action:** Collect Akali-A result on resume. Confirm all requested QA aspects are covered; dispatch additional Akali instances for uncovered aspects.
+**Status:** 4 scoped Akali tracks dispatched (chat/tools/preview/auth+dashboard). Key findings: `web_search_20241022` deprecated (F-01); preview dead (`__s5Base` not injected, F-C1 — Soraka landed BUG-A4 fix); dashboard health cards hardcoded localhost (Jayce-1 in-flight fix); SSE nonce abort drops tool history (F3/Viktor in-flight). Akali-chat result surfaced the CRITICAL 400. Auth+errors PARTIAL landed; session-lifecycle done.
+**Shard pointers:** 2026-04-22-68fb9cb6.
+**Next action:** After Viktor batch and Jayce-1 land: re-run Akali-chat to confirm chat 200. Then full final QA pass before merge.
+
+## Firebase auth — Ekko in-flight
+
+**Status:** Duong handed off all 6 Firebase-auth OQs under handsoff mode. Ekko dispatched: resolve OQs, promote `proposed→approved→in-progress`, enable Identity Toolkit + Google provider + authorized domain + SA role grant.
+**Shard pointers:** 2026-04-22-68fb9cb6.
+**Next action:** Await Ekko return. After Firebase infra lands: dispatch Akali auth track against `/auth/login` with `@missmp.tech` Google account.
+
+## Slack MCP — blocked on xoxb token
+
+**Status:** Syndra wired Slack MCP but Duong's token is `xoxp-` (user token); Slack MCP needs `xoxb-` (bot token). Telegram works as primary notification channel (`message_id: 81`, `message_id: 82` confirmed delivered). Slack deferred.
+**Shard pointers:** 2026-04-22-68fb9cb6.
+**Next action:** When Duong can provision bot token from Slack app settings → OAuth & Permissions → Bot Token Scopes. Telegram is adequate in the meantime.
 
 ## 60-min post-deploy observation window
 
@@ -123,14 +135,24 @@ Last updated: 2026-04-22 (ninth-leg shard 2026-04-22-b5f123a5; prior shards 2026
 
 ---
 
-## RESOLVED this leg (ninth leg)
+## RESOLVED this leg (tenth leg)
 
-- **Aphelios decomposition** — completed (queued at eighth-leg boundary, executed ninth leg). Tasks inlined into Option B plan.
+- **Viktor hotfix landed** — `create_managed_session()` stripped from both session routes; `managedSessionId` write removed; `/chat` routes vanilla-only. Root cause cleared.
+- **S2–S5 CORS deploys** — All 4 companion services redeployed with CORS headers. Live.
+- **Soraka BUG-A4 + JS race** — Preview route 404 → styled HTML; `configVersion.textContent` null guards; JS race fixes. Deployed as `demo-studio-00026-2wv`.
+- **Jayce-3 CORS** — CORS on S2 `demo-config-mgmt-00010-9g4`, S3, S4, S5. All confirmed live.
+- **Senna CONDITIONAL GO** — C2/H1/H2/H4 resolved; C1 deferred per Duong. Lucian GO-WITH-NITS. Both reviewers green.
+- **Telegram notification wired** — DM delivery confirmed. Active notification channel.
+- **Scoped Akali QA pattern** — 4 parallel tracks (chat/tools/preview/auth+dashboard) replaced single full-e2e agent. Findings aggregated; fix dispatch parallelized.
+
+## RESOLVED in ninth leg
+
+- **Aphelios decomposition** — completed. Tasks inlined into Option B plan.
 - **Rakan xfails** — committed. TDD gate satisfied for Option B vanilla-API surfaces.
 - **Viktor impl Waves 1–5** — native chat loop, config tools, preview, factory + verification all implemented. No managed agent, no MCP server.
 - **Vi integration** — NO-GO (7 blockers) → Viktor-3 resolved all blockers → GO. Integration test suite green post-cleanup.
-- **Ekko prod deploy** — revision `demo-studio-00023-hjj` deployed. (Pre-hotfix; redeploy pending after Viktor fix.)
-- **Root cause identified** — `create_managed_session()` + `managedSessionId` write in `POST /session/new` keeps managed-agent path active. Hotfix in flight.
+- **Ekko prod deploy** — revision `demo-studio-00023-hjj` deployed. (Pre-hotfix; superseded by 00026-2wv.)
+- **Root cause identified** — `create_managed_session()` + `managedSessionId` write in `POST /session/new` keeps managed-agent path active. Hotfix landed in tenth leg.
 
 ## RESOLVED in eighth leg
 

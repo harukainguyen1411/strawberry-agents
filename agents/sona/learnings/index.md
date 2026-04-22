@@ -4,6 +4,7 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- [2026-04-22 Scoped QA tracks outperform monolithic full-e2e for iterative ship](2026-04-22-scoped-qa-tracks-over-monolithic-e2e.md) — narrow-scope parallel Akali tracks (chat/tools/preview/auth) enable immediate fix dispatch per domain without waiting for full-e2e completion; monolithic e2e reserved for final gate pass only.
 - [2026-04-22 Parallel QA as Duong-directed exception to serial overnight discipline](2026-04-22-parallel-qa-exception-pattern.md) — serial dispatch is the overnight default but not an absolute rule; QA/review waves have lighter usage profiles and can be parallelized when Duong directs; always record when the serial default is suspended and by whose direction.
 - [2026-04-22 Partial refactor path leak — verify the full call chain from every entry point](2026-04-22-partial-refactor-path-leak.md) — when refactoring away from a code path, a legacy call surviving in an upstream entry point silently re-activates the old path for all downstream handlers that gate on fields the legacy call writes; grep for removed function name across all entry points, not just the primary file.
 - [2026-04-22 Serial dispatch for overnight autonomous sessions](2026-04-22-serial-dispatch-overnight-sessions.md) — when operating overnight in hands-off mode with no human available to triage, use serial dispatch (one subagent at a time); usage ceiling, not time, is the primary risk; companion: commit a re-entry compass file before first dispatch.
