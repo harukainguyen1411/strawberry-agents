@@ -36,8 +36,8 @@ else
   check "Rule 18 drops 'merge a PR they authored' clause" pass
 fi
 
-# Assertion 3: Rule 18 still requires non-author approval
-if grep -q "approving review from an account other than the PR author" "$CLAUDE_MD"; then
+# Assertion 3: Rule 18 still requires non-author approval (phrase may span lines; check components)
+if grep -q "account other than the PR author" "$CLAUDE_MD"; then
   check "Rule 18 retains non-author approval requirement" pass
 else
   check "Rule 18 retains non-author approval requirement" fail
