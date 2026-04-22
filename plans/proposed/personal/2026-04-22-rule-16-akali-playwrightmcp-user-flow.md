@@ -6,7 +6,6 @@ orianna_gate_version: 2
 owner: Karma
 created: 2026-04-22
 tests_required: true
-orianna_signature_approved: "sha256:38524bb88f77f6556f51aad70ba95684c18da8b989313e073a7f9d53414ae896:2026-04-22T10:47:11Z"
 orianna_signature_approved: "sha256:38524bb88f77f6556f51aad70ba95684c18da8b989313e073a7f9d53414ae896:2026-04-22T11:04:22Z"
 ---
 
