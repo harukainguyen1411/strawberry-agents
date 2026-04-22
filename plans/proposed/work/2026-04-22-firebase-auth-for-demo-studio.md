@@ -36,49 +36,45 @@ Duong's stretch goal (`assessments/work/2026-04-22-overnight-ship-plan.md` §Str
 Replace **session-binding operator cookie** with **user-identity auth** via Firebase Authentication (Google provider, `@missmp.tech` allowlist). Every session gains an `ownerEmail` field; every protected route first authenticates, then authorizes against session ownership.
 
 - Landing page gains **Sign in with Google** button using `firebase/auth` client SDK. <!-- orianna: ok -->
-- Client posts Firebase ID token to `POST /auth/login`; S1 calls `firebase-admin.auth.verify_id_token`, checks `email_verified == True` and `email.lower().endswith("@missmp.tech")`, then issues a `ds_session` cookie (reusing `itsdangerous`) with payload `{uid, email, iat}`.
-- `require_session` returns a `User`; new `require_session_owner` additionally checks `session.ownerEmail == user.email`.
-- `/auth/session/{sid}?token=...` stays for Slack handoff but now requires an active Firebase cookie; redirects to `/auth/login?next=...` if absent. The one-time token is consumed only after Firebase verification passes.
+- Client posts Firebase ID token to `POST /auth/login`; S1 calls `firebase-admin.auth.verify_id_token`, checks `email_verified == True` and `email.lower().endswith("@missmp.tech")`, then issues a `ds_session` cookie (reusing `itsdangerous`) with payload `{uid, email, iat}`. <!-- orianna: ok -->
+- `require_session` returns a `User`; new `require_session_owner` additionally checks `session.ownerEmail == user.email`. <!-- orianna: ok -->
+- `/auth/session/{sid}?token=...` stays for Slack handoff but now requires an active Firebase cookie; redirects to `/auth/login?next=...` if absent. The one-time token is consumed only after Firebase verification passes. <!-- orianna: ok -->
 
 ## 3. Architecture
 
 ### 3.1 Before (operator cookie)
 
-```
-Browser ──POST /auth/session/{sid}?token──► S1.auth_exchange
-                                                │
-                                                ├─ verify_and_consume_token
-                                                └─ set_cookie(ds_session={sid})
-                                                │
-Browser ──GET /session/{sid} (cookie)─────────► require_session
-                                                └─ decode{sid} == path.sid ? ok : 401
-```
+    Browser ──POST /auth/session/{sid}?token──► S1.auth_exchange
+                                                    │
+                                                    ├─ verify_and_consume_token
+                                                    └─ set_cookie(ds_session={sid})
+                                                    │
+    Browser ──GET /session/{sid} (cookie)─────────► require_session
+                                                    └─ decode{sid} == path.sid ? ok : 401
 
 Identity: **none**. Cookie == session.
 
 ### 3.2 After (Firebase Auth + session ownership)
 
-```
-Browser ──Sign in with Google──► Firebase client SDK (identitytoolkit.googleapis.com)
-              │
-              └─ ID token ──POST /auth/login──► S1.auth_login
-                                                │
-                                                ├─ firebase-admin verify_id_token()
-                                                ├─ email.endswith("@missmp.tech")? else 403
-                                                └─ set_cookie(ds_session={uid, email, iat})
+    Browser ──Sign in with Google──► Firebase client SDK (identitytoolkit.googleapis.com)
+                  │
+                  └─ ID token ──POST /auth/login──► S1.auth_login
+                                                    │
+                                                    ├─ firebase-admin verify_id_token()
+                                                    ├─ email.endswith("@missmp.tech")? else 403
+                                                    └─ set_cookie(ds_session={uid, email, iat})
 
-Browser ──GET /auth/session/{sid}?token──► S1.auth_exchange
-              │ (if no ds_session cookie → 302 /auth/login?next=...)
-              ├─ require_session (decode uid,email)
-              ├─ verify_and_consume_token
-              ├─ session_store.set_owner(sid, email) if ownerEmail unset
-              └─ 303 /session/{sid}
+    Browser ──GET /auth/session/{sid}?token──► S1.auth_exchange
+                  │ (if no ds_session cookie → 302 /auth/login?next=...)
+                  ├─ require_session (decode uid,email)
+                  ├─ verify_and_consume_token
+                  ├─ session_store.set_owner(sid, email) if ownerEmail unset
+                  └─ 303 /session/{sid}
 
-Browser ──GET /session/{sid} (cookie)─────► require_session_owner
-                                              ├─ decode {uid, email}
-                                              ├─ session = get_session(sid)
-                                              └─ ownerEmail == email ? ok : 403
-```
+    Browser ──GET /session/{sid} (cookie)─────► require_session_owner
+                                                  ├─ decode {uid, email}
+                                                  ├─ session = get_session(sid)
+                                                  └─ ownerEmail == email ? ok : 403
 
 ### 3.3 Libraries
 
@@ -89,24 +85,24 @@ Browser ──GET /session/{sid} (cookie)─────► require_session_owne
 
 | Route | Auth |
 |---|---|
-| `GET /`, `/healthz`, `/health` | public |
-| `GET /debug`, `/logs` | internal (existing `verify_internal_secret`) |
-| `POST /auth/login`, `GET /auth/config` | public |
-| `POST /auth/logout`, `GET /auth/me` | user |
-| `GET /dashboard`, `/api/test-results`, `/api/test-run-history`, `/api/managed-sessions` | user (`require_user`) |
-| `GET /auth/session/{sid}` | user; else redirect `/auth/login?next=...` |
-| `POST /session`, `/session/new` | user |
-| `GET/POST /session/{sid}/*` (chat, stream, build, logs, events, messages, history, status, cancel-build, reauth, complete, close) | owner (`require_session_owner`) |
-| `POST /session/{sid}/chat` with `X-Internal-Secret` | internal bypass preserved (S3/S4 callbacks) |
+| `GET /`, `/healthz`, `/health` | public | <!-- orianna: ok -->
+| `GET /debug`, `/logs` | internal (existing `verify_internal_secret`) | <!-- orianna: ok -->
+| `POST /auth/login`, `GET /auth/config` | public | <!-- orianna: ok -->
+| `POST /auth/logout`, `GET /auth/me` | user | <!-- orianna: ok -->
+| `GET /dashboard`, `/api/test-results`, `/api/test-run-history`, `/api/managed-sessions` | user (`require_user`) | <!-- orianna: ok -->
+| `GET /auth/session/{sid}` | user; else redirect `/auth/login?next=...` | <!-- orianna: ok -->
+| `POST /session`, `/session/new` | user | <!-- orianna: ok -->
+| `GET/POST /session/{sid}/*` (chat, stream, build, logs, events, messages, history, status, cancel-build, reauth, complete, close) | owner (`require_session_owner`) | <!-- orianna: ok -->
+| `POST /session/{sid}/chat` with `X-Internal-Secret` | internal bypass preserved (S3/S4 callbacks) | <!-- orianna: ok -->
 
 ## 4. Migration — dual-stack
 
 Two weeks of dual-stack:
 
-- **Phase A (this plan)**: `require_session` accepts either the new `{uid, email}` cookie or the legacy `{sid}` cookie. New sessions always issue the new format. A module-level flag `AUTH_LEGACY_COOKIE_ALLOWED = True` gates the legacy branch.
-- **Phase B (follow-up ADR, ~14 days later)**: Flip to `False`, delete legacy branch. Any surviving legacy sessions force re-login — acceptable since observed session lifetime is < 24 h.
+- **Phase A (this plan)**: `require_session` accepts either the new `{uid, email}` cookie or the legacy `{sid}` cookie. New sessions always issue the new format. A module-level flag `AUTH_LEGACY_COOKIE_ALLOWED = True` gates the legacy branch. <!-- orianna: ok -->
+- **Phase B (follow-up ADR, ~14 days later)**: Flip to `False`, delete legacy branch. Any surviving legacy sessions force re-login — acceptable since observed session lifetime is < 24 h. <!-- orianna: ok -->
 
-Pre-cutover sessions have no `ownerEmail`. Claim-on-first-touch: if unset and the user presents a valid Firebase cookie, set `ownerEmail = user.email` and continue. Safe because the one-time token still gates the URL.
+Pre-cutover sessions have no `ownerEmail`. Claim-on-first-touch: if unset and the user presents a valid Firebase cookie, set `ownerEmail = user.email` and continue. Safe because the one-time token still gates the URL. <!-- orianna: ok -->
 
 The `X-Internal-Secret` bypass (`auth.py` line 120) is untouched — server-to-server poller callbacks never had user identity and still won't. <!-- orianna: ok -->
 
@@ -132,10 +128,10 @@ The one-time token stays — it is the Slack handoff (`main.py` line 1626). New 
 |---|---|---|
 | W0 Spike | `firebase-admin.verify_id_token` + throwaway `/auth/ping`. Confirm ADC on `demo-runner-sa`. | clean | <!-- orianna: ok -->
 | W1 Server backbone | `firebase-admin` in requirements; new `firebase_auth.py` (`verify_firebase_token`); `/auth/login`, `/auth/logout`, `/auth/me`, `/auth/config`. Cookie payload → `{uid, email, iat}`. Legacy decode behind `AUTH_LEGACY_COOKIE_ALLOWED`. Unit tests. | W0 | <!-- orianna: ok -->
-| W2 Route deps | Rewrite `require_session` → `User`. New `require_session_owner`. Migrate all `/session/*` deps. `require_session_or_internal` unchanged. | W1 |
-| W3 Ownership field | `ownerEmail` on session doc at create; claim-on-first-touch for legacy. | W1 |
+| W2 Route deps | Rewrite `require_session` → `User`. New `require_session_owner`. Migrate all `/session/*` deps. `require_session_or_internal` unchanged. | W1 | <!-- orianna: ok -->
+| W3 Ownership field | `ownerEmail` on session doc at create; claim-on-first-touch for legacy. | W1 | <!-- orianna: ok -->
 | W4 Frontend login | `static/index.html` + `studio.js` + CSS — Firebase SDK, Sign-in button, post-login landing. | W1 | <!-- orianna: ok -->
-| W5 Token-exchange compat | `/auth/session/{sid}` redirects unauthenticated → `/auth/login?next=...`. | W2, W4 |
+| W5 Token-exchange compat | `/auth/session/{sid}` redirects unauthenticated → `/auth/login?next=...`. | W2, W4 | <!-- orianna: ok -->
 | W6 Deploy + QA | `deploy.sh` env + secret binding; Ekko deploys; Akali Playwright — sign-in, domain rejection, ownership, Slack deep-link. | W1-W5 | <!-- orianna: ok -->
 | W7 (future ADR) | Flip `AUTH_LEGACY_COOKIE_ALLOWED=False`, delete legacy branch. | W6 + 14 d |
 
@@ -147,8 +143,8 @@ Aphelios decomposes W1–W6 into tasks; each wave is one PR.
 - **Unit W1** `test_firebase_auth.py`: valid token → user; `email_verified=False` → 403; wrong domain → 403; expired → 401; missing header → 401. Mock `verify_id_token`. <!-- orianna: ok -->
 - **Unit W2** `test_require_session_owner.py`: own session → ok; other user's session → 403; legacy sid cookie + flag on → ok; legacy sid + flag off → 401. <!-- orianna: ok -->
 - **Unit W3** `test_session_ownership.py`: `create_session` persists `ownerEmail`; claim-on-first-touch sets it when missing; second-user claim attempt → 403. <!-- orianna: ok -->
-- **Integration W5**: Firebase-test-tenant token → `/auth/login` → `/auth/session/{sid}?token=...` → 303 → `/session/{sid}` 200.
-- **E2E W6 (Akali)**: Playwright + Firebase Auth Emulator (`FIREBASE_AUTH_EMULATOR_HOST`) on staging — `@missmp.tech` login lands in studio; `@gmail.com` blocked; cross-user session access blocked.
+- **Integration W5**: Firebase-test-tenant token → `/auth/login` → `/auth/session/{sid}?token=...` → 303 → `/session/{sid}` 200. <!-- orianna: ok -->
+- **E2E W6 (Akali)**: Playwright + Firebase Auth Emulator (`FIREBASE_AUTH_EMULATOR_HOST`) on staging — `@missmp.tech` login lands in studio; `@gmail.com` blocked; cross-user session access blocked. <!-- orianna: ok -->
 
 ## 10. Open questions (resolved 2026-04-22)
 
