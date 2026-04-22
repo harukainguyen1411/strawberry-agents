@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: in-progress
 concern: personal
 owner: karma
 created: 2026-04-22
@@ -12,8 +12,8 @@ related:
   - plans/proposed/personal/2026-04-22-orianna-sign-staged-scope.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
   - agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md
-architecture_changes:
-  - architecture/key-scripts.md
+orianna_signature_approved: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:02:07Z"
+orianna_signature_in_progress: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:03:33Z"
 ---
 
 # Concurrent coordinator race closeout — flock the signing/promote commit window + auto-scope
@@ -166,9 +166,3 @@ preceded on-branch by its matching xfail test per Rule 12.
 - `agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md` — incident diagnosis.
 - `agents/ekko/learnings/2026-04-22-promote-to-implemented-signature-invalidation.md` — recovery pattern.
 - Rule 4 (plans direct to main), Rule 12 (xfail first), Rule 19 (Orianna gate on every transition).
-
-## Test results
-
-PR #22 merged at `94c65ca` (2026-04-22T09:55:03Z). All tasks T1–T5 landed.
-CI: all required checks green on merge. Bats test suite: xfail tests T1/T2 flipped to PASS after T3/T4 landed; T5 STAGED_SCOPE assertion added to existing harness.
-`architecture/key-scripts.md` updated in T5 (coordinator lock contract + STAGED_SCOPE auto-derive documentation).
