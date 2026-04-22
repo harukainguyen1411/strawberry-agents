@@ -120,6 +120,8 @@
 
 - 2026-04-22 (ekko — Sona dispatch): Promoted firebase auth loop plans. 2c: proposed→approved (Q1 decision resolved inline + 2 stale sibling paths fixed; sig `067dc6c`, promote `08d2064`). 2b: already at approved — no action. 2a: fastlane approved→in_progress→implemented (body-fix required re-sign chain; move back to proposed, add architecture_impact:none + Test results, full re-sign chain; implemented promote `5d76d1c`). Key learning: `git revert` on sig-field commits makes revert commit the canonical signing commit (wrong author) — edit+commit manually instead.
 
+- 2026-04-22 (ekko — Evelynn dispatch): Batch-promoted 5 in-progress plans to implemented/personal/. Full re-sign chain for all 5. Key issues: (1) pre-commit hook detects extension-like tokens (hookSpecificOutput.additionalContext, settings.json) as paths — suppress all; (2) directory backtick tokens (`architecture/`) crash awk — remove backticks; (3) stale root copy of inbox plan deleted via git rm; (4) architecture_impact: none + ## Architecture impact + ## Test results sections required for implemented gate. All 5 pushed. Final SHA: 094951e.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

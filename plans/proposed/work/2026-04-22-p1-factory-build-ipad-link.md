@@ -39,19 +39,19 @@ architecture_changes:
 
 Priority-1 goal: **a user who clicks "Build" in demo-studio-v3 ends up, a few minutes later, with a real Wallet Studio project and a clickable iPad demo link.** Today neither endpoint produces a real artifact.
 
-Verified facts (as of 2026-04-22, worktree `company-os/` on branch `feat/demo-studio-v3`, HEAD `39c60cf`): <!-- orianna: ok -->
+Verified facts (as of 2026-04-22, worktree `company-os/` on branch `feat/demo-studio-v3`, HEAD `39c60cf`): <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
-- **S1 `POST /session/{sid}/build`** in `company-os/tools/demo-studio-v3/main.py` line ~2129 is internal-secret gated, transitions the session `configuring→building`, and awaits `factory_bridge_v2.trigger_factory_v2(...)`. <!-- orianna: ok -->
-- **`company-os/tools/demo-studio-v3/factory_bridge_v2.py` line 17** is a pure scaffold: generates `run_id = uuid.uuid4().hex[:12]`, writes `factoryRunId` on the session, and returns `{ok, factoryRunId, projectId}` where `projectId` is synthetic (`f"proj-{session_id[:8]}"`). `TODO(BD.F.2)` marks the missing HTTP call. <!-- orianna: ok -->
-- **S3 `company-os/tools/demo-factory/main.py` `_run_build_job`** (line 356) is a 100 % mock: steps through `PIPELINE_STEPS` with `asyncio.sleep(0.01)` per step, never touches Wallet Studio, returns `projectUrl: https://app.walletstudio.com/projects/{proj-uuid}` and `demoUrl: https://demo.missmp.tech/{proj-uuid}` derived from a synthetic uuid, not a real shortcode. <!-- orianna: ok -->
-- **S3 has no S2 client** — `grep -rn CONFIG_MGMT tools/demo-factory/` returns nothing. The mock does not need config; the real pipeline will. <!-- orianna: ok -->
-- **The real pipeline exists** — `company-os/tools/demo-factory/factory.py` is a CLI (`python factory.py run --brand Agila --line pet`) that drives `WSClient` (`ws_client.py`, reading `WS_BASE_URL` + `WS_API_KEY`) through: `create_project → post_clone_fixup → set_project_images → apply_ios_template → apply_google_template → apply_params → apply_translation_keys → apply_journey_actions → apply_token_ui → sync_pass_preview → create_test_pass → publish_ios_template` (indirectly via apply). It assembles `content` from `research_brand` (LLM) → `generate_strategy` → `generate_content`. This LLM research stage is the wrong input surface for P1 — the user already provided brand/market/config in S2. <!-- orianna: ok -->
-- **iPad demo URL pattern** — real demos resolve at `https://demo.missmp.tech/{shortcode}` where `shortcode` is a human-readable slug (e.g. `agila-pet`) written on the WS project via `WSClient.update_project`. The shortcode is initially set by `post_clone_fixup` in `company-os/tools/demo-factory/project.py` line 77 from `demo.get("shortcode")`. It is readable via `client.get_project(project_id)["shortcode"]`. <!-- orianna: ok -->
-- **S4 auto-trigger is disabled in practice** — `S4_VERIFY_URL` env var is unset on the deployed S3 instance, so `_trigger_s4` logs a warning and no-ops. P1 does **not** include S4; that is P3. <!-- orianna: ok -->
-- **S1→S3 SSE relay** (`s3_build_sse_stream` in S1 `main.py` line 175) already exists but cannot work today because `factoryRunId` is a synthetic 12-hex id, not a real S3 `buildId`. Once S3 returns real `buildId`, the relay begins functioning. <!-- orianna: ok -->
-- **S2 config shape** (`company-os/tools/demo-config-mgmt/main.py` MOCK_CONFIG, line 39): `{brand, market, languages, shortcode, colors, logos, card, params, ipadDemo, journey, tokenUi}`. This aligns strongly with the `content` dict that the real factory pipeline expects (brand/market/languages/shortcode/colors/logos/card/params/journey/tokenUi). Minor deltas: S2 has `ipadDemo`; factory content has `demoSteps`/`steps`/`persona`/`translations`/`insuranceLine`. These deltas are resolved in §D3 below. <!-- orianna: ok -->
-- **S1 UI surface for completion** — `company-os/tools/demo-studio-v3/static/studio.js` lines 852-862: when the Firestore snapshot reports `status==='complete'` and `outputUrls.demoUrl` is truthy, it `addMessage('system', 'Demo deployed: ' + d.outputUrls.demoUrl)`. That writes the URL as plain text into the chat stream with no click affordance. P1 requires a clickable link, so a proper "Demo ready" panel must be added. <!-- orianna: ok -->
-- **Session schema** — `session._UPDATABLE_FIELDS` at line 177 of `company-os/tools/demo-studio-v3/session.py` already includes `projectId`, `factoryRunId`, `outputUrls`. New fields (`buildId`, `demoUrl`, `projectUrl`, `shortcode`) must be added to the allowlist before any writer can set them; `update_session_field` raises `ValueError` otherwise. <!-- orianna: ok -->
+- **S1 `POST /session/{sid}/build`** in `company-os/tools/demo-studio-v3/main.py` line ~2129 is internal-secret gated, transitions the session `configuring→building`, and awaits `factory_bridge_v2.trigger_factory_v2(...)`. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **`company-os/tools/demo-studio-v3/factory_bridge_v2.py` line 17** is a pure scaffold: generates `run_id = uuid.uuid4().hex[:12]`, writes `factoryRunId` on the session, and returns `{ok, factoryRunId, projectId}` where `projectId` is synthetic (`f"proj-{session_id[:8]}"`). `TODO(BD.F.2)` marks the missing HTTP call. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S3 `company-os/tools/demo-factory/main.py` `_run_build_job`** (line 356) is a 100 % mock: steps through `PIPELINE_STEPS` with `asyncio.sleep(0.01)` per step, never touches Wallet Studio, returns `projectUrl: https://app.walletstudio.com/projects/{proj-uuid}` and `demoUrl: https://demo.missmp.tech/{proj-uuid}` derived from a synthetic uuid, not a real shortcode. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S3 has no S2 client** — `grep -rn CONFIG_MGMT tools/demo-factory/` returns nothing. The mock does not need config; the real pipeline will. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **The real pipeline exists** — `company-os/tools/demo-factory/factory.py` is a CLI (`python factory.py run --brand Agila --line pet`) that drives `WSClient` (`ws_client.py`, reading `WS_BASE_URL` + `WS_API_KEY`) through: `create_project → post_clone_fixup → set_project_images → apply_ios_template → apply_google_template → apply_params → apply_translation_keys → apply_journey_actions → apply_token_ui → sync_pass_preview → create_test_pass → publish_ios_template` (indirectly via apply). It assembles `content` from `research_brand` (LLM) → `generate_strategy` → `generate_content`. This LLM research stage is the wrong input surface for P1 — the user already provided brand/market/config in S2. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **iPad demo URL pattern** — real demos resolve at `https://demo.missmp.tech/{shortcode}` where `shortcode` is a human-readable slug (e.g. `agila-pet`) written on the WS project via `WSClient.update_project`. The shortcode is initially set by `post_clone_fixup` in `company-os/tools/demo-factory/project.py` line 77 from `demo.get("shortcode")`. It is readable via `client.get_project(project_id)["shortcode"]`. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S4 auto-trigger is disabled in practice** — `S4_VERIFY_URL` env var is unset on the deployed S3 instance, so `_trigger_s4` logs a warning and no-ops. P1 does **not** include S4; that is P3. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S1→S3 SSE relay** (`s3_build_sse_stream` in S1 `main.py` line 175) already exists but cannot work today because `factoryRunId` is a synthetic 12-hex id, not a real S3 `buildId`. Once S3 returns real `buildId`, the relay begins functioning. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S2 config shape** (`company-os/tools/demo-config-mgmt/main.py` MOCK_CONFIG, line 39): `{brand, market, languages, shortcode, colors, logos, card, params, ipadDemo, journey, tokenUi}`. This aligns strongly with the `content` dict that the real factory pipeline expects (brand/market/languages/shortcode/colors/logos/card/params/journey/tokenUi). Minor deltas: S2 has `ipadDemo`; factory content has `demoSteps`/`steps`/`persona`/`translations`/`insuranceLine`. These deltas are resolved in §D3 below. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **S1 UI surface for completion** — `company-os/tools/demo-studio-v3/static/studio.js` lines 852-862: when the Firestore snapshot reports `status==='complete'` and `outputUrls.demoUrl` is truthy, it `addMessage('system', 'Demo deployed: ' + d.outputUrls.demoUrl)`. That writes the URL as plain text into the chat stream with no click affordance. P1 requires a clickable link, so a proper "Demo ready" panel must be added. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- **Session schema** — `session._UPDATABLE_FIELDS` at line 177 of `company-os/tools/demo-studio-v3/session.py` already includes `projectId`, `factoryRunId`, `outputUrls`. New fields (`buildId`, `demoUrl`, `projectUrl`, `shortcode`) must be added to the allowlist before any writer can set them; `update_session_field` raises `ValueError` otherwise. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 Orthogonal concerns explicitly **out of scope**: S4 verification (P3), Slack surfacing removal (Loop 2d — a separate Firebase Auth loop), WS template/theme changes, preview iframe staleness, dashboard health CORS. Any of these can land independently; P1 does not gate on them and does not gate them.
 
@@ -62,7 +62,7 @@ Orthogonal concerns explicitly **out of scope**: S4 verification (P3), Slack sur
 Two shapes were considered:
 
 - **D1.a — Full real pipeline.** S3 calls the existing `factory.py` pipeline end-to-end: Claude research → strategy → content generation → WS write → publish → return real shortcode + URLs.
-- **D1.b — MVP with S2 config as source of truth.** S3 creates a real WS project from the S2 config (brand/market/colors/logos/card/params/journey/tokenUi/ipadDemo/shortcode), applies the template, publishes, returns the real shortcode and URLs. No LLM research step inside the build. <!-- orianna: ok -->
+- **D1.b — MVP with S2 config as source of truth.** S3 creates a real WS project from the S2 config (brand/market/colors/logos/card/params/journey/tokenUi/ipadDemo/shortcode), applies the template, publishes, returns the real shortcode and URLs. No LLM research step inside the build. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - **D1.c — Thin mock + synthetic real-looking URL.** Leave `_run_build_job` as a mock but return `https://demo.missmp.tech/{slug}` derived from the S2 `shortcode`. Fastest but still no real project.
 
 **Decision: D1.b (MVP, S2 config as source of truth).** Rationale:
@@ -76,7 +76,7 @@ The LLM pipeline is not deleted; it remains available as the CLI (`python factor
 
 ### D2. S1 → S3 HTTP contract
 
-**Endpoint:** `POST {S3}/build` (already exists, body schema is `BuildRequestV2`). <!-- orianna: ok -->
+**Endpoint:** `POST {S3}/build` (already exists, body schema is `BuildRequestV2`). <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **Request body (sent by S1 `factory_client_v2.start_build`):**
 
@@ -99,7 +99,7 @@ The LLM pipeline is not deleted; it remains available as the CLI (`python factor
 
 `projectId` is the **real WS numeric project id** on the first build (e.g. `"10793"`), or echoed back on iteration rebuilds. It is **not** a UUID. S1 persists `projectId` and `buildId` on the session doc.
 
-**Terminal state discovery (S1):** S1 subscribes to `GET {S3}/build/{buildId}/events` SSE (already wired in `s3_build_sse_stream`). When S3 emits `build_complete` with payload `{buildId, projectId, shortcode, projectUrl, demoUrl}`, S1 writes the URLs to the session doc. When S3 emits `build_failed`, S1 transitions `building→failed`. <!-- orianna: ok -->
+**Terminal state discovery (S1):** S1 subscribes to `GET {S3}/build/{buildId}/events` SSE (already wired in `s3_build_sse_stream`). When S3 emits `build_complete` with payload `{buildId, projectId, shortcode, projectUrl, demoUrl}`, S1 writes the URLs to the session doc. When S3 emits `build_failed`, S1 transitions `building→failed`. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **S3 `build_complete` event payload schema (extended):**
 
@@ -119,19 +119,19 @@ The LLM pipeline is not deleted; it remains available as the CLI (`python factor
 
 Current mock emits the same keys but derives values from a synthetic uuid. D2 keeps the key shape so no S1 parser changes are needed — only the values become real.
 
-**Auth:** existing scheme unchanged. S1 → S3 passes `Authorization: Bearer ${FACTORY_TOKEN}` (S3 `_require_auth`, line 54). S3 → S1 callback is not in scope for P1 (S1 polls/subscribes via SSE; no push). S2 fetch from S3 uses S2's bearer token (`CONFIG_MGMT_TOKEN`). Internal-secret hop (S1 inbound from Slack/UI) stays on the S1 side only. <!-- orianna: ok -->
+**Auth:** existing scheme unchanged. S1 → S3 passes `Authorization: Bearer ${FACTORY_TOKEN}` (S3 `_require_auth`, line 54). S3 → S1 callback is not in scope for P1 (S1 polls/subscribes via SSE; no push). S2 fetch from S3 uses S2's bearer token (`CONFIG_MGMT_TOKEN`). Internal-secret hop (S1 inbound from Slack/UI) stays on the S1 side only. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **Timeouts:**
 
-- S1 → S3 `POST /build` synchronous call: 30 s. The endpoint returns after project-lookup only, so 5 s is the expected p99; 30 s accommodates a cold-start on S3 Cloud Run. <!-- orianna: ok -->
+- S1 → S3 `POST /build` synchronous call: 30 s. The endpoint returns after project-lookup only, so 5 s is the expected p99; 30 s accommodates a cold-start on S3 Cloud Run. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - S1 → S3 SSE subscribe: `httpx.AsyncClient` with no overall timeout; read timeout 30 s (matches the current pattern, tolerates pipeline step latency).
-- S3 → WS (per call inside build job): `WSClient` defaults to 30 s per request (`ws_client.py` line 43). No change. <!-- orianna: ok -->
-- Overall build wall-clock ceiling (S3 internal): 10 min. If exceeded, S3 emits `build_failed` with reason `timeout`. Matches the existing 5-min SSE client ceiling in `get_build_events` line 577; extended to 10 min for real builds. <!-- orianna: ok -->
+- S3 → WS (per call inside build job): `WSClient` defaults to 30 s per request (`ws_client.py` line 43). No change. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- Overall build wall-clock ceiling (S3 internal): 10 min. If exceeded, S3 emits `build_failed` with reason `timeout`. Matches the existing 5-min SSE client ceiling in `get_build_events` line 577; extended to 10 min for real builds. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **Retry policy:**
 
-- S1 → S3 `POST /build`: 1 attempt. Non-idempotent (creates projects), so no automatic retry. On 5xx, S1 propagates to the user as 502 with a retry-this-manually message. <!-- orianna: ok -->
-- S3 → WS: existing `WSClient` retry policy (2 retries on 5xx with 1 s/2 s backoff) is retained unchanged. <!-- orianna: ok -->
+- S1 → S3 `POST /build`: 1 attempt. Non-idempotent (creates projects), so no automatic retry. On 5xx, S1 propagates to the user as 502 with a retry-this-manually message. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- S3 → WS: existing `WSClient` retry policy (2 retries on 5xx with 1 s/2 s backoff) is retained unchanged. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - S3 → S2: 1 attempt, 10 s timeout. On failure, S3 emits `build_failed` with reason `config_fetch_failed`; no partial build.
 - S1 → S3 SSE reconnect: existing behaviour — S1 closes the stream on user navigation; SSE auto-reconnect is not added (out of scope).
 
@@ -139,7 +139,7 @@ Current mock emits the same keys but derives values from a synthetic uuid. D2 ke
 
 Move the real pipeline from `factory.py` into an importable library so `main.py` can call it without shelling out.
 
-**New module: `company-os/tools/demo-factory/factory_build.py`.** <!-- orianna: ok --> Exports one function:
+**New module: `company-os/tools/demo-factory/factory_build.py`.** <!-- orianna: ok -- work-workspace path, not strawberry-agents --> Exports one function:
 
 ```python
 async def run_build_from_config(
@@ -274,7 +274,7 @@ async def _run_build_job(build_id: str, session_id: str, project_id: str | None)
 | `outputUrls` | object `{demoUrl, projectUrl, passUrls}` | S1 SSE relay | Async, on `build_complete` event |
 | `status` | `complete` / `failed` | S1 SSE relay | Async, on terminal event |
 
-**`session._UPDATABLE_FIELDS` allowlist** at line 177 must grow to include: `buildId`, `shortcode`, `projectUrl`, `demoUrl`. `outputUrls`, `projectId`, `factoryRunId` are already there. <!-- orianna: ok -->
+**`session._UPDATABLE_FIELDS` allowlist** at line 177 must grow to include: `buildId`, `shortcode`, `projectUrl`, `demoUrl`. `outputUrls`, `projectId`, `factoryRunId` are already there. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **`factoryRunId` deprecation.** Today `factory_bridge_v2` writes a synthetic uuid into `factoryRunId`. Under P1, `factoryRunId` is replaced by `buildId` (real S3 build id). Keep the column for one release for backward-compat reads; stop writing it. Follow-up plan removes it.
 
@@ -304,11 +304,11 @@ Build failure surfaces via a single S3 event type `build_failed` with a `reason`
 | `timeout` | Build exceeds 10 min wall-clock | "Build timed out. Try again." |
 | `unexpected` | Any uncaught exception | "Unexpected error. Try again." |
 
-**Partial-build recovery.** If the pipeline fails after `create_project` but before `publish_ios_template`, the project exists but is not published. S1 stores `projectId` on the session from the sync S3 response. On the user's next build click, S1 sends `{sessionId, projectId}`; S3 re-uses the project (existing `/build` behaviour — validates the projectId exists in `_projects` or Firestore). This means a retry after partial failure picks up where the pipeline left off for the `create_project` step. Later steps are idempotent (all WS writes are full-object PUTs per `ws_client.py` comments) so re-running the full pipeline against the existing project is safe. <!-- orianna: ok -->
+**Partial-build recovery.** If the pipeline fails after `create_project` but before `publish_ios_template`, the project exists but is not published. S1 stores `projectId` on the session from the sync S3 response. On the user's next build click, S1 sends `{sessionId, projectId}`; S3 re-uses the project (existing `/build` behaviour — validates the projectId exists in `_projects` or Firestore). This means a retry after partial failure picks up where the pipeline left off for the `create_project` step. Later steps are idempotent (all WS writes are full-object PUTs per `ws_client.py` comments) so re-running the full pipeline against the existing project is safe. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **Orphan projects.** If a user abandons a build mid-flight and the project is never re-used, it leaks. Not resolved in P1 (matches the `s3-project-reuse-and-s4-trigger` stance). Track as OQ-4.
 
-**S4 no-op.** S4 auto-trigger stays disabled (`S4_VERIFY_URL` unset in prod). The call still fires on build success but `_trigger_s4` logs a warning and returns without error. Build terminal state is independent of S4. <!-- orianna: ok -->
+**S4 no-op.** S4 auto-trigger stays disabled (`S4_VERIFY_URL` unset in prod). The call still fires on build success but `_trigger_s4` logs a warning and returns without error. Build terminal state is independent of S4. <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 ### D7. Deploy & flags
 
@@ -338,13 +338,13 @@ S1 deploy is feature-gated via the same observable behaviour — S1 cares about 
 Aphelios owns task breakdown. Each task below is sized approximately; Aphelios rescopes to 20–60 min tranches with xfail-first discipline per rule 12.
 
 - [ ] **T.P1.1** — xfail contract test: S3 `POST /build` returns real `buildId` + `projectId` when `FACTORY_REAL_BUILD=1` and S2 config present; asserts no synthetic uuid in response — kind: test | estimate_minutes: 30
-- [ ] **T.P1.2** — Implement `company-os/tools/demo-factory/config_mgmt_client.py` (copy/adapt from S1's) — kind: code | estimate_minutes: 25 <!-- orianna: ok -->
-- [ ] **T.P1.3** — Extract `run_build_from_config` into `company-os/tools/demo-factory/factory_build.py`; library-only, no CLI — kind: code | estimate_minutes: 55 <!-- orianna: ok -->
+- [ ] **T.P1.2** — Implement `company-os/tools/demo-factory/config_mgmt_client.py` (copy/adapt from S1's) — kind: code | estimate_minutes: 25 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- [ ] **T.P1.3** — Extract `run_build_from_config` into `company-os/tools/demo-factory/factory_build.py`; library-only, no CLI — kind: code | estimate_minutes: 55 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - [ ] **T.P1.4** — Implement `s2_config_to_factory_content` translator with full test coverage for shape alignment — kind: code+test | estimate_minutes: 45
-- [ ] **T.P1.5** — Rewrite `_run_build_job` in `company-os/tools/demo-factory/main.py` behind `FACTORY_REAL_BUILD` flag — kind: code | estimate_minutes: 40 <!-- orianna: ok -->
+- [ ] **T.P1.5** — Rewrite `_run_build_job` in `company-os/tools/demo-factory/main.py` behind `FACTORY_REAL_BUILD` flag — kind: code | estimate_minutes: 40 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - [ ] **T.P1.6** — Extend `build_complete` event payload to include `shortcode`, `projectUrl`, `demoUrl`, `passUrls` with real values — kind: code | estimate_minutes: 20
 - [ ] **T.P1.7** — xfail contract test: S3 emits `build_failed` with each of the five `reason` values under forced failure conditions — kind: test | estimate_minutes: 40
-- [ ] **T.P1.8** — Implement `company-os/tools/demo-studio-v3/factory_client_v2.py` with `httpx.AsyncClient` calling S3 `POST /build` — kind: code | estimate_minutes: 30 <!-- orianna: ok -->
+- [ ] **T.P1.8** — Implement `company-os/tools/demo-studio-v3/factory_client_v2.py` with `httpx.AsyncClient` calling S3 `POST /build` — kind: code | estimate_minutes: 30 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - [ ] **T.P1.9** — Rewrite S1 `factory_bridge_v2.trigger_factory_v2` to call `factory_client_v2.start_build` and return `{ok, buildId, projectId}` — kind: code | estimate_minutes: 25
 - [ ] **T.P1.10** — Extend S1 SSE relay (`s3_build_sse_stream` → session doc writer) to parse `build_complete` and write `shortcode`, `projectUrl`, `demoUrl`, `outputUrls`, transition to `complete` — kind: code | estimate_minutes: 35
 - [ ] **T.P1.11** — Extend `session._UPDATABLE_FIELDS` allowlist with `buildId`, `shortcode`, `projectUrl`, `demoUrl` — kind: code | estimate_minutes: 10
@@ -360,16 +360,16 @@ Total estimate: approx 545 min across 16 tasks. Aphelios re-estimates per strict
 
 Files that will change (full list for Aphelios' breakdown):
 
-**S3 — `company-os/tools/demo-factory/`:** <!-- orianna: ok -->
+**S3 — `company-os/tools/demo-factory/`:** <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - `main.py` — rewrite `_run_build_job` (line 356), extend `build_complete` event payload (line 272-286 of `_run_mock_build` for shape parity)
-- `factory_build.py` — NEW, library entry point <!-- orianna: ok -->
-- `config_mgmt_client.py` — NEW, S2 client <!-- orianna: ok -->
-- `tests/test_build.py` — xfail tests T.P1.1, T.P1.7 <!-- orianna: ok -->
-- `tests/test_factory_build.py` — NEW, unit tests for `run_build_from_config` and `s2_config_to_factory_content` <!-- orianna: ok -->
+- `factory_build.py` — NEW, library entry point <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- `config_mgmt_client.py` — NEW, S2 client <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- `tests/test_build.py` — xfail tests T.P1.1, T.P1.7 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- `tests/test_factory_build.py` — NEW, unit tests for `run_build_from_config` and `s2_config_to_factory_content` <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - `requirements.txt` — no new deps (requests + google-cloud-firestore already present)
 
-**S1 — `company-os/tools/demo-studio-v3/`:** <!-- orianna: ok -->
-- `factory_client_v2.py` — NEW, HTTPS client to S3 <!-- orianna: ok -->
+**S1 — `company-os/tools/demo-studio-v3/`:** <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
+- `factory_client_v2.py` — NEW, HTTPS client to S3 <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 - `factory_bridge_v2.py` — rewrite `trigger_factory_v2` (line 17) to call the new client
 - `main.py` — extend SSE relay to parse build_complete and write session fields; line ~175 `s3_build_sse_stream` and line ~2239 `session_logs_sse`
 - `session.py` — extend `_UPDATABLE_FIELDS` allowlist (line 177)
@@ -377,9 +377,9 @@ Files that will change (full list for Aphelios' breakdown):
 - `tests/test_factory_bridge_v2.py` — rewrite for real HTTP client
 - `tests/test_build_endpoint.py` — integration test T.P1.12
 
-**No changes** to `company-os/tools/demo-config-mgmt/` (S2 already exposes `GET /v1/config/{id}`; D3 relies on it). <!-- orianna: ok -->
+**No changes** to `company-os/tools/demo-config-mgmt/` (S2 already exposes `GET /v1/config/{id}`; D3 relies on it). <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
-**No changes** to `company-os/tools/demo-factory/factory.py` (kept as CLI for bespoke use). <!-- orianna: ok -->
+**No changes** to `company-os/tools/demo-factory/factory.py` (kept as CLI for bespoke use). <!-- orianna: ok -- work-workspace path, not strawberry-agents -->
 
 **No changes** to `demo-ui` or `demo-preview` (URL patterns are consumed, not produced).
 
