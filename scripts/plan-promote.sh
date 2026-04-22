@@ -257,14 +257,8 @@ case "$SOURCE_PARENT_BASE" in
 esac
 TARGET_DIR="${PLANS_ROOT}/${TARGET_STATUS}${CONCERN_SUBDIR}"
 TARGET_PATH="$TARGET_DIR/$BASENAME"
-# DEST_REL is the repo-relative destination path, used as STAGED_SCOPE when
-# invoking orianna-sign.sh so its signing commit is scoped to exactly this file
-# and does not absorb concurrent sessions' staged work.
-# See: plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md T3
-DEST_REL="${TARGET_PATH#"$REPO_ROOT/"}"
-# Export STAGED_SCOPE scoped to child invocations of orianna-sign.sh only;
-# it is unset after this block so callers of plan-promote.sh do not inherit it.
-export STAGED_SCOPE="$DEST_REL"
+# Note: STAGED_SCOPE is no longer exported here. orianna-sign.sh auto-derives it
+# from PLAN_REL when unset (T5 — 2026-04-22-concurrent-coordinator-race-closeout.md).
 
 mkdir -p "$TARGET_DIR"
 
@@ -282,9 +276,6 @@ fi
 # 7. Commit.
 git -C "$REPO_ROOT" add -- "$TARGET_PATH"
 git -C "$REPO_ROOT" commit -m "chore: promote $BASENAME to $TARGET_STATUS" >&2
-# STAGED_SCOPE was exported above for orianna-sign.sh child invocations; unset now
-# so it does not leak to callers of plan-promote.sh or the push step.
-unset STAGED_SCOPE
 
 # 8. Push (skipped when NO_PUSH env var is set — for test harnesses without a remote).
 if [ -z "${NO_PUSH:-}" ]; then
