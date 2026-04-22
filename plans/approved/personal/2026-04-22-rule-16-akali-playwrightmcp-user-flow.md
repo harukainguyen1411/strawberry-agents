@@ -7,6 +7,7 @@ owner: Karma
 created: 2026-04-22
 tests_required: true
 orianna_signature_approved: "sha256:116d840b884eee13382fb02d57c11a5a5c318f122e1fd2d4b2523deef43d9d27:2026-04-22T11:32:12Z"
+orianna_signature_in_progress: "sha256:116d840b884eee13382fb02d57c11a5a5c318f122e1fd2d4b2523deef43d9d27:2026-04-22T13:06:54Z"
 ---
 
 # Rule 16 strengthening — name Akali, require Playwright MCP, extend to user-flow changes
