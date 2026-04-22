@@ -9,6 +9,7 @@ tests_required: true
 tags: [hooks, pre-commit, plan-lifecycle, bugfix]
 related:
   - plans/approved/personal/2026-04-21-plan-prelint-shift-left.md
+orianna_signature_approved: "sha256:5bd53b199b6f2d4cb5095e1a3dedf82ef1a9687d55c4a07700ae8a395a015b23:2026-04-22T06:31:29Z"
 ---
 
 # Rename-aware Rule 4 in the plan-structure pre-commit hook
