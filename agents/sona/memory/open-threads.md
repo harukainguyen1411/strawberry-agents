@@ -1,30 +1,36 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (Lissandra pre-compact consolidation; twelfth-leg shard 2026-04-22-3a5b4781; eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (Lissandra pre-compact consolidation #2; shard 2026-04-22-dd3ae6e1; prior shards 2026-04-22-3a5b4781, 2026-04-22-0cf7b28e, 2026-04-22-68fb9cb6, 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
 
 ---
 
-## Dashboard-split PR #65 — Viktor god-branch merge in-flight (CRITICAL, task #33)
+## Dashboard-split W1/W2 — MERGED; W5 deploy prep OPEN (CRITICAL, IAM blocked)
 
-**Status (2026-04-22):** Plan `proposed→approved (bbf95e7)→in-progress`. Viktor W1 scaffold: xfail `fede8ac` + impl `cb57ce6` on `feat/demo-dashboard-split`. PR #65 open; Senna LGTM + Lucian advisory-only (both hit reviewer-auth.sh failure on `missmp/company-os`). Duong directed retarget to god branch `feat/demo-studio-v3`. Ekko retargeted; god branch 20+ commits behind main → 132 files delta. Duong directed Path A: Viktor merging `main → feat/demo-studio-v3` with conflict resolution (task #33). Viktor dispatched; **in-flight at compact boundary**.
-**Shard pointers:** 2026-04-22-3a5b4781.
-**Next action:** Await Viktor merge return → re-check PR #65 diff → get Duong harukainguyen1411 approve → merge.
-
----
-
-## Firestore config-leak fix — T7 wipe HELD pending Duong go-ahead (CRITICAL)
-
-**Status (2026-04-22):** Investigation `b3729b0` → plan `44d423f` → in-progress `82d9cba`. Talon: T1-T6 + T8-partial + T7-script-written; commits `cc34cb3` (xfail) + `12b9fd7` (impl) on `feat/demo-studio-v3`. 22/22 tests green. T7 wipe of 96 production Firestore docs: **HELD — Duong go-ahead required**. S2-persistence OQ: does stripping `firestore_url` from live docs break S2 continuity? PR #32 on `feat/demo-studio-v3` not yet reviewed.
-**Shard pointers:** 2026-04-22-3a5b4781.
-**Next action:** (1) Duong go-ahead on T7 + resolve S2-persistence OQ; (2) Senna+Lucian review PR #32; (3) Duong harukainguyen1411 approve PR #32.
+**Status (2026-04-22):** PR #65 (W1 scaffold) MERGED `0bb60d8` after Viktor resolved god-branch drift. PR #66 (W2 — 8 routes from S1) MERGED `4c1d4bb`. Dashboard W1+W2 live on `feat/demo-studio-v3`. PR #68 OPEN (`feat/demo-dashboard-w5-deploy-prep`): SA created; `deploy.sh` fixed; **IAM blocked** — `roles/datastore.user` + `secretAccessor` grants require Duong `harukainguyen1411` in GCP console. Dashboard scope contracted: deliverable is "working URL + handoff."
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Duong grants IAM binds → Ekko deploys dashboard service → confirm working URL.
 
 ---
 
-## Loop 2b + 2c Firebase auth plans — awaiting Duong approval
+## Firestore config-leak fix — T7 wipe outcome ambiguous (harness-blocked)
 
-**Status (2026-04-22):** Loop 2b `73c28af` (`plans/proposed/work/`) — frontend sign-in UI (Firebase Web SDK, Google button, `onAuthStateChanged`, POST `/auth/login`). Loop 2c `d045852` (`plans/proposed/work/`) — route migration (`require_session → User`, ownership claim-on-first-touch, all `/session/{sid}/*` routes). Both await Duong semantic approval.
-**Shard pointers:** 2026-04-22-3a5b4781.
-**Next action:** Surface to Duong for approval; after approval dispatch Ekko for `proposed→approved→in-progress` promote chain.
+**Status (2026-04-22):** T1-T6 + T8 shipped (`cc34cb3` + `12b9fd7`). Duong green-light for T7 received. Ekko dispatched T7 wipe script but was harness-blocked (subprocess denied by sandbox). Outcome ambiguous — `config.firestore_url` field may still be in staging Firestore docs. Ekko learning `ae08c07`. PR #32 on `feat/demo-studio-v3` reviewed: Senna+Lucian findings committed (`c4e678d`, `c6b820b`).
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Confirm `config.firestore_url` field presence in staging docs; if still present, schedule human-run or alternative execution path for wipe. Then get Duong approve on PR #32.
+
+---
+
+## Firebase Loop 2b — PR #69 OPEN, Lucian request-changes (test strategy gap)
+
+**Status (2026-04-22):** Loop 2a implemented. Loop 2b (frontend sign-in UI) at `plans/approved/work/`. PR #69 OPEN (`feat/firebase-auth-2b-frontend-signin`). Akali: PASS. Senna: advisory LGTM (3 important findings, non-blocking). Lucian: REQUEST-CHANGES — plan specified Playwright TypeScript + Firebase Auth Emulator; impl shipped source-grep pytest. T.8 DoD ("verify emulator run") unfulfilled. Reviewer-auth denied for `missmp/company-os`; Lucian verdict at `/tmp/lucian-pr-69-verdict.md`.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Duong decision — accept source-grep coverage stance (override Lucian) or dispatch Vi for emulator tests. Then get Duong `harukainguyen1411` web-UI approve and merge.
+
+## Firebase Loop 2c — dispatch in-flight, remote push unconfirmed
+
+**Status (2026-04-22):** Loop 2c (`firebase-auth-loop2c-route-migration`) at `plans/approved/work/`. Vi dispatched on `feat/firebase-auth-2c-xfails` (xfail tests); Jayce dispatched on `feat/firebase-auth-2c-impl` (impl). Branches exist locally. Remote push status unconfirmed at compact boundary.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Check Vi + Jayce return messages; verify remote push; open PRs if commits are on remote. Gate: Loop 2b must merge first (2b is the base for 2c).
 
 ---
 
@@ -89,11 +95,11 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation; twelfth-leg shard
 
 ---
 
-## Preview iframe staleness (demo-studio-v3)
+## Preview iframe staleness (demo-studio-v3) — plan in-progress, impl not yet dispatched
 
-**Status (2026-04-22):** Open — new thread. `demo-preview` remote service renders Allianz regardless of current S2 state. S2 appears to seed every new session with the Allianz template default. Chat works end-to-end; preview does not reflect actual session brand. Separate from chat bubble fix.
-**Shard pointers:** 2026-04-22-0cf7b28e.
-**Next action:** Separate plan needed. Triage: S2 seeding bug vs preview-service cache bug vs iframe `refreshPreview()` wiring. Commission Karma or Azir for a quick-lane plan once chat branch is stable.
+**Status (2026-04-22):** Plan `2026-04-22-preview-iframe-staleness-triage.md` promoted to in-progress (Ekko `192e516`). PR #67 (server.py port + `/preview` route fix) MERGED and deployed (`demo-preview-00010-ff4`). Remaining triage tasks T1-T4 (S2 seeding audit, iframe `refreshPreview()` wiring, S2 brand-state propagation) not yet dispatched to builders.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Dispatch Jayce or Viktor on triage tasks T1-T4 per the in-progress plan. Confirm whether preview now reflects session brand after PR #67 deploy before opening new build tasks.
 
 ---
 
@@ -115,9 +121,15 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation; twelfth-leg shard
 
 ## Coordinator identity misroute on post-compact resume
 
-**Status (2026-04-22):** Open — class of bug, not just the one-off this session. Full postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Fired when the session did Sona-concern work under an Evelynn tag.
+**Status (2026-04-22):** Open — class of bug, not just the one-off this session. Full postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Fired when the session did Sona-concern work under an Evelynn tag. Mitigation #3 (bash cwd-wedge protocol) landed (`8e796f1`).
 **Shard pointers:** 2026-04-22-0cf7b28e.
 **Next action:** Commission Swain or Karma for a concern-check-on-resume mechanism (post-compact identity re-validation + `/end-session` argument verification + default-escalate-not-silent-fallback).
+
+## Coordinator QA verification discipline — standing rule
+
+**Status (2026-04-22):** Duong landed feedback doc `feedback/2026-04-22-coordinator-verify-qa-claims.md` (`c19c190`). Rule: coordinator must independently verify QA agent claims before relaying pass verdicts to Duong. Check test counts, coverage claims, screenshots, and Playwright flow evidence — do not relay Akali or Vi pass reports unchecked.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Standing operational rule — no discrete next action. Apply on every QA result relay.
 
 ---
 
@@ -133,11 +145,11 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation; twelfth-leg shard
 **Shard pointers:** 2026-04-22-68fb9cb6.
 **Next action:** After Viktor batch and Jayce-1 land: re-run Akali-chat to confirm chat 200. Then full final QA pass before merge.
 
-## Firebase auth — Ekko in-flight
+## Firebase auth — Loop 2a implemented; Identity Toolkit OQs resolved
 
-**Status:** Duong handed off all 6 Firebase-auth OQs under handsoff mode. Ekko dispatched: resolve OQs, promote `proposed→approved→in-progress`, enable Identity Toolkit + Google provider + authorized domain + SA role grant.
-**Shard pointers:** 2026-04-22-68fb9cb6.
-**Next action:** Await Ekko return. After Firebase infra lands: dispatch Akali auth track against `/auth/login` with `@missmp.tech` Google account.
+**Status:** Ekko resolved 6 Firebase-auth OQs; Loop 2a promoted through full chain to implemented (`5d76d1c`). Server backbone `/auth/config`, `/auth/login`, `/auth/me`, `/auth/logout` live on `feat/demo-studio-v3`. Identity Toolkit + Google provider + authorized domain configured.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Loop 2b PR #69 must merge first → then Loop 2c → then dispatch Akali auth track against `/auth/login` with `@missmp.tech` Google account. Akali auth track deferred until 2b+2c land.
 
 ## Slack MCP — blocked on xoxb token
 
