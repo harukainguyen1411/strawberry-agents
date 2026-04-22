@@ -133,21 +133,59 @@ while IFS= read -r log_line; do
   name_status="$(git -C "$REPO_ROOT" diff-tree --no-commit-id -r --name-status -M "$commit_hash" 2>/dev/null)"
   [ -n "$name_status" ] || continue
 
-  # Determine the file path in this commit and its status
+  # Determine the file path and status for PLAN_REL in this commit.
+  # A commit may touch multiple files; we must look up the status of our
+  # specific file rather than blindly taking head -1 of the name_status
+  # output (which would misclassify multi-file commits where PLAN_REL is
+  # not the first listed file).
+  #
   # For a rename: "R100\told-path\tnew-path"
   # For add/modify: "A\tpath" or "M\tpath"
-  file_status="$(printf '%s\n' "$name_status" | awk '{print substr($1,1,1)}' | head -1)"
+  #
+  # Strategy: scan all lines; prefer a line whose new-path (col 2 or 3
+  # for renames) matches PLAN_REL.  Fall back to the first non-D line.
+  file_status=""
+  commit_file=""
+  _first_am_status=""
+  _first_am_file=""
+  while IFS='	' read -r _st _f1 _f2; do
+    _s1="$(printf '%s' "$_st" | cut -c1)"
+    if [ "$_s1" = "R" ]; then
+      # Rename: _f1=old-path _f2=new-path
+      if [ "$_f2" = "$PLAN_REL" ] || [ "$_f1" = "$PLAN_REL" ]; then
+        file_status="R"
+        commit_file="$_f2"
+        break
+      fi
+    elif [ "$_s1" = "A" ] || [ "$_s1" = "M" ]; then
+      if [ "$_f1" = "$PLAN_REL" ]; then
+        file_status="$_s1"
+        commit_file="$_f1"
+        break
+      fi
+      # Save the first A/M line as fallback in case PLAN_REL isn't found
+      if [ -z "$_first_am_status" ]; then
+        _first_am_status="$_s1"
+        _first_am_file="$_f1"
+      fi
+    fi
+  done <<_NS_EOF
+$(printf '%s\n' "$name_status")
+_NS_EOF
+  # Fallback: if PLAN_REL not found by path-match, use the first A/M line
+  if [ -z "$file_status" ] && [ -n "$_first_am_status" ]; then
+    file_status="$_first_am_status"
+    commit_file="$_first_am_file"
+  fi
   case "$file_status" in
     R)
       # This commit is a rename — the signature existed before this commit.
       # Skip it: it cannot be the signing commit.
       continue
       ;;
-    A|M)
-      commit_file="$(printf '%s\n' "$name_status" | awk '{print $2}' | head -1)"
-      ;;
+    A|M) ;;
     *)
-      # Unknown status — skip
+      # Unknown status (D, or empty) — skip
       continue
       ;;
   esac
