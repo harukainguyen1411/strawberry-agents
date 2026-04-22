@@ -27,7 +27,25 @@ Last updated: 2026-04-22 (hands-dirty loop leg; eleventh-leg shard 2026-04-22-0c
 - QA report `1bc8196`: `assessments/qa-reports/2026-04-22-loop1-cors-proxy-dashboard-all-5-up.{md,png}`. All 5 service cards UP, 0 CORS errors.
 - Pushed to origin on both repos.
 
-**Next loop:** Loop 2 — Firebase auth backbone (`plans/approved/work/2026-04-22-firebase-auth-for-demo-studio.md` already signed, W0-W6 unstarted). Before W0 can run, verify IAM grant `roles/firebase.sdkAdminServiceAgent` on SA `266692422014-compute@developer.gserviceaccount.com` in project `mmpt-233505` (may have been done by Ekko in a prior leg).
+## Loop 2a — Firebase auth W1 server backbone — RESOLVED (2026-04-22)
+
+**Shipped:**
+- Plan `c59e2d6`: strawberry-agents `plans/proposed/work/2026-04-22-firebase-auth-loop2a-server-backbone.md`.
+- xfail `6a96d04`: 3 test files / 15 xfails on `feat/demo-studio-v3` — `tests/test_firebase_auth.py`, `tests/test_auth_cookie_encode.py`, `tests/test_auth_routes.py`.
+- Impl `b2adf20` on `feat/demo-studio-v3`:
+  - `firebase-admin>=6.5.0` dep.
+  - `firebase_auth.py` new module: `User` dataclass, `verify_firebase_token`, `InvalidTokenError` / `DomainNotAllowedError`, lazy Admin-SDK init with ADC preference.
+  - `auth.py` additive: `encode_user_cookie` / `decode_user_cookie`, `USER_COOKIE_MAX_AGE=7d`, `AUTH_LEGACY_COOKIE_ALLOWED=True`. Existing helpers untouched.
+  - `main.py` four new routes: `GET /auth/config`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
+  - 15/15 tests green. IAM grant `roles/firebase.sdkAdminServiceAgent` **not required this loop** — `verify_id_token` uses public JWKs.
+- QA `73e001c`: `assessments/qa-reports/2026-04-22-loop2a-firebase-auth-w1-server-backbone.{md,png}`. Playwright smokes: `/auth/config` 200 + correct JSON, `/auth/me` 401 unauth.
+- Pushed to origin both repos.
+
+**Loop 2 queue (remaining legs):**
+- **Loop 2b (Task #9)** — Frontend sign-in UI (W4): `static/index.html` + `static/auth.js` + CSS. Firebase Web SDK via CDN, Sign in with Google button, `onAuthStateChanged` wiring, POST `/auth/login` on success. Playwright verify: button visible unauth; email shown authed.
+- **Loop 2c (Task #10)** — Route migration (W2+W3): `require_session` → returns `User`; add `require_session_owner`; add `ownerEmail` on session.py + claim-on-first-touch; migrate all `/session/{sid}/*` routes. Tests: `test_require_session.py`, `test_require_session_owner.py`, `test_session_ownership.py`, `test_route_auth_matrix.py`.
+- **Loop 2d (Task #11)** — Remove Slack scaffolding per Duong's "entirely" directive: strip `slack_user_id`/`slack_channel`/`slack_thread_ts` fields; remove `POST /session` Slack handoff; decide on `/auth/session/{sid}?token=...` (drop vs keep). Deviates from approved dual-stack ADR — needs follow-up ADR documenting rationale.
+- **W0 IAM grant** — still HUMAN-BLOCKED for Cloud Run deploy, not for unit tests. Run when Ekko deploys Loop 2a/2b to staging.
 
 ---
 
