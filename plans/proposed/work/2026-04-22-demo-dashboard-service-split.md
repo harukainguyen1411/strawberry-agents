@@ -13,7 +13,6 @@ tags:
   - split
   - work
 tests_required: true
-orianna_signature_approved: "sha256:1dcbeac03f834a2ec711c786f52e325bea5ea2ad7baf84aead23979f3b2d7097:2026-04-22T07:53:53Z"
 ---
 
 # ADR: Split `/dashboard` out of demo-studio-v3 into a new Cloud Run service
@@ -67,7 +66,7 @@ S1 keeps everything else. Nothing else depends on these handlers.
 
 ### 2.3 Cross-service dependencies after split
 
-- **Firestore.** Both services read sessions from `demo-studio-sessions` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> collection. Dashboard is read-only; studio is read-write. IAM: `demo-dashboard` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> runtime SA gets `roles/datastore.user` (or a narrower `demo-studio-sessions`-only custom role if we want to be strict later).
+- **Firestore.** Both services read sessions from `demo-studio-sessions` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> collection. Dashboard is read-only; studio is read-write. IAM: `demo-dashboard` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> runtime SA gets `roles/datastore.user` <!-- orianna: ok -- IAM role string, not a filesystem path --> (or a narrower `demo-studio-sessions`-only custom role if we want to be strict later).
 - **S2–S5 health.** Dashboard is the only caller of the Loop 1 proxy. Moves cleanly.
 - **Test-results data.** `/api/test-results` + `/api/test-run-history` read `test-results.json` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> and `test-run-history.json` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> as local files today. Two options:
   1. (short-term) bundle stale copies into the dashboard image,
@@ -103,9 +102,9 @@ Through W1–W3, dashboard routes stay behind the existing `require_session` dep
 - **In:** new service scaffolding, migrated routes, new deploy pipeline, Playwright verify, S1 cleanup of migrated routes.
 - **Out:**
   - Firebase auth wiring (W4 picks it up; gated on Loop 2b+2c landing).
-  - Custom domain mapping (`dashboard.mmp.tech` or similar) — follow-up when IAM has the domain.
+  - Custom domain mapping (`dashboard.mmp.tech` <!-- orianna: ok -- prospective external domain, not a local path --> or similar) — follow-up when IAM has the domain.
   - `demo-studio-mcp` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> deletion (separate MCP retirement ADR).
-  - Firestore custom role narrower than `roles/datastore.user` — later hardening.
+  - Firestore custom role narrower than `roles/datastore.user` <!-- orianna: ok -- IAM role string, not a filesystem path --> — later hardening.
   - Batching / GraphQL for the managed-sessions API — no change this split.
 
 ## Test plan
@@ -150,13 +149,13 @@ All xfail-first (Rule 12) — committed as xfail on `feat/demo-dashboard-split` 
 - **Code duplication.** `firebase_auth.py` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path -->, logger, Firestore read client are copied into the dashboard folder in W2. Mitigation: factor into a shared Python package (`tools/_shared/` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> or similar) in a follow-up ADR once both services are stable. Accepted tech debt for the split PR.
 - **test-results.json data source.** Current local-file scheme is already broken for multi-instance S1 — we flush this to Firestore in W2 regardless. Risk: schema churn between old and new readers during cutover. Mitigation: freeze test-results writes on S1 side for the cutover window (hours, not days).
 - **Deploy cost.** New Cloud Run service = min-instances=0 default (same as S1), $0 idle. Negligible.
-- **IAM drift.** Dashboard SA needs `roles/datastore.user`. Mitigation: explicit `gcloud projects add-iam-policy-binding` in deploy.sh comments; Ekko runs it once pre-W5.
+- **IAM drift.** Dashboard SA needs `roles/datastore.user` <!-- orianna: ok -- IAM role string, not a filesystem path -->. Mitigation: explicit `gcloud projects add-iam-policy-binding` in deploy.sh comments; Ekko runs it once pre-W5.
 - **Split regression on dashboard.** Playwright E2E against the new service before W5 prod cutover. Any mismatch surfaces before real traffic.
 
 ## 7. Open questions
 
 1. **Should `demo-dashboard` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> use the same `demo-runner-sa` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> runtime SA as S1, or a scoped `demo-dashboard-sa`?** Default to same SA for W5; tighten to scoped SA in a follow-up once IAM separation is needed.
-2. **Custom domain (`dashboard.mmp.tech` or subfolder on the main domain)?** Deferred — not in this plan's scope. `*.run.app` URL is fine for internal tooling.
+2. **Custom domain (`dashboard.mmp.tech` <!-- orianna: ok -- prospective external domain, not a local path --> or subfolder on the main domain)?** Deferred — not in this plan's scope. `*.run.app` URL is fine for internal tooling.
 3. **Keep `/test-dashboard` as a separate HTML route, or fold into `/dashboard` tabs?** Keep separate for this split — minimize code churn. Revisit after merge.
 4. **Freeze the S1 `test-results.json` <!-- orianna: ok -- cross-repo/service token, not a local strawberry-agents path --> writer during cutover, or dual-write through W3?** Freeze — simplest and the window is short.
 
