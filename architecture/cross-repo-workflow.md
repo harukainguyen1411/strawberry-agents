@@ -103,6 +103,21 @@ grep -r "bee-worker" apps/
 
 ---
 
+## Work-scope Reviewer Anonymity
+
+Work-concern repos live under the `missmp/` GitHub organisation. Duong's MMP teammates can
+see every commit message, PR review body, and comment on those repos. Agent-system internals
+(agent names, reviewer handles, `*@anthropic.com` emails, `Co-Authored-By: Claude` trailers)
+must never appear in work-scope surfaces.
+
+Enforcement is automatic:
+- Pre-commit hook scans commit messages when `origin` matches `[:/]missmp/`
+- `scripts/reviewer-auth.sh` scans review/comment bodies before posting
+
+Full denylist and guidance: `architecture/pr-rules.md` `#work-scope-anonymity`.
+
+---
+
 ## Conventions Summary
 
 1. Plans always in `strawberry-agents`. PRs always in `strawberry-app`.
