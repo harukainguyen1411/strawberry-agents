@@ -35,6 +35,7 @@ These scripts implement the Orianna-signed plan lifecycle (ADR `plans/implemente
 | `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` | Installed via `scripts/install-hooks.sh` | Pre-commit hook that rejects any commit that edits the body of a signed plan without updating the signature. For every staged `plans/**/*.md` carrying any `orianna_signature_*` field, recomputes the body hash via `scripts/orianna-hash-body.sh` against the staged blob and compares it to the hash stored in each signature field. Exits 1 with a self-documenting runbook error (recovery steps inline in the message) if any hash mismatches. Admin `Orianna-Bypass:` trailer bypasses the check (Duong only). | `0` — all staged signed plans have matching hashes; `1` — at least one mismatch (runbook error printed) |
 | `scripts/orianna-pre-fix.sh` | `bash scripts/orianna-pre-fix.sh <plan.md> [--concern work\|personal]` | Applies known-safe mechanical rewrites to a plan file before the first Orianna invocation to eliminate common false-positive patterns. Three passes: (A) concern-scoped legacy workspace-prefix rewriting (work concern only); (B) appends `<!-- orianna: ok -- URL-shaped prose token (<host>) -->` to lines with backtick-quoted tokens from the well-known prose-host allowlist (claude.com, anthropic.com, github.com, code.claude.com); (C) reports `?`-marker presence in §10/§11 to stderr with exit 0 (human review needed, no file mutation). Idempotent: a second invocation on an already-fixed plan produces a zero-diff no-op. Concern inferred from plan frontmatter if the flag is absent. | `0` — success (rewrites applied or no-op); non-zero — invocation error only |
 | `scripts/_lib_stale_lock.sh` | Sourced by `scripts/orianna-sign.sh` and `scripts/plan-promote.sh` | Shared library exposing `maybe_clear_stale_lock <lockfile>`. Clears a stale `.git/index.lock` file only when: (a) the file is older than 60 seconds (via `stat -f %m` on macOS or `stat -c %Y` on Linux), AND (b) `lsof <lockfile>` returns no holder. If `lsof` is missing, treats the lock as cannot-verify and refuses to clear. Emits an audit line to stderr on clear. Sourced at startup of the two calling scripts; no-op if the lockfile is absent or fresh. | Not a standalone script — sourced |
+| `scripts/_lib_coordinator_lock.sh` | Sourced by `scripts/orianna-sign.sh` and `scripts/plan-promote.sh` | Shared library exposing `coordinator_lock_acquire <lockfile>` and `coordinator_lock_release`. Implements an advisory exclusive lock over the shared `.git/strawberry-promote.lock` lockfile, preventing concurrent `orianna-sign.sh` and `plan-promote.sh` invocations from racing the git index (git add→commit window). Prefers `flock(1)`; falls back to mkdir-based lock for environments where flock is absent (Git Bash on Windows, stripped macOS setups). On contention: prints `coordinator is already running (pid N)` to stderr and exits 1 (fast-fail, no wait). Trap-based auto-release on EXIT/INT/TERM. Lockfile lives under `.git/` (never tracked). See: `plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md` T3. | Not a standalone script — sourced |
 
 ### Shape B commit contract
 
@@ -48,21 +49,45 @@ Cross-reference: `architecture/plan-lifecycle.md` §Shape B commit contract.
 
 ### `STAGED_SCOPE` env var for `orianna-sign.sh`
 
-When the environment variable `STAGED_SCOPE` is set to a repo-relative plan path,
-`orianna-sign.sh` scopes its signing commit to exactly that path via
+`orianna-sign.sh` scopes its signing commit to exactly the plan path via
 `git commit -- <pathspec>`. This leaves any other files in the index untouched,
 preventing concurrent coordinator sessions' staged work from riding into the signing
 commit and triggering the one-file guard in `pre-commit-orianna-signature-guard.sh`.
 
-Set `STAGED_SCOPE` only when the caller knows the exact destination path of the
-plan being signed. `plan-promote.sh` exports `STAGED_SCOPE` automatically before
-any `orianna-sign.sh` invocation it performs. Direct callers of `orianna-sign.sh`
-may opt in by exporting the variable; when unset, behavior is unchanged.
+**Auto-derive (default):** Since `plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md` T5,
+`orianna-sign.sh` automatically derives `STAGED_SCOPE` from `PLAN_REL` when the
+variable is unset. This means all signing commits are path-scoped by default — no
+caller action required. Explicit `STAGED_SCOPE=<path>` exports still win over the
+auto-derived value.
+
+**Previous behavior (`plan-promote.sh` exporting):** The original design had
+`plan-promote.sh` exporting `STAGED_SCOPE` before child invocations of
+`orianna-sign.sh`. This export was unreachable (plan-promote does not invoke
+orianna-sign — Orianna signs independently before promotion). The dead export was
+removed in T6 of the same plan.
 
 Background: `STAGED_SCOPE` was introduced after Ekko hit the concurrent-staging race
 while promoting `plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md` — a
 second coordinator session had staged unrelated files at the moment the signing commit
 ran. See `plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md`.
+
+### Coordinator lock contract
+
+Both `scripts/orianna-sign.sh` and `scripts/plan-promote.sh` acquire an advisory
+exclusive lock on `.git/strawberry-promote.lock` before their git add→commit window.
+The lock is implemented in `scripts/_lib_coordinator_lock.sh` (shared by both scripts).
+
+Key properties:
+- **Fast-fail:** the second holder prints `coordinator is already running (pid N)` and
+  exits 1 immediately — no blocking wait. This prevents subagents hanging on contention.
+- **Shared lockfile:** `.git/strawberry-promote.lock` — lives under `.git/`, never
+  appears in `git status`, never tracked, scoped per-repo. Survives worktree switches.
+- **Trap-based cleanup:** the lock is released automatically on EXIT/INT/TERM; no
+  leftover lockfile after normal or abnormal exit.
+- **Platform:** prefers `flock(1)` (Linux / macOS with util-linux); falls back to
+  mkdir-based lock for Git Bash on Windows and stripped macOS setups.
+
+See: `plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md` T3–T4.
 
 ## Notes
 
