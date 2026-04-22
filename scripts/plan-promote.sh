@@ -21,6 +21,13 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=_lib_gdoc.sh
 . "$SCRIPT_DIR/_lib_gdoc.sh"
 
+# Stale index.lock auto-recovery (T7 — orianna-gate-speedups)
+if [ -f "$SCRIPT_DIR/_lib_stale_lock.sh" ]; then
+  # shellcheck source=_lib_stale_lock.sh
+  . "$SCRIPT_DIR/_lib_stale_lock.sh"
+  GIT_DIR="$(git rev-parse --git-dir 2>/dev/null || echo '')" maybe_clear_stale_lock
+fi
+
 usage() {
   cat >&2 <<EOF
 Usage: $0 <plans/proposed/file.md> <target-status>
