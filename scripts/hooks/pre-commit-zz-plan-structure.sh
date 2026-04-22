@@ -25,9 +25,13 @@
 
 set -e
 
-# Resolve repo root from the script location
+# Resolve repo root: prefer git's answer (honours GIT_WORK_TREE env var set by test
+# harnesses that run the hook against a temp repo); fall back to script-relative path.
 _hook_dir="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "$_hook_dir/../.." && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo '')"
+if [ -z "$REPO_ROOT" ]; then
+  REPO_ROOT="$(cd "$_hook_dir/../.." && pwd)"
+fi
 
 # 1. Get list of staged plan files (added, copied, modified)
 staged_plans="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '^plans/.*\.md$' || true)"
@@ -370,10 +374,35 @@ awk -v REPO_ROOT="$REPO_ROOT" -v STAGED_LINES_FILE="$_staged_lines_tmp" '
   }
 
   # --- Rules 4 & 5: backtick path checks (outside frontmatter, code fences) ---
+  # --- Rule T11.c: reason-required on new <!-- orianna: ok --> markers (staged lines only) ---
   fm_done && !in_code_fence {
     line = $0
-    # Skip lines with suppression marker
-    suppressed = (index(line, "<!-- orianna: ok -->") > 0) ? 1 : 0
+
+    # Determine suppression state.
+    # Both bare and reason forms suppress the path-existence check (rule 4/5).
+    # Only NEW staged lines are checked for the reason-required rule (T11.c).
+    suppressed = 0
+    if (index(line, "<!-- orianna: ok") > 0) {
+      suppressed = 1
+    }
+
+    # T11.c: reject bare <!-- orianna: ok --> (without reason) on staged lines only.
+    # A bare marker: "<!-- orianna: ok -->" with NO non-empty text between "ok" and "-->".
+    # A reason marker: "<!-- orianna: ok -- <text> -->" with at least one non-space char after "--".
+    # Already-committed lines (not in staged[]) are grandfathered.
+    #
+    # Detection: if the line contains "<!-- orianna: ok -->" (the exact bare form),
+    # AND the line does NOT match the reason-form pattern "<!-- orianna: ok -- [^ ]",
+    # AND this line is newly staged → BLOCK.
+    if ((FILENAME SUBSEP NR in staged) && index(line, "<!-- orianna: ok -->") > 0) {
+      # Check if ANY reason form also exists on this line.
+      # reason pattern: <!-- orianna: ok -- (at least one non-space char after the space)
+      has_reason_form = (line ~ /<!-- orianna: ok -- [^-]/)
+      if (!has_reason_form) {
+        print "[lib-plan-structure] BLOCK (T11.c): bare <!-- orianna: ok --> requires a reason suffix. Use: <!-- orianna: ok -- <reason> -->. See plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md T11.c. Line: " line > "/dev/stderr"
+        file_fail = 1
+      }
+    }
 
     # Extract all backtick-quoted tokens from the line
     rest = line
