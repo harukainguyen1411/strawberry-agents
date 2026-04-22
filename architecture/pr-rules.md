@@ -61,3 +61,48 @@ Evelynn creates the team with TeamCreate, spawns all three agents with `team_nam
 ## Merge
 
 Evelynn merges after Lissandra confirms clean. Never merge before the review loop completes.
+
+## Work-scope anonymity {#work-scope-anonymity}
+
+Work-concern PRs land on repos under the `missmp/` GitHub organisation, where Duong's MMP
+teammates and colleagues can see every review body, comment, and commit message. Agent-system
+internals must never leak into those surfaces.
+
+### Scope signal
+
+A repo is considered **work-scope** when `git remote get-url origin` matches the regex
+`[:/]missmp/`. Personal-concern repos (e.g. `harukainguyen1411/strawberry-app`) are
+unaffected — enforcement is a no-op there.
+
+### Denylist surfaces
+
+The following categories of tokens are blocked on work-scope surfaces:
+
+| Category | Examples |
+|----------|---------|
+| Agent first-names | Senna, Lucian, Evelynn, Sona, Viktor, Jayce, Azir, Swain, Orianna, Karma, Talon, Ekko, Heimerdinger, Syndra, Akali, Ahri, Ori |
+| GitHub handles | `strawberry-reviewers`, `strawberry-reviewers-2`, `harukainguyen1411`, `duongntd99` |
+| Email domain | `*@anthropic.com` |
+| AI attribution trailer | `Co-Authored-By: Claude` |
+
+The denylist token table is the single source of truth in
+`scripts/hooks/_lib_reviewer_anonymity.sh`. Word-boundary matching (`grep -wi`) prevents
+false positives on substrings.
+
+### Enforcement paths
+
+1. **Pre-commit hook** (`scripts/hooks/pre-commit-reviewer-anonymity.sh`) — scans
+   `.git/COMMIT_EDITMSG` before every commit in a work-scope repo. Hit → exit 1, commit
+   blocked with guidance.
+
+2. **`scripts/reviewer-auth.sh` pre-submit scan** — before executing any `gh pr review`
+   or `gh pr comment` call, resolves the PR's head repository. If it matches `missmp/`,
+   the `--body` value is scanned. Hit → exit 3, request NOT posted.
+
+### Guidance for reviewer agents
+
+Sign reviews with a generic role tag (e.g. `-- reviewer`) instead of an agent name.
+Treat a `reviewer-auth.sh` exit-3 rejection as a drafting bug — rewrite the body and
+retry.
+
+See also: `architecture/cross-repo-workflow.md` for the multi-repo context.

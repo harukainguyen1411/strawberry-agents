@@ -228,5 +228,22 @@ else
 fi
 
 echo ""
+echo "=== reviewer anonymity tests ==="
+if bash "$REPO_ROOT/scripts/hooks/test-pre-commit-reviewer-anonymity.sh" 2>/dev/null; then
+  echo "  PASS: test-pre-commit-reviewer-anonymity.sh (all fixtures)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-pre-commit-reviewer-anonymity.sh"
+  FAIL=$((FAIL+1))
+fi
+if bash "$REPO_ROOT/scripts/__tests__/test-reviewer-auth-anonymity.sh" 2>/dev/null; then
+  echo "  PASS: test-reviewer-auth-anonymity.sh (all fixtures)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-reviewer-auth-anonymity.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
