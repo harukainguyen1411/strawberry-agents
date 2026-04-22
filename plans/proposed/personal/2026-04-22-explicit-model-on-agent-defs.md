@@ -1,6 +1,6 @@
 ---
 title: Explicit `model:` on every agent definition — retire inheritance
-status: proposed
+status: approved
 owner: karma
 date: 2026-04-22
 created: 2026-04-22
@@ -85,7 +85,7 @@ All tasks are single-domain edits to `.claude/agents/*.md` plus the Rule 9 line.
 
 - **T3. Add `model: opus` to single-lane remaining batch (4 files).** kind: edit. estimate_minutes: 6. Files: `.claude/agents/heimerdinger.md`, `.claude/agents/camille.md`, `.claude/agents/lulu.md`, `.claude/agents/neeko.md`. Detail: same convention. DoD: `grep -L "^model:" <files>` returns empty; pair-mate symmetry check for Lulu ↔ Neeko unaffected.
 
-- **T4. Tighten `CLAUDE.md` Rule 9 wording.** kind: edit. estimate_minutes: 5. Files: `CLAUDE.md` (line 63 region). Detail: replace the Rule 9 paragraph with the MUST-wording drafted in the "CLAUDE.md Rule 9" section above. Add a one-line revision-log entry at the bottom of `plans/pre-orianna/implemented/2026-04-20-agent-pair-taxonomy.md` noting the reversal ("2026-04-22 — §D1.1a Opus-omit convention superseded by CLAUDE.md Rule 9 MUST-declare; see `plans/proposed/personal/2026-04-22-explicit-model-on-agent-defs.md`"). DoD: `grep -n "MUST declare" CLAUDE.md` returns line 63 region; taxonomy ADR has the revision-log entry appended.
+- **T4. Tighten `CLAUDE.md` Rule 9 wording.** kind: edit. estimate_minutes: 5. Files: `CLAUDE.md` (line 63 region). Detail: replace the Rule 9 paragraph with the MUST-wording drafted in the "CLAUDE.md Rule 9" section above. Add a one-line revision-log entry at the bottom of `plans/pre-orianna/implemented/2026-04-20-agent-pair-taxonomy.md` noting the reversal ("2026-04-22 — §D1.1a Opus-omit convention superseded by CLAUDE.md Rule 9 MUST-declare; see `plans/proposed/personal/2026-04-22-explicit-model-on-agent-defs.md`"). DoD: `grep -n "MUST declare" CLAUDE.md` returns line 63 region; taxonomy ADR has the revision-log entry appended. <!-- orianna: ok -->
 
 - **T5. Verification sweep.** kind: verify. estimate_minutes: 5. Files: `.claude/agents/*.md`, `.claude/_script-only-agents/*.md`. Detail: run `for f in .claude/agents/*.md .claude/_script-only-agents/*.md; do grep -q "^model:" "$f" || echo "MISSING: $f"; done` and confirm empty output. Verify no file declares `model: haiku` or a pinned ID like `model: opus-4-7` / `model: sonnet-4-6`. DoD: no MISSING lines; no pinned IDs; short report posted to the PR body. <!-- orianna: ok -->
 
