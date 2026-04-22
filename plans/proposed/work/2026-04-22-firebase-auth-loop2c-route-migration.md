@@ -279,7 +279,7 @@ Parametrized over the §2.4 migrated routes × (no cookie, owner new-cookie, non
    - Option A (this plan's default): preserve 2c-era behavior — if no Firebase cookie, fall back to minting a legacy `{sid}` cookie (existing `create_session_cookie`). Slack links continue to work for not-yet-signed-in users. Defer removal to Loop 2d.
    - Option B: redirect to `/auth/login?next=<encoded>` per parent ADR §5 (the eventual steady state). This requires a frontend login page that reads `?next=` — that's Loop 2b's territory, and it's plausibly already there when 2c executes. If so, we'd prefer Option B.
    - **Recommendation:** gate on whether Loop 2b delivered the `?next=` redirect flow. If yes, use Option B in 2c. If no, use Option A in 2c and do the swap as the first ticket in Loop 2d.
-   - **Decision owed to:** Duong, before T.M.10 starts.
+   - **Decision (Duong, 2026-04-22):** Use **Option A** for Loop 2c — preserve the legacy cookie mint fallback at `/auth/session/{sid}?token=...` for unauthenticated Slack visitors. Redirect to `/auth/login?next=...` (Option B) is deferred to Loop 2d once Loop 2b's `?next=` flow is confirmed shipped and stable.
 
 2. **Q2 — Should `require_session_or_internal` migrate to an owner-aware variant in 2c, or stay as-is?**
    - Current call sites: `/session/{sid}/chat`, `/session/{sid}/logs`. The plan introduces `require_session_or_owner` to cover these, with internal bypass preserved. `require_session_or_internal` itself is left in place for any other callers (grep confirms only those two routes use it — if grep ends up clean, we delete it in Loop 2d alongside `require_session`).
