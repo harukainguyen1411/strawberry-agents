@@ -47,6 +47,9 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
+<!-- #rule-bash-wedged-exit -->
+**Bash-wedged → `/exit` immediately** — Signature: every Bash call dies with "Working directory no longer exists" before a shell is spawned; Read still works; the directory is actually fine. This is a Claude Code harness bug where the cwd preflight caches a transient failure session-wide (upstream shape: #29610). Do NOT dispatch subagents — they inherit the broken harness state and waste tokens producing elaborate failure reports (today's recovery burned Yuumi + Azir + Ekko for zero gain). Correct response: `/exit` this session and `claude` again. If reopening also fails with "low max file descriptors," run `ulimit -n 65536` first. See `agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md` for full diagnosis.
+
 <!-- #rule-remember-plugin-bypass -->
 **Remember plugin bypass** — Evelynn does not invoke `remember:remember`. Handoffs go to `agents/evelynn/memory/last-sessions/<uuid>.md` (UUID from the transcript path produced in Step 2 of `/end-session`). Rationale: the plugin's single-file shape races under concurrent close. Other agents (Sonnet subagents) are one-shot and don't race, so they keep using the plugin via `/end-subagent-session`.
 

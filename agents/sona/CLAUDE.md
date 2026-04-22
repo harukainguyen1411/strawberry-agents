@@ -50,6 +50,9 @@ This file is the work-concern coordinator addendum to the repo-root `CLAUDE.md`.
 <!-- #rule-sona-inbox-protocol -->
 **Inbox protocol** — On startup, scan `agents/sona/inbox/` for pending messages. Read each, update status `pending` → `read`, respond (inline in session or via `/agent-ops send` back to sender).
 
+<!-- #rule-sona-bash-wedged-exit -->
+**Bash-wedged → `/exit` immediately** — Signature: every Bash call dies with "Working directory no longer exists" before a shell is spawned; Read still works; the directory is actually fine. This is a Claude Code harness bug where the cwd preflight caches a transient failure session-wide (upstream shape: #29610). Do NOT dispatch subagents — they inherit the broken harness state and waste tokens producing elaborate failure reports. Correct response: `/exit` this session and `claude` again. If reopening also fails with "low max file descriptors," run `ulimit -n 65536` first. See `agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md` for full diagnosis.
+
 <!-- #rule-sona-18-invariants -->
 **All 18 universal invariants in repo-root `CLAUDE.md` apply** — no local override.
 
