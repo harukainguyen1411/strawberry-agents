@@ -10,6 +10,7 @@ tags: [governance, claude-md, pr-rules, rule-18]
 related:
   - plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md
 orianna_signature_approved: "sha256:f588c298745cf5ad7d84839460b14b75dab4b1f8f338c908fcc31fde52fe8942:2026-04-22T10:32:11Z"
+orianna_signature_in_progress: "sha256:f588c298745cf5ad7d84839460b14b75dab4b1f8f338c908fcc31fde52fe8942:2026-04-22T10:35:33Z"
 ---
 
 # Amend Rule 18 — allow agent self-merge when non-author review gate holds
