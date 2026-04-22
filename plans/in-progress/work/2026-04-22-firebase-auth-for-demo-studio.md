@@ -163,12 +163,108 @@ Aphelios decomposes W1–W6 into tasks; each wave is one PR.
 
 ## Tasks
 
-- [ ] T.COORD.1 — Aphelios decomposes W1–W6 into implementation tasks | estimate_minutes: 45
-- [ ] T.COORD.2 — Xayah writes the test-plan stubs enumerated in §9 | estimate_minutes: 30
-- [ ] T.COORD.3 — Ekko runs the one-time Firebase Console setup + SA role grant <!-- orianna: ok --> | estimate_minutes: 20
-- [ ] T.COORD.4 — Duong answers §10 gating questions before promotion | estimate_minutes: 15
-- [ ] T.COORD.5 — Senna / Lucian reviews per-wave PRs | estimate_minutes: 60
-- [ ] T.COORD.6 — Akali runs the W6 E2E matrix against staging then prod | estimate_minutes: 45
+<!-- orianna: ok — all file paths in T.W*.* tasks below reference files inside company-os/tools/demo-studio-v3/ within the work workspace; not strawberry-agents local files -->
+
+### Coordination
+
+- [x] **T.COORD.1** — Aphelios decomposes W1–W6 into implementation tasks. estimate_minutes: 45
+- [ ] **T.COORD.2** — Xayah writes the test-plan stubs enumerated in §9. estimate_minutes: 30
+- [ ] **T.COORD.3** — Ekko runs the one-time Firebase Console setup + SA role grant <!-- orianna: ok -->. estimate_minutes: 20
+- [x] **T.COORD.4** — Duong answers §10 gating questions before promotion. estimate_minutes: 15
+- [ ] **T.COORD.5** — Senna / Lucian reviews per-wave PRs. estimate_minutes: 60
+- [ ] **T.COORD.6** — Akali runs the W6 E2E matrix against staging then prod. estimate_minutes: 45
+
+### Wave 0 — Spike (verify `firebase-admin.verify_id_token` works with ADC)
+
+**Status: HUMAN-BLOCKED on IAM grant.** Before W0 can run, Duong must execute once:
+
+```
+gcloud projects add-iam-policy-binding mmpt-233505 \
+  --member="serviceAccount:266692422014-compute@developer.gserviceaccount.com" \
+  --role="roles/firebase.sdkAdminServiceAgent"
+```
+
+SA `266692422014-compute@developer.gserviceaccount.com` is the ADC identity in Cloud Run. Ekko has completed the rest of GCP infra setup. W1 decomposition may begin in parallel (no runtime dep), but **no W0-W1 task may deploy until the grant lands**.
+
+- [ ] **T.W0.1** — Add `firebase-admin>=6.5.0` to `requirements.txt` on a spike branch. owner: Viktor. estimate_minutes: 5. Files: `requirements.txt`. DoD: `pip install -r requirements.txt` in a fresh venv resolves without conflict; `pip show firebase-admin` reports ≥6.5.0. <!-- orianna: ok -->
+- [ ] **T.W0.2** — Write throwaway `/auth/ping` route that calls `firebase_admin.auth.verify_id_token(header_token)` and returns the decoded claims or the exception class name. owner: Viktor. estimate_minutes: 15. Files: `main.py` (spike branch only — revert before W1 PR). DoD: route returns 200 + claims on a valid token; returns 401 + error class on invalid. <!-- orianna: ok -->
+- [ ] **T.W0.3** — Deploy spike branch to Cloud Run dev; curl `/auth/ping` with a real `@missmp.tech` ID token minted via `gcloud auth print-identity-token` or Firebase emulator. owner: Ekko. estimate_minutes: 10. Files: (deploy only). DoD: 200 response with `email` claim; no `PermissionDenied` / `DefaultCredentialsError` in logs — confirms ADC role grant is effective. <!-- orianna: ok -->
+- [ ] **T.W0.4** — Revert spike route + spike requirements pin. owner: Viktor. estimate_minutes: 5. Files: `main.py`, `requirements.txt`. DoD: branch clean except for spike learnings captured in the W1 PR description. <!-- orianna: ok -->
+
+### Wave 1 — Server backbone (`firebase_auth.py` + `/auth/*` routes) <!-- orianna: ok -->
+
+- [ ] **T.W1.1** — Add `firebase-admin>=6.5.0` to `requirements.txt` (for real). owner: Viktor. estimate_minutes: 5. Files: `requirements.txt`. DoD: dep pinned; `pip install` clean. <!-- orianna: ok -->
+- [ ] **T.W1.2** — Write xfail `tests/test_firebase_auth.py` covering the five W1 cases in §9 (valid token → User; `email_verified=False` → 403; wrong domain → 403; expired → 401; missing header → 401). Mock `verify_id_token`. owner: Soraka. estimate_minutes: 15. Files: `tests/test_firebase_auth.py`. DoD: all five tests committed as xfail with docstrings citing this plan; `pytest -q` shows 5 xfail. <!-- orianna: ok -->
+- [ ] **T.W1.3** — Create `firebase_auth.py` module with `verify_firebase_token(id_token: str) -> User` and `User` dataclass (`uid: str`, `email: str`). Raises `InvalidTokenError` / `DomainNotAllowedError`. Read `FIREBASE_PROJECT_ID` + `ALLOWED_EMAIL_DOMAIN` from env. owner: Viktor. estimate_minutes: 15. Files: `firebase_auth.py` (new). DoD: module importable; signature matches test expectations; `email.lower().endswith("@" + domain)` per OQ 6. <!-- orianna: ok -->
+- [ ] **T.W1.4** — Flip `test_firebase_auth.py` xfails to strict (expect-pass). owner: Soraka. estimate_minutes: 5. Files: `tests/test_firebase_auth.py`. DoD: 5 tests pass locally; no xfail markers remain. <!-- orianna: ok -->
+- [ ] **T.W1.5** — Update `auth.py`: cookie payload schema → `{uid, email, iat}`; `itsdangerous` serializer unchanged. Introduce module flag `AUTH_LEGACY_COOKIE_ALLOWED = True`. owner: Viktor. estimate_minutes: 15. Files: `auth.py`. DoD: new helper `encode_user_cookie(user)` / `decode_user_cookie(raw)`; legacy `{sid}` decode retained behind flag. <!-- orianna: ok -->
+- [ ] **T.W1.6** — Add xfail test `tests/test_auth_cookie_dual_stack.py`: new cookie decodes → User; legacy `{sid}` cookie + flag on → sid; legacy cookie + flag off → raises. owner: Soraka. estimate_minutes: 15. Files: `tests/test_auth_cookie_dual_stack.py`. DoD: 3 xfails committed. <!-- orianna: ok -->
+- [ ] **T.W1.7** — Implement dual-stack decode per T.W1.5 so T.W1.6 flips green. owner: Viktor. estimate_minutes: 10. Files: `auth.py`. DoD: xfails flipped; both cookie formats round-trip. <!-- orianna: ok -->
+- [ ] **T.W1.8** — Add `POST /auth/login` route in `main.py`: reads `{idToken}` JSON body, calls `verify_firebase_token`, sets `ds_session` cookie with `{uid, email, iat}`, 7-day Max-Age (OQ 2), returns 204. owner: Viktor. estimate_minutes: 15. Files: `main.py`. DoD: route registered; unit test hits it with mocked verifier. <!-- orianna: ok -->
+- [ ] **T.W1.9** — Add `POST /auth/logout` route: clears `ds_session` cookie, returns 204. owner: Viktor. estimate_minutes: 5. Files: `main.py`. DoD: cookie cleared with `expires=0` + same path/domain as set. <!-- orianna: ok -->
+- [ ] **T.W1.10** — Add `GET /auth/me` route: returns `{uid, email}` from cookie or 401. owner: Viktor. estimate_minutes: 5. Files: `main.py`. DoD: 200 with claims when authed; 401 when not. <!-- orianna: ok -->
+- [ ] **T.W1.11** — Add `GET /auth/config` route: returns `{projectId, apiKey, authDomain}` sourced from `FIREBASE_PROJECT_ID`, `FIREBASE_WEB_API_KEY`, `FIREBASE_AUTH_DOMAIN` env. owner: Viktor. estimate_minutes: 10. Files: `main.py`. DoD: route public; absent env → 500 at startup, not at request time. <!-- orianna: ok -->
+- [ ] **T.W1.12** — Add xfail integration tests for all four new `/auth/*` routes in `tests/test_auth_routes.py`. owner: Soraka. estimate_minutes: 15. Files: `tests/test_auth_routes.py`. DoD: 4 xfails covering login/logout/me/config; flip green once T.W1.8–11 land. <!-- orianna: ok -->
+- [ ] **T.W1.13** — Initialize `firebase_admin` app at module load in `firebase_auth.py` (prefer ADC; fallback to `FIREBASE_SERVICE_ACCOUNT_JSON` env). owner: Viktor. estimate_minutes: 15. Files: `firebase_auth.py`. DoD: `firebase_admin.initialize_app()` runs once; both branches exercised in unit tests via monkeypatch. <!-- orianna: ok -->
+
+### Wave 2 — Route deps (`require_session` → `User`; new `require_session_owner`)
+
+- [ ] **T.W2.1** — Write xfail test `tests/test_require_session.py` with cases: returns `User` with `{uid, email}` for new-format cookie; returns `User(uid=sid, email=None)` for legacy cookie + flag; raises 401 missing cookie. owner: Soraka. estimate_minutes: 10. Files: `tests/test_require_session.py`. DoD: 3 xfails committed. <!-- orianna: ok -->
+- [ ] **T.W2.2** — Rewrite `require_session` in `auth.py` to decode dual-stack cookie and return `User`. owner: Jayce. estimate_minutes: 15. Files: `auth.py`. DoD: T.W2.1 xfails flip green; existing `require_session_or_internal` still returns its pre-existing shape. <!-- orianna: ok -->
+- [ ] **T.W2.3** — Write xfail test `tests/test_require_session_owner.py` covering §9 W2 cases (own → ok; other → 403; legacy + flag on → ok; legacy + flag off → 401). owner: Soraka. estimate_minutes: 15. Files: `tests/test_require_session_owner.py`. DoD: 4 xfails committed. <!-- orianna: ok -->
+- [ ] **T.W2.4** — Implement `require_session_owner(sid, user=Depends(require_session), session=Depends(load_session))` in `auth.py`: checks `session.ownerEmail == user.email`; legacy path allowed only if `AUTH_LEGACY_COOKIE_ALLOWED`. owner: Jayce. estimate_minutes: 15. Files: `auth.py`. DoD: T.W2.3 xfails flip green. <!-- orianna: ok -->
+- [ ] **T.W2.5** — Migrate `/session/{sid}` GET route to `require_session_owner`. owner: Jayce. estimate_minutes: 5. Files: `main.py`. DoD: route signature swap; no behavioral test drift. <!-- orianna: ok -->
+- [ ] **T.W2.6** — Migrate `/session/{sid}/chat` to owner dep; preserve `X-Internal-Secret` bypass (OQ 4 — untouched). owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: `require_session_or_internal` wrap verified; internal secret still bypasses user check. <!-- orianna: ok -->
+- [ ] **T.W2.7** — Migrate `/session/{sid}/stream` to owner dep. owner: Jayce. estimate_minutes: 5. Files: `main.py`. DoD: dep swap only. <!-- orianna: ok -->
+- [ ] **T.W2.8** — Migrate `/session/{sid}/build` + `/session/{sid}/cancel-build` to owner dep. owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: both routes require owner. <!-- orianna: ok -->
+- [ ] **T.W2.9** — Migrate `/session/{sid}/logs` + `/session/{sid}/status` to owner dep. owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: both routes require owner. <!-- orianna: ok -->
+- [ ] **T.W2.10** — Migrate `/session/{sid}/messages` + `/session/{sid}/events` + `/session/{sid}/history` to owner dep. owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: all three require owner. <!-- orianna: ok -->
+- [ ] **T.W2.11** — Migrate `/session/{sid}/reauth` + `/session/{sid}/complete` + `/session/{sid}/close` to owner dep. owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: all three require owner. <!-- orianna: ok -->
+- [ ] **T.W2.12** — Migrate `/dashboard` + `/api/test-results` + `/api/test-run-history` + `/api/managed-sessions` to `require_user` (not owner — team-wide read per OQ 3). owner: Jayce. estimate_minutes: 15. Files: `main.py`. DoD: `require_user` dep exists (just `require_session` returning User); routes reject unauthenticated, allow any `@missmp.tech` authed user. <!-- orianna: ok -->
+- [ ] **T.W2.13** — Migrate `POST /session` + `POST /session/new` to `require_user` (any authed @missmp.tech can create a session); preserve `X-Internal-Secret` bypass for Slack. owner: Jayce. estimate_minutes: 10. Files: `main.py`. DoD: internal secret bypass untouched; user dep added. <!-- orianna: ok -->
+- [ ] **T.W2.14** — Write regression test matrix `tests/test_route_auth_matrix.py`: parametrize (route, method) × (no cookie, user cookie, owner cookie, other-user cookie, internal secret) → assert 401/403/200 as appropriate. owner: Soraka. estimate_minutes: 15. Files: `tests/test_route_auth_matrix.py`. DoD: 20+ row matrix green. <!-- orianna: ok -->
+
+### Wave 3 — Ownership field + claim-on-first-touch
+
+- [ ] **T.W3.1** — Write xfail `tests/test_session_ownership.py` for §9 W3 cases (persists `ownerEmail` on create; claim-on-first-touch sets when missing; second-user claim → 403). owner: Soraka. estimate_minutes: 15. Files: `tests/test_session_ownership.py`. DoD: 3 xfails committed. <!-- orianna: ok -->
+- [ ] **T.W3.2** — Add `owner_email: str | None = None` param to `create_session` in `session.py`; persist as `ownerEmail` field in session doc. owner: Seraphine. estimate_minutes: 10. Files: `session.py`. DoD: field present in new docs; round-trip via session_store. <!-- orianna: ok -->
+- [ ] **T.W3.3** — Update `session_store.py` schema/model to include optional `ownerEmail: str | None`. owner: Seraphine. estimate_minutes: 10. Files: `session_store.py`. DoD: old docs without field deserialize without error; Firestore schema tolerant. <!-- orianna: ok -->
+- [ ] **T.W3.4** — Call-site: `POST /session/new` passes `owner_email=user.email` into `create_session`. owner: Seraphine. estimate_minutes: 5. Files: `main.py`. DoD: new sessions always carry ownerEmail; verified by T.W3.1. <!-- orianna: ok -->
+- [ ] **T.W3.5** — Call-site: `POST /session` (Slack handoff w/ `X-Internal-Secret`) passes `owner_email=None` when no user context — claim-on-first-touch handles it. owner: Seraphine. estimate_minutes: 5. Files: `main.py`. DoD: internal-secret path creates session with null ownerEmail; first Firebase-authed visitor claims it (see T.W5.3). <!-- orianna: ok -->
+- [ ] **T.W3.6** — Flip T.W3.1 xfails green. owner: Soraka. estimate_minutes: 5. Files: `tests/test_session_ownership.py`. DoD: 3 tests pass; xfail markers removed. <!-- orianna: ok -->
+
+### Wave 4 — Frontend login UI
+
+- [ ] **T.W4.1** — Add `static/auth.js` helper module (~80 lines): `initFirebase(config)` fetches `/auth/config` then calls `initializeApp` + `getAuth`; exports `signInWithGoogle()`, `signOut()`, `getCurrentUser()`, `fetchWithAuth(url, opts)` (credentials-include + 401 → redirect to login). owner: Rakan. estimate_minutes: 15. Files: `static/auth.js` (new). DoD: module loads as ES module from CDN-hosted Firebase SDK. <!-- orianna: ok -->
+- [ ] **T.W4.2** — Modify `static/index.html` (41 → ~80 lines): add `<script type="module">` importing `auth.js`; add **Sign in with Google** button (id=`signin-btn`); gate session-ID form behind login state. owner: Rakan. estimate_minutes: 15. Files: `static/index.html`. DoD: unauthenticated view shows Sign-in button; authenticated view shows session form + email + Sign-out. <!-- orianna: ok -->
+- [ ] **T.W4.3** — Wire `signin-btn` to `signInWithGoogle()` → `getIdToken()` → POST `/auth/login` → reload to `/` or `next`. owner: Rakan. estimate_minutes: 10. Files: `static/index.html` (inline script or `auth.js`). DoD: button click flow yields an authed cookie on success. <!-- orianna: ok -->
+- [ ] **T.W4.4** — Add `onAuthStateChanged` listener that toggles Sign-in / Sign-out UI + email display. owner: Rakan. estimate_minutes: 10. Files: `static/auth.js`. DoD: page reacts to auth state without reload. <!-- orianna: ok -->
+- [ ] **T.W4.5** — Add **Sign out** link: POST `/auth/logout` (clear cookie) → `firebase.signOut()` → redirect `/` (OQ 5). owner: Rakan. estimate_minutes: 10. Files: `static/auth.js`, `static/index.html`. DoD: both server cookie and client Firebase state cleared. <!-- orianna: ok -->
+- [ ] **T.W4.6** — Add ~30 lines of button/header CSS in `static/studio.css`. owner: Rakan. estimate_minutes: 10. Files: `static/studio.css`. DoD: Sign-in button visually matches design language; no layout regressions in session view. <!-- orianna: ok -->
+- [ ] **T.W4.7** — Update `static/studio.js` to use `fetchWithAuth` for all `/session/*` XHR calls (so a 401 redirects to login gracefully). owner: Rakan. estimate_minutes: 15. Files: `static/studio.js`. DoD: any `fetch(` call against `/session/` swaps to wrapper; existing event-stream / SSE code still works. <!-- orianna: ok -->
+- [ ] **T.W4.8** — Update `README.md` §Local dev with Firebase emulator instructions (`FIREBASE_AUTH_EMULATOR_HOST=localhost:9099`) + ADC hint for `demo-runner-sa`. owner: Rakan. estimate_minutes: 10. Files: `README.md`. DoD: new contributor can follow the README to run the app locally with auth. <!-- orianna: ok -->
+
+### Wave 5 — Token-exchange compatibility (Slack handoff)
+
+- [ ] **T.W5.1** — Write xfail `tests/test_auth_exchange_redirect.py` with cases: unauthenticated `GET /auth/session/{sid}?token=...` → 302 `/auth/login?next=<encoded>`; authed + valid token → 303 `/session/{sid}`; authed + bad token → 403. owner: Soraka. estimate_minutes: 15. Files: `tests/test_auth_exchange_redirect.py`. DoD: 3 xfails committed. <!-- orianna: ok -->
+- [ ] **T.W5.2** — Modify `auth_exchange` in `main.py` (line 1638): if no Firebase cookie → `return RedirectResponse(f"/auth/login?next={quote(str(request.url))}", 302)`. owner: Viktor. estimate_minutes: 10. Files: `main.py`. DoD: redirect fires for unauth; still consumes token for authed path. <!-- orianna: ok -->
+- [ ] **T.W5.3** — In `auth_exchange`: after Firebase verify + token consume, if `session.ownerEmail is None` call `session_store.set_owner(sid, user.email)` (claim on first contact). owner: Viktor. estimate_minutes: 10. Files: `main.py`, `session_store.py` (add `set_owner` if missing). DoD: legacy session without owner gains owner on first authed visit; second visitor gets 403. <!-- orianna: ok -->
+- [ ] **T.W5.4** — Ensure `next=` handling on login page: `static/index.html` reads `?next=` query param, passes it through on login success redirect. owner: Rakan. estimate_minutes: 10. Files: `static/index.html`. DoD: Slack-deep-link → login → lands on `/auth/session/{sid}?token=...` → studio. <!-- orianna: ok -->
+- [ ] **T.W5.5** — Flip T.W5.1 xfails green. owner: Soraka. estimate_minutes: 5. Files: `tests/test_auth_exchange_redirect.py`. DoD: 3 tests pass. <!-- orianna: ok -->
+- [ ] **T.W5.6** — Integration test `tests/test_slack_handoff_integration.py`: mint Firebase-emulator token → POST `/auth/login` → GET `/auth/session/{sid}?token=...` → follow 303 → assert 200 on `/session/{sid}`. owner: Soraka. estimate_minutes: 15. Files: `tests/test_slack_handoff_integration.py`. DoD: one green integration test end-to-end. <!-- orianna: ok -->
+
+### Wave 6 — Deploy + QA
+
+- [ ] **T.W6.1** — Add `ALLOWED_EMAIL_DOMAIN=missmp.tech` and `FIREBASE_PROJECT_ID=mmpt-233505` + `FIREBASE_AUTH_DOMAIN=mmpt-233505.firebaseapp.com` as plain env vars in `deploy.sh`. owner: Ekko. estimate_minutes: 5. Files: `deploy.sh`. DoD: env vars appear in next Cloud Run revision config. <!-- orianna: ok -->
+- [ ] **T.W6.2** — Add `FIREBASE_WEB_API_KEY` to `secrets-mapping.txt` bound to Secret Manager entry (ADC for server; web key is public-but-managed). owner: Ekko. estimate_minutes: 10. Files: `secrets-mapping.txt`. DoD: deploy resolves secret; `/auth/config` returns correct value. <!-- orianna: ok -->
+- [ ] **T.W6.3** — Add `DS_STUDIO_FIREBASE_ADMIN_SA` → `FIREBASE_SERVICE_ACCOUNT_JSON` fallback binding in `secrets-mapping.txt` (only used if ADC fails). owner: Ekko. estimate_minutes: 10. Files: `secrets-mapping.txt`. DoD: fallback secret exists but is unset by default; documented as emergency-only. <!-- orianna: ok -->
+- [ ] **T.W6.4** — Confirm Firebase Console setup (Google sign-in enabled; Cloud Run + custom domains on Authorized Domains; OAuth consent restricted to missmp Workspace org). owner: Ekko. estimate_minutes: 15. Files: (console only). DoD: checklist screenshotted into PR body. <!-- orianna: ok -->
+- [ ] **T.W6.5** — Deploy to staging Cloud Run; verify `/auth/config` returns correct values; verify `/auth/ping`-equivalent smoke passes. owner: Ekko. estimate_minutes: 10. Files: (deploy only). DoD: staging revision active; smoke green; logs free of Firebase init errors. <!-- orianna: ok -->
+- [ ] **T.W6.6** — Akali writes Playwright E2E: happy path `@missmp.tech` Google sign-in → lands in studio. owner: Akali. estimate_minutes: 15. Files: `tests/e2e/test_firebase_auth_happy_path.spec.ts` (or established E2E location). DoD: test green against staging with Firebase Auth Emulator. <!-- orianna: ok -->
+- [ ] **T.W6.7** — Akali writes Playwright E2E: `@gmail.com` user blocked with 403. owner: Akali. estimate_minutes: 10. Files: `tests/e2e/test_firebase_auth_domain_reject.spec.ts`. DoD: test green. <!-- orianna: ok -->
+- [ ] **T.W6.8** — Akali writes Playwright E2E: user-A creates session, user-B tries `/session/{sidA}` → 403. owner: Akali. estimate_minutes: 15. Files: `tests/e2e/test_firebase_auth_cross_user.spec.ts`. DoD: test green. <!-- orianna: ok -->
+- [ ] **T.W6.9** — Akali writes Playwright E2E: Slack deep-link → unauth → login → land on session. owner: Akali. estimate_minutes: 15. Files: `tests/e2e/test_firebase_auth_slack_deeplink.spec.ts`. DoD: test green. <!-- orianna: ok -->
+- [ ] **T.W6.10** — Duong approves staging; Ekko deploys to prod; post-deploy smoke (`/auth/config` + `/auth/me` unauthenticated 401). owner: Ekko. estimate_minutes: 10. Files: (deploy only). DoD: prod revision live; smoke green; rollback script on standby per rule #17. <!-- orianna: ok -->
 
 ## Out of scope
 
