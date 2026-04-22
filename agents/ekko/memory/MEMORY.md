@@ -104,6 +104,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch): Promoted 2026-04-22-orianna-speedups-pr19-fast-follow.md proposed→approved→in-progress. Pre-commit hook violations required 3 iterations of fixes: (1) empty sig fields block re-sign — must remove them, (2) old hook pre-commit-t-plan-structure.sh uses `index(prose, "h)")` bare string search — any "plan path)" or word ending "h)" fails, rephrase to avoid literal h), (3) parallel agent contamination caused promote commit failure — unstaged foreign file, but parallel agent had already committed the rename. Approved sig: c19d7fd, approved promote: 0444152, in_progress sig: 5feb148, in-progress promote: 252e024 (parallel agent incidentally). Plan at plans/in-progress/personal/. Side effect: "test commit" c87614d + revert c6a1743 from this session left staged-scope plan back at proposed/ with no signatures (was at approved/ with valid sig 5479717). Needs Duong-manual fix or dedicated Ekko session (harness denied this session).
 
+- 2026-04-22 (ekko — Sona dispatch): Firestore config-mgmt leak investigation. Root cause: `session.py::create_session` (the PRE-BD-1 old module) writes `config`, `configVersion`, `factoryVersion` to every session doc. `session_store.py` is BD-1-compliant but only used for managed-sessions path. All 96 staging docs carry leaked fields; zero have `configId`. `demo-config-mgmt` S2 service is in-memory only — Firestore DB has only 3 manual test docs. Report: assessments/work/2026-04-22-firestore-config-mgmt-leak-investigation.md. Commit b3729b0.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
