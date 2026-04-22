@@ -23,9 +23,9 @@ Documents how the three-repo model works day-to-day. See the approved migration 
 | `harukainguyen1411` | Human account | Reviews and merges PRs in `strawberry-app`; repo owner of `strawberry-app` and `strawberry-agents` |
 
 Agents open PRs from `Duongntd`. `harukainguyen1411` approves. Per CLAUDE.md rule 18, agents must not
-use `--admin` or any branch-protection bypass; every merge requires (a) all required status checks green,
-(b) one approving review from an account other than the PR author, and (c) no branch-protection bypass.
-An agent may merge its own PR once (a), (b), and (c) are satisfied. `harukainguyen1411` has admin bypass
+use `--admin` or any branch-protection bypass; every merge requires (a) all required status checks green
+and (b) one approving review from an account other than the PR author.
+An agent may merge its own PR once (a) and (b) are satisfied. `harukainguyen1411` has admin bypass
 but this is break-glass only — human Duong action.
 
 ---
