@@ -25,6 +25,7 @@ architecture_changes:
   - Adds session fields `demoUrl`, `projectUrl`, `shortcode`, `buildId` (alongside existing `projectId`, `outputUrls`, `factoryRunId`) and whitelists them in `session._UPDATABLE_FIELDS`.
   - Adds a "Demo ready" completion panel to S1 `static/studio.js` rendering a clickable iPad demo link and Wallet Studio project link when `status=complete`.
 orianna_signature_approved: "sha256:81128a9f5e1883f2a51b0e1fb261e6253b8cee0d62fd0d07fabc595f74865b83:2026-04-22T14:44:17Z"
+orianna_signature_approved: "sha256:81128a9f5e1883f2a51b0e1fb261e6253b8cee0d62fd0d07fabc595f74865b83:2026-04-22T14:45:38Z"
 ---
 
 # ADR: P1 — User triggers build → finished Wallet Studio project + iPad demo link
