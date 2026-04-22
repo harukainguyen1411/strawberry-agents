@@ -2,6 +2,7 @@
 # orianna-sign.sh — Orianna signing orchestrator.
 #
 # Plan: plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D7.1, T2.1
+# Plan: plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md T5, T10
 #
 # Validates the plan is in the correct source directory for the requested phase,
 # invokes the phase-appropriate Orianna prompt via claude CLI (NO mechanical
@@ -10,7 +11,14 @@
 # author identity and the three required trailers (§D1.1). Does NOT push.
 #
 # Usage:
-#   bash scripts/orianna-sign.sh <plan.md> <phase>
+#   bash scripts/orianna-sign.sh [--pre-fix|--no-pre-fix] <plan.md> <phase>
+#
+# Flags:
+#   --pre-fix     Run orianna-pre-fix.sh before the claude check. If rewrites
+#                 are applied, the commit uses shape B (body + signature in one
+#                 atomic commit with Signed-Fix: <phase> trailer). Default: on
+#                 for concern: work plans; off otherwise.
+#   --no-pre-fix  Explicitly disable the pre-fix pass.
 #
 # <phase> must be: approved, in_progress, or implemented
 #
@@ -37,6 +45,8 @@ fi
 
 ORIANNA_HASH_BODY="$SCRIPT_DIR/orianna-hash-body.sh"
 ORIANNA_VERIFY="$SCRIPT_DIR/orianna-verify-signature.sh"
+ORIANNA_PRE_FIX="$SCRIPT_DIR/orianna-pre-fix.sh"
+STALE_LOCK_LIB="$SCRIPT_DIR/_lib_stale_lock.sh"
 
 ORIANNA_NAME="Orianna (agent)"
 ORIANNA_EMAIL="orianna@agents.strawberry.local"
@@ -52,10 +62,15 @@ die() {
 
 usage() {
   cat >&2 <<EOF
-Usage: $0 <plan.md> <phase>
+Usage: $0 [--pre-fix|--no-pre-fix] <plan.md> <phase>
 
 Signs a plan at the given lifecycle phase using Orianna's LLM gate check.
 No mechanical fallback — if claude CLI is unavailable, signing is refused (§D9.2).
+
+Flags:
+  --pre-fix     Run orianna-pre-fix.sh before claude check (default: on for
+                concern:work plans, off otherwise).
+  --no-pre-fix  Disable the pre-fix pass.
 
 <phase> must be: approved, in_progress, or implemented
 
@@ -70,6 +85,18 @@ EOF
 }
 
 # ---- argument validation ---------------------------------------------------
+
+# Parse optional flags
+PRE_FIX_FLAG=""  # empty = auto-detect from frontmatter; "1" = on; "0" = off
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --pre-fix)   PRE_FIX_FLAG="1"; shift ;;
+    --no-pre-fix) PRE_FIX_FLAG="0"; shift ;;
+    --) shift; break ;;
+    -*) die "unknown flag: $1" ;;
+    *) break ;;
+  esac
+done
 
 [ $# -eq 2 ] || usage
 PLAN_ARG="$1"
@@ -149,6 +176,42 @@ if [ "$PHASE" = "implemented" ]; then
   if ! bash "$ORIANNA_VERIFY" "$PLAN_PATH" in_progress >/dev/null 2>&1; then
     _err="$(bash "$ORIANNA_VERIFY" "$PLAN_PATH" in_progress 2>&1 || true)"
     die "in-progress-signature invalid or missing: $_err. Cannot sign implemented until both prior signatures are valid."
+  fi
+fi
+
+# ---- Stale git index.lock auto-recovery (T7) --------------------------------
+# Source the stale-lock helper if present (POSIX-compatible dot-include).
+if [ -f "$STALE_LOCK_LIB" ]; then
+  # shellcheck source=_lib_stale_lock.sh
+  . "$STALE_LOCK_LIB"
+  GIT_DIR="$(git -C "$REPO_ROOT" rev-parse --git-dir)" maybe_clear_stale_lock
+fi
+
+# ---- Pre-fix pass (T9/T10) — optional body rewrites before claude check ----
+# Determine whether to run pre-fix based on flag or plan frontmatter.
+PRE_FIX_APPLIED=0  # 1 if pre-fix made any changes
+if [ "$PRE_FIX_FLAG" = "0" ]; then
+  _run_pre_fix=0
+elif [ "$PRE_FIX_FLAG" = "1" ]; then
+  _run_pre_fix=1
+else
+  # Auto-detect: on for concern:work plans, off otherwise.
+  _plan_concern="$(awk 'BEGIN{d=0} /^---[[:space:]]*$/{d++; if(d==2) exit; next} d==1 && /^concern:/{sub(/^concern:[[:space:]]*/,""); print; exit}' "$PLAN_PATH" 2>/dev/null || echo '')"
+  if [ "$_plan_concern" = "work" ]; then
+    _run_pre_fix=1
+  else
+    _run_pre_fix=0
+  fi
+fi
+
+if [ "$_run_pre_fix" -eq 1 ] && [ -f "$ORIANNA_PRE_FIX" ]; then
+  log_stderr "running pre-fix pass on: $PLAN_REL"
+  _pre_fix_stdout="$(bash "$ORIANNA_PRE_FIX" "$PLAN_PATH" 2>/dev/null || true)"
+  if [ -n "$_pre_fix_stdout" ]; then
+    log_stderr "pre-fix rewrites applied: $_pre_fix_stdout"
+    PRE_FIX_APPLIED=1
+  else
+    log_stderr "pre-fix: no rewrites needed"
   fi
 fi
 
@@ -285,14 +348,29 @@ mv "$TMP_PLAN" "$PLAN_PATH"
 log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
 
 # ---- Commit with Orianna's identity and required trailers ----------------
+# Shape B (T5): when pre-fix rewrites were applied in this invocation, combine
+# body edits and signature into one atomic commit with a Signed-Fix: trailer.
+# Shape A: signature-only commit (original shape, no pre-fix edits).
 
 git -C "$REPO_ROOT" add "$PLAN_PATH"
 
-COMMIT_MSG="chore: orianna signature for ${PLAN_BASENAME}-${PHASE}
+if [ "${PRE_FIX_APPLIED:-0}" -eq 1 ]; then
+  # Shape B — atomic body + signature commit
+  COMMIT_MSG="chore: orianna signature for ${PLAN_BASENAME}-${PHASE}
+
+Signed-Fix: ${PHASE}
+Signed-by: Orianna
+Signed-phase: ${PHASE}
+Signed-hash: sha256:${BODY_HASH}"
+  log_stderr "shape B commit (pre-fix rewrites included)"
+else
+  # Shape A — signature-only commit
+  COMMIT_MSG="chore: orianna signature for ${PLAN_BASENAME}-${PHASE}
 
 Signed-by: Orianna
 Signed-phase: ${PHASE}
 Signed-hash: sha256:${BODY_HASH}"
+fi
 
 # Write COMMIT_EDITMSG before git commit so the pre-commit hook (which runs before
 # git prepares the message internally) can inspect the trailers.
