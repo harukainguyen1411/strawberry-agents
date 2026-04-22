@@ -97,44 +97,56 @@ git -C "$TMPREPO" commit -q -m "chore: seed test plan"
 PLAN_REL="plans/proposed/2026-04-22-staged-scope-test-plan.md"
 
 # Stub claude CLI: writes a clean Orianna report (block_findings: 0) and exits 0.
+# Extracts REPO_ROOT from --system-prompt and plan basename from the full prompt arg.
 cat > "$TMPBIN/claude" <<'STUBEOF'
 #!/usr/bin/env bash
 # Stub claude CLI for test harness — emits a clean Orianna report.
-# orianna-sign.sh calls: claude -p --dangerously-skip-permissions \
-#   --system-prompt "...working directory is $REPO_ROOT." "$FULL_PROMPT"
-# We extract REPO_ROOT from the --system-prompt arg.
 
 REPORT_REPO=""
 NEXT_IS_SYSPROMPT=0
+LAST_ARG=""
 for arg in "$@"; do
   if [ "$NEXT_IS_SYSPROMPT" -eq 1 ]; then
-    # Extract path from "...Your working directory is /path/to/repo."
     REPORT_REPO="${arg#*Your working directory is }"
-    # Strip trailing period and whitespace
     REPORT_REPO="${REPORT_REPO%.}"
     REPORT_REPO="${REPORT_REPO%% }"
     NEXT_IS_SYSPROMPT=0
   fi
-  case "$arg" in
-    --system-prompt) NEXT_IS_SYSPROMPT=1 ;;
-  esac
+  case "$arg" in --system-prompt) NEXT_IS_SYSPROMPT=1 ;; esac
+  LAST_ARG="$arg"
 done
+
+PLAN_BASENAME=""
+while IFS= read -r line; do
+  case "$line" in
+    *"Plan path (relative to repo root):"*)
+      _rel="${line#*\`}"
+      _rel="${_rel%\`*}"
+      PLAN_BASENAME="$(basename "$_rel" .md)"
+      break
+      ;;
+  esac
+done <<EOF
+$LAST_ARG
+EOF
 
 if [ -z "$REPORT_REPO" ]; then
   printf '[stub-claude] ERROR: could not determine repo root from --system-prompt arg\n' >&2
   exit 2
 fi
+if [ -z "$PLAN_BASENAME" ]; then
+  printf '[stub-claude] ERROR: could not determine plan basename from prompt\n' >&2
+  exit 2
+fi
 
 REPORT_DIR="$REPORT_REPO/assessments/plan-fact-checks"
 mkdir -p "$REPORT_DIR"
-
-PLAN_BASENAME="2026-04-22-staged-scope-test-plan"
 TS="$(date -u '+%Y-%m-%dT%H-%M-%SZ')"
 REPORT_FILE="$REPORT_DIR/${PLAN_BASENAME}-${TS}.md"
 
 cat > "$REPORT_FILE" <<EOF
 ---
-plan: $PLAN_ABS
+plan: $PLAN_BASENAME
 phase: approved
 block_findings: 0
 warn_findings: 0
@@ -223,5 +235,61 @@ fi
 
 pass "orianna_signature_approved present in frontmatter"
 
-printf '\n[ALL PASS] STAGED_SCOPE test passed.\n'
+# --- Assertion 4: T5 auto-derive — STAGED_SCOPE unset produces same commit shape
+# Run a second plan with NO STAGED_SCOPE in env; commit must still be scoped
+# to exactly the plan file (auto-derive applies PLAN_REL as default).
+# Plan: plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md T5
+
+PLAN2_FILE="$PLAN_DIR/2026-04-22-staged-scope-auto-derive-plan.md"
+cat > "$PLAN2_FILE" <<'PLAN2EOF'
+---
+status: proposed
+concern: personal
+owner: talon
+created: 2026-04-22
+orianna_gate_version: 2
+complexity: quick
+---
+
+# Auto-derive STAGED_SCOPE test plan
+
+Minimal plan for testing STAGED_SCOPE auto-derive (T5).
+PLAN2EOF
+git -C "$TMPREPO" add "$PLAN2_FILE"
+git -C "$TMPREPO" commit -q -m "chore: seed auto-derive test plan"
+PLAN2_REL="plans/proposed/2026-04-22-staged-scope-auto-derive-plan.md"
+
+# Stage another noise file to verify auto-derive scopes the commit correctly
+NOISE2_FILE="$TMPREPO/noise2.txt"
+printf 'more noise from concurrent session\n' > "$NOISE2_FILE"
+git -C "$TMPREPO" add "$NOISE2_FILE"
+
+info "invoking orianna-sign.sh WITHOUT STAGED_SCOPE (T5 auto-derive)"
+SIGN2_RC=0
+REPO="$TMPREPO" \
+  PATH="$TMPBIN:$PATH" \
+  bash "$ORIANNA_SIGN" "$PLAN2_FILE" approved 2>&1 || SIGN2_RC=$?
+
+if [ "$SIGN2_RC" -ne 0 ]; then
+  fail "auto-derive: orianna-sign.sh exited $SIGN2_RC (expected 0)"
+fi
+
+HEAD2_FILES="$(git -C "$TMPREPO" show --name-only --format='' HEAD)"
+HEAD2_COUNT="$(printf '%s\n' "$HEAD2_FILES" | grep -c '[^[:space:]]' || echo 0)"
+
+if [ "$HEAD2_COUNT" -ne 1 ]; then
+  fail "auto-derive: HEAD commit should touch exactly 1 file; got $HEAD2_COUNT: $HEAD2_FILES"
+fi
+if ! printf '%s\n' "$HEAD2_FILES" | grep -qF "$PLAN2_REL"; then
+  fail "auto-derive: HEAD commit should touch $PLAN2_REL; got: $HEAD2_FILES"
+fi
+pass "T5 auto-derive: HEAD commit touches exactly 1 file: $PLAN2_REL"
+
+STAGED2_AFTER="$(git -C "$TMPREPO" diff --cached --name-only)"
+if ! printf '%s\n' "$STAGED2_AFTER" | grep -q "noise2.txt"; then
+  fail "T5 auto-derive: noise2.txt should remain staged after signing commit; index: $STAGED2_AFTER"
+fi
+pass "T5 auto-derive: noise2.txt remains staged (concurrent work preserved)"
+
+printf '\n[ALL PASS] STAGED_SCOPE test passed (including T5 auto-derive).\n'
 exit 0

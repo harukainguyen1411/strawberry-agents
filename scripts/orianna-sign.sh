@@ -187,6 +187,15 @@ if [ -f "$STALE_LOCK_LIB" ]; then
   GIT_DIR="$(git -C "$REPO_ROOT" rev-parse --git-dir)" maybe_clear_stale_lock
 fi
 
+# ---- Source coordinator lock lib (T4 — concurrent-coordinator-race-closeout) -
+# Load the shared lock helper now; the lock itself is acquired just before
+# git add (see the comment near git -C "$REPO_ROOT" add "$PLAN_PATH" below).
+_COORD_LOCK_LIB="$SCRIPT_DIR/_lib_coordinator_lock.sh"
+if [ -f "$_COORD_LOCK_LIB" ]; then
+  # shellcheck source=_lib_coordinator_lock.sh
+  . "$_COORD_LOCK_LIB"
+fi
+
 # ---- Pre-fix pass (T9/T10) — optional body rewrites before claude check ----
 # Determine whether to run pre-fix based on flag or plan frontmatter.
 PRE_FIX_APPLIED=0  # 1 if pre-fix made any changes
@@ -344,6 +353,19 @@ if ! grep -qF "$SIG_LINE" "$TMP_PLAN"; then
   die "failed to insert signature line into frontmatter — plan may lack proper --- delimiters"
 fi
 
+# ---- Coordinator advisory lock (T4 — concurrent-coordinator-race-closeout) --
+# Acquire the shared lock before writing the signature to disk and before the
+# git add→commit window. This serialises concurrent orianna-sign.sh and
+# plan-promote.sh invocations, preventing cross-agent index races and ensuring
+# the signature write + commit is atomic relative to other coordinators.
+# Lockfile lives under .git/ (never tracked).
+# See: plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md T4
+if command -v coordinator_lock_acquire >/dev/null 2>&1; then
+  coordinator_lock_acquire "$REPO_ROOT/.git/strawberry-promote.lock"
+else
+  log_stderr "WARNING: coordinator_lock_acquire not available — running without coordinator lock (race risk)"
+fi
+
 mv "$TMP_PLAN" "$PLAN_PATH"
 log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
 
@@ -374,18 +396,27 @@ fi
 
 # Write COMMIT_EDITMSG before git commit so the pre-commit hook (which runs before
 # git prepares the message internally) can inspect the trailers.
-GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --git-dir)"
+GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --absolute-git-dir)"
 printf '%s\n' "$COMMIT_MSG" > "${GIT_DIR_PATH}/COMMIT_EDITMSG"
 
 # STAGED_SCOPE support (plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md):
 # When STAGED_SCOPE is set, scope the commit to exactly the plan path via a git pathspec.
 # This prevents concurrent coordinator sessions' staged files from riding along into the
 # signing commit and triggering the one-file guard in pre-commit-orianna-signature-guard.sh.
-# Behavior is unchanged when STAGED_SCOPE is unset (opt-in).
+#
+# Auto-derive (T5 — concurrent-coordinator-race-closeout): if STAGED_SCOPE is unset,
+# default it to PLAN_REL so the commit is always path-scoped. Explicit caller-set
+# values still win. This makes the contract self-sufficient regardless of caller.
+if [ -z "${STAGED_SCOPE:-}" ]; then
+  STAGED_SCOPE="$PLAN_REL"
+  export STAGED_SCOPE
+  log_stderr "STAGED_SCOPE auto-derived from PLAN_REL: $STAGED_SCOPE"
+fi
 if [ -n "${STAGED_SCOPE:-}" ]; then
   # Validate: must be a relative path that stays within REPO_ROOT
   case "$STAGED_SCOPE" in
     /*) die "STAGED_SCOPE must be a repo-relative path, not absolute: $STAGED_SCOPE" ;;
+    *"../"*|*"/.."*|"..") die "STAGED_SCOPE must not contain path traversal (..): $STAGED_SCOPE" ;;
     *) ;;
   esac
   if [ ! -f "$REPO_ROOT/$STAGED_SCOPE" ]; then
