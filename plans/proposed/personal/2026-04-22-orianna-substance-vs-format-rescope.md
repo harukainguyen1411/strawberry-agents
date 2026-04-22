@@ -20,6 +20,7 @@ related:
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
 architecture_changes: [architecture/plan-lifecycle.md]
+orianna_signature_approved: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T10:54:34Z"
 ---
 
 # Orianna — substance-vs-format rescope
