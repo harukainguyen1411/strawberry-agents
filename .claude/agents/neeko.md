@@ -1,4 +1,5 @@
 ---
+model: opus
 effort: high
 tier: complex
 pair_mate: lulu
