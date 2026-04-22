@@ -110,6 +110,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch, Task #49): Attempted implemented promotion for 3 plans (PR #21/#22/#16). All 3 BLOCKED — missing `## Test results` + architecture declaration; adding body sections requires full re-sign chain. Plan 1 (rescope) + Plan 3 (boot-chain) additionally blocked by T11.c (60/18 bare `<!-- orianna: ok -->` markers). Plan 2 (race-closeout) harness-denied `orianna-sign.sh` call. Revert at `15286be`. All 3 need Duong admin action. Architecture declarations: plan1=architecture/plan-lifecycle.md (T9 `9704fba`), plan2=architecture/key-scripts.md (PR #22), plan3=architecture_impact:none+## Architecture impact section. See learnings/2026-04-22-implemented-promote-harness-block.md.
 
+- 2026-04-22 (ekko — Sona dispatch): demo-dashboard W5 deploy prep. SA `demo-dashboard-sa@mmpt-233505.iam.gserviceaccount.com` CREATED. IAM role bind BLOCKED (setIamPolicy denied, Duong-manual). deploy.sh fixed: `--ingress=all` + `--service-account=demo-dashboard-sa@...` + secret name bug fixed (`DS_SHARED_SESSION_SECRET` → `DS_STUDIO_SESSION_SECRET`). Branch: `feat/demo-dashboard-w5-deploy-prep` off W2 HEAD (4c1d4bb), worktree at company-os-w5-deploy-prep. Pushed. Two blockers for actual deploy: (1) roles/datastore.user bind, (2) secretAccessor grants on 2 secrets — both need project Owner identity.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
