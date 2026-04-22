@@ -213,6 +213,12 @@ else
   fi
 fi
 
+# Snapshot the plan before any pre-fix mutations so we can restore on
+# block-findings exit (Rule 1 — no uncommitted tree changes after refused sign).
+# Plan: plans/in-progress/personal/2026-04-22-orianna-speedups-pr19-fast-follow.md T2
+_PLAN_SNAPSHOT="$(mktemp)"
+cp "$PLAN_PATH" "$_PLAN_SNAPSHOT"
+
 if [ "$_run_pre_fix" -eq 1 ] && [ -f "$ORIANNA_PRE_FIX" ]; then
   log_stderr "running pre-fix pass on: $PLAN_REL"
   _pre_fix_stdout="$(bash "$ORIANNA_PRE_FIX" "$PLAN_PATH" 2>/dev/null || true)"
@@ -314,10 +320,19 @@ fi
 log_stderr "block findings: ${block_count}"
 
 if [ "$block_count" -gt 0 ] || [ "$claude_exit" -eq 1 ]; then
+  # Restore plan from snapshot so pre-fix mutations don't linger (Rule 1).
+  if [ -f "$_PLAN_SNAPSHOT" ]; then
+    cp "$_PLAN_SNAPSHOT" "$PLAN_PATH"
+    rm -f "$_PLAN_SNAPSHOT"
+    log_stderr "plan restored to pre-sign state (snapshot/restore — T2)"
+  fi
   log_stderr "check failed: $block_count block finding(s). Plan unchanged. Fix issues and re-run."
   log_stderr "Report: $latest_report"
   exit 1
 fi
+
+# Discard snapshot — sign succeeded, mutations are intentional.
+rm -f "$_PLAN_SNAPSHOT"
 
 # ---- All checks passed — compute hash and append signature ----------------
 
