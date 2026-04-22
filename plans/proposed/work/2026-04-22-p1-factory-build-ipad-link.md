@@ -24,6 +24,7 @@ architecture_changes:
   - Adds S2 config fetch inside S3 (S3 gains a `config_mgmt_client.py`) so the factory pipeline receives brand/market/colors/logos/card/params/journey/tokenUi/ipadDemo from demo-config-mgmt rather than a Claude research step.
   - Adds session fields `demoUrl`, `projectUrl`, `shortcode`, `buildId` (alongside existing `projectId`, `outputUrls`, `factoryRunId`) and whitelists them in `session._UPDATABLE_FIELDS`.
   - Adds a "Demo ready" completion panel to S1 `static/studio.js` rendering a clickable iPad demo link and Wallet Studio project link when `status=complete`.
+orianna_signature_approved: "sha256:cb59eb4cf678d24d3e624e1cb9b24515ec9d33f3d7c31450e839caa34b6bd8be:2026-04-22T15:11:11Z"
 ---
 
 # ADR: P1 — User triggers build → finished Wallet Studio project + iPad demo link
