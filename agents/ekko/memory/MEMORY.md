@@ -112,6 +112,8 @@
 
 - 2026-04-22 (ekko — Sona dispatch): demo-dashboard W5 deploy prep. SA `demo-dashboard-sa@mmpt-233505.iam.gserviceaccount.com` CREATED. IAM role bind BLOCKED (setIamPolicy denied, Duong-manual). deploy.sh fixed: `--ingress=all` + `--service-account=demo-dashboard-sa@...` + secret name bug fixed (`DS_SHARED_SESSION_SECRET` → `DS_STUDIO_SESSION_SECRET`). Branch: `feat/demo-dashboard-w5-deploy-prep` off W2 HEAD (4c1d4bb), worktree at company-os-w5-deploy-prep. Pushed. Two blockers for actual deploy: (1) roles/datastore.user bind, (2) secretAccessor grants on 2 secrets — both need project Owner identity.
 
+- 2026-04-22 (ekko — Evelynn dispatch, Task #64): Promoted 2026-04-22-work-scope-reviewer-anonymity.md proposed→approved→in_progress. Plan was untracked — initial commit required; pre-commit blocked on (1) `(d)` token in fixture labels (use `fixture-d` not `(d)` in task prose), (2) prospective paths needing `<!-- orianna: ok -- reason -->` suppressors, (3) bare suppressor markers needing reason suffix. Coordinator lock race on first sign attempt (concurrent rescope session) — cleared naturally. approved sig: 9dfdd73, in_progress sig: 2712660. Final path: plans/in-progress/personal/2026-04-22-work-scope-reviewer-anonymity.md.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
