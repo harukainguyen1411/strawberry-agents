@@ -11,23 +11,72 @@ jobs:
     permissions:
       pull-requests: read
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Fetch PR body and changed files
-        id: pr-data
+      - name: Fetch PR body and changed files, then run Rule 16 linter
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
         run: |
-          PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
-          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only)
-          # Export as env files (handles multiline)
-          printf '%s' "$PR_BODY" > /tmp/pr_body.txt
-          printf '%s' "$CHANGED_FILES" > /tmp/pr_files.txt
+          PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""')
+          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --repo "$REPO" --name-only)
 
-      - name: Run pr-lint-check (Rule 16 — Akali / Playwright MCP)
-        run: |
-          PR_BODY="$(cat /tmp/pr_body.txt)" \
-          CHANGED_FILES="$(cat /tmp/pr_files.txt)" \
-          sh scripts/ci/pr-lint-check.sh
+          # ---------------------------------------------------------------
+          # scripts/ci/pr-lint-check.sh — inlined (POSIX-portable)
+          # ---------------------------------------------------------------
+
+          # 1. Classify by changed file paths
+          is_ui_or_flow=0
+
+          OLD_IFS="$IFS"
+          IFS='
+          '
+          for filepath in $CHANGED_FILES; do
+            case "$filepath" in
+              apps/*/app/*|apps/*/components/*|apps/*/pages/*|apps/*/routes/*|apps/*/forms/*|apps/*/auth/*|apps/*/session/*)
+                is_ui_or_flow=1
+                break
+                ;;
+            esac
+          done
+          IFS="$OLD_IFS"
+
+          # 2. Classify by user-flow keywords in PR body
+          if [ "$is_ui_or_flow" = "0" ]; then
+            body_lower=$(printf '%s' "$PR_BODY" | tr '[:upper:]' '[:lower:]')
+            case "$body_lower" in
+              *"new route"*|*"new form"*|*"state transition"*|*"auth flow"*|*"session lifecycle"*|*"user flow"*)
+                is_ui_or_flow=1
+                ;;
+            esac
+          fi
+
+          # 3. Exempt — not UI or user-flow
+          if [ "$is_ui_or_flow" = "0" ]; then
+            echo "PR is not UI or user-flow — exempt from Rule 16."
+            exit 0
+          fi
+
+          # 4. Require QA-Report: or QA-Waiver: marker
+          has_marker=0
+          case "$PR_BODY" in
+            *"QA-Report:"*|*"QA-Waiver:"*)
+              has_marker=1
+              ;;
+          esac
+
+          if [ "$has_marker" = "1" ]; then
+            echo "Rule 16 satisfied — QA marker found."
+            exit 0
+          fi
+
+          # 5. Violation
+          echo "Rule 16 violation: This PR touches UI or user-flow paths but is missing a" >&2
+          echo "QA-Report: or QA-Waiver: entry in the PR body." >&2
+          echo "" >&2
+          echo "Required action: Run Akali via Playwright MCP to produce a QA report, then" >&2
+          echo "add one of the following lines to your PR description:" >&2
+          echo "  QA-Report: assessments/qa-reports/<date>-akali-<slug>.md" >&2
+          echo "  QA-Waiver: <reason>" >&2
+          echo "" >&2
+          echo "See CLAUDE.md Rule 16 and .claude/agents/akali.md for details." >&2
+          exit 1
