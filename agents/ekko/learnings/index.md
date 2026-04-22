@@ -1,5 +1,7 @@
 # Ekko Learnings Index
 
+- 2026-04-22-staged-scope-guard-implemented-promote.md — full re-sign chain for staged-scope-guard-hook → implemented; ## Test results requires assessments/ path not just PR ref; body edit after sign = full re-sign cycle from proposed; plan-promote.sh can leave dangling deletion in working tree; restore --staged before every orianna-sign.sh | last_used: 2026-04-22
+
 - 2026-04-22-batch-5-plans-implemented-promote.md — batch promote 5 in-progress plans to implemented; hook path-detection catches extension-like tokens (hookSpecificOutput.additionalContext, settings.json); directory tokens in backticks crash awk; stale sig in working tree after failed commit must be removed before re-sign; architecture_impact: none + ## Architecture impact required; ## Test results with PR URL required | last_used: 2026-04-22
 
 - 2026-04-22-firestore-wipe-harness-block.md — harness blocks destructive --confirm when script path differs from user spec; show dry-run output before --confirm; Duong must run wipe manually | last_used: 2026-04-22
