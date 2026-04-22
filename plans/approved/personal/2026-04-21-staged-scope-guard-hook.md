@@ -14,6 +14,7 @@ related:
   - architecture/key-scripts.md
 architecture_impact: none
 orianna_signature_approved: "sha256:e3a424172a0fd11f0f9eb097f31049cff11ec4917ab8782e07efaefe2670d543:2026-04-22T14:23:12Z"
+orianna_signature_in_progress: "sha256:e3a424172a0fd11f0f9eb097f31049cff11ec4917ab8782e07efaefe2670d543:2026-04-22T14:24:52Z"
 ---
 
 # Pre-commit staged-scope guard — prevent cross-agent commit sweeping
