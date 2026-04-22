@@ -1,4 +1,5 @@
 ---
+model: opus
 name: Sona
 effort: medium
 concern: work

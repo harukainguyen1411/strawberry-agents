@@ -1,4 +1,5 @@
 ---
+model: opus
 name: Evelynn
 effort: medium
 concern: personal

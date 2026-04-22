@@ -1,4 +1,5 @@
 ---
+model: opus
 effort: medium
 tier: quick
 pair_mate: talon
