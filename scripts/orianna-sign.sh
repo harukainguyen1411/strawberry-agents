@@ -219,6 +219,30 @@ fi
 _PLAN_SNAPSHOT="$(mktemp)"
 cp "$PLAN_PATH" "$_PLAN_SNAPSHOT"
 
+# Universal snapshot restore trap — fires on EXIT, SIGINT, and SIGTERM.
+# If the snapshot file still exists at exit time, a non-zero exit is occurring
+# (success path discards the snapshot before exit 0). Restore the plan so no
+# pre-fix mutations are left uncommitted on disk regardless of exit path.
+# Fix: PR #23 fast-follow — previously only block_count>0 and claude_exit==1
+# paths restored; "claude not found", other exit-2 die() paths, and signals
+# silently leaked mutations.
+_snapshot_restore_trap() {
+  local _sig="$1"
+  if [ -f "$_PLAN_SNAPSHOT" ]; then
+    cp "$_PLAN_SNAPSHOT" "$PLAN_PATH" 2>/dev/null || true
+    rm -f "$_PLAN_SNAPSHOT"
+    log_stderr "plan restored to pre-sign state (snapshot/restore trap — $_sig)"
+  fi
+  # Re-raise signal so the process exits with the correct status.
+  case "$_sig" in
+    INT)  trap - INT;  kill -INT  "$$" ;;
+    TERM) trap - TERM; kill -TERM "$$" ;;
+  esac
+}
+trap '_snapshot_restore_trap EXIT' EXIT
+trap '_snapshot_restore_trap INT'  INT
+trap '_snapshot_restore_trap TERM' TERM
+
 if [ "$_run_pre_fix" -eq 1 ] && [ -f "$ORIANNA_PRE_FIX" ]; then
   log_stderr "running pre-fix pass on: $PLAN_REL"
   _pre_fix_stdout="$(bash "$ORIANNA_PRE_FIX" "$PLAN_PATH" 2>/dev/null || true)"
