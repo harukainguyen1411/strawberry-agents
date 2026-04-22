@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-21
