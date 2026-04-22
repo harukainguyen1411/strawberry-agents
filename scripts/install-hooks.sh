@@ -1,6 +1,6 @@
 #!/bin/sh
 # Installs strawberry git hook dispatchers into .git/hooks.
-# Each dispatcher verb (pre-commit, pre-push) runs every scripts/hooks/<verb>-*.sh in order.
+# Each dispatcher verb (pre-commit, pre-push, commit-msg) runs every scripts/hooks/<verb>-*.sh in order.
 # Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
 #
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
@@ -20,6 +20,9 @@
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
 #   pre-push-tdd.sh                     — TDD gate enforcement
+#
+# Commit-msg hooks picked up automatically from scripts/hooks/commit-msg-*.sh:
+#   commit-msg-no-ai-coauthor.sh        — blocks AI co-author trailers (Claude, Anthropic, etc.)
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -87,6 +90,7 @@ LOOP
 
 install_dispatcher "pre-commit"
 install_dispatcher "pre-push"
+install_dispatcher "commit-msg"
 
 echo "[install-hooks] Done. Hook dispatchers installed to: $HOOKS_DIR"
 echo "[install-hooks] Sub-hooks active: $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"
