@@ -396,8 +396,10 @@ awk -v REPO_ROOT="$REPO_ROOT" -v STAGED_LINES_FILE="$_staged_lines_tmp" '
     # AND this line is newly staged → BLOCK.
     if ((FILENAME SUBSEP NR in staged) && index(line, "<!-- orianna: ok -->") > 0) {
       # Check if ANY reason form also exists on this line.
-      # reason pattern: <!-- orianna: ok -- (at least one non-space char after the space)
-      has_reason_form = (line ~ /<!-- orianna: ok -- [^-]/)
+      # reason pattern: <!-- orianna: ok -- (at least one non-space, non-closing char after "-- ")
+      # Allow any non-space first char including leading dash (F5).
+      # Plan: plans/in-progress/personal/2026-04-22-orianna-speedups-pr19-fast-follow.md F5
+      has_reason_form = (line ~ /<!-- orianna: ok -- [^ ]/)
       if (!has_reason_form) {
         print "[lib-plan-structure] BLOCK (T11.c): bare <!-- orianna: ok --> requires a reason suffix. Use: <!-- orianna: ok -- <reason> -->. See plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md T11.c. Line: " line > "/dev/stderr"
         file_fail = 1
