@@ -510,3 +510,4 @@ All three round-3 resolutions flow into the ADR text above; no open questions re
 ## Revision log
 
 - 2026-04-21 — Evelynn — added §D13 (quick lane). Collapsed planner/executor pair (Karma + Talon) for trivial work. Same Orianna gate, same PR review. New shared files: `_shared/quick-planner.md`, `_shared/quick-executor.md`. Pre-commit hook (§D4.3a) updated to recognize quick lane.
+- 2026-04-22 — §D1.1a Opus-omit convention superseded by CLAUDE.md Rule 9 MUST-declare; see `plans/in-progress/personal/2026-04-22-explicit-model-on-agent-defs.md`. All Opus-tier agents now explicitly declare `model: opus` in frontmatter. Inheritance is prohibited.
