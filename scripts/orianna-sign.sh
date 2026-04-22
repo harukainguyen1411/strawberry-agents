@@ -403,7 +403,15 @@ printf '%s\n' "$COMMIT_MSG" > "${GIT_DIR_PATH}/COMMIT_EDITMSG"
 # When STAGED_SCOPE is set, scope the commit to exactly the plan path via a git pathspec.
 # This prevents concurrent coordinator sessions' staged files from riding along into the
 # signing commit and triggering the one-file guard in pre-commit-orianna-signature-guard.sh.
-# Behavior is unchanged when STAGED_SCOPE is unset (opt-in).
+#
+# Auto-derive (T5 — concurrent-coordinator-race-closeout): if STAGED_SCOPE is unset,
+# default it to PLAN_REL so the commit is always path-scoped. Explicit caller-set
+# values still win. This makes the contract self-sufficient regardless of caller.
+if [ -z "${STAGED_SCOPE:-}" ]; then
+  STAGED_SCOPE="$PLAN_REL"
+  export STAGED_SCOPE
+  log_stderr "STAGED_SCOPE auto-derived from PLAN_REL: $STAGED_SCOPE"
+fi
 if [ -n "${STAGED_SCOPE:-}" ]; then
   # Validate: must be a relative path that stays within REPO_ROOT
   case "$STAGED_SCOPE" in
