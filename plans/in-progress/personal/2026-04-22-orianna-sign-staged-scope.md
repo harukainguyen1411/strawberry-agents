@@ -10,6 +10,7 @@ tags: [orianna, plan-lifecycle, scripts, concurrency, bugfix]
 related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
+architecture_changes: [architecture/key-scripts.md]
 orianna_signature_approved: "sha256:1b23501714ab7fe9b92352dc3f89f7014dd15cbe426627a620aaf55450b36b82:2026-04-22T07:11:21Z"
 orianna_signature_in_progress: "sha256:1b23501714ab7fe9b92352dc3f89f7014dd15cbe426627a620aaf55450b36b82:2026-04-22T07:15:12Z"
 ---
@@ -147,6 +148,10 @@ Test harness: the existing `scripts/__tests__/` <!-- orianna: ok --> POSIX bash 
 Orianna tests if present; otherwise a self-contained script using `mktemp -d`,
 `git init`, a stubbed `claude` on `PATH`, and `trap` cleanup). All three
 checks live in `scripts/__tests__/test-orianna-sign-staged-scope.sh`. <!-- orianna: ok -->
+
+## Test results
+
+PR #20 (squash `e7189281`) merged 2026-04-22. All required checks passed (Senna APPROVED, Lucian APPROVED). Test file `scripts/__tests__/test-orianna-sign-staged-scope.sh` committed and verified green.
 
 ## References
 
