@@ -1,4 +1,5 @@
 ---
+model: opus
 name: Swain
 skills: [agent-ops, context7, superpowers:writing-plans, superpowers:brainstorming, firecrawl:firecrawl-cli]
 effort: xhigh
