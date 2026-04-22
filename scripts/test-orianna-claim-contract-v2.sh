@@ -82,8 +82,11 @@ else
   else
     gf1_ok=1
     while IFS= read -r plan; do
+      [ -z "$plan" ] && continue
       rc=0
-      bash "$VERIFY" "$plan" >/dev/null 2>&1 || rc=$?
+      # verify requires phase arg — use "approved" as the common phase present
+      # on all multi-phase signed plans in this repo.
+      bash "$VERIFY" "$plan" approved >/dev/null 2>&1 || rc=$?
       if [ "$rc" -ne 0 ]; then
         fail "GF1_EXISTING_SIGS_STILL_VALID" "$(basename "$plan") failed verify after rescope (strict-shrink invariant violated)"
         gf1_ok=0
@@ -106,7 +109,7 @@ EOF
     PASS=$((PASS + 1))
   else
     rc=0
-    bash "$VERIFY" "$SAMPLE_PLAN" >/dev/null 2>&1 || rc=$?
+    bash "$VERIFY" "$SAMPLE_PLAN" approved >/dev/null 2>&1 || rc=$?
     if [ "$rc" -eq 0 ]; then
       pass "GF2_VERIFY_UNAFFECTED_BY_CONTRACT"
     else

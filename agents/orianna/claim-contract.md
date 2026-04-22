@@ -1,10 +1,45 @@
 ---
-contract-version: 1
+contract-version: 2
 created: 2026-04-19
+rescoped: 2026-04-22
 source-adr: plans/approved/2026-04-19-orianna-fact-checker.md
+rescope-adr: plans/in-progress/personal/2026-04-22-orianna-substance-vs-format-rescope.md
 ---
 
-# Orianna Claim-Extraction Contract — v1
+# Orianna Claim-Extraction Contract — v2
+
+## v1 → v2 delta
+
+This file was bumped from v1 to v2 as part of the substance-vs-format rescope
+(ADR `plans/in-progress/personal/2026-04-22-orianna-substance-vs-format-rescope.md`).
+
+**What changed:**
+
+- **§1 C2 split:** the single "Repo path" claim category (C2) is now split into
+  two sub-categories: C2a (internal-prefix path, block on miss) and C2b
+  (all other path-shaped tokens, info on miss). See §1 below.
+- **§2 Non-claim categories expanded:** four new categories added — HTTP route
+  tokens, dotted identifiers (Python/TS style), tokens inside fenced code
+  blocks, and template/brace expressions. See §2 below.
+- **§5 Routing scope narrowed:** routing (`test -e`) applies only to C2a tokens.
+  C2b tokens are logged as `info` without any filesystem check. See §5 below.
+- **§6 Extraction heuristic changed:** fenced code blocks are no longer
+  extracted. Only inline backtick spans (outside fences) are extracted. See §6
+  below.
+
+**What did NOT change:**
+
+- The signature mechanism (SHA-256 body hash, git author trailers, verification
+  script). No existing signature is invalidated — the contract is not hashed
+  into plan signatures.
+- Severity definitions for block, warn, and info (§3).
+- The strict-default rule for C1 and C2a (§4).
+- Routing logic itself (which root applies for which concern) (§5).
+- Suppression syntax `<!-- orianna: ok -->` (§8).
+- The report structure (§7).
+
+The rescope is a **strict shrink**: fewer checks can only decrease block counts.
+Every plan that passed the v1 gate trivially passes the v2 gate.
 
 This file is the authoritative specification for what counts as a verifiable
 claim in a plan document, and what severity level to assign when a claim
@@ -28,12 +63,22 @@ anchor — a reproducible reference a reviewer can verify in under 30 seconds.
 | # | Claim category | Example | Required anchor shape |
 |---|---|---|---|
 | C1 | Integration / service name | "Firebase GitHub App" | File path + line, or `gh api` call confirming the integration exists, or link to official vendor docs if it is a bare vendor name not on the allowlist |
-| C2 | Repo path | `apps/bee/server.ts` | `ls` or `test -f` returns success against the correct repo checkout |
+| C2a | **Internal-prefix repo path** — token begins with an internal-prefix (see §5b opt-back list and §5b personal routing). Miss severity: **block**. | `scripts/plan-promote.sh`, `agents/orianna/claim-contract.md` | `test -e` returns success against the correct repo checkout |
+| C2b | **Other path-shaped token** — a token that contains `/` or ends in a recognized extension but does NOT begin with an internal-prefix. Miss severity: **info** (no filesystem check performed). | `/auth/login`, `company-os/tools/demo-studio-v3/agent_proxy.py` | Not required; logged as info if unresolvable |
 | C3 | Command / CLI flag | `firebase deploy --only functions:api` | Citation of the tool's help output or a docs URL |
 | C4 | GitHub Actions workflow or secret name | `.github/workflows/deploy.yml`, `FIREBASE_SERVICE_ACCOUNT` | File path in `.github/workflows/` + `grep` match for the secret name |
 | C5 | Script or tool path | `scripts/plan-promote.sh` | `ls` hit against this repo |
 | C6 | Architecture claim | "discord-relay runs on GCE" | Reference to the architecture doc or deploy config that asserts the same fact |
 | C7 | Existing plan reference | `plans/approved/2026-04-17-deployment-pipeline.md` | `ls plans/**` hit |
+
+**C2a internal-prefix list** (applies under both personal and work concerns):
+`agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`,
+`secrets/`, `tools/decrypt.sh`, `tools/encrypt.sh`. Under `concern: personal`
+also: `apps/`, `dashboards/`, `.github/workflows/`.
+
+Note: C5 is a specialization of C2a (script paths always match the internal
+prefix). Both are block-severity on miss. C5 remains listed separately for
+historical clarity.
 
 ---
 
@@ -51,6 +96,22 @@ The following are not verifiable claims and must never be flagged:
   `agents/memory/agent-network.md` (e.g. "Orianna", "Ekko", "Viktor") are
   roster references, not integration claims.
 - **Pure opinion / style** — word choice, tone, formatting preference.
+- **HTTP route tokens** — any token whose first segment is an HTTP method
+  (`GET`, `POST`, `PUT`, `DELETE`, `PATCH`, `HEAD`, `OPTIONS`) or whose first
+  character is `/` followed by a path segment that is not an internal-prefix.
+  Examples: `/auth/login`, `POST /api/sessions`, `GET /build/{id}`. These are
+  API surface descriptors, not filesystem claims. Never extracted for checking.
+- **Dotted identifiers** — tokens composed of dotted segments using camelCase
+  or snake_case with no `/` separator and no recognized filesystem extension.
+  Examples: `firebase_admin.auth.verify_id_token`, `ds_session`,
+  `ClassName.method`. These are code symbols, not paths.
+- **Tokens inside fenced code blocks** — entire content between ` ``` ` fences
+  is illustrative (diagrams, pseudocode, example shell, state machines).
+  No tokens are extracted from fenced blocks. Authors who want fenced content
+  checked can move the relevant claim outside the fence.
+- **Template / brace expressions** — tokens containing `{` or `}` with nested
+  variable names. Examples: `{uid, email, iat}`, `{sid}/{token}`,
+  `/path/{param}`. These are placeholder patterns, not real paths.
 
 Orianna is a fact-checker, not a style editor. Prose quality is never a
 block finding.
@@ -100,17 +161,31 @@ rewording for clarity. Never halts promotion. Examples:
 
 ## 4. Strict-default rule (Duong decision 6)
 
-Any claim in category C1 (integration / service name) or C2 (repo path) that
-**cannot be verified** defaults to **block** severity. There is no "warn by
-default for integration names" mode. When in doubt, block.
+Any claim in category C1 (integration / service name) or **C2a** (internal-prefix
+repo path) that **cannot be verified** defaults to **block** severity. There is
+no "warn by default for integration names" mode. When in doubt, block.
+
+C2b (other path-shaped token) misses default to **info** severity — these are
+not filesystem claims by Orianna's v2 taxonomy. Upgrading a C2b finding to
+block requires an explicit author escalation (use `<!-- orianna: ok -->` to
+indicate the author wants the token suppressed, or move it outside a fence and
+add it to an internal-prefix path if it is actually load-bearing).
 
 Rationale: the problem that motivated Orianna's creation was an unverified
 integration name ("Firebase GitHub App") that consumed 15 minutes of Duong's
 time. Leniency on integration names defeats the purpose of the gate.
+The C2a/C2b split is motivated by the documented false-positive pattern on HTTP
+routes, dotted identifiers, and diagram tokens (see rescope ADR §1 evidence).
 
 ---
 
 ## 5. Repo routing rules
+
+**Routing applies to C2a (internal-prefix path) tokens only.** Non-internal-
+prefix path tokens (C2b) do not undergo `test -e` and are logged as `info`
+with the note "non-internal-prefix path token; C2b category; no filesystem
+check performed." The routing rules below describe how to resolve C2a tokens
+across repo checkouts. C2b tokens bypass routing entirely.
 
 Routing is concern-aware. The plan's `concern:` frontmatter field determines
 which resolution root applies.
@@ -187,26 +262,44 @@ must enumerate identical entries.
 
 ---
 
-## 6. v1 extraction heuristic
+## 6. v2 extraction heuristic
 
-1. Parse the plan markdown. For each fenced code block and each inline
-   backtick span, extract the token.
-2. For each token, classify: path-shaped (contains `/` or ends in a
-   recognized extension)? flag (starts with `-`)? integration name?
-   command?
-3. For each path-shaped token, apply routing rules (§5) and run `test -e`
-   against the applicable repo checkout.
-4. For each integration-shaped token (proper noun, not path, not flag):
+1. Parse the plan markdown. **For each inline backtick span outside a fenced
+   code block**, extract the token. Fenced code blocks (content between ` ``` `
+   fences) are illustrative and are not extracted. Authors who want specific
+   fenced content checked can move the relevant claim outside the fence.
+2. For each extracted token, classify:
+   - **C2b / non-claim** — first, apply the non-claim category tests from §2:
+     HTTP route? Dotted identifier (camelCase/snake_case with no `/`)? Template/
+     brace expression (`{`, `}`)? Whitespace-containing span? If any non-claim
+     test matches, log as `info` (non-claim skip) and skip further checks.
+   - **Flag** — starts with `-`? Skip entirely.
+   - **Path-shaped** — contains `/` or ends in a recognized extension (`.sh`,
+     `.md`, `.ts`, `.js`, `.tsx`, `.jsx`, `.json`, `.yml`, `.yaml`, `.env`,
+     `.bats`)? Proceed to step 3.
+   - **Integration name** — proper noun, not a path, not a flag? Proceed to
+     step 4.
+   - **Command / other** — skip.
+3. For each path-shaped token:
+   - Check if the token begins with an internal-prefix (C2a): `agents/`,
+     `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`,
+     `secrets/`, `tools/decrypt.sh`, `tools/encrypt.sh`; and under
+     `concern: personal` also `apps/`, `dashboards/`, `.github/workflows/`.
+   - **C2a token:** apply routing rules (§5) and run `test -e` against the
+     applicable repo checkout. Miss → `block`. Hit → `info` (clean pass).
+   - **C2b token (not internal-prefix):** log as `info` with note
+     "non-internal-prefix path token; C2b category; no filesystem check
+     performed." No `test -e` is run.
+4. For each integration-shaped token:
    check the allowlist (`agents/orianna/allowlist.md`). If on the allowlist
    as a bare vendor name, pass. If not on the allowlist, flag for
    author-supplied anchor (block severity per §4 strict default).
 5. Emit a report with one row per suspect token: claim text, anchor
    attempted, result, severity.
 
-v1 accepts false positives from backtick spans that are code samples or
-examples. Authors may add an inline comment `<!-- orianna: ok -->` immediately
-after a suspect backtick span to suppress a finding; this is logged as `info`
-in the report.
+Authors may add an inline comment `<!-- orianna: ok -->` immediately after a
+suspect backtick span to suppress a finding; this is logged as `info` in the
+report (author-suppressed).
 
 ---
 
