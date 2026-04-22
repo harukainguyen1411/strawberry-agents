@@ -82,7 +82,7 @@ The session model is already designed to "interject when an event lands."
 The v1 implementation shipped and was reverted in three commits
 (`2550097`, `69f4400`, `32a70b3`) because (a) Claude Code logged
 `Channels blocked by org policy`, (b) the MCP server name
-`strawberry-inbox` never resolved in the session's MCP roster, and (c)
+`strawberry-inbox` never resolved in the session's MCP roster, and (c) <!-- orianna: ok -- non-existent MCP server name, v1 artifact -->
 `--dangerously-load-development-channels` is not a flag suitable for
 routine production use on a managed device. Full detail preserved in §10.
 
@@ -140,12 +140,12 @@ What *is* available to us on this machine:
 What *is not* available to us:
 
 - Channels (org-policy blocked).
-- Registered MCP server named `strawberry-inbox` (never existed).
+- Registered MCP server named `strawberry-inbox` (never existed). <!-- orianna: ok -- non-existent MCP server name, v1 artifact -->
 - Any daemon process outside the session lifecycle.
 
 ## 2. Decision
 
-Ship **`strawberry-inbox-watch`**: a `Monitor`-based real-time inbox
+Ship **`strawberry-inbox-watch`**: <!-- orianna: ok -- v3 concept name, not a file path --> a `Monitor`-based real-time inbox
 watcher with a clean pending/archive lifecycle.
 
 Three moving parts:
