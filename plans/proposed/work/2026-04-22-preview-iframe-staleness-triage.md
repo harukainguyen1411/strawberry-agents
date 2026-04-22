@@ -13,6 +13,7 @@ tags:
   - bug
   - work
 tests_required: true
+orianna_signature_approved: "sha256:d1af1ab98ba8ad1bfaa7e8b16ec1e874c4c68069d4fda8b86db75f340e8c8b50:2026-04-22T10:50:18Z"
 ---
 
 # Preview iframe staleness — port origin/main implementation onto feat branch
@@ -40,7 +41,7 @@ A deploy guard goes into the preview deploy script — Ekko's Option B, a branch
 
 - kind: test
 - estimate_minutes: 25
-- files: `tools/demo-studio-v3/tests/test_preview_iframe_brand_sync.py` <!-- orianna: ok -- prospective path under work workspace -->
+- files: `mmp/workspace/tools/demo-studio-v3/tests/test_preview_iframe_brand_sync.py` <!-- orianna: ok -- prospective path under work workspace -->
 - detail: Playwright-driven test on the work workspace. Step one, POST /session to create a fresh session. Step two, drive chat (or post directly to Config-Mgmt depending on what the test harness exposes) to commit brand equal to Aviva. Step three, load the studio page, wait for settle. Step four, read the preview iframe's resolved URL; fetch it directly and assert the rendered HTML contains Aviva chrome markers and does NOT contain Allianz chrome markers. Mark the test with pytest.mark.xfail and a reason string pointing at this plan file until T4 flips it. Commit lands on the feat branch before any T2/T3/T4 fix commit per Rule 12.
 - DoD: test runs red-xfail locally; pytest on that single test file exits green because xfail counts as expected; committed with a `test(demo-preview):` prefix.
 
@@ -64,7 +65,7 @@ A deploy guard goes into the preview deploy script — Ekko's Option B, a branch
 
 - kind: fix
 - estimate_minutes: 25
-- files: `tools/demo-studio-v3/static/studio.js` <!-- orianna: ok -- work workspace -->, `tools/demo-preview/deploy.sh` <!-- orianna: ok -- work workspace -->, `tools/demo-studio-v3/tests/test_preview_iframe_brand_sync.py` <!-- orianna: ok -- prospective, created by T1 -->
+- files: `mmp/workspace/tools/demo-studio-v3/static/studio.js` <!-- orianna: ok -- work workspace -->, `tools/demo-preview/deploy.sh` <!-- orianna: ok -- work workspace -->, `mmp/workspace/tools/demo-studio-v3/tests/test_preview_iframe_brand_sync.py` <!-- orianna: ok -- prospective, created by T1 -->
 - detail: Three sub-steps. Sub-step-one, grep studio.js for the string slash-v1-slash-preview; if any hit, replace with slash-preview to match server.py's spec-aligned routes. Also check that the fullview URL construction uses /preview/{id}/fullview and not /v1/preview/{id}/fullview. Sub-step-two, add to the top of deploy.sh — after the shebang and set-euo-pipefail — a check that git rev-parse abbrev-ref HEAD equals feat/demo-studio-v3, else echo an error and exit 1. Per Ekko Option B: zero new files, git-native. Sub-step-three, remove the xfail marker from T1's test; run pytest and confirm green; also run a second assertion swapping Aviva for Lemonade to prove it is not anything-but-Allianz. Save a Playwright screenshot to `assessments/qa-reports/2026-04-22-preview-iframe-staleness-live.png` <!-- orianna: ok -- prospective screenshot under strawberry-agents -->. Commit with a `fix(demo-preview):` prefix.
 - DoD: studio.js calls /preview/{id} and /preview/{id}/fullview with no /v1/ prefix anywhere; deploy.sh refuses to run from main or any non-feat branch; xfail is removed and pytest is green; screenshot attached.
 
