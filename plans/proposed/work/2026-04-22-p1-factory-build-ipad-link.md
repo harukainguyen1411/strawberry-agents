@@ -24,7 +24,6 @@ architecture_changes:
   - Adds S2 config fetch inside S3 (S3 gains a `config_mgmt_client.py`) so the factory pipeline receives brand/market/colors/logos/card/params/journey/tokenUi/ipadDemo from demo-config-mgmt rather than a Claude research step.
   - Adds session fields `demoUrl`, `projectUrl`, `shortcode`, `buildId` (alongside existing `projectId`, `outputUrls`, `factoryRunId`) and whitelists them in `session._UPDATABLE_FIELDS`.
   - Adds a "Demo ready" completion panel to S1 `static/studio.js` rendering a clickable iPad demo link and Wallet Studio project link when `status=complete`.
-orianna_signature_approved: "sha256:81128a9f5e1883f2a51b0e1fb261e6253b8cee0d62fd0d07fabc595f74865b83:2026-04-22T14:45:38Z"
 ---
 
 # ADR: P1 — User triggers build → finished Wallet Studio project + iPad demo link
@@ -250,7 +249,7 @@ async def _run_build_job(build_id: str, session_id: str, project_id: str | None)
 
 ### D4. Shortcode → URL resolution
 
-**Where the shortcode comes from:** `post_clone_fixup` (step 4 in D3.1) writes `demo.get("shortcode")` to the WS project. If the shortcode conflicts (another project has it), WS returns an error and fixup retries with `f"{shortcode}-{project_id}"` (existing logic in `project.py` lines 76-90). So the **effective shortcode** is only known after fixup.
+**Where the shortcode comes from:** `post_clone_fixup` (step 4 in D3.1) writes `demo.get("shortcode")` to the WS project. If the shortcode conflicts (another project has it), WS returns an error and fixup retries with `f"{shortcode}-{project_id}"` (existing logic in `project.py` lines 76-90). So the **effective shortcode** is only known after fixup. <!-- orianna: ok — project.py is company-os/tools/demo-factory/project.py, work-workspace file -->
 
 **When URLs are composed:** after step 14 (`get_project(project_id)`), read `snapshot["shortcode"]` and compose:
 
@@ -279,7 +278,7 @@ async def _run_build_job(build_id: str, session_id: str, project_id: str | None)
 
 **`factoryRunId` deprecation.** Today `factory_bridge_v2` writes a synthetic uuid into `factoryRunId`. Under P1, `factoryRunId` is replaced by `buildId` (real S3 build id). Keep the column for one release for backward-compat reads; stop writing it. Follow-up plan removes it.
 
-**UI — "Demo ready" panel (S1 `static/studio.js`).**
+**UI — "Demo ready" panel (S1 `static/studio.js`).** <!-- orianna: ok — static/studio.js is company-os/tools/demo-studio-v3/static/studio.js, work-workspace file -->
 
 Current behaviour (line 860): `if (d.outputUrls && d.outputUrls.demoUrl) addMessage('system', 'Demo deployed: ' + d.outputUrls.demoUrl);`. This writes the raw URL into the chat as system text — not clickable, buried in scroll.
 
