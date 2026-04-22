@@ -18,6 +18,7 @@ related:
 architecture_impact: none
 orianna_signature_approved: "sha256:d6744af4eeace3f03da9eb74234ef54c79c928b99ba2e218f10b323a226ab2b2:2026-04-22T10:49:39Z"
 orianna_signature_in_progress: "sha256:d6744af4eeace3f03da9eb74234ef54c79c928b99ba2e218f10b323a226ab2b2:2026-04-22T10:50:30Z"
+orianna_signature_implemented: "sha256:d6744af4eeace3f03da9eb74234ef54c79c928b99ba2e218f10b323a226ab2b2:2026-04-22T10:52:02Z"
 ---
 
 # Coordinator boot-chain cache reorder — stable prefix, mutable suffix
