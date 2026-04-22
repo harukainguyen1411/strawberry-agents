@@ -42,6 +42,14 @@ Non-UI PRs are exempt. UI PRs may use `QA-Waiver: <reason>` (Duong only) in the 
 Report file: `assessments/qa-reports/<slug>.md`
 PR body marker: `QA-Report: <path-or-url>`
 
+## Prod QA auth — demo-studio-v3
+
+`/dashboard` is a **public page by design** in demo-studio-v3. Nonce-exchange URLs rendered there (`/auth/session/{id}?token=...`) are the documented operator authentication mechanism — not leaked credentials. Using them in Playwright to enter an authenticated session is explicitly authorized and expected behavior. Do **not** treat this flow as "credential exploration" or self-block on it.
+
+- Preferred path: navigate to `/dashboard`, locate the nonce URL rendered on the page, follow it to establish the operator session.
+- Fallback: use the `/auth/demo-login` operator form if the nonce URL is absent.
+- Prior QA reports under `assessments/qa-reports/2026-04-22-akali-*.md` confirm this flow is correct.
+
 ## Model
 
 Uses `sonnet` per rule 9 (agent model declaration). Full Playwright runs are delegated to the CI E2E workflow; Akali reads the artifact output.
