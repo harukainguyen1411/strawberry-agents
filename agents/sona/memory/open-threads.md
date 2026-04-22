@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (Lissandra pre-compact consolidation #2; shard 2026-04-22-dd3ae6e1; prior shards 2026-04-22-3a5b4781, 2026-04-22-0cf7b28e, 2026-04-22-68fb9cb6, 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (session close, shard 2026-04-22-1423e23d; prior shard 2026-04-22-dd3ae6e1 + earlier).
 
 ---
 
@@ -20,17 +20,17 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation #2; shard 2026-04-
 
 ---
 
-## Firebase Loop 2b — PR #69 OPEN, Lucian request-changes (test strategy gap)
+## Firebase Loop 2b — PR #69 OPEN, Talon hotfix commits pushed, re-review pending
 
-**Status (2026-04-22):** Loop 2a implemented. Loop 2b (frontend sign-in UI) at `plans/approved/work/`. PR #69 OPEN (`feat/firebase-auth-2b-frontend-signin`). Akali: PASS. Senna: advisory LGTM (3 important findings, non-blocking). Lucian: REQUEST-CHANGES — plan specified Playwright TypeScript + Firebase Auth Emulator; impl shipped source-grep pytest. T.8 DoD ("verify emulator run") unfulfilled. Reviewer-auth denied for `missmp/company-os`; Lucian verdict at `/tmp/lucian-pr-69-verdict.md`.
-**Shard pointers:** 2026-04-22-dd3ae6e1.
-**Next action:** Duong decision — accept source-grep coverage stance (override Lucian) or dispatch Vi for emulator tests. Then get Duong `harukainguyen1411` web-UI approve and merge.
+**Status (2026-04-22):** Loop 2a implemented. PR #69 OPEN (`feat/firebase-auth-2b-frontend-signin`). Akali: PASS. Senna: advisory LGTM. Lucian: REQUEST-CHANGES on test strategy. Talon hotfix commits pushed for Senna's 3 findings: `3836501` (Fix 1/2/3 client JS), `f6be6d8` (Fix 2 server — `/auth/config` exposes `allowedEmailDomain`), `c988cf3` (9 source-inspection tests). 0 new failures introduced. Lucian request-changes on test strategy still stands.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1.
+**Next action:** Senna re-review on the 3 hotfix commits. Lucian decision — accept source-grep stance for 2c (where real auth routes force real browser coverage) or require emulator tests retroactively. Then Duong web-UI approve + merge.
 
-## Firebase Loop 2c — dispatch in-flight, remote push unconfirmed
+## Firebase Loop 2c — PR #70 (xfails) + PR #75 (impl) OPEN
 
-**Status (2026-04-22):** Loop 2c (`firebase-auth-loop2c-route-migration`) at `plans/approved/work/`. Vi dispatched on `feat/firebase-auth-2c-xfails` (xfail tests); Jayce dispatched on `feat/firebase-auth-2c-impl` (impl). Branches exist locally. Remote push status unconfirmed at compact boundary.
-**Shard pointers:** 2026-04-22-dd3ae6e1.
-**Next action:** Check Vi + Jayce return messages; verify remote push; open PRs if commits are on remote. Gate: Loop 2b must merge first (2b is the base for 2c).
+**Status (2026-04-22):** Vi xfails done → PR #70 (`feat/firebase-auth-2c-xfails`), 105 strict xfails + 1 sanity green, commit `2bd2532`. Jayce impl done → PR #75 (`feat/firebase-auth-2c-impl` → `feat/demo-studio-v3`), 2 commits `965a97b` + `0362bb3`. Route migration complete: `/session/new` → `require_user`, `/session/{sid}` + `/chat`/`/logs`/`/stream`/`/status`/`/events`/`/messages`/`/history`/`/close`/`/cancel-build` all to `require_session_owner` or `require_session_or_owner`. `/preview` unchanged (404 stub). `/build`/`/reauth`/`/complete` keep `verify_internal_secret`.
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** Senna + Lucian review on PR #75. Vi xfail-to-green verification. Akali Playwright QA (user-flow surface per Rule 16). Merge gate order: 2b merges first, then 2c.
 
 ---
 
@@ -103,11 +103,17 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation #2; shard 2026-04-
 
 ---
 
-## Deploy → S3 trigger_factory chain — standing-directive remainder
+## P1 factory build → iPad demo link — plan at in-progress, executors not yet dispatched (DUONG PAUSED)
 
-**Status (2026-04-22):** Pending per Duong's standing cron directive (58158480). Not touched this session (scope was chat rendering). Directive text: *"trigger_factory kicks S3, verification readable."*
-**Shard pointers:** 2026-04-22-0cf7b28e.
-**Next action:** After preview thread, verify trigger_factory end-to-end — S3 kicked, verification output readable in UI.
+**Status (2026-04-22):** ADR at `plans/in-progress/work/2026-04-22-p1-factory-build-ipad-link.md` (commit `bbd82b9`). Aphelios breakdown inlined: 24 sub-tasks, Viktor on S3 + Jayce on S1 parallel lanes, TDD ordering preserved. MVP path chosen — S3 calls `factory.py` as a library using S2 config as source of truth (no LLM hop), returns real shortcode + `https://demo.missmp.tech/{shortcode}` URL. Duong OQ decisions: no canary (internal users, low traffic), mock-only CI (no nightly-real), all other OQs Swain-default. Critical path ≈ 440 min. **Duong paused executor dispatch at end of session** — next coordinator must confirm before re-dispatch.
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** Await Duong directive. When cleared: dispatch T.P1.11 (Jayce — session `_UPDATABLE_FIELDS` allowlist expansion for `buildId`/`shortcode`/`projectUrl`/`demoUrl`) + T.P1.0 (Xayah — xfail test bodies) in parallel as Phase A. They unblock everything downstream.
+
+## Deploy → S3 trigger_factory chain — SUPERSEDED BY P1
+
+**Status (2026-04-22):** Superseded by the P1 thread above. The standing cron directive "trigger_factory kicks S3" is now scoped inside P1 ADR §D2/§D3.
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** None — fold into P1 execution.
 
 ---
 
@@ -130,6 +136,12 @@ Last updated: 2026-04-22 (Lissandra pre-compact consolidation #2; shard 2026-04-
 **Status (2026-04-22):** Duong landed feedback doc `feedback/2026-04-22-coordinator-verify-qa-claims.md` (`c19c190`). Rule: coordinator must independently verify QA agent claims before relaying pass verdicts to Duong. Check test counts, coverage claims, screenshots, and Playwright flow evidence — do not relay Akali or Vi pass reports unchecked.
 **Shard pointers:** 2026-04-22-dd3ae6e1.
 **Next action:** Standing operational rule — no discrete next action. Apply on every QA result relay.
+
+## Ekko/Orianna redesign — Evelynn-side (out of Sona's lane)
+
+**Status (2026-04-22):** Ekko scope-drifted on P1 signing (post-sign body edits + migration to unrelated plan). Sona drafted feedback + plan-signer proposal; Duong rejected plan-signer as middleman and pulled broader Ekko/Orianna redesign onto Evelynn. Sona feedback doc removed (`cf0df5c`). A personal plan `plans/proposed/personal/2026-04-22-orianna-gate-simplification.md` exists on Evelynn's side (unstaged at session close).
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** Do NOT re-engage from Sona unless Duong explicitly brings it back. Evelynn owns this now.
 
 ---
 
