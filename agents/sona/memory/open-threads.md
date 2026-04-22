@@ -1,6 +1,33 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (hands-dirty loop leg; eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+
+---
+
+## Hands-dirty loop cadence (new operating mode 2026-04-22)
+
+**Duong mode:** PlaywrightMCP → identify bug → write plan + xfail test → fix → PlaywrightMCP confirm → pause and /compact → next loop.
+
+**Sona execution mode:** coordinator role suspended for this session — Sona drives everything herself (Playwright snapshots, plan files, xfail tests, code edits, pytest, git). Per Duong's explicit override: "no coordinator anymore". When session resumes after compact, pick up from queue.
+
+**North-Star pillars (Duong's 5+1):**
+1. P0 — User reliably logs in + creates session. Firebase auth replaces Slack-session entirely (slack_user_id/slack_channel/slack_thread_ts fields + `POST /session` + `/auth/session/{sid}?token=...` all to go).
+2. P1 — User triggers build → finished wallet-studio project + iPad demo link.
+3. P2 — Preview service shows live session changes (not stale Allianz default).
+4. P3 — Verification runs and user sees result.
+5. P4 — Session phases render + logs stream visibly.
+6. P5 — Dashboard shows service status + session list + agents tool + message logs.
+
+## Loop 1 — Dashboard service-health CORS — RESOLVED (2026-04-22)
+
+**Shipped:**
+- Plan `34b0641`: strawberry-agents `plans/proposed/work/2026-04-22-dashboard-service-health-cors-proxy.md`.
+- xfail `2834bc5`: `tools/demo-studio-v3/tests/test_service_health_proxy.py` on `feat/demo-studio-v3`.
+- Fix `9b812ce`: server-side proxy `GET /api/service-health/{name}/health` + `/dashboard` injection swap. 9/9 tests green.
+- QA report `1bc8196`: `assessments/qa-reports/2026-04-22-loop1-cors-proxy-dashboard-all-5-up.{md,png}`. All 5 service cards UP, 0 CORS errors.
+- Pushed to origin on both repos.
+
+**Next loop:** Loop 2 — Firebase auth backbone (`plans/approved/work/2026-04-22-firebase-auth-for-demo-studio.md` already signed, W0-W6 unstarted). Before W0 can run, verify IAM grant `roles/firebase.sdkAdminServiceAgent` on SA `266692422014-compute@developer.gserviceaccount.com` in project `mmpt-233505` (may have been done by Ekko in a prior leg).
 
 ---
 
