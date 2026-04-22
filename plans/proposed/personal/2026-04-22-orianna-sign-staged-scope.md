@@ -11,7 +11,6 @@ related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
 architecture_changes: [architecture/key-scripts.md]
-orianna_signature_approved: "sha256:799d6b231c51adc982a42885412e21e8df95e61c32149e02bf9bf091d955df63:2026-04-22T07:39:25Z"
 ---
 
 # `STAGED_SCOPE` env var for `orianna-sign.sh` — eliminate concurrent-staging race <!-- orianna: ok -- script or path ref suppressed -->
