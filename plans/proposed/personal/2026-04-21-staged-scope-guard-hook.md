@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -13,8 +13,6 @@ related:
   - scripts/hooks/pre-commit-secrets-guard.sh
   - architecture/key-scripts.md
 architecture_impact: none
-orianna_signature_approved: "sha256:e3a424172a0fd11f0f9eb097f31049cff11ec4917ab8782e07efaefe2670d543:2026-04-22T14:23:12Z"
-orianna_signature_in_progress: "sha256:e3a424172a0fd11f0f9eb097f31049cff11ec4917ab8782e07efaefe2670d543:2026-04-22T14:24:52Z"
 ---
 
 # Pre-commit staged-scope guard — prevent cross-agent commit sweeping
@@ -125,4 +123,4 @@ None. This plan adds a new pre-commit hook script and a test script. No existing
 
 ## Test results
 
-All 5 Task 1 test cases pass. Hook implemented at `scripts/hooks/pre-commit-staged-scope-guard.sh`, test at `scripts/hooks/tests/pre-commit-staged-scope-guard.test.sh`. Shipped via PR #17 (merge `e58a96d`).
+All 5 Task 1 test cases pass. Hook implemented at `scripts/hooks/pre-commit-staged-scope-guard.sh`, test at `scripts/hooks/tests/pre-commit-staged-scope-guard.test.sh`. Shipped via PR #17 (merge `e58a96d`). Gate fact-check: `assessments/plan-fact-checks/2026-04-21-staged-scope-guard-hook-2026-04-22T14-24-29Z.md`.
