@@ -26,7 +26,7 @@ tests_required: true
 
 ## 1. Context
 
-Loop 2a of the Firebase auth rollout (`plans/proposed/work/2026-04-22-firebase-auth-loop2a-server-backbone.md` <!-- orianna: ok -- sibling plan in proposed/work, not a strawberry-agents implementation path -->, commits `c59e2d6`→`b2adf20` on branch `feat/demo-studio-v3` <!-- orianna: ok -- git branch name in company-os repo, not a local path -->) landed the server backbone:
+Loop 2a of the Firebase auth rollout (`plans/approved/work/2026-04-22-firebase-auth-loop2a-server-backbone.md` <!-- orianna: ok -- sibling plan in approved/work, not a strawberry-agents implementation path -->, commits `c59e2d6`→`b2adf20` on branch `feat/demo-studio-v3` <!-- orianna: ok -- git branch name in company-os repo, not a local path -->) landed the server backbone:
 
 - `firebase_auth.py` <!-- orianna: ok -- cross-repo/service token, file lives in company-os/tools/demo-studio-v3/ --> with `verify_firebase_token(id_token) -> User` (`User(uid, email)` dataclass), `InvalidTokenError`, `DomainNotAllowedError`.
 - `auth.py` <!-- orianna: ok -- cross-repo/service token, file lives in company-os/tools/demo-studio-v3/ --> gained `encode_user_cookie(user_dict)` / `decode_user_cookie(raw) -> dict | None` helpers producing/consuming the new `{uid, email, iat}` cookie payload under the existing `ds_session` cookie name, plus module flag `AUTH_LEGACY_COOKIE_ALLOWED = True`.
@@ -47,7 +47,7 @@ Deferred to other loops:
 
 - Loop 2b: Frontend sign-in UI.
 - Loop 2d: Removal of legacy cookie helpers, Slack handoff scaffolding, `AUTH_LEGACY_COOKIE_ALLOWED` flag flip.
-- Dashboard split (`plans/proposed/work/2026-04-22-demo-dashboard-service-split.md` <!-- orianna: ok -- sibling plan in proposed/work, not a strawberry-agents implementation path -->) — Loop 2c migrates S1's `/session/{sid}/*` surface only; dashboard-owned routes are covered there.
+- Dashboard split (`plans/in-progress/work/2026-04-22-demo-dashboard-service-split.md` <!-- orianna: ok -- sibling plan in in-progress/work, not a strawberry-agents implementation path -->) — Loop 2c migrates S1's `/session/{sid}/*` surface only; dashboard-owned routes are covered there.
 
 ## 2. Decision
 
@@ -196,7 +196,7 @@ The internal bypass returns a dict shaped like a session record (just `sessionId
 - Removal of legacy helpers (`create_session_cookie`, `verify_session_cookie`, `require_session`, `require_session_or_internal`) — Loop 2d.
 - Slack handoff scaffolding removal (`/auth/session/{sid}?token=...`, Slack field pruning on session doc) — Loop 2d.
 - Frontend sign-in UI — Loop 2b.
-- Dashboard-owned routes — `plans/proposed/work/2026-04-22-demo-dashboard-service-split.md` <!-- orianna: ok -- sibling plan in proposed/work, not a strawberry-agents implementation path --> covers those.
+- Dashboard-owned routes — `plans/in-progress/work/2026-04-22-demo-dashboard-service-split.md` <!-- orianna: ok -- sibling plan in in-progress/work, not a strawberry-agents implementation path --> covers those.
 - Flipping `AUTH_LEGACY_COOKIE_ALLOWED` to `False` — Loop 2d or later (post-2-week soak).
 - Schema migration of existing Firestore docs to backfill `ownerUid` — claim-on-first-touch is the migration strategy; no backfill script.
 - Deploy. Ekko lane once merged. Post-deploy smoke: staging first, then prod per Rule 17.
