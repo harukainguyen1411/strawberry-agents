@@ -1,5 +1,5 @@
 ---
-status: approved
+status: proposed
 orianna_gate_version: 2
 complexity: normal
 concern: work
@@ -11,6 +11,7 @@ tags:
   - firebase
   - work
 tests_required: true
+architecture_impact: none
 ---
 
 # Loop 2a — Firebase auth W1 server backbone
@@ -129,6 +130,11 @@ All tests committed as xfail first, then flipped green once impl lands.
 - `auth.py` <!-- orianna: ok -- company-os workspace file --> — additive: new helpers + flag, no existing function signatures changed.
 - `main.py` <!-- orianna: ok -- company-os workspace file --> — 4 new routes appended; no route migrations.
 - Test directory — 3 new test files (~14 tests total).
+
+## Test results
+
+Implementation landed in PR #65 on `harukainguyen1411/strawberry-app` <!-- orianna: ok — GitHub repo reference, not a local filesystem path --> (branch `feat/demo-studio-v3` <!-- orianna: ok — git branch name in company-os repo, not a local path -->). All required CI checks passed and PR #65 merged green. Fastlane rationale: impl already shipped before plan promotion.
+- Playwright smoke (T.8): `/auth/config` 200 and `/auth/me` 401 confirmed. Screenshots under `assessments/qa-reports` <!-- orianna: ok — strawberry-agents assessments dir, runtime QA output -->.
 
 ## Loop context
 
