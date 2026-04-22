@@ -57,6 +57,14 @@ else
   check "No .claude/agents/, CLAUDE.md, or architecture/ contains 'merge a PR they authored'" pass
 fi
 
+# Assertion 6 (T4-broadened): No architecture/ or agents/memory/ file contains alternate old phrasing
+# "merge their own PRs" — catches cross-repo-workflow.md drift that T4 previously missed.
+if grep -rq "merge their own PRs" "$REPO_ROOT/architecture/" "$REPO_ROOT/agents/memory/" 2>/dev/null; then
+  check "No architecture/ or agents/memory/ contains 'merge their own PRs'" fail
+else
+  check "No architecture/ or agents/memory/ contains 'merge their own PRs'" pass
+fi
+
 echo ""
 echo "Results: $PASS PASS, $FAIL FAIL"
 if [ "$FAIL" -gt 0 ]; then
