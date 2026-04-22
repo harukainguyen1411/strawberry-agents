@@ -1,4 +1,5 @@
 ---
+model: opus
 effort: high
 tier: single_lane
 role_slot: pr-code-security

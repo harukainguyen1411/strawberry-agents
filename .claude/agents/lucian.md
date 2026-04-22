@@ -1,4 +1,5 @@
 ---
+model: opus
 effort: medium
 tier: single_lane
 role_slot: pr-fidelity
