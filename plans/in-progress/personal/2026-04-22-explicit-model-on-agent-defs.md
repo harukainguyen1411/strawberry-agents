@@ -132,6 +132,10 @@ Every load-bearing claim in this plan has a grep-able anchor. Listed with file +
 
 ---
 
+## Architecture impact
+
+None — this plan only edits agent-definition frontmatter files under `.claude/agents/` <!-- orianna: ok --> and one paragraph of `CLAUDE.md`. No architecture docs, shared-include files, or system schemas change.
+
 ## Open questions
 
 - None blocking. One deferral: whether to update the pre-commit hook in §D4.3a check #3 (which currently treats `model: opus` as a "redundant, warning" violation) to invert its semantics — now `model: opus` is required, not redundant. That hook is not yet implemented per scan of `scripts/hooks/`; flagging for whoever implements it. Not in scope for this plan. <!-- orianna: ok -->
