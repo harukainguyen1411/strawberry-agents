@@ -10,6 +10,7 @@ orianna_gate_version: 2
 tests_required: false
 architecture_impact: none
 tags: [agents, frontmatter, governance, claude-md-rule-9]
+orianna_signature_approved: "sha256:b174707d5c17a6e88145d6d4f68548321093ac5eb9a07ce51811dd4f55bd4b46:2026-04-22T02:44:57Z"
 ---
 
 # Context
