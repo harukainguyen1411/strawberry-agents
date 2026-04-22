@@ -118,6 +118,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch, Task #64): Promoted 2026-04-22-work-scope-reviewer-anonymity.md proposed→approved→in_progress. Plan was untracked — initial commit required; pre-commit blocked on (1) `(d)` token in fixture labels (use `fixture-d` not `(d)` in task prose), (2) prospective paths needing `<!-- orianna: ok -- reason -->` suppressors, (3) bare suppressor markers needing reason suffix. Coordinator lock race on first sign attempt (concurrent rescope session) — cleared naturally. approved sig: 9dfdd73, in_progress sig: 2712660. Final path: plans/in-progress/personal/2026-04-22-work-scope-reviewer-anonymity.md.
 
+- 2026-04-22 (ekko — Sona dispatch): Promoted firebase auth loop plans. 2c: proposed→approved (Q1 decision resolved inline + 2 stale sibling paths fixed; sig `067dc6c`, promote `08d2064`). 2b: already at approved — no action. 2a: fastlane approved→in_progress→implemented (body-fix required re-sign chain; move back to proposed, add architecture_impact:none + Test results, full re-sign chain; implemented promote `5d76d1c`). Key learning: `git revert` on sig-field commits makes revert commit the canonical signing commit (wrong author) — edit+commit manually instead.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
