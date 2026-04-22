@@ -12,8 +12,7 @@ related:
   - plans/proposed/personal/2026-04-22-orianna-sign-staged-scope.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
   - agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md
-orianna_signature_approved: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:02:07Z"
-orianna_signature_in_progress: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:03:33Z"
+architecture_changes: [architecture/key-scripts.md]
 ---
 
 # Concurrent coordinator race closeout — flock the signing/promote commit window + auto-scope
@@ -166,3 +165,17 @@ preceded on-branch by its matching xfail test per Rule 12.
 - `agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md` — incident diagnosis.
 - `agents/ekko/learnings/2026-04-22-promote-to-implemented-signature-invalidation.md` — recovery pattern.
 - Rule 4 (plans direct to main), Rule 12 (xfail first), Rule 19 (Orianna gate on every transition).
+
+## Test results
+
+PR #22 merge commit: `94c65caf11c39cf1ca66db05506d42ee730de581`
+Head SHA: `60aa6608c3c61d16e93fc8b10a04b63854d522d4`
+
+All CI checks passed:
+
+| Check | Workflow | Conclusion | Run URL |
+|-------|----------|------------|---------|
+| xfail-first check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24771041266/job/72477259255 |
+| xfail-first check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24771040052/job/72477255049 |
+| regression-test check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24771041266/job/72477259187 |
+| regression-test check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24771040052/job/72477255003 |

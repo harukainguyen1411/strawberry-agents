@@ -19,8 +19,7 @@ related:
   - agents/orianna/prompts/plan-check.md
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
-orianna_signature_approved: "sha256:a76395d7e3678a6e5856aebd60e2932cd99aac3452371b494fea1f13d92c2d7f:2026-04-22T06:56:22Z"
-orianna_signature_in_progress: "sha256:a76395d7e3678a6e5856aebd60e2932cd99aac3452371b494fea1f13d92c2d7f:2026-04-22T07:06:28Z"
+architecture_changes: [architecture/plan-lifecycle.md]
 ---
 
 # Orianna — substance-vs-format rescope
@@ -32,7 +31,7 @@ Orianna's current check set mixes **substance gating** (does the plan actually d
 Concrete evidence from the current corpus at the time of writing:
 
 - `assessments/plan-fact-checks/2026-04-21-demo-studio-v3-e2e-ship-v2-2026-04-21T09-50-32Z.md` — **10 block findings**, each one a distinct HTTP route path (`/build`, `/verify`, `/logs`, `/approve`) flagged because the route tokens were routed to the work monorepo root and failed `test -e`. None of these pointed at a real defect in the plan.
-- `assessments/plan-fact-checks/2026-04-22-firebase-auth-for-demo-studio-2026-04-22T02-15-40Z.md` — **12 block findings**, each a cluster of HTTP routes (`POST /auth/login`, `/auth/session/{sid}`), Python identifiers (`ds_session`, `require_session`, `firebase-admin.auth.verify_id_token`), or ASCII diagram tokens inside fenced code blocks. Recovery required the author to add ~20 per-line `<!-- orianna: ok -->` markers; no substantive claim changed.
+- `assessments/plan-fact-checks/2026-04-22-firebase-auth-for-demo-studio-2026-04-22T02-15-40Z.md` — **12 block findings**, each a cluster of HTTP routes (`POST /auth/login`, `/auth/session/{sid}`), Python identifiers (`ds_session`, `require_session`, `firebase-admin.auth.verify_id_token`), or ASCII diagram tokens inside fenced code blocks. Recovery required the author to add ~20 per-line orianna suppression markers; no substantive claim changed.
 - `assessments/plan-fact-checks/2026-04-22-firebase-auth-for-demo-studio-2026-04-22T02-28-28Z.md` (the eventual clean pass) — 0 block, 0 warn, 6 info. The only delta from the red run was cosmetic suppression markers. No design claim shifted.
 - `assessments/plan-fact-checks/2026-04-22-explicit-model-on-agent-defs-2026-04-22T02-34-14Z.md` — 1 block at the `implementation-gate-check` phase because the plan declared `architecture_impact: none` in frontmatter but omitted the `## Architecture impact` section body. This is **substance gating working correctly** — a declared-none assertion that carries no body-text rationale should be caught.
 
@@ -46,7 +45,7 @@ Orianna should gate on **substance**, not **format**.
 
 **Keep rigorous:**
 - Required tests exist (xfail-first per CLAUDE.md Rule 12, regression tests per Rule 13).
-- Docs updated/created when the change demands them (`architecture/`, CLAUDE.md rules, PR template). <!-- orianna: ok -->
+- Docs updated/created when the change demands them (`architecture/`, CLAUDE.md rules, PR template). <!-- orianna: ok — directory token plus document names, not file existence claims -->
 - File paths referenced in claims are correct (not stale, not cross-repo-broken).
 - Plan completeness — declared scope is actually covered.
 
@@ -105,11 +104,11 @@ Enumerated by source file, with classification and proposed disposition. Every c
 | PA-3 | Step A — `created:` present, non-blank | Format | Date provenance; rarely load-bearing | WARN |
 | PA-4 | Step A — `tags:` present, non-blank | Format | Tagging is organizational, not correctness | WARN |
 | PA-5 | Step B — gating-question scan (`TBD` / `TODO` / `Decision pending` in `## Open questions` / `## Gating questions` / `## Unresolved`) | Substance | Open gating Qs on an `approved` plan = the decision is not yet taken | KEEP |
-| PA-6 | Step C — path-shaped backtick token, routed, `test -e` miss | Mixed | Keep for `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`, `tools/decrypt.sh`, `tools/encrypt.sh` (all are internal references where misses indicate real stale claims). DROP for all other path-shapes — too many false positives on HTTP routes, Python dotted identifiers, template tokens, etc. | SPLIT (see §3.3) | <!-- orianna: ok -->
+| PA-6 | Step C — path-shaped backtick token, routed, `test -e` miss | Mixed | Keep for `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`, `tools/decrypt.sh`, `tools/encrypt.sh` (all are internal references where misses indicate real stale claims). DROP for all other path-shapes — too many false positives on HTTP routes, Python dotted identifiers, template tokens, etc. | SPLIT (see §3.3) | <!-- orianna: ok — table cell content, list of path prefixes as classification examples -->
 | PA-7 | Step C — path-shaped token inside a fenced code block | Format | Fenced blocks are almost always illustrative (diagrams, example shell, pseudocode) | DROP |
 | PA-8 | Step C — integration-shaped token off allowlist | Substance | The original Firebase-GitHub-App motivator | KEEP (unchanged) |
 | PA-9 | Step C — integration-shaped token in Section 2 of allowlist without anchor | Substance | Specific integrations still require anchors | KEEP |
-| PA-10 | Step D — sibling `<basename>-tasks.md` / `-tests.md` file under `plans/` | Substance | One-plan-one-file rule; a sibling indicates the plan isn't actually complete inline | KEEP | <!-- orianna: ok -->
+| PA-10 | Step D — sibling `<basename>-tasks.md` / `-tests.md` file under `plans/` | Substance | One-plan-one-file rule; a sibling indicates the plan isn't actually complete inline | KEEP | <!-- orianna: ok — template pattern in table cell, not a concrete path claim -->
 | PA-11 | Step E — cited URL HTTP 410 / deprecation redirect | Substance | Library/API has been sunset | KEEP |
 | PA-12 | Step E — context7 @deprecated symbol at cited version | Substance | Same | KEEP |
 | PA-13 | Step E — cited URL HTTP 404 / DNS failure | Mixed | Already at `warn` severity (not block); no change | KEEP-AS-WARN |
@@ -127,7 +126,7 @@ Enumerated by source file, with classification and proposed disposition. Every c
 | TG-4 | Step B — banned unit literals `hours`/`days`/`weeks`/`h)`/`(d)` | Format | Duplicate with linter rule 2 | DROP (covered by linter) |
 | TG-5 | Step C — test task present when `tests_required: true` (kind:test or title matches write/add/create/update .* test) | Substance | Rule 12 TDD invariant | KEEP |
 | TG-6 | Step D — `## Test plan` section present and non-empty when `tests_required: true` | Substance | Rule 12 / Rule 13 foundation | KEEP |
-| TG-7 | Step E — sibling `-tasks.md` / `-tests.md` under `plans/` | Substance | Same as PA-10 | KEEP | <!-- orianna: ok -->
+| TG-7 | Step E — sibling `-tasks.md` / `-tests.md` under `plans/` | Substance | Same as PA-10 | KEEP | <!-- orianna: ok — template suffix pattern in table, not a concrete path claim -->
 | TG-8 | Step F — `orianna_signature_approved` present + valid | Substance | Carry-forward invariant | KEEP |
 
 **Source: `agents/orianna/prompts/implementation-gate-check.md` (in-progress → implemented gate)**
@@ -137,7 +136,7 @@ Enumerated by source file, with classification and proposed disposition. Every c
 | IG-1 | Step A — every path-shaped claim resolves on the current tree | Mixed | Same split as PA-6: KEEP for internal-prefix tokens (real stale-claim signal), DROP for HTTP routes / fenced tokens / identifiers | SPLIT (see §3.3) |
 | IG-2 | Step B — architecture declaration: `architecture_changes:` list with each path existing + git-log after approved timestamp | Substance | Rule: docs updated when change demands it | KEEP |
 | IG-3 | Step B — architecture declaration: `architecture_impact: none` + non-empty `## Architecture impact` section | Substance | Declared-none with no rationale is a gap, not a pass | KEEP |
-| IG-4 | Step C — `## Test results` section with CI URL or `assessments/` path | Substance | Rule 12: test results must be recorded | KEEP | <!-- orianna: ok -->
+| IG-4 | Step C — `## Test results` section with CI URL or `assessments/` path | Substance | Rule 12: test results must be recorded | KEEP | <!-- orianna: ok — section heading reference in table, not a path existence claim -->
 | IG-5 | Step D — `orianna_signature_approved` carry-forward | Substance | Carry-forward invariant | KEEP |
 | IG-6 | Step E — `orianna_signature_in_progress` carry-forward | Substance | Carry-forward invariant | KEEP |
 
@@ -162,9 +161,9 @@ The fallback mirrors the LLM path's claim-contract. Every check it performs is a
 This file is the authoritative spec for what counts as a claim. The rescope requires editing §1 (claim categories), §2 (non-claim categories), §5 (routing rules), and §6 (extraction heuristic) to encode the new split. Specifically:
 
 - §1: Introduce a sub-classifier on path-shaped tokens — "internal-repo-prefix path" (the opt-back list) vs "arbitrary path-shaped token." Only the former is load-bearing.
-- §2: Add explicit non-claim categories for HTTP route tokens (`/auth/login`, `GET /foo`, etc.), Python/TypeScript dotted identifiers (`module.function`, `ClassName.method`), ASCII diagram tokens inside fenced code, template placeholders with nested braces (`{uid, email, iat}`). <!-- orianna: ok -->
+- §2: Add explicit non-claim categories for HTTP route tokens (`/auth/login`, `GET /foo`, etc.), Python/TypeScript dotted identifiers (`module.function`, `ClassName.method`), ASCII diagram tokens inside fenced code, template placeholders with nested braces (`{uid, email, iat}`). <!-- orianna: ok — illustrative examples of non-claim token categories -->
 - §5: Keep routing but change the miss severity from `block` → `info` for non-internal-prefix tokens under `concern: work`.
-- §6: Drop extraction from fenced code blocks entirely (replace with: code blocks are illustrative; authors opt in to checking via `<!-- orianna: ok -->` at fence-start, which stays suppression-only, never triggers a check).
+- §6: Drop extraction from fenced code blocks entirely (replace with: code blocks are illustrative; authors opt in to checking via the standard orianna suppression marker at fence-start, which stays suppression-only, never triggers a check).
 
 **Source: `agents/orianna/allowlist.md`**
 
@@ -176,26 +175,26 @@ PA-6 / IG-1 / the bash fallback all perform the same operation: extract every ba
 
 **New rule set (applies under both personal and work concerns):**
 
-1. **Internal-prefix path tokens** — tokens beginning with `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`, `tools/decrypt.sh`, `tools/encrypt.sh`, or (under `concern: personal`) `apps/`, `dashboards/`, `.github/workflows/`. These are references to this repo's own infrastructure or, for the personal concern, the strawberry-app checkout. A miss on these is a real stale-claim signal. <!-- orianna: ok -->
+1. **Internal-prefix path tokens** — tokens beginning with `agents/`, `plans/`, `scripts/`, `architecture/`, `assessments/`, `.claude/`, `tools/decrypt.sh`, `tools/encrypt.sh`, or (under `concern: personal`) `apps/`, `dashboards/`, `.github/workflows/`. These are references to this repo's own infrastructure or, for the personal concern, the strawberry-app checkout. A miss on these is a real stale-claim signal. <!-- orianna: ok — enumeration of prefix strings, not asserting each path exists -->
    - **Miss severity:** `block` (unchanged from today).
    - **Rationale:** the overwhelming majority of stale internal refs caught by today's gate are here, and the cost of a false positive is trivially fixable (rename, suppress, or fix the reference).
 
-2. **All other path-shaped tokens** — HTTP routes (`/auth/login`, `POST /foo`, `GET /bar`), workspace-monorepo paths under `concern: work` that fall outside the opt-back list, dotted identifiers containing `/` (rare), template literals (`{uid}/{sid}`), etc. <!-- orianna: ok -->
+2. **All other path-shaped tokens** — HTTP routes (`/auth/login`, `POST /foo`, `GET /bar`), workspace-monorepo paths under `concern: work` that fall outside the opt-back list, dotted identifiers containing `/` (rare), template literals (`{uid}/{sid}`), etc. <!-- orianna: ok — example HTTP routes illustrating the non-internal class -->
    - **Miss severity:** `info` (downgraded from `block`).
    - **Rationale:** today's false-positive pattern is almost exclusively this class. Converting to `info` makes the finding visible in the report but non-blocking. The pre-commit linter (rule 4) continues to catch genuinely-broken **internal** paths at commit time.
-   - **Suppression:** authors may still use `<!-- orianna: ok -->` for self-documentation, but it becomes optional rather than mandatory.
+   - **Suppression:** authors may still use the orianna suppression marker (with reason suffix) for self-documentation, but it becomes optional rather than mandatory.
 
 3. **Fenced code block tokens** — no extraction. Fenced blocks (```` ``` ````) are illustrative (diagrams, pseudocode, example shell, state-machine literals). Extraction-from-fences was the single largest source of reported noise in the firebase-auth and demo-studio-v3 ADRs. Authors who want fenced content checked can move it outside the fence.
    - **Change:** `extract_tokens()` in `scripts/fact-check-plan.sh` and the Step C instructions in `agents/orianna/prompts/plan-check.md` stop iterating fenced-block lines.
    - **Rationale:** the cost-benefit flipped. Zero documented cases of a real stale internal claim being caught *only* inside a fenced block; many documented cases of false positives from fenced content.
 
-4. **Suppression-marker semantics** — unchanged. The `<!-- orianna: ok -->` marker still suppresses per-line per claim-contract §8. Its frequency of use falls substantially because fewer lines are even checked.
+4. **Suppression-marker semantics** — unchanged. The orianna suppression marker (with reason suffix per T11.c) still suppresses per-line per claim-contract §8. Its frequency of use falls substantially because fewer lines are even checked.
 
 ### 3.4 Operational surface — warn still shows up
 
-Per the task brief's operational concern: a check demoted from `block` to `warn` still shows up in the CI output. The gate report already has three sections (`## Block findings`, `## Warn findings`, `## Info findings`) and is always written to disk under `assessments/plan-fact-checks/`. `scripts/orianna-fact-check.sh` exit codes are driven by `block_findings` only, so a `warn` or `info` does not halt promotion. Agents triage by reading the report; Duong's visibility is preserved. <!-- orianna: ok -->
+Per the task brief's operational concern: a check demoted from `block` to `warn` still shows up in the CI output. The gate report already has three sections (`## Block findings`, `## Warn findings`, `## Info findings`) and is always written to disk under `assessments/plan-fact-checks/`. `scripts/orianna-fact-check.sh` exit codes are driven by `block_findings` only, so a `warn` or `info` does not halt promotion. Agents triage by reading the report; Duong's visibility is preserved. <!-- orianna: ok — section heading names plus existing script reference, not new path claims -->
 
-No CI-visible change is needed — the report structure already supports it. The promotion script's stderr emits block/warn/info counts (see `scripts/fact-check-plan.sh:442`), which surfaces the warn count without failing. <!-- orianna: ok -->
+No CI-visible change is needed — the report structure already supports it. The promotion script's stderr emits block/warn/info counts (see `scripts/fact-check-plan.sh:442`), which surfaces the warn count without failing. <!-- orianna: ok — line-number annotation on existing file, not a path existence claim -->
 
 ### 3.5 Rescope in summary — check-set delta
 
@@ -216,9 +215,9 @@ No CI-visible change is needed — the report structure already supports it. The
 | Demoting non-internal path-shape misses from `block` → `info` silently accepts genuinely-broken external references that someone later has to chase down. | Evidence from the four weeks of gate history: zero cases where such a finding corresponded to a real bug that wouldn't have been caught by either (a) implementation tests, (b) the pre-commit linter for internal paths, or (c) Step E external-claim verification. The class being demoted is precisely the class that produces false positives — HTTP routes, diagram tokens, dotted identifiers. Internal paths stay at `block`. |
 | Dropping extraction from fenced code blocks means a diagram that cites a real missing path won't be caught. | Architecture diagrams and state machines name paths that the plan itself *creates*. The in-progress → implemented gate's IG-1 re-check on the current tree catches any path claim that didn't materialize. Pre-commit linter rule 4 also re-checks cited paths. Two layers cover the gap. |
 | Dropping `estimate_minutes` validation from Orianna (TG-2/TG-3/TG-4) means the pre-commit linter is the sole enforcer. | The pre-commit linter is strictly upstream of Orianna (it runs at `git commit`, Orianna runs at promote time). If the linter passes, Orianna re-validating the same invariant is tautological. If the linter is ever disabled or regressed, TG-2/TG-3/TG-4 in the prompts are fast to re-enable (one paragraph restoration). Low reversibility cost. |
-| The `claim-contract.md` change could be read as "Orianna is softer now" and erode the gate's value. | The `block`-capable checks after rescope are all load-bearing: missing owner, unresolved gating questions, stale internal paths, missing tests, missing architecture declaration, missing test results, invalid signatures, un-allowlisted integrations. The softening is exclusively on format-only classes that were not catching real defects. Duong decision log in §10 OQ-1 records the scope. | <!-- orianna: ok -->
+| The `claim-contract.md` change could be read as "Orianna is softer now" and erode the gate's value. | The `block`-capable checks after rescope are all load-bearing: missing owner, unresolved gating questions, stale internal paths, missing tests, missing architecture declaration, missing test results, invalid signatures, un-allowlisted integrations. The softening is exclusively on format-only classes that were not catching real defects. Duong decision log in §10 OQ-1 records the scope. | <!-- orianna: ok — risk table cell, prose description not a path claim -->
 | Authors may treat `warn` findings as "ignore me" and let genuine stale refs accumulate. | Keep `warn` findings visible in the promote-script stderr summary (already implemented). Quarterly memory-audit (separate, existing runbook `scripts/orianna-memory-audit.sh`) can optionally sample `warn` findings for escalation; add this as a follow-up if warn-drift is observed. |
-| Changing `claim-contract.md` invalidates existing signatures via body-hash (the contract is referenced in plan bodies). | The claim-contract itself is not part of any plan's body hash — it's a separate file under `agents/orianna/`. Signatures hash only the plan file's body. No signature invalidation. | <!-- orianna: ok -->
+| Changing `claim-contract.md` invalidates existing signatures via body-hash (the contract is referenced in plan bodies). | The claim-contract itself is not part of any plan's body hash — it's a separate file under `agents/orianna/`. Signatures hash only the plan file's body. No signature invalidation. | <!-- orianna: ok — risk table cell, directory reference as location description -->
 
 ---
 
@@ -229,7 +228,7 @@ The implementer(s) of this plan must produce the following edits. Each is bite-s
 ### 5.1 Prompt: `agents/orianna/prompts/plan-check.md`
 
 1. **Step A** — demote PA-1 (`status: proposed`), PA-3 (`created:`), PA-4 (`tags:`) from block to warn. Keep PA-2 (`owner:`) at block. Edit §Step A wording to distinguish block-level (owner only) from warn-level (status/created/tags).
-2. **Step C** — add a new sub-heading "Path-shape classification": split internal-prefix paths (block on miss) from all others (info on miss). Enumerate the internal-prefix list explicitly (same list as `claim-contract.md` §5b inverted). <!-- orianna: ok -->
+2. **Step C** — add a new sub-heading "Path-shape classification": split internal-prefix paths (block on miss) from all others (info on miss). Enumerate the internal-prefix list explicitly (same list as `claim-contract.md` §5b inverted). <!-- orianna: ok — section reference in implementation instruction, not a path claim -->
 3. **Step C** — remove the fenced-code-block iteration instruction. Replace with a one-paragraph note that fenced blocks are illustrative and not extracted; authors can move content out of the fence if they want it checked.
 4. **Step E** — no change. Severity mapping already has the right shape (most external checks are `info` or `warn`; only sunset/deprecation is `block`).
 5. **Report format** — no schema change; `block_findings` / `warn_findings` / `info_findings` counts adjust naturally.
@@ -251,9 +250,9 @@ The implementer(s) of this plan must produce the following edits. Each is bite-s
 1. **§1 Claim categories** — sub-classify C2 (repo path) into C2a (internal-prefix path) and C2b (other path-shaped token). Severity default: C2a → block, C2b → info.
 2. **§2 Non-claim categories** — add four new entries:
    - HTTP route tokens (e.g. `/auth/login`, `POST /foo/{bar}`, `GET /baz`).
-   - Dotted identifiers with camelCase or snake_case segments (e.g. `module.function`, `Class.method`) that are not also path-shaped. <!-- orianna: ok -->
+   - Dotted identifiers with camelCase or snake_case segments (e.g. `module.function`, `Class.method`) that are not also path-shaped. <!-- orianna: ok — example identifier tokens, not path existence claims -->
    - Tokens inside fenced code blocks (```` ``` ````) — entire category.
-   - Template/brace expressions (e.g. `{uid, email, iat}`, `{sid}/{token}`). <!-- orianna: ok -->
+   - Template/brace expressions (e.g. `{uid, email, iat}`, `{sid}/{token}`). <!-- orianna: ok — template literal examples, not path existence claims -->
 3. **§5 Routing rules** — add a prefatory paragraph: "Routing applies to internal-prefix path tokens only (C2a). Non-internal-prefix path tokens (C2b) do not undergo `test -e` and are logged as `info`."
 4. **§6 v1 extraction heuristic** — replace step 1 ("For each fenced code block and each inline backtick span, extract the token") with: "For each inline backtick span outside a fenced code block, extract the token. Fenced code blocks are illustrative and not extracted."
 5. Bump `contract-version: 1` → `contract-version: 2` in frontmatter.
@@ -268,10 +267,10 @@ The implementer(s) of this plan must produce the following edits. Each is bite-s
 
 ### 5.6 Tests — new + updated
 
-**New tests** (in `scripts/test-fact-check-substance-format-split.sh`): <!-- orianna: ok -->
+**New tests** (in `scripts/test-fact-check-substance-format-split.sh`): <!-- orianna: ok — prospective test file, not yet on disk -->
 
 - A plan citing `/auth/login` inside backticks → `info` finding, not `block`.
-- A plan citing `scripts/nonexistent.sh` inside backticks → `block` finding. <!-- orianna: ok -->
+- A plan citing `scripts/nonexistent.sh` inside backticks → `block` finding. <!-- orianna: ok — intentionally nonexistent path in test case description -->
 - A plan with fenced code block containing `` `/foo/bar` `` → no finding extracted.
 - A plan with frontmatter missing `status:` → `warn` (was block).
 - A plan with frontmatter missing `owner:` → `block` (unchanged).
@@ -291,7 +290,7 @@ Update the three "What Orianna checks" sub-sections (approved, in-progress, impl
 
 ## 6. Tasks
 
-- [ ] **T1** — Write the new `scripts/test-fact-check-substance-format-split.sh` as xfail. estimate_minutes: 35. Files: `scripts/test-fact-check-substance-format-split.sh` (new). DoD: 7 test cases from §5.6, all current xfail against unchanged tree; committed on a branch referencing this plan. kind: test <!-- orianna: ok -->
+- [ ] **T1** — Write the new `scripts/test-fact-check-substance-format-split.sh` as xfail. estimate_minutes: 35. Files: `scripts/test-fact-check-substance-format-split.sh` (new). DoD: 7 test cases from §5.6, all current xfail against unchanged tree; committed on a branch referencing this plan. kind: test <!-- orianna: ok — prospective test file, not yet on disk -->
 - [ ] **T2** — Run T1 test script against unchanged tree, confirm each of the 7 cases xfails for the expected reason. estimate_minutes: 10. DoD: verified xfail output captured in PR description.
 - [ ] **T3** — Update `scripts/test-fact-check-concern-root-flip.sh` and `scripts/test-fact-check-false-positives.sh` per §5.6 updated-tests list; commit as xfail. estimate_minutes: 30. Files: both test scripts (updated). DoD: previously-green tests now xfail on the classification change; kind: test
 - [ ] **T4** — Bump claim-contract.md per §5.4 items 1–5 (version 1 → 2). estimate_minutes: 40. Files: `agents/orianna/claim-contract.md` (updated). DoD: contract edits land; no hook failures; T1/T2/T3 still xfail (prompts and script not yet changed).
@@ -301,7 +300,7 @@ Update the three "What Orianna checks" sub-sections (approved, in-progress, impl
 - [ ] **T8** — Update `agents/orianna/prompts/implementation-gate-check.md` per §5.3 items 1–3. estimate_minutes: 25. Files: `agents/orianna/prompts/implementation-gate-check.md` (updated). DoD: plan citing HTTP routes inside backticks signs cleanly at implemented.
 - [ ] **T9** — Update `architecture/plan-lifecycle.md` per §5.7. estimate_minutes: 20. Files: `architecture/plan-lifecycle.md` (updated). DoD: gate summaries match new check set.
 - [ ] **T10** — Full test-suite run: T1 + T3 + `scripts/test-fact-check-concern-root-flip.sh` + `scripts/test-fact-check-false-positives.sh` + `scripts/test-fact-check-work-concern-routing.sh` + `scripts/test-orianna-lifecycle-smoke.sh`. estimate_minutes: 25. DoD: all green.
-- [ ] **T11** — Author a single canary plan (complexity: quick, `tests_required: false`, trivial scope like a one-line README edit) citing HTTP routes and fenced-block diagrams inline; confirm it signs at approved on the new check set on the first pass without suppression markers. estimate_minutes: 30. Files: `plans/proposed/personal/2026-04-XX-orianna-rescope-canary.md` (new). DoD: zero block findings; warn/info as expected; plan moves to approved via normal `scripts/orianna-sign.sh` + `scripts/plan-promote.sh` flow. <!-- orianna: ok -->
+- [ ] **T11** — Author a single canary plan (complexity: quick, `tests_required: false`, trivial scope like a one-line README edit) citing HTTP routes and fenced-block diagrams inline; confirm it signs at approved on the new check set on the first pass without suppression markers. estimate_minutes: 30. Files: `plans/proposed/personal/2026-04-XX-orianna-rescope-canary.md` (new). DoD: zero block findings; warn/info as expected; plan moves to approved via normal `scripts/orianna-sign.sh` + `scripts/plan-promote.sh` flow. <!-- orianna: ok — prospective canary plan with placeholder date -->
 - [ ] **T12** — Update `agents/orianna/learnings/index.md` with one entry summarizing the rescope and the new claim-contract version. estimate_minutes: 15. Files: `agents/orianna/learnings/index.md` (updated). DoD: entry added with `last_used: <date>`.
 
 Total estimate: 355 minutes.
@@ -317,11 +316,11 @@ The task brief asks whether existing v2-signed plans need re-signing after the r
 - The `Orianna` signature hashes the plan body (`scripts/orianna-hash-body.sh`), not `agents/orianna/claim-contract.md`, not the prompt files, not `_lib_orianna_*.sh`. The rescope only touches files outside the hash scope.
 - The rescope only **removes** or **demotes** checks. It does not add new block-capable checks. A plan that passed the old gate trivially passes the new gate: fewer blocks can only decrease the finding count.
 - `scripts/orianna-verify-signature.sh` verifies the signature is still valid against the current plan body; that is unaffected by prompt rescope.
-- Carry-forward checks (`check_approved_carry_forward`, `check_carry_forward_inprogress`) invoke `orianna-verify-signature.sh`, which is also unaffected. <!-- orianna: ok -->
+- Carry-forward checks (`check_approved_carry_forward`, `check_carry_forward_inprogress`) invoke `orianna-verify-signature.sh`, which is also unaffected. <!-- orianna: ok — function name literals, not path claims -->
 
 Confirmed by construction: the rescope is strictly a check-set **shrink**, and shrink preserves all prior signing-relationships. The `contract-version: 1 → 2` bump is metadata for readers; it does not imply any re-verification by the signature path.
 
-**Exception — reports referenced from plan bodies.** If a plan happens to cite a fact-check report under `assessments/plan-fact-checks/...` in a backtick span, that citation continues to be a C2a (internal-prefix) path token and must resolve under `test -e`. No change. Reports are not deleted by this plan. <!-- orianna: ok -->
+**Exception — reports referenced from plan bodies.** If a plan happens to cite a fact-check report under `assessments/plan-fact-checks/...` in a backtick span, that citation continues to be a C2a (internal-prefix) path token and must resolve under `test -e`. No change. Reports are not deleted by this plan. <!-- orianna: ok — glob pattern illustrating the exception rule, not asserting a specific report exists -->
 
 **Canary pass (T11)** is the empirical validation: one new plan signed end-to-end on the rescoped gate confirms the grandfathering reasoning in practice. If the canary fails unexpectedly, the rescope is reverted task-by-task (T4–T9 are each single-file reverts).
 
@@ -339,7 +338,7 @@ For a full rollback post-merge: revert the merge commit. Re-sign is not required
 
 ### Unit level
 
-- `scripts/test-fact-check-substance-format-split.sh` (new, T1) — covers the seven classification boundaries in §5.6 under the bash-fallback path. Runs in CI; must be green. <!-- orianna: ok -->
+- `scripts/test-fact-check-substance-format-split.sh` (new, T1) — covers the seven classification boundaries in §5.6 under the bash-fallback path. Runs in CI; must be green. <!-- orianna: ok — prospective test file, not yet on disk -->
 - `scripts/test-fact-check-concern-root-flip.sh` and `scripts/test-fact-check-false-positives.sh` (updated, T3) — existing suite updated for the new non-internal-prefix demotion. Assertion deltas are documented inline.
 
 ### Integration level
@@ -348,14 +347,14 @@ For a full rollback post-merge: revert the merge commit. Re-sign is not required
 
 ### Canary level
 
-- T11 — one live plan under `plans/proposed/personal/` signed on the rescoped gate. Qualitative success criterion: the author writes the plan with HTTP routes / ASCII diagrams / dotted identifiers in backticks, and the first `scripts/orianna-sign.sh` call returns exit 0 without any `<!-- orianna: ok -->` markers on those specific tokens.
+- T11 — one live plan under `plans/proposed/personal/` signed on the rescoped gate. Qualitative success criterion: the author writes the plan with HTTP routes / ASCII diagrams / dotted identifiers in backticks, and the first `scripts/orianna-sign.sh` call returns exit 0 without any orianna suppression markers on those specific tokens.
 
 ### Regression level (per Rule 13)
 
 The specific regressions to cover:
 
 - **R1** — A plan citing `/auth/login` in inline backticks signs at approved gate without block. (Was block pre-rescope.)
-- **R2** — A plan citing `scripts/does-not-exist.sh` in inline backticks blocks at approved gate. (Unchanged — internal-prefix miss.) <!-- orianna: ok -->
+- **R2** — A plan citing `scripts/does-not-exist.sh` in inline backticks blocks at approved gate. (Unchanged — internal-prefix miss.) <!-- orianna: ok — intentionally nonexistent path in regression test description -->
 - **R3** — A plan with `- [ ]` task missing `estimate_minutes:` passes Orianna's approved-gate but fails the pre-commit linter. (TG-2 dropped; linter still catches.)
 - **R4** — A plan with fenced code block containing `` `/foo/bar` `` passes Orianna without any finding extracted from the fence. (PA-7 dropped.)
 
@@ -367,7 +366,7 @@ All four regressions land as xfail commits under T1 / T3 before the prompt+scrip
 
 Declared via `architecture_changes:` at implementation time — `architecture/plan-lifecycle.md` gets the §5.7 update (one per-sub-section sentence). The change is small but required, because the operator-facing lifecycle summary must reflect the rescoped check set or it goes stale immediately.
 
-No new architecture doc is created; no existing one beyond `plan-lifecycle.md` is modified. <!-- orianna: ok -->
+No new architecture doc is created; no existing one beyond `plan-lifecycle.md` is modified. <!-- orianna: ok — bare filename reference as negation statement, not path claim -->
 
 ---
 
@@ -384,7 +383,7 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
   - a: hard drop fence extraction (cleanest)
   - b: hard drop + add a per-line "I want this fenced token checked" marker option as a future affordance
   - c: keep fence extraction but expand allowlist coverage (quickest)
-  - Pick: a — the category of fenced tokens that's load-bearing (a fenced `agents/.../file.md` that genuinely exists) is already covered by the author citing the same path outside a fence elsewhere in the plan, which is the common practice today. <!-- orianna: ok -->
+  - Pick: a — the category of fenced tokens that's load-bearing (a fenced `agents/.../file.md` that genuinely exists) is already covered by the author citing the same path outside a fence elsewhere in the plan, which is the common practice today. <!-- orianna: ok — glob pattern illustrating a class of tokens, not a path existence claim -->
   - **Resolved:** (a) hard drop. Duong concurs with Swain.
 
 - **OQ-3 — Drop TG-2/TG-3/TG-4 (estimate_minutes at Orianna sign-time) vs keep as redundancy.** The proposal drops in favor of the pre-commit linter. Alternative: keep Orianna's copies as redundancy in case the linter ever regresses. Recommendation: drop. Rationale: the linter is in `scripts/hooks/pre-commit-zz-plan-structure.sh` with tests; its split-of-responsibilities ownership is explicit in `architecture/plan-lifecycle.md`. Redundant enforcement wastes LLM budget. Duong's pick?
@@ -408,7 +407,7 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
   - Pick: a — sequencing maximizes clarity on whether the speedups are still needed at the originally-proposed scope.
   - **Resolved:** (b) parallel. Duong diverges from Swain (Swain recommended serial). Rescope and speedups run in parallel; do not serialize.
 
-- **OQ-6 — Claim-contract version bump: v2 only, or also rename/archive v1?** The proposal bumps `contract-version: 1 → 2` in place. Alternative: keep v1 in an archival copy at `agents/orianna/claim-contract-v1.md` so historical signature verification context is preserved. Recommendation: bump in place. Rationale: the contract isn't hashed into signatures, so there's no retroactive-lookup need. Any future reader can `git log agents/orianna/claim-contract.md` for version history. Duong's pick? <!-- orianna: ok -->
+- **OQ-6 — Claim-contract version bump: v2 only, or also rename/archive v1?** The proposal bumps `contract-version: 1 → 2` in place. Alternative: keep v1 in an archival copy at `agents/orianna/claim-contract-v1.md` so historical signature verification context is preserved. Recommendation: bump in place. Rationale: the contract isn't hashed into signatures, so there's no retroactive-lookup need. Any future reader can `git log agents/orianna/claim-contract.md` for version history. Duong's pick? <!-- orianna: ok — prospective archive path presented as alternative, not a current path claim -->
   - a: bump in place, no archive (cleanest)
   - b: bump in place + add a one-paragraph "v1→v2 delta" section at the top of the file
   - c: archive v1 alongside v2 (thorough but clutter)
@@ -419,9 +418,9 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
 
 ## 11. Coordination
 
-- **Plan lives in:** `plans/proposed/personal/2026-04-22-orianna-substance-vs-format-rescope.md` <!-- orianna: ok -->
+- **Plan lives in:** `plans/proposed/personal/2026-04-22-orianna-substance-vs-format-rescope.md` <!-- orianna: ok — original proposed path; plan has since moved to in-progress -->
 - **Delegation:** Evelynn picks an implementer pair (Viktor or Ekko for bash/prompts; pair with Xayah or Caitlyn for test planning in T1/T3). Swain does not assign — `owner: swain` is authorship only.
-- **Serial-after:** recommended to land after any in-flight plan that touches `agents/orianna/prompts/**` to avoid merge conflict. At the time of authoring there are none, but the adjacent `2026-04-21-orianna-gate-speedups.md` does touch `scripts/hooks/` (not prompts); they are file-independent but decision-coupled per OQ-5. <!-- orianna: ok -->
+- **Serial-after:** recommended to land after any in-flight plan that touches `agents/orianna/prompts/**` to avoid merge conflict. At the time of authoring there are none, but the adjacent `2026-04-21-orianna-gate-speedups.md` does touch `scripts/hooks/` (not prompts); they are file-independent but decision-coupled per OQ-5. <!-- orianna: ok — glob pattern expressing a concern, not a path existence claim -->
 - **Serial-before:** blocks any future plan that wants to tighten the check set again. A revert is one `git revert` away.
 - **PR boundary:** one PR for T1+T2 (xfail tests); one PR for T3 (updated test assertions as xfail); one PR for T4 (claim-contract); one PR for T5 (bash fallback); one PR for T6+T7+T8 (prompts, same concern, same reviewer); one PR for T9+T10+T11+T12 (docs + canary + learnings). Six PRs total. Alternative: collapse to three PRs (tests; contract+script; prompts+docs+canary) if reviewer bandwidth is tight.
 
@@ -431,17 +430,17 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
 
 Every path-shaped token cited in this plan body resolves at the time of authoring. The plan itself is a META-EXAMPLE of the rescope (it cites HTTP routes, Python identifiers, fenced tokens in its evidence section §1) and is therefore expected to generate warn/info findings on the pre-rescope gate. Those are documented, not defects.
 
-Prospective output paths (files created by this plan) carry inline `<!-- orianna: ok -->` markers where they appear in backticks:
+Prospective output paths (files created by this plan) carry inline orianna suppression markers where they appear in backticks:
 
-- `scripts/test-fact-check-substance-format-split.sh` <!-- orianna: ok -->
-- `plans/proposed/personal/2026-04-XX-orianna-rescope-canary.md` <!-- orianna: ok -->
+- `scripts/test-fact-check-substance-format-split.sh` <!-- orianna: ok — prospective output, not yet on disk -->
+- `plans/proposed/personal/2026-04-XX-orianna-rescope-canary.md` <!-- orianna: ok — prospective canary plan with placeholder date -->
 
 ---
 
 ## 13. Out of scope
 
-- Changes to the signing/verification machinery (`orianna-sign.sh`, `orianna-verify-signature.sh`, `orianna-hash-body.sh`) — those are correct; their contract is preserved. <!-- orianna: ok -->
-- Changes to `plan-promote.sh` — continues to call `orianna-fact-check.sh` unchanged. <!-- orianna: ok -->
+- Changes to the signing/verification machinery (`orianna-sign.sh`, `orianna-verify-signature.sh`, `orianna-hash-body.sh`) — those are correct; their contract is preserved. <!-- orianna: ok — out-of-scope list, scripts cited as named exclusions not path claims -->
+- Changes to `plan-promote.sh` — continues to call `orianna-fact-check.sh` unchanged. <!-- orianna: ok — out-of-scope exclusion citing existing script names -->
 - Changes to the `Orianna-Bypass:` break-glass path — unaffected.
 - Changes to `scripts/hooks/pre-commit-zz-plan-structure.sh` — the linter's five rules remain as-is. Indirect effect: after this plan lands, the linter becomes the single owner of `estimate_minutes` validation.
 - New suppression-marker syntaxes (category-level, document-level, fence-opt-in). The line-scoped marker remains the only escape hatch; frequency of use drops because fewer tokens are checked.
@@ -462,3 +461,17 @@ Prospective output paths (files created by this plan) carry inline `<!-- orianna
 - `agents/orianna/allowlist.md` — no change; referenced for completeness.
 - `assessments/plan-fact-checks/2026-04-22-firebase-auth-for-demo-studio-2026-04-22T02-15-40Z.md` — 12-block example of the false-positive pattern this rescope eliminates.
 - `assessments/plan-fact-checks/2026-04-21-demo-studio-v3-e2e-ship-v2-2026-04-21T09-50-32Z.md` — 10-block HTTP-route example.
+
+## Test results
+
+PR #21 merge commit: `726892965868f1aaded2ddb97544893933f904fa`
+Head SHA: `fbfc23efd19b2a3bcddaf6ee3b10281937406107`
+
+All CI checks passed:
+
+| Check | Workflow | Conclusion | Run URL |
+|-------|----------|------------|---------|
+| xfail-first check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24766505422/job/72461940094 |
+| xfail-first check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24766482164/job/72461860394 |
+| regression-test check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24766505422/job/72461940096 |
+| regression-test check | TDD Gate | SUCCESS | https://github.com/harukainguyen1411/strawberry-agents/actions/runs/24766482164/job/72461860374 |
