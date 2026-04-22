@@ -6,7 +6,7 @@ orianna_gate_version: 2
 owner: Karma
 created: 2026-04-22
 tests_required: true
-orianna_signature_approved: "sha256:38524bb88f77f6556f51aad70ba95684c18da8b989313e073a7f9d53414ae896:2026-04-22T11:04:22Z"
+orianna_signature_approved: "sha256:116d840b884eee13382fb02d57c11a5a5c318f122e1fd2d4b2523deef43d9d27:2026-04-22T11:21:21Z"
 ---
 
 # Rule 16 strengthening — name Akali, require Playwright MCP, extend to user-flow changes
@@ -60,6 +60,14 @@ No schema, no external integration, no cross-concern change. Single-concern docs
 - Files: `.github/pull_request_template.md`.
 - Detail: Tighten the `QA-Report` row comment to: "QA-Report: <path-or-url> | QA-Waiver: <reason> — required for any UI or user-flow PR (Rule 16); Akali via Playwright MCP. N/A only for non-UI, non-user-flow PRs."
 - DoD: Row text matches above verbatim.
+
+### T6. Write xfail pr-lint-check tests
+
+- kind: test
+- estimate_minutes: 20
+- Files: `scripts/ci/pr-lint-check.sh` (new, extracted from T4 workflow), `scripts/hooks/tests/pr-lint/` (new dir with fixtures + runner). <!-- orianna: ok — prospective paths not yet created -->
+- Detail: Extract the PR body linter bash script from T4's GitHub Actions workflow into a standalone `scripts/ci/pr-lint-check.sh` so it can be unit-tested locally. Create a POSIX shell test runner at `scripts/hooks/tests/pr-lint/run-tests.sh` with four fixtures matching the four test cases in `## Test plan`. Commit the tests as xfail (the linter check script exits non-zero before T4 ships the implementation; T4 then makes them green. <!-- orianna: ok — prospective fixture paths -->
+- DoD: `scripts/ci/pr-lint-check.sh` exists and is POSIX-portable; test runner exits non-zero (xfail) before T4 lands; all four test cases are represented; test file committed on the implementation branch before any linter implementation. <!-- orianna: ok — prospective paths in DoD -->
 
 ## Test plan
 
