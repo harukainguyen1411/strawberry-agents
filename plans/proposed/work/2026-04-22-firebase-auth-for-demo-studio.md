@@ -172,11 +172,9 @@ Aphelios decomposes W1–W6 into tasks; each wave is one PR.
 
 **Status: HUMAN-BLOCKED on IAM grant.** Before W0 can run, Duong must execute once:
 
-```
-gcloud projects add-iam-policy-binding mmpt-233505 \
-  --member="serviceAccount:266692422014-compute@developer.gserviceaccount.com" \
-  --role="roles/firebase.sdkAdminServiceAgent"
-```
+    gcloud projects add-iam-policy-binding mmpt-233505 \
+      --member="serviceAccount:266692422014-compute@developer.gserviceaccount.com" \
+      --role="roles/firebase.sdkAdminServiceAgent"
 
 SA `266692422014-compute@developer.gserviceaccount.com` is the ADC identity in Cloud Run. Ekko has completed the rest of GCP infra setup. W1 decomposition may begin in parallel (no runtime dep), but **no W0-W1 task may deploy until the grant lands**.
 
@@ -266,7 +264,7 @@ SA `266692422014-compute@developer.gserviceaccount.com` is the ADC identity in C
 - Multi-factor auth (Firebase supports it; no demand yet).
 - Deleting the one-time-token machinery (stays because Slack needs it).
 - Rate limiting on `/auth/login` (Cloud Run + Firebase already enforce per-project quotas).
-- Switching `/mcp` bearer auth — MCP service is being retired (`plans/proposed/work/2026-04-21-demo-studio-mcp-retirement.md`).
+- Switching `/mcp` bearer auth — MCP service is being retired (`plans/proposed/work/2026-04-21-demo-studio-mcp-retirement.md`). <!-- orianna: ok -->
 
 ## Architecture impact
 
