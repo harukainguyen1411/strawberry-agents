@@ -24,9 +24,9 @@ tests_required: true
 ## 1. Context
 
 Loop 2 of Duong's hands-dirty cadence continues the P0 goal: user reliably logs in + creates session. The approved ADR
-`plans/approved/work/2026-04-22-firebase-auth-for-demo-studio.md` <!-- orianna: ok --> (Orianna-signed
+`plans/approved/work/2026-04-22-firebase-auth-for-demo-studio.md` <!-- orianna: ok -- cross-repo plan path, lives in strawberry-agents not company-os --> (Orianna-signed
 `sha256:91a431b7ed3f69b260755586908979245602a06e9d3e815d9ba432790d232d86`) lays out W0–W6 for the full Firebase cutover.
-The W0 spike is HUMAN-BLOCKED on an IAM grant (`roles/firebase.sdkAdminServiceAgent` <!-- orianna: ok --> on SA
+The W0 spike is HUMAN-BLOCKED on an IAM grant (`roles/firebase.sdkAdminServiceAgent` <!-- orianna: ok -- GCP IAM role name, not a filesystem path --> on SA
 `266692422014-compute@developer.gserviceaccount.com`).
 
 `verify_id_token` does not actually need an IAM role — it fetches public JWKs from Google's CDN and verifies
@@ -42,16 +42,16 @@ all TDD'd with mocked verify. Deferred to later loops:
 
 ## 2. Decision
 
-Deliver W1.1–W1.13 of the parent ADR on branch `feat/demo-studio-v3` <!-- orianna: ok -->:
+Deliver W1.1–W1.13 of the parent ADR on branch `feat/demo-studio-v3` <!-- orianna: ok -- Git branch name in company-os workspace, not strawberry-agents path -->:
 
-1. `requirements.txt` <!-- orianna: ok --> gains `firebase-admin>=6.5.0`.
-2. New module `firebase_auth.py` <!-- orianna: ok -->: `verify_firebase_token(id_token: str) -> User`,
+1. `requirements.txt` <!-- orianna: ok -- company-os workspace file, not strawberry-agents --> gains `firebase-admin>=6.5.0`.
+2. New module `firebase_auth.py` <!-- orianna: ok -- company-os workspace file -->: `verify_firebase_token(id_token: str) -> User`,
    `User` dataclass (`uid`, `email`), raises `InvalidTokenError` / `DomainNotAllowedError`. Reads
    `FIREBASE_PROJECT_ID` + `ALLOWED_EMAIL_DOMAIN` from env. Initializes `firebase_admin` app lazily.
-3. `auth.py` <!-- orianna: ok --> gains `encode_user_cookie(user)` / `decode_user_cookie(raw)` helpers and
+3. `auth.py` <!-- orianna: ok -- company-os workspace file --> gains `encode_user_cookie(user)` / `decode_user_cookie(raw)` helpers and
    module flag `AUTH_LEGACY_COOKIE_ALLOWED = True`. **`require_session` signature is NOT changed this loop** —
    that migration is Loop 2c. Only the new encode/decode helpers are added.
-4. `main.py` <!-- orianna: ok --> gains four new routes:
+4. `main.py` <!-- orianna: ok -- company-os workspace file --> gains four new routes:
    - `POST /auth/login` — body `{idToken}` → verify → set cookie `{uid, email, iat}` → 204.
    - `POST /auth/logout` — clear cookie → 204.
    - `GET /auth/me` — return `{uid, email}` or 401.
@@ -81,15 +81,15 @@ Failure modes:
 
 Test files (xfail-first, Rule 12):
 
-- `tools/demo-studio-v3/tests/test_firebase_auth.py` <!-- orianna: ok --> — 5 cases:
+- `mmp/workspace/tools/demo-studio-v3/tests/test_firebase_auth.py` <!-- orianna: ok -- company-os workspace test file --> — 5 cases:
   valid token → User; `email_verified=False` → raises `DomainNotAllowedError` / `InvalidTokenError`
   (TBD inside impl); wrong domain → raises; expired → raises; missing env → clear error. Mock
   `firebase_admin.auth.verify_id_token`.
-- `tools/demo-studio-v3/tests/test_auth_routes.py` <!-- orianna: ok --> — 6 cases:
+- `mmp/workspace/tools/demo-studio-v3/tests/test_auth_routes.py` <!-- orianna: ok -- company-os workspace test file --> — 6 cases:
   POST /auth/login happy path sets cookie + 204; POST /auth/login bad token → 401; POST /auth/login
   wrong domain → 403; POST /auth/logout clears cookie; GET /auth/me authed → 200 with `{uid, email}`;
   GET /auth/me unauth → 401. Plus: GET /auth/config returns env values.
-- `tools/demo-studio-v3/tests/test_auth_cookie_encode.py` <!-- orianna: ok --> — 2 cases:
+- `mmp/workspace/tools/demo-studio-v3/tests/test_auth_cookie_encode.py` <!-- orianna: ok -- company-os workspace test file --> — 2 cases:
   `encode_user_cookie` → `decode_user_cookie` round-trips `{uid, email, iat}`; tampered cookie → None.
 
 All tests committed as xfail first, then flipped green once impl lands.
@@ -98,14 +98,14 @@ All tests committed as xfail first, then flipped green once impl lands.
 
 - `firebase_admin.initialize_app()` is app-global; must be idempotent across test reloads. Guard with
   `try: get_app(); except: initialize_app()`.
-- Tests must NOT actually contact `identitytoolkit.googleapis.com` <!-- orianna: ok --> — verify all network mocked.
-- Cookie secret (`SESSION_SECRET`) reused from existing `auth.py` <!-- orianna: ok -->; no new secret introduced this loop.
+- Tests must NOT actually contact `identitytoolkit.googleapis.com` <!-- orianna: ok -- external URL, not filesystem path --> — verify all network mocked.
+- Cookie secret (`SESSION_SECRET`) reused from existing `auth.py` <!-- orianna: ok -- company-os workspace file -->; no new secret introduced this loop.
 - `AUTH_LEGACY_COOKIE_ALLOWED` flag is added but unused this loop (dual-stack decode lands in 2c).
   Acceptable tech debt — flag value already decided (True).
 
 ## 5. Out of scope follow-ups
 
-- Loop 2b: Frontend sign-in (`static/index.html` <!-- orianna: ok -->, `static/auth.js` <!-- orianna: ok -->, `static/studio.css` <!-- orianna: ok -->).
+- Loop 2b: Frontend sign-in (`static/index.html` <!-- orianna: ok -- company-os workspace file -->, `static/auth.js` <!-- orianna: ok -- company-os workspace file -->, `static/studio.css` <!-- orianna: ok -- company-os workspace file -->).
 - Loop 2c: `require_session` → `User` migration + `require_session_owner` for all `/session/{sid}/*` routes.
 - Loop 2d: Drop Slack scaffolding (`slack_user_id`, `slack_channel`, `slack_thread_ts` fields; `POST /session`
   Slack handoff path; `/auth/session/{sid}?token=...` if we go "entirely" per Duong's directive).
@@ -113,21 +113,21 @@ All tests committed as xfail first, then flipped green once impl lands.
 
 ## Tasks
 
-- [ ] **T.1** — Write xfail test file `tools/demo-studio-v3/tests/test_firebase_auth.py` with 5 cases per §Test plan, mocking `firebase_admin.auth.verify_id_token`. owner: sona. estimate_minutes: 15. Files: `tools/demo-studio-v3/tests/test_firebase_auth.py` <!-- orianna: ok -->. DoD: `pytest tests/test_firebase_auth.py -q` reports 5 xfailed, 0 xpassed.
-- [ ] **T.2** — Write xfail test file `tools/demo-studio-v3/tests/test_auth_cookie_encode.py` with 2 cases covering encode/decode round-trip and tamper detection. owner: sona. estimate_minutes: 8. Files: `tools/demo-studio-v3/tests/test_auth_cookie_encode.py` <!-- orianna: ok -->. DoD: 2 xfailed, 0 xpassed.
-- [ ] **T.3** — Write xfail test file `tools/demo-studio-v3/tests/test_auth_routes.py` with 7 cases covering all four routes per §Test plan. owner: sona. estimate_minutes: 15. Files: `tools/demo-studio-v3/tests/test_auth_routes.py` <!-- orianna: ok -->. DoD: 7 xfailed, 0 xpassed.
-- [ ] **T.4** — Add `firebase-admin>=6.5.0` to `requirements.txt`. owner: sona. estimate_minutes: 3. Files: `tools/demo-studio-v3/requirements.txt` <!-- orianna: ok -->. DoD: pip install clean in fresh venv.
-- [ ] **T.5** — Create `tools/demo-studio-v3/firebase_auth.py` with `User` dataclass, `verify_firebase_token`, exception types, lazy-init of `firebase_admin` app. owner: sona. estimate_minutes: 25. Files: `tools/demo-studio-v3/firebase_auth.py` <!-- orianna: ok -->. DoD: T.1 xfails flip green.
-- [ ] **T.6** — Add `encode_user_cookie` / `decode_user_cookie` helpers + `AUTH_LEGACY_COOKIE_ALLOWED` flag to `auth.py`. owner: sona. estimate_minutes: 10. Files: `tools/demo-studio-v3/auth.py` <!-- orianna: ok -->. DoD: T.2 xfails flip green.
-- [ ] **T.7** — Add the four `/auth/*` routes to `main.py` using the new firebase_auth module and cookie helpers. owner: sona. estimate_minutes: 20. Files: `tools/demo-studio-v3/main.py` <!-- orianna: ok -->. DoD: T.3 xfails flip green.
-- [ ] **T.8** — Playwright verify: navigate to `http://127.0.0.1:8080/auth/config` expect JSON with projectId; navigate to `/auth/me` unauth expect 401 JSON. owner: sona. estimate_minutes: 5. Files: (runtime-only). DoD: both smokes pass; screenshots captured under `assessments/qa-reports` <!-- orianna: ok -->.
+- [ ] **T.1** — Write xfail test file `mmp/workspace/tools/demo-studio-v3/tests/test_firebase_auth.py` with 5 cases per §Test plan, mocking `firebase_admin.auth.verify_id_token`. owner: sona. estimate_minutes: 15. Files: `mmp/workspace/tools/demo-studio-v3/tests/test_firebase_auth.py` <!-- orianna: ok -- company-os workspace file -->. DoD: `pytest tests/test_firebase_auth.py -q` reports 5 xfailed, 0 xpassed.
+- [ ] **T.2** — Write xfail test file `mmp/workspace/tools/demo-studio-v3/tests/test_auth_cookie_encode.py` with 2 cases covering encode/decode round-trip and tamper detection. owner: sona. estimate_minutes: 8. Files: `mmp/workspace/tools/demo-studio-v3/tests/test_auth_cookie_encode.py` <!-- orianna: ok -- company-os workspace file -->. DoD: 2 xfailed, 0 xpassed.
+- [ ] **T.3** — Write xfail test file `mmp/workspace/tools/demo-studio-v3/tests/test_auth_routes.py` with 7 cases covering all four routes per §Test plan. owner: sona. estimate_minutes: 15. Files: `mmp/workspace/tools/demo-studio-v3/tests/test_auth_routes.py` <!-- orianna: ok -- company-os workspace file -->. DoD: 7 xfailed, 0 xpassed.
+- [ ] **T.4** — Add `firebase-admin>=6.5.0` to `requirements.txt`. owner: sona. estimate_minutes: 3. Files: `mmp/workspace/tools/demo-studio-v3/requirements.txt` <!-- orianna: ok -- company-os workspace file -->. DoD: pip install clean in fresh venv.
+- [ ] **T.5** — Create `mmp/workspace/tools/demo-studio-v3/firebase_auth.py` with `User` dataclass, `verify_firebase_token`, exception types, lazy-init of `firebase_admin` app. owner: sona. estimate_minutes: 25. Files: `mmp/workspace/tools/demo-studio-v3/firebase_auth.py` <!-- orianna: ok -- company-os workspace file -->. DoD: T.1 xfails flip green.
+- [ ] **T.6** — Add `encode_user_cookie` / `decode_user_cookie` helpers + `AUTH_LEGACY_COOKIE_ALLOWED` flag to `auth.py`. owner: sona. estimate_minutes: 10. Files: `mmp/workspace/tools/demo-studio-v3/auth.py` <!-- orianna: ok -- company-os workspace file -->. DoD: T.2 xfails flip green.
+- [ ] **T.7** — Add the four `/auth/*` routes to `main.py` using the new firebase_auth module and cookie helpers. owner: sona. estimate_minutes: 20. Files: `mmp/workspace/tools/demo-studio-v3/main.py` <!-- orianna: ok -- company-os workspace file -->. DoD: T.3 xfails flip green.
+- [ ] **T.8** — Playwright verify: navigate to `http://127.0.0.1:8080/auth/config` expect JSON with projectId; navigate to `/auth/me` unauth expect 401 JSON. owner: sona. estimate_minutes: 5. Files: (runtime-only). DoD: both smokes pass; screenshots captured under `assessments/qa-reports` <!-- orianna: ok -- strawberry-agents assessments dir, not company-os -->.
 
 ## Architecture impact
 
-- `requirements.txt` <!-- orianna: ok --> — one new dep.
-- `firebase_auth.py` <!-- orianna: ok --> — new module (~100 lines est.).
-- `auth.py` <!-- orianna: ok --> — additive: new helpers + flag, no existing function signatures changed.
-- `main.py` <!-- orianna: ok --> — 4 new routes appended; no route migrations.
+- `requirements.txt` <!-- orianna: ok -- company-os workspace file --> — one new dep.
+- `firebase_auth.py` <!-- orianna: ok -- company-os workspace file --> — new module (~100 lines est.).
+- `auth.py` <!-- orianna: ok -- company-os workspace file --> — additive: new helpers + flag, no existing function signatures changed.
+- `main.py` <!-- orianna: ok -- company-os workspace file --> — 4 new routes appended; no route migrations.
 - Test directory — 3 new test files (~14 tests total).
 
 ## Loop context
