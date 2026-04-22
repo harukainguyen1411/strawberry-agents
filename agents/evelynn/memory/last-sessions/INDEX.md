@@ -25,15 +25,14 @@
 - 2026-04-19 · 5999126d · Parallel stream with another Evelynn running portfolio v0 simultaneously. I drove the Claude usage dashboard v1 execution from `~/Documents/Personal/strawberry-agents` (post-A4 canonical). Zero cross-talk — disjoint trees (mine: `dashboards/usage-dashboard/` + `scripts/usage-dashboard/` in strawberry-app;  hers: `apps/portfolio/**`).
 - 2026-04-19 · 80828706 · Shipped Orianna v1 mostly end-to-end in one long session. ADR by Azir, 23 tasks via Kayn, executed by the team. Ended with Orianna's own tasks plan NOT clean (block=7), so final `implemented/` promote did not happen. ADR itself is clean and ready to promote.
 - 2026-04-19 · a7a754c2 · Workstream 3 of 3 (Dependabot cleanup) running in parallel with deployment-pipeline (WS1) and test-procedural (WS2).
-- 2026-04-19 · a8081406 · **Date:** 2026-04-18; **Mode:** direct; **Platform:** Mac, CLI
-- 2026-04-19 · ac55c511 · Marathon session that folded three workstreams and uncovered a multi-week identity leak. Orianna v1 shipped. Migration ran to A4-gate. Dashboard + portfolio ADRs approved. Global git config + gh auth corrected to the real agent account.
-- 2026-04-19 · b2453a47 · Marathon build session. Started with the S50 follow-up (operational surface gap), kicked off portfolio v0 from approved ADR through V0.10 of execution, ended at Anthropic 5h quota wall. Both ADR and tasks plan are approved + Orianna-clean. Ten portfolio PRs open on `harukainguyen1411/strawberry-app`.
-- 2026-04-19 · cc3b17d5 · Brief coordination session. Closed the A4 gap that S48/S49 kept punting on.
-- 2026-04-19 · cca80ba9 · Big migration session. Duong initiated public-repo split + agent-infra split + token-budget rebalance.
-- 2026-04-19 · e267eb0c · Plan-heavy session. Three ADRs promoted, one hook landed, PR chain unjammed end-to-end.
-- 2026-04-19 · f1602bec · Drove Phase 1 of the deployment pipeline through three PRs. All approved by Jhin, none mergeable yet — blocked by lint errors on main from a parallel Evelynn's portfolio work.
-- 2026-04-19 · faa8aa63 · **What happened.** Deployment pipeline Phase 1 stream. Landed the SessionStart hook + `agent: evelynn` wiring (commit `b58216d`). Merged PR #144 (evelynn memory sharding — per-session shards, boot-time consolidation, remember-plugin bypass for evelynn). Shipped PR #179 (P1.2 `scripts/deploy/_lib.sh` — 8 helpers, shellcheck clean, re-source guard, audit JSONL with schema_version + hostname) — green from Jhin + Lux, awaiting Duong manual approve/merge. Misframed P1.2 mid-session ("CI gate" instead of `_lib.sh` helpers), caught by Caitlyn, recovered;  preserved the CI-gate TDD plan at `plans/proposed/2026-04-18-future-ci-gate-tdd.md` for a future Phase 2+ task.; **Open threads.**; - **PR #179** needs Duong manual approve/merge in UI (single-account repo limitation).
 
 ## Archived
 
-_(no archived shards)_
+- archive/a8081406
+- archive/ac55c511
+- archive/b2453a47
+- archive/cc3b17d5
+- archive/cca80ba9
+- archive/e267eb0c
+- archive/f1602bec
+- archive/faa8aa63
