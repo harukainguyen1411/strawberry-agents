@@ -124,6 +124,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch): Promoted 2026-04-21-staged-scope-guard-hook.md to implemented/personal/. Full re-sign chain (body required: architecture_impact, suppressor reasons, ## Architecture impact, ## Test results with assessments/ path). Two re-sign rounds needed: first round failed because ## Test results had only PR ref (gate needs assessments/ path). body fix: 374fbde, approved sig: 66e50fd, approved promote: ca5523c, in_progress sig: 939373b, in-progress promote: 70fc65a, implemented sig: b927b72, implemented promote: 316949a. BLOCKED: 2026-04-21-commit-msg-no-ai-coauthor-hook.md is incomplete — no hook file, no test file, no install-hooks wiring, no key-scripts.md entry. All 5 tasks missing.
 
+- 2026-04-22 (ekko — Sona dispatch): Promoted 2026-04-22-p1-factory-build-ipad-link.md proposed→approved. 3 sign iterations + 1 parallel-agent sign. Suppressor count: 28 total added across 2 commits (8e14a83, 1d3aa1a). Key blocks: factory.py/main.py/sys.exit bare names, OQ checkboxes [ ] needing [x], project.py and static/studio.js section header missed by gate but caught by promote hook. Final sig `791b895e` by parallel agent, promote `dac5dad`. Plan at plans/approved/work/.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
