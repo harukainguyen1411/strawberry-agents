@@ -11,6 +11,7 @@ tags:
   - firebase
   - work
 tests_required: true
+orianna_signature_approved: "sha256:f1ddbbc8ce6e2144d7ed5c08fbf0462d95aee2560334b3a8b486b35144f4d686:2026-04-22T11:22:47Z"
 ---
 
 # Loop 2a — Firebase auth W1 server backbone
