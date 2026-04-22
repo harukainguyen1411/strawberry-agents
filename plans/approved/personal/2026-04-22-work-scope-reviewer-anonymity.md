@@ -7,6 +7,7 @@ orianna_gate_version: 2
 tests_required: true
 created: 2026-04-22
 orianna_signature_approved: "sha256:882b9d90aebe836cd5d54d7cff6769982c27f4e5a25cb3e999d3f4b708dddf5d:2026-04-22T11:00:52Z"
+orianna_signature_in_progress: "sha256:882b9d90aebe836cd5d54d7cff6769982c27f4e5a25cb3e999d3f4b708dddf5d:2026-04-22T11:01:54Z"
 ---
 
 # Work-scope reviewer anonymity
