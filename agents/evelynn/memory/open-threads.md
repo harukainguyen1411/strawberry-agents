@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-22 (post-compact continuation, shard 2cb962cd close).
+Last updated: 2026-04-22 (pre-compact consolidation, shard cea94956).
 
 ---
 
@@ -38,17 +38,17 @@ Last updated: 2026-04-22 (post-compact continuation, shard 2cb962cd close).
 
 ## Viktor inbox PR
 
-**Current status (2026-04-21):** BLOCKED on PR creation. Implementation done — branch `inbox-watch-v3`, 27/27 tests green. Pre-push hook blocked auto `gh pr create`. Needs manual PR creation by Duong or explicit delegation of the gh pr create call.
-**Shards:** 2cb962cd, 002efe6a, e49b10d8, 31a158e4, ef2bbc31.
-**Next:** Manually create PR for `inbox-watch-v3`. High priority — implementation is done.
+**Current status (2026-04-22):** MERGED via PR #18 (`9ee2f2e`). 27/27 tests green. Closed.
+**Shards:** 2cb962cd, 002efe6a, e49b10d8, 31a158e4, ef2bbc31, cea94956.
+**Next:** No action. RESOLVED.
 
 ---
 
 ## Orianna-gate-speedups plan impl
 
-**Current status (2026-04-22):** Sign commit `f6b117f` on main. Promote to `in-progress` was blocked by stale path in §1 paragraph 2 (`pre-orianna-plan-archive.md` now in `approved/` not `proposed/`). Fix path → re-sign (body-hash invalidation) → promote. Ekko hit rate limit mid-work; resumes 12am Saigon.
-**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
-**Next:** Ekko retry: fix §1 stale path, re-sign `in_progress`, `plan-promote.sh ... in_progress`, then assign Viktor.
+**Current status (2026-04-22):** MERGED via PR #19 (`98d310c`). Fast-follow plan authored for Senna's F1 (stderr-hijack), F2 (pre-fix-before-claude-block Rule 1 risk), F3 (grep-c-echo-0 latent bug) findings. Talon awaiting dispatch for fast-follow impl.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956.
+**Next:** Promote speedups fast-follow plan to `in-progress`; dispatch Talon.
 
 ---
 
@@ -60,19 +60,35 @@ Last updated: 2026-04-22 (post-compact continuation, shard 2cb962cd close).
 
 ---
 
-## Staged-scope-guard impl
+## STAGED_SCOPE concurrent-staging fix
 
-**Current status (2026-04-22):** **MERGED** via PR #17 (`e58a96d`). Talon impl → Senna CHANGES_REQUESTED → Jayce fixes → Senna re-approved + Lucian approved → Senna squash-merged.
-**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
-**Next:** Follow-up plan `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md` exists — agents need to adopt `STAGED_SCOPE=<files>` per-commit for the guard to enforce.
+**Current status (2026-04-22):** MERGED via PR #20 (`e718928`). Evelynn×Sona concurrent-staging race diagnosed and fixed. STAGED_SCOPE env var now live.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956.
+**Next:** Full-tree agent adoption still needed. Follow-up plan `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md` needs promotion + dispatch.
+
+---
+
+## Staged-scope-guard agent adoption
+
+**Current status (2026-04-22):** PR #20 merged. Agents must adopt `STAGED_SCOPE=<files>` per-commit for the guard to enforce fully.
+**Shards:** cea94956.
+**Next:** Promote `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md` → approved → in-progress; dispatch Ekko or Talon.
+
+---
+
+## Orianna rescope — substance-vs-format
+
+**Current status (2026-04-22):** PR #21 open under Senna+Lucian dual review. Swain ADR open questions `1a 2a 3a 4b 5b 6b` answered by Duong. Implementation dispatched.
+**Shards:** cea94956.
+**Next:** Check Senna+Lucian review status. Address any CHANGES_REQUESTED. Merge under `harukainguyen1411`.
 
 ---
 
 ## Rename-aware pre-lint impl
 
-**Current status (2026-04-22):** Plan at `plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md`. Needs proposed→approved→in-progress chain (Ekko rate-limited mid-work). git-mv full-body bug blocked prior Ekko for 2h.
-**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
-**Next:** Ekko retry post-rate-limit: `plan-promote.sh` proposed→approved→in-progress, then assign Talon or Viktor.
+**Current status (2026-04-22):** Plan at `plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md`. Blocked pending STAGED_SCOPE full-tree adoption. Do not promote until adoption is confirmed.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956.
+**Next:** Wait for STAGED_SCOPE adoption plan to land; then promote rename-aware pre-lint chain.
 
 ---
 
