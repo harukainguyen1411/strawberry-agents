@@ -12,6 +12,7 @@ related:
   - plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md
 orianna_signature_approved: "sha256:69b978d0603f6ef878b9b7981052e26cd3c8c427d372e6b6ee8e11b6f893c3d1:2026-04-22T13:34:19Z"
 orianna_signature_in_progress: "sha256:69b978d0603f6ef878b9b7981052e26cd3c8c427d372e6b6ee8e11b6f893c3d1:2026-04-22T13:35:40Z"
+orianna_signature_implemented: "sha256:69b978d0603f6ef878b9b7981052e26cd3c8c427d372e6b6ee8e11b6f893c3d1:2026-04-22T13:37:33Z"
 ---
 
 # Amend Rule 18 — allow agent self-merge when non-author review gate holds
