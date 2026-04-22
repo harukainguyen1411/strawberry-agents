@@ -51,6 +51,10 @@ fi
 
 FAIL=0
 
+# Temp file for failure signalling across subshell boundaries (F4 — mktemp).
+# Plan: plans/in-progress/personal/2026-04-22-orianna-speedups-pr19-fast-follow.md F4
+_FAIL_TMP="$(mktemp -t body-hash-guard-failures.XXXXXX)"
+
 # ---- For each staged plan, extract signature fields and verify hashes -----
 for rel_path in $STAGED_PLANS; do
   abs_path="$GIT_WORK_TREE/$rel_path"
@@ -120,15 +124,16 @@ for rel_path in $STAGED_PLANS; do
       printf '\n' >&2
       printf '  Stale phase: %s  |  Mismatched body hash — orianna-bypass or re-sign required\n' "$phase" >&2
       # Signal failure by writing to a temp file (subshell cannot mutate parent FAIL)
-      printf 'FAIL\n' >> /tmp/body-hash-guard-failures-$$.txt 2>/dev/null || true
+      printf 'FAIL\n' >> "$_FAIL_TMP" 2>/dev/null || true
     fi
   done
 done
 
 # Check if any failures were recorded (subshell cannot propagate variable)
-if [ -f "/tmp/body-hash-guard-failures-$$.txt" ]; then
-  rm -f "/tmp/body-hash-guard-failures-$$.txt"
+if [ -s "$_FAIL_TMP" ]; then
+  rm -f "$_FAIL_TMP"
   exit 1
 fi
+rm -f "$_FAIL_TMP"
 
 exit 0
