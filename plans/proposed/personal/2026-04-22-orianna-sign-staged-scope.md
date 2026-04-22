@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-22
@@ -11,23 +11,21 @@ related:
   - plans/implemented/personal/2026-04-20-orianna-gated-plan-lifecycle.md
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
 architecture_changes: [architecture/key-scripts.md]
-orianna_signature_approved: "sha256:1b23501714ab7fe9b92352dc3f89f7014dd15cbe426627a620aaf55450b36b82:2026-04-22T07:11:21Z"
-orianna_signature_in_progress: "sha256:1b23501714ab7fe9b92352dc3f89f7014dd15cbe426627a620aaf55450b36b82:2026-04-22T07:15:12Z"
 ---
 
-# `STAGED_SCOPE` env var for `orianna-sign.sh` — eliminate concurrent-staging race <!-- orianna: ok -->
+# `STAGED_SCOPE` env var for `orianna-sign.sh` — eliminate concurrent-staging race <!-- orianna: ok -- script or path ref suppressed -->
 
 ## Context
 
 `scripts/orianna-sign.sh` writes the signature line into the plan's frontmatter,
 then runs `git add <plan>` followed by `git commit`. The signature-guard hook
 (`scripts/hooks/pre-commit-orianna-signature-guard.sh`) enforces that Orianna
-commits touch exactly one file under the plans/ <!-- orianna: ok --> directory. When a second coordinator
+commits touch exactly one file under the plans/ <!-- orianna: ok -- script or path ref suppressed --> directory. When a second coordinator
 session (Sona or Evelynn) has unrelated files staged in the shared index at the
-moment `orianna-sign.sh` reaches its `git commit` step, those staged files ride <!-- orianna: ok -->
+moment `orianna-sign.sh` reaches its `git commit` step, those staged files ride <!-- orianna: ok -- script or path ref suppressed -->
 along into the commit's staged set and the guard rejects with "must touch
 exactly 1 file". Ekko hit this today promoting
-`plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md` <!-- orianna: ok -->
+`plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md` <!-- orianna: ok -- script or path ref suppressed -->
 and the failure is not a one-off: Evelynn and Sona are designed to run
 concurrently, so every plan promotion is exposed to this race whenever the
 other coordinator has dirty staged work.
@@ -37,7 +35,7 @@ plan file, regardless of what else is staged. Git supports this natively via
 `git commit -- <path>` (pathspec-scoped commit), which commits only the index
 entries matching that pathspec and leaves other staged entries untouched for
 the next commit. We wire this in through an opt-in `STAGED_SCOPE` environment
-variable honored by `orianna-sign.sh`. When `STAGED_SCOPE` is set, the script <!-- orianna: ok -->
+variable honored by `orianna-sign.sh`. When `STAGED_SCOPE` is set, the script <!-- orianna: ok -- script or path ref suppressed -->
 passes the path as a pathspec to `git commit`; when unset, behavior is
 unchanged.
 
@@ -73,15 +71,15 @@ below in case they want the stronger default.
 
 - Kind: test
 - Estimate_minutes: 20
-- Files: `scripts/__tests__/test-orianna-sign-staged-scope.sh` (new). <!-- orianna: ok -->
+- Files: `scripts/__tests__/test-orianna-sign-staged-scope.sh` (new). <!-- orianna: ok -- script or path ref suppressed -->
 - Detail: POSIX bash test that builds a throwaway temp repo with `REPO=`,
-  seeds a minimal plan under `plans/proposed/` <!-- orianna: ok --> with a valid v2 frontmatter,
+  seeds a minimal plan under `plans/proposed/` <!-- orianna: ok -- script or path ref suppressed --> with a valid v2 frontmatter,
   stubs `claude` on `PATH` to emit a clean report, then stages an extra
-  unrelated file (e.g. `noise.txt`) <!-- orianna: ok --> into the temp repo index, then invokes
-  `bash scripts/orianna-sign.sh <plan> approved` with <!-- orianna: ok -->
+  unrelated file (e.g. `noise.txt`) <!-- orianna: ok -- script or path ref suppressed --> into the temp repo index, then invokes
+  `bash scripts/orianna-sign.sh <plan> approved` with <!-- orianna: ok -- script or path ref suppressed -->
   `STAGED_SCOPE=<plan-relpath>` exported, then asserts the resulting HEAD
   commit's `git show --name-only HEAD` touches exactly the plan file and
-  `noise.txt` <!-- orianna: ok --> remains staged in the index post-commit. Mark the test xfail
+  `noise.txt` <!-- orianna: ok -- script or path ref suppressed --> remains staged in the index post-commit. Mark the test xfail
   against the current script (grep a sentinel `# xfail: STAGED_SCOPE`
   comment; CI's tdd-gate recognizes the plan reference in the commit message).
   Reference this plan file in the test header comment.
@@ -133,21 +131,21 @@ below in case they want the stronger default.
 
 Invariants protected:
 
-1. **Signing commit touches exactly one file under plans/** <!-- orianna: ok --> — existing
+1. **Signing commit touches exactly one file under plans/** <!-- orianna: ok -- script or path ref suppressed --> — existing
    signature-guard invariant; T1 asserts it holds even when the index carries
    unrelated staged files.
 2. **Orphan staged files survive the signing commit** — T1 asserts
-   `noise.txt` <!-- orianna: ok --> remains in the index post-commit so the concurrent
+   `noise.txt` <!-- orianna: ok -- script or path ref suppressed --> remains in the index post-commit so the concurrent
    coordinator's work is not stolen or silently committed under Orianna's
    identity.
 3. **Default behavior unchanged when `STAGED_SCOPE` unset** — T2's DoD test
    (or manual verification) confirms the unscoped path still commits as
    today.
 
-Test harness: the existing `scripts/__tests__/` <!-- orianna: ok --> POSIX bash pattern (see sibling
+Test harness: the existing `scripts/__tests__/` <!-- orianna: ok -- script or path ref suppressed --> POSIX bash pattern (see sibling
 Orianna tests if present; otherwise a self-contained script using `mktemp -d`,
 `git init`, a stubbed `claude` on `PATH`, and `trap` cleanup). All three
-checks live in `scripts/__tests__/test-orianna-sign-staged-scope.sh`. <!-- orianna: ok -->
+checks live in `scripts/__tests__/test-orianna-sign-staged-scope.sh`. <!-- orianna: ok -- script or path ref suppressed -->
 
 ## Test results
 
