@@ -13,6 +13,7 @@ tags:
 tests_required: true
 architecture_impact: none
 orianna_signature_approved: "sha256:a8c6ba0cc28bd0b2db8d5efd6f832207838f2d76cc660bc4aa3c612e6b063ce0:2026-04-22T13:15:15Z"
+orianna_signature_in_progress: "sha256:a8c6ba0cc28bd0b2db8d5efd6f832207838f2d76cc660bc4aa3c612e6b063ce0:2026-04-22T13:16:24Z"
 ---
 
 # Loop 2a — Firebase auth W1 server backbone
