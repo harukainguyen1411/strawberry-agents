@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-22 · cea94956 · **Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe; **Consolidation UUID:** cea94956; **Date:** 2026-04-22
 - 2026-04-22 · 2cb962cd · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Date:** 2026-04-21; **Consolidated by:** Lissandra (pre-compact, mid-session)
 - 2026-04-21 · ef2bbc31 · **Session ID:** 0cf7b28e-bad0-46b2-8a0b-78cc0d04d52e; **Consolidation UUID:** ef2bbc31; **Date:** 2026-04-21
 - 2026-04-21 · 31a158e4 · **Session ID:** 34b4f5e7-70f4-4340-bd55-7e783482cf0e; **Consolidation UUID:** 31a158e4; **Date:** 2026-04-21
