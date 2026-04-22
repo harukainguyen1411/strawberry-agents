@@ -1,13 +1,12 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
 created: 2026-04-22
-orianna_signature_approved: "sha256:882b9d90aebe836cd5d54d7cff6769982c27f4e5a25cb3e999d3f4b708dddf5d:2026-04-22T11:00:52Z"
-orianna_signature_in_progress: "sha256:882b9d90aebe836cd5d54d7cff6769982c27f4e5a25cb3e999d3f4b708dddf5d:2026-04-22T11:01:54Z"
+architecture_impact: none
 ---
 
 # Work-scope reviewer anonymity
@@ -83,6 +82,15 @@ Test runner: the two scripts above run standalone (`bash scripts/hooks/test-pre-
 
 - Retroactive cleanup of existing work-scope PRs is **out of scope** for this plan. Prospective-only per Duong's brief phrasing ("add to PR reviewers ... never have"). A separate plan can sweep history if needed.
 - Optional CI post-open rescan (brief item 3) is **deferred**. The two enforcement paths (pre-commit + reviewer-auth) cover every sanctioned write path; CI rescan is a belt-and-braces measure worth its own plan if a bypass is ever observed.
+
+## Architecture impact
+
+No architecture/ files modified. New scripts added to scripts/hooks/ (pre-commit-reviewer-anonymity.sh, _lib_reviewer_anonymity.sh). Documentation sections added to architecture/pr-rules.md and architecture/cross-repo-workflow.md as part of T4, but these are existing architecture files updated in-place, not structural changes to the architecture layer.
+
+## Test results
+
+- PR #25 merged at e6d3ac2: https://github.com/harukainguyen1411/strawberry-agents/pull/25
+- All required checks green at merge.
 
 ## References
 

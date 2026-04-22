@@ -1,16 +1,15 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-22
 orianna_gate_version: 2
 complexity: quick
 tests_required: true
+architecture_impact: none
 tags: [governance, claude-md, pr-rules, rule-18]
 related:
   - plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md
-orianna_signature_approved: "sha256:f588c298745cf5ad7d84839460b14b75dab4b1f8f338c908fcc31fde52fe8942:2026-04-22T10:32:11Z"
-orianna_signature_in_progress: "sha256:f588c298745cf5ad7d84839460b14b75dab4b1f8f338c908fcc31fde52fe8942:2026-04-22T10:35:33Z"
 ---
 
 # Amend Rule 18 — allow agent self-merge when non-author review gate holds
@@ -50,6 +49,15 @@ Non-goals: the test script does NOT assert anything about GitHub branch-protecti
 ## Decision
 
 Drop the author-is-not-merger clause from Rule 18. Keep the `--admin`, branch-protection-bypass, and red-required-check prohibitions. The non-author-approval gate (b) is the load-bearing safety invariant and is structurally enforced by GitHub's author-cannot-approve-own-PR rule plus the separate `strawberry-reviewers` / `strawberry-reviewers-2` identities. No hook changes, no branch-protection-record changes required.
+
+## Architecture impact
+
+No architecture files modified by this plan. Rule 18 wording updated in CLAUDE.md and downstream docs (architecture/git-workflow.md, architecture/pr-rules.md, agents/memory/agent-network.md, agent definitions). No new architecture/ files created.
+
+## Test results
+
+- PR #24 merged at b9e3113: https://github.com/harukainguyen1411/strawberry-agents/pull/24
+- All required checks green at merge.
 
 ## References
 

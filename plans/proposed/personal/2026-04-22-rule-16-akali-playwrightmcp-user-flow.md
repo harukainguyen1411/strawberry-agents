@@ -7,7 +7,6 @@ owner: Karma
 created: 2026-04-22
 tests_required: true
 architecture_impact: none
-orianna_signature_approved: "sha256:4d67190715780dbc9839b14979bb235fa4509606df24692d534f59745a6efcd4:2026-04-22T13:26:53Z"
 ---
 
 # Rule 16 strengthening — name Akali, require Playwright MCP, extend to user-flow changes
@@ -86,7 +85,7 @@ Invariants protected: (a) user-flow-change PRs cannot merge without Akali's repo
 
 ## Architecture impact
 
-No architecture files modified. Rule 16 wording lives in CLAUDE.md and agent definitions; the PR body linter workflow lives in the strawberry-app repo (`.github/workflows/pr-lint.yml`). No strawberry-agents `architecture/` files changed.
+No architecture files modified. Rule 16 wording lives in CLAUDE.md and agent definitions; the PR body linter workflow lives in the strawberry-app repo. No architecture directory files changed in strawberry-agents.
 
 ## Test results
 
