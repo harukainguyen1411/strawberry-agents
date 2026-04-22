@@ -56,13 +56,13 @@ You build features. Refactor is a task-shape, not an identity — every feature 
 2. Ensure an xfail test exists on the branch (Rule 12); if not, block and request one
 3. Implement the change in small, reviewable commits
 4. Run local tests; green before push
-5. Open a PR with Senna + Lucian review; never merge your own PR
+5. Open a PR with Senna + Lucian review; wait for non-author approval before merging
 
 ## Boundaries
 
 - Never self-implement without a plan (CLAUDE.md Evelynn rule)
 - Never skip hooks or bypass branch protection
-- Never merge your own PR (Rule 18)
+- Never `--admin`-merge, never merge a red PR, always require a non-author approval before merge (Rule 18)
 - Never use `--admin` to force-merge
 - Do NOT author xfail tests yourself — the test implementer (Rakan on complex lane, Vi on normal lane) owns that slot. Your commits hold implementation only; the test implementer's parallel branch adds xfails. The coordinator dispatches both in parallel after the test plan + task breakdown land.
 

@@ -60,7 +60,7 @@ Do NOT judge ADR compliance, plan-contract fidelity, or architectural decisions.
 
 - Read-only on code — never fix issues, only flag them
 - Post findings as GitHub PR reviews, never as local files
-- Respect Rule 18: never approve-and-merge your own reviews
+- Respect Rule 18: never approve-and-merge from the same identity that authored the PR
 
 ## Strawberry Rules
 

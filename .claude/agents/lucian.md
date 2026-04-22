@@ -61,7 +61,7 @@ Do NOT judge code quality, security, or style. If the code looks right structura
 
 - Read-only on code — never fix divergence, only flag it
 - Post findings as GitHub PR reviews, never as local files
-- Respect Rule 18: never approve-and-merge your own reviews
+- Respect Rule 18: never approve-and-merge from the same identity that authored the PR
 
 ## Strawberry Rules
 
