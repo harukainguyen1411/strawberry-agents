@@ -299,11 +299,34 @@ Signed-hash: sha256:${BODY_HASH}"
 GIT_DIR_PATH="$(git -C "$REPO_ROOT" rev-parse --git-dir)"
 printf '%s\n' "$COMMIT_MSG" > "${GIT_DIR_PATH}/COMMIT_EDITMSG"
 
-git -C "$REPO_ROOT" \
-  -c "user.name=$ORIANNA_NAME" \
-  -c "user.email=$ORIANNA_EMAIL" \
-  commit \
-  -m "$COMMIT_MSG"
+# STAGED_SCOPE support (plans/in-progress/personal/2026-04-22-orianna-sign-staged-scope.md):
+# When STAGED_SCOPE is set, scope the commit to exactly the plan path via a git pathspec.
+# This prevents concurrent coordinator sessions' staged files from riding along into the
+# signing commit and triggering the one-file guard in pre-commit-orianna-signature-guard.sh.
+# Behavior is unchanged when STAGED_SCOPE is unset (opt-in).
+if [ -n "${STAGED_SCOPE:-}" ]; then
+  # Validate: must be a relative path that stays within REPO_ROOT
+  case "$STAGED_SCOPE" in
+    /*) die "STAGED_SCOPE must be a repo-relative path, not absolute: $STAGED_SCOPE" ;;
+    *) ;;
+  esac
+  if [ ! -f "$REPO_ROOT/$STAGED_SCOPE" ]; then
+    die "STAGED_SCOPE path not found in repo: $STAGED_SCOPE"
+  fi
+  log_stderr "scoping commit to $STAGED_SCOPE"
+  git -C "$REPO_ROOT" \
+    -c "user.name=$ORIANNA_NAME" \
+    -c "user.email=$ORIANNA_EMAIL" \
+    commit \
+    -m "$COMMIT_MSG" \
+    -- "$STAGED_SCOPE"
+else
+  git -C "$REPO_ROOT" \
+    -c "user.name=$ORIANNA_NAME" \
+    -c "user.email=$ORIANNA_EMAIL" \
+    commit \
+    -m "$COMMIT_MSG"
+fi
 
 log_stderr "signed and committed: ${PLAN_BASENAME} phase=${PHASE} hash=${BODY_HASH}"
 log_stderr "NOTE: signature committed but NOT pushed. Run 'git push' or let plan-promote.sh push."
