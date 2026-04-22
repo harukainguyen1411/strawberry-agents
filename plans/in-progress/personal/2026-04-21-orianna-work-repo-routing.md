@@ -57,7 +57,7 @@ Invariants to protect:
 
 Test runner: `bash scripts/test-fact-check-work-concern-routing.sh` <!-- orianna: ok -- cross-repo work-concern path or test-script reference; not a strawberry-agents filesystem claim --> — modeled on `scripts/test-fact-check-false-positives.sh` (same PASS/FAIL tally style, same REPORT_DIR handling).
 
-Out of scope for this plan: updating `orianna-fact-check.sh` LLM-path wrapper (the prompt change in Task 3 is sufficient — the wrapper just dispatches the prompt); any reconciliation of pre-existing work-concern plans already in `plans/proposed/work/` (none exist yet — this plan lands before the migration).
+Out of scope for this plan: updating orianna-fact-check.sh <!-- orianna: ok -- script reference; file does not exist and is not claimed to exist --> LLM-path wrapper (the prompt change in Task 3 is sufficient — the wrapper just dispatches the prompt); any reconciliation of pre-existing work-concern plans already in plans/proposed/work/ <!-- orianna: ok -- directory path token, not a file existence claim --> (none exist yet — this plan lands before the migration).
 
 ## Architecture impact
 
