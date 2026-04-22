@@ -106,6 +106,8 @@
 
 - 2026-04-22 (ekko — Sona dispatch): Firestore config-mgmt leak investigation. Root cause: `session.py::create_session` (the PRE-BD-1 old module) writes `config`, `configVersion`, `factoryVersion` to every session doc. `session_store.py` is BD-1-compliant but only used for managed-sessions path. All 96 staging docs carry leaked fields; zero have `configId`. `demo-config-mgmt` S2 service is in-memory only — Firestore DB has only 3 manual test docs. Report: assessments/work/2026-04-22-firestore-config-mgmt-leak-investigation.md. Commit b3729b0.
 
+- 2026-04-22 (ekko — Evelynn dispatch, Task #49): Attempted implemented promotion for 3 plans (PR #21/#22/#16). All 3 BLOCKED — missing `## Test results` + architecture declaration; adding body sections requires full re-sign chain. Plan 1 (rescope) + Plan 3 (boot-chain) additionally blocked by T11.c (60/18 bare `<!-- orianna: ok -->` markers). Plan 2 (race-closeout) harness-denied `orianna-sign.sh` call. Revert at `15286be`. All 3 need Duong admin action. Architecture declarations: plan1=architecture/plan-lifecycle.md (T9 `9704fba`), plan2=architecture/key-scripts.md (PR #22), plan3=architecture_impact:none+## Architecture impact section. See learnings/2026-04-22-implemented-promote-harness-block.md.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
