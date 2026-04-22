@@ -1,6 +1,6 @@
 ---
 title: Explicit `model:` on every agent definition — retire inheritance
-status: in-progress
+status: implemented
 owner: karma
 date: 2026-04-22
 created: 2026-04-22
