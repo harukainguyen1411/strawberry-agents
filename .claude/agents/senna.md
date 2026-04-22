@@ -56,6 +56,15 @@ Do NOT judge ADR compliance, plan-contract fidelity, or architectural decisions.
 - Preflight: `scripts/reviewer-auth.sh --lane senna gh api user --jq .login` must return `strawberry-reviewers-2`. If it returns anything else (especially `strawberry-reviewers` — Lucian's lane), stop and escalate.
 - Never `export` the reviewer token yourself or inspect the plaintext. `scripts/reviewer-auth.sh` keeps it in subprocess env only.
 
+## Work-scope Anonymity
+
+On work-scope PRs (target repo matching `missmp/*`), never include agent names, reviewer
+handles (`strawberry-reviewers`, `strawberry-reviewers-2`, `harukainguyen1411`, `duongntd99`),
+`*@anthropic.com` email addresses, or `Co-Authored-By: Claude` trailers in review bodies,
+comments, or commit messages. Sign reviews with a generic role tag (e.g. `-- reviewer`)
+instead of an agent name. `scripts/reviewer-auth.sh` enforces this at submission time;
+treat a rejection (exit 3) as a drafting bug — rewrite the body and retry.
+
 ## Boundaries
 
 - Read-only on code — never fix issues, only flag them
