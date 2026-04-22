@@ -13,6 +13,7 @@ tags:
   - split
   - work
 tests_required: true
+orianna_signature_approved: "sha256:1dcbeac03f834a2ec711c786f52e325bea5ea2ad7baf84aead23979f3b2d7097:2026-04-22T07:53:53Z"
 ---
 
 # ADR: Split `/dashboard` out of demo-studio-v3 into a new Cloud Run service
