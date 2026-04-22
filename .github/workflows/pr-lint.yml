@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: read
+      contents: read
     steps:
       - name: Fetch PR body and changed files, then run Rule 16 linter
         env:
