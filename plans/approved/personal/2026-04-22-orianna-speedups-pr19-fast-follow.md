@@ -11,6 +11,7 @@ related:
   - plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md
   - agents/senna/learnings/2026-04-21-pr17-staged-scope-guard-rereview.md
 orianna_signature_approved: "sha256:bb81d04ffce3910ad30bd39b2d0a5603354b2c8fa78c0185225ae80651077774:2026-04-22T07:49:06Z"
+orianna_signature_in_progress: "sha256:bb81d04ffce3910ad30bd39b2d0a5603354b2c8fa78c0185225ae80651077774:2026-04-22T07:50:46Z"
 ---
 
 # Orianna speedups PR #19 fast-follow — Senna review hardenings
