@@ -61,3 +61,5 @@
 - 2026-04-22-maxfiles-ulimit-iterm-spinloop.md — Setting maxfiles to INT_MAX triggers iTerm 96% CPU spinloop; cap ulimit -n at 65536. bash-cwd wedge → /exit immediately (not subagent dispatch); reopen with ulimit fix first. | last_used: 2026-04-22
 - 2026-04-22-orianna-bypass-over-resign-treadmill.md — When git-log contamination blocks Orianna on plan promotion, use admin Orianna-Bypass trailer after two failed re-sign attempts rather than continuing the treadmill. The blocker is mechanical, not semantic. | last_used: 2026-04-22
 - 2026-04-22-rule18-amended-self-merge-permitted.md — Rule 18 amended: agent may self-merge when dual non-author approval + green checks satisfied. PR #24 first use. Update delegation prompts that previously required Duong merge. Sona inbox is directory-drop only. | last_used: 2026-04-22
+
+- 2026-04-23-karma-timeout-complete-but-uncommitted.md — Check disk state before re-dispatching a timed-out planner; partial artifacts may be complete. | last_used: 2026-04-23
