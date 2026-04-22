@@ -12,6 +12,7 @@ tags:
   - security
   - work
 tests_required: true
+orianna_signature_approved: "sha256:f4cbd61c819b22a930fddbee8c0f0ab77221b79e2891718c0e156efaefb089dc:2026-04-22T01:36:51Z"
 ---
 
 # ADR: Firebase Auth for Demo Studio v3 (@missmp.tech SSO)
