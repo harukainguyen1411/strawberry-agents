@@ -122,6 +122,8 @@
 
 - 2026-04-22 (ekko — Evelynn dispatch): Batch-promoted 5 in-progress plans to implemented/personal/. Full re-sign chain for all 5. Key issues: (1) pre-commit hook detects extension-like tokens (hookSpecificOutput.additionalContext, settings.json) as paths — suppress all; (2) directory backtick tokens (`architecture/`) crash awk — remove backticks; (3) stale root copy of inbox plan deleted via git rm; (4) architecture_impact: none + ## Architecture impact + ## Test results sections required for implemented gate. All 5 pushed. Final SHA: 094951e.
 
+- 2026-04-22 (ekko — Evelynn dispatch): Promoted 2026-04-21-staged-scope-guard-hook.md to implemented/personal/. Full re-sign chain (body required: architecture_impact, suppressor reasons, ## Architecture impact, ## Test results with assessments/ path). Two re-sign rounds needed: first round failed because ## Test results had only PR ref (gate needs assessments/ path). body fix: 374fbde, approved sig: 66e50fd, approved promote: ca5523c, in_progress sig: 939373b, in-progress promote: 70fc65a, implemented sig: b927b72, implemented promote: 316949a. BLOCKED: 2026-04-21-commit-msg-no-ai-coauthor-hook.md is incomplete — no hook file, no test file, no install-hooks wiring, no key-scripts.md entry. All 5 tasks missing.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
