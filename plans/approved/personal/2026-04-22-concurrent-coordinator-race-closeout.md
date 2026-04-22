@@ -13,6 +13,7 @@ related:
   - plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md
   - agents/evelynn/inbox/archive/2026-04/2026-04-22-bash-cwd-wedge-feedback.md
 orianna_signature_approved: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:02:07Z"
+orianna_signature_in_progress: "sha256:2b6522c77e8d4e4a47b956c595c4a62ac748b5fd7063ac9be769dad3fb61dfb5:2026-04-22T09:03:33Z"
 ---
 
 # Concurrent coordinator race closeout — flock the signing/promote commit window + auto-scope
