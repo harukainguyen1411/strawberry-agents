@@ -42,18 +42,36 @@ coordinator_lock_release() {
 }
 
 coordinator_lock_acquire() {
-  _COORDINATOR_LOCK_FILE="${1:?coordinator_lock_acquire requires a lockfile path}"
+  local _cl_raw_path="${1:?coordinator_lock_acquire requires a lockfile path}"
+
+  # C1 fix: if the path's parent component is a file (git worktree — .git is a
+  # plain file, not a directory), resolve the shared gitdir via
+  # git rev-parse --git-common-dir and rebase the lockfile filename onto it.
+  local _cl_lock_parent
+  _cl_lock_parent="$(dirname "$_cl_raw_path")"
+  if [ -f "$_cl_lock_parent" ] && [ ! -d "$_cl_lock_parent" ]; then
+    local _cl_common_dir
+    _cl_common_dir="$(git rev-parse --git-common-dir 2>/dev/null)" || true
+    if [ -n "$_cl_common_dir" ] && [ -d "$_cl_common_dir" ]; then
+      _cl_raw_path="$_cl_common_dir/$(basename "$_cl_raw_path")"
+    fi
+  fi
+  _COORDINATOR_LOCK_FILE="$_cl_raw_path"
 
   # Register trap (caller's existing trap is preserved; we append via subshell-safe form).
   trap 'coordinator_lock_release' EXIT INT TERM
 
   # --- try flock first ---
   if command -v flock >/dev/null 2>&1; then
-    # Open (or create) the lockfile on FD 9 and acquire exclusive non-blocking lock.
+    # I1 fix: use read-write open (9<>) instead of write-only (9>) so the file
+    # is not truncated before flock completes. The holder writes its PID after
+    # acquiring the lock; a contender reading the same file sees the PID intact.
     # shellcheck disable=SC1083
-    exec 9>"$_COORDINATOR_LOCK_FILE"
+    exec 9<>"$_COORDINATOR_LOCK_FILE"
     if flock -n 9; then
-      printf '%s\n' "$$" >&9
+      # Truncate then write our PID atomically now that we hold the lock.
+      : > "$_COORDINATOR_LOCK_FILE"
+      printf '%s\n' "$$" > "$_COORDINATOR_LOCK_FILE"
       _COORDINATOR_LOCK_ACQUIRED=1
       return 0
     else
@@ -77,7 +95,21 @@ coordinator_lock_acquire() {
     }
     return 0
   else
+    # I2 fix: stale-lock recovery — if the holder PID no longer exists, reclaim.
     _cl_holder_pid="$(cat "$_cl_lock_dir/pid" 2>/dev/null || true)"
+    if [ -n "$_cl_holder_pid" ] && ! kill -0 "$_cl_holder_pid" 2>/dev/null; then
+      # Stale lock: holder process is gone. Remove and retry once.
+      rm -rf "$_cl_lock_dir" 2>/dev/null || true
+      if mkdir "$_cl_lock_dir" 2>/dev/null; then
+        printf '%s\n' "$$" > "$_cl_lock_dir/pid"
+        _COORDINATOR_LOCK_ACQUIRED=1
+        coordinator_lock_release() {
+          rm -rf "$_cl_lock_dir" 2>/dev/null || true
+          _COORDINATOR_LOCK_ACQUIRED=0
+        }
+        return 0
+      fi
+    fi
     printf 'coordinator is already running (pid %s); retry when it finishes.\n' \
       "${_cl_holder_pid:-unknown}" >&2
     exit 1

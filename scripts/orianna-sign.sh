@@ -416,6 +416,7 @@ if [ -n "${STAGED_SCOPE:-}" ]; then
   # Validate: must be a relative path that stays within REPO_ROOT
   case "$STAGED_SCOPE" in
     /*) die "STAGED_SCOPE must be a repo-relative path, not absolute: $STAGED_SCOPE" ;;
+    *"../"*|*"/.."*|"..") die "STAGED_SCOPE must not contain path traversal (..): $STAGED_SCOPE" ;;
     *) ;;
   esac
   if [ ! -f "$REPO_ROOT/$STAGED_SCOPE" ]; then
