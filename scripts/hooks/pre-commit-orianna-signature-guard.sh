@@ -47,14 +47,22 @@ HASH_BODY="$REPO_ROOT/scripts/orianna-hash-body.sh"
 GIT_DIR="${GIT_DIR:-$(git rev-parse --git-dir 2>/dev/null)}"
 GIT_WORK_TREE="${GIT_WORK_TREE:-$(git rev-parse --show-toplevel 2>/dev/null)}"
 
-# All error output goes to the log file. Redirect stderr there so that
-# any accidental >&2 output is also captured, not leaked to the caller.
+# Log sink for guard errors. In interactive sessions (TTY stderr) we tee to
+# both the log and the terminal so errors are visible. In non-interactive
+# harnesses (no TTY, e.g. command substitution) we capture to the log only.
+# Plan: plans/in-progress/personal/2026-04-22-orianna-speedups-pr19-fast-follow.md T3 (F1)
 _GUARD_LOG="$GIT_DIR/orianna-sig-guard.log"
 : > "$_GUARD_LOG" 2>/dev/null || _GUARD_LOG="${TMPDIR:-/tmp}/orianna-sig-guard-$$.log"
-exec 2>>"$_GUARD_LOG"
+if [ ! -t 2 ]; then
+  exec 2>>"$_GUARD_LOG"
+fi
 
-# err: write a message to the log (via stderr, which is now the log file).
-err() { printf '[orianna-sig-guard] %s\n' "$*" >&2; }
+# err: write a message to stderr (interactive: visible on terminal) AND to the
+# log file (always, for post-mortem inspection).
+err() {
+  printf '[orianna-sig-guard] %s\n' "$*" >&2
+  printf '[orianna-sig-guard] %s\n' "$*" >> "$_GUARD_LOG" 2>/dev/null || true
+}
 
 # --- Check author identity ---
 # GIT_AUTHOR_EMAIL may be set by git as an env var during commit.
@@ -68,7 +76,8 @@ fi
 
 # --- CHECK 1: diff touches exactly one file under plans/ ---
 STAGED_FILES="$(git diff --cached --name-status 2>/dev/null)"
-NUM_STAGED="$(printf '%s\n' "$STAGED_FILES" | grep -c '^[AMDRC]' || echo 0)"
+NUM_STAGED="$(printf '%s\n' "$STAGED_FILES" | grep -c '^[AMDRC]' || true)"
+NUM_STAGED="${NUM_STAGED:-0}"
 
 if [ "$NUM_STAGED" -ne 1 ]; then
   err "ERROR: Orianna signing commit must touch exactly 1 file; $NUM_STAGED files staged"
@@ -132,7 +141,8 @@ if [ -n "$SIGNED_FIX_PHASE" ]; then
   fi
 
   # Verify exactly one signature line added
-  ADDED_SIG_LINES="$(printf '%s\n' "$DIFF_OUTPUT" | grep -c '^+orianna_signature_' || echo 0)"
+  ADDED_SIG_LINES="$(printf '%s\n' "$DIFF_OUTPUT" | grep -c '^+orianna_signature_' || true)"
+  ADDED_SIG_LINES="${ADDED_SIG_LINES:-0}"
   if [ "$ADDED_SIG_LINES" -ne 1 ]; then
     err "ERROR: shape B commit must add exactly 1 orianna_signature_<phase> line; found $ADDED_SIG_LINES"
     exit 1
@@ -191,7 +201,8 @@ fi
 # --- CHECK 2: diff adds exactly one orianna_signature_<phase> line (no other content change) ---
 
 # Count added lines (starting with +, not ++)
-ADDED_SIG_LINES="$(printf '%s\n' "$DIFF_OUTPUT" | grep -c '^+orianna_signature_' || echo 0)"
+ADDED_SIG_LINES="$(printf '%s\n' "$DIFF_OUTPUT" | grep -c '^+orianna_signature_' || true)"
+ADDED_SIG_LINES="${ADDED_SIG_LINES:-0}"
 # Count any other added lines (not the +++ header, not blank +, not signature lines)
 OTHER_ADDED="$(printf '%s\n' "$DIFF_OUTPUT" | grep '^+' | grep -v '^+++' | grep -v '^+orianna_signature_' | grep -v '^+[[:space:]]*$' || true)"
 
