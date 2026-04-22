@@ -9,7 +9,6 @@ complexity: quick
 orianna_gate_version: 2
 tests_required: true
 tags: [agents, frontmatter, governance, claude-md-rule-9]
-orianna_signature_approved: "sha256:0f496eef7a478b8199c25d7e3f83f0f0f37e41b1b26b566893166f645ba530e2:2026-04-22T02:15:44Z"
 ---
 
 # Context
