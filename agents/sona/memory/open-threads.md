@@ -1,6 +1,38 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (hands-dirty loop leg; eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+Last updated: 2026-04-22 (Lissandra pre-compact consolidation; twelfth-leg shard 2026-04-22-3a5b4781; eleventh-leg shard 2026-04-22-0cf7b28e; tenth-leg 2026-04-22-68fb9cb6; prior shards 2026-04-22-b5f123a5, 2026-04-22-9835724c, 2026-04-21-c83020ad, 2026-04-21-da7d5b12, 2026-04-21-3f9a8c58, 2026-04-21-4c6f055d, 2026-04-21-a0a51dd8, 2026-04-21-17a90992, 2026-04-21-a0893a81).
+
+---
+
+## Dashboard-split PR #65 — Viktor god-branch merge in-flight (CRITICAL, task #33)
+
+**Status (2026-04-22):** Plan `proposed→approved (bbf95e7)→in-progress`. Viktor W1 scaffold: xfail `fede8ac` + impl `cb57ce6` on `feat/demo-dashboard-split`. PR #65 open; Senna LGTM + Lucian advisory-only (both hit reviewer-auth.sh failure on `missmp/company-os`). Duong directed retarget to god branch `feat/demo-studio-v3`. Ekko retargeted; god branch 20+ commits behind main → 132 files delta. Duong directed Path A: Viktor merging `main → feat/demo-studio-v3` with conflict resolution (task #33). Viktor dispatched; **in-flight at compact boundary**.
+**Shard pointers:** 2026-04-22-3a5b4781.
+**Next action:** Await Viktor merge return → re-check PR #65 diff → get Duong harukainguyen1411 approve → merge.
+
+---
+
+## Firestore config-leak fix — T7 wipe HELD pending Duong go-ahead (CRITICAL)
+
+**Status (2026-04-22):** Investigation `b3729b0` → plan `44d423f` → in-progress `82d9cba`. Talon: T1-T6 + T8-partial + T7-script-written; commits `cc34cb3` (xfail) + `12b9fd7` (impl) on `feat/demo-studio-v3`. 22/22 tests green. T7 wipe of 96 production Firestore docs: **HELD — Duong go-ahead required**. S2-persistence OQ: does stripping `firestore_url` from live docs break S2 continuity? PR #32 on `feat/demo-studio-v3` not yet reviewed.
+**Shard pointers:** 2026-04-22-3a5b4781.
+**Next action:** (1) Duong go-ahead on T7 + resolve S2-persistence OQ; (2) Senna+Lucian review PR #32; (3) Duong harukainguyen1411 approve PR #32.
+
+---
+
+## Loop 2b + 2c Firebase auth plans — awaiting Duong approval
+
+**Status (2026-04-22):** Loop 2b `73c28af` (`plans/proposed/work/`) — frontend sign-in UI (Firebase Web SDK, Google button, `onAuthStateChanged`, POST `/auth/login`). Loop 2c `d045852` (`plans/proposed/work/`) — route migration (`require_session → User`, ownership claim-on-first-touch, all `/session/{sid}/*` routes). Both await Duong semantic approval.
+**Shard pointers:** 2026-04-22-3a5b4781.
+**Next action:** Surface to Duong for approval; after approval dispatch Ekko for `proposed→approved→in-progress` promote chain.
+
+---
+
+## reviewer-auth.sh gap for missmp/company-os
+
+**Status (2026-04-22):** Both Senna and Lucian fail `reviewer-auth.sh` against `missmp/company-os` PRs. Current workaround: advisory comment only; Rule 18 satisfied only by Duong harukainguyen1411 web-UI approve. Structural gap — not a transient failure.
+**Shard pointers:** 2026-04-22-3a5b4781.
+**Next action:** Commission plan to extend `reviewer-auth.sh` for multi-repo org context, or grant `strawberry-reviewers` collaborator access to `missmp/company-os`.
 
 ---
 
