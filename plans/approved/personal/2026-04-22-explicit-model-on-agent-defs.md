@@ -10,6 +10,7 @@ orianna_gate_version: 2
 tests_required: false
 tags: [agents, frontmatter, governance, claude-md-rule-9]
 orianna_signature_approved: "sha256:89c655de127d4a3d3ffb4d438323d360631c8bb30ac9963c8addab87c310e641:2026-04-22T02:22:28Z"
+orianna_signature_in_progress: "sha256:89c655de127d4a3d3ffb4d438323d360631c8bb30ac9963c8addab87c310e641:2026-04-22T02:27:44Z"
 ---
 
 # Context
