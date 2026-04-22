@@ -1,0 +1,33 @@
+name: PR Lint (Rule 16 — Akali / Playwright MCP gate)
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  pr-lint:
+    name: QA gate check (Rule 16)
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch PR body and changed files
+        id: pr-data
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          PR_BODY=$(gh pr view "$PR_NUMBER" --json body --jq '.body // ""')
+          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --name-only)
+          # Export as env files (handles multiline)
+          printf '%s' "$PR_BODY" > /tmp/pr_body.txt
+          printf '%s' "$CHANGED_FILES" > /tmp/pr_files.txt
+
+      - name: Run pr-lint-check (Rule 16 — Akali / Playwright MCP)
+        run: |
+          PR_BODY="$(cat /tmp/pr_body.txt)" \
+          CHANGED_FILES="$(cat /tmp/pr_files.txt)" \
+          sh scripts/ci/pr-lint-check.sh
