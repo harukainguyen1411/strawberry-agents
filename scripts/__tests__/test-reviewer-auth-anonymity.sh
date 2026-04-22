@@ -26,8 +26,8 @@ FAIL=0
 pass() { printf '[PASS] %s\n' "$1"; PASS=$((PASS+1)); }
 fail() { printf '[FAIL] %s\n' "$1"; FAIL=$((FAIL+1)); }
 
-# XFAIL: these tests will fail until implementation is in place
-XFAIL=1
+# Implementation present — all fixtures should pass live
+XFAIL=0
 
 # --- fixture-d: work-scope PR body containing reviewer handle → exit 3 ---
 run_fixture_d() {

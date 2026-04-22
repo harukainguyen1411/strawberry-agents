@@ -24,8 +24,8 @@ FAIL=0
 pass() { printf '[PASS] %s\n' "$1"; PASS=$((PASS+1)); }
 fail() { printf '[FAIL] %s\n' "$1"; FAIL=$((FAIL+1)); }
 
-# XFAIL: these tests will fail until implementation is in place
-XFAIL=1
+# Implementation present — all fixtures should pass live
+XFAIL=0
 
 # --- helper: make a temp git repo with given remote origin ---
 make_repo() {

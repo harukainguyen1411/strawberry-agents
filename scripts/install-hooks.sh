@@ -9,6 +9,7 @@
 #   pre-commit-orianna-body-hash-guard.sh — blocks commits that invalidate Orianna body-hash signatures (T2)
 #   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2); shape B via T4
 #   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
+#   pre-commit-reviewer-anonymity.sh    — blocks agent-system identifiers in work-scope (missmp/) commit msgs
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
