@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: swain
 created: 2026-04-22
@@ -20,8 +20,7 @@ related:
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
 architecture_changes: [architecture/plan-lifecycle.md]
-orianna_signature_approved: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T10:54:34Z"
-orianna_signature_in_progress: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T10:55:29Z"
+orianna_signature_approved: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T11:02:02Z"
 ---
 
 # Orianna — substance-vs-format rescope
