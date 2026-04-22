@@ -1,6 +1,6 @@
 ---
 title: Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
-status: in-progress
+status: implemented
 concern: personal
 owner: azir
 created: 2026-04-20
