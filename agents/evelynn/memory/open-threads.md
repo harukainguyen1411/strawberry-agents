@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-21 (updated from shard ef2bbc31 — fifth pre-compact consolidation, session 0cf7b28e).
+Last updated: 2026-04-22 (post-compact continuation, shard 2cb962cd close).
 
 ---
 
@@ -46,41 +46,41 @@ Last updated: 2026-04-21 (updated from shard ef2bbc31 — fifth pre-compact cons
 
 ## Orianna-gate-speedups plan impl
 
-**Current status (2026-04-21):** Approved, queued. Plan commit `0d218f4`, OQ decisions folded via `45fcd56`. 16 tasks / 440 min. Body-hash guard, signed-fix commit shape, lock auto-recovery, §D3 enforcement are sub-tasks.
-**Shards:** 31a158e4, ef2bbc31.
-**Next:** Assign Viktor once inbox PR is handled.
+**Current status (2026-04-22):** Sign commit `f6b117f` on main. Promote to `in-progress` was blocked by stale path in §1 paragraph 2 (`pre-orianna-plan-archive.md` now in `approved/` not `proposed/`). Fix path → re-sign (body-hash invalidation) → promote. Ekko hit rate limit mid-work; resumes 12am Saigon.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
+**Next:** Ekko retry: fix §1 stale path, re-sign `in_progress`, `plan-promote.sh ... in_progress`, then assign Viktor.
 
 ---
 
 ## Prompt-caching impl
 
-**Current status (2026-04-21):** Karma plan `c796b21` approved. Lux audit (`97a05d5`) identifies 15–25M tokens/month savings via boot-chain reorder + cache_control: ephemeral markers.
-**Shards:** e49b10d8, 31a158e4, ef2bbc31.
-**Next:** Assign Talon or Viktor to implement per Lux's audit.
+**Current status (2026-04-22):** Boot-chain reorder **MERGED** via PR #16 (`d36b925`). Remaining Lux targets: Orianna SDK 1h TTL, agent-network.md split, subagent boot audit, instrumentation.
+**Shards:** e49b10d8, 31a158e4, ef2bbc31, 2cb962cd.
+**Next:** Queue Karma or direct dispatch for Lux T2-T5 (SDK TTL + agent-network split highest leverage).
 
 ---
 
 ## Staged-scope-guard impl
 
-**Current status (2026-04-21):** Approved by Duong (`8b24ad2`). Addresses 4 git-add-A sweep-up incidents today.
-**Shards:** 31a158e4, ef2bbc31.
-**Next:** Queue after inbox PR. Assign Ekko or Viktor.
+**Current status (2026-04-22):** **MERGED** via PR #17 (`e58a96d`). Talon impl → Senna CHANGES_REQUESTED → Jayce fixes → Senna re-approved + Lucian approved → Senna squash-merged.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
+**Next:** Follow-up plan `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md` exists — agents need to adopt `STAGED_SCOPE=<files>` per-commit for the guard to enforce.
 
 ---
 
 ## Rename-aware pre-lint impl
 
-**Current status (2026-04-21):** Approved (`2a71045`). git-mv full-body bug blocked Ekko #65 for 2h.
-**Shards:** 31a158e4, ef2bbc31.
-**Next:** Queue after staged-scope-guard (or in parallel).
+**Current status (2026-04-22):** Plan at `plans/proposed/personal/2026-04-21-pre-lint-rename-aware.md`. Needs proposed→approved→in-progress chain (Ekko rate-limited mid-work). git-mv full-body bug blocked prior Ekko for 2h.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
+**Next:** Ekko retry post-rate-limit: `plan-promote.sh` proposed→approved→in-progress, then assign Talon or Viktor.
 
 ---
 
 ## Commit-msg hook for AI co-author trailer
 
-**Current status (2026-04-21):** Karma plan in flight. Syndra def patched with explicit prohibition (`76b3158`). Still need hook to land for permanent enforcement. Pattern recurred in this session.
-**Shards:** 31a158e4, ef2bbc31.
-**Next:** Assign Ekko to implement hook. Until then: explicitly prohibit co-author trailers in every Syndra delegation prompt.
+**Current status (2026-04-22):** Plan at `plans/proposed/personal/2026-04-21-commit-msg-no-ai-coauthor-hook.md`. Orianna suppressors landed (`9627af1`, `3885b28`). Needs proposed→approved→in-progress chain (Ekko rate-limited).
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd.
+**Next:** Ekko retry post-rate-limit: `plan-promote.sh ... approved`, then `in_progress`, then Talon impl. Until hook lands: keep explicitly prohibiting co-author trailers in every Syndra delegation.
 
 ---
 
@@ -143,6 +143,30 @@ Last updated: 2026-04-21 (updated from shard ef2bbc31 — fifth pre-compact cons
 
 **Status:** Gated until 2026-04-26 (7-day stability window).
 **Next:** Run purge on or after 2026-04-26.
+
+---
+
+## Subagent permission reliability (bug #29610)
+
+**Current status (2026-04-22):** `permissionMode: bypassPermissions` stripped from 27 agent defs (`0dcb9ba`). Per Lux research, the flag is ignored under parent `auto` mode AND implicated in Claude Code bug #29610 (background subagents terminal denial for out-of-project-root paths). Karma diagnostic plan at `plans/proposed/personal/2026-04-22-subagent-permission-reliability.md` awaits Duong's approval.
+**Shards:** 2cb962cd.
+**Next:** Approve Karma plan; next parallel-dispatch cluster is the live test of whether the strip holds.
+
+---
+
+## Rakan/Vi xfail-ownership split
+
+**Current status (2026-04-22):** Codified across `_shared/builder.md` + `rakan.md`/`vi.md` + both coordinator CLAUDE.md files. Viktor/Jayce explicitly prohibited from writing their own xfails; Rakan (complex) and Vi (normal) own that slot, dispatched in parallel with feature builder. Quick-lane Talon stays collapsed by design.
+**Shards:** 2cb962cd.
+**Next:** Live-test on next standard-lane dispatch. Watch for Viktor/Jayce bypassing the rule.
+
+---
+
+## Reviewer-failure fallback protocol
+
+**Current status (2026-04-22):** Codified (`1e47eda`) in both coordinator CLAUDE.md files. Reviewer writes verdict to `/tmp/<reviewer>-pr-N-verdict.md` on failure; Yuumi posts as PR comment under Duongntd (not a review — no approval claimed). Validated end-to-end on PR #16 with Lucian.
+**Shards:** 2cb962cd.
+**Next:** No action. Monitor for new failure modes.
 
 ---
 
