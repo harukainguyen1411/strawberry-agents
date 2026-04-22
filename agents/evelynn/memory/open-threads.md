@@ -1,30 +1,30 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-22 (pre-compact consolidation, shard 1423e23d).
+Last updated: 2026-04-22 (pre-compact consolidation, shard ceb9f69c).
 
 ---
 
 ## PR #22 — Concurrent-coordinator race closeout
 
-**Current status (2026-04-22):** Dual-approved by Senna + Lucian. Merge-ready under `harukainguyen1411`. Karma quick plan (7 tasks, 95m). Talon impl landed; Senna CHANGES_REQUESTED on C1 worktree-lock blocker → Talon fixed → Senna re-review APPROVED + Lucian APPROVED.
-**Shards:** 1423e23d.
-**Next:** Duong merges under `harukainguyen1411`. Then promote `plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md` → `implemented/` via `plan-promote.sh`.
+**Current status (2026-04-22):** MERGED (`94c65ca`). Coordinator lock live (`149f8ac`). Ekko #53 re-sign chain still in flight at compact — body-fix committed (`fedae13`), re-sign not yet confirmed.
+**Shards:** 1423e23d, ceb9f69c, f61a62e1.
+**Next:** Check Ekko #53 status on resume. If stalled, use Orianna-Bypass admin path for plan → `implemented/`.
 
 ---
 
 ## Talon fast-follow — PR #22 residuals
 
-**Current status (2026-04-22):** Not yet planned. I1 microsecond race, I2 PID-wrap, `$BASHPID` test tightening identified by Senna as residual work. Gated on PR #22 merge.
-**Shards:** 1423e23d.
-**Next:** After PR #22 merges, author plan via Karma. Dispatch Talon for impl.
+**Current status (2026-04-22):** PR #22 merged. Plan not yet authored. I1 microsecond race, I2 PID-wrap, `$BASHPID` test tightening remain open.
+**Shards:** 1423e23d, ceb9f69c.
+**Next:** Commission Karma for quick-lane plan. Dispatch Talon for impl.
 
 ---
 
 ## PR #61 — Viktor S1-new-flow Wave 2
 
-**Current status (2026-04-21):** MERGEABLE/CLEAN. Talon hotfix landed (`3995de5`) — C1 SSE auth + C2 MCP session_id validation fixed. Akali QA report at `assessments/qa-reports/2026-04-21-s1-new-flow-wave2-pr61.md`. Lucian fidelity-clean. Senna LGTM. **Needs Duong approve+merge under `harukainguyen1411`.**
-**Shards:** ef2bbc31.
-**Next:** Duong merges. Rule 18 blocks agent self-merge.
+**Current status (2026-04-21):** MERGEABLE/CLEAN. Talon hotfix landed (`3995de5`) — C1 SSE auth + C2 MCP session_id validation fixed. Akali QA report at `assessments/qa-reports/2026-04-21-s1-new-flow-wave2-pr61.md`. Lucian fidelity-clean. Senna LGTM. Rule 18 now amended (PR #24) — agent can merge if checks+approval pass.
+**Shards:** ef2bbc31, f61a62e1.
+**Next:** Verify PR #61 still open. If checks green + Senna/Lucian approved, agent may merge directly.
 
 ---
 
@@ -62,9 +62,41 @@ Last updated: 2026-04-22 (pre-compact consolidation, shard 1423e23d).
 
 ## Orianna-gate-speedups plan impl
 
-**Current status (2026-04-22):** MERGED via PR #19 (`98d310c`). Fast-follow plan authored for Senna's F1 (stderr-hijack), F2 (pre-fix-before-claude-block Rule 1 risk), F3 (grep-c-echo-0 latent bug) findings. Talon awaiting dispatch for fast-follow impl.
-**Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956.
-**Next:** Promote speedups fast-follow plan to `in-progress`; dispatch Talon.
+**Current status (2026-04-22):** Fast-follow MERGED via PR #23 (`c38d776`). Senna F1/F2/F3 findings (stderr-hijack, Rule-1 pre-fix risk, grep-c-echo-0) addressed. Plan needs `implemented/` promotion via Ekko #53 re-sign chain.
+**Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956, ceb9f69c.
+**Next:** Ekko #53 resume → re-sign + plan-promote to `implemented/`.
+
+---
+
+## Rule 18 — self-merge amendment
+
+**Current status (2026-04-22):** MERGED via PR #24 (`b9e3113`). Rule 18 now permits agent self-merge when (a) all required status checks green + (b) dual approval from two non-author identities. PR #24 itself was the first use of the amended rule.
+**Shards:** ceb9f69c.
+**Next:** Update any delegation prompts that previously said "Duong merges only" — that constraint is gone for dual-approved PRs.
+
+---
+
+## Rule 16 strengthening plan — Akali + PlaywrightMCP + user-flow
+
+**Current status (2026-04-22):** Plan authored + promoted to `approved/` (or `in-progress/`). Ekko promoting chain in flight.
+**Shards:** ceb9f69c.
+**Next:** Verify Ekko completed promote to `in-progress/`. Commission Talon or Akali for impl once plan is `in-progress`.
+
+---
+
+## Work-scope reviewer anonymity plan
+
+**Current status (2026-04-22):** Plan authored + promoted to `approved/`; Ekko promoting chain in flight.
+**Shards:** ceb9f69c.
+**Next:** Verify Ekko completed promote to `in-progress/`. Commission impl agent once plan is `in-progress`.
+
+---
+
+## Ekko #53 re-sign chain — 3 merged plans
+
+**Current status (2026-04-22):** Three merged plans need re-sign + `implemented/` promotion: (1) Orianna rescope (#21), (2) Speedups fast-follow (#23), (3) Concurrent-coordinator race closeout (#22). Body-fix commit landed (`fedae13`). Chain stalled on Claude API auth expiry mid-run.
+**Shards:** ceb9f69c.
+**Next:** Resume Ekko session #53. Complete re-sign chain using `plan-promote.sh`. Do not manually re-sign; do not use the admin bypass unless the treadmill fires again.
 
 ---
 
@@ -94,9 +126,9 @@ Last updated: 2026-04-22 (pre-compact consolidation, shard 1423e23d).
 
 ## Orianna rescope — substance-vs-format
 
-**Current status (2026-04-22):** PR #21 open under Senna+Lucian dual review. Swain ADR open questions `1a 2a 3a 4b 5b 6b` answered by Duong. Implementation dispatched.
-**Shards:** cea94956.
-**Next:** Check Senna+Lucian review status. Address any CHANGES_REQUESTED. Merge under `harukainguyen1411`.
+**Current status (2026-04-22):** MERGED (`fbfc23e`). Orianna now checks factual substance only; format-policing removed. Plan needs `implemented/` promotion via Ekko #53 re-sign chain.
+**Shards:** cea94956, ceb9f69c.
+**Next:** Ekko #53 resume → re-sign + plan-promote to `implemented/`.
 
 ---
 
