@@ -81,9 +81,9 @@ Additionally:
 - `require_last_push_approval: true` — the approving review must be on the current tip commit.
 - `required_conversation_resolution: true` — all reviewer-raised threads must be resolved.
 
-### No self-merge / no `--admin` bypass
+### No `--admin` bypass
 
-Agents must never run `gh pr merge --admin` and must never merge a PR they authored. This applies even when all checks are green. See `CLAUDE.md` rule 18.
+Agents must never run `gh pr merge --admin` and must never merge a red PR. An agent may merge its own PR once Rule 18 gate (b) (non-author approval) is satisfied. See `CLAUDE.md` rule 18.
 
 ### Break-glass procedure (human-only, Duong)
 
@@ -151,7 +151,7 @@ Ephemeral runtime state in `~/.strawberry/ops/` (gitignored):
 
 The system uses two GitHub identities. Executors and coordinator agents push code and open PRs as **`Duongntd`** (the agent account). Reviewer agents (Senna, Lucian) switch to the **`strawberry-reviewers`** identity when submitting approvals via `scripts/reviewer-auth.sh`. The human owner **`harukainguyen1411`** is reserved for break-glass merges only — see CLAUDE.md Rule 18.
 
-This satisfies Rule 18's non-author-reviewer requirement structurally: every PR opened by an executor (`Duongntd`) is approved by a distinct GitHub identity (`strawberry-reviewers`), so GitHub's "author cannot approve own PR" check passes.
+This satisfies Rule 18 gate (b) structurally: every PR opened by an executor (`Duongntd`) is approved by a distinct GitHub identity (`strawberry-reviewers`), so GitHub's "author cannot approve own PR" check passes.
 
 The `strawberry-reviewers` PAT is stored at `secrets/encrypted/reviewer-github-token.age` (age-encrypted, committed to repo). `scripts/reviewer-auth.sh` decrypts it via `tools/decrypt.sh` and passes `GH_TOKEN` into a child `gh` process only — never echoed, never written to a parent-shell variable, per Rule 6.
 

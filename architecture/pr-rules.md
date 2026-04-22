@@ -36,7 +36,7 @@ All commits (including on feature branches) use `chore:` or `ops:` prefix. The p
 | `Duongntd` | Agent pusher — opens PRs, pushes commits, manages branches in `strawberry-app` |
 | `harukainguyen1411` | Human reviewer — approves PRs, merges. Has admin bypass (break-glass only). |
 
-PRs are opened in `harukainguyen1411/strawberry-app`. The `harukainguyen1411` account is the designated approver for agent-authored PRs (per commit 80cd16f and plan §8 decision 8). Agents must not merge their own PRs — see `CLAUDE.md` rule 18.
+PRs are opened in `harukainguyen1411/strawberry-app`. Agents must not use `--admin` or any branch-protection bypass, and must not merge a red PR. Per rule 18, an agent may merge its own PR once (a) all required status checks are green and (b) one approving review from an account other than the PR author is in place — see `CLAUDE.md` rule 18.
 
 ## Review Team Protocol
 
