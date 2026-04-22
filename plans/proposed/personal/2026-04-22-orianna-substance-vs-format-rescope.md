@@ -19,6 +19,7 @@ related:
   - agents/orianna/prompts/plan-check.md
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
+orianna_signature_approved: "sha256:000ff40180ccbd06a7b625394510a8fac2350c20601d9c65ee528e853871d991:2026-04-22T06:48:44Z"
 ---
 
 # Orianna — substance-vs-format rescope
