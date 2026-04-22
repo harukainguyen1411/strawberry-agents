@@ -187,6 +187,15 @@ if [ -f "$STALE_LOCK_LIB" ]; then
   GIT_DIR="$(git -C "$REPO_ROOT" rev-parse --git-dir)" maybe_clear_stale_lock
 fi
 
+# ---- Source coordinator lock lib (T4 — concurrent-coordinator-race-closeout) -
+# Load the shared lock helper now; the lock itself is acquired just before
+# git add (see the comment near git -C "$REPO_ROOT" add "$PLAN_PATH" below).
+_COORD_LOCK_LIB="$SCRIPT_DIR/_lib_coordinator_lock.sh"
+if [ -f "$_COORD_LOCK_LIB" ]; then
+  # shellcheck source=_lib_coordinator_lock.sh
+  . "$_COORD_LOCK_LIB"
+fi
+
 # ---- Pre-fix pass (T9/T10) — optional body rewrites before claude check ----
 # Determine whether to run pre-fix based on flag or plan frontmatter.
 PRE_FIX_APPLIED=0  # 1 if pre-fix made any changes
@@ -346,6 +355,17 @@ fi
 
 mv "$TMP_PLAN" "$PLAN_PATH"
 log_stderr "appended $FIELD_NAME to frontmatter (hash=${BODY_HASH})"
+
+# ---- Coordinator advisory lock (T4 — concurrent-coordinator-race-closeout) --
+# Acquire the shared lock immediately before the git add→commit window.
+# This serialises concurrent orianna-sign.sh and plan-promote.sh invocations,
+# preventing cross-agent index races. Lockfile lives under .git/ (never tracked).
+# See: plans/in-progress/personal/2026-04-22-concurrent-coordinator-race-closeout.md T4
+if command -v coordinator_lock_acquire >/dev/null 2>&1; then
+  coordinator_lock_acquire "$REPO_ROOT/.git/strawberry-promote.lock"
+else
+  log_stderr "WARNING: coordinator_lock_acquire not available — running without coordinator lock (race risk)"
+fi
 
 # ---- Commit with Orianna's identity and required trailers ----------------
 # Shape B (T5): when pre-fix rewrites were applied in this invocation, combine
