@@ -90,10 +90,15 @@ See `agents/memory/agent-network.md` for the full roster.
     Agents may never merge a red PR.
 
 <!-- #rule-qa-agent-pre-pr -->
-16. **Before opening a UI PR, a QA agent must run the full Playwright flow with
-    video + screenshots and diff against the Figma design** — report lives under
-    `assessments/qa-reports/` and is linked in the PR body. Enforced by PR body
-    linter. Non-UI PRs exempt.
+16. **Before opening a UI or user-flow PR, Akali (`.claude/agents/akali.md`) must
+    run the full Playwright MCP flow (`mcp__plugin_playwright_playwright__*` tool
+    family) with video + screenshots and diff against the Figma design** — report
+    lives under `assessments/qa-reports/` and is linked in the PR body via a
+    `QA-Report: <path-or-url>` line. Enforced by `.github/workflows/pr-lint.yml`
+    (PR body linter). A `QA-Waiver: <reason>` line is accepted in lieu of a report
+    when Akali cannot run (e.g. no running staging environment). Non-UI and
+    non-user-flow PRs exempt. _User-flow_ means: new routes, new forms,
+    state-transition changes, auth flows, session lifecycle changes.
 
 <!-- #rule-smoke-tests -->
 17. **Post-deploy smoke tests run on stg and prod; rollback on prod failure** —
