@@ -1,17 +1,16 @@
 ---
-status: in-progress
+status: proposed
 concern: personal
 owner: karma
 created: 2026-04-22
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
+architecture_impact: none
 tags: [orianna-gate, hooks, scripts, fast-follow, senna-review]
 related:
-  - plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md
+  - plans/implemented/personal/2026-04-21-orianna-gate-speedups.md
   - agents/senna/learnings/2026-04-21-pr17-staged-scope-guard-rereview.md
-orianna_signature_approved: "sha256:bb81d04ffce3910ad30bd39b2d0a5603354b2c8fa78c0185225ae80651077774:2026-04-22T07:49:06Z"
-orianna_signature_in_progress: "sha256:bb81d04ffce3910ad30bd39b2d0a5603354b2c8fa78c0185225ae80651077774:2026-04-22T07:50:46Z"
 ---
 
 # Orianna speedups PR #19 fast-follow — Senna review hardenings
@@ -104,8 +103,17 @@ No schema or migration work. No external integration touched.
 
 None. F4/F5/F6 ruled in-scope per the brief ("if cheap"); all three are one-liners adjacent to the F1/F2/F3 hunks, so folding them in keeps the sign cycle count low.
 
+## Architecture impact
+
+No architecture/ files modified. Changes are surgical patches to scripts/orianna-sign.sh, scripts/hooks/pre-commit-orianna-signature-guard.sh, scripts/hooks/pre-commit-zz-plan-structure.sh, scripts/hooks/pre-commit-orianna-body-hash-guard.sh, and scripts/install-hooks.sh. No new architectural patterns introduced.
+
+## Test results
+
+- PR #23 merged at 36afa9a (final, incorporating PR #19 + #27 fast-follow): https://github.com/harukainguyen1411/strawberry-agents/pull/23
+- All required checks green at merge.
+
 ## References
 
 - Senna review: `agents/senna/learnings/2026-04-21-pr17-staged-scope-guard-rereview.md`
-- Parent plan: `plans/proposed/personal/2026-04-21-orianna-gate-speedups.md` <!-- orianna: ok -- plan may move to in-progress; current location is proposed -->
+- Parent plan: `plans/implemented/personal/2026-04-21-orianna-gate-speedups.md` <!-- orianna: ok -- plan promoted to implemented -->
 - PR #19 merge commit: `98d310c`
