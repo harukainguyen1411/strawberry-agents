@@ -19,7 +19,6 @@ related:
   - agents/orianna/prompts/plan-check.md
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
-orianna_signature_approved: "sha256:000ff40180ccbd06a7b625394510a8fac2350c20601d9c65ee528e853871d991:2026-04-22T06:48:44Z"
 ---
 
 # Orianna — substance-vs-format rescope
@@ -418,7 +417,7 @@ No new architecture doc is created; no existing one beyond `plan-lifecycle.md` i
 
 ## 11. Coordination
 
-- **Plan lives in:** `plans/proposed/personal/2026-04-22-orianna-substance-vs-format-rescope.md`
+- **Plan lives in:** `plans/proposed/personal/2026-04-22-orianna-substance-vs-format-rescope.md` <!-- orianna: ok -->
 - **Delegation:** Evelynn picks an implementer pair (Viktor or Ekko for bash/prompts; pair with Xayah or Caitlyn for test planning in T1/T3). Swain does not assign — `owner: swain` is authorship only.
 - **Serial-after:** recommended to land after any in-flight plan that touches `agents/orianna/prompts/**` to avoid merge conflict. At the time of authoring there are none, but the adjacent `2026-04-21-orianna-gate-speedups.md` does touch `scripts/hooks/` (not prompts); they are file-independent but decision-coupled per OQ-5. <!-- orianna: ok -->
 - **Serial-before:** blocks any future plan that wants to tighten the check set again. A revert is one `git revert` away.
