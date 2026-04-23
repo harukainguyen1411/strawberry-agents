@@ -130,6 +130,8 @@ After: v2 branch deleted. `handle_message_event` falls straight through to v1 sp
 
 ### Open questions surfaced during breakdown
 
+**Sona auto-mode answers (2026-04-23):** OQ-A1 = default (Ekko follows README pointer); OQ-A2 = default (colocated under `tools/slack-triage/tests/`).
+
 - **OQ-A1** — Is there an existing Cloud Run deploy runbook or Makefile for slack-triage that T.8 should follow verbatim, or does Ekko author the deploy commands from scratch? Default assumption: Ekko reads `tools/slack-triage/README.md` "GCP Cloud Functions deployment commands" reference (pointed at in README §Deploy) and executes accordingly.
 - **OQ-A2** — Should T.1's xfail file live at `tools/slack-triage/tests/test_demo_studio_removed.py` (colocated) or under a top-level `tests/` tree in `company-os`? Default: colocated — matches the existing `test_triage_v2.py` pattern.
 
