@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 complexity: quick
 owner: karma
 title: Orianna v2 — agent-gated plan promotions (simplification)
