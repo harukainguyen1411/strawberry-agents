@@ -1,7 +1,9 @@
 ---
-status: proposed
+status: archived
 concern: personal
 owner: karma
+archived: 2026-04-23
+archived_reason: superseded by PR #30 orianna-gate-simplification — orianna-sign.sh archived; staged-scope concern now handled by pre-commit-staged-scope-guard.sh separately
 created: 2026-04-22
 complexity: quick
 tests_required: true
