@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 concern: personal
 owner: swain
 created: 2026-04-23
@@ -652,3 +652,10 @@ Sum of substep estimates: 400 min (exactly matches parent budget). Opus-tier sub
 None. All 7 ADR OQs are pre-locked (1a, 2b, 3a, 4a, 5a, 6a, 7a per caller's instruction). Xayah's three gap observations (lines 462–468) are addressed inside this breakdown: gap 1 → T2.1 / T3.1 / T5.1 add `--dry-run` + pre-mutation `git tag`; gap 2 → T4.5 adds the boot-chain trace hook; gap 3 → T9.3 hard-fail shape is "file deleted → unknown-skill error" per the caller's OQ5-a pick. If implementation surfaces new ambiguity, flag as `OQ-K<n>` on the relevant substep line.
 
 Total estimate: 400 min (6h 40m) across 13 parent tasks / 59 substeps, distributed over 3 phases with a 7-day observation gate between Phase 2 and Phase 3.
+
+## Orianna approval
+
+- **Date:** 2026-04-23
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Plan is comprehensively authored — all 7 ADR open questions are pre-locked, all tasks are concrete and substep-decomposed with estimates, STAGED_SCOPE, and DoD, and the full xfail test suite (20 tests across 5 categories) is authored by Xayah and paired to implementation substeps. The `tests_required: true` constraint is satisfied by Xayah's test tasks (T-INV-*, T-MIG-*, T-DEP-*, T-INT-*, T-REG-*). Under the v2 gate, the v1 `tests_required` + `kind: test` blocker is dropped. Ready for Phase 1 implementation.
