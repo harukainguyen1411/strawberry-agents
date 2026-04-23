@@ -32,11 +32,14 @@ Sender is derived from `$CLAUDE_AGENT_NAME` if set in environment. If the caller
 **Steps to execute:**
 
 1. Determine sender: use `$CLAUDE_AGENT_NAME` if set, otherwise ask the caller to state who they are. If the caller cannot confirm, exit 2 with `agent-ops send: sender unknown`.
-2. Verify `agents/<agent>/` exists. If not, exit 2 with `agent-ops send: unknown agent <name>`.
-3. Resolve timestamp: `date -u +%Y%m%d-%H%M`.
-4. Generate short ID: last 6 chars of `date -u +%s%N` or equivalent.
-5. Write the inbox file using Write tool to `agents/<agent>/inbox/<timestamp>-<shortid>.md`.
-6. Print the full path of the created inbox file.
+2. Delegate to `scripts/agent-ops/send.sh` via the Bash tool (mirrors `list` / `new` patterns). The script validates the target agent, creates the inbox directory, and writes the file — no Write tool is used, so the inbox-write guard does not fire.
+
+```bash
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+bash "$REPO_ROOT/scripts/agent-ops/send.sh" "<agent>" "<sender>" "<message>"
+```
+
+3. Print the full path of the created inbox file (the script prints it on stdout).
 
 ### `list [--json]`
 
@@ -85,3 +88,7 @@ This skill runs identically on macOS and Windows (Git Bash). All subcommands use
 - `architecture/platform-parity.md` — full platform support matrix
 - `plans/proposed/2026-04-08-mcp-restructure.md` — rough plan (governs Phases 2–3)
 - `plans/implemented/2026-04-09-mcp-restructure-phase-1-detailed.md` — this Phase 1 spec (once promoted)
+
+## Inbox write guard
+
+Direct `Write` or `Edit` to `agents/*/inbox/*.md` is blocked by `scripts/hooks/pretooluse-inbox-write-guard.sh` (registered as a PreToolUse hook). Use `/agent-ops send` to deliver inbox messages — this is the only sanctioned authorship path for non-admin identities. The single permitted `Edit` is the check-inbox status flip (`status: pending` -> `status: read`); all other edits are rejected. Archival moves live under `inbox/archive/` and are unguarded. Admin bypass identities: `duongntd` and `harukainguyen1411`.

@@ -76,6 +76,15 @@
         ]
       },
       {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/pretooluse-inbox-write-guard.sh"
+          }
+        ]
+      },
+      {
         "matcher": "Agent",
         "hooks": [
           {
