@@ -136,3 +136,111 @@ All load-bearing claims verified:
 7. SSE piggyback on existing status event (D6 stays); new event type deferred.
 
 Promoted-By: Orianna
+
+---
+
+## Tasks-detail
+
+Aphelios breakdown of the W1-W5 wave scope from §4. T-Hotfix is intentionally omitted — already in flight as PR #87 (Jayce addressing Senna criticals C1/C2/C3 out-of-band). All work rooted at the company-os workspace; feature branches cut off the v3 god branch via `scripts/safe-checkout.sh`; every wave merges back into the god branch and waits for green CI before the next wave's impl commits land. <!-- orianna: ok -- company-os workspace root and feat/demo-studio-v3 branch tokens reference cross-repo; safe-checkout.sh lives in strawberry-agents and exists -->
+
+**Load-bearing assumptions (flag for Duong / Evelynn if any slip):**
+
+- **A1.** T-Hotfix (the snapshot-config shim) has landed on the v3 god branch before W3 starts. W3 explicitly deletes the shim; if PR #87 stalls, W3 must be re-sequenced to absorb the hotfix surgery rather than delete it. (No blocker for W1/W2/W4/W5.) <!-- orianna: ok -- T-Hotfix implementation lives in company-os tool_dispatch.py; branch token references cross-repo -->
+- **A2.** `config_mgmt_client.fetch_config(sid)` already exists and returns `{config, version, ...}` — the ADR §3 says "Keep `fetch_config`" implying present. Viktor confirms on first read; if absent, add as W1.T2b (≤15 min) before W1.T3. <!-- orianna: ok -- config_mgmt_client.fetch_config is a cross-repo symbol in company-os -->
+- **A3.** The existing SSE status event emitter carries a free-form payload dict where we can add `configVersion` without a schema-breaking change (D6 piggyback). If the status event is strongly-typed, W3.T6 becomes ~15 min heavier and W4.T3 needs matching client-side tolerance — flag at implementation time. <!-- orianna: ok -- SSE emitter lives in company-os main.py -->
+- **A4.** `DEFAULT_SEED` is a single static dict (OQ-1 resolved: realistic smoke-test, Allianz-like). Swain/Duong will paste the concrete JSON into the new seed-config module during W1.T2 review; Seraphine does not invent schema fields. <!-- orianna: ok -- seed_config.py is a prospective new module in company-os -->
+- **A5.** The S2 Bearer token env var on S1 is `DS_CONFIG_MGMT_TOKEN` (probe evidence in §1). W1.T3 uses it verbatim — no rename.
+- **A6.** The Firestore `_UPDATABLE_FIELDS` guard in the session module is the only writepath gate for session-doc fields; no other validator needs touching for `seededConfig` / `configVersion` / `seedSentAt`. <!-- orianna: ok -- session.py and _UPDATABLE_FIELDS are cross-repo tokens in company-os -->
+
+**Parallelism windows (see dispatch diagram at end):**
+
+- **P-α:** W4 (frontend cache) can start its xfail + stub scaffolding as soon as W2 lands, since W4's only backend coupling is the SSE `configVersion` field which W2 does not touch but W3 adds. W4 final wiring (T4/T5) blocks on W3.
+- **P-β:** W5 (cleanup & docs) prep tasks (T1 README diff draft, T2 ARCHITECTURE.md diff draft) can run in parallel with W3 impl; the actual deletions (T3) gate on W3 completion.
+- **Hard serial:** W1 → W2 (W2 reads `seededConfig` from session doc that W1 writes). W2 → W3 (W3's tool-result surface assumes config is in system-block context, not re-fetched). W3 → W5.T3.
+
+### Wave 1 — S1 seed on session create (35 min → 5 sub-tasks)
+
+Depends on: T-Hotfix merged to the v3 god branch (assumption A1, loose — W1 does not touch the tool-dispatch module). <!-- orianna: ok -- v3 god branch and tool-dispatch module are cross-repo tokens -->
+
+- [ ] **W1.T1** — Xfail test: the new-session endpoint writes `seededConfig`, `configVersion: 1`, `seedSentAt` non-null to the `demo-studio-sessions` collection doc; S2 POST call is Bearer-authed with `DS_CONFIG_MGMT_TOKEN`. estimate_minutes: 15. Files: new test module under the v3 tests tree. DoD: two xfail tests committed (happy path + S2-500 fallback); test file imports the not-yet-written `DEFAULT_SEED`; pytest collects both as xfail; commit message references this plan. <!-- orianna: ok -- demo-studio-sessions is a Firestore collection, session/new is HTTP route, tests live in company-os -->
+- [ ] **W1.T2** — Create the new seed-config module exporting `DEFAULT_SEED: dict` (realistic Allianz-like smoke-test per OQ-1). estimate_minutes: 10. Files: new `seed_config` module at the v3 tool root. DoD: module importable; `DEFAULT_SEED` is a plain dict (no callables); field list sourced from Swain/Duong paste during review (see A4); `json.dumps(DEFAULT_SEED)` round-trips without exception. <!-- orianna: ok -- seed_config module lives in company-os v3 workspace -->
+- [ ] **W1.T3** — Extend the session module's `_UPDATABLE_FIELDS` with `seededConfig`, `configVersion`, `seedSentAt`. estimate_minutes: 5. Files: session module in v3. DoD: set-diff on `_UPDATABLE_FIELDS` shows exactly three new fields; existing fields unchanged; session-doc-writer integration test still passes. <!-- orianna: ok -- session module is cross-repo in company-os -->
+- [ ] **W1.T4** — Wire the new-session handler to call `snapshot_config(sid, DEFAULT_SEED)` after `create_session`, then patch session doc with `seededConfig=returned_config`, `configVersion=returned_version`, `seedSentAt=SERVER_TIMESTAMP`. estimate_minutes: 15. Files: main request-handler module (handler at §1757-1826), config-mgmt client module (add `snapshot_config` if absent). DoD: W1.T1 xfails flip to pass; S2 5xx path logs warning and still returns 200 with session created but `configVersion` absent (soft-fail seeding, not fatal); `snapshot_config` signature is `(sid, config, force=False) -> dict` per §3. <!-- orianna: ok -- main handler and config-mgmt client are cross-repo files in company-os -->
+- [ ] **W1.T5** — Remove xfail markers from W1.T1 tests; run the full v3 pytest suite locally; push and confirm CI green on branch before merging to the v3 god branch. estimate_minutes: 10. Files: the W1.T1 test module. DoD: zero xfail markers on W1 tests; CI green; wave gate W1-G closed in branch PR description. <!-- orianna: ok -- v3 tests and god-branch token reference cross-repo -->
+
+### Wave 2 — System-block injection (45 min → 7 sub-tasks)
+
+Depends on: W1 merged.
+
+- [ ] **W2.T1** — Xfail test: `run_turn` with `initial_config={"foo": "bar"}` produces a `messages.stream` call whose `system` kwarg is a list of two text blocks: `[{type:"text", text:SYSTEM_PROMPT}, {type:"text", text:<contains "foo">, cache_control:{type:"ephemeral"}}]`. estimate_minutes: 15. Files: new test module for agent-proxy system-block behavior. DoD: xfail test covers both normal branch (§295-300) and 429-retry branch (§330-335) via monkeypatched `client.messages.stream`; commit precedes any agent-proxy modification. <!-- orianna: ok -- agent_proxy.py is a cross-repo file in company-os; messages.stream is an SDK method -->
+- [ ] **W2.T2** — Xfail test: first-turn agent with pre-seeded config issues zero `get_schema` / `get_config` tool_use blocks across first 3 tool-uses (Test plan §W2 assertion). estimate_minutes: 10. Files: new test module for no-schema-roundtrip behavior. DoD: xfail test with stubbed Anthropic client returning 3 deterministic tool-uses; assertion is on tool names emitted. <!-- orianna: ok -- tests live in company-os v3 tests tree -->
+- [ ] **W2.T3** — Add a `_config_block(cfg: dict) -> dict` helper in the agent-proxy module returning the ephemeral-cached text block per D1. estimate_minutes: 5. Files: agent-proxy module in v3. DoD: helper returns `{"type":"text","text": <json.dumps(cfg, indent=2) prefixed with a fixed "Current config:" header>, "cache_control":{"type":"ephemeral"}}`; unit-tested inline. <!-- orianna: ok -- agent-proxy module is cross-repo in company-os -->
+- [ ] **W2.T4** — Extend `run_turn` signature with `initial_config: dict | None = None`; when non-None, build `system = [{"type":"text","text":SYSTEM_PROMPT}, _config_block(initial_config)]` else keep string. estimate_minutes: 5. Files: agent-proxy module (§28-100). DoD: default behaviour unchanged for legacy callers; new branch only taken when config supplied. <!-- orianna: ok -- agent-proxy module is cross-repo in company-os -->
+- [ ] **W2.T5** — Thread `system` kwarg into BOTH `client.messages.stream(...)` call sites (normal §295-300 and 429-retry §330-335). estimate_minutes: 5. Files: agent-proxy module. DoD: grep for `messages.stream(` shows both sites pass the same `system` variable; no string-SYSTEM_PROMPT leak remains in either branch when list form is active. <!-- orianna: ok -- agent-proxy module is cross-repo in company-os; messages.stream is SDK method -->
+- [ ] **W2.T6** — Update SYSTEM_PROMPT: remove "first tool call MUST be `get_schema`" mandate; keep tool descriptions intact per D4. estimate_minutes: 5. Files: agent-proxy module (SYSTEM_PROMPT constant). DoD: diff removes exactly the one sentence; STATE-1/2/3 structure preserved; Xayah review comment captured in PR if prompt wording becomes contentious. <!-- orianna: ok -- agent-proxy module is cross-repo in company-os -->
+- [ ] **W2.T7** — Caller wiring: session-handler code that invokes `run_turn` reads `seededConfig` from session doc and passes as `initial_config`. Drop xfail markers on W2.T1/T2; CI green on branch. estimate_minutes: 10. Files: main request-handler (chat handler), the two W2.T1/T2 test modules. DoD: zero xfail markers; W2 gate closed; merged to v3 god branch. <!-- orianna: ok -- main handler and tests are cross-repo in company-os -->
+
+### Wave 3 — `set_config` schema flip + soft-fail validation (50 min → 8 sub-tasks)
+
+Depends on: W2 merged AND T-Hotfix present on branch (deletion target exists).
+
+- [ ] **W3.T1** — Xfail test: `set_config` tool schema is `{config: object}` (no `path`/`value`); a tool_use with `{"path":"a","value":"b"}` is rejected by the dispatch validator with a 400-equivalent tool_result. estimate_minutes: 10. Files: new test module for set-config schema validation. DoD: two xfails (new shape accepts, old shape rejects). <!-- orianna: ok -- tests live in company-os v3 tests tree -->
+- [ ] **W3.T2** — Xfail test: valid `{config: {...}}` round-trips via `snapshot_config`; session doc `configVersion` advances 1 → 2; returned tool_result carries version. estimate_minutes: 10. Files: new test module for set-config round-trip. DoD: mock S2 returns `{version:2, config:..., validation:{errors:[]}}`; assertion on both session doc patch and tool_result. <!-- orianna: ok -- tests live in company-os v3 tests tree -->
+- [ ] **W3.T3** — Xfail test: soft-fail validation — first POST returns `422` / validation-error body; retry with `force=true` returns 200; tool_result content includes the validation array per D7. estimate_minutes: 10. Files: new test module for validation-retry. DoD: xfail asserts exactly one retry (not unbounded); assertion on surfaced validation payload shape. <!-- orianna: ok -- tests live in company-os v3 tests tree -->
+- [ ] **W3.T4** — Add/confirm `snapshot_config(sid, config, force=False) -> dict` in the config-mgmt client (POST `/v1/config?force={force}` with Bearer). estimate_minutes: 5. Files: config-mgmt client module. DoD: wrapper returns parsed body dict including `version`, `config`, `validation`; unit test with fake Bearer + httpx mock. <!-- orianna: ok -- config-mgmt client is cross-repo in company-os -->
+- [ ] **W3.T5** — Flip `set_config` tool `input_schema` from `{path, value}` → `{config: object}` in the tool registration block. estimate_minutes: 5. Files: tool-dispatch module. DoD: tool def JSONSchema shows single `config` object property (required); description updated to match whole-snapshot semantics. <!-- orianna: ok -- tool_dispatch module is cross-repo in company-os -->
+- [ ] **W3.T6** — Rewrite `_handle_set_config` to call `snapshot_config` with `force=False` first, catch validation error, retry once with `force=True`, surface validation array in tool_result content. Emit SSE status event carrying `configVersion` (D6 piggyback — see assumption A3). estimate_minutes: 10. Files: tool-dispatch module, main status-event emitter. DoD: single retry cap enforced; tool_result content is structured JSON with `{version, validation}`; SSE event payload gains `configVersion` key; existing consumers of the status event tolerate the extra key. <!-- orianna: ok -- tool_dispatch and main modules are cross-repo in company-os -->
+- [ ] **W3.T7** — Delete `_default_patch_config` (legacy) AND `_default_snapshot_config_shim` (T-Hotfix). estimate_minutes: 5. Files: tool-dispatch module. DoD: grep for both symbol names returns zero hits in the v3 tool tree; call sites replaced by `snapshot_config` direct. <!-- orianna: ok -- tool_dispatch module is cross-repo in company-os -->
+- [ ] **W3.T8** — Drop xfail markers on W3.T1/T2/T3; run integration suite; CI green on branch; merge to the v3 god branch. estimate_minutes: 5. Files: the three W3 xfail test modules. DoD: zero xfail markers on W3 tests; wave gate W3-G closed. <!-- orianna: ok -- tests and branch reference cross-repo in company-os -->
+
+### Wave 4 — Frontend sessionStorage cache (30 min → 5 sub-tasks)
+
+Depends on: W2 merged for scaffolding; W3 merged for final wiring (SSE `configVersion` field).
+
+- [ ] **W4.T1** — Xfail browser test: page boot with `sessionStorage['config:{sid}:{v}']` warm → zero network calls to the preview proxy within 5s. estimate_minutes: 10. Files: new Playwright spec in the v3 browser tests tree. DoD: xfail Playwright test asserts network idle on preview-proxy URL pattern; uses fake `sessionId` + `version` seeded into sessionStorage before navigation. <!-- orianna: ok -- browser tests live in company-os v3 tests -->
+- [ ] **W4.T2** — Xfail browser test: SSE status event with bumped `configVersion` evicts `config:{sid}:{old_v}` entry and triggers exactly one preview-proxy fetch for the new version. estimate_minutes: 5. Files: new Playwright spec for cache invalidation. DoD: xfail asserts sessionStorage key rotation + single fetch observed. <!-- orianna: ok -- browser tests live in company-os v3 tests -->
+- [ ] **W4.T3** — Implement cache read on page boot in the studio.js module: `const cached = sessionStorage.getItem('config:' + sessionId + ':' + version)`; if hit, skip preview-proxy fetch. estimate_minutes: 5. Files: studio.js in the v3 static tree. DoD: cache-miss path unchanged from current fetch behaviour; no synchronous JSON parse on main thread for payloads >100KB (Viktor guard). <!-- orianna: ok -- studio.js is cross-repo in company-os v3 -->
+- [ ] **W4.T4** — Wire SSE status-event handler to read `configVersion`, invalidate stale `config:{sid}:*` entries, trigger re-fetch. estimate_minutes: 5. Files: studio.js in v3 static tree. DoD: handler is additive — existing status-event consumers unaffected when `configVersion` field absent (backward-compat). <!-- orianna: ok -- studio.js is cross-repo in company-os v3 -->
+- [ ] **W4.T5** — Drop xfail markers on W4.T1/T2; CI green on branch; merge to v3 god branch. estimate_minutes: 5. Files: both W4 browser test specs. DoD: Playwright reports green; W4 gate W4-G closed. <!-- orianna: ok -- branch and tests are cross-repo in company-os -->
+
+### Wave 5 — Cleanup & docs (20 min → 4 sub-tasks)
+
+Depends on: W3 merged (T3 deletions gated); T1/T2 can run in parallel with W3 (P-β).
+
+- [ ] **W5.T1** — README: remove PATCH references; document new agent-owned config flow (seed-at-create, whole-snapshot POST, soft-fail validation). estimate_minutes: 5. Files: the v3 README. DoD: grep for `PATCH` or `patch_config` in the v3 README returns zero matches; new "Config flow (agent-owned)" section present. <!-- orianna: ok -- v3 README lives in company-os -->
+- [ ] **W5.T2** — ARCHITECTURE doc: update config-flow diagram/prose; remove PATCH arrow. estimate_minutes: 5. Files: the v3 ARCHITECTURE doc. DoD: sequence diagram shows `POST /v1/config` (whole snapshot) + SSE `configVersion` piggyback; PATCH arrow deleted. <!-- orianna: ok -- v3 ARCHITECTURE doc lives in company-os -->
+- [ ] **W5.T3** — SYSTEM_PROMPT final sweep: remove any "error-loop"/"PATCH"/"partial update" wording missed in W2.T6. estimate_minutes: 5. Files: agent-proxy module (SYSTEM_PROMPT). DoD: grep for `patch|PATCH|partial` in SYSTEM_PROMPT constant returns zero matches; Xayah pass on prompt re-read. <!-- orianna: ok -- agent-proxy module is cross-repo in company-os -->
+- [ ] **W5.T4** — Final branch merge-up: v3 god branch merged (no rebase per Rule 11) onto main; deployment pipeline kicks off; smoke test per Rule 17 on stg. estimate_minutes: 5. Files: n/a (git operation + CI). DoD: main green; stg smoke green; Cloud Run revision deployed; prod gate awaits Duong go/no-go. <!-- orianna: ok -- v3 god branch is cross-repo on company-os -->
+
+### Dispatch order & parallelism
+
+```
+T-Hotfix (PR #87, out-of-band)  ─┐
+                                 ▼
+W1 ─► W2 ─► W3 ─► W5.T3, W5.T4
+              │
+              ├──► W4 (starts W2-done; final wiring W3-done)  (P-α)
+              │
+              └──► W5.T1, W5.T2 (prep in parallel with W3)    (P-β)
+```
+
+Peak concurrency (during W3): 3 agents
+- Viktor/Jayce on W3 backend impl
+- Seraphine on W4 frontend scaffolding (T1-T3, using stubbed SSE)
+- Vi/Seraphine on W5.T1/T2 doc prep
+
+### Sub-task count by wave
+
+- W1: 5
+- W2: 7
+- W3: 8
+- W4: 5
+- W5: 4
+- **Total W1-W5: 29 sub-tasks** (well under the 40-task ceiling)
+
+### Open questions surfaced by decomposition
+
+- **OQ-K1.** Does the config-mgmt client's `fetch_config` already exist on the v3 god branch? (Assumption A2.) If not, add a ≤15-min task inside W1 before T3. <!-- orianna: ok -- config-mgmt client and branch are cross-repo in company-os -->
+- **OQ-K2.** Is the existing SSE status event payload schema permissive enough to add `configVersion` without breaking existing frontend consumers? (Assumption A3.) If it's strongly-typed (e.g. Pydantic model with `extra=forbid`), W3.T6 grows and W4.T4 needs a compatibility flag.
+- **OQ-K3.** `DEFAULT_SEED` concrete JSON body — Swain/Duong paste during W1.T2 review (OQ-1 resolved directionally but actual content TBD).
+- **OQ-K4.** Should W4's Playwright tests run under the existing top-level e2e CI workflow (Rule 15) or a separate frontend unit-test harness? Impacts whether W4 merge-gate is the full E2E pipeline (~10 min) or a fast unit lane.
