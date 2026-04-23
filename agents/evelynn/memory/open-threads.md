@@ -16,7 +16,7 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 02f8c677).
 
 **Current status (2026-04-22):** PR #22 merged. Plan not yet authored. I1 microsecond race, I2 PID-wrap, `$BASHPID` test tightening remain open.
 **Shards:** 1423e23d, ceb9f69c.
-**Next:** Commission Karma for quick-lane plan. Dispatch Talon for impl. Now durably documented in architecture/residuals-and-risks.md#concurrent-coordinator-lock.
+**Next:** Commission Karma for quick-lane plan. Dispatch Talon for impl. Now durably documented in assessments/residuals-and-risks.md#concurrent-coordinator-lock.
 
 ---
 
