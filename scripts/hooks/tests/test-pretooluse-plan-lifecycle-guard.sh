@@ -127,6 +127,60 @@ JSON
 assert_exit "C4: malformed JSON input -> exit 2 (fail-closed)" 2 \
   bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<<'NOT_JSON'"
 
+# --- Edit/Write/NotebookEdit file-existence semantics (xfail until impl patched) ---
+# Rule: Edit/NotebookEdit on EXISTING file in protected path -> exit 0 (permitted edit)
+#       Write to NON-EXISTING file in protected path -> exit 2 (blocked new-file creation)
+#       Write to EXISTING file in protected path -> exit 0 (overwrite = edit, permitted)
+
+# Use the repo's own plan file as the "existing" test fixture
+_EXISTING_PLAN="$REPO_ROOT/plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md"
+_EXISTING_APPROVED="$REPO_ROOT/plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md"
+
+# C5: Edit on existing protected file, non-Orianna -> exit 0 (edit permitted)
+if [ -f "$_EXISTING_PLAN" ]; then
+  PAYLOAD_C5="{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md\",\"old_string\":\"x\",\"new_string\":\"y\"}}"
+  assert_exit "C5: Edit existing protected file, aphelios -> exit 0 (existing-file edit allowed)" 0 \
+    bash -c "CLAUDE_AGENT_NAME=aphelios bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C5}
+JSON
+"
+else
+  printf '  SKIP: C5 — %s not found, skipping Edit-existing test\n' "$_EXISTING_PLAN"
+fi
+
+# C6: Write to NON-EXISTING file in protected path, non-Orianna -> exit 2 (new file blocked)
+_NON_EXISTING="plans/in-progress/personal/non-existent-xfail-$(date +%s).md"
+PAYLOAD_C6="{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"${_NON_EXISTING}\",\"content\":\"test\"}}"
+assert_exit "C6: Write to non-existing protected file, aphelios -> exit 2 (new-file creation blocked)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=aphelios bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C6}
+JSON
+"
+
+# C7: Write to EXISTING file in protected path, non-Orianna -> exit 0 (overwrite = edit, permitted)
+if [ -f "$_EXISTING_APPROVED" ]; then
+  PAYLOAD_C7="{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md\",\"content\":\"updated\"}}"
+  assert_exit "C7: Write to existing protected file, karma -> exit 0 (overwrite/edit allowed)" 0 \
+    bash -c "CLAUDE_AGENT_NAME=karma bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C7}
+JSON
+"
+else
+  printf '  SKIP: C7 — %s not found, skipping Write-existing test\n' "$_EXISTING_APPROVED"
+fi
+
+# C8: NotebookEdit on existing file -> exit 0
+if [ -f "$_EXISTING_PLAN" ]; then
+  PAYLOAD_C8="{\"tool_name\":\"NotebookEdit\",\"tool_input\":{\"notebook_path\":\"plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md\",\"new_source\":\"test\"}}"
+  assert_exit "C8: NotebookEdit on existing protected file, xayah -> exit 0" 0 \
+    bash -c "CLAUDE_AGENT_NAME=xayah bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C8}
+JSON
+"
+else
+  printf '  SKIP: C8 — %s not found, skipping NotebookEdit-existing test\n' "$_EXISTING_PLAN"
+fi
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
