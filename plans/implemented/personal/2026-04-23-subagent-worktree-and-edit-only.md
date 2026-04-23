@@ -4,7 +4,7 @@ owner: karma
 complexity: quick
 tests_required: true
 orianna_gate_version: 2
-status: proposed
+status: implemented
 date: 2026-04-23
 created: 2026-04-23
 concern: personal
@@ -102,3 +102,11 @@ INV-3 — **Aphelios/Kayn/Xayah/Caitlyn cannot create new files; failure is loud
 - PR #22 — coordinator-level flock for the working tree.
 - Today's session transcript — Aphelios mid-run SendMessage correction; Xayah D1A discipline hold.
 - Universal invariants rules 10 (POSIX bash), 12 (xfail-first).
+
+## Orianna promotion — proposed → implemented
+
+- **Date:** 2026-04-23
+- **Agent:** Orianna
+- **Transition:** proposed → implemented
+- **Evidence:** Xfail commit 8b9d258 (test-agent-default-isolation.sh + test-edit-only-agents.sh, 14 assertions). Impl commit 4d3a538: scripts/hooks/agent-default-isolation.sh exists+executable, wired in .claude/settings.json PreToolUse Agent matcher; four agent defs (aphelios, kayn, xayah, caitlyn) have default_isolation: worktree and Write removed from tools block; CLAUDE.md Rule 20 added; agents/memory/agent-network.md subagent auto-isolation section added.
+- **Promoted-By:** Orianna
