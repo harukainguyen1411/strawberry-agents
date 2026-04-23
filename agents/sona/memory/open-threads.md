@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-148e1b03; prior shards 2026-04-23-5bc52df0 + 2026-04-23-cbe48dfe + 2026-04-23-b1acd96a + earlier).
+Last updated: 2026-04-23 (session-close leg 5, shard 2026-04-23-536df25c; prior shards 2026-04-23-148e1b03 + 5bc52df0 + cbe48dfe + b1acd96a + earlier).
 
 ---
 
@@ -102,19 +102,19 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-148e1b03; 
 
 ---
 
-## Config-architecture ADR — APPROVED, decomposed, W1 in-progress (2026-04-23)
+## Config-architecture ADR — W1+W2 SHIPPED; W3 next (2026-04-23)
 
-**Status (2026-04-23, updated):** Swain returned with `plans/proposed/work/2026-04-23-agent-owned-config-flow.md`. Duong approved all 7 OQs. Orianna promoted to approved (`79981e1`). Aphelios decomposed into 29 sub-tasks W1–W5 (commit `4bb30da`). Plan promoted to in-progress. W1 (seed config on session create): Rakan xfails on `test/w1-xfail-stubs` (`fa6c54b`); Viktor WIP committed as `a86f739`; Viktor re-dispatched to finish + integrate + open PR. W2 blocked until W1 lands.
-**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03.
-**Next action:** Await Viktor W1 return → review dispatch → merge → W2 dispatch.
+**Status (2026-04-23, session-close leg 5):** W1 (seed on session create) merged as PR #91 commit `79d6c19`. Amended once for BD.B.3 cross-ADR conflict (`configVersion`/`seededConfig`/`seedSentAt` mirror dropped); ADR amendment committed as `b4a0edf`. W2 (system-block injection) merged as PR #96, final head `144fbb6`, reworked once via merge-based reconstruction to resolve Rule 12 ordering violation Lucian caught. W3 (set_config schema flip + SSE `configVersion` piggyback) is next — not yet dispatched. W4+W5 still blocked.
+**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c.
+**Next action:** Dispatch W3 complex-lane parallel pair (Rakan xfails ‖ Viktor impl) per amended ADR §186-192. Resolve OQ-K2 (SSE schema flexibility) before W3.T6.
 
 ---
 
-## PR #87 — S2 set_config hotfix — awaiting Duong approve (2026-04-23)
+## PR #87 — S2 set_config hotfix — MERGED (2026-04-23)
 
-**Status (2026-04-23):** Senna ADVISORY LGTM (C1/C2/C3 + I1/I5 all cleared by Jayce). Lucian APPROVE. strawberry-reviewers has no missmp/company-os access — Rule 18 escalated to Duong for web-UI approve. Do not merge until Duong approves.
+**Status (2026-04-23, session-close leg 5):** Merged by Duong. Hotfix live on `feat/demo-studio-v3`. Caller-side POST+RMW workaround for deployed S2's missing PATCH handler. Thread closed.
 **Shard pointers:** 2026-04-23-148e1b03.
-**Next action:** Duong web-UI approve on PR #87 → merge → W1 config-arch branch pulls in the fix if needed.
+**Next action:** None.
 
 ---
 
@@ -139,6 +139,38 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-148e1b03; 
 **Status (2026-04-23):** Plan at `plans/in-progress/work/2026-04-23-merged-branch-auto-cleanup.md` (Orianna promoted, commit `70dee7b`). T1+T2 shipped by Talon (`scripts/cleanup-merged-branches.sh` + tests, commit `b2b8944`). Violation: `b2b8944` contains Co-Authored-By AI trailer — needs remediation. T3 (`/end-session` wiring) and T4 (GitHub auto-delete-head-branches) not yet dispatched. One-time backfill (T.CLEANUP.3) was done manually by Ekko this leg (10 branches deleted).
 **Shard pointers:** 2026-04-23-cbe48dfe.
 **Next action:** Remediate `b2b8944` AI-trailer violation (Ekko amend or follow-up commit). Dispatch T3+T4.
+
+---
+
+## Identity-leakage fix — Evelynn inbox triage pending (2026-04-23, session-close leg 5)
+
+**Status:** Duong flagged two identity leaks on PRs #91/#96 post-merge: (1) agent-name signatures in PR comment bodies ("— Senna" / "— Lucian"); (2) `viktor@strawberry.local` and `orianna@strawberry.local` as commit authors on work-repo code. Root causes: per-worktree `.git/config` identity leakage across subagent sessions, and reviewer verdict templates that include name footers. Inbox message sent to Evelynn (`20260423-1450-955853.md`) proposing Karma quick-lane plan bundling three hygiene fixes: per-process GIT_AUTHOR_NAME binding, verdict-signature scrubbing pipeline, and pre-push + tdd-gate CI install on missmp/company-os.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** Evelynn triage. Her call on pull-forward-vs-post-W5 priority.
+
+---
+
+## S2 PATCH drift — Ekko investigation complete, remediation pending (2026-04-23)
+
+**Status:** `tools/demo-config-mgmt/main.py` locally has PATCH handler (line 238); deployed rev `00014-2bn` does NOT. Ekko investigated: `deploy.sh` uses `gcloud run deploy --source .` which builds from local working directory at deploy time, not git HEAD. No CI deploy pipeline exists. PR #87 already shipped a caller-side POST+RMW workaround, so the divergence is functionally inert. Three options: (1) strip local PATCH to match deployed, (2) redeploy prod to match local, (3) fix deploy.sh to embed git SHA and fail on dirty working tree. Ekko recommends (1) + (3) as separate ADR.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** Duong picks (1)/(2)/(3). If (3), commission plan.
+
+---
+
+## Rule-sona-leads-the-team rewrite — SHIPPED (2026-04-23)
+
+**Status:** Duong directive relayed via Evelynn: rewrite the "never execute code" absolute as a principle-based throughput rule. Committed as `5919c02` on strawberry-agents main. Also corrected stale `disable-model-invocation: true` doc refs in repo-root CLAUDE.md rule 8 and agents/sona/CLAUDE.md session-close section (skill file is already `false`) — commits `de328b4` + `9a014b2`. Thread closed.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** None.
+
+---
+
+## Inbox-watcher partial resolution mystery (2026-04-23)
+
+**Status:** Monitor task `bdbo05hye` IS running watching Sona's inbox, fired on my outbound message to Evelynn at 21:44, but did NOT fire on Evelynn's earlier inbound messages at 11:54/11:56. Unclear if the gap is direction-specific, new-file-creation-specific, timing-specific, or something else. Relevant for the permanent inbox push-notification design.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** Investigate next session when idle. May inform Evelynn's inbox-push-notification design.
 
 ---
 
