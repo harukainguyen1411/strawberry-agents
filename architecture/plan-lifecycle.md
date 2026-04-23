@@ -75,7 +75,7 @@ identities (`harukainguyen1411`, `Duongntd`) are the only bypass; there is no
 This is the **only** enforcement layer. The commit-phase guards
 (`pre-commit-plan-promote-guard.sh`, `commit-msg-plan-promote-guard.sh`) were archived
 to `scripts/hooks/_archive/v2-commit-phase-plan-guards/` by
-`plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md` — at the commit
+`plans/implemented/personal/2026-04-23-plan-lifecycle-physical-guard.md` — at the commit
 layer, identity is cheaply spoofable (the Ekko incident, 2026-04-23). The physical
 layer prevents the move before it ever reaches git.
 
