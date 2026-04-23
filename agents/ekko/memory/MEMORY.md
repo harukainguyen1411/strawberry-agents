@@ -128,6 +128,8 @@
 
 - 2026-04-22 (ekko — Sona dispatch): Promoted 2026-04-22-p1-factory-build-ipad-link.md proposed→approved. 3 sign iterations + 1 parallel-agent sign. Suppressor count: 28 total added across 2 commits (8e14a83, 1d3aa1a). Key blocks: factory.py/main.py/sys.exit bare names, OQ checkboxes [ ] needing [x], project.py and static/studio.js section header missed by gate but caught by promote hook. Final sig `791b895e` by parallel agent, promote `dac5dad`. Plan at plans/approved/work/.
 
+- 2026-04-23 (ekko): Promoted 2026-04-22-orianna-gate-simplification.md proposed→approved. Required 2 sign+fix cycles: first cycle cleared orianna-sign.sh (0 blocks) but plan-promote.sh's lib-plan-structure found additional blocks (bare script names, git config key tokens, backtick-enclosed existing directory `scripts/hooks` crashing awk). Second cycle cleared all. Sign SHA: 93071b7, promote SHA: 8b5f361 (pushed). Key new learning: lib-plan-structure checks ALL lines when git mv stages file as new; `scripts/hooks` (no slash) still crashes awk on macOS; `plans/` in grep command fragments also crashes awk.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
