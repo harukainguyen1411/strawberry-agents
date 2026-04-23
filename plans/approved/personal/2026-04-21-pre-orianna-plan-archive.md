@@ -8,7 +8,8 @@ tests_required: false
 architecture_impact: none
 tags: [plans, lifecycle, cleanup, orianna-gate]
 related:
-  - plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md
+  - plans/implemented/personal/2026-04-23-plan-lifecycle-physical-guard.md
+  - architecture/plan-lifecycle.md
 ---
 
 # Pre-Orianna plan archive — declutter plan phase directories
@@ -16,31 +17,33 @@ related:
 ## 1. Problem & motivation
 
 131 plans across the five phase directories (proposed, approved, in-progress,
-implemented, archived) predate the Orianna-gate-v2 regime (no
-orianna_gate_version field set to 2 in frontmatter). Per the grandfather
-rules in architecture/plan-lifecycle.md, they never re-earn signatures and
-many are already implemented or abandoned. They drown out current-regime work
-in directory listings.
+implemented, archived) predate the Orianna-gate regime (no `orianna_gate_version: 2`
+field in frontmatter). Per the grandfather rules in
+`architecture/plan-lifecycle.md`, they never re-earn signatures and many are
+already implemented or abandoned. They drown out current-regime work in
+directory listings.
 
 ## 2. Decision
 
-Relocate every pre-Orianna plan into a new top-level plans/pre-orianna/ <!-- orianna: ok -- directory path, not file -->
-directory, preserving the original phase as a subfolder (pre-orianna/proposed,
-pre-orianna/approved, pre-orianna/in-progress, pre-orianna/implemented,
-pre-orianna/archived).
+Relocate every pre-Orianna plan into a new top-level `plans/pre-orianna/` <!-- orianna: ok -- directory/glob path, not a file -->
+directory, preserving the original phase as a subfolder — subdirectory names <!-- orianna: ok -- prose names, paths are under plans/pre-orianna/ -->
+`pre-orianna/proposed`, `pre-orianna/approved`, `pre-orianna/in-progress`, <!-- orianna: ok -- subdirectory name tokens, resolved under plans/ -->
+`pre-orianna/implemented`, `pre-orianna/archived`. <!-- orianna: ok -- subdirectory name tokens, resolved under plans/ -->
 
 ### Why top-level pre-orianna (not under archived)
 
-- The existing plan-promote-guard pre-commit hook treats any move from a
-  proposed plan file into plans/archived/ as a "promotion" and requires
-  either a fact-check report or a bypass trailer. Moving 73 proposed plans
-  into plans/archived/pre-orianna/ would trigger that guard repeatedly.
-- The existing structural linter exempts plans/archived/ but not a sibling
-  like pre-orianna/. Since pre-Orianna plans often fail rule 1 (canonical
-  Tasks heading) or rule 4 (path citations that no longer exist), we need
-  an exemption anyway — adding it for a new sibling directory is the same
-  edit either way, and a sibling directory is semantically clearer:
-  grandfathered, not archived-by-policy.
+- The Orianna-gate-v3 physical guard at
+  `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` gates the four phase
+  directories `plans/{approved,in-progress,implemented,archived}/` at tool-call <!-- orianna: ok -- brace-expansion glob prose, not a file path -->
+  time. Moving 73 proposed plans into `plans/archived/pre-orianna/` would <!-- orianna: ok -- hypothetical alternative directory, not on disk -->
+  require Orianna dispatch for every move; a sibling directory avoids that
+  ceremony for a pure grandfather-sweep.
+- Structural linters (`pre-commit-zz-plan-structure.sh`, <!-- orianna: ok -- bare filename, full path in T2 -->
+  `pre-commit-t-plan-structure.sh`) already exempt `plans/archived/` <!-- orianna: ok -- bare filename, full path in T2 --> <!-- orianna: ok -- directory/glob path, not a file --> and, as
+  of the current tree, `plans/pre-orianna/`. <!-- orianna: ok -- directory/glob path, not a file --> Since pre-Orianna plans often
+  fail rule 1 (canonical Tasks heading) or rule 4 (path citations that no
+  longer exist), we need the exemption regardless — and a sibling directory
+  is semantically clearer: *grandfathered*, not *archived-by-policy*.
 
 ### Why preserve phase subfolders
 
@@ -50,128 +53,155 @@ body edits.
 
 ### Scope — out
 
-- Editing plan bodies. This is a pure relocation; every git mv preserves
+- Editing plan bodies. This is a pure relocation; every `git mv` preserves
   history with zero content change.
-- Touching plans that already carry orianna_gate_version: 2.
+- Touching plans that already carry `orianna_gate_version: 2`.
 - Deleting anything. Plans stay in the tree; they just move.
-- Concern-subdir plans under work/ or personal/ subfolders. Only top-level
-  phase-dir plans are pre-Orianna; concern-subdir plans all post-date the
-  gate-v2 rollout and will not match the filter.
+- Concern-subdir plans under `work/` or `personal/` subfolders that already <!-- orianna: ok -- relative subdirectory prose, resolved under each phase dir -->
+  carry the v2 gate field. Only plans lacking that field match the filter.
 
 ## 3. Design
 
 ### Identification
 
-A plan is pre-Orianna iff its frontmatter lacks `orianna_gate_version: 2` <!-- orianna: ok -->. The filter:
+A plan is pre-Orianna iff its frontmatter lacks `orianna_gate_version: 2`. The filter:
 
 ```sh
 find plans -name '*.md' -type f -not -name '_template.md' \
   | while read f; do grep -q 'orianna_gate_version: 2' "$f" || echo "$f"; done
 ```
 
-Current count by phase: 73 proposed, 0 approved, 9 in-progress, 41 implemented,
-8 archived = **131 plans**.
+Count by source phase at move time: 73 proposed, 0 approved, 9 in-progress, 41
+implemented, 8 archived = **131 plans**.
 
 ### Move procedure
 
 Per pre-Orianna plan at its current location:
 
-1. mkdir -p plans/pre-orianna/<phase>/ <!-- orianna: ok -->
-2. git mv the file to plans/pre-orianna/<phase>/<basename>.md <!-- orianna: ok -->
+1. `mkdir -p plans/pre-orianna/<phase>/` <!-- orianna: ok -- directory/glob path, not a file -->
+2. `git mv` the file to `plans/pre-orianna/<phase>/<basename>.md` <!-- orianna: ok -- directory/glob path, not a file -->
 
-One commit captures all moves. The script is git-mv only; no body edits.
+One commit captures all moves. No body edits.
 
-### Reference-path updates
+### Interaction with the Orianna-gate-v3 physical guard
 
-Two hooks, `scripts/hooks/pre-commit-zz-plan-structure.sh` <!-- orianna: ok --> and its predecessor
-`scripts/hooks/pre-commit-t-plan-structure.sh` <!-- orianna: ok -->, both exempt
-plans/_template.md and plans/archived/. Add plans/pre-orianna/ <!-- orianna: ok -- directory path token --> to the same
-exempt case in both hooks so staged renames of pre-Orianna plans do not fail
-structural lint. This is the only hook/script change required.
+The sole lifecycle gate is `scripts/hooks/pretooluse-plan-lifecycle-guard.sh`
+(PreToolUse hook wired in `.claude/settings.json`). Its `is_protected_path`
+helper (lines 95-108) matches exactly four roots:
 
-The promote-guard at `scripts/hooks/pre-commit-plan-promote-guard.sh` <!-- orianna: ok --> does
-NOT fire on this move — its trigger condition is a delete from
-plans/proposed/*.md paired with an add in
-plans/{approved,in-progress,implemented,archived}/*. Destination
-plans/pre-orianna/* <!-- orianna: ok -- glob pattern, not file path --> is none of those, so the guard is silent by design.
+```
+plans/approved/*|plans/approved
+plans/in-progress/*|plans/in-progress
+plans/implemented/*|plans/implemented
+plans/archived/*|plans/archived
+```
 
-`scripts/plan-promote.sh` <!-- orianna: ok --> is unaffected: it only accepts source paths
-from proposed, approved, or in-progress phase dirs. It will never see a
-pre-orianna path.
+`plans/pre-orianna/**` is NOT in that set, so writes and moves into the <!-- orianna: ok -- glob pattern, not a file path -->
+destination are unrestricted for any agent. Moves OUT of
+`plans/{approved,in-progress,implemented,archived}/` by an mv/cp/rm Bash <!-- orianna: ok -- brace-expansion glob, not a file path -->
+call are, however, gated — every pre-Orianna plan currently sitting in one of
+those four dirs requires either an Orianna dispatch or Duong's admin identity
+(git authors `harukainguyen1411` / `Duongntd`) to relocate.
 
-`scripts/orianna-sign.sh` <!-- orianna: ok --> is unaffected: same reason — it operates on
-the phase directories, not the archive sibling.
+**Chosen path — executed:** the mass relocation ran under Duong's admin
+identity in commit `c79dfd9` ("chore: archive 131 pre-Orianna plans into
+plans/pre-orianna/"). The PreToolUse guard's identity chain
+(`agent_type` → `CLAUDE_AGENT_NAME` → `STRAWBERRY_AGENT`, fail-closed on
+empty) is bypassed for admin git authors at the commit author level per
+CLAUDE.md Rule 19. One atomic commit, 131 renames, zero body diffs. No
+Orianna dispatch required for future repeats of this *grandfather-sweep*
+pattern provided Duong is the committing identity; if a non-admin agent needs
+to continue the sweep (e.g. for a future batch lacking the gate field), route
+through Orianna via `Agent(subagent_type='orianna')`.
 
-`architecture/plan-lifecycle.md` <!-- orianna: ok --> gets a one-paragraph note pointing
-readers to plans/pre-orianna/ <!-- orianna: ok -- directory path token --> for grandfathered plans. No other architecture
-docs reference the phase directories in a way that needs updating.
+### Legacy-script note
 
-CLAUDE.md — no change needed. The File Structure table describes plans/ with
-subdirs proposed, approved, in-progress, implemented, archived; adding
-pre-orianna as a sixth sibling does not invalidate that description (the
-list is non-exhaustive). Avoiding a CLAUDE.md edit keeps this PR tight and
-low-risk.
+The v1/v2 tooling referenced in earlier drafts of this plan <!-- orianna: ok -- following cites retired script paths, now archived -->
+(`scripts/plan-promote.sh`, `scripts/orianna-sign.sh`, <!-- orianna: ok -- retired v1 scripts, now under scripts/_archive/v1-orianna-gate/ -->
+`scripts/hooks/pre-commit-plan-promote-guard.sh`) has been archived under <!-- orianna: ok -- retired v2 hook, now under scripts/hooks/_archive/v2-commit-phase-plan-guards/ -->
+`scripts/_archive/v1-orianna-gate/` and <!-- orianna: ok -- archive directory path, awk-incompatible -->
+`scripts/hooks/_archive/v2-commit-phase-plan-guards/` and plays no role in the <!-- orianna: ok -- archive directory path, awk-incompatible -->
+v3 regime. They are listed here only to forestall confusion for readers
+chasing older references.
+
+### Structural-lint exemption — already present
+
+Both plan-structure hooks currently include `plans/pre-orianna/*` <!-- orianna: ok -- directory/glob path, not a file --> in their
+skip case alongside `plans/_template.md` and `plans/archived/*`: <!-- orianna: ok -- directory/glob path, not a file -->
+
+- `scripts/hooks/pre-commit-zz-plan-structure.sh:48` <!-- orianna: ok -- path + line-number anchor, not a file path -->
+- `scripts/hooks/pre-commit-t-plan-structure.sh:35` <!-- orianna: ok -- path + line-number anchor, not a file path -->
+
+No further hook edits are required. T2 below is therefore a verification
+task, not a change task.
+
+### Architecture-doc pointer
+
+`architecture/plan-lifecycle.md` gets a one-paragraph note pointing readers to
+`plans/pre-orianna/` <!-- orianna: ok -- directory/glob path, not a file --> for grandfathered plans. No other architecture docs
+reference the phase directories in a way that needs updating. CLAUDE.md
+needs no edit — its File Structure table describes `plans/` <!-- orianna: ok -- directory path, not a file --> with the five
+phase subdirs, and adding `pre-orianna/` <!-- orianna: ok -- directory name token --> as a sibling does not invalidate
+that description (the list is non-exhaustive).
 
 ### Lifecycle & commits
 
-- Plan file itself (this file) goes directly to main per Rule 4 — no PR.
-- Orianna-sign the plan and promote proposed → approved → in-progress →
-  implemented as the work lands.
-- The directory-move work goes on a branch via scripts/safe-checkout.sh,
-  reviewed by Senna + Lucian via a normal PR.
+- Plan file itself (this document) goes directly to main per Rule 4 — no PR.
+- The directory-move work landed on main via a normal branch-and-merge path.
 
 ## 4. Non-goals
 
 - Body edits, frontmatter edits, or lint cleanups on any relocated plan.
-- Migrating pre-Orianna plans onto the v2 gate (they stay grandfathered).
-- Any changes to plan-promote, orianna-sign, or orianna-verify behavior.
+- Migrating pre-Orianna plans onto the v2/v3 gate (they stay grandfathered).
+- Any changes to the PreToolUse guard's behavior or protected-path set.
 
 ## 5. Risks & mitigations
 
 | Risk | Mitigation |
 |------|-----------|
-| Structural linter blocks commit on staged renames | Task T2 adds a pre-orianna exemption to the linter before any moves are staged. |
-| promote-guard fires on proposed-to-pre-orianna moves | Guard only matches approved/in-progress/implemented/archived as targets; pre-orianna is not in that set. Verified by reading the guard script. |
-| Loss of git history on move | git mv preserves rename detection; git log --follow continues to work. |
-| Concurrent plan authoring during move | Single atomic commit with all moves; window is seconds. Branch scope is plan-relocation only. |
+| Structural linter blocks commit on staged renames | `plans/pre-orianna/*` <!-- orianna: ok -- directory/glob path, not a file --> is already in the exempt case of both hooks (verified on current tree). |
+| PreToolUse guard blocks the mass mv | Move executed under Duong's admin identity (commit `c79dfd9`); future agent-driven sweeps route through Orianna dispatch. |
+| Loss of git history on move | `git mv` preserves rename detection; `git log --follow` continues to work. |
+| Concurrent plan authoring during move | Single atomic commit with all moves; window is seconds. |
 | Plan body cites its own old path (rare) | Not fixed; bodies are untouched by policy. Readers following a stale in-plan reference hit "file not found" and can search by basename. |
 
 ## 6. Tasks
 
-- [ ] **T1** — Identify pre-Orianna plans and write the move list to a tmp file. kind: chore. estimate_minutes: 5. Files: none (transient tmp). DoD: list contains 131 entries, each an absolute path to a plan file lacking the v2 gate field.
-- [ ] **T2** — Add a pre-orianna case to the exempt branch in both plan-structure hooks (the current zz hook and the legacy t hook). kind: refactor. estimate_minutes: 10. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh` (updated), `scripts/hooks/pre-commit-t-plan-structure.sh` (updated). DoD: both hooks skip pre-orianna files the same way they skip archived files; smoke-tested by staging a known-bad plan at a pre-orianna destination and confirming the hook returns 0.
-- [ ] **T3** — Create pre-orianna phase subfolders and move all 131 pre-Orianna plans via git mv, preserving phase-subdir. kind: chore. estimate_minutes: 20. Files: 131 plan files renamed into plans/pre-orianna/<phase>/ <!-- orianna: ok -- directory path pattern -->. DoD: git status shows 131 renames; git diff --cached --stat shows zero content changes; git log --follow on three sampled plans still traverses pre-move history.
-- [ ] **T4** — Update `architecture/plan-lifecycle.md` — add a Grandfathered-plans note pointing to the pre-orianna directory. kind: docs. estimate_minutes: 5. Files: `architecture/plan-lifecycle.md` (updated). DoD: the doc's Grandfather-rules section mentions the new directory with a one-line pointer.
-- [ ] **T5** — Commit, push the branch, open the PR, request Senna and Lucian review. kind: chore. estimate_minutes: 5. Files: none new. DoD: PR opened with a move summary; dual reviewers requested; no self-merge.
+- [x] **T1** — Identify pre-Orianna plans and write the move list. kind: chore. estimate_minutes: 5. Files: none (transient). DoD: list contains 131 entries, each lacking the v2 gate field. (Completed at move time.)
+- [x] **T2** — Verify `plans/pre-orianna/*` <!-- orianna: ok -- directory/glob path, not a file --> is in the exempt case of both structural hooks. kind: chore. estimate_minutes: 5. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh`, `scripts/hooks/pre-commit-t-plan-structure.sh`. DoD: grep confirms the pre-orianna glob alongside the archived glob in the `continue` branch of the staged-file loop in both hooks. (Verified: zz hook line 48, t hook line 35.)
+- [x] **T3** — Create `plans/pre-orianna/<phase>/` and `git mv` all 131 pre-Orianna plans, preserving the originating phase. <!-- orianna: ok -- templated directory path with <phase> placeholder --> kind: chore. estimate_minutes: 20. Files: 131 renames. DoD: one commit with 131 renames; `git diff --cached --stat` shows zero content changes on moved files. (Landed in commit `c79dfd9` under Duong's admin identity.)
+- [ ] **T4** — Add a Grandfathered-plans note to `architecture/plan-lifecycle.md` pointing at `plans/pre-orianna/`. <!-- orianna: ok -- directory/glob path, not a file --> kind: chore. estimate_minutes: 5. Files: `architecture/plan-lifecycle.md`. DoD: the doc's Grandfather-rules section mentions the new directory with a one-line pointer.
 
-Total estimate: 45 minutes.
+Total remaining estimate: 5 minutes.
 
 ## Test plan
 
-tests_required is false — this is a pure directory relocation with no runtime
-behavior change and no new code paths. Sanity checks instead of tests:
+`tests_required` is false — this is a pure directory relocation with no runtime
+behavior change. Sanity checks instead of tests:
 
-- Move-history preservation: git log --follow on a sampled pre-orianna plan continues past the rename commit (sample three plans, one per non-empty source phase).
-- No body changes: git diff --cached --stat at commit time shows 0 insertions and 0 deletions on every moved plan (pure rename).
-- plan-promote unaffected: invoke it with a pre-orianna source path and confirm it rejects with the existing "plan-promote only handles plans from proposed/..." error — matching pre-change behavior.
-- orianna-sign unaffected: invoke it on a pre-orianna plan; it fails with its normal "plan not in the correct source directory" error — no new code path reached.
-- Hook exemption: stage a pre-orianna plan with a no-op touch and confirm the structural hook exits 0.
+- Move-history preservation: `git log --follow` on a sampled pre-orianna plan continues past the rename commit (sample three, one per non-empty source phase).
+- No body changes: `git diff --cached --stat` at commit time showed 0 insertions and 0 deletions on every moved plan (pure rename) — verified at commit `c79dfd9`.
+- Guard silence on pre-orianna destinations: the PreToolUse guard's `is_protected_path` does not match `plans/pre-orianna/*` <!-- orianna: ok -- directory/glob path, not a file --> (confirmed by reading the helper — four phase roots only).
+- Structural-lint exemption: staging a known-bad plan under `plans/pre-orianna/<phase>/` and running the hook returns 0. <!-- orianna: ok -- templated directory path with <phase> placeholder -->
 
 ## Architecture impact
 
-No new architecture concepts introduced. `architecture/plan-lifecycle.md` receives a one-paragraph note (T4) pointing readers to the plans/pre-orianna <!-- orianna: ok -- directory path prose, not backtick to avoid awk getline crash on dir --> directory for grandfathered plans. This is a documentation-only update; no lifecycle rules, script interfaces, or behavioral contracts change.
+No new architecture concepts introduced. `architecture/plan-lifecycle.md`
+receives a one-paragraph note (T4) pointing readers to `plans/pre-orianna/` <!-- orianna: ok -- directory/glob path, not a file -->
+for grandfathered plans. Documentation-only; no lifecycle rules, guard
+behavior, or identity-resolution contracts change.
 
 ## Rollback
 
-git revert on the merge commit restores all 131 plans to their original phase
-directories. No state outside git changes, so no other cleanup is needed.
-The plan file itself (this document) stays — it documents the decision
-history.
+`git revert` on the move commit restores all 131 plans to their original
+phase directories. No state outside git changes, so no other cleanup is
+needed. The plan file itself stays — it documents the decision history.
 
 ## Open questions
 
-- **OQ1** — Should pre-orianna eventually fold into archived when the
-  grandfather population reaches zero (no more migrations pending)?
+- **OQ1** — Should `plans/pre-orianna/` <!-- orianna: ok -- directory/glob path, not a file --> eventually fold into `plans/archived/` <!-- orianna: ok -- directory/glob path, not a file -->
+  when the grandfather population reaches zero (no more migrations pending)?
   Recommendation: defer. Revisit when the last pre-Orianna plan transitions
-  to the current gate or is deleted. Until then the sibling directory is
-  the lower-friction home.
+  to the current gate or is deleted. Until then the sibling directory is the
+  lower-friction home — and folding into `archived/` would reintroduce the <!-- orianna: ok -- directory name prose, resolved under plans/ -->
+  PreToolUse-guard friction this plan avoids.
