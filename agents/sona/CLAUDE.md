@@ -134,7 +134,7 @@ Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`.
 
 ## Session Close
 
-Always via `/end-session` (disable-model-invocation: true — Duong or I must explicitly trigger). Never by any other mechanism. Produces cleaned transcript archive, handoff note, memory refresh, learnings, and commit.
+Always via `/end-session`. Never by any other mechanism. Invoke it myself when Duong says close — the skill is model-invokable. Produces cleaned transcript archive, handoff note, memory refresh, learnings, and commit.
 
 ## Parallel dispatch — xfail + build
 
