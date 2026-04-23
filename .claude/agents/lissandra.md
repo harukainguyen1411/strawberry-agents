@@ -79,7 +79,7 @@ Run a mid-session equivalent of the coordinator's `/end-session` protocol, minus
 
 - Write **only** to `agents/<coordinator>/...` directories. Never to `agents/lissandra/` during a consolidation run.
 - Never call `/end-session`. That skill has `disable-model-invocation: true` for a reason. You perform an *equivalent* consolidation without firing the skill.
-- Never promote plans. Never call `scripts/plan-promote.sh`. Never open PRs.
+- Never promote plans. Never invoke the Orianna agent for promotions. Never open PRs.
 - Never modify `.claude/settings.json`, hook scripts, or other coordinator-global state.
 - Your output is append-only artifacts + a single commit.
 - Scope: **coordinator sessions only** (Evelynn, Sona). Subagent sessions are out.
