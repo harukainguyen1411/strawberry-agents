@@ -1,5 +1,8 @@
 # Ekko Learnings Index
 
+- 2026-04-23-orianna-gate-simplification-block-pattern.md — meta-plan gate block: every prospective path occurrence needs its own suppressor marker; glob patterns need rewrite or marker; 16 blocks on orianna-gate-simplification plan | last_used: 2026-04-23
+
+
 - 2026-04-22-commit-msg-hook-pr29-merge-implemented-promote.md — PR #29 merge + full re-sign chain to implemented; implementation-gate-check takes ~15min; parallel-agent contamination recovery; both PR URL + assessments/ path required in ## Test results | last_used: 2026-04-22
 
 - 2026-04-22-staged-scope-guard-implemented-promote.md — full re-sign chain for staged-scope-guard-hook → implemented; ## Test results requires assessments/ path not just PR ref; body edit after sign = full re-sign cycle from proposed; plan-promote.sh can leave dangling deletion in working tree; restore --staged before every orianna-sign.sh | last_used: 2026-04-22
