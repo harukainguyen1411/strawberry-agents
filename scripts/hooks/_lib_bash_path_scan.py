@@ -11,10 +11,15 @@ Handles:
   - Variable assignments in the same pipeline resolved at use-sites ($var)
   - ANSI-C quoting  ($'...')
   - Regular single/double quoting (bashlex already exposes word value)
+  - CompoundNode / subshell children via .list (B4/B5 fix)
+  - WordNode command substitutions via .parts (B1/B2/B3 fix)
+  - eval / bash -c / sh -c argument re-parse (B7 fix)
   - Case-folding: all paths emitted as lowercase (for APFS / case-insensitive FS)
   - .. collapse and double-slash collapse (same normalization as shell guard)
 
-Exit 0 always (caller decides what to do with the paths).
+Exit codes:
+  0 — success, paths printed to stdout
+  3 — bashlex parse error (stderr message written); caller must treat as fail-closed
 """
 
 from __future__ import annotations
@@ -79,26 +84,64 @@ def walk(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ig
                     # Strip quotes from value
                     value = normalize_path(value) if value else ""
                     assignments[name] = value
+                # Also walk any commandsubstitution nodes inside the assignment word
+                for subpart in getattr(part, "parts", []):
+                    walk(subpart, assignments, out)
+
+        # Detect eval / bash -c / sh -c for argument re-parse (B7)
+        _verb = ""
+        _dash_c = False
+        _parts_list = list(getattr(node, "parts", []))
+        for i, part in enumerate(_parts_list):
+            if part.kind == "word" and i == 0:
+                _verb = part.word.lower()  # type: ignore[attr-defined]
+            elif part.kind == "word" and i == 1 and _verb in ("bash", "sh") and part.word == "-c":  # type: ignore[attr-defined]
+                _dash_c = True
+
+        _reparse_next = _verb == "eval" or (_verb in ("bash", "sh") and _dash_c)
+        _reparse_idx = 1 if _verb == "eval" else 2  # index of the arg to re-parse
+
         # Now collect word arguments
-        for part in node.parts:  # type: ignore[attr-defined]
+        for i, part in enumerate(_parts_list):
             if part.kind == "word":
                 raw = part.word  # type: ignore[attr-defined]
+                # Walk commandsubstitution nodes inside word.parts (B1/B2/B3)
+                for subpart in getattr(part, "parts", []):
+                    walk(subpart, assignments, out)
                 # Resolve variable references like $dest or ${dest}
                 resolved = _resolve_vars(raw, assignments)
                 normed = normalize_path(resolved)
                 if normed:
                     out.append(normed)
+                # eval / bash -c re-parse (B7) — single level only
+                if _reparse_next and i == _reparse_idx:
+                    _reparse_str = resolved.strip('"').strip("'")
+                    _try_reparse(_reparse_str, assignments, out)
             elif part.kind in ("redirect",):
                 # Redirect target is in heredoc or filename
                 _walk_redirect(part, assignments, out)
+            elif part.kind == "assignment":
+                pass  # already handled above
             else:
                 walk(part, assignments, out)
 
     elif kind == "redirect":
         _walk_redirect(node, assignments, out)
 
+    elif kind == "commandsubstitution":
+        # B1/B2/B3: walk the inner command of $(...) and `...`
+        inner = getattr(node, "command", None)
+        if inner is not None:
+            walk(inner, assignments, out)
+        # Also check .parts in case bashlex uses that shape
+        for part in getattr(node, "parts", []):
+            walk(part, assignments, out)
+
     elif kind in ("list", "pipeline", "compound", "if", "while", "for", "until",
                   "function", "subshell"):
+        # B4/B5: CompoundNode (subshells, function bodies) uses .list, not just .parts
+        for child in getattr(node, "list", []):  # type: ignore[attr-defined]
+            walk(child, assignments, out)
         for part in getattr(node, "parts", []):  # type: ignore[attr-defined]
             walk(part, assignments, out)
 
@@ -108,9 +151,26 @@ def walk(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ig
             walk(part, assignments, out)
 
     else:
-        # Fallback: recurse into any parts
+        # Fallback: recurse into any parts or list children
+        for child in getattr(node, "list", []):
+            walk(child, assignments, out)
         for part in getattr(node, "parts", []):  # type: ignore[attr-defined]
             walk(part, assignments, out)
+
+
+def _try_reparse(cmd_str: str, assignments: dict[str, str], out: list[str]) -> None:
+    """Attempt to re-parse a string as bash (for eval/bash -c). Single level."""
+    import bashlex  # type: ignore[import]
+
+    if not cmd_str.strip():
+        return
+    try:
+        sub_parts = bashlex.parse(cmd_str)
+    except Exception:  # noqa: BLE001
+        # Re-parse failure is non-fatal — we already recorded the raw string above
+        return
+    for node in sub_parts:
+        walk(node, assignments, out)
 
 
 def _walk_redirect(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ignore[type-arg]
@@ -153,22 +213,21 @@ def _resolve_vars(s: str, assignments: dict[str, str]) -> str:
 
 
 def scan(command: str) -> list[str]:
-    """Parse command with bashlex and return list of normalized paths."""
+    """Parse command with bashlex and return list of normalized paths.
+
+    On parse error, writes to stderr and exits with code 3 (B6: no silent fallback).
+    """
     import bashlex  # type: ignore[import]
 
     try:
         parts = bashlex.parse(command)
-    except Exception:  # noqa: BLE001
-        # If bashlex can't parse, fall back to naive whitespace token scan so
-        # the guard still catches obvious paths even on parse failure.
-        paths = []
-        for tok in command.split():
-            # strip leading redirect chars
-            tok = tok.lstrip("><")
-            normed = normalize_path(tok)
-            if normed:
-                paths.append(normed)
-        return paths
+    except Exception as exc:  # noqa: BLE001
+        # B6: no silent tokenizer fallback — exit non-zero so caller fails closed.
+        print(
+            f"[_lib_bash_path_scan] bashlex parse error: {exc}",
+            file=sys.stderr,
+        )
+        sys.exit(3)
 
     assignments: dict[str, str] = {}
     out: list[str] = []

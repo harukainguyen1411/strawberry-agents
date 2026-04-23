@@ -181,13 +181,22 @@ case "$_tool_name" in
     fi
 
     # Walk the bash AST and check each extracted path.
+    # B6: capture scanner output and exit code separately.
+    # Non-zero scanner exit (e.g. parse error → exit 3) is treated as fail-closed.
+    _scanner_out="$(printf '%s' "$_cmd" | "$_py" "$_path_scanner" 2>/dev/null)"
+    _scanner_rc=$?
+    if [ "$_scanner_rc" -ne 0 ]; then
+      printf '%s bash AST scanner exited %s — denied (fail-closed)\n' \
+        "$REJECT_MSG_PREFIX" "$_scanner_rc" >&2
+      exit 2
+    fi
     while IFS= read -r _resolved; do
       if is_protected_path "$_resolved"; then
         if ! is_orianna; then
           reject "$_resolved"
         fi
       fi
-    done < <(printf '%s' "$_cmd" | "$_py" "$_path_scanner" 2>/dev/null)
+    done <<< "$_scanner_out"
     ;;
 
   Write|Edit|NotebookEdit)

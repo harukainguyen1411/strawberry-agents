@@ -285,10 +285,11 @@ ${PAYLOAD_R3_6}
 JSON
 "
 
-# R3-7: malformed bash (parse error) -> exit 2 fail-closed, no tokenizer fallback
+# R3-7: malformed bash referencing plans path (parse error) -> exit 2 fail-closed, no tokenizer fallback
+# Command must reference "plans" to pass the pre-filter and reach the AST scanner.
 # Scanner must exit non-zero on parse error; guard must treat non-zero scanner exit as fail-closed.
-PAYLOAD_R3_7='{"tool_name":"Bash","tool_input":{"command":"git mv ;;"}}'
-assert_exit "R3-7: malformed bash (parse error), ekko -> exit 2 fail-closed" 2 \
+PAYLOAD_R3_7='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md ;;"}}'
+assert_exit "R3-7: malformed bash with plans path (parse error), ekko -> exit 2 fail-closed" 2 \
   bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
 ${PAYLOAD_R3_7}
 JSON
