@@ -1536,6 +1536,63 @@ _assert "(R-no-regression) normal M edit with new bad citation still blocks (exi
 rm -rf "$tRnoreg_dir"
 
 # ---------------------------------------------------------------------------
+# NonPlan-1 — non-plan .md files (agent defs, docs, learnings) must NOT trigger
+# the plan-structure hook even when they carry YAML frontmatter.
+# Plan: plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md (xfail)
+# ---------------------------------------------------------------------------
+tNonPlan_dir="$(_setup_repo)"
+# Agent def with valid agent frontmatter (model/name/description/tools) but none
+# of the plan-required fields (status/concern/owner/created/tests_required) and
+# no `## Tasks` section. Prior to the fix, the hook linted this file and blocked.
+mkdir -p "$tNonPlan_dir/.claude/agents"
+cat > "$tNonPlan_dir/.claude/agents/test-fixture.md" <<'AGENT'
+---
+model: sonnet
+name: TestFixture
+description: Fixture agent — not a plan.
+tools:
+  - Read
+  - Edit
+---
+
+# TestFixture — not a plan
+
+## Startup
+
+1. Read this file.
+
+## What You Do
+
+Nothing. This is a test fixture.
+AGENT
+git -C "$tNonPlan_dir" add ".claude/agents/test-fixture.md"
+tNonPlan_local_hook="$tNonPlan_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tNonPlan_rc="$( (cd "$tNonPlan_dir" && bash "$tNonPlan_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(NonPlan-1) agent-def with frontmatter but no plan fields passes (exit 0)" 0 "$tNonPlan_rc"
+rm -rf "$tNonPlan_dir"
+
+# ---------------------------------------------------------------------------
+# NonPlan-2 — learnings/memory .md files outside plans/ must pass through.
+# ---------------------------------------------------------------------------
+tNonPlan2_dir="$(_setup_repo)"
+mkdir -p "$tNonPlan2_dir/agents/ekko/learnings"
+cat > "$tNonPlan2_dir/agents/ekko/learnings/2026-04-23-test.md" <<'LEARN'
+---
+date: 2026-04-23
+topic: test
+---
+
+# Learning — test
+
+Some body text. No ## Tasks, no plan fields.
+LEARN
+git -C "$tNonPlan2_dir" add "agents/ekko/learnings/2026-04-23-test.md"
+tNonPlan2_local_hook="$tNonPlan2_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tNonPlan2_rc="$( (cd "$tNonPlan2_dir" && bash "$tNonPlan2_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(NonPlan-2) learnings file with frontmatter outside plans/ passes (exit 0)" 0 "$tNonPlan2_rc"
+rm -rf "$tNonPlan2_dir"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
