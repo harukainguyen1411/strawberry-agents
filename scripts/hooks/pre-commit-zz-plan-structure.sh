@@ -33,31 +33,48 @@ if [ -z "$REPO_ROOT" ]; then
   REPO_ROOT="$(cd "$_hook_dir/../.." && pwd)"
 fi
 
-# 1. Get list of staged plan files (added, copied, modified)
-staged_plans="$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null | grep '^plans/.*\.md$' || true)"
+# 1. Get list of staged plan files (added, copied, modified, renamed).
+#    Use --name-status so we can distinguish R (rename) from A/C/M.
+#    name-status output: "<status>\t<path>" for A/C/M, "<status>\t<old>\t<new>" for R.
+staged_plans_raw="$(git diff --cached --name-status --diff-filter=ACMR 2>/dev/null | grep -E $'(^[ACMR][^\t]*\t.*\\.md$|^R[0-9]*\t.*\t.*\\.md$)' || true)"
 
-if [ -z "$staged_plans" ]; then
+if [ -z "$staged_plans_raw" ]; then
   exit 0
 fi
 
-# 2. Filter: exclude template and archived plans; collect absolute paths into a temp file
+# 2. Filter: exclude template and archived plans; collect absolute paths into a temp file.
+#    Also build a rename-map temp file: for R entries record "new_abs\told_rel" so the
+#    staged-lines builder can compute a true blob-to-blob diff for renamed plans.
 _filter_tmp="$(mktemp /tmp/pre-commit-zz-plan-structure-XXXXXX.tmp)"
-trap 'rm -f "$_filter_tmp"' EXIT INT HUP TERM
-printf '%s\n' "$staged_plans" | while IFS= read -r rel; do
-  case "$rel" in
+_rename_map_tmp="$(mktemp /tmp/pre-commit-zz-rename-map-XXXXXX.tmp)"
+trap 'rm -f "$_filter_tmp" "$_rename_map_tmp"' EXIT INT HUP TERM
+
+printf '%s\n' "$staged_plans_raw" | while IFS='	' read -r status f1 f2; do
+  # f1 = old path (rename) or only path (A/C/M); f2 = new path (rename) or empty.
+  # Determine the new path (the file we will lint).
+  case "$status" in
+    R*) new_rel="$f2" ; old_rel="$f1" ;;
+    *)  new_rel="$f1" ; old_rel="" ;;
+  esac
+  # Apply filters on new_rel
+  case "$new_rel" in
     plans/_template.md|plans/archived/*|plans/implemented/*|plans/pre-orianna/*) continue ;;
   esac
   # Block paths with spaces
-  case "$rel" in
-    *\ *) printf '[pre-commit-zz-plan-structure] BLOCK: plan path contains a space (not allowed): %s\n' "$rel" >&2; exit 1 ;;
+  case "$new_rel" in
+    *\ *) printf '[pre-commit-zz-plan-structure] BLOCK: plan path contains a space (not allowed): %s\n' "$new_rel" >&2; exit 1 ;;
   esac
-  abs="$REPO_ROOT/$rel"
-  [ -f "$abs" ] || continue
-  printf '%s\n' "$abs"
-done > "$_filter_tmp"
+  new_abs="$REPO_ROOT/$new_rel"
+  [ -f "$new_abs" ] || continue
+  printf '%s\n' "$new_abs" >> "$_filter_tmp"
+  # Record rename mapping (new_abs<TAB>old_rel) for the staged-lines builder.
+  if [ -n "$old_rel" ]; then
+    printf '%s\t%s\n' "$new_abs" "$old_rel" >> "$_rename_map_tmp"
+  fi
+done
 
 if [ ! -s "$_filter_tmp" ]; then
-  rm -f "$_filter_tmp"
+  rm -f "$_filter_tmp" "$_rename_map_tmp"
   exit 0
 fi
 
@@ -65,21 +82,21 @@ fi
 #     line numbers appear in the diff hunk (rule 4 only validates those lines).
 #     Format written to temp file: "<abs_path>:<linenum>" (one per line).
 #     New files (entire content is staged) include every line via +N,M hunks.
+#
+#     Rename-aware: for R entries we compute a true blob-to-blob diff between
+#     the old blob (HEAD:<old_path>) and the new file content in the index.
+#     This yields only lines that actually changed, not the full body.
+#     Pure R100 renames produce zero added lines → Rule 4 becomes a no-op.
+#     Defensive fallback: if the blob diff fails, we emit a WARN and mark the
+#     file as fully-staged (safe baseline matching pre-fix behaviour).
 _staged_lines_tmp="$(mktemp /tmp/pre-commit-zz-staged-lines-XXXXXX.tmp)"
-trap 'rm -f "$_filter_tmp" "$_staged_lines_tmp"' EXIT INT HUP TERM
-while IFS= read -r abs; do
-  rel="${abs#$REPO_ROOT/}"
-  # git diff --cached --unified=0 shows only hunk headers with no context.
-  # Hunk header format: @@ -old +new_start[,new_count] @@
-  # Extract new-side line ranges and enumerate individual line numbers.
-  # Parse hunk headers with a single anchored sed — works on BSD and GNU sed.
-  # Pattern is anchored to `^@@ -<old> +<new> @@` so the trailing context
-  # (which may contain arbitrary `+<digits>` strings) cannot confuse parsing.
-  # The gawk 3-arg match() primary + greedy-sed fallback is removed: the
-  # primary was dead code on macOS (BSD awk rejects 3-arg match at parse time),
-  # and the greedy sed misparses any hunk header whose context contained `+N`.
-  git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
-    grep '^@@' | \
+trap 'rm -f "$_filter_tmp" "$_rename_map_tmp" "$_staged_lines_tmp"' EXIT INT HUP TERM
+
+_extract_hunk_lines() {
+  # Read hunk headers from stdin; write "abs:linenum" lines to stdout.
+  # Args: $1 = abs path for output prefix.
+  local abs="$1"
+  grep '^@@' | \
     while IFS= read -r hunk; do
       # Anchored extraction: `@@ -<old> +<start>[,<count>] @@ <context>`
       # sed -E captures group 1 = start, group 2 = ,count (optional).
@@ -95,7 +112,63 @@ while IFS= read -r abs; do
         i=$((i + 1))
       done
     done
-done < "$_filter_tmp" > "$_staged_lines_tmp"
+}
+
+while IFS= read -r abs; do
+  rel="${abs#$REPO_ROOT/}"
+
+  # Check if this file is a rename by looking up the rename map.
+  old_rel=""
+  if [ -s "$_rename_map_tmp" ]; then
+    old_rel="$(grep -F "$abs	" "$_rename_map_tmp" | cut -f2 | head -1 || true)"
+  fi
+
+  if [ -n "$old_rel" ]; then
+    # Rename path: compute blob-to-blob diff between HEAD:<old_rel> and the
+    # new file content in the index (git show :<new_rel> for the indexed blob).
+    # Approach:
+    #   1. Extract old blob to a temp file.
+    #   2. Extract new index blob to a temp file.
+    #   3. diff --no-index --unified=0 old_tmp new_tmp to get hunk headers.
+    #   4. Parse hunk headers the same way as the A/M path.
+    # Fallback: if git show fails (e.g. file not in HEAD), emit WARN and fall
+    # back to the cached diff (overzealous-but-safe baseline).
+    _old_tmp="$(mktemp /tmp/pre-commit-zz-old-blob-XXXXXX.tmp)"
+    _new_tmp="$(mktemp /tmp/pre-commit-zz-new-blob-XXXXXX.tmp)"
+    # Extract old blob from HEAD
+    if git show "HEAD:$old_rel" > "$_old_tmp" 2>/dev/null; then
+      # Extract new blob from the index (staged version)
+      if git show ":$rel" > "$_new_tmp" 2>/dev/null; then
+        # diff --no-index exits 1 when files differ (normal), exits 0 when identical,
+        # exits 2 on error. We capture the diff output regardless of exit code.
+        diff --unified=0 -- "$_old_tmp" "$_new_tmp" 2>/dev/null | \
+          _extract_hunk_lines "$abs" >> "$_staged_lines_tmp" || true
+      else
+        printf '[pre-commit-zz-plan-structure] WARN: could not extract indexed blob for %s; falling back to cached diff\n' "$rel" >&2
+        git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
+          _extract_hunk_lines "$abs" >> "$_staged_lines_tmp" || true
+      fi
+    else
+      printf '[pre-commit-zz-plan-structure] WARN: could not extract HEAD blob for %s; falling back to cached diff\n' "$old_rel" >&2
+      git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
+        _extract_hunk_lines "$abs" >> "$_staged_lines_tmp" || true
+    fi
+    rm -f "$_old_tmp" "$_new_tmp"
+  else
+    # A/M/C path: use the cached diff directly (existing behaviour).
+    # git diff --cached --unified=0 shows only hunk headers with no context.
+    # Hunk header format: @@ -old +new_start[,new_count] @@
+    # Extract new-side line ranges and enumerate individual line numbers.
+    # Parse hunk headers with a single anchored sed — works on BSD and GNU sed.
+    # Pattern is anchored to `^@@ -<old> +<new> @@` so the trailing context
+    # (which may contain arbitrary `+<digits>` strings) cannot confuse parsing.
+    # The gawk 3-arg match() primary + greedy-sed fallback is removed: the
+    # primary was dead code on macOS (BSD awk rejects 3-arg match at parse time),
+    # and the greedy sed misparses any hunk header whose context contained `+N`.
+    git diff --cached --unified=0 -- "$rel" 2>/dev/null | \
+      _extract_hunk_lines "$abs" >> "$_staged_lines_tmp" || true
+  fi
+done < "$_filter_tmp"
 
 # 3. Single awk pass over all plan files (POSIX awk — no ENDFILE extension).
 #    Tracks file boundaries via FNR==1 to flush per-file state.
