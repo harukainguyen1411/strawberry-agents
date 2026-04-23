@@ -1,6 +1,6 @@
 ---
 slug: merged-branch-auto-cleanup
-status: proposed
+status: in-progress
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
@@ -61,3 +61,19 @@ T4 is verified by the `gh api ... --jq .delete_branch_on_merge` read-back.
 - `CLAUDE.md` Rule 10 — POSIX-portable bash for `scripts/` outside platform subdirs. <!-- orianna: ok -- repo-root doc reference -->
 - `.claude/skills/end-session/SKILL.md` — target wiring point. <!-- orianna: ok -- existing skill file -->
 - `.claude/skills/end-subagent-session/SKILL.md` — target wiring point. <!-- orianna: ok -- existing skill file -->
+
+---
+## Orianna Approval
+
+- Date: 2026-04-23
+- Agent: Orianna
+- Transition: proposed → approved
+- Rationale: All load-bearing claims verified against repo. Two warns are prospective-path notes for T1/T2 implementation (not current-state assertions). Plan is internally consistent; POSIX-portability rule cited correctly; referenced scripts and skill files confirmed to exist. No blocks. Approved.
+
+---
+## Orianna Approval — approved → in-progress
+
+- Date: 2026-04-23
+- Agent: Orianna
+- Transition: approved → in-progress
+- Rationale: All load-bearing current-state claims confirmed: `scripts/prune-worktrees.sh` exists, both skill files exist. New paths (T1/T2) are prospective and marked accordingly. No blocks. Approved.

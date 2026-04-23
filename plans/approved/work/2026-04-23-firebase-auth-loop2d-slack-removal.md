@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 complexity: complex
 concern: work
 owner: swain
@@ -403,3 +403,12 @@ Local dev impact: none. Firebase-emulator path unchanged. Smoke test contributor
 ## Test plan notes for Xayah
 
 The unit-test files listed above are all net-new; the existing `tests/test_routes.py` <!-- orianna: ok -- cross-repo file, lives in company-os workspace not strawberry-agents -->, `tests/test_main_session_create_no_config.py` <!-- orianna: ok -- cross-repo file, lives in company-os workspace not strawberry-agents -->, `tests/test_s1_new_flow_phase_*.py` <!-- orianna: ok -- cross-repo files, live in company-os workspace not strawberry-agents --> need their `slackUserId` / `slackChannel` / `slackThreadTs` seed dicts kept as-is (they exercise legacy-doc tolerance) — do NOT strip those keys from test fixtures, because one of the invariants we're testing is that legacy docs keep roundtripping. The only tests that need slack-arg removal are the `create_session()`-calling unit tests enumerated in T.W1.4.
+
+---
+
+## Orianna approval
+
+**Decision:** APPROVE
+**Date:** 2026-04-23
+**Fact-check:** blocks: 0, warns: 0, infos: 2
+**Notes:** All 7 OQs resolved by Duong (§11). All cross-repo file references properly annotated. Both local plan paths verified on disk. No speculative claims presented as current-state without anchor. Swain picks accepted; Aphelios owns downstream decomposition.
