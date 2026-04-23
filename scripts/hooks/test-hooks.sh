@@ -285,6 +285,26 @@ fi
 # NOTE: commit-msg-plan-promote-guard tests archived — superseded by pretooluse physical guard.
 
 echo ""
+echo "=== agent default-isolation hook tests (INV-1) ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/test-agent-default-isolation.sh" 2>/dev/null; then
+  echo "  PASS: test-agent-default-isolation.sh (INV-1 auto-isolation)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-agent-default-isolation.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
+echo "=== edit-only breakdown/test-plan agent defs tests (INV-2/INV-3) ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/test-edit-only-agents.sh" 2>/dev/null; then
+  echo "  PASS: test-edit-only-agents.sh (INV-2 no Write, INV-3 default_isolation set)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-edit-only-agents.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "=== orianna v2 gate — invariants #4 and #5 ==="
 if bash "$REPO_ROOT/scripts/hooks/test-orianna-gate-inv4-inv5.sh" 2>/dev/null; then
   echo "  PASS: test-orianna-gate-inv4-inv5.sh (INV-4 idempotence + INV-5 lifecycle smoke)"
