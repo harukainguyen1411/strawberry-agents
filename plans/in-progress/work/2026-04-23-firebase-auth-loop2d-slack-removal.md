@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 complexity: complex
 concern: work
 owner: swain
@@ -450,6 +450,29 @@ W6 is QA + deploy; xfail-first (Rule 12) does not apply to deploy tasks. E2E spe
 ## Test plan notes for Xayah
 
 The unit-test files listed above are all net-new; the existing `tests/test_routes.py` <!-- orianna: ok -- cross-repo file, lives in company-os workspace not strawberry-agents -->, `tests/test_main_session_create_no_config.py` <!-- orianna: ok -- cross-repo file, lives in company-os workspace not strawberry-agents -->, `tests/test_s1_new_flow_phase_*.py` <!-- orianna: ok -- cross-repo files, live in company-os workspace not strawberry-agents --> need their `slackUserId` / `slackChannel` / `slackThreadTs` seed dicts kept as-is (they exercise legacy-doc tolerance) — do NOT strip those keys from test fixtures, because one of the invariants we're testing is that legacy docs keep roundtripping. The only tests that need slack-arg removal are the `create_session()`-calling unit tests enumerated in T.W1.4.
+
+---
+
+## T.W0.2 result — S3/S4 grep audit (T.COORD.3, 2026-04-23)
+
+**Auditor:** Ekko
+**Scope:** `POST /session` callers across `demo-factory`, `demo-config-mgmt`, `demo-preview`, `demo-dashboard` in `company-os/tools/`.
+**Grep patterns run:** `requests.post`, `httpx.post`, `fetch(`, shell `curl`, `"/session"` bare literal, template-string `/session` interpolation, `DEMO_STUDIO_URL`, `demo-studio-v3.*session`.
+
+### Findings
+
+**ZERO callers of `POST /session` (the bare Slack entrypoint) found in any of the four services.**
+
+Exhaustive per-service detail:
+
+- **demo-factory** — `requests.post` appears in `demo_validate.py:77` targeting `WS_BASE` (= `https://api.missmp.tech/api/v3`, a separate MissMP API — not demo-studio). `httpx.AsyncClient.post` in `main.py:317` targets `S4_VERIFY_URL` (a verification service env var — not demo-studio). No `DEMO_STUDIO_URL` reference in this service. No `/session` string anywhere.
+- **demo-config-mgmt** — No `requests.post`, no `httpx.post`, no `fetch(`, no `curl`, no `/session` literal, no `DEMO_STUDIO_URL` reference.
+- **demo-preview** — No `requests.post`, no `httpx.post`, no `fetch(`, no `curl`, no `/session` literal. `DEMO_STUDIO_URL` not referenced. (The function `fetch_config_from_mgmt` in `server.py:86` calls the config-mgmt service, not demo-studio.)
+- **demo-dashboard** — `fetch(` appears in `dashboard.html` at lines 1008, 1134, 1173, 1200, 1389, 1459. Targets are: `config.backend` (generic backend, not demo-studio), `/sessions` (list endpoint — plural, not the bare POST), `/session/${id}/close` (session sub-resource), `/session/${id}/history` (session sub-resource). All are `/session/{id}/*` or `/sessions` patterns — none are the bare `POST /session`. `DEMO_STUDIO_URL` is referenced in `deploy.sh` and two test files only as an env-var value passed at deploy time — no code in main.py or dashboard.html constructs a `DEMO_STUDIO_URL + "/session"` call.
+
+### Conclusion
+
+**Zero callers confirmed.** W3 (`POST /session` deletion) has no blocking dependency from S3/S4 sibling services. T.W0.2 DoD satisfied. W3 is unblocked on this gate (T.W0.1 slack-triage log observation window remains the other W3 prerequisite).
 
 ---
 
