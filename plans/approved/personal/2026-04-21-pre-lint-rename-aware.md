@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -114,3 +114,10 @@ edits).
   flag? Recommendation: no — git already decides R vs D+A at the
   threshold boundary; trust its classification and keep the hook logic
   simple.
+
+## Orianna approval
+
+- **Date:** 2026-04-23
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** The plan has a clear owner (karma), concrete tasks (T1–T6) with explicit DoD and estimate_minutes, a well-specified test plan covering three regression scenarios, and a clean rollback path. No unresolved TBD or Decision-pending items exist in any gating section. OQ1 carries a firm recommendation (no) and does not block implementation. The fix addresses a confirmed systemic bug that has wasted significant engineering time on spurious Rule 4 blocks during routine plan promotions.
