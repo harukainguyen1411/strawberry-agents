@@ -1,5 +1,5 @@
 ---
-status: approved
+status: proposed
 complexity: quick
 owner: karma
 title: Orianna v2 — agent-gated plan promotions (simplification)
@@ -9,7 +9,6 @@ created: 2026-04-22
 orianna_gate_version: 2
 concern: personal
 tests_required: true
-orianna_signature_approved: "sha256:2a28fab2194261adf84eb5933c2183be263784515b51d755702b14d5976cf1a5:2026-04-23T02:39:27Z"
 ---
 
 ## Context
@@ -84,6 +83,19 @@ New regime:
   Files: any cron/hook/script that writes to the `assessments/plan-fact-checks` directory <!-- orianna: ok -- existing directory path, not a file -->.
   Detail: Disable generation; leave existing artifacts untouched. Add a `README.md` in the folder noting the freeze date. <!-- orianna: ok -- prospective file to be created by this task -->
   DoD: No code path writes new files under the `assessments/plan-fact-checks` directory <!-- orianna: ok -- existing directory path, not a file -->; historical files preserved.
+
+- T8. **Write hook authorization tests**
+  Kind: test. Estimate_minutes: 30.
+  Files: `scripts/hooks/test-orianna-gate-v2.bats` (new) <!-- orianna: ok -- prospective path, created by this plan -->
+  Detail: Author bats tests exercising the 6 invariants listed in `## Test plan`:
+  - Hook rejects non-Orianna identity on plan-lifecycle paths.
+  - Hook accepts Orianna identity with valid signature trailer.
+  - Hook respects `Orianna-Bypass:` trailer only when author is `harukainguyen1411`.
+  - Archive path `scripts/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> retains files (no deletion).
+  - `orianna_gate_version: 2` plans require full signature chain. <!-- orianna: ok -- frontmatter key token, not a path -->
+  - Grandfathered plans (no `orianna_gate_version`) fall back to legacy fact-check. <!-- orianna: ok -- frontmatter key token, not a path -->
+  Tests live under `scripts/hooks/test-orianna-gate-v2.bats` (create new file). <!-- orianna: ok -- prospective path, created by this plan -->
+  DoD: All 6 tests pass under bats; wired into `scripts/hooks/test-hooks.sh`.
 
 ## Test plan
 
