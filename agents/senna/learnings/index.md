@@ -25,3 +25,4 @@
 - 2026-04-18-systemic-ci-failures.md — diagnose systemic CI red vs per-PR red | last_used: 2026-04-18
 - 2026-04-18-timingsafeequal-bypass-pattern.md — `timingSafeEqual` defeated by `||` short-circuit on length mismatch | last_used: 2026-04-18
 - 2026-04-18-vitest-it-fails-vs-it-failing.md — `it.fails` (Vitest 4) vs `it.failing` (Playwright); silent 0-test registration | last_used: 2026-04-18
+- 2026-04-23-pr75-firebase-loop2c-route-migration.md — xfail PR and impl PR must be diffed against each other before approving either; route-list drift silently blocks xfail-flip step | last_used: 2026-04-23
