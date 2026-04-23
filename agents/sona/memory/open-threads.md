@@ -1,6 +1,15 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-cbe48dfe; prior shards 2026-04-23-b1acd96a + 2026-04-22-1423e23d + earlier).
+Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-5bc52df0; prior shards 2026-04-23-cbe48dfe + 2026-04-23-b1acd96a + earlier).
+
+---
+
+## S1 load_dotenv gap — .env.local not auto-loaded (2026-04-23, Ekko flagged)
+
+**Status:** pending — trivial follow-up, no owner.
+**Issue:** `tools/demo-studio-v3/main.py` calls `load_dotenv(override=False)` which only picks up `.env`. `.env.local` must come from shell env (`set -a && source .env.local`) or S1 starts with empty Firebase config and `/auth/config` returns silent empties.
+**Fix:** add a second `load_dotenv(".env.local", override=False)` call in main.py.
+**Route:** Soraka or Jayce trivial, no xfail needed.
 
 ---
 
@@ -53,11 +62,11 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-cbe48dfe; 
 
 ---
 
-## Firebase Loop 2d — Slack scaffolding removal — ADR in-flight
+## Firebase Loop 2d — Slack scaffolding removal — SHIPPED W1/W2/W5
 
-**Status (2026-04-23):** Duong directed Loop 2d — remove `slack_user_id`/`slack_channel`/`slack_thread_ts` fields, `POST /session` Slack handoff, and `/auth/session/{sid}?token=...` route. Add "New session" button UI. Swain dispatched to author ADR at compact boundary.
-**Shard pointers:** 2026-04-23-cbe48dfe.
-**Next action:** Await Swain return. Review 5 decision calls with Duong. Commission Karma for quick-lane plan after approval.
+**Status (2026-04-23, updated):** Swain ADR approved by Duong. Orianna promoted to approved then in-progress. Aphelios decomposed. Viktor executed W1/W2/W5 stacked chain. PRs #80 (W1), #81 (W2), #82 (W5) all merged onto `feat/demo-studio-v3`. Xayah Loop 2d xfail stubs on `test/loop2d-xfail`. T.COORD.5 (slack-triage removal) T.0–T.6 complete via PR #79.
+**Shard pointers:** 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
+**Next action:** Remaining Loop 2d waves (if any beyond W1/W2/W5) after Swain config-architecture ADR resolved. Verify T.8 Cloud Run deploy (T.COORD.5) completed.
 
 ---
 
@@ -69,27 +78,51 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-cbe48dfe; 
 
 ---
 
-## P1 factory build — Phase B+C complete; Phase D in flight
+## P1 factory build — Phase B+C+D shipped; Phase E pending merge
 
-**Status (2026-04-23, updated):** Phase A (T.P1.0 Xayah xfails + T.P1.11 Jayce allowlist) complete. Phase B (Viktor S3 trigger_factory, branch `feat/p1-s3-stream`, commits `f42d4f4`/`430b38c`/`f39119d`, 9 xfails flipped) complete. Phase C (T.P1.8 Jayce session-build linkage, branch `feat/p1-t8-session-build-linkage`) complete. Rakan T.P1.7 fault-injection fixture (`test/p1-t7-fault-injection`, commit `5761785`) complete. Jayce T.P1.9 PR #77 open. Jayce T.P1.10a SSE relay writer in-flight at compact boundary.
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
-**Next action:** Await T.P1.10a → then T.P1.10b → Rakan T.P1.12 → Soraka T.P1.13b → Akali T.P1.16 → Ekko T.P1.14 deploy.
+**Status (2026-04-23, updated):** Phase A+B+C complete. T.P1.10a SSE relay writer complete (`feat/p1-t10a-sse-relay-writer`). T.P1.10b SSE fallback GET: PR #84 reviewed (Lucian APPROVE + Senna LGTM), awaiting Duong merge. T.P1.13b demo-ready panel (Soraka): PR #83 reviewed (Lucian APPROVE), awaiting Duong merge. Loop 2d W1/W2/W5 (slack scaffolding removal) merged as PRs #80/#81/#82. PR #77 (T.P1.9) — merged. T.COORD.5 slack-triage T.0–T.6 complete (PR #79).
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
+**Next action:** Duong merge PRs #83+#84 → dispatch T.P1.12 (Rakan integration test) → T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA). Verify T.P1.10a PR status.
 
 ---
 
-## PR #77 (T.P1.9 trigger_factory_v2) — open, awaiting review
+## PR #77 (T.P1.9 trigger_factory_v2) — MERGED (2026-04-23)
 
-**Status (2026-04-23):** PR #77 open on `feat/p1-t9-trigger-factory-v2`. `buildId` + real `projectId` persisted via `update_session_field`. Scaffold bug flagged in T.P1.0 xfails (`create_session` signature mismatch vs real Firestore-backed impl). Not blocking PR #77 itself.
-**Shard pointers:** 2026-04-23-cbe48dfe.
-**Next action:** Dispatch Senna + Lucian for PR #77 review. Fix T.P1.0 scaffold bug (Caitlyn or Vi).
+**Status (2026-04-23):** Merged. Thread closed.
+**Shard pointers:** 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
+**Next action:** None.
 
 ---
 
 ## TOCTOU I1 — plan exists, no owner assigned
 
 **Status (2026-04-23, updated):** Plan authored by Karma: `plans/proposed/work/2026-04-23-demo-studio-auth-exchange-raced-claim.md`. No executor assigned. Must be addressed before final ship.
-**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
+**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
 **Next action:** Assign owner (Vi or Camille). Plan needs Orianna promotion before execution.
+
+---
+
+## Config-architecture ADR — Swain in-flight (2026-04-23)
+
+**Status (2026-04-23):** Duong clarified the intended config flow: session creation seeds from an S2 Firestore test config; agent edits JSON in-context (browser sessionStorage cache); on sequence completion agent calls POST /v1/config to create a new version; preview reads the new version. Swain dispatched to author an ADR for this design. In-flight at compact boundary.
+**Shard pointers:** 2026-04-23-5bc52df0.
+**Next action:** Await Swain ADR. Review with Duong. Then commission Karma for implementation plan (S2 seeding, S1 session-init flow, sessionStorage wiring, POST-on-completion hook).
+
+---
+
+## Akali-QA reminder hook + inbox direct-write block (2026-04-23)
+
+**Status (2026-04-23):** Duong directed two structural fixes to be designed on Evelynn's side: (1) a reminder hook when Lucian is dispatched for user-flow/UI PRs to also dispatch Akali; (2) after Akali returns, coordinator must verify rather than relay blindly. (3) inbox direct-write should be blocked, forcing use of agent-ops skill. Messages sent to Evelynn inbox.
+**Shard pointers:** 2026-04-23-5bc52df0.
+**Next action:** Follow up with Evelynn. Confirm design + implementation dispatched.
+
+---
+
+## AI-coauthor hook — port to missmp/company-os (2026-04-23)
+
+**Status (2026-04-23):** Lucian flagged `Co-Authored-By: Claude Sonnet 4.6` in Jayce d8088bd (PR #77) and Talon b2b8944. Same class as PR #29 fix in strawberry-agents. Evelynn messaged to port the commit-msg-no-ai-coauthor hook (strawberry-agents commit `5138394`) to missmp/company-os work-repo.
+**Shard pointers:** 2026-04-23-5bc52df0.
+**Next action:** Follow up with Evelynn — confirm hook ported to company-os. Then remediate affected commits (d8088bd, b2b8944).
 
 ---
 
