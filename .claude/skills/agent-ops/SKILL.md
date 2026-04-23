@@ -85,3 +85,7 @@ This skill runs identically on macOS and Windows (Git Bash). All subcommands use
 - `architecture/platform-parity.md` — full platform support matrix
 - `plans/proposed/2026-04-08-mcp-restructure.md` — rough plan (governs Phases 2–3)
 - `plans/implemented/2026-04-09-mcp-restructure-phase-1-detailed.md` — this Phase 1 spec (once promoted)
+
+## Inbox write guard
+
+Direct `Write` or `Edit` to `agents/*/inbox/*.md` is blocked by `scripts/hooks/pretooluse-inbox-write-guard.sh` (registered as a PreToolUse hook). Use `/agent-ops send` to deliver inbox messages — this is the only sanctioned authorship path for non-admin identities. The single permitted `Edit` is the check-inbox status flip (`status: pending` -> `status: read`); all other edits are rejected. Archival moves live under `inbox/archive/` and are unguarded. Admin bypass identities: `duongntd` and `harukainguyen1411`.
