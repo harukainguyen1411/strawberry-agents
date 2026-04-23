@@ -89,6 +89,80 @@ fi
 
 rm -rf "$_tmp_repo"
 
+# --- T7 inversion xfail test ---
+# Senna finding: git log --follow --diff-filter=AR | tail -1 returns the original
+# propose commit (authored by Orianna), not the promotion commit (authored by
+# non-Orianna). The fixed audit must use --diff-filter=R and filter on new-path
+# so that a rename into a protected dir by a non-Orianna identity is flagged.
+#
+# Scenario:
+#   commit A — Orianna adds plans/proposed/personal/senna-t7.md
+#   commit B — non-Orianna renames it to plans/approved/personal/senna-t7.md
+# Expected: audit flags commit B as orphan (non-Orianna promoted into protected dir)
+# Current (buggy): tail -1 returns commit A (Orianna authored) → no orphan reported
+
+_tmp2="$(mktemp -d)"
+git -C "$_tmp2" init -q
+
+mkdir -p "$_tmp2/plans/proposed/personal"
+mkdir -p "$_tmp2/plans/approved/personal"
+mkdir -p "$_tmp2/agents/orianna/memory"
+
+cat > "$_tmp2/agents/orianna/memory/git-identity.sh" <<'SH'
+git config user.email "orianna@strawberry.local"
+git config user.name "Orianna"
+SH
+
+# Commit A: Orianna proposes the plan
+printf '# Senna T7 test plan\nstatus: proposed\n' > "$_tmp2/plans/proposed/personal/senna-t7.md"
+git -C "$_tmp2" add plans/proposed/personal/senna-t7.md
+git -C "$_tmp2" -c user.email="orianna@strawberry.local" -c user.name="Orianna" \
+  commit -q -m "chore: propose senna-t7 plan"
+
+# Commit B: non-Orianna promotes (renames) to approved
+git -C "$_tmp2" mv plans/proposed/personal/senna-t7.md plans/approved/personal/senna-t7.md
+git -C "$_tmp2" -c user.email="ekko@strawberry.local" -c user.name="Ekko" \
+  commit -q -m "chore: promote senna-t7 plan (unauthorized)"
+
+_promo_sha="$(git -C "$_tmp2" log --format='%H' -1)"
+_promo_email="ekko@strawberry.local"
+
+_output2="$(bash "$AUDIT" --repo-root "$_tmp2" 2>/dev/null)"
+_exit2=$?
+
+# INV-7e: audit exits 0
+if [ "$_exit2" = "0" ]; then
+  printf '  PASS: INV-7e: rename-scenario audit exits 0\n'
+  PASS=$((PASS+1))
+else
+  printf '  FAIL: INV-7e: audit exited %s (expected 0)\n' "$_exit2"
+  FAIL=$((FAIL+1))
+fi
+
+# INV-7f: audit must flag the PROMOTION commit (non-Orianna rename), not pass silently
+# The buggy tail-1 logic returns commit A (Orianna), reports no orphan → this test FAILs
+# until the fix (--diff-filter=R new-path matching) is applied.
+if echo "$_output2" | grep -q "$_promo_sha"; then
+  printf '  PASS: INV-7f: rename-scenario output contains promotion SHA (T7 inversion fixed)\n'
+  PASS=$((PASS+1))
+else
+  printf '  FAIL: INV-7f: rename-scenario output does not contain promotion SHA %s\n' "$_promo_sha"
+  printf '         (T7 inversion: tail -1 returned original propose commit, not promotion)\n'
+  printf '  output was: %s\n' "$_output2"
+  FAIL=$((FAIL+1))
+fi
+
+# INV-7g: output contains the non-Orianna promoter email
+if echo "$_output2" | grep -q "$_promo_email"; then
+  printf '  PASS: INV-7g: rename-scenario output contains promoter email\n'
+  PASS=$((PASS+1))
+else
+  printf '  FAIL: INV-7g: rename-scenario output does not contain promoter email %s\n' "$_promo_email"
+  FAIL=$((FAIL+1))
+fi
+
+rm -rf "$_tmp2"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
