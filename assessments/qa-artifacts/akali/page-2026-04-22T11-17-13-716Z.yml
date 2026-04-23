@@ -1,0 +1,88 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - heading "Aviva" [level=1] [ref=e4]
+    - generic [ref=e5]:
+      - generic [ref=e6]: Motor Insurance
+      - generic [ref=e7]: GB
+      - generic [ref=e8]: aviva-motor
+      - generic [ref=e9]: EN
+    - generic [ref=e10]:
+      - 'generic "primary: #B60000" [ref=e11]'
+      - 'generic "secondary: #E85454" [ref=e12]'
+      - 'generic "background: #B60000" [ref=e13]'
+      - 'generic "foreground: #FFFFFF" [ref=e14]'
+      - 'generic "label: #FFB3B3" [ref=e15]'
+    - generic [ref=e16]: v1
+  - tablist "Preview sections" [ref=e17]:
+    - tab "Overview" [selected] [ref=e18] [cursor=pointer]
+    - tab "Wallet Passes" [ref=e19] [cursor=pointer]
+    - tab "Journey" [ref=e20] [cursor=pointer]
+    - tab "Token UI" [ref=e21] [cursor=pointer]
+    - tab "iPad Demo" [ref=e22] [cursor=pointer]
+    - tab "Logo Map" [ref=e23] [cursor=pointer]
+  - tabpanel "Overview" [ref=e24]:
+    - banner [ref=e25]:
+      - heading "Aviva" [level=1] [ref=e26]
+      - generic [ref=e27]: Motor Insurance · GB
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - term [ref=e30]: Shortcode
+          - definition [ref=e31]: aviva-motor
+        - generic [ref=e32]:
+          - term [ref=e33]: Market
+          - definition [ref=e34]: GB
+        - generic [ref=e35]:
+          - term [ref=e36]: Languages
+          - definition [ref=e37]: en
+        - generic [ref=e38]:
+          - term [ref=e39]: Product
+          - definition [ref=e40]: Motor Insurance
+        - generic [ref=e41]:
+          - term [ref=e42]: Persona
+          - definition [ref=e43]: James Smith
+    - generic "Brand palette" [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]: PRIMARY
+        - generic [ref=e47]:
+          - generic [ref=e48]: "#B60000"
+          - generic [ref=e49]: Brand 1 / 5
+      - generic [ref=e50]:
+        - generic [ref=e51]: SECONDARY
+        - generic [ref=e52]:
+          - generic [ref=e53]: "#E85454"
+          - generic [ref=e54]: Brand 2 / 5
+      - generic [ref=e55]:
+        - generic [ref=e56]: BACKGROUND
+        - generic [ref=e57]:
+          - generic [ref=e58]: "#B60000"
+          - generic [ref=e59]: Brand 3 / 5
+      - generic [ref=e60]:
+        - generic [ref=e61]: FOREGROUND
+        - generic [ref=e62]:
+          - generic [ref=e63]: "#FFFFFF"
+          - generic [ref=e64]: Brand 4 / 5
+      - generic [ref=e65]:
+        - generic [ref=e66]: LABEL
+        - generic [ref=e67]:
+          - generic [ref=e68]: "#FFB3B3"
+          - generic [ref=e69]: Brand 5 / 5
+    - generic [ref=e70]:
+      - generic [ref=e71]:
+        - heading "Template Parameters" [level=3] [ref=e72]
+        - generic [ref=e73]: 5 tokens
+      - generic [ref=e74]:
+        - generic [ref=e75]:
+          - generic [ref=e76]: "{{firstName}}"
+          - generic [ref=e77]: James
+        - generic [ref=e78]:
+          - generic [ref=e79]: "{{lastName}}"
+          - generic [ref=e80]: Smith
+        - generic [ref=e81]:
+          - generic [ref=e82]: "{{policyNumber}}"
+          - generic [ref=e83]: AV-2026-88124
+        - generic [ref=e84]:
+          - generic [ref=e85]: "{{vehicle}}"
+          - generic [ref=e86]: Ford Focus
+        - generic [ref=e87]:
+          - generic [ref=e88]: "{{expiryDate}}"
+          - generic [ref=e89]: 31.12.2026
