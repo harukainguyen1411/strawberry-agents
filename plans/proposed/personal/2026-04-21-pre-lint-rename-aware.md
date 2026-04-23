@@ -3,7 +3,6 @@ status: proposed
 concern: personal
 owner: karma
 created: 2026-04-21
-orianna_gate_version: 2
 complexity: quick
 tests_required: true
 tags: [hooks, pre-commit, plan-lifecycle, bugfix]

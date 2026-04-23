@@ -4,16 +4,12 @@ concern: personal
 owner: karma
 created: 2026-04-22
 complexity: quick
-orianna_gate_version: 2
 tests_required: true
 architecture_impact: none
 tags: [orianna-gate, hooks, scripts, fast-follow, senna-review]
 related:
   - plans/implemented/personal/2026-04-21-orianna-gate-speedups.md
   - agents/senna/learnings/2026-04-21-pr17-staged-scope-guard-rereview.md
-orianna_signature_approved: "sha256:859fa43042b17dc127b5ff0cb5a4363abd14c06c728ff27a171328ae6577cbd4:2026-04-22T13:45:26Z"
-orianna_signature_in_progress: "sha256:859fa43042b17dc127b5ff0cb5a4363abd14c06c728ff27a171328ae6577cbd4:2026-04-22T13:46:20Z"
-orianna_signature_implemented: "sha256:859fa43042b17dc127b5ff0cb5a4363abd14c06c728ff27a171328ae6577cbd4:2026-04-22T13:47:36Z"
 ---
 
 # Orianna speedups PR #19 fast-follow — Senna review hardenings

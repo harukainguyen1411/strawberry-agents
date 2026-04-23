@@ -4,7 +4,6 @@ concern: personal
 owner: swain
 created: 2026-04-22
 complexity: complex
-orianna_gate_version: 2
 tests_required: true
 tags: [orianna-gate, plan-lifecycle, scripts, hooks, governance, rescope]
 related:
@@ -20,9 +19,6 @@ related:
   - agents/orianna/prompts/task-gate-check.md
   - agents/orianna/prompts/implementation-gate-check.md
 architecture_changes: [architecture/plan-lifecycle.md]
-orianna_signature_approved: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T11:05:18Z"
-orianna_signature_in_progress: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T11:06:09Z"
-orianna_signature_implemented: "sha256:7482c1799b2451dea2f2e2828c338a12f57e4bfed9569afdeaa25524fe8145e1:2026-04-22T11:11:12Z"
 ---
 
 # Orianna — substance-vs-format rescope

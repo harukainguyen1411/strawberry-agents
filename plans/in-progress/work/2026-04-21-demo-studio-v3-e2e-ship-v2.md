@@ -1,6 +1,5 @@
 ---
 status: in-progress
-orianna_gate_version: 2
 complexity: complex
 concern: work
 owner: Azir
@@ -12,7 +11,6 @@ tags:
   - integration
   - work
 tests_required: true
-orianna_signature_approved: "sha256:0c6587607f0e86a322039555dfcec1f1f58a26f51b08f929603fdb9695643f89:2026-04-21T10:00:40Z"
 ---
 
 # ADR: Demo Studio v3 — E2E Integration and Ship Gate (v2)
