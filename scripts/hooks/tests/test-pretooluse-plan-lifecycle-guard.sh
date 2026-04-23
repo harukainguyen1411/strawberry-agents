@@ -354,6 +354,27 @@ ${PAYLOAD_V7}
 JSON
 "
 
+# --- T1: agent_type identity propagation (xfail until T2 impl lands) ---
+# Hook JSON carries agent_type field (set by Claude Code runtime for subagent calls).
+# Guard must read .agent_type as first identity source — no env vars needed.
+#
+# A1: agent_type=orianna, no env vars, git mv proposed->approved -> exit 0 (xfail)
+# A2: agent_type=ekko,    no env vars, git mv proposed->approved -> exit 2 (xfail)
+
+PAYLOAD_A1='{"tool_name":"Bash","agent_type":"orianna","tool_input":{"command":"git mv plans/proposed/personal/x.md plans/approved/personal/x.md"}}'
+assert_exit "A1: agent_type=orianna, no env vars, git mv -> exit 0" 0 \
+  bash -c "unset CLAUDE_AGENT_NAME STRAWBERRY_AGENT; bash \"$GUARD\" <<'JSON'
+${PAYLOAD_A1}
+JSON
+"
+
+PAYLOAD_A2='{"tool_name":"Bash","agent_type":"ekko","tool_input":{"command":"git mv plans/proposed/personal/x.md plans/approved/personal/x.md"}}'
+assert_exit "A2: agent_type=ekko, no env vars, git mv -> exit 2" 2 \
+  bash -c "unset CLAUDE_AGENT_NAME STRAWBERRY_AGENT; bash \"$GUARD\" <<'JSON'
+${PAYLOAD_A2}
+JSON
+"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
