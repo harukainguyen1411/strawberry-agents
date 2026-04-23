@@ -1,14 +1,15 @@
 ---
 status: proposed
 concern: personal
-owner: swain
+owner: azir
 created: 2026-04-21
 updated: 2026-04-23
 tests_required: true
 complexity: complex
 tags: [coordinator, evelynn, sona, preferences, learning, decisions, memory]
 related:
-  - plans/approved/personal/2026-04-21-memory-consolidation-redesign.md
+  - plans/implemented/personal/2026-04-21-memory-consolidation-redesign.md
+  - plans/in-progress/personal/2026-04-23-memory-flow-simplification.md
   - agents/memory/duong.md
   - .claude/skills/end-session/SKILL.md
   - .claude/skills/pre-compact-save/SKILL.md
@@ -405,9 +406,9 @@ Three mechanisms:
 
 First 20 decisions are collected under `confidence: low` across all axes. During this window, the `Predict:` line equals the `Pick:` line by default (the coordinator has no independent signal). `preferences.md` starts empty except for axes extracted from the first decisions' tagged axes.
 
-## 9. Integration with the in-flight memory-consolidation plan
+## 9. Integration with memory-consolidation + memory-flow-simplification plans
 
-`plans/approved/personal/2026-04-21-memory-consolidation-redesign.md` (approved, not yet implemented) establishes the two-layer memory shape. This plan slots in cleanly as an additional tier under the same two-layer pattern:
+`plans/implemented/personal/2026-04-21-memory-consolidation-redesign.md` (implemented as of 2026-04-23) established the two-layer memory shape. This plan slots in cleanly as an additional tier under the same two-layer pattern:
 
 | Layer | Memory-consolidation tier | Decision-feedback tier |
 |---|---|---|
@@ -436,7 +437,20 @@ Token budget (estimate, post-bootstrap):
 - `axes.md` at 10 axes × 6 lines ≈ 60 lines ≈ 2 KB ≈ 400–500 tokens.
 - Combined: ~1–1.2k tokens added to the dynamic tail. Compared to the memory-consolidation plan's ~8–9k token savings, net boot cost goes down.
 
-Ordering dependency: **this plan depends on the memory-consolidation plan being at least in `in-progress/`** before the scripts ship, because `scripts/memory-consolidate.sh` is rewritten by that plan and re-extended by this one. Serialising the two is the cleanest path (see §10.5 rollout).
+Ordering dependency: memory-consolidation is in the `implemented/` stage (as of 2026-04-23). The serial ordering condition is satisfied; this plan can proceed to the `approved/` stage. <!-- orianna: ok -- stage names, not file paths -->
+
+### 9.1 Boundary with memory-flow-simplification (in-progress)
+
+`plans/in-progress/personal/2026-04-23-memory-flow-simplification.md` proposes two renames that overlap with surface names cited in this plan: <!-- orianna: ok -- prospective names below are discussed as rename sources/targets, not load-bearing cites -->
+
+1. `agents/<coordinator>/memory/open-threads.md` → `live-threads.md` (new semantic: in-session writable ledger, not close-only). <!-- orianna: ok -->
+2. `agents/<coordinator>/memory/last-sessions/` → `agents/<coordinator>/memory/sessions/` (single archive root). <!-- orianna: ok -->
+
+This plan does NOT re-specify either rename. Scoping rule: **surface names cited here (existing `open-threads.md`, `last-sessions/INDEX.md`) track whatever memory-flow-simplification lands.** <!-- orianna: ok --> At implementation time, Kayn/Aphelios MUST check the then-current names before authoring T6/T9/T10. If flow-simplification has merged first, the agent-def boot-chain entries and the `/end-session` Step 6c ordering reference the renamed surfaces (`live-threads.md`, `sessions/INDEX.md`) transparently — the decision-tier artifacts (`preferences.md`, `axes.md`, `decisions/INDEX.md`, `decisions/log/*.md`) are unaffected by the rename because they live under a distinct `decisions/` subtree. <!-- orianna: ok -- prospective decision-tier paths created by T8 -->
+
+Concretely: the decision-feedback tier owns `agents/<coordinator>/memory/decisions/**`. <!-- orianna: ok --> It never writes to the coordinator's live-thread ledger or session-snapshot trees (under whichever name they carry). The only coupling points are (a) boot-chain ordering (§6.1, §9) which references a sibling file by-whatever-name-it-has-at-the-time, and (b) `/end-session` Step 6c ordering (§5.2) which runs strictly after the shard + ledger regen pass — whatever that pass is called.
+
+No content duplication. No merge pain predicted.
 
 ## 10. Failure modes & mitigations
 
@@ -539,3 +553,5 @@ Unique rollback wrinkle: if T4 extension is already live and `log/*.md` files ha
   **Pick:** Non-blocking with one retry + loud report at session close — proceed as specified in §10 failure mode #5.
 - **OQ5** — Ordering vs. memory-consolidation plan: should this plan be held until the memory-consolidation plan reaches `implemented`, or can the two be worked in parallel? Recommendation: **serial — wait for memory-consolidation to hit `in-progress/` minimum**. The `memory-consolidate.sh` script is rewritten by that plan and re-extended by this one. Attempting both in parallel means twin-branch merge pain on a single script. Serial = cleaner. Flag if Duong wants them collapsed into one combined rollout.
   **Pick:** Resolved — memory-consolidation is now `implemented` (cleared as of 2026-04-23 triage). Serial ordering condition is satisfied; this plan may proceed to promotion.
+- **OQ6** — Overlap with `plans/in-progress/personal/2026-04-23-memory-flow-simplification.md`: that plan renames the live-ledger and collapses the session-snapshot tree. <!-- orianna: ok -- rename discussion; see 9.1 --> Should this plan (a) pin to current names and file a follow-up rename, (b) rewrite to use the new names pre-emptively, or (c) scope the boundary and let implementation-time lookups resolve? Recommendation: **(c) — scope the boundary, no content duplication**. See §9.1. Decision-tier artifacts are under the prospective `decisions/` subtree (§3) and are orthogonal to the flow-simplification rename. Coupling is limited to boot-chain adjacency (sibling-by-name) and `/end-session` step ordering (step-after-ledger-pass, whatever the pass is called). Kayn/Aphelios check then-current names at T6/T9/T10 authoring time.
+  **Pick:** Scope the boundary (§9.1). This plan does not re-specify the rename; whichever plan merges first wins the naming, and this plan's implementation tracks it.

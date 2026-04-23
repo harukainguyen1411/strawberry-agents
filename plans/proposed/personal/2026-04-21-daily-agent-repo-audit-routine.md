@@ -2,9 +2,13 @@
 status: proposed
 concern: personal
 owner: lux
+architect: azir
 created: 2026-04-21
+design_pass: 2026-04-23-azir-adr-ready
 tests_required: true
 complexity: complex
+estimate_minutes: 675
+blocking_oqs: [OQ-Routine-Feasibility, OQ1, OQ9]
 tags: [audit, routine, drift, claude-code, rot-detection, meta-tooling]
 related:
   - plans/proposed/personal/2026-04-21-retrospection-dashboard.md
@@ -13,6 +17,17 @@ related:
   - architecture/agent-pair-taxonomy.md
   - architecture/agent-network.md
   - architecture/key-scripts.md
+invariants:
+  - Routine is advisory-only — never blocks commits, CI, or PRs
+  - Audit subagents are read-only — enforced by tool-list restriction, not convention
+  - Parent Routine is the sole writer to audits/findings-tracker.json
+  - One artifact per day — assessments/audits/YYYY-MM-DD-audit.md
+  - One consolidated inbox message per run — not one-per-finding
+  - Subagent JSON output is schema-validated before consolidation
+  - Dimension 5 external content passes prompt-injection scanner before entering reasoning context
+  - Auto-resolve requires two consecutive absence observations (defeats flake oscillation)
+  - No PR, no Slack, no email, no push notification — inbox + artifact + git commit only
+  - chore: commit prefix (no apps/** touched)
 ---
 
 # Daily agent-repo audit routine — drift detection via Claude Code Routines
@@ -88,11 +103,28 @@ Total budget per run: ~20-28 minutes of dispatched subagent work + ~3-5 min of o
 |---|---|
 | Name | `daily-agent-repo-audit` |
 | Repo | `Duongntd/strawberry-agents` (main branch) |
-| Schedule | Daily at `07:00 Asia/Bangkok` (before Duong's typical day-start) |
-| Tools | `Read`, `Grep`, `Glob`, `Bash` (read-only + git + gh for release-notes fetches), `Agent` (dispatch subagents), `Write` (findings artifact + tracker + inbox), `WebFetch`, `WebSearch` |
+| Schedule | Daily at `07:00 Asia/Bangkok` → cron `0 0 * * *` in UTC (00:00 UTC = 07:00 Bangkok UTC+7). See OQ1 for timezone confirmation and OQ-Routine-Feasibility for whether Claude Code Routines accept a cron string or a higher-level schedule primitive. |
+| Tools — parent | `Read`, `Grep`, `Glob`, `Bash` (git + gh only — see allow-list below), `Agent`, `Write` (scoped to `assessments/audits/**`, `audits/**`, `agents/evelynn/inbox/**`), `WebFetch`, `WebSearch` |
+| Tools — audit subagents (read-only enforcement) | `Read`, `Grep`, `Glob`, `Bash` (read-only subset — see §D1.1). **NOT granted:** `Write`, `Edit`, `NotebookEdit`, `Agent`. This is enforced at dispatch time via the `Agent` tool's allowed-tools parameter, not by prompt convention. |
 | Connectors | None. (No MCP servers. The Routine runs on the repo and the open web only.) |
 | Output | Committed artifact + pushed commit; no PR, no Slack |
 | Idempotency | Re-running the same day is safe — tracker state-machine detects "already ran today" and no-ops with a log line |
+| Skip/pause mechanics | `audits/findings-tracker.json:disabled_dates[]` → skip a specific date; `audits/disabled-dimensions.json` → skip one dimension; delete the `/schedule` entry → pause indefinitely. See §D11. |
+
+### D1.1 Read-only subagent enforcement
+
+The audit subagents (Lux×4, Azir×1) are dispatched with a tool allow-list that contains **no write-capable tools**. Concretely, the parent Routine's `Agent` call shape is:
+
+```
+Agent(
+  subagent_type="lux" | "azir",
+  allowed_tools=["Read", "Grep", "Glob", "Bash"],
+  bash_allowlist=["git log", "git show", "git diff", "grep", "rg", "ls", "find", "cat", "head", "tail", "wc", "curl"],
+  prompt="<per-dimension dispatch template — §D10>"
+)
+```
+
+`Write`, `Edit`, `NotebookEdit`, and `Agent` are structurally absent from the child's tool surface. A misbehaving subagent prompt cannot cause a write because the tool is not present to call — this is the same pattern the `strawberry-reviewers` identity uses on PR reviews. The parent Routine is the sole writer to `audits/findings-tracker.json`, `assessments/audits/**`, and `agents/evelynn/inbox/**`. (If Claude Code's `Agent` tool does not yet expose `allowed_tools` at dispatch time, §OQ-Routine-Feasibility covers the fallback: two-pass design where the subagent emits a JSON blob via stdout and the parent validates + persists — the subagent still runs with reduced tools via its agent-def frontmatter rather than call-site.)
 
 **Subscription tier requirement:** Routines require Pro/Max/Team/Enterprise on Claude Code Web. Daily cap per tier (Pro: 5/day, Max: 15/day, Team/Enterprise: 25/day) is well above one daily execution. The Routine draws down subscription usage identically to interactive sessions. (Source: Routines blog post.) <!-- orianna: ok -->
 
@@ -395,7 +427,16 @@ tracker_snapshot_sha: sha256:<short>
 - Research bullets (Dimension 5): see §D3.5 output section below
 ```
 
-**Inbox surface:** `agents/evelynn/inbox/YYYYMMDD-HHMM-audit-routine-info.md`. Short — a one-screen summary with counts and the top 3 highest-severity new findings, plus a link to the full artifact. Evelynn's inbox-watcher (from the approved `2026-04-20-strawberry-inbox-channel.md` plan) picks this up in real time when Evelynn is running, or surfaces as pending on her next session start. <!-- orianna: ok -->
+**Inbox surface:** exactly **one consolidated message per run** (never one-per-finding). File shape:
+
+| Condition | Filename | Contents |
+|---|---|---|
+| No new findings AND no newly-resolved AND no >7-day high escalations | `YYYYMMDD-HHMM-audit-routine-info.md` | One line: "Audit clean. N findings open (state unchanged)." |
+| Only `low`/`medium` new findings | `YYYYMMDD-HHMM-audit-routine-info.md` | Counts + top 3 new findings + link to artifact |
+| ≥1 new `high` OR ≥1 high open >7 days | `YYYYMMDD-HHMM-audit-routine-warn.md` | Counts + ALL new `high` findings inline + top 2 medium + link to artifact |
+| Dimension errored 2+ runs in a row | `YYYYMMDD-HHMM-audit-routine-warn.md` | Above + a "coverage degraded" section naming the failing dimension |
+
+The suffix (`info` vs `warn`) is the priority signal the inbox-watcher uses to decide whether to interrupt Evelynn's current task or queue for next session start. No `critical` suffix — the Routine is advisory by invariant 1. Evelynn's inbox-watcher (from approved `2026-04-20-strawberry-inbox-channel.md`) picks this up in real time or surfaces as pending on her next session start. <!-- orianna: ok -->
 
 **No Slack, no email, no push notification.** Inbox + artifact + git commit are the surfaces. The Routine's commit message is:
 
@@ -623,6 +664,21 @@ Test runner: vitest (the repo's existing choice — see `apps/**` and `scripts/_
 | Prompt-injection classifier false-positives on legitimate imperative blog content | medium | T13 observation week calibrates the threshold; tuned via `audits/thresholds.json:dim_5_injection_threshold`. A rejection is `low`-severity only — never blocks the audit, never escalates, just skips one URL. If every URL in a category rejects, one `medium` meta-finding surfaces so sustained over-rejection is visible. |
 | `llm-guard` / `transformers` / `torch` supply-chain compromise | low-medium | Dependencies pinned in `audits/requirements.txt` by exact version. Weights are a specific commit-SHA pin on the Hugging Face model (set in `scripts/audit-dim-5-fetch.sh`'s `HF_HUB_DOWNLOAD_REVISION` env). Model runs locally with no network at inference time (weights cached on first run). |
 
+## 5.5 Invariants
+
+These are the load-bearing commitments this ADR makes. Each is also declared in frontmatter for mechanized checks. Changing any of these requires a new ADR, not an edit.
+
+1. **Advisory-only.** The Routine never blocks a commit, CI run, PR, or human action. No hook references its output. No CI gate consumes its tracker.
+2. **Audit subagents are read-only.** Enforced by `allowed_tools` restriction at dispatch (§D1.1), not by prompt convention. A malicious or confused subagent prompt cannot produce a write because the write tool is structurally absent.
+3. **Parent Routine is the sole writer** to `audits/findings-tracker.json`, `assessments/audits/**`, and `agents/evelynn/inbox/**`. Subagents emit JSON to stdout; the parent merges.
+4. **One artifact per day.** Filename `assessments/audits/YYYY-MM-DD-audit.md`. Re-running the same day no-ops via the tracker's `last_run_date` field.
+5. **One consolidated inbox message per run.** Never one-per-finding. Priority rules: message filename is `*-info.md` when only `low`/`medium` new findings surface; `*-warn.md` when ≥1 new `high` surfaces OR an existing `high` has been open >7 days. Never `*-critical.md` — the Routine is advisory.
+6. **Subagent JSON is schema-validated.** §D4 schema. Malformed output is rejected (dimension marked errored, raw output preserved for debug). Parent never consolidates un-validated findings.
+7. **Dimension 5 external content is quarantined.** All upstream HTML passes the ProtectAI deberta-v3 classifier (§D12) before any byte enters the Routine's reasoning context. Fail-closed on scanner failure.
+8. **Auto-resolution requires two consecutive absences.** Prevents flaky detection from oscillating open ↔ resolved.
+9. **Skipping is a single-field edit.** `disabled_dates[]` or `disabled_dimensions.json` or deleting the `/schedule` entry. No code change needed to pause.
+10. **`chore:` commit prefix.** The Routine touches only `assessments/**`, `audits/**`, `agents/evelynn/inbox/**` — never `apps/**`. Per CLAUDE.md rule 5 this is `chore:`.
+
 ## 6. Tasks
 
 **Phase 1 — Walking skeleton (one day).** Estimate: 4 tasks, 165 minutes.
@@ -687,6 +743,8 @@ Test runner: vitest (the repo's existing choice — see `apps/**` and `scripts/_
 - **Full rollback is zero-risk** — no CLAUDE.md rule depends on the Routine; no PR gate depends on it; no script in `scripts/hooks/` depends on it.
 
 ## Open questions
+
+- **OQ-Routine-Feasibility (BLOCKER)** — Does Claude Code Routine infrastructure actually support (a) scheduled execution on Claude Code Web, (b) `Agent`-tool dispatch of subagents from inside a Routine session, and (c) per-dispatch `allowed_tools` restriction (§D1.1)? The ADR assumes all three based on the Routines blog post, but none have been exercised by this repo. This is a hard dependency — if (a) fails, the whole plan is blocked pending an alternative scheduler (GitHub Actions + `claude` CLI headless, cron-on-a-VM, etc.). If (b) fails, the parent Routine collapses to sequential in-session audits (still works, just longer wall-clock). If (c) fails, the read-only guarantee (invariant 2) degrades from structural to conventional — we would need a tighter fallback (e.g. a `pretooluse` hook that rejects Write/Edit from any `audit-dim-*` subagent identity). *Action:* Duong runs a 15-minute spike: create a no-op Routine entry via `/schedule`, confirm it fires once, confirm it can invoke `Agent`, inspect whether `allowed_tools` is a parameter on `Agent`. Results land in §OQ-Routine-Feasibility answer block before T1 starts. *Fallback path* if (a) fails: port the orchestrator to `.github/workflows/daily-audit.yml` using `anthropics/claude-code-action` or the `claude` headless CLI; the subagent-dispatch contract (§D3, §D10) and tracker schema (§D4) remain unchanged.
 
 - **OQ1** — Timezone for the schedule: the ADR assumes `Asia/Bangkok` (UTC+7). Is that Duong's current working timezone? If not, specify the correct IANA zone. *Recommendation:* Duong confirms; if he relocates frequently, use `America/Los_Angeles` or similar stable default and accept the local-clock drift as acceptable for a 7-AM-ish schedule.
 
