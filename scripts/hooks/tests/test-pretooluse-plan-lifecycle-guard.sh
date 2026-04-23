@@ -181,6 +181,54 @@ else
   printf '  SKIP: C8 — %s not found, skipping NotebookEdit-existing test\n' "$_EXISTING_PLAN"
 fi
 
+# --- Senna round-2: AST walker xfail tests (xfail until bashlex helper implemented) ---
+
+# R2-1: shell redirect no-space (echo x >plans/approved/y.md), non-Orianna -> exit 2
+# The tokenizer splits on whitespace — ">plans/approved/y.md" has no space before ">"
+# so the old tokenizer sees it as one token but doesn't strip the ">". AST walker must
+# detect the redirect target.
+PAYLOAD_R2_1='{"tool_name":"Bash","tool_input":{"command":"echo x >plans/approved/y.md"}}'
+assert_exit "R2-1: redirect no-space (echo x >plans/approved/y.md), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R2_1}
+JSON
+"
+
+# R2-2: case-fold bypass (PLANS/APPROVED/x.md on case-insensitive FS), non-Orianna -> exit 2
+# Test asserts exit 2 regardless of actual FS (guard must case-fold on its own).
+PAYLOAD_R2_2='{"tool_name":"Bash","tool_input":{"command":"git mv src PLANS/APPROVED/x.md"}}'
+assert_exit "R2-2: case-fold bypass (PLANS/APPROVED/x.md), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R2_2}
+JSON
+"
+
+# R2-3: variable assignment resolution (dest=plans/approved/x.md; git mv src $dest), non-Orianna -> exit 2
+# The old tokenizer sees "$dest" as a literal token — AST walker must trace var assignment.
+PAYLOAD_R2_3='{"tool_name":"Bash","tool_input":{"command":"dest=plans/approved/x.md; git mv src $dest"}}'
+assert_exit "R2-3: var assignment (dest=plans/approved/x.md; git mv src \$dest), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R2_3}
+JSON
+"
+
+# R2-4: ANSI-C quoting ($'...'), non-Orianna -> exit 2
+PAYLOAD_R2_4='{"tool_name":"Bash","tool_input":{"command":"git mv src $'"'"'plans/approved/x.md'"'"'"}}'
+assert_exit "R2-4: ANSI-C quoting (\$'plans/approved/x.md'), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R2_4}
+JSON
+"
+
+# R2-5: missing python3/bashlex -> fail-closed, exit 2 with install message
+# We simulate missing python3 by providing a PYTHON3_CMD override pointing at /nonexistent.
+PAYLOAD_R2_5='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md plans/approved/x.md"}}'
+assert_exit "R2-5: python3 unavailable (PYTHON3_CMD=/nonexistent) -> exit 2 fail-closed" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko PYTHON3_CMD=/nonexistent bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R2_5}
+JSON
+"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
