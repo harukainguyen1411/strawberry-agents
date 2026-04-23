@@ -64,9 +64,11 @@ Protected directories:
 - `plans/implemented/`
 - `plans/archived/`
 
-Any agent whose `$CLAUDE_AGENT_NAME` / `$STRAWBERRY_AGENT` (case-insensitive) is not
-`orianna` is rejected with exit 2 before the tool runs. Fail-closed: if neither env var
-is set, the guard rejects access to protected paths.
+Identity is resolved in order: framework `agent_type` (Agent-tool subagent dispatch)
+→ `CLAUDE_AGENT_NAME` env var → `STRAWBERRY_AGENT` env var → fail-closed. If no
+identity can be resolved, the guard rejects access to protected paths. Duong's admin
+identities (`harukainguyen1411`, `Duongntd`) are the only bypass; there is no
+`Orianna-Bypass:` trailer mechanism and no `_orianna_identity.txt` file.
 
 `plans/proposed/` and its subtrees remain freely writable by any agent (plan authoring).
 
@@ -135,5 +137,4 @@ and enforces five rules (see inline comments in the script). Plans under
 | `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` | PreToolUse physical guard — sole enforcement layer |
 | `scripts/orianna-bypass-audit.sh` | Post-hoc bypass detection (non-blocking) |
 | `scripts/hooks/_archive/v2-commit-phase-plan-guards/` | Archived v2 commit-phase guards (superseded) |
-| `scripts/hooks/_orianna_identity.txt` | Canonical Orianna email for hook check |
 | `architecture/archive/v1-orianna-gate/plan-lifecycle.md` | Previous lifecycle doc (v1 regime) |
