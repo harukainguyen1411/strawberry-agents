@@ -1396,6 +1396,146 @@ _assert "(R4-trailer) hunk header with +digits in trailing context: new bad toke
 rm -rf "$tR4t_dir"
 
 # ---------------------------------------------------------------------------
+# R-pure — R100 rename with nonexistent backtick citation must exit 0
+# xfail before fix: current hook treats R100 as full-body addition, so every
+# line is marked staged and Rule 4 fires on the nonexistent path → exit 1.
+# After fix: blob-to-blob diff produces zero added lines for pure rename →
+# Rule 4 is a no-op → exit 0.
+# Plan: plans/approved/personal/2026-04-21-pre-lint-rename-aware.md
+# ---------------------------------------------------------------------------
+tRpure_dir="$(_setup_repo)"
+mkdir -p "$tRpure_dir/plans/proposed/personal"
+cat > "$tRpure_dir/plans/proposed/personal/rename-pure.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+tests_required: false
+tags: [test]
+---
+
+# Pure rename test
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+See `scripts/imaginary.sh` for the approach.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$tRpure_dir" add "plans/proposed/personal/rename-pure.md"
+git -C "$tRpure_dir" commit -q -m "initial plan"
+# Pure rename: mv to approved/personal/ (identical content — R100)
+mkdir -p "$tRpure_dir/plans/approved/personal"
+cp "$tRpure_dir/plans/proposed/personal/rename-pure.md" \
+   "$tRpure_dir/plans/approved/personal/rename-pure.md"
+git -C "$tRpure_dir" rm -q "plans/proposed/personal/rename-pure.md"
+git -C "$tRpure_dir" add "plans/approved/personal/rename-pure.md"
+tRpure_local_hook="$tRpure_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tRpure_rc="$( (cd "$tRpure_dir" && bash "$tRpure_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R-pure) R100 rename citing nonexistent path must not trigger Rule 4 (exit 0)" 0 "$tRpure_rc"
+rm -rf "$tRpure_dir"
+
+# ---------------------------------------------------------------------------
+# R-edit — rename + frontmatter edit: only truly-new lines trigger Rule 4
+# xfail before fix: current hook marks all lines staged on any rename diff,
+# so the pre-existing nonexistent citation in the body triggers Rule 4 → exit 1
+# (wrong: the body line was unchanged). After fix: blob-to-blob diff yields
+# only the actually-changed line(s) — the status change. Body line with
+# imaginary.sh is NOT new → Rule 4 skips it → exit 0.
+# Plan: plans/approved/personal/2026-04-21-pre-lint-rename-aware.md
+# ---------------------------------------------------------------------------
+tRedit_dir="$(_setup_repo)"
+mkdir -p "$tRedit_dir/plans/proposed/personal"
+cat > "$tRedit_dir/plans/proposed/personal/rename-edit.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+tests_required: false
+tags: [test]
+---
+
+# Rename + edit test
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+See `scripts/imaginary.sh` for the approach.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$tRedit_dir" add "plans/proposed/personal/rename-edit.md"
+git -C "$tRedit_dir" commit -q -m "initial plan"
+# Rename + frontmatter edit (status: proposed → approved)
+mkdir -p "$tRedit_dir/plans/approved/personal"
+sed 's/^status: proposed/status: approved/' \
+  "$tRedit_dir/plans/proposed/personal/rename-edit.md" \
+  > "$tRedit_dir/plans/approved/personal/rename-edit.md"
+git -C "$tRedit_dir" rm -q "plans/proposed/personal/rename-edit.md"
+git -C "$tRedit_dir" add "plans/approved/personal/rename-edit.md"
+tRedit_local_hook="$tRedit_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tRedit_rc="$( (cd "$tRedit_dir" && bash "$tRedit_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R-edit) rename+status-edit: only changed line staged, body imaginary.sh not flagged (exit 0)" 0 "$tRedit_rc"
+rm -rf "$tRedit_dir"
+
+# ---------------------------------------------------------------------------
+# R-no-regression — normal M edit with new nonexistent backtick path blocks
+# Non-xfail: this passes with both old and new code; guards against regression.
+# Plan: plans/approved/personal/2026-04-21-pre-lint-rename-aware.md
+# ---------------------------------------------------------------------------
+tRnoreg_dir="$(_setup_repo)"
+mkdir -p "$tRnoreg_dir/plans/proposed/personal"
+cat > "$tRnoreg_dir/plans/proposed/personal/noreg-base.md" <<'PLAN'
+---
+status: proposed
+concern: personal
+owner: karma
+created: 2026-04-21
+tests_required: false
+tags: [test]
+---
+
+# No-regression base
+
+## Tasks
+
+- [ ] **T1** — Do the thing. estimate_minutes: 10. DoD: done.
+
+## Rollback
+
+Revert.
+
+## Open questions
+
+None.
+PLAN
+git -C "$tRnoreg_dir" add "plans/proposed/personal/noreg-base.md"
+git -C "$tRnoreg_dir" commit -q -m "base plan"
+# Normal M edit: append a new line citing a nonexistent path
+printf 'See `scripts/imaginary-noreg.sh` for details.\n' \
+  >> "$tRnoreg_dir/plans/proposed/personal/noreg-base.md"
+git -C "$tRnoreg_dir" add "plans/proposed/personal/noreg-base.md"
+tRnoreg_local_hook="$tRnoreg_dir/scripts/hooks/pre-commit-zz-plan-structure.sh"
+tRnoreg_rc="$( (cd "$tRnoreg_dir" && bash "$tRnoreg_local_hook") 2>/dev/null && echo 0 || echo $? )"
+_assert "(R-no-regression) normal M edit with new bad citation still blocks (exit 1)" 1 "$tRnoreg_rc"
+rm -rf "$tRnoreg_dir"
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 printf '\n%d passed, %d failed\n' "$PASS" "$FAIL"
