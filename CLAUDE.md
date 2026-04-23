@@ -53,8 +53,8 @@ See `agents/memory/agent-network.md` for the full roster.
 <!-- #rule-no-raw-age-d -->
 6. **Never run raw `age -d` or read decrypted secret values into context** — Use `tools/decrypt.sh` exclusively; it keeps plaintext in the child process env only. Never `cat`/`type`/pipe `secrets/age-key.txt`. The pre-commit hook blocks violations.
 
-<!-- #rule-plan-promote-sh -->
-7. **Use `scripts/plan-promote.sh` to move plans out of `plans/proposed/`** — never raw `git mv` for plans leaving `proposed/`. `plan-promote.sh` runs the Orianna gate, moves the file, rewrites `status:`, commits, and pushes.
+<!-- #rule-orianna-promotes-plans -->
+7. **Use the Orianna agent to promote plans out of `plans/proposed/`** — invoke `.claude/agents/orianna.md` with the plan path and target stage. Never raw `git mv` for plans leaving `proposed/`. Orianna reads the plan, decides APPROVE or REJECT, and on APPROVE handles the move, status update, commit (`Promoted-By: Orianna` trailer), and push.
 
 <!-- #rule-end-session-skill -->
 8. **Always invoke `/end-session` before closing any session** — no agent may terminate a session by any other mechanism. Top-level sessions use `/end-session` (disable-model-invocation: true — Duong or Evelynn must explicitly trigger it). Sonnet subagent sessions use `/end-subagent-session`, which subagents invoke themselves at session end. Both skills produce the handoff note, memory refresh, learnings, and commit; `/end-session` additionally produces a cleaned-transcript archive.
@@ -114,8 +114,8 @@ See `agents/memory/agent-network.md` for the full roster.
     are satisfied. Break-glass admin merges are a human-only Duong procedure (see
     `plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md` §3).
 
-<!-- #rule-orianna-signature-required -->
-19. **Plan promotions past `proposed → approved` require valid Orianna signatures on every transition** — `scripts/plan-promote.sh` invokes `scripts/orianna-verify-signature.sh` for the target phase plus carry-forward verification of all prior signatures. Plans authored under the v2 regime (`orianna_gate_version: 2`) are blocked from any transition without a valid signature; grandfathered plans (no `orianna_gate_version` field) fall back to legacy fact-check behavior. The only bypass is the `Orianna-Bypass: <reason>` commit trailer, valid only when the commit author is Duong's admin identity (`harukainguyen1411`); agent-identity bypass attempts are rejected by the pre-commit hook. See `architecture/plan-lifecycle.md` for the full lifecycle, `architecture/key-scripts.md` for the helper scripts, and `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md` §D9.1 for the bypass rationale.
+<!-- #rule-orianna-callable-agent -->
+19. **Plan promotions are gated by the Orianna agent** — Orianna is a callable Opus agent at `.claude/agents/orianna.md`. Only she (and Duong's admin identity, `harukainguyen1411`) may commit plan moves out of `plans/proposed/`; enforced by `scripts/hooks/pre-commit-plan-promote-guard.sh` via author identity check against `scripts/hooks/_orianna_identity.txt` plus a `Promoted-By: Orianna` commit trailer. No body-hash signatures, no fact-check artifacts — Orianna reads the plan, renders APPROVE or REJECT, and on APPROVE she `git mv`s the file, appends a cosmetic approval block, commits, and pushes. No `Orianna-Bypass:` trailer mechanism — admin identity is the only bypass. See `architecture/plan-lifecycle.md` for the full lifecycle.
 
 ## File Structure
 
