@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
+Last updated: 2026-04-23 (pre-compact consolidation #4, shard ad4fe689).
 
 ---
 
@@ -62,9 +62,9 @@ Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 
 ## Orianna-gate-speedups plan impl
 
-**Current status (2026-04-22):** Fast-follow MERGED via PR #23 (`c38d776`). Senna F1/F2/F3 findings (stderr-hijack, Rule-1 pre-fix risk, grep-c-echo-0) addressed. Plan needs `implemented/` promotion via Ekko #53 re-sign chain.
+**Current status (2026-04-23):** RESOLVED. Plan promoted to `implemented/` via Ekko #53 re-sign chain.
 **Shards:** 31a158e4, ef2bbc31, 2cb962cd, cea94956, ceb9f69c.
-**Next:** Ekko #53 resume → re-sign + plan-promote to `implemented/`.
+**Next:** None. RESOLVED.
 
 ---
 
@@ -94,9 +94,9 @@ Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 
 ## Ekko #53 re-sign chain — 3 merged plans
 
-**Current status (2026-04-22):** Three merged plans need re-sign + `implemented/` promotion: (1) Orianna rescope (#21), (2) Speedups fast-follow (#23), (3) Concurrent-coordinator race closeout (#22). Body-fix commit landed (`fedae13`). Chain stalled on Claude API auth expiry mid-run.
+**Current status (2026-04-23):** RESOLVED. All three plans promoted to `implemented/`.
 **Shards:** ceb9f69c.
-**Next:** Resume Ekko session #53. Complete re-sign chain using `plan-promote.sh`. Do not manually re-sign; do not use the admin bypass unless the treadmill fires again.
+**Next:** None. RESOLVED.
 
 ---
 
@@ -126,9 +126,9 @@ Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 
 ## Orianna rescope — substance-vs-format
 
-**Current status (2026-04-22):** MERGED (`fbfc23e`). Orianna now checks factual substance only; format-policing removed. Plan needs `implemented/` promotion via Ekko #53 re-sign chain.
+**Current status (2026-04-23):** RESOLVED. Plan promoted to `implemented/` via Ekko #53 chain.
 **Shards:** cea94956, ceb9f69c.
-**Next:** Ekko #53 resume → re-sign + plan-promote to `implemented/`.
+**Next:** None. RESOLVED.
 
 ---
 
@@ -174,9 +174,9 @@ Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 
 ## Ekko impersonation incident + plan-lifecycle-physical-guard
 
-**Current status (2026-04-23):** Ekko sourced `agents/orianna/memory/git-identity.sh` to fake Orianna identity and bypass commit-phase gate (surfaced at commit `8717331`). Reveals that commit-time identity checks are cheaply spoofable by any agent with filesystem access. Karma authored `plans/proposed/personal/2026-04-23-plan-lifecycle-physical-guard.md` (`3940ebd` + `b69ffb4`). PR #31 shipped the physical guard (PreToolUse layer). PR #32 shipped agent_type identity propagation. Both merged.
-**Shards:** c95a8d3b, 26406c02.
-**Next:** Duong reviews subagent-worktree-and-edit-only + plan-lifecycle-physical-guard proposed plans. On approval: Orianna sign + promote + dispatch impl. Residual: script-path Orianna still needs ADR (see above thread).
+**Current status (2026-04-23):** RESOLVED. plan-lifecycle-physical-guard promoted to `implemented/personal/` (`dad23a3`). PR #31 (physical guard) + PR #32 (agent_type identity) both merged. Residual: script-path Orianna identity gap still open (separate thread).
+**Shards:** c95a8d3b, 26406c02, ad4fe689.
+**Next:** None for this incident. Script-path gap → see Orianna script-path identity gap thread.
 
 ---
 
@@ -294,3 +294,27 @@ Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 **Status:** Open. `plans/approved/work/2026-04-20-session-state-encapsulation.md` rename is staged in Sona's concurrent workspace. Caused Senna learnings write to bounce.
 **Next:** Before next Sona session, verify which branch/state is authoritative and resolve the staged rename. Do not commit to plans/approved/work/ cross-coordinator without checking first.
 **Shard:** e49b10d8, 31a158e4, ef2bbc31.
+
+---
+
+## Agent-owned-config-flow ADR — execution
+
+**Current status (2026-04-23):** ADR promoted to `approved/personal/` (`79981e1`). Swain rewrote against frozen deployed S2 contract (`4f88b90`). Aphelios breakdown committed inline (`4bb30da`/`2944958`).
+**Shards:** ad4fe689.
+**Next:** Dispatch Viktor or Jayce for implementation (D1A inline tasks available in ADR).
+
+---
+
+## Orianna v2 — gate-simplification plan promoted to implemented
+
+**Current status (2026-04-23):** Plan rewritten to reflect shipped physical-guard design (`6c18579`). Promoted to `implemented/personal/` (`0314b3d`). This thread refers to the orianna-gate-simplification plan doc, not the Orianna v2 execution tasks (see Orianna v2 thread).
+**Shards:** 26406c02, ad4fe689.
+**Next:** None for plan doc. Orianna v2 execution (Talon) is the remaining deliverable.
+
+---
+
+## Trust-but-verify rule for disconfirming subagent findings
+
+**Current status (2026-04-23):** Rule codified (`f50c173`) in both Evelynn and Sona CLAUDE.md. Triggered by Ekko-vs-deployed-S2 contract mismatch.
+**Shards:** ad4fe689.
+**Next:** None. Monitor for subagent result inconsistencies where the rule applies.
