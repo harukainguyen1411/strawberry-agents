@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: implemented
 concern: personal
 owner: karma
 created: 2026-04-22
@@ -35,3 +35,21 @@ unanticipated cases rather than the normal path.
 
 1. **Update executor agent definitions** — `kind: chore`, `estimate_minutes: 30`. Update agent definitions for Yuumi, Ekko, Syndra, Talon, Viktor, and Jayce to set `STAGED_SCOPE` before each `git commit` call. Use `STAGED_SCOPE='*'` for acknowledged bulk operations (memory consolidation, install-hooks.sh re-runs). <!-- orianna: ok -- agent-def paths exist at plan authoring time -->
    - Use newline-separated paths for multi-file commits (not space-separated). Example: `STAGED_SCOPE=$(printf 'a/b.md\nc/d.md')`. The guard hook parses newlines; space-separated paths silently fail validation.
+
+---
+
+## Orianna approval
+
+**APPROVE** — 2026-04-23
+
+All load-bearing claims verified:
+
+- Commits d088e9c, 8e9401a, 8c6d852 exist on main.
+- PR #30 (orianna-gate-simplification) confirmed MERGED.
+- All 6 target agents (yuumi, ekko, syndra, talon, viktor, jayce) carry exactly 3 occurrences of STAGED_SCOPE in their agent defs.
+- NonPlan-1 and NonPlan-2 tests present in scripts/hooks/test-pre-commit-plan-structure.sh.
+- Full test suite: 43 passed, 0 failed (live run confirmed).
+
+Scope-precision note: plan says "6 agent definitions" but shipped work touched 5 edit points (2 standalone + 3 shared includes); all 6 target agents covered via sync propagation. End state matches plan intent.
+
+Promoted-By: Orianna
