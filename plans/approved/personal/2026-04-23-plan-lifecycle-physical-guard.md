@@ -88,6 +88,7 @@ All tests are xfail-first (Rule 12) — the test commit lands on the task branch
 - Universal invariants: `CLAUDE.md` Rules 7, 12, 19.
 - Lifecycle doc to update: `architecture/plan-lifecycle.md`.
 - Bypass-detection audit — `scripts/orianna-bypass-audit.sh` (post-hoc, non-blocking). Suggested cron wiring: nightly CI job (`.github/workflows/`) that runs the script and posts findings to a reporting channel without failing the build; local invocation `bash scripts/orianna-bypass-audit.sh` from repo root. Single-gate principle (Duong 2026-04-23): prevention is the PreToolUse hook; detection is this audit; they are separate layers with separate responsibilities, and the audit never blocks.
+- Follow-up plan: filesystem-layer ACLs (chflags/chattr) or dedicated PlanMove tool (allowlist) to close entire bypass family. B8–B10 + any future AST gaps to be addressed under that plan. Filed as future work, not this PR. (Senna structural recommendation, 2026-04-23.)
 
 ---
 

@@ -245,21 +245,23 @@ else
 fi
 
 echo ""
-echo "=== orianna v2 gate tests ==="
-if bash "$REPO_ROOT/scripts/hooks/test-plan-promote-guard.sh" 2>/dev/null; then
-  echo "  PASS: test-plan-promote-guard.sh (v2, all 6 fixtures)"
+echo "=== pretooluse plan-lifecycle-guard tests (physical guard) ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/test-pretooluse-plan-lifecycle-guard.sh" 2>/dev/null; then
+  echo "  PASS: test-pretooluse-plan-lifecycle-guard.sh (6 invariants)"
   PASS=$((PASS+1))
 else
-  echo "  FAIL: test-plan-promote-guard.sh"
+  echo "  FAIL: test-pretooluse-plan-lifecycle-guard.sh"
   FAIL=$((FAIL+1))
 fi
-if bash "$REPO_ROOT/scripts/hooks/test-orianna-gate-v2.sh" 2>/dev/null; then
-  echo "  PASS: test-orianna-gate-v2.sh (all 6 invariants)"
+if bash "$REPO_ROOT/scripts/hooks/tests/test-pretooluse-plan-lifecycle-integration.sh" 2>/dev/null; then
+  echo "  PASS: test-pretooluse-plan-lifecycle-integration.sh (integration flow)"
   PASS=$((PASS+1))
 else
-  echo "  FAIL: test-orianna-gate-v2.sh"
+  echo "  FAIL: test-pretooluse-plan-lifecycle-integration.sh"
   FAIL=$((FAIL+1))
 fi
+# NOTE: orianna v2 commit-phase gate tests (test-plan-promote-guard.sh, test-orianna-gate-v2.sh)
+# archived to scripts/hooks/_archive/v2-commit-phase-plan-guards/ — superseded by physical guard above.
 
 echo ""
 echo "=== agents/orianna/memory/git-identity.sh smoke ==="
@@ -280,15 +282,7 @@ else
   FAIL=$((FAIL+1))
 fi
 
-echo ""
-echo "=== commit-msg plan-promote-guard tests ==="
-if bash "$REPO_ROOT/scripts/hooks/test-commit-msg-plan-promote-guard.sh" 2>/dev/null; then
-  echo "  PASS: test-commit-msg-plan-promote-guard.sh (6 trailer-check cases)"
-  PASS=$((PASS+1))
-else
-  echo "  FAIL: test-commit-msg-plan-promote-guard.sh"
-  FAIL=$((FAIL+1))
-fi
+# NOTE: commit-msg-plan-promote-guard tests archived — superseded by pretooluse physical guard.
 
 echo ""
 echo "=== orianna v2 gate — invariants #4 and #5 ==="
