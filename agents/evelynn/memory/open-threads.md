@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-23 (session close, shard 69f3fb3e).
+Last updated: 2026-04-23 (pre-compact consolidation, shard 02f8c677).
 
 ---
 
@@ -150,9 +150,25 @@ Last updated: 2026-04-23 (session close, shard 69f3fb3e).
 
 ## Orianna v2 — simplification
 
-**Current status (2026-04-23):** Plan at `plans/proposed/personal/2026-04-22-orianna-gate-simplification.md` (title: "Orianna v2 — agent-gated plan promotions"). Karma drafted 7 tasks; Duong revised scope mid-flight: archive-don't-overwrite existing scripts/architecture docs rather than deleting them. Plan body still reflects delete-semantics; needs revision before execution. Talon dispatch paused by Duong.
-**Shards:** 69f3fb3e.
-**Next:** Revise plan body per archive-semantics (move old scripts under `scripts/_archive/v1-orianna-gate/`, old docs under `architecture/archive/`). Then dispatch Talon/Viktor to execute. 7 tasks, ~105 min estimate.
+**Current status (2026-04-23):** Plan revised to archive-semantics (`152b10d`) and promoted to `plans/approved/personal/2026-04-22-orianna-gate-simplification.md` via Ekko sign (`93071b7`) + promote (`8b5f361`). Ekko background in flight: promoting `approved→in-progress`. Archive semantics confirmed: old scripts → `scripts/_archive/v1-orianna-gate/`, old docs → `architecture/archive/`.
+**Shards:** 69f3fb3e, 02f8c677.
+**Next:** Verify Ekko completed `approved→in-progress` promote. Dispatch Talon for 7-task execution (~105 min).
+
+---
+
+## Memory-flow simplification ADR
+
+**Current status (2026-04-23):** Swain drafted `plans/proposed/personal/2026-04-23-memory-flow-simplification.md` (`4370a73`). Ekko background in flight to commit + promote to `approved/`. 13 tasks, ~400 min, 3 phases. Collapses 11 memory surfaces → 6, 4 close skills → 2. Retires `.remember/` for coordinators. Renames `open-threads.md` → `live-threads.md`. Fixes Sona drift bug by construction. Duong concurred all 7 OQs with Swain's picks.
+**Shards:** 02f8c677.
+**Next:** Verify Ekko completed promote to `approved/`. Dispatch per ADR phasing once plan is `in-progress`. Coordinate with Sona before phase execution — touches both coordinator memory shapes.
+
+---
+
+## Evelynn startup parity — RESOLVED
+
+**Current status (2026-04-23):** Shipped. Step 9 inbox scan added to Evelynn's startup sequence (`c650af8`). Both coordinators now have identical 9-step startup sequences.
+**Shards:** 02f8c677.
+**Next:** None. RESOLVED.
 
 ---
 

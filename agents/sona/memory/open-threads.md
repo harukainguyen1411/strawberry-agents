@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-22 (session close, shard 2026-04-22-1423e23d; prior shard 2026-04-22-dd3ae6e1 + earlier).
+Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-b1acd96a; prior shards 2026-04-22-1423e23d + earlier).
 
 ---
 
@@ -25,17 +25,17 @@ Last updated: 2026-04-22 (session close, shard 2026-04-22-1423e23d; prior shard 
 
 ---
 
-## Firebase Loop 2b — PR #69 OPEN, Talon hotfix commits pushed, re-review pending
+## Firebase Loop 2b — PR #69 MERGED (2026-04-23)
 
-**Status (2026-04-22):** Loop 2a implemented. PR #69 OPEN (`feat/firebase-auth-2b-frontend-signin`). Akali: PASS. Senna: advisory LGTM. Lucian: REQUEST-CHANGES on test strategy. Talon hotfix commits pushed for Senna's 3 findings: `3836501` (Fix 1/2/3 client JS), `f6be6d8` (Fix 2 server — `/auth/config` exposes `allowedEmailDomain`), `c988cf3` (9 source-inspection tests). 0 new failures introduced. Lucian request-changes on test strategy still stands.
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1.
-**Next action:** Senna re-review on the 3 hotfix commits. Lucian decision — accept source-grep stance for 2c (where real auth routes force real browser coverage) or require emulator tests retroactively. Then Duong web-UI approve + merge.
+**Status (2026-04-23):** MERGED by Duong. Senna cleared Talon hotfixes. Lucian test-strategy dissent noted and deferred to Loop 2d. Thread closed.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1, 2026-04-23-b1acd96a.
+**Next action:** None. Loop 2c merge gate unblocked on 2b side.
 
-## Firebase Loop 2c — PR #70 (xfails) + PR #75 (impl) OPEN
+## Firebase Loop 2c — PR #70 (xfails) + PR #75 (impl) OPEN — BLOCKED on test reconciliation
 
-**Status (2026-04-22):** Vi xfails done → PR #70 (`feat/firebase-auth-2c-xfails`), 105 strict xfails + 1 sanity green, commit `2bd2532`. Jayce impl done → PR #75 (`feat/firebase-auth-2c-impl` → `feat/demo-studio-v3`), 2 commits `965a97b` + `0362bb3`. Route migration complete: `/session/new` → `require_user`, `/session/{sid}` + `/chat`/`/logs`/`/stream`/`/status`/`/events`/`/messages`/`/history`/`/close`/`/cancel-build` all to `require_session_owner` or `require_session_or_owner`. `/preview` unchanged (404 stub). `/build`/`/reauth`/`/complete` keep `verify_internal_secret`.
-**Shard pointers:** 2026-04-22-1423e23d.
-**Next action:** Senna + Lucian review on PR #75. Vi xfail-to-green verification. Akali Playwright QA (user-flow surface per Rule 16). Merge gate order: 2b merges first, then 2c.
+**Status (2026-04-23):** Seven-way parallel review on PR #75 returned: Lucian LGTM, Senna REQUEST-CHANGES, Vi NO-GO (TDD gate), Akali PARTIAL. Root cause: 3 API-shape mismatches between PR #70 xfail suite and PR #75 impl — (A) `auth._load_session` import path, (B) CI header injection, (C) `session.py` placement. Vi dispatched (second wave) for test reconciliation. Do not merge or re-review until Vi returns and Senna re-clears. 2b merge gate (PR #69) cleared.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a.
+**Next action:** Await Vi reconciliation result. Once tests align, Senna re-review. Akali Playwright QA still required (user-flow, Rule 16). Then Duong web-UI approve + merge.
 
 ---
 
@@ -108,11 +108,27 @@ Last updated: 2026-04-22 (session close, shard 2026-04-22-1423e23d; prior shard 
 
 ---
 
-## P1 factory build → iPad demo link — plan at in-progress, executors not yet dispatched (DUONG PAUSED)
+## P1 factory build → iPad demo link — Phase A complete, Phase B + C in flight
 
-**Status (2026-04-22):** ADR at `plans/in-progress/work/2026-04-22-p1-factory-build-ipad-link.md` (commit `bbd82b9`). Aphelios breakdown inlined: 24 sub-tasks, Viktor on S3 + Jayce on S1 parallel lanes, TDD ordering preserved. MVP path chosen — S3 calls `factory.py` as a library using S2 config as source of truth (no LLM hop), returns real shortcode + `https://demo.missmp.tech/{shortcode}` URL. Duong OQ decisions: no canary (internal users, low traffic), mock-only CI (no nightly-real), all other OQs Swain-default. Critical path ≈ 440 min. **Duong paused executor dispatch at end of session** — next coordinator must confirm before re-dispatch.
-**Shard pointers:** 2026-04-22-1423e23d.
-**Next action:** Await Duong directive. When cleared: dispatch T.P1.11 (Jayce — session `_UPDATABLE_FIELDS` allowlist expansion for `buildId`/`shortcode`/`projectUrl`/`demoUrl`) + T.P1.0 (Xayah — xfail test bodies) in parallel as Phase A. They unblock everything downstream.
+**Status (2026-04-23):** Phase A complete: T.P1.0 Xayah landed `test/p1-t0-contract-scaffolds` (27 xfails + 2 slug-check tests covering T.P1.0–T.P1.13). T.P1.11 Jayce landed `feat/p1-t11-session-allowlist` (2 commits: `0835dc2` + `804a77e`, `_UPDATABLE_FIELDS` expanded with `buildId`/`shortcode`/`projectUrl`/`demoUrl`). Phase B: Viktor in flight (S3 trigger_factory). Phase C: Jayce in flight (T.P1.8 session-build linkage). TOCTOU I1 still needs owner assignment.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a.
+**Next action:** Await Viktor (Phase B) + Jayce (Phase C) returns. Open PRs for T.P1.0 and T.P1.11 once downstream work lands. Assign TOCTOU I1 owner.
+
+## TOCTOU I1 — pending owner assignment
+
+**Status (2026-04-23):** Identified during PR #75 review wave. No owner assigned yet. Blocks clean merge of 2c chain.
+**Shard pointers:** 2026-04-23-b1acd96a.
+**Next action:** Assign owner (Vi or Camille). Must be addressed before PR #75 merges.
+
+---
+
+## Memory-drift class bug — reconciliation proposal sent to Evelynn
+
+**Status (2026-04-23):** `.remember/now.md` live buffer diverging from `open-threads.md` hand-authored lag diagnosed as within-session bookkeeping failure (not between-session). Reconciliation-step proposal sent to Evelynn inbox (`agents/evelynn/inbox/20260423-0219-910771.md`).
+**Shard pointers:** 2026-04-23-b1acd96a.
+**Next action:** Follow up with Evelynn side. If proposal accepted, commission Swain/Karma to implement reconciliation step at boot + /end-session.
+
+---
 
 ## Deploy → S3 trigger_factory chain — SUPERSEDED BY P1
 

@@ -63,3 +63,4 @@
 - 2026-04-22-rule18-amended-self-merge-permitted.md — Rule 18 amended: agent may self-merge when dual non-author approval + green checks satisfied. PR #24 first use. Update delegation prompts that previously required Duong merge. Sona inbox is directory-drop only. | last_used: 2026-04-22
 
 - 2026-04-23-karma-timeout-complete-but-uncommitted.md — Check disk state before re-dispatching a timed-out planner; partial artifacts may be complete. | last_used: 2026-04-23
+- 2026-04-23-orianna-sign-promote-structure-hook-divergence.md — orianna-sign.sh APPROVE is not sufficient for plan-promote.sh success; structure hook checks orthogonal invariants. Fix structural deficiency first, then re-sign. Use admin Orianna-Bypass after two failed re-sign attempts. | last_used: 2026-04-23
