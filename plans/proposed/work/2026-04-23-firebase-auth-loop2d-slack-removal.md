@@ -267,6 +267,9 @@ Aphelios decomposes W1–W6 into implementation tasks after Duong approves §OQ.
 
 ## 11. Open questions (for Duong before promotion)
 
+**Duong's answers (2026-04-23):** `1a 2c 3c 4a 5a 6a 7a` — all Swain picks accepted. OQs resolved; ADR ready for promotion.
+
+
 1. **Slack-triage removal coordination.** W3 has a hard dep on `slack-triage/create_demo_studio_session` being removed from prod first. <br>
    a: Author a sibling slack-triage PR in 2d that deletes the Demo Studio handoff cleanly — cleanest but couples two repos' release cadence. <br>
    b: Ship 2d's W3 behind a Cloud Run revision-level kill switch (`DEMO_STUDIO_ACCEPT_SLACK_POST=0`); flip switch after slack-triage ships. <br>
