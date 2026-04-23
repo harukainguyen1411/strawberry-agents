@@ -318,3 +318,43 @@ Last updated: 2026-04-23 (pre-compact consolidation #4, shard ad4fe689).
 **Current status (2026-04-23):** Rule codified (`f50c173`) in both Evelynn and Sona CLAUDE.md. Triggered by Ekko-vs-deployed-S2 contract mismatch.
 **Shards:** ad4fe689.
 **Next:** None. Monitor for subagent result inconsistencies where the rule applies.
+
+---
+
+## Hands-off queue processed — 2026-04-23
+
+**Current status (2026-04-23):** RESOLVED. 6 plans shipped to implemented, 1 to in-progress. PR #34 merged. Concurrent-agent commit entanglement pattern discovered; serialization discipline established.
+**Shards:** c4af884e.
+**Next:** None. RESOLVED.
+
+---
+
+## Three Azir ADRs awaiting Duong review
+
+**Current status (2026-04-23):** ADRs for decision-feedback, daily-audit, and agent-feedback-system are review-ready. Awaiting Duong editorial review before promotion.
+**Shards:** c4af884e.
+**Next:** Duong reviews and approves. Commission implementation dispatch after approval.
+
+---
+
+## Plan 7 memory-flow paused-coordinator window
+
+**Current status (2026-04-23):** Memory-flow plan (plan 7) execution requires a coordinated pause window across both coordinators. Pending Duong scheduling.
+**Shards:** c4af884e.
+**Next:** Duong schedules paused-coordinator window. Then dispatch builder.
+
+---
+
+## Plan 5 subagent-denial-probe phase-2 deferred
+
+**Current status (2026-04-23):** Phase-1 shipped via PR #34. Phase-2 (SubagentStop wrapper for subagent-internal denial capture) deferred pending accumulation of 20+ denial rows in the probe data.
+**Shards:** c4af884e.
+**Next:** Monitor denial data accumulation. Dispatch phase-2 once threshold met.
+
+---
+
+## Plan-lifecycle AST scanner heredoc false-positive
+
+**Current status (2026-04-23):** The plan-lifecycle PreToolUse AST scanner fails closed on heredoc bodies containing plan-path tokens, even when those paths appear only as string content (not as file-operation arguments). Same false-positive bit task 111 (gh pr create with plan path in commit message body).
+**Shards:** c4af884e.
+**Next:** Commission Karma or Talon to tighten scanner to file-modifying verbs only. Until fixed, avoid bash heredocs with plan-path strings.
