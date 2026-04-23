@@ -31,11 +31,12 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-b1acd96a; 
 **Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1, 2026-04-23-b1acd96a.
 **Next action:** None. Loop 2c merge gate unblocked on 2b side.
 
-## Firebase Loop 2c — PR #70 (xfails) + PR #75 (impl) OPEN — BLOCKED on test reconciliation
+## Firebase Loop 2c — PR #75 MERGED (2026-04-23)
 
-**Status (2026-04-23):** Seven-way parallel review on PR #75 returned: Lucian LGTM, Senna REQUEST-CHANGES, Vi NO-GO (TDD gate), Akali PARTIAL. Root cause: 3 API-shape mismatches between PR #70 xfail suite and PR #75 impl — (A) `auth._load_session` import path, (B) CI header injection, (C) `session.py` placement. Vi dispatched (second wave) for test reconciliation. Do not merge or re-review until Vi returns and Senna re-clears. 2b merge gate (PR #69) cleared.
+**Status (2026-04-23):** MERGED by Duong. Vi reconciliation v2 cleared TDD gate (0 xpassed, -4 baseline delta vs `feat/demo-studio-v3`, independently verified by Ekko). Senna re-review COMMENT (advisory LGTM, reviewer-auth gap). Akali Rule 16 PASS-WITH-NOTES (all 22 route behaviors correct; pre-existing legacy-cookie 500 bug flagged). Lucian LGTM. Thread closed.
 **Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a.
-**Next action:** Await Vi reconciliation result. Once tests align, Senna re-review. Akali Playwright QA still required (user-flow, Rule 16). Then Duong web-UI approve + merge.
+**Follow-ups opened (Karma plans in flight):** TOCTOU I1 in `auth_exchange` raced-claim; legacy-cookie old-format 500→401 one-liner. Both target `main.py`/`auth.py` in demo-studio-v3.
+**Next action:** Loop 2d scoping (Slack scaffolding removal) when Duong is ready.
 
 ---
 
