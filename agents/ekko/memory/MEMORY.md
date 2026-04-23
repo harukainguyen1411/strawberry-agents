@@ -143,6 +143,8 @@
 
 - 2026-04-23 (ekko — Evelynn dispatch): Unblocked orianna-gate-simplification approved→in-progress by adding T8 (kind: test). Required full re-sign chain: mv plan back to proposed (53efa6b), re-sign approved (c2539b8), promote to approved (ecde187), sign in_progress (ad8fb23), promote to in-progress (0ef99bf, pushed). Gate verdicts: approved 0 blocks/20 info, in_progress 0 blocks. Final path: plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md. Lesson: `tests_required: true` + no `kind: test` task hard-blocks task-gate-check at approved→in-progress.
 
+- 2026-04-23 (ekko): Fixed over-blocking in _lib_bash_path_scan.py — added verb-allowlist (_MUTATING_VERBS + _MUTATING_GIT_SUBVERBS). git add/cat/ls/grep on plan paths now pass (exit 0). sed -i, touch, redirects, git mv, rm still block. Xfail: 04e82b8, impl: 94f3ccd. 34/34 tests passing.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
