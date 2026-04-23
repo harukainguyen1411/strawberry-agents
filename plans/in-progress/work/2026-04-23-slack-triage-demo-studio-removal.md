@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 complexity: normal
 concern: work
 owner: swain
@@ -140,3 +140,12 @@ After: v2 branch deleted. `handle_message_event` falls straight through to v1 sp
 APPROVED 2026-04-23 by Orianna (fact-check gate v2).
 All load-bearing claims verified against current repo state.
 blocks: 0, warns: 0, infos: 6.
+
+## Orianna promotion — approved → in-progress
+
+Promoted 2026-04-23 by Orianna.
+All load-bearing claims re-verified against repo state at promotion time.
+Parent plan exists at `plans/in-progress/work/2026-04-23-firebase-auth-loop2d-slack-removal.md`.
+Symbols `create_demo_studio_session`, `_handle_demo_request_v2`, `DEMO_STUDIO_ENABLED`, `DEMO_STUDIO_URL` confirmed in `company-os` working branch (`feat/demo-studio-v3`) at stated line numbers.
+`tests/test_triage_v2.py` skip-gate pattern confirmed.
+blocks: 0, warns: 0, infos: 0.
