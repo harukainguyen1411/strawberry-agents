@@ -6,9 +6,7 @@
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
 #   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
 #   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
-#   pre-commit-orianna-body-hash-guard.sh — blocks commits that invalidate Orianna body-hash signatures (T2)
-#   pre-commit-orianna-signature-guard.sh — enforces Orianna signing commit shape (§D1.2); shape B via T4
-#   pre-commit-plan-promote-guard.sh    — blocks unreviewed plan promotions out of proposed/
+#   pre-commit-plan-promote-guard.sh    — blocks unauthorized plan promotions out of proposed/ (v2: Orianna identity + Promoted-By trailer)
 #   pre-commit-reviewer-anonymity.sh    — blocks agent-system identifiers in work-scope (missmp/) commit msgs
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)

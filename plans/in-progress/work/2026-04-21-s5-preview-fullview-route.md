@@ -1,6 +1,5 @@
 ---
 status: in-progress
-orianna_gate_version: 2
 concern: work
 complexity: normal
 tags: [demo-preview, s5, work]

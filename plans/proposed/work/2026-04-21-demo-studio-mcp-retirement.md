@@ -1,6 +1,5 @@
 ---
 status: proposed
-orianna_gate_version: 2
 complexity: simple
 concern: work
 owner: Heimerdinger

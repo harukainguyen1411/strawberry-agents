@@ -3,7 +3,6 @@ status: proposed
 concern: personal
 owner: karma
 created: 2026-04-22
-orianna_gate_version: 2
 complexity: quick
 tests_required: true
 tags: [orianna, plan-lifecycle, scripts, concurrency, bugfix]

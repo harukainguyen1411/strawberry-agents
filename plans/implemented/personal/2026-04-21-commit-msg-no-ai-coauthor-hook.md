@@ -3,7 +3,6 @@ status: implemented
 concern: personal
 owner: karma
 created: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 complexity: quick
 tags: [hooks, git, ai-attribution, enforcement, commit-msg]
@@ -13,9 +12,6 @@ related:
   - architecture/key-scripts.md
   - agents/syndra/learnings/
 architecture_impact: none
-orianna_signature_approved: "sha256:7af6422f64f5a3071d52684b951db58de5e4d5e49fc3e6fec3d89c7295d55df8:2026-04-22T15:00:47Z"
-orianna_signature_in_progress: "sha256:7af6422f64f5a3071d52684b951db58de5e4d5e49fc3e6fec3d89c7295d55df8:2026-04-22T15:03:46Z"
-orianna_signature_implemented: "sha256:7af6422f64f5a3071d52684b951db58de5e4d5e49fc3e6fec3d89c7295d55df8:2026-04-22T15:17:09Z"
 ---
 
 # Block AI co-author trailers at commit-msg time
