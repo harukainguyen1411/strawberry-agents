@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-23 · ad4fe689 · **Consolidation UUID:** ad4fe689; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 26406c02 (same session, earlier compact)
 - 2026-04-23 · 26406c02 · **Consolidation UUID:** 26406c02; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** c95a8d3b (same session, earlier compact)
 - 2026-04-23 · c95a8d3b · **Consolidation UUID:** c95a8d3b; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 02f8c677 (same session, earlier compact)
 - 2026-04-23 · 02f8c677 · (no summary extractable)
