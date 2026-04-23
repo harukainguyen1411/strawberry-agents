@@ -89,6 +89,44 @@ ${PAYLOAD_INV6}
 JSON
 "
 
+# --- Senna C1-C4 bypass vectors (xfail until guard patched) ---
+
+# C1: single-quoted path bypass — tokenizer must strip quotes before matching
+PAYLOAD_C1='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md '\''plans/approved/x.md'\''"}}'
+assert_exit "C1: single-quoted dest path, ekko -> exit 2 (quote-strip required)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C1}
+JSON
+"
+
+# C1b: double-quoted path bypass
+PAYLOAD_C1B='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md \"plans/approved/x.md\""}}'
+assert_exit "C1b: double-quoted dest path, ekko -> exit 2 (quote-strip required)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C1B}
+JSON
+"
+
+# C2: double-slash bypass — slash collapsing required
+PAYLOAD_C2='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md plans//approved/x.md"}}'
+assert_exit "C2: double-slash in path, ekko -> exit 2 (slash-collapse required)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C2}
+JSON
+"
+
+# C3: dot-dot traversal bypass — canonicalization required
+PAYLOAD_C3='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md plans/../plans/approved/x.md"}}'
+assert_exit "C3: dotdot traversal in path, ekko -> exit 2 (canonicalize required)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_C3}
+JSON
+"
+
+# C4: malformed JSON must fail-closed (exit 2), not fall through
+assert_exit "C4: malformed JSON input -> exit 2 (fail-closed)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<<'NOT_JSON'"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
