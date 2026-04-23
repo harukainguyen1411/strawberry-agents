@@ -36,7 +36,10 @@ fi
 # 1. Get list of staged plan files (added, copied, modified, renamed).
 #    Use --name-status so we can distinguish R (rename) from A/C/M.
 #    name-status output: "<status>\t<path>" for A/C/M, "<status>\t<old>\t<new>" for R.
-staged_plans_raw="$(git diff --cached --name-status --diff-filter=ACMR 2>/dev/null | grep -E $'(^[ACMR][^\t]*\t.*\\.md$|^R[0-9]*\t.*\t.*\\.md$)' || true)"
+#    Positive path filter: only plans/**/*.md — non-plan .md files (agent defs,
+#    docs, learnings, memory) must not be linted even when they carry YAML
+#    frontmatter. For R entries the filter matches on the new path.
+staged_plans_raw="$(git diff --cached --name-status --diff-filter=ACMR 2>/dev/null | grep -E $'(^[ACM][^\t]*\tplans/.*\\.md$|^R[0-9]*\t[^\t]*\tplans/.*\\.md$)' || true)"
 
 if [ -z "$staged_plans_raw" ]; then
   exit 0
