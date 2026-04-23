@@ -51,7 +51,7 @@ New regime:
 
 - T3. **One-shot plan cleanup sweep.**
   Kind: edit. Estimate_minutes: 15.
-  Files: all files under `plans/**` that contain `orianna_gate_version` or `Orianna-Signature` (54 + 5 files per current grep).
+  Files: all files under `plans/**` that contain `orianna_gate_version` or `Orianna-Signature` (54 + 5 files per current grep). <!-- orianna: ok -- descriptive glob pattern, not a real path -->
   Detail: Script a sweep (`scripts/sweep-orianna-metadata.sh` — disposable, can live in `/tmp` or be deleted after use) that strips the `orianna_gate_version:` frontmatter line and any `## Orianna signature` blocks with their body. <!-- orianna: ok -- prospective disposable script, not a committed file --> Plans remain in their current stage folders. Commit as a single `chore:` commit.
   DoD: `grep -rl "orianna_gate_version\|Orianna-Signature" plans/` returns zero results.
 
