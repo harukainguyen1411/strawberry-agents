@@ -74,10 +74,6 @@ awk -v _sep="__END_OF_FILE__" '
       print "[lib-plan-structure] BLOCK: missing required frontmatter field: `created:`" > "/dev/stderr"
       file_fail = 1
     }
-    if (!has_gate_ver) {
-      print "[lib-plan-structure] BLOCK: missing required frontmatter field: `orianna_gate_version:`" > "/dev/stderr"
-      file_fail = 1
-    }
     if (!has_tests_required) {
       print "[lib-plan-structure] BLOCK: missing required frontmatter field: `tests_required:`" > "/dev/stderr"
       file_fail = 1
@@ -101,7 +97,7 @@ awk -v _sep="__END_OF_FILE__" '
     in_fm = 0; fm_open = 0; fm_done = 0
     in_tasks = 0; in_test_plan = 0
     has_status = 0; has_concern = 0; has_owner = 0
-    has_created = 0; has_gate_ver = 0; has_tests_required = 0
+    has_created = 0; has_tests_required = 0
     tests_required_val = "true"
     has_test_plan_content = 0
     hours_flagged = 0; days_flagged = 0; weeks_flagged = 0
@@ -135,10 +131,6 @@ awk -v _sep="__END_OF_FILE__" '
     if ($0 ~ /^created:/) {
       v = $0; sub(/^created:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
       if (length(v) > 0) has_created = 1
-    }
-    if ($0 ~ /^orianna_gate_version:/) {
-      v = $0; sub(/^orianna_gate_version:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)
-      if (length(v) > 0) has_gate_ver = 1
     }
     if ($0 ~ /^tests_required:/) {
       v = $0; sub(/^tests_required:[[:space:]]*/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v)

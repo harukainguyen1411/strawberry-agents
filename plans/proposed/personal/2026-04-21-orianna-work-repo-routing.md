@@ -6,7 +6,6 @@ created: 2026-04-21
 date: 2026-04-21
 concern: personal
 complexity: quick
-orianna_gate_version: 2
 tags: [orianna, claim-contract, routing, work-concern, infra]
 tests_required: true
 architecture_impact: none

@@ -3,7 +3,6 @@ status: proposed
 concern: personal
 owner: lux
 created: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 complexity: complex
 tags: [audit, routine, drift, claude-code, rot-detection, meta-tooling]

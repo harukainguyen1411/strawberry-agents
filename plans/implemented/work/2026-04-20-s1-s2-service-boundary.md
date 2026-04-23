@@ -1,6 +1,5 @@
 ---
 status: implemented
-orianna_gate_version: 2
 complexity: normal
 concern: work
 owner: azir
@@ -13,8 +12,6 @@ tags:
   - boundary
   - work
 tests_required: true
-orianna_signature_approved: "sha256:1872b2f223379a313c09ccc0b3345cbc5bb9a1e7be51529caa245aae096bb812:2026-04-21T06:10:50Z"
-orianna_signature_in_progress: "sha256:1872b2f223379a313c09ccc0b3345cbc5bb9a1e7be51529caa245aae096bb812:2026-04-21T06:13:24Z"
 ---
 
 # ADR: Demo Studio — S1/S2 Service Boundary (Config-Management Delimitation)

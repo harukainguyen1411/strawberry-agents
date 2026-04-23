@@ -27,7 +27,7 @@ fi
 
 # check_plan_frontmatter <plan_file>
 # Verifies all required YAML frontmatter keys are present and non-empty.
-# Required keys: status, concern, owner, created, orianna_gate_version, tests_required
+# Required keys: status, concern, owner, created, tests_required
 # Returns 0 on clean pass, non-zero with [lib-plan-structure] BLOCK: messages on stderr.
 check_plan_frontmatter() {
   _cpf_plan="$1"
@@ -41,7 +41,7 @@ check_plan_frontmatter() {
 
   # Required keys — each must be present and have a non-empty value on the same line
   # shellcheck disable=SC2016  # backticks in printf format string are literal markdown, not subshell
-  for _key in status concern owner created orianna_gate_version tests_required; do
+  for _key in status concern owner created tests_required; do
     # Match 'key: value' — value must not be empty
     _val="$(printf '%s\n' "$_cpf_fm" | awk -v k="$_key" '
       $0 ~ "^" k ":[[:space:]]" {

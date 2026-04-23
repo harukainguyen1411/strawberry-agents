@@ -6,13 +6,9 @@ date: 2026-04-22
 created: 2026-04-22
 concern: personal
 complexity: quick
-orianna_gate_version: 2
 tests_required: false
 architecture_impact: none
 tags: [agents, frontmatter, governance, claude-md-rule-9]
-orianna_signature_approved: "sha256:9a6799cd75184edb99b67afb892aef05baa25ff44ada2f433f866959223f9066:2026-04-22T11:22:13Z"
-orianna_signature_in_progress: "sha256:9a6799cd75184edb99b67afb892aef05baa25ff44ada2f433f866959223f9066:2026-04-22T11:23:19Z"
-orianna_signature_implemented: "sha256:9a6799cd75184edb99b67afb892aef05baa25ff44ada2f433f866959223f9066:2026-04-22T11:24:34Z"
 ---
 
 # Context
