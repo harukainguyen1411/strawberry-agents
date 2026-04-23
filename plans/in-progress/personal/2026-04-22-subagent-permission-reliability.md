@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: in-progress
 concern: personal
 owner: karma
 created: 2026-04-22
@@ -63,3 +63,13 @@ Land a diagnostic wrapper (`scripts/subagent-denial-probe.sh` plus a `PostToolUs
 - Today's Evelynn session journal (denial incidents): `agents/evelynn/journal/cli-2026-04-21.md`
 - Related hook infrastructure: `scripts/install-hooks.sh`, `scripts/hooks/`
 - Agent frontmatter reference: `.claude/agents/syndra.md` (known-good `bypassPermissions` example)
+
+---
+
+## Orianna approval — 2026-04-23
+
+**Decision:** APPROVE — proposed → in-progress
+
+Phase-1 (diagnostic wrapper) delivered and merged via PR #34 (4a72378). All load-bearing claims verified: merge commit confirmed, predecessor commits cc39b19/9980ba7 in correct xfail-first order, Lucian APPROVED + Senna COMMENT (0 critical/important, 2 non-blocking), Rule 18 satisfied, all four delivered files present on disk. Phase-2 correctly deferred (T3 doc task and T4 plan-amendment outstanding; OQ1 structural finding triangulated by Lucian DN-3 and Senna scoping caveat).
+
+blocks: 0, warns: 0, infos: 6
