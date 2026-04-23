@@ -5,7 +5,6 @@ concern: personal
 owner: karma
 created: 2026-04-20
 complexity: quick
-orianna_gate_version: 2
 tests_required: true
 architecture_impact: none
 tags:
@@ -13,9 +12,6 @@ tags:
   - fact-check
   - tooling
   - quick-lane
-orianna_signature_approved: "sha256:702141f0032c5290aca490e80a9122cc8a835871389b588fb9efae0f3e9b95c9:2026-04-21T02:45:44Z"
-orianna_signature_in_progress: "sha256:702141f0032c5290aca490e80a9122cc8a835871389b588fb9efae0f3e9b95c9:2026-04-21T02:46:55Z"
-orianna_signature_implemented: "sha256:702141f0032c5290aca490e80a9122cc8a835871389b588fb9efae0f3e9b95c9:2026-04-21T02:48:02Z"
 ---
 
 ## Context

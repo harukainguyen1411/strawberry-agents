@@ -1,6 +1,5 @@
 ---
 status: in-progress
-orianna_gate_version: 2
 concern: work
 complexity: normal
 tests_required: true

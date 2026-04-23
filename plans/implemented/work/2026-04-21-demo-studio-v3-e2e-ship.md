@@ -1,6 +1,5 @@
 ---
 status: implemented
-orianna_gate_version: 2
 complexity: complex
 concern: work
 owner: Swain

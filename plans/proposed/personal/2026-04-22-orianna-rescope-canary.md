@@ -7,7 +7,6 @@ created: 2026-04-22
 tags: [orianna-gate, canary, rescope]
 complexity: quick
 tests_required: false
-orianna_gate_version: 2
 architecture_impact: none
 ---
 
