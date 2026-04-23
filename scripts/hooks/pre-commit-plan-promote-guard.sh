@@ -1,6 +1,10 @@
 #!/bin/sh
-# pre-commit-plan-promote-guard.sh — v2 Orianna gate authorization.
+# pre-commit-plan-promote-guard.sh — v2 Orianna gate authorization (pre-commit phase).
 # Plan: plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md §T4
+#
+# This hook handles file-path and identity-shape checks that do NOT require the
+# commit message body. Trailer-dependent checks live in commit-msg-plan-promote-guard.sh
+# which runs at the commit-msg phase when git has written the actual commit message.
 #
 # Enforces two classes of commit authorization:
 #
@@ -9,10 +13,9 @@
 #   (approved, in-progress, implemented, archived) is a PROMOTION commit.
 #   Promotion commits require EITHER:
 #   (a) Author email matches the Orianna agent identity (read from
-#       scripts/hooks/_orianna_identity.txt) AND commit message contains
-#       "Promoted-By: Orianna" trailer.
+#       scripts/hooks/_orianna_identity.txt). Trailer presence is verified by
+#       commit-msg-plan-promote-guard.sh.
 #   (b) Author email matches an admin identity (ADMIN_EMAILS).
-#   Trailer forgery: non-Orianna + "Promoted-By: Orianna" → REJECT.
 #
 # Class B — Direct creation in non-proposed stage directories:
 #   A staged diff that creates a NEW file directly under plans/approved/**,
@@ -33,11 +36,17 @@ set -e
 # Admin accounts — bypass all restrictions.
 ADMIN_EMAILS="harukainguyen1411@gmail.com"
 
-# Orianna identity file (single line: the canonical email)
+# Orianna identity file (single line: the canonical email).
+# SCRIPT_DIR is resolved from $0. The dispatcher calls each sub-hook with its
+# absolute path, so dirname($0) reliably resolves the sibling _orianna_identity.txt
+# regardless of the calling process's working directory.
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 IDENTITY_FILE="$SCRIPT_DIR/_orianna_identity.txt"
 
 # Read Orianna's canonical email from the identity file.
+# If absent or empty, ORIANNA_EMAIL stays "". is_orianna() then returns false
+# for ALL authors — fail-closed: no agent can impersonate Orianna if her
+# identity file disappears. Admin path still works.
 ORIANNA_EMAIL=""
 if [ -f "$IDENTITY_FILE" ]; then
   ORIANNA_EMAIL="$(head -1 "$IDENTITY_FILE" | tr -d '[:space:]')"
@@ -62,16 +71,6 @@ is_admin() {
 is_orianna() {
   [ -n "$ORIANNA_EMAIL" ] && [ "$current_author_email" = "$ORIANNA_EMAIL" ] && return 0
   return 1
-}
-
-# --- read commit message -----------------------------------------------------
-
-COMMIT_MSG_FILE="${GIT_DIR:-$(git rev-parse --git-dir)}/COMMIT_EDITMSG"
-commit_msg=""
-[ -f "$COMMIT_MSG_FILE" ] && commit_msg="$(cat "$COMMIT_MSG_FILE")"
-
-has_promoted_by_trailer() {
-  printf '%s\n' "$commit_msg" | grep -qE '^Promoted-By:[[:space:]]*Orianna[[:space:]]*$'
 }
 
 # --- inspect staged diff -----------------------------------------------------
@@ -145,36 +144,17 @@ if [ -n "$admin_path_changes" ]; then
 fi
 
 # --- Class A: promotion commits (move out of proposed/) ---------------------
+# Identity check only. Trailer presence is verified by commit-msg-plan-promote-guard.sh
+# at the commit-msg phase when the actual message is available via $1.
 
 if [ -n "$promoted_files" ]; then
-  # Forged trailer: non-Orianna author with Promoted-By: Orianna trailer → reject
-  if has_promoted_by_trailer && ! is_orianna && ! is_admin; then
-    printf '\n=== BLOCKED: Promoted-By: Orianna trailer forgery ===\n' >&2
-    printf 'Author: %s\n' "$current_author_email" >&2
-    printf '\n' >&2
-    printf 'The "Promoted-By: Orianna" trailer is reserved for the Orianna agent\n' >&2
-    printf '(email: %s).\n' "$ORIANNA_EMAIL" >&2
-    printf 'Non-Orianna, non-admin authors may not use this trailer.\n' >&2
-    printf '\n' >&2
-    exit 1
-  fi
-
-  # Orianna path: must have Promoted-By trailer
-  if is_orianna && ! has_promoted_by_trailer; then
-    printf '\n=== BLOCKED: Orianna promotion commit missing Promoted-By: Orianna trailer ===\n' >&2
-    printf 'Author: %s\n' "$current_author_email" >&2
-    printf 'Add "Promoted-By: Orianna" as a commit trailer.\n' >&2
-    printf '\n' >&2
-    exit 1
-  fi
-
-  # Admin path: always allowed (no trailer required)
+  # Admin path: always allowed
   if is_admin; then
     printf '\n[plan-promote-guard] Admin promotion by %s — allowed.\n' "$current_author_email" >&2
     exit 0
   fi
 
-  # Orianna path: allowed when trailer present
+  # Orianna path: allowed — commit-msg hook will verify the trailer
   if is_orianna; then
     exit 0
   fi
