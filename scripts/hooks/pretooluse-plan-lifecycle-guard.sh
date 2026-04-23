@@ -209,7 +209,36 @@ case "$_tool_name" in
 
     if is_protected_path "$_fpath"; then
       if ! is_orianna; then
-        reject "$_fpath"
+        # File-existence semantics:
+        # - Edit / NotebookEdit always require the file to exist (tool contract).
+        #   Editing an existing plan (e.g. appending Tasks section) is permitted
+        #   for any agent — only new-file creation in protected dirs is blocked.
+        # - Write on an EXISTING file is an overwrite/edit — permitted.
+        # - Write on a NON-EXISTING file is creation — blocked.
+        _abs_fpath=""
+        if [ -n "$_repo_root" ]; then
+          _abs_fpath="$_repo_root/$_fpath"
+        fi
+
+        _file_exists=0
+        if [ -n "$_abs_fpath" ] && [ -f "$_abs_fpath" ]; then
+          _file_exists=1
+        fi
+
+        case "$_tool_name" in
+          Edit|NotebookEdit)
+            # Edit/NotebookEdit on an existing file — permit
+            exit 0
+            ;;
+          Write)
+            if [ "$_file_exists" = "1" ]; then
+              # Overwriting existing file — permit (semantically an edit)
+              exit 0
+            fi
+            # Creating a new file in a protected dir — block
+            reject "$_fpath"
+            ;;
+        esac
       fi
     fi
     ;;
