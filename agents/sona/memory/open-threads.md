@@ -4,19 +4,24 @@ Last updated: 2026-04-22 (session close, shard 2026-04-22-1423e23d; prior shard 
 
 ---
 
-## Dashboard-split W1/W2 — MERGED; W5 deploy prep OPEN (CRITICAL, IAM blocked)
+## Dashboard-split — OUT OF SCOPE (2026-04-23, Duong)
 
-**Status (2026-04-22):** PR #65 (W1 scaffold) MERGED `0bb60d8` after Viktor resolved god-branch drift. PR #66 (W2 — 8 routes from S1) MERGED `4c1d4bb`. Dashboard W1+W2 live on `feat/demo-studio-v3`. PR #68 OPEN (`feat/demo-dashboard-w5-deploy-prep`): SA created; `deploy.sh` fixed; **IAM blocked** — `roles/datastore.user` + `secretAccessor` grants require Duong `harukainguyen1411` in GCP console. Dashboard scope contracted: deliverable is "working URL + handoff."
-**Shard pointers:** 2026-04-22-dd3ae6e1.
-**Next action:** Duong grants IAM binds → Ekko deploys dashboard service → confirm working URL.
+**Status:** Dashboard work (W1/W2 merged; PR #68 W5 deploy prep) is out of Sona's scope per Duong's directive 2026-04-23. Handed off / deferred. Do not chase IAM, do not dispatch on PR #68.
+**Next action:** None. If Duong re-scopes, resume from PR #68 state.
 
 ---
 
-## Firestore config-leak fix — T7 wipe outcome ambiguous (harness-blocked)
+## Firestore config-leak fix — RESOLVED (2026-04-23)
 
-**Status (2026-04-22):** T1-T6 + T8 shipped (`cc34cb3` + `12b9fd7`). Duong green-light for T7 received. Ekko dispatched T7 wipe script but was harness-blocked (subprocess denied by sandbox). Outcome ambiguous — `config.firestore_url` field may still be in staging Firestore docs. Ekko learning `ae08c07`. PR #32 on `feat/demo-studio-v3` reviewed: Senna+Lucian findings committed (`c4e678d`, `c6b820b`).
-**Shard pointers:** 2026-04-22-dd3ae6e1.
-**Next action:** Confirm `config.firestore_url` field presence in staging docs; if still present, schedule human-run or alternative execution path for wipe. Then get Duong approve on PR #32.
+**Status:** T1-T8 complete. T7 wipe executed (96 docs cleared). Thread closed. PR #32 = god PR, see separate thread.
+**Next action:** None.
+
+---
+
+## PR #32 — god PR on `feat/demo-studio-v3` — DO NOT MERGE until everything lands
+
+**Status (2026-04-23, Duong directive):** PR #32 is the god PR for demo-studio-v3. All sub-PRs (Firebase 2b/2c, P1 factory, preview triage, chat fixes) merge INTO `feat/demo-studio-v3`. PR #32 itself stays open until the full chain is shipped and verified.
+**Next action:** Do not dispatch reviewers to "approve #32." Only merge #32 when P0 + P1 + P2 are all green and Duong green-lights the final ship.
 
 ---
 
