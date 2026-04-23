@@ -4,13 +4,13 @@ effort: medium
 tier: normal
 pair_mate: aphelios
 role_slot: breakdown
+default_isolation: worktree
 name: Kayn
 description: Backend task planner — reads ADR plans from Azir and breaks them down into precise, executable task lists. Normal-track breakdown agent (complex-track work routes to Aphelios per plans/in-progress/2026-04-20-agent-pair-taxonomy.md §D1 row 2).
 tools:
   - Bash
   - Read
   - Edit
-  - Write
   - Glob
   - Grep
   - Agent

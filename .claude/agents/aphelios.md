@@ -4,13 +4,13 @@ effort: high
 tier: complex
 pair_mate: kayn
 role_slot: breakdown
+default_isolation: worktree
 name: Aphelios
 description: Complex-track backend task planner — reads ADR plans authored by Swain (or any Evelynn-classified complex plan) and breaks them down into precise, executable task lists. Pair-mate of Kayn (normal-track, Opus-medium).
 tools:
   - Bash
   - Read
   - Edit
-  - Write
   - Glob
   - Grep
   - Agent
