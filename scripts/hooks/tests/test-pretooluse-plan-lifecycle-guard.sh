@@ -229,6 +229,71 @@ ${PAYLOAD_R2_5}
 JSON
 "
 
+# --- Senna round-3: AST walker structural fixes (xfail until implemented) ---
+
+# R3-1: subshell (git mv src plans/approved/x.md) -> exit 2
+# CompoundNode uses .list, not .parts — walker must descend .list children.
+PAYLOAD_R3_1='{"tool_name":"Bash","tool_input":{"command":"(git mv src plans/approved/x.md)"}}'
+assert_exit "R3-1: subshell (git mv src plans/approved/x.md), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_1}
+JSON
+"
+
+# R3-2: function body f(){ git mv src plans/approved/x.md; };f -> exit 2
+# FunctionNode body is a CompoundNode with .list — walker must descend .list.
+PAYLOAD_R3_2='{"tool_name":"Bash","tool_input":{"command":"f(){ git mv src plans/approved/x.md; };f"}}'
+assert_exit "R3-2: function body (f(){ git mv src plans/approved/x.md; }), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_2}
+JSON
+"
+
+# R3-3: command substitution $(git mv src plans/approved/x.md) -> exit 2
+# WordNode.parts contains CommandsubstitutionNode — walker must walk .parts of words.
+PAYLOAD_R3_3='{"tool_name":"Bash","tool_input":{"command":"echo $(git mv src plans/approved/x.md)"}}'
+assert_exit "R3-3: command substitution \$(git mv src plans/approved/x.md), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_3}
+JSON
+"
+
+# R3-4: backtick substitution `git mv src plans/approved/x.md` -> exit 2
+# Same CommandsubstitutionNode shape as $(...).
+PAYLOAD_R3_4='{"tool_name":"Bash","tool_input":{"command":"echo \`git mv src plans/approved/x.md\`"}}'
+assert_exit "R3-4: backtick substitution, ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_4}
+JSON
+"
+
+# R3-5: eval re-parse -> exit 2
+# When verb is eval, re-parse the argument string.
+PAYLOAD_R3_5='{"tool_name":"Bash","tool_input":{"command":"eval \"git mv src plans/approved/x.md\""}}'
+assert_exit "R3-5: eval re-parse (eval \"git mv src plans/approved/x.md\"), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_5}
+JSON
+"
+
+# R3-6: bash -c re-parse -> exit 2
+# When verb is bash or sh with -c flag, re-parse the argument string.
+PAYLOAD_R3_6='{"tool_name":"Bash","tool_input":{"command":"bash -c \"git mv src plans/approved/x.md\""}}'
+assert_exit "R3-6: bash -c re-parse (bash -c \"git mv src plans/approved/x.md\"), ekko -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_6}
+JSON
+"
+
+# R3-7: malformed bash (parse error) -> exit 2 fail-closed, no tokenizer fallback
+# Scanner must exit non-zero on parse error; guard must treat non-zero scanner exit as fail-closed.
+PAYLOAD_R3_7='{"tool_name":"Bash","tool_input":{"command":"git mv ;;"}}'
+assert_exit "R3-7: malformed bash (parse error), ekko -> exit 2 fail-closed" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_R3_7}
+JSON
+"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
