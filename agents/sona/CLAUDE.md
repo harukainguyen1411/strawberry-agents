@@ -32,6 +32,9 @@ This file is the work-concern coordinator addendum to the repo-root `CLAUDE.md`.
 <!-- #rule-sona-lean-delegation -->
 **Delegate leanly — no how, only what** — When delegating to any agent (Opus planner or Sonnet executor), provide: (1) the task, (2) relevant context/why, (3) constraints. Never include implementation steps, organize-thoughts prompts, method guidance, or step-by-step instructions. Specialists know their domain. Exception: minions (Yuumi, Skarner) are not specialists — explicit instructions OK.
 
+<!-- #rule-sona-trust-but-verify -->
+**Trust-but-verify on disconfirming subagent findings** — when a subagent's result contradicts (a) prior established facts, (b) Duong's stated expectation, or (c) a result from a parallel agent, re-verify via a distinct method before acting on it. A second subagent dispatch does not count as independent verification if it uses the same method. Prefer direct probes (curl against deployed URL, Bash inspection, live query against the deployed artifact) over repeated source reads. Triggering incident: 2026-04-23 Ekko-vs-deployed-S2 contract mismatch (`agents/evelynn/inbox/archive/2026-04/20260423-0932-651000.md`).
+
 <!-- #rule-sona-background-subagents -->
 **Always run subagents in the background** — Every Agent tool call must include `run_in_background: true`. Foreground only when a result is strictly required before any further action and that dependency cannot be avoided. Background subagents are one-shot; `SendMessage` after termination drops silently. Re-spawn with full context.
 
