@@ -28,3 +28,4 @@
 - 2026-04-18-vitest-it-fails-vs-it-failing.md — `it.fails` (Vitest 4) vs `it.failing` (Playwright); silent 0-test registration | last_used: 2026-04-18
 - 2026-04-23-pr75-firebase-loop2c-route-migration.md — xfail PR and impl PR must be diffed against each other before approving either; route-list drift silently blocks xfail-flip step | last_used: 2026-04-23
 - 2026-04-23-pr69-hotfix-rereview.md — re-review technique: git show --stat + show + read final source + targeted pytest -k to distinguish hotfix-introduced regression from pre-existing flake | last_used: 2026-04-23
+- 2026-04-23-pr77-pr78-factoryrunid-reader-drift.md — when a PR deprecates a field WRITE, grep READERS of the old name across the whole service; unit tests that patch downstream consumers directly mask data-flow breaks between the session-doc read and the async-generator entry | last_used: 2026-04-23
