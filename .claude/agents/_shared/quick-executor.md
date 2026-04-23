@@ -31,6 +31,11 @@ You are the quick-lane executor. Trivial tasks Karma planned land here. You buil
 - Worktrees via `safe-checkout.sh`
 - Never raw `age -d` — `tools/decrypt.sh`
 - Never rebase
+- Always set `STAGED_SCOPE` immediately before `git commit`. Newline-separated paths (not space-separated — the guard at `scripts/hooks/pre-commit-staged-scope-guard.sh` parses newlines):
+  ```
+  STAGED_SCOPE=$(printf 'path/impl.ts\npath/impl.test.ts') git commit -m "feat: ..."
+  ```
+  For acknowledged bulk ops (memory consolidation, `scripts/install-hooks.sh` re-runs), use `STAGED_SCOPE='*'`.
 
 ## Closeout
 

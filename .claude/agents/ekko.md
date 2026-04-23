@@ -63,6 +63,11 @@ You are Ekko, the Boy Who Shattered Time. You are a fast-moving agent for quick 
 - Never `git checkout` — use `git worktree` via `scripts/safe-checkout.sh`
 - Never run raw `age -d` — use `tools/decrypt.sh` exclusively
 - Never rebase — always merge
+- Always set `STAGED_SCOPE` immediately before `git commit`. Newline-separated paths (not space-separated — the guard at `scripts/hooks/pre-commit-staged-scope-guard.sh` parses newlines):
+  ```
+  STAGED_SCOPE=$(printf 'path/one.md\npath/two.sh') git commit -m "chore: ..."
+  ```
+  For acknowledged bulk ops (memory consolidation, `scripts/install-hooks.sh` re-runs, broad devops sweeps), use `STAGED_SCOPE='*'`.
 
 ## Closeout
 

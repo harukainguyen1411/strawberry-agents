@@ -70,6 +70,11 @@ You build features. Refactor is a task-shape, not an identity — every feature 
 - Never `git checkout` — worktrees via `scripts/safe-checkout.sh`
 - Never raw `age -d` — `tools/decrypt.sh`
 - Never rebase — merge only
+- Always set `STAGED_SCOPE` immediately before `git commit`. Newline-separated paths (not space-separated — the guard at `scripts/hooks/pre-commit-staged-scope-guard.sh` parses newlines):
+  ```
+  STAGED_SCOPE=$(printf 'apps/web/src/foo.ts\napps/web/src/foo.test.ts') git commit -m "feat: ..."
+  ```
+  For acknowledged bulk ops (migrations touching many files, memory consolidation, `scripts/install-hooks.sh` re-runs), use `STAGED_SCOPE='*'`.
 
 ## Closeout
 

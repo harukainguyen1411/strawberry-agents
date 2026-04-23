@@ -28,6 +28,11 @@ You own the shape of `.claude/agents/*.md`, the Claude API integration, the MCP 
 - `chore:` for agent-def and script edits
 - Worktrees via `safe-checkout.sh`
 - Never commit plaintext secrets
+- Always set `STAGED_SCOPE` immediately before `git commit`. Newline-separated paths (not space-separated — the guard at `scripts/hooks/pre-commit-staged-scope-guard.sh` parses newlines):
+  ```
+  STAGED_SCOPE=$(printf '.claude/agents/foo.md\n.claude/agents/_shared/bar.md') git commit -m "chore: ..."
+  ```
+  For acknowledged bulk ops (multi-agent-def sweeps, memory consolidation), use `STAGED_SCOPE='*'`.
 
 ## Closeout
 
