@@ -1,5 +1,5 @@
 ---
-status: approved
+status: implemented
 concern: personal
 owner: karma
 created: 2026-04-21
@@ -121,3 +121,11 @@ edits).
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** The plan has a clear owner (karma), concrete tasks (T1–T6) with explicit DoD and estimate_minutes, a well-specified test plan covering three regression scenarios, and a clean rollback path. No unresolved TBD or Decision-pending items exist in any gating section. OQ1 carries a firm recommendation (no) and does not block implementation. The fix addresses a confirmed systemic bug that has wasted significant engineering time on spurious Rule 4 blocks during routine plan promotions.
+
+## Orianna promotion — approved → implemented
+
+- **Date:** 2026-04-23
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Evidence:** Commit c4a5f3a implements blob-to-blob rename-aware diff in pre-commit-zz-plan-structure.sh (git show HEAD:<old> + git show :<new> + diff --no-index); defensive WARN fallback confirmed. Test suite 41/41 passing including 3 rename-specific tests (R-pure, R-edit, R-no-regression).
+- **Promoted-By:** Orianna
