@@ -25,7 +25,7 @@ New regime:
 
 1. **Trailer forgery** — any agent could write `Promoted-By: Orianna` into a commit message. Mitigation: pre-commit hook cross-checks the trailer against `git config user.email` at commit time. Orianna agent sessions must set a distinct git identity (e.g. `orianna@strawberry.local`). Pre-push hook re-verifies on push. Duong's admin identity remains the only human bypass.
 2. **Git identity drift** — if Orianna's session git config is not set, her own commits will be rejected. T5 adds a bootstrap step in her agent definition to set `user.email` / `user.name` from a committed config snippet on every session start.
-3. **Other agents bypassing Orianna by editing her agent file** — agent def files live in `.claude/agents/` which is already covered by the existing hook surface; consider whether `.claude/agents/orianna.md` itself should require admin authorship to modify. Recommend: yes, add to hook's admin-only path list (T4.c).
+3. **Other agents bypassing Orianna by editing her agent file** — agent def files live in `.claude/agents/` which is already covered by the existing hook surface; consider whether `.claude/agents/orianna.md` itself should require admin authorship to modify. Recommend: yes, add to hook's admin-only path list (T4.c). <!-- orianna: ok -- prospective path, created by this plan -->
 4. **Legacy signatures in frozen plans** — approved/in-progress/implemented plans carry old signature blocks. Stripping them is cosmetic but touches many files; one atomic sweep commit is cleanest. No functional risk — nothing reads those blocks after the verify script is deleted.
 5. **Orianna promotion atomicity** — if Orianna's `git mv` + commit succeeds but push fails, the plan is moved locally but unpushed. Same failure mode as today's `plan-promote.sh`; not a regression. Orianna's prompt should retry push on transient failure and surface hard failures to the caller.
 6. **No more fact-check paper trail** — historical assessments remain, but APPROVE decisions are now ephemeral (only the cosmetic signature block survives). If audit trail matters, Orianna's approval rationale can be captured in the commit message body. Recommend enforcing minimum commit body length for promotion commits (T4.d, optional).
@@ -36,7 +36,7 @@ New regime:
   Kind: edit. Estimate_minutes: 20.
   Files: `.claude/agents/orianna.md` (new) <!-- orianna: ok -- prospective path, created by this plan -->, `.claude/_script-only-agents/orianna.md` (delete).
   Detail: Create callable agent def with `model: opus` frontmatter and `tools: Read, Bash, Edit` (needs git mv + commit + push access). Prompt steps:
-  - bootstrap git identity from `agents/orianna/memory/git-identity.sh` on session start
+  - bootstrap git identity from `agents/orianna/memory/git-identity.sh` on session start <!-- orianna: ok -- prospective path, created by this plan -->
   - read the target plan file and the requested stage transition from the caller
   - render APPROVE or REJECT with a short rationale
   - on APPROVE: append a `## Orianna approval` block with date + agent name + from-stage + to-stage, update `status:` frontmatter, `git mv` the file to the new stage folder, commit with `Promoted-By: Orianna` trailer and rationale in body, then push
@@ -52,18 +52,18 @@ New regime:
 - T3. **One-shot plan cleanup sweep.**
   Kind: edit. Estimate_minutes: 15.
   Files: all files under `plans/**` that contain `orianna_gate_version` or `Orianna-Signature` (54 + 5 files per current grep).
-  Detail: Script a sweep (`scripts/sweep-orianna-metadata.sh` — disposable, can live in `/tmp` or be deleted after use) that strips the `orianna_gate_version:` frontmatter line and any `## Orianna signature` blocks with their body. Plans remain in their current stage folders. Commit as a single `chore:` commit.
+  Detail: Script a sweep (`scripts/sweep-orianna-metadata.sh` — disposable, can live in `/tmp` or be deleted after use) that strips the `orianna_gate_version:` frontmatter line and any `## Orianna signature` blocks with their body. <!-- orianna: ok -- prospective disposable script, not a committed file --> Plans remain in their current stage folders. Commit as a single `chore:` commit.
   DoD: `grep -rl "orianna_gate_version\|Orianna-Signature" plans/` returns zero results.
 
 - T4. **Rewrite pre-commit hook for plan-move authorization.**
   Kind: edit. Estimate_minutes: 30.
   Files: `scripts/hooks/pre-commit-plan-promote-guard.sh`, `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/pre-commit-orianna-signature-guard.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/test-pre-commit-orianna-signature.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/test-plan-promote-guard.sh` (rewrite).
   Detail:
-  - Detect staged diff that moves (`R` status) or deletes files matching `plans/proposed/**` where the counterpart creates `plans/(approved|in-progress|implemented|archived)/**`.
-  - For such diffs, require commit author email to match the Orianna agent identity (exact string match against a committed allowlist in `scripts/hooks/_orianna_identity.txt`) AND require the commit message to contain a `Promoted-By: Orianna` trailer. Read the commit message from `$1` in the commit-msg hook, or use a two-stage check where pre-commit validates author + staged paths and commit-msg validates trailer.
-  - Extend admin-only path list to include `.claude/agents/orianna.md` and `scripts/hooks/_orianna_identity.txt` so only Duong's admin identity may modify them.
+  - Detect staged diff that moves (`R` status) or deletes files matching `plans/proposed/**` where the counterpart creates `plans/(approved|in-progress|implemented|archived)/**`. <!-- orianna: ok -- literal glob pattern in hook logic, not a real path -->
+  - For such diffs, require commit author email to match the Orianna agent identity (exact string match against a committed allowlist in `scripts/hooks/_orianna_identity.txt`) AND require the commit message to contain a `Promoted-By: Orianna` trailer. <!-- orianna: ok -- prospective path, created by this plan --> Read the commit message from `$1` in the commit-msg hook, or use a two-stage check where pre-commit validates author + staged paths and commit-msg validates trailer.
+  - Extend admin-only path list to include `.claude/agents/orianna.md` and `scripts/hooks/_orianna_identity.txt` so only Duong's admin identity may modify them. <!-- orianna: ok -- prospective paths, created by this plan -->
   - Optional: enforce minimum body length of at least thirty characters on promotion commits so approval rationale is preserved.
-  - Non-promotion commits: reject any creation under `plans/approved/**`, `plans/in-progress/**`, `plans/implemented/**`, `plans/archived/**` unless author is Orianna or Duong's admin identity.
+  - Non-promotion commits: reject any creation under `plans/approved/**`, `plans/in-progress/**`, `plans/implemented/**`, `plans/archived/**` unless author is Orianna or Duong's admin identity. <!-- orianna: ok -- literal glob patterns in hook logic, not real paths -->
   DoD: New unit tests pass; retired hooks and their tests moved to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->; `install-hooks.sh` updated if it enumerates hook filenames.
 
 - T5. **Orianna git identity bootstrap.**
@@ -88,12 +88,12 @@ New regime:
 
 Invariants the tests must protect:
 
-1. **Only Orianna or admin can move plans out of `proposed/`** — unit test in `scripts/hooks/test-plan-promote-guard.sh`: craft a staged diff that renames a `plans/proposed/personal/foo.md` to `plans/approved/personal/foo.md`; assert hook REJECTS when author email is a generic agent email AND no `Promoted-By` trailer is present; assert hook ACCEPTS when author email matches `_orianna_identity.txt` AND trailer is present; assert hook ACCEPTS when author email is `harukainguyen1411`'s admin address.
+1. **Only Orianna or admin can move plans out of `proposed/`** — unit test in `scripts/hooks/test-plan-promote-guard.sh`: craft a staged diff that renames a `plans/proposed/personal/foo.md` to `plans/approved/personal/foo.md`; assert hook REJECTS when author email is a generic agent email AND no `Promoted-By` trailer is present; assert hook ACCEPTS when author email matches `_orianna_identity.txt` AND trailer is present; assert hook ACCEPTS when author email is `harukainguyen1411`'s admin address. <!-- orianna: ok -- hypothetical test fixture paths, not real files -->
 2. **Trailer forgery is caught** — test: non-Orianna author + `Promoted-By: Orianna` trailer present -> hook REJECTS.
-3. **Non-promotion commits cannot create plans in non-proposed stages** — test: a fresh create of `plans/approved/personal/bar.md` by a non-Orianna, non-admin author -> hook REJECTS.
+3. **Non-promotion commits cannot create plans in non-proposed stages** — test: a fresh create of `plans/approved/personal/bar.md` by a non-Orianna, non-admin author -> hook REJECTS. <!-- orianna: ok -- hypothetical test fixture path, not a real file -->
 4. **Sweep script idempotence** — run T3's sweep twice; second run produces zero diff.
 5. **Lifecycle smoke** — end-to-end: Orianna agent (invoked in a test harness) approves a proposed plan, the move + commit lands cleanly, pre-push hook passes.
-6. **Admin-only protection of Orianna's agent def** — test: non-admin author modifying `.claude/agents/orianna.md` -> hook REJECTS.
+6. **Admin-only protection of Orianna's agent def** — test: non-admin author modifying `.claude/agents/orianna.md` -> hook REJECTS. <!-- orianna: ok -- prospective path, created by this plan -->
 
 All tests live in `scripts/hooks/` alongside existing `test-*.sh` files and are wired into `scripts/hooks/test-hooks.sh`.
 
