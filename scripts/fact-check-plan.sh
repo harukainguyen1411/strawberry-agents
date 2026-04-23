@@ -19,6 +19,14 @@
 # Report written to: assessments/plan-fact-checks/<basename>-<ISO-timestamp>.md
 # Report is always written, even on exit 1.
 
+# T7 FREEZE: assessments/plan-fact-checks/ is frozen as of 2026-04-23.
+# This script no longer writes new artifacts. The v2 Orianna regime uses
+# a callable agent instead of script-based fact-checking.
+# See: plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md §T7
+printf '[fact-check-plan] FROZEN: fact-check artifact generation is disabled (v2 regime).\n' >&2
+printf '[fact-check-plan] Use the Orianna agent (.claude/agents/orianna.md) for plan promotion.\n' >&2
+exit 0
+
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
