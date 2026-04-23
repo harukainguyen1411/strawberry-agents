@@ -245,5 +245,22 @@ else
 fi
 
 echo ""
+echo "=== orianna v2 gate tests ==="
+if bash "$REPO_ROOT/scripts/hooks/test-plan-promote-guard.sh" 2>/dev/null; then
+  echo "  PASS: test-plan-promote-guard.sh (v2, all 6 fixtures)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-plan-promote-guard.sh"
+  FAIL=$((FAIL+1))
+fi
+if bash "$REPO_ROOT/scripts/hooks/test-orianna-gate-v2.sh" 2>/dev/null; then
+  echo "  PASS: test-orianna-gate-v2.sh (all 6 invariants)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-orianna-gate-v2.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
