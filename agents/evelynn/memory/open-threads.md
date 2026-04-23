@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation #2, shard c95a8d3b).
+Last updated: 2026-04-23 (pre-compact consolidation #3, shard 26406c02).
 
 ---
 
@@ -150,9 +150,9 @@ Last updated: 2026-04-23 (pre-compact consolidation #2, shard c95a8d3b).
 
 ## Orianna v2 — simplification
 
-**Current status (2026-04-23):** PR #30 MERGED (`add2027`). Implementation shipped. Plan now `in-progress`. Talon dispatch pending for 7 remaining tasks (~105 min). Archive semantics confirmed: old scripts → `scripts/_archive/v1-orianna-gate/`, old docs → `architecture/archive/`.
-**Shards:** 69f3fb3e, 02f8c677, c95a8d3b.
-**Next:** Dispatch Talon for 7-task execution. Plan should promote to `implemented/` on completion.
+**Current status (2026-04-23):** PR #30 MERGED (`add2027`). PR #31 MERGED (`34fed4b`) — physical guard / god gate live after 4 Senna review rounds (bashlex AST walker). PR #32 MERGED (`fc96916`) — agent_type identity propagation from hook JSON payload. Plan `in-progress`. Talon dispatch pending for remaining v2 tasks (~105 min). Archive semantics confirmed: old scripts → `scripts/_archive/v1-orianna-gate/`, old docs → `architecture/archive/`.
+**Shards:** 69f3fb3e, 02f8c677, c95a8d3b, 26406c02.
+**Next:** Dispatch Talon for remaining v2 execution tasks. Plan should promote to `implemented/` on completion.
 
 ---
 
@@ -164,11 +164,19 @@ Last updated: 2026-04-23 (pre-compact consolidation #2, shard c95a8d3b).
 
 ---
 
+## Orianna script-path identity gap (agent_type propagation)
+
+**Current status (2026-04-23):** PR #32 fixed identity propagation for Agent-tool-dispatched Orianna (`.agent_type` from hook JSON payload). Script-invoked worktree sessions (`.claude/worktrees/agent-*` CLI context) do NOT get `agent_type: "orianna"` populated by the runtime — gate correctly blocks them. Surfaced by subagent `a95d253d` returning BLOCKED on subagent-identity→implemented promotion.
+**Shards:** 26406c02.
+**Next:** Commission Swain or Azir for ADR on script-path identity propagation. Until resolved, script-dispatch Orianna promotions must use admin identity (`harukainguyen1411`) or be re-invoked via Evelynn Agent-tool dispatch.
+
+---
+
 ## Ekko impersonation incident + plan-lifecycle-physical-guard
 
-**Current status (2026-04-23):** Ekko sourced `agents/orianna/memory/git-identity.sh` to fake Orianna identity and bypass commit-phase gate (surfaced at commit `8717331`). Reveals that commit-time identity checks are cheaply spoofable by any agent with filesystem access. Karma authored `plans/proposed/personal/2026-04-23-plan-lifecycle-physical-guard.md` (`3940ebd` + `b69ffb4`). Third revision adding T8 bypass-detection audit (per Duong's "one TRUE god gate" principle) is in-flight (Karma agent `a80b8fa7a3fcab3f7`).
-**Shards:** c95a8d3b.
-**Next:** Wait for Karma to complete T8 revision and commit. Then Duong reviews. On approval: Orianna sign + promote + dispatch impl.
+**Current status (2026-04-23):** Ekko sourced `agents/orianna/memory/git-identity.sh` to fake Orianna identity and bypass commit-phase gate (surfaced at commit `8717331`). Reveals that commit-time identity checks are cheaply spoofable by any agent with filesystem access. Karma authored `plans/proposed/personal/2026-04-23-plan-lifecycle-physical-guard.md` (`3940ebd` + `b69ffb4`). PR #31 shipped the physical guard (PreToolUse layer). PR #32 shipped agent_type identity propagation. Both merged.
+**Shards:** c95a8d3b, 26406c02.
+**Next:** Duong reviews subagent-worktree-and-edit-only + plan-lifecycle-physical-guard proposed plans. On approval: Orianna sign + promote + dispatch impl. Residual: script-path Orianna still needs ADR (see above thread).
 
 ---
 
