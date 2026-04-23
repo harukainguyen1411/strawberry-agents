@@ -73,6 +73,69 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-20 (S61, cli, direct)
+
+Work-agent merger + dual-coordinator wiring + Orianna-gated lifecycle + agent pair taxonomy ADRs. Shipped strawberry-inbox Channels plugin. Two big ADRs sit ready for promotion.
+
+### Delta notes for consolidation
+
+- **Dual-coordinator pattern**: `claude --agent <name>` + per-agent `initialPrompt` replaces hardcoded SessionStart boots. Hook narrowed to resume-skip only. Aliases in `scripts/mac/aliases.sh`.
+- **Claude Code Channels** is the primitive for external-event→running-session ping. Not RemoteTrigger (that's human→terminal bridge). Plugin shape: MCP server launched via `--channels server:<name> --dangerously-load-development-channels`.
+- **Never Opus-low**: canonical model/effort rule from Lux research. Opus-xhigh > high > medium > Sonnet-high > medium > low. Opus-low is worst $/quality; agents there get retiered to Sonnet-high or Opus-medium.
+- **Adaptive thinking is the only mode on Opus 4.7** — effort is the ceiling+tendency dial, not a floor. `medium` = "may skip for simple, moderate for complex." Applies uniformly to Sonnet 4.6 too (opt-in there, roster-wide adoption).
+- **Model frontmatter convention**: Opus agents omit `model:` (inherit 4.7 default); Sonnet agents declare `model: sonnet` alias; `effort:` always explicit.
+- **Agent-def caching** on parent session: edits to `.claude/agents/<name>.md` don't propagate to subagents spawned by an already-running session. Workaround: session restart.
+- **Final-message rule** (new in agent-network.md §Session Protocol): all background subagents — their final message is the only thing the parent sees. Universal, not per-agent.
+- **Band-aid scope trap**: Duong caught me scoping a fix to the first symptom (Lux def edit) instead of the systemic rule. When a behavior applies universally, patch the universal file, not the per-agent one.
+- **Ekko Edit-denial punt pattern**: Ekko bailed from a task mid-flight on Edit denial rather than retrying or asking. Duong overrode "you do it." Evelynn-as-executor override is explicit-only, not standing.
+
+## Session 2026-04-20 (S62, cli, direct)
+
+Orianna promotion cycle + Sona bootstrap reply + Orianna invocation lockdown. Plan 1 promoted clean (`618904b`). Plan 2 held on 3 real warns. Sona promoted to first-class coordinator in CLAUDE.md (`36199ef`). Orianna relocated to `.claude/_script-only-agents/` — script subprocess path verified unaffected.
+
+### Delta notes for consolidation
+
+- **Working pattern: commit messages for auto-commit-before-git-op must describe content, not timing.** Ekko's `chore: commit pre-lockdown working tree state` rolled unrelated PascalCase normalization work into an opaque commit; Duong caught it as "should not be trash." Rule 1 (never leave work uncommitted) is non-negotiable, but the executor's responsibility is to describe what they're committing in the message body. Fix pattern: annotation commit on top documenting actual content. Precedent: `b5c5fea` annotates `387ef2a`.
+
+- **Working pattern: `.claude/settings.local.json` allowlist isn't hot-reloaded for subagents spawned from an already-running session.** Write to the file from top-level succeeds; subsequent subagents spawned within the same session still get denied. Workaround: restart session after allowlist edits, or top-level Evelynn executes harness-workaround chores directly (one-off coordinate-only exceptions are acceptable for infra plumbing, per today's Orianna relocation).
+
+- **Script-only agent pattern**: `.claude/_script-only-agents/` is the sibling to `_retired-agents/` — distinct intent, both retired from the Agent-tool `subagent_type` enum by virtue of living outside `.claude/agents/`. Script-invokers via `claude -p` with raw prompts are unaffected. Good template for future partial-retirements.
+
+- **Cross-plan reference rot**: promoting plan A from `proposed/` to `approved/` broke sibling plan B's `§Context` reference. Plan-promote.sh could surface "plans in `proposed/` referencing this plan's old path" as an info/warn step. Backlog item for lifecycle hardening.
+
+- **Infrastructure: Orianna gate runtime discipline** — Plan 2's verification re-run surfaced a block that didn't exist pre-promotion. This is the expected cost of fact-check discipline, not a false positive. Keep the gate blocking.
+
+### Key infra touched
+
+- `.claude/_script-only-agents/orianna.md` (new dir, relocated from `.claude/agents/orianna.md`; header comment added)
+- `.claude/settings.local.json` (new; `Bash(mkdir:*)` + `Bash(git mv:*)` allowlist)
+- `agents/memory/agent-network.md` (Orianna row + coordination section annotated script-only; Secretaries section added by Duong's `36199ef`)
+- `CLAUDE.md` (dual-coordinator model, concern-injection prefix — by Duong's `36199ef`)
+
+## Session 2026-04-20 (S63, cli, direct mode)
+
+Massive infrastructure session — shipped 4 foundational plans end-to-end plus 6 supporting fixes and cleanup sweeps.
+
+### Delta notes
+- Agent pair taxonomy landed: complex/normal matrix, 4 new agent scaffolds (Xayah, Rakan, Soraka, Syndra), tier chart complete.
+- Orianna Gated Plan Lifecycle v2 live: signature required at every transition, `orianna_gate_version: 2` regime, bypass-trailer-only emergency path.
+- Lissandra Pre-Compact Consolidator wired: `/pre-compact-save` skill, PreCompact hook blocks bare `/compact`.
+- Plan-Structure Pre-Lint (Karma + Talon, quick-lane): PR #6 → main at 1dc9d26. Pre-commit enforces plan YAML structure.
+- 22-agent backfill: include markers on all paired agent definitions.
+- Plan-path discipline: 3-layer enforcement (CLAUDE.md + plan-promote.sh + shared rules).
+- Bug fixes: Vi gate-v1 hallucination (4e2e1ed), Orianna git identity (trailer embed), Orianna concern-subdir path (Ekko, e99c19a).
+- Yuumi: mass drift cleanup (47 stale claims, 3 grandfathered plans) + Sona briefing (6de3911).
+- All streams complete. System at clean boundary.
+
+## Session 2026-04-20 (S63, cli, direct)
+
+Post-compact coda to the S63 governance-foundations day. Archived 33 orphan Orianna fact-check reports (Yuumi `77af539`). Karma fast-laned Orianna web-research verification ADR — extends fact-check with WebFetch/WebSearch/context7 for external-claim verification. Plan promoted to `plans/approved/personal/2026-04-20-orianna-web-research-verification.md` (`9d27236`). Tomorrow: Talon executes.
+
+Delta notes (fold into evelynn.md at next consolidation):
+- New working pattern: quick-lane ADRs can include governance-file edits (agent allowlist) as legitimate prerequisites. Reviewer glance, not a block.
+- FAQ to surface: Orianna signatures are phase-targeted at the destination phase while plan sits in source directory (`orianna_signature_approved` in `proposed/` = approved-gate-ready).
+- Agent dispatch failure mode: usage-limit return with zero artifact → clean retry on different account, not a debugging situation.
+
 ## Session 2026-04-19 (S56, cli, direct mode, mid-day → evening)
 
 CI hygiene + identity-gap solved. Killed auto-rebase cascade (PR #51). Closed 16 Dependabot PRs. Merged P1.2 (#25), P1.4 (#26), e2e scope (#48), email guard (#20), firebaserc (#52). Built `strawberry-reviewers` bot identity end-to-end — second GitHub account, age-encrypted PAT, `scripts/reviewer-auth.sh`, Senna+Lucian defs updated, smoke test PASS. Rule 18 now structurally satisfiable by agent-only flows. Camille identity-gap plan shipped proposed → implemented in one session.

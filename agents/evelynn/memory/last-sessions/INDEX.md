@@ -25,14 +25,14 @@
 - 2026-04-19 · 1283cce9 · Three other Evelynn sessions were running in parallel on this tree. Kept delegation lanes narrow. Closed the two S50 CI reds + knocked out D4 of the deployment-pipeline plan.
 - 2026-04-19 · 19282e01 · Portfolio-stack landing day. Long CI hygiene → merge cascade session.
 - 2026-04-19 · 288d26b4 · Long incident-response + pipeline hardening session. Dark Strawberry went down (~1 hour blank-page incident from a local deploy), recovered, and came out with a deploy lockdown, feature flags, storage fix, Gemini intake, and a multi-format I/O plan.
-- 2026-04-19 · 28dec2a6 · Portfolio drain + reviewer-identity split implementation.
-- 2026-04-19 · 3dbb267a · Portfolio cascade, round two. Six merges + one no-op close.
-- 2026-04-19 · 5999126d · Parallel stream with another Evelynn running portfolio v0 simultaneously. I drove the Claude usage dashboard v1 execution from `~/Documents/Personal/strawberry-agents` (post-A4 canonical). Zero cross-talk — disjoint trees (mine: `dashboards/usage-dashboard/` + `scripts/usage-dashboard/` in strawberry-app;  hers: `apps/portfolio/**`).
-- 2026-04-19 · 80828706 · Shipped Orianna v1 mostly end-to-end in one long session. ADR by Azir, 23 tasks via Kayn, executed by the team. Ended with Orianna's own tasks plan NOT clean (block=7), so final `implemented/` promote did not happen. ADR itself is clean and ready to promote.
-- 2026-04-19 · a7a754c2 · Workstream 3 of 3 (Dependabot cleanup) running in parallel with deployment-pipeline (WS1) and test-procedural (WS2).
 
 ## Archived
 
+- archive/28dec2a6
+- archive/3dbb267a
+- archive/5999126d
+- archive/80828706
+- archive/a7a754c2
 - archive/a8081406
 - archive/ac55c511
 - archive/b2453a47
