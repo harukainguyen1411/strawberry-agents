@@ -3,7 +3,6 @@ status: implemented
 concern: personal
 owner: karma
 created: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 complexity: quick
 tags: [hooks, git, enforcement, pre-commit, concurrency]
@@ -13,9 +12,6 @@ related:
   - scripts/hooks/pre-commit-secrets-guard.sh
   - architecture/key-scripts.md
 architecture_impact: none
-orianna_signature_approved: "sha256:2e8dec96fa79a1facc6ac550592787027f15f72e463ba5a0f20281978c42f1cb:2026-04-22T14:29:51Z"
-orianna_signature_in_progress: "sha256:2e8dec96fa79a1facc6ac550592787027f15f72e463ba5a0f20281978c42f1cb:2026-04-22T14:31:21Z"
-orianna_signature_implemented: "sha256:2e8dec96fa79a1facc6ac550592787027f15f72e463ba5a0f20281978c42f1cb:2026-04-22T14:33:02Z"
 ---
 
 # Pre-commit staged-scope guard — prevent cross-agent commit sweeping

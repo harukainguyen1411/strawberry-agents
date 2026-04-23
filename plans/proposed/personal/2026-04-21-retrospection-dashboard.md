@@ -3,7 +3,6 @@ status: proposed
 concern: personal
 owner: swain
 created: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 tags: [dashboard, observability, retrospection, otel, local-first]
 related:

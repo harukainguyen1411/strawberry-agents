@@ -1,6 +1,5 @@
 ---
 status: in-progress
-orianna_gate_version: 2
 complexity: normal
 concern: work
 owner: Karma

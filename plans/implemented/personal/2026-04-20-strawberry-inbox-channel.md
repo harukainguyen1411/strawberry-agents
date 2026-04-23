@@ -6,13 +6,9 @@ owner: azir
 created: 2026-04-20
 date: 2026-04-20
 amended: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 architecture_impact: none
 tags: [inbox, coordinator, hooks, monitor]
-orianna_signature_approved: "sha256:48b06e40964cf8b248a39257745bc4833256ea0508f4dfeb46494fb7473c4571:2026-04-22T13:59:12Z"
-orianna_signature_in_progress: "sha256:48b06e40964cf8b248a39257745bc4833256ea0508f4dfeb46494fb7473c4571:2026-04-22T14:00:29Z"
-orianna_signature_implemented: "sha256:48b06e40964cf8b248a39257745bc4833256ea0508f4dfeb46494fb7473c4571:2026-04-22T14:03:22Z"
 ---
 
 # Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery

@@ -4,7 +4,6 @@ concern: personal
 owner: karma
 created: 2026-04-21
 complexity: quick
-orianna_gate_version: 2
 tests_required: true
 tags: [orianna-gate, plan-lifecycle, scripts, hooks, latency]
 related:
@@ -14,9 +13,6 @@ related:
   - plans/approved/personal/2026-04-21-plan-prelint-shift-left.md
   - plans/approved/personal/2026-04-21-pre-orianna-plan-archive.md
 architecture_changes: [architecture/key-scripts.md, architecture/plan-lifecycle.md]
-orianna_signature_approved: "sha256:b372c004abac1146600759d94bd9fb66577044145d62afcedd332628e737d7fa:2026-04-22T07:46:44Z"
-orianna_signature_in_progress: "sha256:b372c004abac1146600759d94bd9fb66577044145d62afcedd332628e737d7fa:2026-04-22T07:48:09Z"
-orianna_signature_implemented: "sha256:b372c004abac1146600759d94bd9fb66577044145d62afcedd332628e737d7fa:2026-04-22T07:51:09Z"
 ---
 
 # Orianna gate speedups — mechanical fixes for signing latency and process failure modes

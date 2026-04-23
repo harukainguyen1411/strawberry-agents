@@ -1,6 +1,5 @@
 ---
 status: implemented
-orianna_gate_version: 2
 complexity: normal
 concern: work
 owner: Sona
@@ -12,7 +11,6 @@ tags:
   - refactor
   - work
 tests_required: true
-orianna_signature_approved: "sha256:066127b15bbb7ec1c1899b0ae165948822d64c5d555bdac21deaebbfcabac08e:2026-04-21T07:10:02Z"
 ---
 
 # ADR: Demo Studio v3 — Session State Encapsulation (Service 1)
