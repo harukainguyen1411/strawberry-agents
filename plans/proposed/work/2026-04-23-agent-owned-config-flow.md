@@ -9,99 +9,104 @@ tags:
   - demo-studio
   - config-mgmt
   - agent
-  - firestore
   - work
 tests_required: true
 ---
 
-# Agent-owned config flow — chat → context → `set_config` POST
+# Agent-owned config flow — S1 adapts to frozen S2 contract
 
-<!-- orianna: ok -- all module tokens (main.py, agent_proxy.py, tool_dispatch.py, config_mgmt_client.py, mcp_tools.py, session.py, setup_agent.py, static/studio.js, templates/session.html) reference files inside the missmp/company-os work workspace under company-os/tools/demo-studio-v3/ and company-os/tools/demo-config-mgmt/, not strawberry-agents -->
-<!-- orianna: ok -- directory tokens (tools/demo-studio/, versions/, static/studio.js) reference cross-repo paths inside the missmp/company-os work workspace, not strawberry-agents -->
+<!-- orianna: ok -- all module tokens (main.py, agent_proxy.py, tool_dispatch.py, config_mgmt_client.py, session.py, static/studio.js) reference files inside the missmp/company-os work workspace under company-os/tools/demo-studio-v3/, not strawberry-agents -->
 <!-- orianna: ok -- branch tokens (feat/demo-studio-v3) are git branches on missmp/company-os, not filesystem paths -->
-<!-- orianna: ok -- HTTP route tokens (/session/new, /session/{sid}, /session/{sid}/chat, /v1/config, /v1/config/{id}, /v1/config/{id}/versions, /v1/schema) are HTTP paths on Cloud Run services, not filesystem paths -->
-<!-- orianna: ok -- Firestore collection/field/doc tokens (configs, configs/{id}, configs/{id}/versions/{v}, configs/{configId}, configs/{currentConfigId}.version, configs/smoke-test, configs/smoke-test.json, demo-studio-sessions, demo-studio-sessions/{sid}, configId, configVersion, seedConfigId) are Firestore logical paths/field names, not filesystem -->
-<!-- orianna: ok -- prospective-path tokens (scripts/seed-smoke-test-config.sh) cite files that will be created by this ADR's implementation waves -->
-<!-- orianna: ok -- env-var tokens (CONFIG_MGMT_URL, CONFIG_MGMT_TOKEN, FIRESTORE_PROJECT_ID, FIRESTORE_DATABASE, SEED_CONFIG_ID) are env names, not filesystem -->
+<!-- orianna: ok -- HTTP route tokens (/session/new, /session/{sid}/chat, /v1/config, /v1/config/{session_id}, /v1/schema) are HTTP paths on Cloud Run services, not filesystem paths -->
+<!-- orianna: ok -- Firestore field tokens (configId, configVersion, seedSentAt, demo-studio-sessions) are Firestore logical paths/field names, not filesystem -->
+<!-- orianna: ok -- env-var tokens (CONFIG_MGMT_URL, CONFIG_MGMT_TOKEN, DS_CONFIG_MGMT_TOKEN, DEFAULT_SEED_CONFIG) are env names, not filesystem -->
+<!-- orianna: ok -- deployed-revision tokens (demo-config-mgmt-00014-2bn) are Cloud Run revision identifiers, not filesystem -->
 
 ## 1. Context
 
-**Target flow (per Duong):** `POST /session/new` seeds config from Firestore → client caches in `sessionStorage` → agent mutates the JSON in its own context window across research / logo / Apple pass / Google pass / journey → one terminal `set_config` tool call POSTs the whole JSON to S2 on completion. No PATCH. No per-field round-trips.
+**Deployed S2 is frozen.** A prior S2 rewrite was reverted yesterday. Revision `demo-config-mgmt-00014-2bn` (image sha256:27c460353d3272c1880e66b4036dbd63c00cb6214a488ae87de1cadfe1e7f427) is the contract S1 must adapt to. This ADR scopes S1 changes only; S2 is out of scope.
 
-**Current state — verified against `feat/demo-studio-v3`** (the active codebase; `tools/demo-studio/` is v2, out of scope): <!-- orianna: ok -- feat/demo-studio-v3 is a git branch on missmp/company-os; tools/demo-studio/ is a cross-repo directory in company-os workspace -->
+**Verified S2 surface (probed via curl + `DS_CONFIG_MGMT_TOKEN`):**
 
-- S2 `tools/demo-config-mgmt/main.py:39-86` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> is pure in-memory: `_session_configs: dict[str, dict]`, module-scoped `_session_configs_lock`, no `google.cloud.firestore` import. Service restart drops all state.
-- S2 surface today: `POST /v1/config` (create w/ `initialConfig`), `PATCH /v1/config/{id}` (dotted-path updates — to delete), `GET /v1/config/{id}`, `GET /v1/config/{id}/versions` (stub returns hardcoded fixture).
-- S1 `tool_dispatch.py:43-109, 140-161` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> defines `set_config` with a `{path, value}` schema and calls `requests.patch(f"{url}/v1/config/{encoded}", ...)` — exactly the PATCH-per-field path Duong wants gone.
-- S1 `agent_proxy.py:28-100, 283-299` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> `SYSTEM_PROMPT` never embeds the config JSON. The agent learns config shape via a `get_schema` tool round-trip at the start of every GENERATE phase.
-- S1 `main.py:1757-1826` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> `POST /session/new` stamps `ownerUid`/`ownerEmail` from the Firebase cookie but never calls S2 to seed.
-- Frontend `static/studio.js` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> has no `sessionStorage` / `localStorage` config cache; config version is polled per-turn via S1 status responses.
+- `GET  /v1/schema` (Bearer) — canonical schema YAML.
+- `POST /v1/config?force=bool` (Bearer) — body `{sessionId, config}`. Same `sessionId` on re-POST auto-bumps `version`. Returns `{sessionId, version, config, createdAt, updatedAt, validation}`. Validation runs on write; errors block save unless `?force=true`.
+- `GET  /v1/config/{session_id}` (Bearer) — latest (or `?version=N`).
+- `GET  /v1/config/{session_id}/versions` (Bearer).
+- **NO PATCH.** OpenAPI description: *"No PATCH — every write is a full config snapshot creating a new version."* PATCH returns 405.
+- Storage: volatile in-memory dict. CORS: hardcoded to studio origin on `/health` only.
+
+**Current-state bug — `set_config` is broken in prod.** `tools/demo-studio-v3/tool_dispatch.py:100` calls `requests.patch(f"{url}/v1/config/{encoded}", ...)` per field. Every call returns 405 against deployed S2. The entire GENERATE phase silently fails on every write. <!-- orianna: ok -- cross-repo file lives in company-os workspace -->
+
+**Other S1 gaps against the target flow** (verified against `feat/demo-studio-v3`): <!-- orianna: ok -- feat/demo-studio-v3 is a git branch on company-os -->
+
+- `agent_proxy.py:28-100, 295-300, 330-335` — `SYSTEM_PROMPT` is passed directly as a string to `client.messages.stream(..., system=SYSTEM_PROMPT, ...)`. No config JSON in context. Agent relies on `get_schema` round-trip at the start of every GENERATE phase. <!-- orianna: ok -- cross-repo file in company-os workspace; messages.stream is SDK method token -->
+- `main.py:1757-1826` — `POST /session/new` stamps `ownerUid`/`ownerEmail` + `configId = session_id` but **never calls S2**. First config write only happens when the agent PATCHes (currently 405s). <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- `session.py:57` — session doc writes `configId: session_id`, aligning with S2's sessionId-keyed contract. `configVersion` is not in `_UPDATABLE_FIELDS` (§227-244) and is currently unwritten. <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- `static/studio.js` — no `sessionStorage` cache; config is re-read per preview render. <!-- orianna: ok -- cross-repo file in company-os workspace -->
 
 ## 2. Decisions
 
-**D1. Config lives in a `system` block, not the prompt body.** At chat start S1 injects the seeded config JSON as an additional `system` entry after `SYSTEM_PROMPT` (the Messages API accepts a list for `system`). This keeps the core prompt cache-stable across sessions (the static prefix) and lets the config block carry its own `cache_control: {"type": "ephemeral"}`. Rejected: initial user message (pollutes the chat transcript), dedicated tool-result (requires a tool round-trip before the agent sees the config).
+**D1. Config lives in a `system` block, not the prompt body.** On the first turn of a session, `agent_proxy.run_turn` reads the seeded config from S1 session state and builds `system = [{"type": "text", "text": SYSTEM_PROMPT}, {"type": "text", "text": _config_block(cfg), "cache_control": {"type": "ephemeral"}}]`. This keeps the static prefix cache-stable and puts config in the ephemeral tail. Rejected: initial user message (pollutes transcript), tool-result seed (requires a pre-first-turn dummy tool round-trip).
 
-**D2. Agent mutates a local JSON copy; `set_config` is terminal and whole-document.**  `set_config`'s `input_schema` is `{ "config": <full JSON> }`. S1 validates shape + size then POSTs to S2 `/v1/config` with the full config. No `path` field. No per-field call. `get_config` tool stays (for re-reads post-build in STATE 5 QC) but is used <1x per session during GENERATE.
+**D2. Agent mutates a local JSON copy; `set_config` is terminal and whole-snapshot.** The `set_config` tool's `input_schema` flips from `{path, value}` → `{config: object}`. Handler POSTs the whole JSON to S2 `POST /v1/config` with `{sessionId, config}`. S2 auto-versions. S1 persists the returned `version` to `demo-studio-sessions/{sid}.configVersion`. No per-field call. No PATCH path exists client-side. <!-- orianna: ok -- demo-studio-sessions/{sid}.configVersion is a Firestore logical field, not filesystem -->
 
-**D3. Versioning model: new top-level doc per POST, `parentId` link (not nested `versions/` subcollection).** Firestore layout: `configs/{configId}` where `configId = {seedShortcode}_{ulid}`. Fields: `{ config, version, parentId, seedConfigId, createdAt, ownerUid, sessionId }`. Rationale: reads are by session (we always know `currentConfigId`), not by history. Lists come from a `configs` where-clause on `sessionId`. A nested `versions/` subcollection buys nothing — there is no rollback UI in scope (§5 out-of-scope). <!-- orianna: ok -- configs/{configId}, versions/ are Firestore logical paths, not filesystem -->
+**D3. Seeding at session create.** `POST /session/new` calls S2 `POST /v1/config` with `{sessionId: new_session_id, config: DEFAULT_SEED}` where `DEFAULT_SEED` is a single hardcoded smoke-test dict (initially imported from a new module `seed_config.py`, not a Firestore template library). S1 stores the returned full config + `version: 1` on the session doc (new field `seededConfig: dict`, `configVersion: 1`, `seedSentAt: timestamp`). Rationale: a no-seed path forces every session to start with `get_schema` + 20+ `set_config` calls against a bare doc; seeding gives the agent a realistic baseline and turns GENERATE into edit-not-create. <!-- orianna: ok -- seed_config.py is a prospective new module to be created by this ADR -->
 
-**D4. S1 mints a new `configId` on each `set_config`; session doc tracks `currentConfigId`.** The `demo-studio-sessions/{sid}` doc gains `currentConfigId` (FK to active `configs` doc) and `seedConfigId` (FK to the template row). Preview reads `GET /v1/config/{currentConfigId}`. Reasoning: version-incrementing-the-same-ID makes "what did the agent see when it started" unrecoverable once it finishes. <!-- orianna: ok -- demo-studio-sessions/{sid} is a Firestore logical path, not filesystem -->
+**D4. Drop `get_schema` round-trip from the GENERATE hot path.** With config pre-seeded and injected into context, the agent sees the shape directly. Tool stays registered for STATE-1 clarification use-cases but the SYSTEM_PROMPT "first call MUST be get_schema" rule is removed. `get_config` stays — used in STATE 3 REVIEW for the summary, unchanged semantically.
 
-**D5. Firestore is S2's source of truth; in-memory dict is a read-through LRU, not a cache of writes.** Restart recovery: on cold start, `_get_config` reads Firestore → populates the dict → returns. Writes go Firestore-first, then populate the dict. The `_session_configs` dict is bounded (e.g. 500 entries, LRU) and becomes a perf optimization, not a correctness primitive.
+**D5. Preview reads latest via `GET /v1/config/{sid}`, no version pinning at first.** S1's preview render pulls `GET /v1/config/{sid}` (latest) on demand. `configVersion` on the session doc is informational / for the dashboard, not load-bearing. Follow-up ADR can pin `?version=N` if race bugs appear.
 
-**D6. Delete the PATCH endpoint and its S1 client paths in one sweep.** `PATCH /v1/config/{id}` removed from S2. `tool_dispatch._default_patch_config`, `config_mgmt_client.patch_config` stub (does not exist today — only invoked via `requests.patch` in `tool_dispatch.py:100`), `mcp_tools._S2Client.set_config`'s per-path loop — all deleted. `mcp_tools.py:46-51` <!-- orianna: ok -- cross-repo file, lives in company-os workspace --> iteration path goes away with the MCP retirement already in-flight (§6 T.X).
+**D6. Frontend `sessionStorage` cache, configId-keyed, SSE-invalidated.** `static/studio.js` on page boot: `const cached = sessionStorage.getItem('config:' + sessionId + ':' + version)`. On `set_config` completion S1 emits an existing-stream event (reuse the status event shape — no new SSE type in v1) carrying the new version; client invalidates cache and re-fetches via the existing preview proxy. Rejected: new SSE event type (changes SSE schema — defer); per-turn poll (wasteful). <!-- orianna: ok -- cross-repo file in company-os workspace -->
 
-**D7. Seed selection: hardcoded `SEED_CONFIG_ID` env for now.** `POST /session/new` reads `os.getenv("SEED_CONFIG_ID", "smoke-test")`, calls S2 `GET /v1/config/{SEED_CONFIG_ID}`, copies the `config` body into the new session's initial state. Template-selection UX is deferred (§5 out of scope). Smoke-test seed ships as a Firestore fixture in S2 deploy (Task T6).
+**D7. Validation handling: soft-fail with `?force=true` fallback.** S2 validates on write and can reject. On first POST attempt, S1 sends without `force`. If S2 returns validation errors, S1 logs them + retries with `?force=true` exactly once + surfaces the validation array on the `set_config` tool result so the agent sees which fields failed. Rationale: agent-generated configs will occasionally miss required schema fields; hard-failing abandons the whole snapshot. Alternative (hard-fail always) rejected — no recovery path mid-chat.
 
-**D8. Frontend cache is `sessionStorage`, keyed by `configId`, hydrated on page load.** `static/studio.js` on session-page load: `const cached = sessionStorage.getItem('config:' + configId)`. If present, use it; if absent, fetch `GET /v1/config/{configId}` through a thin S1 proxy route (S2 is not public). On `set_config` completion S1 emits a `config_updated` SSE event carrying `{ configId, config }` — client updates cache. No per-turn refetch. <!-- orianna: ok -- static/studio.js is a cross-repo file in company-os workspace -->
+**D8. Hotfix first, full flow second.** Ship T-Hotfix (PATCH → POST-snapshot) to unblock prod before the system-block injection work (W1-W3). Hotfix is a minimum surgery: flip `_default_patch_config` to POST the single changed field merged into the last-known config (read via `fetch_config` first), write it back. Ugly but restores a working `set_config` in one PR. System-block injection (W1-W3) then supersedes.
 
 ## 3. Architecture Changes
 
-- S2 gains a Firestore module: `configs` collection with `configs/{id}` docs. S2 requirements.txt adds `google-cloud-firestore`. Reuses `FIRESTORE_PROJECT_ID` / `FIRESTORE_DATABASE` env vars from S1 (same DB, different collection). <!-- orianna: ok -- configs/{id} is a Firestore logical path, not filesystem -->
-- S1 session schema: `demo-studio-sessions/{sid}` gains `currentConfigId: string`, `seedConfigId: string`. `configVersion` field kept for BC but decoupled (derived from `configs/{currentConfigId}.version`). <!-- orianna: ok -- demo-studio-sessions/{sid} and configs/{currentConfigId}.version are Firestore logical paths/fields, not filesystem -->
-- S1 chat handler: `agent_proxy.run_turn` takes `initial_config: dict` param; builds `system = [SYSTEM_PROMPT_STATIC, {"type": "text", "text": _config_block(initial_config), "cache_control": {"type": "ephemeral"}}]`.
-- S1 tool surface: `set_config` schema flips from `{path, value}` to `{config: object}`. `get_config` stays. Old PATCH-per-field handlers removed.
-- Frontend: on page-boot fetch sequence becomes `sessionStorage.get(configId) || proxied-GET`; on SSE `config_updated` event cache is overwritten.
+- S1 session schema: `_UPDATABLE_FIELDS` gains `configVersion`, `seededConfig`, `seedSentAt`. `configId` stays equal to `sessionId`.
+- S1 `POST /session/new` handler: after `create_session`, call S2 `POST /v1/config` with seed; update session doc with returned config + version.
+- S1 `agent_proxy.run_turn`: accepts `initial_config: dict | None` param; builds multi-block `system` list when present; `stream_ctx = client.messages.stream(..., system=system_blocks, ...)` in both normal and 429-retry branches (§295-300, §330-335).
+- S1 tool surface: `set_config` schema flips; `_default_patch_config` deleted; new `_default_snapshot_config(session_id, config)` wraps `config_mgmt_client.snapshot_config` (POST wrapper); `_handle_set_config` rewrites. `get_schema` tool kept but SYSTEM_PROMPT STATE-2 "first call" mandate removed.
+- S1 `config_mgmt_client.py`: add `snapshot_config(sid, config, force=False) -> dict` (POST wrapper returning `{version, config, validation}`). Keep `fetch_config`. Delete no existing function (nothing currently POSTs). <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- Frontend: configId-keyed sessionStorage in `static/studio.js`; cache invalidate on status-event version change. <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- No S2 changes anywhere.
 
 ## 4. Tasks
 
-The implementation plan (one file per wave) is left for a follow-up split. Shape:
+- **T-Hotfix. Unblock prod — PATCH → POST-snapshot shim in `tool_dispatch.py`.** `_default_patch_config` renamed `_default_snapshot_config_shim`: reads latest via `fetch_config(sid)`, merges `{path: value}` via local dotted-path apply, POSTs full snapshot to `/v1/config`. `kind: backend`, `estimate_minutes: 40` <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- **W1. S1 seed on session create.** Add `DEFAULT_SEED` to new `seed_config.py`; `POST /session/new` calls S2 POST; session doc writes `seededConfig` + `configVersion`. `_UPDATABLE_FIELDS` extended. `kind: backend`, `estimate_minutes: 35` <!-- orianna: ok -- seed_config.py is a prospective new module -->
+- **W2. System-block injection.** `run_turn` loads `seededConfig` from session; builds `system` as list; feeds both `messages.stream` call sites (normal + 429 retry). Update SYSTEM_PROMPT: drop "first tool call MUST be `get_schema`" mandate; keep tool descriptions. `kind: backend`, `estimate_minutes: 45` <!-- orianna: ok -- messages.stream is SDK method token -->
+- **W3. `set_config` schema flip to whole-JSON + soft-fail validation.** Tool def: `{config: object}`. `_handle_set_config` calls `snapshot_config(sid, config, force=False)` → on validation error retry once with `force=True` + return validation payload in tool_result content. Delete `_default_snapshot_config_shim` from T-Hotfix. `kind: backend`, `estimate_minutes: 50`
+- **W4. Frontend sessionStorage cache.** `static/studio.js` adds `config:{sid}:{v}` cache; invalidate on status-event version change; fall back to existing preview proxy fetch. `kind: frontend`, `estimate_minutes: 30` <!-- orianna: ok -- cross-repo file in company-os workspace -->
+- **W5. Cleanup & docs.** Remove `_default_patch_config` helper, remove PATCH references from README / ARCHITECTURE.md / SYSTEM_PROMPT error-loop wording. `kind: chore`, `estimate_minutes: 20`
 
-- **W0. S2 Firestore plumbing** — add `google-cloud-firestore` dep, rewrite `_session_configs` as Firestore-read-through; seed `configs/smoke-test` fixture via `scripts/seed-smoke-test-config.sh`. <!-- orianna: ok -- configs/smoke-test is a Firestore logical path; scripts/seed-smoke-test-config.sh is a prospective file to be created by this ADR --> `kind: backend`, `estimate_minutes: 45`
-- **W1. S2 versioning model** — new-doc-per-POST, `parentId` link, drop PATCH route. Drop `_apply_dotted_path`. `kind: backend`, `estimate_minutes: 40`
-- **W2. S1 seed on session create** — `POST /session/new` calls S2 `GET /v1/config/{SEED_CONFIG_ID}`, stamps `seedConfigId` + `currentConfigId` on session doc. `kind: backend`, `estimate_minutes: 30`
-- **W3. S1 chat system-prompt injection** — `agent_proxy` loads config from session doc + injects as cache_control system block. `kind: backend`, `estimate_minutes: 30`
-- **W4. S1 `set_config` flip to whole-JSON POST** — schema change, handler rewrite, `config_mgmt_client.create_config(config)`, SSE `config_updated` emit. `kind: backend`, `estimate_minutes: 40`
-- **W5. Frontend `sessionStorage` cache** — hydrate-on-boot, overwrite-on-SSE, thin proxy route `GET /session/{sid}/config`. `kind: frontend`, `estimate_minutes: 35`
-- **W6. PATCH deprecation sweep** — remove `_default_patch_config`, remove `mcp_tools._S2Client.set_config` per-path loop, update system prompt to drop "fix the value and retry" error-loop wording. `kind: backend`, `estimate_minutes: 25`
-
-**Total: ~245 min** across 7 waves.
+**Total: ~220 min** across 6 waves (T-Hotfix ships first, standalone).
 
 ## Test plan
 
-Each wave ships with its own tests. Critical coverage:
+Each wave ships tests. Critical coverage:
 
-- S2 Firestore read-through survives service restart (integration test using Firestore emulator).
-- S2 `POST /v1/config` creates a new doc with `parentId = previousId`; old doc untouched.
-- S1 `POST /session/new` fails loudly if `SEED_CONFIG_ID` doc doesn't exist (no silent fallback to `MOCK_CONFIG`).
-- Agent receives config JSON in its first turn with no tool call required (stream the first assistant message, assert no `get_schema`/`get_config` in the first 3 tool-uses).
-- `set_config` with a malformed `config` (not a dict) returns 400 from S1 before reaching S2.
-- Frontend boot from warm `sessionStorage` makes zero fetches to `/session/{sid}/config` within 5s of page-load.
+- **T-Hotfix:** `_default_snapshot_config_shim` with mock S2 rejecting PATCH + accepting POST — passes. With stale local merge (two racing writes) — documents last-write-wins in docstring.
+- **W1:** `POST /session/new` → Firestore session doc has `seededConfig`, `configVersion: 1`, `seedSentAt` non-null; S2 call is Bearer-authed.
+- **W2:** Agent first turn with pre-seeded config makes zero `get_schema`/`get_config` tool calls in the first 3 tool-uses.
+- **W3:** `set_config` with malformed config (not a dict) → 400 before S2. Valid config round-trips S2, session doc `configVersion` advances 1 → 2. Validation-reject path retries with `force=true` + surfaces errors in tool_result.
+- **W4:** Frontend boot with warm cache makes zero preview-proxy fetches within 5s. Status-event version bump evicts cache.
 
 ## 5. Out of Scope
 
-- Template-selection UX (user-facing template library, template preview thumbnails).
-- Multi-template libraries (`configs` collection partitioned by tenant / market / line).
-- Config diff / rollback UI (the `parentId` chain supports it structurally but is not surfaced).
-- Branching / forking versions off a historical `configId`.
-- Migrating existing live sessions (pre-cutover) to the new flow — new flow applies to sessions created after deploy.
+- Template-selection UX, multi-template libraries. Single `DEFAULT_SEED` only.
+- Config diff / rollback UI (though `GET /versions` supports it structurally).
+- Migrating pre-cutover sessions — new flow applies to sessions created after deploy.
+- S2 Firestore persistence, validation rule changes, CORS changes. **S2 is frozen.**
+- v2 (`tools/demo-studio/`). v3 only. <!-- orianna: ok -- cross-repo directory in company-os workspace -->
 
 ## 6. Open Questions for Duong
 
-1. **Seed shape.** Does the smoke-test seed include populated `params`/`ipadDemo` sample values (so the agent starts from a realistic baseline), or strictly minimal/empty fields (so the agent writes every field)? My lean: minimal — the agent's job is to generate.
-2. **`get_config` retention.** With config in the system prompt, the agent rarely needs `get_config`. Keep it for STATE 5 QC-phase re-reads after a build changes things, or cut it entirely?
-3. **SSE `config_updated` event.** Is emitting config-updates over SSE to the client acceptable, or should the client poll on the thin proxy route? SSE is cheaper but requires a new event type in the chat stream schema.
-4. **`currentConfigId` immutability.** Once a session completes (factory triggered), does `currentConfigId` freeze, or can STATE 5 QC-tweak still push new versions? If freezing, we need a state-machine guard in S1.
-5. **Concurrent POST races.** If two `set_config` calls land for the same session (shouldn't happen but agent retries exist), what wins — last-write-wins (current plan), or reject-if-parentId-stale (optimistic concurrency)?
-6. **Seed fixture storage.** Ship the smoke-test seed as a Python dict in `setup_agent.py` and POST it on first-boot, or as a `configs/smoke-test.json` file invoked by `scripts/seed-smoke-test-config.sh`? I lean on the script — treats seeds as data, not code. <!-- orianna: ok -- setup_agent.py is a cross-repo file in company-os; configs/smoke-test.json is a prospective fixture; scripts/seed-smoke-test-config.sh is a prospective script -->
-7. **V2 migration path.** `tools/demo-studio/` (v2) still runs in parallel. Does this ADR apply to v2 as well, or only v3 (v2 deprecated per prior ADRs)? Reading the last few weeks of plans, v2 is frozen — I'm assuming v3-only but flagging. <!-- orianna: ok -- tools/demo-studio/ is a cross-repo directory in company-os workspace -->
+1. **DEFAULT_SEED shape.** Minimal (mostly empty, agent fills in) or realistic smoke-test (Allianz-like, agent edits)? I lean realistic — faster convergence, fewer tool turns.
+2. **Full-config round-trip size vs context budget.** Typical config runs ~8-12KB JSON. At 5 turns × 8KB re-read in the ephemeral system block: within context but trims cache-hit rate on the static prefix since ephemeral doesn't affect it. Confirm we accept ephemeral config growing per-turn vs freezing seed for the whole session.
+3. **Soft-fail validation behavior.** Retry-with-`force=true` on validation errors (D7) vs surface error + let agent fix and re-call `set_config`? Retry-with-force ships something (agent will fix next turn anyway); hard-fail teaches the agent. I lean retry-with-force for v1, reconsider after prod data.
+4. **`configVersion` race safety.** S2 is volatile in-memory; restart drops versions. If S2 restarts mid-session, next POST starts at v1 again and our S1 `configVersion` desyncs. Do we care for v1 (low stakes since storage is ephemeral), or add a post-POST sanity check (`if returned_version < session.configVersion: log_warn`)?
+5. **Idempotency / retries.** If S1's POST to S2 times out but S2 actually committed, S1 retry creates v2 with identical content. Acceptable for v1 (volatile dict forgives this), or need client-side idempotency key?
+6. **T-Hotfix lifetime.** Ship the shim as a standalone PR merged before W1-W3? Or bundle with W1 in one PR (longer review, slower hotfix)? I lean standalone — prod is broken today.
+7. **SSE event shape for cache invalidation (D6).** Piggyback on existing status event carrying `configVersion`, or hold for v2? Piggyback is ~10 lines; new event type is bigger. Confirm piggyback.
