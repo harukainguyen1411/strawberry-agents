@@ -109,7 +109,7 @@ Total budget per run: ~20-28 minutes of dispatched subagent work + ~3-5 min of o
 | Connectors | None. (No MCP servers. The Routine runs on the repo and the open web only.) |
 | Output | Committed artifact + pushed commit; no PR, no Slack |
 | Idempotency | Re-running the same day is safe — tracker state-machine detects "already ran today" and no-ops with a log line |
-| Skip/pause mechanics | `audits/findings-tracker.json:disabled_dates[]` → skip a specific date; `audits/disabled-dimensions.json` → skip one dimension; delete the `/schedule` entry → pause indefinitely. See §D11. |
+| Skip/pause mechanics | `audits/findings-tracker.json:disabled_dates[]` → skip a specific date; `audits/disabled-dimensions.json` → skip one dimension; delete the `/schedule` entry → pause indefinitely. See §D11. <!-- orianna: ok --> |
 
 ### D1.1 Read-only subagent enforcement
 
