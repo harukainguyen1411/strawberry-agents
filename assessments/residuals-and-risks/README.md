@@ -16,3 +16,9 @@ This is the canonical registry for deferred engineering debt and risk items that
 Risks surfaced during Senna's review of PR #22 (flock-based coordinator lock, merged `94c65ca`). Plan context: `plans/implemented/personal/2026-04-22-concurrent-coordinator-race-closeout.md`.
 
 - [`2026-04-22-coordinator-lock.md`](2026-04-22-coordinator-lock.md) — I1: Lockfile PID-write race (very-low / cosmetic) · I2: PID-wrap / stale-lock false positive (low / high-friction) · $BASHPID test coverage gap (low / moderate)
+
+### Agent orchestration
+
+Risks surfaced during the 2026-04-23 Evelynn CLI session (memory-flow ADR breakdown). Plan context: `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md`.
+
+- [`2026-04-23-parallel-subagent-writes.md`](2026-04-23-parallel-subagent-writes.md) — F1: No subagent-level git serialization (medium / moderate) · F2: Breakdown/test-plan agents create sibling files instead of editing ADR inline (medium / moderate)
