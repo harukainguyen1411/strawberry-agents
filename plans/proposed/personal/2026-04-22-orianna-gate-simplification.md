@@ -18,7 +18,7 @@ The current Orianna gate is ceremonial overkill. Body-hash signatures, carry-for
 New regime:
 - Orianna becomes a **callable** opus agent at the path `.claude/agents/orianna.md`. <!-- orianna: ok -- prospective path, created by this plan --> Her job: read the plan, render APPROVE or REJECT for the requested stage transition. On APPROVE she appends a cosmetic signature block (human-readable date, agent name, stage transition — no hash), `git mv`s the plan to the target stage folder, commits with a `Promoted-By: Orianna` trailer, and pushes.
 - Authorization is enforced at the pre-commit hook layer: any diff that moves a plan file out of the `plans/proposed/` subtree <!-- orianna: ok -- prospective path, created by this plan --> must either carry a `Promoted-By: Orianna` commit trailer AND have a commit author email matching the Orianna agent identity, or be authored by Duong's admin identity (`harukainguyen1411`). All other commits may only create files inside `plans/proposed/`. <!-- orianna: ok -- prospective path, created by this plan -->
-- Signature scripts, verification scripts, the legacy `scripts/plan-promote.sh` promoter, the body-hash guard, the signature guard, and the fact-check generator are retired. One-shot sweep strips `orianna_gate_version` and existing signature blocks from current plans (cosmetic cleanup only; plans stay in place).
+- Signature scripts, verification scripts, the legacy `scripts/plan-promote.sh` promoter, the body-hash guard, the signature guard, and the fact-check generator are archived under `scripts/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> and `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->. One-shot sweep strips `orianna_gate_version` and existing signature blocks from current plans (cosmetic cleanup only; plans stay in place).
 - the `assessments/plan-fact-checks` directory <!-- orianna: ok -- existing directory path, not a file --> is frozen — historical artifacts preserved, no new writes.
 
 ## Risks to weigh before promoting
@@ -43,11 +43,11 @@ New regime:
   - delete the script-only version
   DoD: Orianna is listed in `agents/memory/agent-network.md` as callable; `.claude/_script-only-agents/orianna.md` removed; bootstrap script exists and sets a dedicated git identity.
 
-- T2. **Delete retired scripts.**
-  Kind: delete. Estimate_minutes: 10.
+- T2. **Archive retired scripts.**
+  Kind: move. Estimate_minutes: 10.
   Files: `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, `scripts/orianna-hash-body.sh`, `scripts/orianna-fact-check.sh`, `scripts/plan-promote.sh`, `scripts/_lib_orianna_gate_implemented.sh`, `scripts/_lib_orianna_gate_inprogress.sh`, and their paired `test-orianna-*.sh` siblings (keep `orianna-memory-audit.sh`, `orianna-pre-fix.sh`, `_lib_orianna_architecture.sh`, `_lib_orianna_estimates.sh` — those are orthogonal to the gate).
-  Detail: Audit each script for cross-references before deletion; `grep -rn <script-name>` across repo. Update any caller that still invokes them.
-  DoD: No references to deleted scripts remain in `scripts/`, `.claude/`, `architecture/`, or `CLAUDE.md`; `scripts/test-hooks.sh` still green.
+  Detail: Move (not delete): old scripts move to `scripts/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> preserving filenames. Use `git mv` so history follows. Audit each script for cross-references before moving; `grep -rn <script-name>` across repo. Update any caller that still invokes them.
+  DoD: No active code references to the archived scripts remain in `scripts/` (outside `_archive/`), `.claude/`, `architecture/` (outside `archive/`), or `CLAUDE.md`; `scripts/test-hooks.sh` still green; archived scripts present under `scripts/_archive/v1-orianna-gate/`. <!-- orianna: ok -- prospective archive path, created by this plan -->
 
 - T3. **One-shot plan cleanup sweep.**
   Kind: edit. Estimate_minutes: 15.
@@ -57,14 +57,14 @@ New regime:
 
 - T4. **Rewrite pre-commit hook for plan-move authorization.**
   Kind: edit. Estimate_minutes: 30.
-  Files: `scripts/hooks/pre-commit-plan-promote-guard.sh`, `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` (delete), `scripts/hooks/pre-commit-orianna-signature-guard.sh` (delete), `scripts/hooks/test-pre-commit-orianna-signature.sh` (delete), `scripts/hooks/test-plan-promote-guard.sh` (rewrite).
+  Files: `scripts/hooks/pre-commit-plan-promote-guard.sh`, `scripts/hooks/pre-commit-orianna-body-hash-guard.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/pre-commit-orianna-signature-guard.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/test-pre-commit-orianna-signature.sh` (archive to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->), `scripts/hooks/test-plan-promote-guard.sh` (rewrite).
   Detail:
   - Detect staged diff that moves (`R` status) or deletes files matching `plans/proposed/**` where the counterpart creates `plans/(approved|in-progress|implemented|archived)/**`.
   - For such diffs, require commit author email to match the Orianna agent identity (exact string match against a committed allowlist in `scripts/hooks/_orianna_identity.txt`) AND require the commit message to contain a `Promoted-By: Orianna` trailer. Read the commit message from `$1` in the commit-msg hook, or use a two-stage check where pre-commit validates author + staged paths and commit-msg validates trailer.
   - Extend admin-only path list to include `.claude/agents/orianna.md` and `scripts/hooks/_orianna_identity.txt` so only Duong's admin identity may modify them.
   - Optional: enforce minimum body length of at least thirty characters on promotion commits so approval rationale is preserved.
   - Non-promotion commits: reject any creation under `plans/approved/**`, `plans/in-progress/**`, `plans/implemented/**`, `plans/archived/**` unless author is Orianna or Duong's admin identity.
-  DoD: New unit tests pass; deleted hooks and their tests removed; `install-hooks.sh` updated if it enumerates hook filenames.
+  DoD: New unit tests pass; retired hooks and their tests moved to `scripts/hooks/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan -->; `install-hooks.sh` updated if it enumerates hook filenames.
 
 - T5. **Orianna git identity bootstrap.**
   Kind: create. Estimate_minutes: 10.
@@ -75,8 +75,8 @@ New regime:
 - T6. **Rewrite CLAUDE.md Rule 19 and architecture docs.**
   Kind: edit. Estimate_minutes: 15.
   Files: `CLAUDE.md`, `architecture/plan-lifecycle.md`, `architecture/key-scripts.md`.
-  Detail: Rule 19 becomes a short paragraph: Orianna is a callable agent. She decides plan promotions. Only she (and Duong's admin identity) may commit plan moves out of `plans/proposed/**`; enforced by pre-commit hook via author identity + `Promoted-By: Orianna` trailer. No signatures, no hashes, no fact-check artifacts. Remove the `Orianna-Bypass:` trailer mechanism — admin identity is the only bypass. Update `plan-lifecycle.md` to describe the new flow (caller -> Orianna agent -> commit). Update `key-scripts.md` to remove the deleted script entries.
-  DoD: No references to `orianna-sign.sh`, `plan-promote.sh`, or `orianna_gate_version` remain in `CLAUDE.md` or `architecture/`.
+  Detail: Rule 19 becomes a short paragraph: Orianna is a callable agent. She decides plan promotions. Only she (and Duong's admin identity) may commit plan moves out of `plans/proposed/**`; enforced by pre-commit hook via author identity + `Promoted-By: Orianna` trailer. No signatures, no hashes, no fact-check artifacts. Remove the `Orianna-Bypass:` trailer mechanism — admin identity is the only bypass. Update `plan-lifecycle.md` to describe the new flow (caller -> Orianna agent -> commit). Update `key-scripts.md` to remove the archived script entries. Archive the current `architecture/plan-lifecycle.md` and the relevant section(s) of `architecture/key-scripts.md` under `architecture/archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> before rewriting. Preserve history via `git mv` for plan-lifecycle.md; for key-scripts.md extract the archived section into a standalone file in `architecture/archive/v1-orianna-gate/key-scripts-excerpt.md`. <!-- orianna: ok -- prospective archive path, created by this plan -->
+  DoD: No references to `orianna-sign.sh`, `plan-promote.sh`, or `orianna_gate_version` remain in `CLAUDE.md` or `architecture/`; and archived copies exist under `architecture/archive/v1-orianna-gate/`. <!-- orianna: ok -- prospective archive path, created by this plan -->
 
 - T7. **Retire fact-check generator path.**
   Kind: edit. Estimate_minutes: 5.
@@ -103,3 +103,4 @@ All tests live in `scripts/hooks/` alongside existing `test-*.sh` files and are 
 - `architecture/plan-lifecycle.md` (to be rewritten)
 - `plans/implemented/2026-04-20-orianna-gated-plan-lifecycle.md` (origin of v2 regime — historical context only)
 - `.claude/_script-only-agents/orianna.md` (current prompt, to be relocated and simplified)
+- `scripts/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> (destination for archived v1 scripts)
