@@ -1,6 +1,13 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation #4, shard ad4fe689).
+Last updated: 2026-04-23 (post-session-close, pointing at new top-of-queue items).
+
+---
+
+## Sona inbox monitor not firing on send.sh writes
+
+**Current status (2026-04-23):** Observed twice today — messages written via `bash scripts/agent-ops/send.sh sona evelynn ...` land on disk correctly but Sona's live terminal monitor does not surface them. Pull-based `/check-inbox` still works. Likely same shape as inbox-write-guard: monitor probably hooks `Write|Edit` and Bash-script writes bypass it.
+**Next:** Investigate tomorrow. Dispatch Explore to map monitor architecture, then decide fix path (hook the monitor into send.sh, or switch watcher to FS-event-based). Full notes in `agents/evelynn/learnings/2026-04-23-sona-inbox-monitor-not-firing.md`.
 
 ---
 
