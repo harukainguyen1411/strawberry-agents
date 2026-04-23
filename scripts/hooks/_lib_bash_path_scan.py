@@ -69,6 +69,62 @@ def extract_word_value(node) -> str | None:  # type: ignore[type-arg]
     return word if word else None
 
 
+# Mutating verbs whose path arguments are collected for the guard check.
+# Any verb NOT in this set is treated as read-only and its path args are
+# not collected (so guard will not block them).
+_MUTATING_VERBS: frozenset[str] = frozenset({
+    "mv", "cp", "rm", "touch", "tee", "dd", "install", "rsync",
+    "truncate", "mkdir", "rmdir",
+})
+
+# Sub-verb check for `git` commands: only collect paths when subverb is mutating.
+_MUTATING_GIT_SUBVERBS: frozenset[str] = frozenset({"mv", "rm"})
+
+# Non-mutating read-only verbs — explicitly exempted even if the scanner
+# would otherwise pick up their arguments.  Listed here for documentation;
+# the logic below simply checks _MUTATING_VERBS / _MUTATING_GIT_SUBVERBS.
+# cat, head, tail, less, more, grep, awk, ls, cd, pwd, stat, find, echo,
+# printf, git add, git status, git diff, git log, git show, git commit,
+# git checkout, git restore, git stash, git branch, git push, git pull,
+# git fetch, git describe, git tag ...
+
+# Special case: `sed` with -i / --in-place is a mutating in-place edit.
+def _sed_is_inplace(parts_list: list) -> bool:  # type: ignore[type-arg]
+    """Return True if this `sed` invocation has -i or --in-place flag."""
+    for part in parts_list:
+        if part.kind == "word":
+            w = part.word.lower()  # type: ignore[attr-defined]
+            # -i, -i<suffix>, --in-place
+            if w == "-i" or w.startswith("-i") or w == "--in-place":
+                return True
+    return False
+
+
+def _is_mutating_command(verb: str, parts_list: list) -> bool:  # type: ignore[type-arg]
+    """
+    Return True if this command node should have its path arguments collected.
+
+    Rules:
+    - verb in _MUTATING_VERBS → mutating
+    - verb == "git" and args[0] in _MUTATING_GIT_SUBVERBS → mutating
+    - verb == "sed" and -i / --in-place flag present → mutating (in-place edit)
+    - verb == "eval" or (verb in bash/sh and -c present) → re-parse (handled separately)
+    - everything else → read-only, do NOT collect path arguments
+    """
+    if verb in _MUTATING_VERBS:
+        return True
+    if verb == "git":
+        # Find the first non-flag word after "git" — that's the subverb
+        for part in parts_list[1:]:
+            if part.kind == "word" and not part.word.startswith("-"):  # type: ignore[attr-defined]
+                subverb = part.word.lower()  # type: ignore[attr-defined]
+                return subverb in _MUTATING_GIT_SUBVERBS
+        return False
+    if verb == "sed":
+        return _sed_is_inplace(parts_list)
+    return False
+
+
 def walk(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ignore[type-arg]
     """Recursively walk a bashlex AST node and collect paths."""
     kind = node.kind  # type: ignore[attr-defined]
@@ -101,6 +157,10 @@ def walk(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ig
         _reparse_next = _verb == "eval" or (_verb in ("bash", "sh") and _dash_c)
         _reparse_idx = 1 if _verb == "eval" else 2  # index of the arg to re-parse
 
+        # Determine whether to collect path arguments for this command.
+        # Redirects are ALWAYS collected regardless of verb (handled below).
+        _collect_paths = _is_mutating_command(_verb, _parts_list) or _reparse_next
+
         # Now collect word arguments
         for i, part in enumerate(_parts_list):
             if part.kind == "word":
@@ -108,17 +168,20 @@ def walk(node, assignments: dict[str, str], out: list[str]) -> None:  # type: ig
                 # Walk commandsubstitution nodes inside word.parts (B1/B2/B3)
                 for subpart in getattr(part, "parts", []):
                     walk(subpart, assignments, out)
-                # Resolve variable references like $dest or ${dest}
-                resolved = _resolve_vars(raw, assignments)
-                normed = normalize_path(resolved)
-                if normed:
-                    out.append(normed)
+                # Only collect path arguments for mutating verbs
+                if _collect_paths:
+                    # Resolve variable references like $dest or ${dest}
+                    resolved = _resolve_vars(raw, assignments)
+                    normed = normalize_path(resolved)
+                    if normed:
+                        out.append(normed)
                 # eval / bash -c re-parse (B7) — single level only
                 if _reparse_next and i == _reparse_idx:
+                    resolved = _resolve_vars(raw, assignments)
                     _reparse_str = resolved.strip('"').strip("'")
                     _try_reparse(_reparse_str, assignments, out)
             elif part.kind in ("redirect",):
-                # Redirect target is in heredoc or filename
+                # Redirect target is ALWAYS collected — echo x >plans/approved/y.md must block
                 _walk_redirect(part, assignments, out)
             elif part.kind == "assignment":
                 pass  # already handled above
