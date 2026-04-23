@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 complexity: normal
 concern: work
 owner: swain
@@ -88,16 +88,53 @@ After: v2 branch deleted. `handle_message_event` falls straight through to v1 sp
 
 ## Tasks
 
-<!-- Aphelios will refine post-Orianna-approval. Tasks below are coordination-level skeletons; executor tiers added at decomposition time. -->
+<!-- Aphelios refinement 2026-04-23 — additive: track: annotations, explicit Files:, blockedBy: chain, worktree setup, grep-sweep verification, split PR-vs-deploy tasks. All paths below are relative to `~/Documents/Work/mmp/workspace/company-os/tools/slack-triage/` unless otherwise noted. Repo: `github.com/missmp/company-os`. -->
 
-- [ ] **T.1** — Xfail regression test: assert `create_demo_studio_session` absent from `main` module and no env read of `DEMO_STUDIO_URL` / `DEMO_STUDIO_ENABLED` occurs at import (Rule 12). estimate_minutes: 10. Files: tests/test_slack_triage_demo_studio_removed.py. DoD: 2 xfails committed before T.2 lands.
-- [ ] **T.2** — Delete `create_demo_studio_session`, `_handle_demo_request_v2`, v2 routing branch, `DEMO_STUDIO_URL` / `DEMO_STUDIO_ENABLED` env reads. estimate_minutes: 15. Files: main.py. DoD: T.1 xfails flip green; `grep DEMO_STUDIO\|create_demo_studio_session\|_handle_demo_request_v2` returns zero; existing v1 tests still pass.
-- [ ] **T.3** — Delete `tests/test_triage_v2.py`. estimate_minutes: 5. Files: tests/test_triage_v2.py. DoD: file gone; `pytest` collects and passes the remaining test set.
-- [ ] **T.4** — Prune README Demo Studio mentions. estimate_minutes: 5. Files: README.md. DoD: no "Demo Studio" token remains in the file.
-- [ ] **T.5** — PR + non-author review + merge + deploy. estimate_minutes: 20 (author time; wall-clock includes reviewer + deploy). Files: n/a. DoD: PR merged; prod revision live; parent T.W0.1 can open its 24h observation window.
+- [ ] **T.0** — Create worktree for slack-triage removal branch in `company-os` (Rule 3, never raw `git checkout`). estimate_minutes: 5. Files: n/a (git plumbing only). DoD: worktree at `~/Documents/Work/mmp/workspace/company-os-slack-triage-demo-removal/` tracking a new branch `chore/slack-triage-demo-studio-removal` off `origin/main`; `git worktree list` shows it. track: deploy-track (Ekko). blockedBy: none.
 
-Total active-agent time: ~55 min. Wall-clock (incl. deploy + 24h parent gate): ~25h.
+- [ ] **T.1** — Xfail regression test (Rule 12; xfail-first discipline). Assert `not hasattr(main, "create_demo_studio_session")`, `not hasattr(main, "_handle_demo_request_v2")`, `"DEMO_STUDIO_URL" not in main.__dict__`, and `"DEMO_STUDIO_ENABLED" not in main.__dict__`. Use `pytest.mark.xfail(strict=True, reason="T.2 not yet applied")` so the test flips green only after deletion. estimate_minutes: 15. Files: `tools/slack-triage/tests/test_demo_studio_removed.py` (new). DoD: 4 xfail assertions committed in a standalone commit referencing plan `2026-04-23-slack-triage-demo-studio-removal`; `pytest tools/slack-triage/tests/test_demo_studio_removed.py` shows 4 XFAIL (not XPASS, not PASS); commit pushed. track: normal-track (Sonnet builder). blockedBy: T.0.
+
+- [ ] **T.2** — Delete `create_demo_studio_session` (main.py:271-302), `_handle_demo_request_v2` (main.py:523-570), the v2 routing branch (main.py:513-516), and env reads for `DEMO_STUDIO_URL` (main.py:36) + `DEMO_STUDIO_ENABLED` (main.py:35). Verify `handle_message_event` still compiles and the v1 fall-through path is reached unconditionally for `demo_request` classifications. estimate_minutes: 20. Files: `tools/slack-triage/main.py`. DoD: (a) T.1's 4 xfails flip to XPASS-with-strict → PASS (remove the xfail marker in the same commit since strict=True otherwise errors on XPASS), (b) `python -c "import main"` succeeds inside the service dir, (c) existing `pytest` collection succeeds. track: normal-track (Sonnet builder). blockedBy: T.1.
+
+- [ ] **T.3** — Delete `tools/slack-triage/tests/test_triage_v2.py` entirely (per §5 OQ-1.a — every non-trivial test patches the deleted symbol and the skip-gate would skip all). estimate_minutes: 5. Files: `tools/slack-triage/tests/test_triage_v2.py` (deletion). DoD: file absent from working tree; `pytest tools/slack-triage/` collects zero tests from that path and the remaining test set passes. track: normal-track (Sonnet builder). blockedBy: T.2.
+
+- [ ] **T.4** — Prune README Demo Studio mentions. Current README has no explicit Demo Studio sentence (verified 2026-04-23: only the `DEMO_RUNNER_URL` env var is documented, no `DEMO_STUDIO_URL`). Task reduces to a grep-confirm + no-op unless hidden prose is found. estimate_minutes: 5. Files: `tools/slack-triage/README.md`. DoD: `grep -i "demo studio\|DEMO_STUDIO" tools/slack-triage/README.md` returns zero lines; if any text is removed it's in a dedicated commit. track: normal-track (Sonnet builder). blockedBy: T.3.
+
+- [ ] **T.5** — Repo-wide grep sweep (verification gate). Confirm the tokens `DEMO_STUDIO_URL`, `DEMO_STUDIO_ENABLED`, `create_demo_studio_session`, `_handle_demo_request_v2` do not appear anywhere under `tools/slack-triage/` (source + tests + README + Dockerfile + requirements.txt). Pin the grep output (expected: empty) to the PR body as a verification block. estimate_minutes: 5. Files: n/a (verification only; output pasted into PR description). DoD: `grep -rE "DEMO_STUDIO_URL|DEMO_STUDIO_ENABLED|create_demo_studio_session|_handle_demo_request_v2" tools/slack-triage/` returns zero matches; grep command + empty output captured in PR body under a `## Verification` heading. track: normal-track (Sonnet builder). blockedBy: T.4.
+
+- [ ] **T.6** — Open PR against `missmp/company-os` main. Title `chore: slack-triage — remove Demo Studio handoff (parent Loop 2d)`. Body links parent plan `plans/in-progress/work/2026-04-23-firebase-auth-loop2d-slack-removal.md` T.COORD.5, this plan, and the Verification block from T.5. Request review from a non-author identity (Rule 18 — `strawberry-reviewers` or `strawberry-reviewers-2`). Non-UI, non-user-flow → `QA-Waiver: slack-triage is a backend-only Slack webhook service, no user-facing UI changes` per Rule 16. estimate_minutes: 10. Files: n/a (PR body + GH metadata). DoD: PR open; review requested; CI green (note: `company-os` has only `ci-demo-config-mgmt.yml` which does not touch `tools/slack-triage/` — expect no CI runs on this PR, which satisfies Rule 15 vacuously; call this out in the PR body so the reviewer knows). track: deploy-track (Ekko). blockedBy: T.5.
+
+- [ ] **T.7** — Non-author review + merge. A reviewer identity other than the PR author approves; agent author then merges (no `--admin`, no `--no-verify`, Rule 18). estimate_minutes: 10 (active author time; reviewer wall-clock extra). Files: n/a. DoD: PR merged to `origin/main` with squash or merge commit; merge SHA recorded. track: deploy-track (Ekko + reviewer). blockedBy: T.6.
+
+- [ ] **T.8** — Deploy to Cloud Run prod. **Manual deploy step** — company-os has no GitHub Actions workflow that auto-deploys `tools/slack-triage/` (only `ci-demo-config-mgmt.yml` exists; see Coordination concerns below). Ekko builds the Docker image, pushes to Artifact Registry, and runs `gcloud run deploy slack-triage --image <new-tag> --region <region>` against the prod project. Smoke-test: send a test Slack `demo_request` message to a test channel and confirm slack-triage routes through v1 spec-gathering (posts the gathering question, **not** a studio URL). estimate_minutes: 20 (active time; deploy propagation adds a few minutes wall-clock). Files: n/a (deploy artifact + Cloud Run revision). DoD: new prod Cloud Run revision live and serving traffic; smoke-test message routed through v1 path; prod revision ID recorded on this plan under an "Executor notes" block. track: deploy-track (Ekko). blockedBy: T.7.
+
+- [ ] **T.9** — 24h observation window (parent T.W0.1 gate). Query Cloud Logging for any `POST /session` references originating from slack-triage over a rolling 24h window post-deploy. If zero hits, sign off; if any hits, investigate (expected: zero — the code path is gone). estimate_minutes: 15 (active log-query time; wall-clock 24h). Files: n/a (Cloud Logging query output pasted as a comment under parent T.W0.1). DoD: 24h log window shows zero `create_demo_studio_session` / `POST /session` emissions from slack-triage; parent plan T.W0.1 marked satisfied. track: deploy-track + verification (Ekko). blockedBy: T.8.
+
+**Task count:** 10 tasks (T.0–T.9). Active-agent time: ~110 min. Wall-clock: ~25h (dominated by T.9's 24h observation window).
+
+### TDD infra note (Rule 12 applicability)
+
+`company-os` does **not** carry the strawberry-agents `tdd-gate.yml` CI workflow or any pre-push hook enforcing xfail-first. The sole workflow present is `ci-demo-config-mgmt.yml`, scoped to `tools/demo-studio-config-mgmt/**` only. Rule 12 therefore applies as **agent discipline** (xfail-first commit T.1 before implementation commit T.2) but is not machine-enforced on this PR. The reviewer should visually confirm the T.1 commit precedes T.2 on the branch.
+
+### Coordination concerns (flagged to Sona / parent plan owner)
+
+1. **No automated deploy pipeline for slack-triage.** `company-os` lacks a Cloud Run deploy workflow for `tools/slack-triage/`. T.8 is a **manual** `gcloud run deploy` against prod. If an existing operational runbook governs slack-triage deploys (check with Duong / Ekko memory), link it into T.8's executor note. **Recommendation:** parent plan T.W0.1 should explicitly note that the 24h observation window starts at **T.8 completion**, not at T.7 (merge).
+
+2. **Cross-repo worktree discipline.** T.0 creates the worktree in the `company-os` workspace. The executor must not `git checkout` directly; use `scripts/safe-checkout.sh` if available in `company-os`, else raw `git worktree add` as the Rule 3 fallback.
+
+3. **No strawberry-agents pre-push hook coverage.** The hooks installed via `scripts/install-hooks.sh` live in strawberry-agents. `company-os` may carry its own hook install script — not audited in this breakdown. If `company-os` pre-push hooks don't exist, Rule 12/13/14 are agent-discipline only on this PR.
+
+4. **Rule 16 (QA) applicability.** slack-triage is a backend-only Slack webhook service with no browser UI; `QA-Waiver:` is the correct path (noted in T.6 DoD). Akali not invoked.
+
+5. **Parent plan dep chain.** This plan's T.8 satisfies parent `2026-04-23-firebase-auth-loop2d-slack-removal.md` T.COORD.5. Parent T.W0.1 then consumes T.9's 24h sign-off to unblock parent W3.
+
+### Open questions surfaced during breakdown
+
+- **OQ-A1** — Is there an existing Cloud Run deploy runbook or Makefile for slack-triage that T.8 should follow verbatim, or does Ekko author the deploy commands from scratch? Default assumption: Ekko reads `tools/slack-triage/README.md` "GCP Cloud Functions deployment commands" reference (pointed at in README §Deploy) and executes accordingly.
+- **OQ-A2** — Should T.1's xfail file live at `tools/slack-triage/tests/test_demo_studio_removed.py` (colocated) or under a top-level `tests/` tree in `company-os`? Default: colocated — matches the existing `test_triage_v2.py` pattern.
 
 ## Orianna approval
 
-_Pending._
+APPROVED 2026-04-23 by Orianna (fact-check gate v2).
+All load-bearing claims verified against current repo state.
+blocks: 0, warns: 0, infos: 6.
