@@ -65,6 +65,9 @@ After: v2 branch deleted. `handle_message_event` falls straight through to v1 sp
 
 ## 5. Open questions
 
+**Duong's answers (2026-04-23, auto-mode):** `1a 2a 3a` — all Swain picks accepted (aligned with parent Loop 2d ADR §5.b already approved).
+
+
 1. **Delete v2 tests or retarget?** a: delete `tests/test_triage_v2.py` — every test patches a deleted symbol; pytestmark skip-gate would skip them all anyway. **Pick.** b: retarget to v1-fallback assertions — lower value, v1 tests already cover v1.
 2. **Keep a bare Demo Studio nudge?** a: no URL mentioned — clean deletion, aligns with parent §5.b + task-brief string constraint. **Pick.** b: hardcode literal `https://demo-studio.missmp.tech/` — violates task-brief.
 3. **Keep `DEMO_STUDIO_ENABLED` gate as dead no-op?** a: delete the gate and branch; fall through to v1 unconditionally. **Pick.** b: keep for rollback ergonomics — rejected, rollback is `git revert` not a flag.
