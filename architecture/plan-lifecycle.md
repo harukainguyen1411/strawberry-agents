@@ -128,6 +128,27 @@ and enforces five rules (see inline comments in the script). Plans under
 
 ---
 
+## Grandfathered plans (`plans/pre-orianna/`)
+
+Plans predating the Orianna-gate-v2 regime — those lacking `orianna_gate_version: 2`
+in their frontmatter — live under `plans/pre-orianna/<phase>/`, where `<phase>` is one
+of `proposed`, `approved`, `in-progress`, `implemented`, or `archived`, preserving the
+original phase signal.
+
+`plans/pre-orianna/**` is **not** a protected path under the PreToolUse guard
+(`pretooluse-plan-lifecycle-guard.sh`). New writes and moves within this tree are freely
+permitted for any agent or Duong's admin identity — no Orianna dispatch required.
+
+Both pre-commit structural-lint hooks (`pre-commit-zz-plan-structure.sh`,
+`pre-commit-t-plan-structure.sh`) already exempt the `plans/pre-orianna/*` glob
+alongside `plans/archived/*` and `plans/_template.md`, so grandfathered plans that fail
+current structural rules do not block commits.
+
+For full rationale and the original 131-plan migration, see
+`plans/approved/personal/2026-04-21-pre-orianna-plan-archive.md`.
+
+---
+
 ## Related
 
 | Item | Purpose |
