@@ -1,6 +1,5 @@
 ---
 status: approved
-orianna_gate_version: 2
 complexity: quick
 concern: work
 owner: karma
@@ -12,7 +11,6 @@ tags:
   - frontend
   - work
 tests_required: true
-orianna_signature_approved: "sha256:d364ea817a459b2c95794e130b9fd4c617836154f9dee46ac26422685de9dc7a:2026-04-22T11:28:31Z"
 ---
 
 # Loop 2b — Firebase auth frontend sign-in UI

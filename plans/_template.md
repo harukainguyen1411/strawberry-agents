@@ -3,7 +3,6 @@ status: proposed
 concern: <personal|work>
 owner: <agent-name>
 created: <YYYY-MM-DD>
-orianna_gate_version: 2
 tests_required: <true|false>
 tags: [<tag1>, <tag2>]
 related:

@@ -2,14 +2,10 @@
 status: implemented
 concern: personal
 complexity: quick
-orianna_gate_version: 2
 owner: Karma
 created: 2026-04-22
 tests_required: true
 architecture_impact: none
-orianna_signature_approved: "sha256:f7e07e4b0407b541cbab1957244b9aa2a58b06451e9896d639d236d3c095835c:2026-04-22T13:30:30Z"
-orianna_signature_in_progress: "sha256:f7e07e4b0407b541cbab1957244b9aa2a58b06451e9896d639d236d3c095835c:2026-04-22T13:32:07Z"
-orianna_signature_implemented: "sha256:f7e07e4b0407b541cbab1957244b9aa2a58b06451e9896d639d236d3c095835c:2026-04-22T13:33:47Z"
 ---
 
 # Rule 16 strengthening — name Akali, require Playwright MCP, extend to user-flow changes

@@ -1,6 +1,5 @@
 ---
 status: in-progress
-orianna_gate_version: 2
 complexity: complex
 concern: work
 owner: swain
@@ -11,8 +10,6 @@ tags:
   - re-architecture
   - work
 tests_required: true
-orianna_signature_approved: "sha256:7c93f0238d9fdca5fc58058d10b66520ab3f3e1f852976bbfd9e6bec3031530d:2026-04-21T12:29:27Z"
-orianna_signature_in_progress: "sha256:7c93f0238d9fdca5fc58058d10b66520ab3f3e1f852976bbfd9e6bec3031530d:2026-04-21T12:37:40Z"
 ---
 
 # ADR: Demo Studio v3 — Vanilla Messages API Ship (Option B)

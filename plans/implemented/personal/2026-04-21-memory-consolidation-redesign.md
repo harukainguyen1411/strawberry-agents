@@ -3,7 +3,6 @@ status: implemented
 concern: personal
 owner: swain
 created: 2026-04-21
-orianna_gate_version: 2
 tests_required: true
 complexity: complex
 tags: [memory, boot, coordinator, evelynn, sona, shards]
