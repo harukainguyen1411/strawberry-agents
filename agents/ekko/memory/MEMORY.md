@@ -130,6 +130,10 @@
 
 - 2026-04-23 (ekko): Promoted 2026-04-22-orianna-gate-simplification.md proposed→approved. Required 2 sign+fix cycles: first cycle cleared orianna-sign.sh (0 blocks) but plan-promote.sh's lib-plan-structure found additional blocks (bare script names, git config key tokens, backtick-enclosed existing directory `scripts/hooks` crashing awk). Second cycle cleared all. Sign SHA: 93071b7, promote SHA: 8b5f361 (pushed). Key new learning: lib-plan-structure checks ALL lines when git mv stages file as new; `scripts/hooks` (no slash) still crashes awk on macOS; `plans/` in grep command fragments also crashes awk.
 
+- 2026-04-23 (ekko): Committed Swain memory-flow ADR and promoted proposed→approved. Plan was well-authored (all suppressors had reason suffixes, all Picks present). Orianna: 0 blocks 0 warns 17 info — first-shot pass. ADR commit: 32f24be, sign: d925e0e, promote: 6840d19. Final path: plans/approved/personal/2026-04-23-memory-flow-simplification.md.
+
+- 2026-04-23 (ekko — Evelynn dispatch): Unblocked orianna-gate-simplification approved→in-progress by adding T8 (kind: test). Required full re-sign chain: mv plan back to proposed (53efa6b), re-sign approved (c2539b8), promote to approved (ecde187), sign in_progress (ad8fb23), promote to in-progress (0ef99bf, pushed). Gate verdicts: approved 0 blocks/20 info, in_progress 0 blocks. Final path: plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md. Lesson: `tests_required: true` + no `kind: test` task hard-blocks task-gate-check at approved→in-progress.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
