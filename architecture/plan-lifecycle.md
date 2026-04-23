@@ -46,9 +46,19 @@ Orianna will:
 
 `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` is wired into `.claude/settings.json`
 as a PreToolUse hook for the `Bash` and `Write|Edit|NotebookEdit` tool matchers. It fires
-**before** any tool executes, preventing a non-Orianna agent from physically moving,
-copying, deleting, or writing files into the protected lifecycle directories:
+**before** any tool executes, enforcing the following rules for non-Orianna agents:
 
+**Blocked** (non-Orianna agents):
+- `Bash` commands that reference protected paths (git mv, mv, cp, rm, etc.)
+- `Write` to a **non-existing** file inside a protected directory (new-file creation)
+
+**Permitted** (non-Orianna agents):
+- `Edit` or `NotebookEdit` on an **existing** file in a protected directory — agents
+  such as Aphelios and Xayah must be able to append Tasks/Test-plan sections to
+  in-progress plans.
+- `Write` to an **existing** file in a protected directory (overwrite = edit semantics).
+
+Protected directories:
 - `plans/approved/`
 - `plans/in-progress/`
 - `plans/implemented/`
