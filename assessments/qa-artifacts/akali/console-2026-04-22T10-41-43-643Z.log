@@ -1,0 +1,57 @@
+[      61ms] ReferenceError: Cannot access 'serviceState' before initialization
+    at checkService (http://localhost:8090/dashboard:1002:5)
+    at Array.map (<anonymous>)
+    at pollHealth (http://localhost:8090/dashboard:1029:30)
+    at refreshAll (http://localhost:8090/dashboard:1805:3)
+    at setMode (http://localhost:8090/dashboard:883:43)
+    at http://localhost:8090/dashboard:945:1
+[      63ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[      63ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854503693:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854503692:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854503693:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854503693:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854503693:0
+[      63ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854503693:0
+[      64ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854503693:0
+[      65ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854503693:0
+[   30054ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854533694:0
+[   30059ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854533695:0
+[   30061ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854533695:0
+[   30061ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854533695:0
+[   60056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[   60092ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854563696:0
+[   60094ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854563696:0
+[   60097ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854563697:0
+[   60098ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854563697:0
+[   90061ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854593695:0
+[   90070ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854593696:0
+[   90070ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854593696:0
+[   90071ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854593696:0
+[  120061ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[  120080ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854623696:0
+[  120081ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854623699:0
+[  120082ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854623699:0
+[  120082ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854623699:0
+[  150076ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854653697:0
+[  150080ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854653697:0
+[  150081ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854653697:0
+[  150081ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854653698:0
+[  180056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[  180061ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s2/health?_t=1776854683696:0
+[  180069ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s3/health?_t=1776854683696:0
+[  180069ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s4/health?_t=1776854683696:0
+[  180072ms] [ERROR] Failed to load resource: the server responded with a status of 503 (Service Unavailable) @ http://localhost:8090/api/service-health/s5/health?_t=1776854683696:0
+[  210065ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s3/health?_t=1776854713697:0
+[  210065ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s2/health?_t=1776854713696:0
+[  210065ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s4/health?_t=1776854713697:0
+[  210065ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s5/health?_t=1776854713697:0
+[  240056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s2/health?_t=1776854743696:0
+[  240056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s3/health?_t=1776854743697:0
+[  240056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s4/health?_t=1776854743697:0
+[  240056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s5/health?_t=1776854743697:0
+[  240056ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8080/sessions:0
+[  270057ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s2/health?_t=1776854773697:0
+[  270057ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s3/health?_t=1776854773697:0
+[  270057ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s4/health?_t=1776854773697:0
+[  270057ms] [ERROR] Failed to load resource: net::ERR_CONNECTION_REFUSED @ http://localhost:8090/api/service-health/s5/health?_t=1776854773697:0
