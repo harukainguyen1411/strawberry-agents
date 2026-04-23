@@ -64,3 +64,6 @@
 
 - 2026-04-23-karma-timeout-complete-but-uncommitted.md — Check disk state before re-dispatching a timed-out planner; partial artifacts may be complete. | last_used: 2026-04-23
 - 2026-04-23-orianna-sign-promote-structure-hook-divergence.md — orianna-sign.sh APPROVE is not sufficient for plan-promote.sh success; structure hook checks orthogonal invariants. Fix structural deficiency first, then re-sign. Use admin Orianna-Bypass after two failed re-sign attempts. | last_used: 2026-04-23
+- 2026-04-23-identity-spoofing-commit-phase-gate.md — Commit-phase git-author identity checks are cheaply spoofable; any agent can set git config. PreToolUse-layer enforcement + post-hoc audit (one TRUE god gate principle) is the correct remedy. | last_used: 2026-04-23
+- 2026-04-23-parallel-subagent-write-race-materialized.md — Parallel subagents committing on the same working tree git-race; always use isolation: "worktree" when two or more agents may commit concurrently. | last_used: 2026-04-23
+- 2026-04-23-v1-gate-tests-required-blocked-v2-plans.md — v1 gate `tests_required: true` + no `kind: test` task blocked memory-flow and Orianna v2 plans; both promoted clean once PR #30 (v2 gate) landed. Field is obsolete for new plans post-PR #30. | last_used: 2026-04-23

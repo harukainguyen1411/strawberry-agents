@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-b1acd96a; prior shards 2026-04-22-1423e23d + earlier).
+Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-cbe48dfe; prior shards 2026-04-23-b1acd96a + 2026-04-22-1423e23d + earlier).
 
 ---
 
@@ -47,9 +47,57 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-b1acd96a; 
 ## Firebase Loop 2c — PR #75 MERGED (2026-04-23)
 
 **Status (2026-04-23):** MERGED by Duong. Vi reconciliation v2 cleared TDD gate (0 xpassed, -4 baseline delta vs `feat/demo-studio-v3`, independently verified by Ekko). Senna re-review COMMENT (advisory LGTM, reviewer-auth gap). Akali Rule 16 PASS-WITH-NOTES (all 22 route behaviors correct; pre-existing legacy-cookie 500 bug flagged). Lucian LGTM. Thread closed.
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a.
-**Follow-ups opened (Karma plans in flight):** TOCTOU I1 in `auth_exchange` raced-claim; legacy-cookie old-format 500→401 one-liner. Both target `main.py`/`auth.py` in demo-studio-v3.
-**Next action:** Loop 2d scoping (Slack scaffolding removal) when Duong is ready.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
+**Follow-ups opened (Karma plans in flight):** TOCTOU I1 in `auth_exchange` raced-claim (`plans/proposed/work/2026-04-23-demo-studio-auth-exchange-raced-claim.md`); legacy-cookie old-format 500→401 one-liner. Both target `main.py`/`auth.py` in demo-studio-v3.
+**Next action:** Loop 2d — Swain ADR in flight (dispatched this leg). Await Swain return + Duong 5-decision review before scoping impl.
+
+---
+
+## Firebase Loop 2d — Slack scaffolding removal — ADR in-flight
+
+**Status (2026-04-23):** Duong directed Loop 2d — remove `slack_user_id`/`slack_channel`/`slack_thread_ts` fields, `POST /session` Slack handoff, and `/auth/session/{sid}?token=...` route. Add "New session" button UI. Swain dispatched to author ADR at compact boundary.
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Await Swain return. Review 5 decision calls with Duong. Commission Karma for quick-lane plan after approval.
+
+---
+
+## Firebase P0 — login verified locally (2026-04-23)
+
+**Status (2026-04-23):** Duong signed in with Google (`duong.nguyen.thai@missmp.eu`) on local stack. S1 on `feat/demo-studio-v3` HEAD (`4817eef`, includes PR #69 + #75). `/auth/config` returns `projectId=mmpt-233505`, `allowedEmailDomain=missmp.eu`. P0 login flow confirmed working locally.
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Loop 2d + deploy to staging for external testing.
+
+---
+
+## P1 factory build — Phase B+C complete; Phase D in flight
+
+**Status (2026-04-23, updated):** Phase A (T.P1.0 Xayah xfails + T.P1.11 Jayce allowlist) complete. Phase B (Viktor S3 trigger_factory, branch `feat/p1-s3-stream`, commits `f42d4f4`/`430b38c`/`f39119d`, 9 xfails flipped) complete. Phase C (T.P1.8 Jayce session-build linkage, branch `feat/p1-t8-session-build-linkage`) complete. Rakan T.P1.7 fault-injection fixture (`test/p1-t7-fault-injection`, commit `5761785`) complete. Jayce T.P1.9 PR #77 open. Jayce T.P1.10a SSE relay writer in-flight at compact boundary.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
+**Next action:** Await T.P1.10a → then T.P1.10b → Rakan T.P1.12 → Soraka T.P1.13b → Akali T.P1.16 → Ekko T.P1.14 deploy.
+
+---
+
+## PR #77 (T.P1.9 trigger_factory_v2) — open, awaiting review
+
+**Status (2026-04-23):** PR #77 open on `feat/p1-t9-trigger-factory-v2`. `buildId` + real `projectId` persisted via `update_session_field`. Scaffold bug flagged in T.P1.0 xfails (`create_session` signature mismatch vs real Firestore-backed impl). Not blocking PR #77 itself.
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Dispatch Senna + Lucian for PR #77 review. Fix T.P1.0 scaffold bug (Caitlyn or Vi).
+
+---
+
+## TOCTOU I1 — plan exists, no owner assigned
+
+**Status (2026-04-23, updated):** Plan authored by Karma: `plans/proposed/work/2026-04-23-demo-studio-auth-exchange-raced-claim.md`. No executor assigned. Must be addressed before final ship.
+**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
+**Next action:** Assign owner (Vi or Camille). Plan needs Orianna promotion before execution.
+
+---
+
+## Merged-branch cleanup automation — in-progress
+
+**Status (2026-04-23):** Plan at `plans/in-progress/work/2026-04-23-merged-branch-auto-cleanup.md` (Orianna promoted, commit `70dee7b`). T1+T2 shipped by Talon (`scripts/cleanup-merged-branches.sh` + tests, commit `b2b8944`). Violation: `b2b8944` contains Co-Authored-By AI trailer — needs remediation. T3 (`/end-session` wiring) and T4 (GitHub auto-delete-head-branches) not yet dispatched. One-time backfill (T.CLEANUP.3) was done manually by Ekko this leg (10 branches deleted).
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Remediate `b2b8944` AI-trailer violation (Ekko amend or follow-up commit). Dispatch T3+T4.
 
 ---
 
