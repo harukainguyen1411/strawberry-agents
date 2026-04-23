@@ -262,6 +262,35 @@ else
 fi
 
 echo ""
+echo "=== agents/orianna/memory/git-identity.sh smoke ==="
+_tmp_repo="$(mktemp -d)"
+git -C "$_tmp_repo" init -q
+git -C "$_tmp_repo" -c user.email="before@example.com" -c user.name="Before" \
+  commit --allow-empty -q -m "init" 2>/dev/null || true
+GIT_DIR="$_tmp_repo/.git" GIT_WORK_TREE="$_tmp_repo" \
+  bash "$REPO_ROOT/agents/orianna/memory/git-identity.sh" >/dev/null 2>&1
+_got_email="$(git -C "$_tmp_repo" config user.email 2>/dev/null || true)"
+_got_name="$(git -C "$_tmp_repo" config user.name 2>/dev/null || true)"
+rm -rf "$_tmp_repo"
+if [ "$_got_email" = "orianna@strawberry.local" ] && [ "$_got_name" = "Orianna" ]; then
+  echo "  PASS: git-identity.sh sets orianna@strawberry.local / Orianna"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: git-identity.sh — got email='$_got_email' name='$_got_name'"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
+echo "=== commit-msg plan-promote-guard tests ==="
+if bash "$REPO_ROOT/scripts/hooks/test-commit-msg-plan-promote-guard.sh" 2>/dev/null; then
+  echo "  PASS: test-commit-msg-plan-promote-guard.sh (6 trailer-check cases)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-commit-msg-plan-promote-guard.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "=== orianna v2 gate — invariants #4 and #5 ==="
 if bash "$REPO_ROOT/scripts/hooks/test-orianna-gate-inv4-inv5.sh" 2>/dev/null; then
   echo "  PASS: test-orianna-gate-inv4-inv5.sh (INV-4 idempotence + INV-5 lifecycle smoke)"
