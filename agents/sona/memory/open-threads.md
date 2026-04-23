@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-5bc52df0; prior shards 2026-04-23-cbe48dfe + 2026-04-23-b1acd96a + earlier).
+Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-148e1b03; prior shards 2026-04-23-5bc52df0 + 2026-04-23-cbe48dfe + 2026-04-23-b1acd96a + earlier).
 
 ---
 
@@ -102,11 +102,19 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-5bc52df0; 
 
 ---
 
-## Config-architecture ADR — Swain in-flight (2026-04-23)
+## Config-architecture ADR — APPROVED, decomposed, W1 in-progress (2026-04-23)
 
-**Status (2026-04-23):** Duong clarified the intended config flow: session creation seeds from an S2 Firestore test config; agent edits JSON in-context (browser sessionStorage cache); on sequence completion agent calls POST /v1/config to create a new version; preview reads the new version. Swain dispatched to author an ADR for this design. In-flight at compact boundary.
-**Shard pointers:** 2026-04-23-5bc52df0.
-**Next action:** Await Swain ADR. Review with Duong. Then commission Karma for implementation plan (S2 seeding, S1 session-init flow, sessionStorage wiring, POST-on-completion hook).
+**Status (2026-04-23, updated):** Swain returned with `plans/proposed/work/2026-04-23-agent-owned-config-flow.md`. Duong approved all 7 OQs. Orianna promoted to approved (`79981e1`). Aphelios decomposed into 29 sub-tasks W1–W5 (commit `4bb30da`). Plan promoted to in-progress. W1 (seed config on session create): Rakan xfails on `test/w1-xfail-stubs` (`fa6c54b`); Viktor WIP committed as `a86f739`; Viktor re-dispatched to finish + integrate + open PR. W2 blocked until W1 lands.
+**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03.
+**Next action:** Await Viktor W1 return → review dispatch → merge → W2 dispatch.
+
+---
+
+## PR #87 — S2 set_config hotfix — awaiting Duong approve (2026-04-23)
+
+**Status (2026-04-23):** Senna ADVISORY LGTM (C1/C2/C3 + I1/I5 all cleared by Jayce). Lucian APPROVE. strawberry-reviewers has no missmp/company-os access — Rule 18 escalated to Duong for web-UI approve. Do not merge until Duong approves.
+**Shard pointers:** 2026-04-23-148e1b03.
+**Next action:** Duong web-UI approve on PR #87 → merge → W1 config-arch branch pulls in the fix if needed.
 
 ---
 
