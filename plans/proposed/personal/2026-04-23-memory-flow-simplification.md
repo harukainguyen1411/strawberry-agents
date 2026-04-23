@@ -19,6 +19,7 @@ related:
   - .claude/skills/end-subagent-session/SKILL.md
   - .claude/skills/pre-compact-save/SKILL.md
   - scripts/memory-consolidate.sh
+orianna_signature_approved: "sha256:b9a6fe938bc5e266b64fec73f7cf104c40c1f6af6adb3e2590a0131ddabc530c:2026-04-23T02:43:38Z"
 ---
 
 # Memory flow simplification — ADR
