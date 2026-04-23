@@ -5,20 +5,22 @@
 # Fires before Write / Edit tool executions.
 # Rejects (exit 2) any attempt to write or broadly edit files matching
 #   agents/<name>/inbox/<file>.md
-# unless the calling agent is an admin identity, the edit is the sanctioned
-# check-inbox status flip (pending -> read), or the caller is executing via
-# the /agent-ops skill (STRAWBERRY_SKILL=agent-ops).
+# unless the calling agent is an admin identity or the edit is the sanctioned
+# check-inbox status flip (pending -> read).
+#
+# Note: /agent-ops send writes inbox files via scripts/agent-ops/send.sh (Bash tool),
+# which does not trigger this guard (guard matches Write|Edit only). No env-var bypass
+# is needed or present.
 #
 # Allowed paths (always pass through):
 #   agents/*/inbox/archive/**     — archive subtree is unguarded
 #
 # Identity: read from $CLAUDE_AGENT_NAME, then $STRAWBERRY_AGENT (case-insensitive).
 # Admin bypass: duongntd, harukainguyen1411 — may write inbox files directly.
-# Skill bypass: STRAWBERRY_SKILL=agent-ops — the /agent-ops send path.
 #
 # Permitted Edit: old_string and new_string differ ONLY in:
-#   - "status: pending" line changed to "status: read"
-#   - optional addition of a "read_at: ..." line
+#   - "status: pending" standalone line changed to "status: read" (frontmatter anchor)
+#   - optional addition of a "read_at: <ISO-8601>" line (value must match ISO-8601 shape)
 #   No other lines may differ between old_string and new_string.
 #
 # MultiEdit: not matched by this guard (removed from settings.json matcher).
@@ -99,15 +101,6 @@ is_admin() {
     duongntd|harukainguyen1411) return 0 ;;
   esac
   return 1
-}
-
-# Skill bypass: STRAWBERRY_SKILL=agent-ops allows Write/Edit to inbox paths.
-# This is the sanctioned /agent-ops send path.
-_skill="${STRAWBERRY_SKILL:-}"
-_skill_lc="$(printf '%s' "$_skill" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')"
-
-is_agent_ops_skill() {
-  [ "$_skill_lc" = "agent-ops" ]
 }
 
 # --- reject helper -----------------------------------------------------------
@@ -192,12 +185,7 @@ case "$_tool_name" in
       exit 0
     fi
 
-    # Skill bypass: /agent-ops send sets STRAWBERRY_SKILL=agent-ops
-    if is_agent_ops_skill; then
-      exit 0
-    fi
-
-    # For Write: always blocked unless admin or agent-ops skill (checked above)
+    # For Write: always blocked unless admin (checked above)
     if [ "$_tool_name" = "Write" ]; then
       reject "inbox writes must go through /agent-ops send — direct Write denied"
     fi
@@ -210,25 +198,39 @@ case "$_tool_name" in
     _old_string="$(printf '%s' "$_input" | jq -r '.tool_input.old_string // empty' 2>/dev/null)"
     _new_string="$(printf '%s' "$_input" | jq -r '.tool_input.new_string // empty' 2>/dev/null)"
 
-    # Quick pre-check: old must contain "status: pending" and new must contain "status: read"
+    # Pre-check: old_string must contain a standalone "status: pending" line
+    # and new_string must contain a standalone "status: read" line.
+    # Use line-anchored grep to avoid matching "status: pending" inside body text.
     _old_has_pending=0
     _new_has_read=0
-    case "$_old_string" in
-      *"status: pending"*) _old_has_pending=1 ;;
-    esac
-    case "$_new_string" in
-      *"status: read"*) _new_has_read=1 ;;
-    esac
+    if printf '%s' "$_old_string" | grep -q '^status: pending$'; then
+      _old_has_pending=1
+    fi
+    if printf '%s' "$_new_string" | grep -q '^status: read$'; then
+      _new_has_read=1
+    fi
 
     if [ "$_old_has_pending" = "0" ] || [ "$_new_has_read" = "0" ]; then
       reject "inbox Edit must be the status pending -> read flip (check-inbox path) or go through /agent-ops send"
     fi
 
+    # Validate read_at value if present: must match ISO-8601 shape
+    # Accepted: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SSZ, YYYY-MM-DD HH:MM, YYYY-MM-DD HH:MM:SS
+    # Pattern: starts with 4 digits, dash, 2 digits, dash, 2 digits.
+    if printf '%s' "$_new_string" | grep -q '^read_at: '; then
+      _read_at_val="$(printf '%s' "$_new_string" | grep '^read_at: ' | head -1 | sed 's/^read_at: //')"
+      # Must begin with YYYY-MM-DD
+      case "$_read_at_val" in
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*) ;;
+        *) reject "inbox Edit: read_at value must be ISO-8601 (YYYY-MM-DD...) — got: $_read_at_val" ;;
+      esac
+    fi
+
     # Tightened diff check:
-    # 1. Normalize old_string: replace "status: pending" with "status: read"
+    # 1. Normalize old_string: replace standalone "status: pending" line with "status: read"
     # 2. Normalize new_string: remove any "read_at: ..." line
     # 3. They must be equal after normalization.
-    _old_normalized="$(printf '%s' "$_old_string" | sed 's/status: pending/status: read/')"
+    _old_normalized="$(printf '%s' "$_old_string" | sed 's/^status: pending$/status: read/')"
     _new_normalized="$(printf '%s' "$_new_string" | sed '/^read_at: /d')"
 
     if [ "$_old_normalized" = "$_new_normalized" ]; then
