@@ -9,7 +9,6 @@ created: 2026-04-22
 orianna_gate_version: 2
 concern: personal
 tests_required: true
-orianna_signature_approved: "sha256:073b1174df104d1cf499dd00f4e91ce88df339b191526625ec69d63727bd801e:2026-04-23T02:33:13Z"
 ---
 
 ## Context
@@ -25,10 +24,10 @@ New regime:
 ## Risks to weigh before promoting
 
 1. **Trailer forgery** — any agent could write `Promoted-By: Orianna` into a commit message. Mitigation: pre-commit hook cross-checks the trailer against `git config user.email` at commit time. Orianna agent sessions must set a distinct git identity (e.g. `orianna@strawberry.local`). Pre-push hook re-verifies on push. Duong's admin identity remains the only human bypass.
-2. **Git identity drift** — if Orianna's session git config is not set, her own commits will be rejected. T5 adds a bootstrap step in her agent definition to set `user.email` / `user.name` from a committed config snippet on every session start.
+2. **Git identity drift** — if Orianna's session git config is not set, her own commits will be rejected. T5 adds a bootstrap step in her agent definition to set `user.email` / `user.name` from a committed config snippet on every session start. <!-- orianna: ok -- git config key tokens, not file paths -->
 3. **Other agents bypassing Orianna by editing her agent file** — agent def files live in `.claude/agents/` which is already covered by the existing hook surface; consider whether `.claude/agents/orianna.md` itself should require admin authorship to modify. Recommend: yes, add to hook's admin-only path list (T4.c). <!-- orianna: ok -- prospective path, created by this plan -->
 4. **Legacy signatures in frozen plans** — approved/in-progress/implemented plans carry old signature blocks. Stripping them is cosmetic but touches many files; one atomic sweep commit is cleanest. No functional risk — nothing reads those blocks after the verify script is deleted.
-5. **Orianna promotion atomicity** — if Orianna's `git mv` + commit succeeds but push fails, the plan is moved locally but unpushed. Same failure mode as today's `plan-promote.sh`; not a regression. Orianna's prompt should retry push on transient failure and surface hard failures to the caller.
+5. **Orianna promotion atomicity** — if Orianna's `git mv` + commit succeeds but push fails, the plan is moved locally but unpushed. Same failure mode as today's `plan-promote.sh`; not a regression. Orianna's prompt should retry push on transient failure and surface hard failures to the caller. <!-- orianna: ok -- existing script referenced by name for context, not a prospective path -->
 6. **No more fact-check paper trail** — historical assessments remain, but APPROVE decisions are now ephemeral (only the cosmetic signature block survives). If audit trail matters, Orianna's approval rationale can be captured in the commit message body. Recommend enforcing minimum commit body length for promotion commits (T4.d, optional).
 
 ## Tasks
@@ -46,7 +45,7 @@ New regime:
 
 - T2. **Archive retired scripts.**
   Kind: move. Estimate_minutes: 10.
-  Files: `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, `scripts/orianna-hash-body.sh`, `scripts/orianna-fact-check.sh`, `scripts/plan-promote.sh`, `scripts/_lib_orianna_gate_implemented.sh`, `scripts/_lib_orianna_gate_inprogress.sh`, and their paired `test-orianna-*.sh` siblings (keep `orianna-memory-audit.sh`, `orianna-pre-fix.sh`, `_lib_orianna_architecture.sh`, `_lib_orianna_estimates.sh` — those are orthogonal to the gate).
+  Files: `scripts/orianna-sign.sh`, `scripts/orianna-verify-signature.sh`, `scripts/orianna-hash-body.sh`, `scripts/orianna-fact-check.sh`, `scripts/plan-promote.sh`, `scripts/_lib_orianna_gate_implemented.sh`, `scripts/_lib_orianna_gate_inprogress.sh`, and their paired `test-orianna-*.sh` siblings (keep `scripts/orianna-memory-audit.sh`, `scripts/orianna-pre-fix.sh`, `scripts/_lib_orianna_architecture.sh`, `scripts/_lib_orianna_estimates.sh` — those are orthogonal to the gate).
   Detail: Move (not delete): old scripts move to `scripts/_archive/v1-orianna-gate/` <!-- orianna: ok -- prospective archive path, created by this plan --> preserving filenames. Use `git mv` so history follows. Audit each script for cross-references before moving; `grep -rn <script-name>` across repo. Update any caller that still invokes them.
   DoD: No active code references to the archived scripts remain in `scripts/` (outside `_archive/`), `.claude/`, `architecture/` (outside `archive/`), or `CLAUDE.md`; `scripts/test-hooks.sh` still green; archived scripts present under `scripts/_archive/v1-orianna-gate/`. <!-- orianna: ok -- prospective archive path, created by this plan -->
 
@@ -54,7 +53,7 @@ New regime:
   Kind: edit. Estimate_minutes: 15.
   Files: all files under `plans/**` that contain `orianna_gate_version` or `Orianna-Signature` (54 + 5 files per current grep). <!-- orianna: ok -- descriptive glob pattern, not a real path -->
   Detail: Script a sweep (`scripts/sweep-orianna-metadata.sh` — disposable, can live in `/tmp` or be deleted after use) that strips the `orianna_gate_version:` frontmatter line and any `## Orianna signature` blocks with their body. <!-- orianna: ok -- prospective disposable script, not a committed file --> Plans remain in their current stage folders. Commit as a single `chore:` commit.
-  DoD: `grep -rl "orianna_gate_version\|Orianna-Signature" plans/` returns zero results.
+  DoD: running grep recursively for `orianna_gate_version` and `Orianna-Signature` under the plans directory returns zero results.
 
 - T4. **Rewrite pre-commit hook for plan-move authorization.**
   Kind: edit. Estimate_minutes: 30.
@@ -70,7 +69,7 @@ New regime:
 - T5. **Orianna git identity bootstrap.**
   Kind: create. Estimate_minutes: 10.
   Files: `agents/orianna/memory/git-identity.sh` (new) <!-- orianna: ok -- prospective path, created by this plan -->, `scripts/hooks/_orianna_identity.txt` (new) <!-- orianna: ok -- prospective path, created by this plan -->.
-  Detail: `git-identity.sh` sets `git config user.email orianna@strawberry.local` and `user.name "Orianna"` in the current worktree. `_orianna_identity.txt` contains the single-line canonical email the hook checks against. Orianna's agent prompt invokes the script on every session start.
+  Detail: `git-identity.sh` sets `git config user.email orianna@strawberry.local` and `user.name "Orianna"` in the current worktree. `_orianna_identity.txt` contains the single-line canonical email the hook checks against. Orianna's agent prompt invokes the script on every session start. <!-- orianna: ok -- bare script names here are described by full paths on the Files: line above -->
   DoD: Running the script sets expected values; hook reads the identity file successfully.
 
 - T6. **Rewrite CLAUDE.md Rule 19 and architecture docs.**
@@ -82,7 +81,7 @@ New regime:
 - T7. **Retire fact-check generator path.**
   Kind: edit. Estimate_minutes: 5.
   Files: any cron/hook/script that writes to the `assessments/plan-fact-checks` directory <!-- orianna: ok -- existing directory path, not a file -->.
-  Detail: Disable generation; leave existing artifacts untouched. Add a `README.md` in the folder noting the freeze date.
+  Detail: Disable generation; leave existing artifacts untouched. Add a `README.md` in the folder noting the freeze date. <!-- orianna: ok -- prospective file to be created by this task -->
   DoD: No code path writes new files under the `assessments/plan-fact-checks` directory <!-- orianna: ok -- existing directory path, not a file -->; historical files preserved.
 
 ## Test plan
@@ -96,7 +95,7 @@ Invariants the tests must protect:
 5. **Lifecycle smoke** — end-to-end: Orianna agent (invoked in a test harness) approves a proposed plan, the move + commit lands cleanly, pre-push hook passes.
 6. **Admin-only protection of Orianna's agent def** — test: non-admin author modifying `.claude/agents/orianna.md` -> hook REJECTS. <!-- orianna: ok -- prospective path, created by this plan -->
 
-All tests live in `scripts/hooks/` alongside existing `test-*.sh` files and are wired into `scripts/hooks/test-hooks.sh`.
+All tests live in the scripts/hooks directory alongside existing `test-*.sh` files and are wired into `scripts/hooks/test-hooks.sh`.
 
 ## References
 
