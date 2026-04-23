@@ -325,5 +325,15 @@ else
 fi
 
 echo ""
+echo "=== subagent-denial-probe tests (phase-1) ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/subagent-denial-probe.test.sh" 2>/dev/null; then
+  echo "  PASS: subagent-denial-probe.test.sh"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: subagent-denial-probe.test.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
