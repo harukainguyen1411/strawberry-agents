@@ -45,6 +45,8 @@ Dispatch Orianna via Agent(subagent_type='orianna') instead.
 
 The v2 commit-phase gates (`pre-commit-plan-promote-guard.sh`, `commit-msg-plan-promote-guard.sh`) are archived to `scripts/hooks/_archive/v2-commit-phase-plan-guards/` by this plan. Rationale: at the commit layer, identity is cheaply spoofable; the physical-prevention layer obsoletes the need for a backup check.
 
+Detection is intentionally post-hoc — it logs loudly, never blocks. A blocking audit would re-introduce a second layer that could be spoofed; the single-gate principle (Duong 2026-04-23) rejects that shape. If the PreToolUse hook somehow fails to prevent a move, we let the bypass through, detect it after the fact via T8's audit, and fix the gate — we do not paper over a broken gate with a secondary block that could itself be spoofed into looking green.
+
 ## Tasks
 
 - **T1 — write Bash-matcher guard.** kind: impl. estimate_minutes: 25. Files: `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` (new). <!-- orianna: ok -- prospective path, created by this plan --> Detail: POSIX-portable bash; read stdin JSON with `jq`; extract `.tool_input.command`; normalize whitespace; detect `git mv`, bare `mv`, `cp` (incl. `-R`/`-r`), `rm` (incl. `-rf`) where any token resolves under a protected root; read `$CLAUDE_AGENT_NAME` then `$STRAWBERRY_AGENT`; lowercase-compare against `orianna`; on mismatch print error to stderr and exit 2; otherwise exit 0. DoD: shellcheck clean; unit-test harness in `scripts/hooks/tests/` exercises protected-path detection and identity branch.
@@ -61,9 +63,11 @@ The v2 commit-phase gates (`pre-commit-plan-promote-guard.sh`, `commit-msg-plan-
 
 - **T7 — integration test of Orianna-dispatch flow.** kind: test. estimate_minutes: 20. Files: `scripts/hooks/tests/test-pretooluse-plan-lifecycle-integration.sh` (new). <!-- orianna: ok -- prospective path, created by this plan --> Detail: end-to-end simulation — set `CLAUDE_AGENT_NAME=karma`, create a fake plan under `plans/proposed/personal/` via the Write-guard payload (must succeed), attempt `git mv` to `plans/approved/` via the Bash-guard payload (must fail), then with `CLAUDE_AGENT_NAME=orianna` re-run the `git mv` payload (must succeed). Assertions use exit codes only — no actual filesystem mutation required inside the test. DoD: single run exits 0; integrated into `scripts/hooks/test-hooks.sh`.
 
+- **T8 — bypass-detection audit.** kind: impl. estimate_minutes: 25. Files: `scripts/orianna-bypass-audit.sh` (new). <!-- orianna: ok -- prospective path, created by this plan --> Detail: POSIX-portable bash script that (1) walks `plans/approved/`, `plans/in-progress/`, `plans/implemented/`, `plans/archived/` (recursive into `personal/` and `work/` subtrees); (2) for each plan file runs `git log --follow --format='%H|%ae|%s' --diff-filter=AR -- <path>` to get the commit that introduced the file at its current lifecycle location; (3) checks that the most recent commit moving the file into a protected lifecycle path was authored by the canonical Orianna identity (sourced from `agents/orianna/memory/git-identity.sh`); (4) reports orphan files (arrived via non-Orianna commit) to stdout with commit SHA, author email, and plan path; (5) never blocks, never auto-fixes, never reverts — exit 0 always (finding count may be mirrored as an advisory number only if it does not cause CI to fail; this is detection, not enforcement); (6) runs in ≤5s on a full clone. Script header MUST document the gotcha: audit is only as strong as `git log` author metadata — an agent that impersonated Orianna's git identity (the exact Ekko incident shape) will appear as Orianna in the audit and pass. The audit catches the broader class where bypass didn't bother to spoof identity; identity-spoofing bypasses are the reason the PreToolUse hook is the sole prevention layer. DoD: shellcheck clean; running against current main produces a report (listing any genuinely non-Orianna-authored protected-path plans); cron-able invocation pattern documented in this plan's References. Non-blocking by design — this is NOT a second gate.
+
 ## Test plan
 
-Invariants protected by T5 + T7:
+Invariants protected by T5 + T7 + T8:
 
 - **INV-1** — `git mv plans/proposed/x.md plans/approved/x.md` invoked with `CLAUDE_AGENT_NAME=ekko` is rejected (exit 2) by T1's Bash guard. Protects the exact incident from commits `8717331`/`a802de4`.
 - **INV-2** — the same `git mv` invoked with `CLAUDE_AGENT_NAME=orianna` is allowed (exit 0). Protects Orianna's legitimate promotion path.
@@ -71,8 +75,9 @@ Invariants protected by T5 + T7:
 - **INV-4** — `Write` with `file_path` under `plans/proposed/personal/` or `plans/proposed/work/` from a non-Orianna agent (e.g. Karma authoring this very plan) is allowed. Preserves the authoring-freely invariant for `proposed/`.
 - **INV-5 (fail-closed)** — when neither `CLAUDE_AGENT_NAME` nor `STRAWBERRY_AGENT` is set, both guards reject on protected paths. Prevents "unset the env var" as a bypass.
 - **INV-6 (clean replacement)** — after this plan lands, the archived commit-phase guards are not installed by `scripts/install-hooks.sh`; a fresh `install-hooks.sh` run on a clean clone does not create `.git/hooks/commit-msg` referencing the archived guard, and `.git/hooks/pre-commit` contains no entry for the archived plan-promote guard. Verified by dry-run mode or direct file inspection of the generated hook scripts.
+- **INV-7 (bypass detection)** — given a test-fixture plan file committed into `plans/approved/` by a non-Orianna identity (e.g. `duongntd99`), `scripts/orianna-bypass-audit.sh` reports that file as a bypass orphan (stdout line containing the commit SHA, author email, and plan path) and exits 0. Covered by a fresh unit test `scripts/tests/test-orianna-bypass-audit.sh` (new). <!-- orianna: ok -- prospective path, created by this plan --> xfail-first per Rule 12.
 
-All tests are xfail-first (Rule 12) — the test commit lands on the task branch before any implementation commit for T1/T2.
+All tests are xfail-first (Rule 12) — the test commit lands on the task branch before any implementation commit for T1/T2/T8.
 
 ## Open questions
 
@@ -85,3 +90,4 @@ All tests are xfail-first (Rule 12) — the test commit lands on the task branch
 - Archived v1 promote helper: `scripts/plan-promote.sh` (archived — do not revive in this plan).
 - Universal invariants: `CLAUDE.md` Rules 7, 12, 19.
 - Lifecycle doc to update: `architecture/plan-lifecycle.md`.
+- Bypass-detection audit — `scripts/orianna-bypass-audit.sh` (post-hoc, non-blocking). Suggested cron wiring: nightly CI job (`.github/workflows/`) that runs the script and posts findings to a reporting channel without failing the build; local invocation `bash scripts/orianna-bypass-audit.sh` from repo root. Single-gate principle (Duong 2026-04-23): prevention is the PreToolUse hook; detection is this audit; they are separate layers with separate responsibilities, and the audit never blocks.
