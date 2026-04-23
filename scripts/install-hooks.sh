@@ -95,5 +95,14 @@ install_dispatcher "pre-commit"
 install_dispatcher "pre-push"
 install_dispatcher "commit-msg"
 
+# Install Python dependencies for the PreToolUse guard (bashlex AST walker).
+# Best-effort: warn on failure but do not abort hook installation.
+if command -v pip3 >/dev/null 2>&1; then
+  pip3 install --user -r "$HOOKS_SRC/requirements.txt" >/dev/null 2>&1 \
+    || printf '[install-hooks] WARNING: pip3 install bashlex failed — run: pip3 install bashlex\n' >&2
+else
+  printf '[install-hooks] WARNING: pip3 not found — install Python3 and run: pip3 install bashlex\n' >&2
+fi
+
 echo "[install-hooks] Done. Hook dispatchers installed to: $HOOKS_DIR"
 echo "[install-hooks] Sub-hooks active: $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"

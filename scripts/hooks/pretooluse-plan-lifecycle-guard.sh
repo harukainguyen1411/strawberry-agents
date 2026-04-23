@@ -160,36 +160,34 @@ case "$_tool_name" in
       exit 0
     fi
 
-    # Scan each whitespace-separated token in the command for protected paths.
-    # We detect operations: git mv, mv, cp (incl. -R/-r), rm (incl. -rf/-r/-f).
-    # Strategy: tokenize the command, normalize each token (strip quotes, collapse
-    # slashes, resolve ..), then check if it matches a protected root.
+    # Fast pre-filter: skip Python invocation entirely when "plans" is not present
+    # (case-insensitive). This keeps the common-case guard overhead near zero.
+    _cmd_lc="$(printf '%s' "$_cmd" | tr '[:upper:]' '[:lower:]')"
+    case "$_cmd_lc" in
+      *plans*) ;;  # may reference a protected path — fall through to AST scan
+      *) exit 0 ;;
+    esac
 
-    _found_protected=""
-    _protected_match=""
+    # Resolve python3 binary (allows test override via PYTHON3_CMD env var).
+    _py="${PYTHON3_CMD:-python3}"
+    _guard_dir="$(cd "$(dirname "$0")" && pwd)"
+    _path_scanner="$_guard_dir/_lib_bash_path_scan.py"
 
-    # Normalize whitespace
-    _cmd_norm="$(printf '%s' "$_cmd" | tr '\t\n' '  ')"
-
-    # Check for any token that looks like a plan path under protected roots
-    # We use a simple word-by-word scan
-    for _tok in $_cmd_norm; do
-      # Strip trailing slash for matching
-      _tok_clean="${_tok%/}"
-      # Normalize: strip quotes, collapse slashes, resolve ..
-      _tok_clean="$(normalize_path "$_tok_clean")"
-      if is_protected_path "$_tok_clean"; then
-        _found_protected=1
-        _protected_match="$_tok_clean"
-        break
-      fi
-    done
-
-    if [ -n "$_found_protected" ]; then
-      if ! is_orianna; then
-        reject "$_protected_match"
-      fi
+    # Fail-closed: if python3 or bashlex is unavailable, deny.
+    if ! "$_py" -c "import bashlex" 2>/dev/null; then
+      printf '%s bashlex/python3 unavailable — install via '"'"'pip3 install bashlex'"'"' — denied\n' \
+        "$REJECT_MSG_PREFIX" >&2
+      exit 2
     fi
+
+    # Walk the bash AST and check each extracted path.
+    while IFS= read -r _resolved; do
+      if is_protected_path "$_resolved"; then
+        if ! is_orianna; then
+          reject "$_resolved"
+        fi
+      fi
+    done < <(printf '%s' "$_cmd" | "$_py" "$_path_scanner" 2>/dev/null)
     ;;
 
   Write|Edit|NotebookEdit)
