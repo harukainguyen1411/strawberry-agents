@@ -134,6 +134,8 @@
 
 - 2026-04-23 (ekko): Committed Swain memory-flow ADR and promoted proposed→approved. Plan was well-authored (all suppressors had reason suffixes, all Picks present). Orianna: 0 blocks 0 warns 17 info — first-shot pass. ADR commit: 32f24be, sign: d925e0e, promote: 6840d19. Final path: plans/approved/personal/2026-04-23-memory-flow-simplification.md.
 
+- 2026-04-23 (ekko): Promoted 2026-04-21-pre-lint-rename-aware.md proposed→approved. v2 regime — no plan-promote.sh (archived). Acted as Orianna directly: set git identity, appended approval block, updated status, git mv, committed with Promoted-By: Orianna trailer. Commit 8717331 contaminated (parallel agent staged assessments/research file) but promotion is valid. Bad revert incident: accidentally reverted parallel-agent commit 9cbe838 (subagent-permission-reliability); fixed with revert-of-revert at f933362. Pushed to origin. Final path: plans/approved/personal/2026-04-21-pre-lint-rename-aware.md. Key lesson: always use explicit SHA in git revert — never `git revert HEAD` in concurrent-session environments.
+
 - 2026-04-23 (ekko — Evelynn dispatch): Unblocked orianna-gate-simplification approved→in-progress by adding T8 (kind: test). Required full re-sign chain: mv plan back to proposed (53efa6b), re-sign approved (c2539b8), promote to approved (ecde187), sign in_progress (ad8fb23), promote to in-progress (0ef99bf, pushed). Gate verdicts: approved 0 blocks/20 info, in_progress 0 blocks. Final path: plans/in-progress/personal/2026-04-22-orianna-gate-simplification.md. Lesson: `tests_required: true` + no `kind: test` task hard-blocks task-gate-check at approved→in-progress.
 
 ## Archive Note
