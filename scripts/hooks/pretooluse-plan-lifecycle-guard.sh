@@ -15,8 +15,8 @@
 # Unprotected (any agent may write freely):
 #   plans/proposed/   and all subtrees
 #
-# Identity: read from $CLAUDE_AGENT_NAME, then $STRAWBERRY_AGENT (case-insensitive).
-# Fail-closed: if neither is set, the guard rejects any access to protected paths.
+# Identity: read from hook JSON .agent_type (subagent calls), then $CLAUDE_AGENT_NAME,
+# then $STRAWBERRY_AGENT (case-insensitive). Fail-closed if all three are empty.
 #
 # Input: JSON on stdin (Claude Code PreToolUse hook format).
 # Exit 0 — allowed; exit 2 — blocked.
@@ -26,15 +26,6 @@
 set -u
 
 REJECT_MSG_PREFIX="[plan-lifecycle-guard]"
-
-# --- resolve calling agent identity -----------------------------------------
-
-_agent="${CLAUDE_AGENT_NAME:-}"
-if [ -z "$_agent" ]; then
-  _agent="${STRAWBERRY_AGENT:-}"
-fi
-# Lowercase for case-insensitive comparison
-_agent_lc="$(printf '%s' "$_agent" | tr '[:upper:]' '[:lower:]')"
 
 # --- path normalization helper -----------------------------------------------
 
@@ -144,6 +135,21 @@ if ! printf '%s' "$_input" | jq '.' >/dev/null 2>&1; then
 fi
 
 _tool_name="$(printf '%s' "$_input" | jq -r '.tool_name // empty' 2>/dev/null)"
+
+# --- resolve calling agent identity -----------------------------------------
+# Precedence: hook JSON .agent_type (runtime-set by Claude Code for subagent calls)
+#   > $CLAUDE_AGENT_NAME (CLI --agent sessions)
+#   > $STRAWBERRY_AGENT  (legacy fallback)
+# Fail-closed: empty identity denies access to protected paths.
+_agent="$(printf '%s' "$_input" | jq -r '.agent_type // empty' 2>/dev/null)"
+if [ -z "$_agent" ]; then
+  _agent="${CLAUDE_AGENT_NAME:-}"
+fi
+if [ -z "$_agent" ]; then
+  _agent="${STRAWBERRY_AGENT:-}"
+fi
+# Lowercase for case-insensitive comparison
+_agent_lc="$(printf '%s' "$_agent" | tr '[:upper:]' '[:lower:]')"
 
 # If tool_name is empty after valid JSON parse, fail-closed.
 if [ -z "$_tool_name" ]; then
