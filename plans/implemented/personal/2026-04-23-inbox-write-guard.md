@@ -3,7 +3,7 @@ id: 2026-04-23-inbox-write-guard
 title: PreToolUse inbox-write guard — force inbox writes through /agent-ops send
 concern: personal
 complexity: quick
-status: approved
+status: implemented
 owner: karma
 tests_required: true
 orianna_gate_version: 2
@@ -102,4 +102,18 @@ Tests live in `scripts/hooks/tests/pretooluse-inbox-write-guard.test.sh` <!-- or
 <!-- Orianna approval block — 2026-04-23 -->
 **APPROVED** by Orianna.
 blocks: 0, warns: 0, infos: 4
+Promoted-By: Orianna
+
+---
+
+<!-- Orianna implemented-promotion block — 2026-04-23 -->
+**IMPLEMENTED** — promoted by Orianna.
+PR #33 merged at SHA `3911b38`. All claimed artifacts verified on `origin/main`:
+- `scripts/hooks/pretooluse-inbox-write-guard.sh` — present
+- `scripts/hooks/tests/pretooluse-inbox-write-guard.test.sh` — 13 tests, 0 failures
+- `.claude/settings.json` Write|Edit matcher entry — present
+- `scripts/agent-ops/send.sh` — present
+- `.claude/skills/agent-ops/SKILL.md` — updated
+
+blocks: 0, warns: 0, infos: 1 (matcher is Write|Edit, not Write|Edit|MultiEdit as plan preferred — functional, not a blocker)
 Promoted-By: Orianna
