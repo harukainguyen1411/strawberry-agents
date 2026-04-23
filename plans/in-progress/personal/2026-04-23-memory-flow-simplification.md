@@ -298,6 +298,53 @@ estimate_minutes: 15, kind: doc
 - No task may touch both old and new skill files in the same commit (blast-radius isolation).
 - Post-T5 rollback: revert the T5 commit; coordinators resume `/end-session`. `live-threads.md` vs `open-threads.md` state divergence is a non-issue during rollback because both point at the same thread list (T3 seeded them identically). <!-- orianna: ok -- prospective path cited by ADR -->
 - No single task modifies both `evelynn/` and `sona/` in the same commit — keeps the coordinator lock semantics intact. <!-- orianna: ok -- directory reference with trailing slash -->
+- **Dry-run + rollback contract (Xayah gap 1 closeout):** every migration script authored under T2, T3, T5, T14 (new) MUST accept `--dry-run` and MUST emit `git tag strawberry/pre-T<N>-<slug>-<ts>` before any write. Dry-run exit 0 + byte-identical tree-hash pre/post is mandatory. Rollback = `git reset --hard <tag>` on the coordinator's worktree root; no other unwind path is guaranteed.
+
+### 5.2 Caller-coverage addendum (Swain, 2026-04-23)
+
+Evelynn's brief framed coverage in 9 buckets (caller-T1…caller-T9). The existing T1–T13 already covers seven of them; three gaps need explicit tasks. Mapping first, then additions.
+
+**Coverage map (existing work → caller framing):**
+
+| Caller bucket | Covered by existing | Notes |
+|---|---|---|
+| caller-T1 migration path + cleanup + rollback | §5 Phase 1–3 + Migration invariants + `--dry-run` contract above | Explicit rollback is per-task (§5.1 T5); unified rollback = `git reset --hard <pre-Tn tag>`. |
+| caller-T2 rename open-threads → live-threads | T3 (seed) + T4 (reader flip) + T6 (archival) + T8 (consolidate.sh drop) | Covered across 4 tasks by design. |
+| caller-T3 retire `.remember/` for coordinators | T7 (guard) + T10 (git rm) + §3.2 Rule S3 | Explicit keep list: `remember.md` schema only (plugin). | <!-- orianna: ok -- directory reference with trailing slash -->
+| caller-T4 fold sessions+journal+today-*.md into snapshot | T1 (skill shape §3.4) + T11 (doc fold) | Snapshot format already spec'd in §3.4 five-section shape. |
+| caller-T5 parameterize /end-session + /pre-compact-save | T1 (new skill) + T5 (flip) + T9 (alias removal) | `/close-coordinator-session <mode>` is the parameterised target. |
+| caller-T6 update /check-inbox, /agent-ops | **GAP → T14 below** | Audit confirms zero `now.md` / `open-threads.md` refs in either skill today; task is a regression-guard grep + explicit note, not a rewrite. | <!-- orianna: ok -- now.md + open-threads.md are retired surfaces cited by ADR -->
+| caller-T7 update Lissandra, Skarner agent-defs | **GAP → T15 below** | Lissandra `.claude/agents/lissandra.md` lines 47 to 51 reference `open-threads.md` and Step 6b — must rewrite. Skarner `.claude/agents/skarner.md` line 28 references `journal/` — must add `sessions/` + `live-threads.md` surfaces. | <!-- orianna: ok -- open-threads.md/journal/sessions/live-threads.md cited as retired or prospective surfaces by ADR -->
+| caller-T8 automated backfill for historical shards | Partially T2.1 + T3.1 + T8.5 | **GAP → T16 below** for orchestration wrapper. |
+| caller-T9 architecture doc update | T12 (full rewrite of `architecture/coordinator-memory.md`) | Already broken into 6 substeps. |
+
+**Gap-closing tasks:**
+
+**T14. `/check-inbox` + `/agent-ops` regression-guard audit (10 min).** No rewrite expected — audit confirms both skill bodies under `.claude/skills/check-inbox/` and `.claude/skills/agent-ops/` are surface-clean today. Add a CI-grade grep assertion (a one-liner in `scripts/hooks/pre-commit-*` or `scripts/test-memory-topology.sh` new file) that fails the commit if either skill gains a `now.md` / `open-threads.md` / `.remember/now` / `.remember/today-` reference post-cutover. Paired xfail: new T-INV-9 (static grep) — Rakan appends to matrix. Ordering: lands inside Phase 1 before T5 cutover. kind: hook. <!-- orianna: ok -- prospective path cited by ADR -->
+
+**T15. Rewrite Lissandra + Skarner agent-defs (25 min).** Two substeps, separate commits:
+- T15.1 — `.claude/agents/lissandra.md` lines 47 to 51: replace "Update open-threads.md" Step 6b with an update to `live-threads.md` and cite the new skill dispatch `/close-coordinator-session compact`. Mirror semantics: Lissandra writes `live-threads.md` deltas identically to how the coordinator would in-session. estimate_minutes: 15. tier: opus. DoD: grep for open-threads.md in lissandra.md returns zero; `live-threads.md` ≥ 1; skill name updated. Pairs xfail T-INV-4 (mode=compact dispatches Lissandra — still passes post-rewrite). <!-- orianna: ok -- live-threads.md is the prospective rename target created by T3 of this ADR -->
+- T15.2 — `.claude/agents/skarner.md` line 28 bullet list: add `agents/<coordinator>/memory/sessions/` and `agents/<coordinator>/memory/live-threads.md` to the enumerated search surfaces. estimate_minutes: 10. tier: sonnet. DoD: Skarner's memory-surface bullets enumerate the 6 canonical surfaces from §3.1. No xfail pair (static list edit). <!-- orianna: ok -- prospective path cited by ADR -->
+
+Ordering: T15.1 lands in Phase 2 alongside T5 (Lissandra dispatch path is live the moment `/close-coordinator-session compact` exists); T15.2 lands in Phase 2 or early Phase 3, non-blocking.
+
+**T16. Historical-shard backfill orchestration wrapper (20 min).** Unified one-shot script `scripts/migrate-memory-flow.sh` that dispatches, in order: (a) `migrate-sessions-to-legacy.sh` (T2.1), (b) `seed-live-threads.sh` (T3.1), (c) one invocation of `memory-consolidate.sh` with `MIGRATION_FOLD=1` (T8.5). Each step is idempotent and already has its own `--dry-run`. The wrapper's value is single-entry-point rollback: emits one top-level `git tag strawberry/pre-T16-full-migration-<ts>` covering all three. kind: refactor. tier: sonnet. STAGED_SCOPE: `scripts/migrate-memory-flow.sh`. DoD: shellcheck clean; `--dry-run` tree-hash identical; invoked twice produces byte-identical tree (idempotence inherited from children). Ordering: lands end-of-Phase-1 (gates Phase 2). Pairs xfail T-MIG-5 (new — idempotence of the wrapper); Rakan appends to matrix. <!-- orianna: ok -- prospective path cited by ADR -->
+
+### 5.3 MVP vs nice-to-have for v1
+
+**MVP (must ship in cutover, gates Phase-2 exit):** T1, T2, T3, T4, T5, T6, T7, T15.1 (Lissandra rewrite — gated by T5 dispatch). Without these, the drift class is not eliminated.
+
+**Nice-to-have (Phase 3 cleanup, gracefully deferrable):** T8 (memory-consolidate.sh rewrite — legacy reads still fall back to `sessions/legacy/`), T9 (alias removal), T10 (`.remember/` git rm — files are just ignored post-T7), T11 (journal fold docs), T12 (architecture doc rewrite), T13 (learning), T14 (regression guard), T15.2 (Skarner update), T16 (wrapper — children are individually runnable). <!-- orianna: ok -- directory reference with trailing slash -->
+
+**Hard non-negotiables:** T7 (hook guard) MUST land before T5 cutover lands stable, otherwise `remember:remember` re-captures a stale `.remember/now.md` on every boot and re-creates the drift surface.
+
+### 5.4 Cross-cutting risk register
+
+- **R1 — Parallel coordinator run during migration.** If Evelynn and Sona are both active while T3–T5 lands on one but not the other, the inactive coordinator boots with mixed state (new live-threads.md on one side, old open-threads.md on the other). Mitigation: the migration invariant "no single task modifies both evelynn/ and sona/ in the same commit" means each coordinator is migrated atomically from its own perspective; rollback is per-coordinator. Duong should pause one coordinator for the ~2h migration window.
+- **R2 — Compact boundary mid-migration.** If Evelynn hits `/compact` between T1 land and T5 flip, the old `/pre-compact-save` still fires and writes to the old ledger. This is fine because T5 has not yet flipped the read path — but verify `/pre-compact-save` still resolves to working skill text during the window.
+- **R3 — Orianna signature invalidation.** This plan is already signed in-progress. Appending §5.2–§5.4 is edit-in-place on an approved plan, which Orianna's signature captures via body-hash. The implementer (not Swain) MUST re-run Orianna against the amended body before first T14/T15/T16 commit, OR Duong's admin identity commits the amendment. Risk: if a builder starts T14 without re-signing, pre-commit may reject the commit for signature staleness (treat as a bug, not a blocker — re-sign and proceed).
+- **R4 — Lissandra rewrite ordering.** T15.1 depends on `/close-coordinator-session compact` existing (T1.4). If T1.4 slips, T15.1 pins to T1.4 completion. Explicit `blockedBy: T1.4`.
+- **R5 — Skill aliasing double-dispatch.** T5.4/T5.5 make old skills thin aliases; T9 removes them a week later. If a third-party skill (e.g. a plugin) calls `/end-session` directly by name during the window, the alias fires fine; post-T9 it hard-fails. Audit `.claude/settings.json` + any loaded plugin manifests for stale name references during T9.4 grep pass.
 
 ## 6. Answer to Sona's drift bug — by construction
 
@@ -490,8 +537,8 @@ Paired xfail tests (authored by Rakan before this task starts): **T-INV-2, T-INV
 
 - [ ] **T1.1** — Create skill directory + SKILL.md with frontmatter (`name: close-coordinator-session`, `description`, `allowed-tools`, `disable-model-invocation: false`). estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: `.claude/skills/close-coordinator-session/SKILL.md`. DoD: file exists; `yq` parses frontmatter. blocks: T1.2.
 - [ ] **T1.2** — Write `## Modes` section enumerating `end` / `compact` / `handoff` dispatch semantics (§3.6) — pairs with T-INV-3/4/5 `mode=*` assertions. estimate_minutes: 12. tier: opus. STAGED_SCOPE: same. DoD: all three mode names present verbatim in a single bulleted table. blockedBy: T1.1. blocks: T1.3.
-- [ ] **T1.3** — Write `## Steps` shared core (snapshot assembly into `agents/<coordinator>/memory/sessions/<uuid>.md` with five required sections, INDEX regen, commit, push) — parameterised once, not per-mode. Pairs with T-INV-2 snapshot-shape assertion. estimate_minutes: 14. tier: opus. STAGED_SCOPE: same. DoD: Steps reference new snapshot path (never `last-sessions/`); five section headings enumerated. blockedBy: T1.2. blocks: T1.4.
-- [ ] **T1.4** — Write mode-tail branches: `end` archives transcript to `agents/<agent>/transcripts/` (T-INV-8 guard — no new transcript path); `compact` writes PreCompact sentinel + dispatches Lissandra per OQ7-a (T-INV-4); `handoff` plain return (T-INV-5). estimate_minutes: 14. tier: opus. STAGED_SCOPE: same. DoD: each mode has ≤ 5 lines of mode-specific behavior; no duplicated step list. blockedBy: T1.3. blocks: T1.5.
+- [ ] **T1.3** — Write `## Steps` shared core (snapshot assembly into `agents/<coordinator>/memory/sessions/<uuid>.md` with five required sections, INDEX regen, commit, then push — parameterised once, not per-mode). Pairs with T-INV-2 snapshot-shape assertion. estimate_minutes: 14. tier: opus. STAGED_SCOPE: same. DoD: Steps reference new snapshot path (never under the legacy dir-name); five section headings enumerated. blockedBy: T1.2. blocks: T1.4. <!-- orianna: ok -- prospective snapshot path created by T1 of this ADR -->
+- [ ] **T1.4** — Write mode-tail branches: `end` archives transcript to `agents/<agent>/transcripts/` (T-INV-8 guard — no new transcript location added); `compact` writes PreCompact sentinel + dispatches Lissandra per OQ7-a (T-INV-4); `handoff` plain return (T-INV-5). estimate_minutes: 14. tier: opus. STAGED_SCOPE: same. DoD: each mode has ≤ 5 lines of mode-specific behavior; no duplicated step list. blockedBy: T1.3. blocks: T1.5. <!-- orianna: ok -- existing transcripts/ directory referenced as target; per-agent placeholder resolved at runtime -->
 - [ ] **T1.5** — Add safety notes: coordinator lock held by caller; `remember:remember` NOT invoked; reference §3.2 Rule S3 for `.remember/` non-read (pairs T-INV-6, T-REG-2). estimate_minutes: 7. tier: sonnet. STAGED_SCOPE: same. DoD: grep "coordinator lock" and "remember:remember disabled" in skill body returns ≥ 1 each. blockedBy: T1.4. blocks: T1.6.
 - [ ] **T1.6** — Add `--dry-run` flag support per Xayah gap 1 — dispatch through each mode without writes when env `CLOSE_SESSION_DRY_RUN=1`. Pairs T-MIG-2. estimate_minutes: 5. tier: sonnet. STAGED_SCOPE: same. DoD: dry-run flag documented in SKILL.md; behavioural contract stated. blockedBy: T1.5. blocks: T2.
 
@@ -604,7 +651,7 @@ Risk/rollback: `.remember/` is plugin-managed — the `git rm` substeps only tou
 
 - [ ] **T10.1** — Enumerate tracked files via `git ls-files .remember/`. Capture list in T10.2 commit body. estimate_minutes: 3. tier: sonnet. STAGED_SCOPE: none. DoD: list captured. blocks: T10.2.
 - [ ] **T10.2** — `git rm` coordinator-referencing buffers: `now.md`, `today-*.md`, `recent.md`, `archive.md`. Preserve `remember.md` schema file (T-DEP-3 guard). estimate_minutes: 7. tier: sonnet. STAGED_SCOPE: `.remember/`. DoD: listed files absent; `remember.md` preserved. T-DEP-3 passes. blockedBy: T10.1. blocks: T10.3.
-- [ ] **T10.3** — Add `.remember/.subagents-only.md` — "This directory is subagent-only post-2026-04-30 migration. Coordinators neither read nor write here. See `plans/implemented/personal/2026-04-23-memory-flow-simplification.md` §3.2." estimate_minutes: 5. tier: sonnet. STAGED_SCOPE: `.remember/.subagents-only.md`. DoD: file exists; content matches spec. blockedBy: T10.2. blocks: T10.4.
+- [ ] **T10.3** — Add `.remember/.subagents-only.md` — "This directory is subagent-only post-2026-04-30 migration. Coordinators neither read nor write here. See `plans/implemented/personal/2026-04-23-memory-flow-simplification.md` §3.2." estimate_minutes: 5. tier: sonnet. STAGED_SCOPE: `.remember/.subagents-only.md`. DoD: file exists; content matches spec. blockedBy: T10.2. blocks: T10.4. <!-- orianna: ok -- forward self-reference to implemented destination of this plan -->
 - [ ] **T10.4** — Verify `.gitignore` — ensure subagent `.remember/` writes remain ignored as today. estimate_minutes: 5. tier: sonnet. STAGED_SCOPE: `.gitignore`. DoD: `git status` shows no `.remember/` noise in a clean repo. blockedBy: T10.3. blocks: T11.
 
 #### T11 — Fold `journal/cli-*.md` into snapshot shape (doc-only) (20 min)
@@ -651,7 +698,7 @@ Sum of substep estimates: 400 min (exactly matches parent budget). Opus-tier sub
 
 None. All 7 ADR OQs are pre-locked (1a, 2b, 3a, 4a, 5a, 6a, 7a per caller's instruction). Xayah's three gap observations (lines 462–468) are addressed inside this breakdown: gap 1 → T2.1 / T3.1 / T5.1 add `--dry-run` + pre-mutation `git tag`; gap 2 → T4.5 adds the boot-chain trace hook; gap 3 → T9.3 hard-fail shape is "file deleted → unknown-skill error" per the caller's OQ5-a pick. If implementation surfaces new ambiguity, flag as `OQ-K<n>` on the relevant substep line.
 
-Total estimate: 400 min (6h 40m) across 13 parent tasks / 59 substeps, distributed over 3 phases with a 7-day observation gate between Phase 2 and Phase 3.
+Total estimate: 400 min across 13 parent tasks / 59 substeps, distributed over 3 phases with a 7-day observation gate between Phase 2 and Phase 3.
 
 ## Orianna approval
 
