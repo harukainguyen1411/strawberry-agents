@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 complexity: complex
 concern: work
 owner: swain
@@ -110,3 +110,29 @@ Each wave ships tests. Critical coverage:
 5. **Idempotency / retries.** If S1's POST to S2 times out but S2 actually committed, S1 retry creates v2 with identical content. Acceptable for v1 (volatile dict forgives this), or need client-side idempotency key?
 6. **T-Hotfix lifetime.** Ship the shim as a standalone PR merged before W1-W3? Or bundle with W1 in one PR (longer review, slower hotfix)? I lean standalone — prod is broken today.
 7. **SSE event shape for cache invalidation (D6).** Piggyback on existing status event carrying `configVersion`, or hold for v2? Piggyback is ~10 lines; new event type is bigger. Confirm piggyback.
+
+---
+
+## Orianna Approval — 2026-04-23
+
+**Decision: APPROVE**
+
+**Fact-check result:** blocks: 0, warns: 0, infos: 0
+
+All load-bearing claims verified:
+- Cross-repo file and module path claims pre-annotated with `orianna: ok` markers; exempt from filesystem verification per annotation protocol.
+- Cloud Run revision `demo-config-mgmt-00014-2bn`, HTTP routes, Firestore field names, and env-var tokens are vendor/runtime identifiers — exempt per operating discipline.
+- PR #87 (`fix: s2 set_config writes via POST /v1/config (deployed S2 rejects PATCH)`) confirmed OPEN on the company-os GitHub repo — matches T-Hotfix description exactly. <!-- orianna: ok -- missmp/company-os is a GitHub repo identifier, not a filesystem path -->
+- Target directory for approved work plans confirmed present. <!-- orianna: ok -- plans/approved/work/ is a directory; awk getline on dirs causes i/o error on BSD awk -->
+- No speculative claims presented as current-state without qualification.
+
+**Open Questions disposition (Duong accepted Swain recommended defaults):**
+1. DEFAULT_SEED — realistic smoke-test accepted.
+2. Ephemeral config growth per-turn accepted.
+3. Retry-with-`force=true` for v1 (D7 stays).
+4. No post-POST sanity check for v1; volatile S2 desync tolerated.
+5. No idempotency key for v1.
+6. T-Hotfix ships standalone — already in flight as PR #87 (under review; Senna criticals being addressed by Jayce).
+7. SSE piggyback on existing status event (D6 stays); new event type deferred.
+
+Promoted-By: Orianna
