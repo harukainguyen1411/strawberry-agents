@@ -3,8 +3,7 @@
 # Plan: plans/approved/personal/2026-04-23-inbox-write-guard.md
 #
 # Drives scripts/hooks/pretooluse-inbox-write-guard.sh by piping synthetic JSON payloads.
-# All six cases must pass (exit 0 from the test harness) after T1 ships; this file
-# is committed FIRST (xfail semantics per Rule 12) before the guard script exists.
+# All cases must pass (exit 0 from the test harness) after fixes ship.
 #
 # Run: bash scripts/hooks/tests/pretooluse-inbox-write-guard.test.sh
 # Exit 0 — all cases pass; non-zero — one or more failures.
@@ -48,6 +47,10 @@ run_case() {
   fi
 }
 
+# ============================================================================
+# Original cases a-f (invariant 1: basic block/allow)
+# ============================================================================
+
 # --- Case a: Write to inbox top-level, no identity — expect exit 2 (blocked) -----
 run_case "a: Write to inbox, no identity" \
   '{"tool_name":"Write","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","content":"msg"}}' \
@@ -78,6 +81,61 @@ run_case "e: Edit inbox — body change not status flip — blocked" \
 run_case "f: Write to non-inbox path — guard ignores" \
   '{"tool_name":"Write","tool_input":{"file_path":"plans/proposed/personal/foo.md","content":"plan"}}' \
   0
+
+# ============================================================================
+# Fix 1 (CRITICAL): agent-ops skill bypass — STRAWBERRY_SKILL=agent-ops
+# ============================================================================
+
+# --- Case g: Write to inbox with STRAWBERRY_SKILL=agent-ops — expect exit 0 ---
+run_case "g: Write to inbox via agent-ops skill — allowed" \
+  '{"tool_name":"Write","tool_input":{"file_path":"agents/talon/inbox/20260423-123456.md","content":"msg"}}' \
+  0 \
+  "STRAWBERRY_SKILL=agent-ops"
+
+# --- Case h: Write to inbox with wrong skill value — expect exit 2 (blocked) ---
+run_case "h: Write to inbox with wrong skill value — blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"agents/talon/inbox/20260423-123456.md","content":"msg"}}' \
+  2 \
+  "STRAWBERRY_SKILL=some-other-skill"
+
+# ============================================================================
+# Fix 2 (IMPORTANT): Edit allow-rule tightening — only status line may change
+# ============================================================================
+
+# --- Case i: Edit — status flip with extra read_at line added — expect exit 0 ---
+run_case "i: Edit inbox — status flip + read_at added — allowed" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","old_string":"from: sona\nstatus: pending\n","new_string":"from: sona\nstatus: read\nread_at: 2026-04-23 10:00\n"}}' \
+  0
+
+# --- Case j: Edit — status line present but also body changes — expect exit 2 ---
+run_case "j: Edit inbox — status flip + body change smuggled — blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","old_string":"status: pending\n## body\noriginal","new_string":"status: read\n## body\nupdated"}}' \
+  2
+
+# ============================================================================
+# Fix 3 (IMPORTANT): MultiEdit dropped from matcher — guard ignores tool_name=MultiEdit
+# ============================================================================
+
+# --- Case k: MultiEdit to inbox path — guard should pass through (exit 0) ----
+# (MultiEdit removed from matcher in settings.json, so guard won't fire;
+# but if it does fire, verify guard itself doesn't crash — exit 0 for unknown tool)
+run_case "k: MultiEdit to inbox path — guard ignores (unknown tool passthrough)" \
+  '{"tool_name":"MultiEdit","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","edits":[]}}' \
+  0
+
+# ============================================================================
+# Fix 4 (IMPORTANT): Absolute-path bypass — normalize path before check
+# ============================================================================
+
+# --- Case l: Write with absolute path to inbox — expect exit 2 (blocked) ---
+run_case "l: Write to inbox with absolute path — blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"/some/repo/agents/evelynn/inbox/abc12345.md","content":"msg"}}' \
+  2
+
+# --- Case m: Write with path traversal (../../agents/...) — expect exit 2 ------
+run_case "m: Write to inbox via path traversal — blocked" \
+  '{"tool_name":"Write","tool_input":{"file_path":"plans/../agents/evelynn/inbox/abc12345.md","content":"msg"}}' \
+  2
 
 # --- Summary ---
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
