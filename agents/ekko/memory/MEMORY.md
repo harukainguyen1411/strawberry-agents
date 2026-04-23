@@ -147,6 +147,8 @@
 
 - 2026-04-23 (ekko): Fixed over-blocking in _lib_bash_path_scan.py — added verb-allowlist (_MUTATING_VERBS + _MUTATING_GIT_SUBVERBS). git add/cat/ls/grep on plan paths now pass (exit 0). sed -i, touch, redirects, git mv, rm still block. Xfail: 04e82b8, impl: 94f3ccd. 34/34 tests passing.
 
+- 2026-04-23 (ekko): Archived Evelynn inbox msg 20260423-0932-651000.md to agents/evelynn/inbox/archive/2026-04/ (gitignored, filesystem-only). Added trust-but-verify rule to both agents/evelynn/CLAUDE.md and agents/sona/CLAUDE.md under Coordinator-Specific Critical Rules. Commit f50c173, pushed to main.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
