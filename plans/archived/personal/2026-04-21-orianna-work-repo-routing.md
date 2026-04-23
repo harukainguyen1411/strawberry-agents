@@ -1,10 +1,12 @@
 ---
 title: Orianna claim-contract — work-concern repo routing
-status: proposed
+status: archived
 owner: karma
 created: 2026-04-21
 date: 2026-04-21
 concern: personal
+archived: 2026-04-23
+archived_reason: superseded by PR #30 orianna-gate-simplification — target script scripts/fact-check-plan.sh archived to scripts/_archive/v1-orianna-gate/
 complexity: quick
 tags: [orianna, claim-contract, routing, work-concern, infra]
 tests_required: true

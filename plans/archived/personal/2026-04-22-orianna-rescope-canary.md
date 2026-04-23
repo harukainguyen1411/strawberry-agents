@@ -1,8 +1,10 @@
 ---
 title: Orianna rescope canary — verify first-pass approval without suppression markers
-status: proposed
+status: archived
 concern: personal
 owner: viktor
+archived: 2026-04-23
+archived_reason: obsoleted by PR #30 orianna-gate-simplification — orianna-sign.sh archived, substance-vs-format canary moot under v2 trailer-based gate
 created: 2026-04-22
 tags: [orianna-gate, canary, rescope]
 complexity: quick
