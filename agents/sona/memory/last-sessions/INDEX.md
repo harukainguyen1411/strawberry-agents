@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-23 · 2026-04-23-536df25c · **Session ID:** `536df25c-700d-43f8-bf9a-98a86580e003`; **Date:** 2026-04-23 (closed 2026-04-23T14:56Z / evening local); **Mode:** cli, final post-compact leg (5th compact of session)
 - 2026-04-23 · 2026-04-23-148e1b03 · **Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003; **Date:** 2026-04-23 (compact boundary ~late local / fourth compact this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-23 · 2026-04-23-5bc52df0 · **Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003; **Date:** 2026-04-23 (compact boundary ~15:30 local / third compact this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-23 · 2026-04-23-cbe48dfe · **Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003; **Date:** 2026-04-23 (compact boundary ~13:20 local / second compact this session); **Consolidated by Lissandra (pre-compact)**
