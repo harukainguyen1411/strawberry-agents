@@ -6,12 +6,17 @@
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
 #   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
 #   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
-#   pre-commit-plan-promote-guard.sh    — blocks unauthorized plan promotions out of proposed/ (v2: Orianna identity + Promoted-By trailer)
 #   pre-commit-reviewer-anonymity.sh    — blocks agent-system identifiers in work-scope (missmp/) commit msgs
 #   pre-commit-secrets-guard.sh         — blocks secrets in committed files
 #   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
 #   pre-commit-unit-tests.sh            — runs unit tests for changed packages
 #   pre-commit-zz-plan-structure.sh     — structural lint for staged plans/**/*.md (shift-left, after secrets)
+#
+# NOTE: pre-commit-plan-promote-guard.sh and commit-msg-plan-promote-guard.sh have been
+# archived to scripts/hooks/_archive/v2-commit-phase-plan-guards/ by
+# plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md.
+# Plan lifecycle enforcement is now handled exclusively by the PreToolUse hook
+# scripts/hooks/pretooluse-plan-lifecycle-guard.sh (wired via .claude/settings.json).
 #
 # Execution order is alphabetical (ls | sort). zz-prefix ensures plan-structure
 # runs last among pre-commit hooks (after unit-tests).
