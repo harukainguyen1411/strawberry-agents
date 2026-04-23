@@ -3,6 +3,7 @@
 **Date:** 2026-04-23
 **Author:** Ekko (research only, read-only against codebase)
 **Concern:** personal
+**Session:** Ekko subagent — research only, no codebase writes
 **Spike budget:** 30 min
 **Dependent plans:** `plans/proposed/personal/2026-04-21-daily-agent-repo-audit-routine.md`, `plans/proposed/personal/2026-04-21-agent-feedback-system.md`
 

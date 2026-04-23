@@ -1,8 +1,10 @@
 ---
-status: proposed
+status: archived
 concern: personal
 owner: swain
 created: 2026-04-21
+archived: 2026-04-23
+archived_reason: "overscoped monolith — depends on unimplemented subagent-task-attribution + new repo. Per 2026-04-23 triage, replace with narrower retro-ingestor + retro-SPA plans (to be authored separately when needed)."
 tests_required: true
 tags: [dashboard, observability, retrospection, otel, local-first]
 related:
