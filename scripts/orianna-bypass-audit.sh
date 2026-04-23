@@ -88,11 +88,44 @@ for _root in $PROTECTED_ROOTS; do
     _rel="${_plan_path#"${REPO_ROOT}/"}"
 
     # Find the commit that introduced this file into a protected path.
-    # --diff-filter=AR: Added or Renamed (covers git mv from proposed/).
-    # --follow: follow renames.
-    # We want the EARLIEST commit that placed the file at its current protected path.
-    _intro_commit="$(git -C "$REPO_ROOT" log --follow --diff-filter=AR \
-      --format='%H|%ae|%s' -- "$_rel" 2>/dev/null | tail -1)"
+    #
+    # T7 fix: use --diff-filter=R --name-status to locate the rename commit
+    # whose new-path (destination) matches this file's current protected path.
+    # The old approach (--follow --diff-filter=AR | tail -1) returned the
+    # original proposed/ add commit (often Orianna-authored), masking
+    # unauthorized promotions.
+    #
+    # Pass 1: rename commits — find the one where destination == _rel.
+    # Pass 2: if no rename, direct add commits on the exact path.
+
+    _intro_commit=""
+    _last_header=""
+    _rename_found=""
+
+    while IFS= read -r _line; do
+      case "$_line" in
+        R[0-9]*)
+          # Rename line: R<score><TAB><old-path><TAB><new-path>
+          _new_path="$(printf '%s' "$_line" | cut -f3)"
+          if [ "$_new_path" = "$_rel" ]; then
+            _intro_commit="$_last_header"
+            _rename_found=1
+            break
+          fi
+          ;;
+        *\|*\|*)
+          # Commit header line: sha|email|subject
+          _last_header="$_line"
+          ;;
+      esac
+    done < <(git -C "$REPO_ROOT" log --diff-filter=R --name-status \
+      --format='%H|%ae|%s' -- "$REPO_ROOT/$_root" 2>/dev/null)
+
+    # Pass 2: direct add (file was added directly, not renamed from proposed/)
+    if [ -z "$_rename_found" ]; then
+      _intro_commit="$(git -C "$REPO_ROOT" log --diff-filter=A \
+        --format='%H|%ae|%s' -- "$_rel" 2>/dev/null | head -1)"
+    fi
 
     if [ -z "$_intro_commit" ]; then
       # File has no Add/Rename record — could be a freshly staged uncommitted file.
