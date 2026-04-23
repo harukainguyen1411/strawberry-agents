@@ -31,6 +31,19 @@ Last updated: 2026-04-23 (pre-compact consolidation, shard 2026-04-23-b1acd96a; 
 **Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1, 2026-04-23-b1acd96a.
 **Next action:** None. Loop 2c merge gate unblocked on 2b side.
 
+## CLAUDE.md Rule 7 — stale script reference (Evelynn follow-up)
+
+**Status (2026-04-23):** Repo-root `CLAUDE.md` Rule 7 still says "Use `scripts/plan-promote.sh`" but that script was archived today in the Orianna v2 restructure (commit `81b0d17`). Orianna-as-callable-agent is the replacement. A hook fired a false-positive security warning against commit `70dee7b` (cleanup-plan promotion) because the text match looked like a bypass. Rule needs rewording.
+**Next action:** Evelynn's lane — update repo-root `CLAUDE.md` Rule 7 to reference Orianna agent + `Promoted-By: Orianna` trailer, or whatever the v2 regime calls for.
+
+---
+
+## Standing rule — delete merged branches (Duong, 2026-04-23)
+
+**After any PR merges:** delete the local branch + worktree in `~/Documents/Work/mmp/workspace/company-os`, and `git fetch --all --prune` to keep remote-tracking refs clean. Preserve only branches actively held open by a subagent's in-flight task. Fold into session close as a cleanup step.
+
+---
+
 ## Firebase Loop 2c — PR #75 MERGED (2026-04-23)
 
 **Status (2026-04-23):** MERGED by Duong. Vi reconciliation v2 cleared TDD gate (0 xpassed, -4 baseline delta vs `feat/demo-studio-v3`, independently verified by Ekko). Senna re-review COMMENT (advisory LGTM, reviewer-auth gap). Akali Rule 16 PASS-WITH-NOTES (all 22 route behaviors correct; pre-existing legacy-cookie 500 bug flagged). Lucian LGTM. Thread closed.
