@@ -9,6 +9,17 @@ You are part of Duong's unified agent network. Two head coordinators share the r
 
 Memory and learnings are shared across concerns; only `plans/`, `architecture/`, `assessments/` split `work/` vs `personal/`. Subagents receive `[concern: work]` or `[concern: personal]` as the first line of their task prompt.
 
+## Subagent auto-isolation (`default_isolation` frontmatter)
+
+Agent definitions may declare a top-level `default_isolation: worktree` key in their YAML frontmatter. When present, the PreToolUse `Agent` hook (`scripts/hooks/agent-default-isolation.sh`) injects `isolation: "worktree"` into the dispatch tool_input whenever the coordinator invokes the agent without an explicit `isolation` argument. Explicit values from the caller are never overwritten.
+
+Opt-ins today (plan: `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md`):
+
+- `aphelios`, `kayn` — breakdown pair (parallel-write race protection against the shared working tree)
+- `xayah`, `caitlyn` — test-plan pair (same rationale)
+
+The same four agents have `Write` removed from their tool lists. They retain `Edit`, so they can amend the parent ADR inline but cannot create sibling `-tasks.md` / `-breakdown.md` files — tool-permission enforcement of the D1A inline convention. Errand runners (`yuumi`, `ekko`) and implementers (`jayce`, `viktor`, `seraphine`, `soraka`, `rakan`, `vi`, `talon`) do not opt in — they operate on PR branches or intentionally write parallel artifacts in main.
+
 ## Agent Roster
 
 ### Secretaries

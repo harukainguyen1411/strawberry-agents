@@ -6,11 +6,11 @@ description: Complex-track test planner — writes resilience, fault-injection, 
 tier: complex
 pair_mate: caitlyn
 role_slot: test-plan
+default_isolation: worktree
 tools:
   - Bash
   - Read
   - Edit
-  - Write
   - Glob
   - Grep
   - Agent
