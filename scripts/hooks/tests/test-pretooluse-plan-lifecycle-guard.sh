@@ -295,6 +295,65 @@ ${PAYLOAD_R3_7}
 JSON
 "
 
+# --- Verb-allowlist tests: non-mutating verbs must NOT block plan paths (xfail until impl) ---
+#
+# V1: git add plans/approved/x.md, talon -> exit 0 (read-only git op)
+# V2: cat plans/approved/x.md, talon -> exit 0 (read-only)
+# V3: ls plans/approved/, talon -> exit 0 (read-only)
+# V4: grep foo plans/approved/x.md, talon -> exit 0 (read-only)
+# V5: sed -i 's/a/b/' plans/approved/x.md, talon -> exit 2 (in-place edit = mutation)
+# V6: touch plans/approved/new.md, talon -> exit 2 (mutation)
+# V7: echo foo >plans/approved/x.md, talon -> exit 2 (redirect = write)
+
+PAYLOAD_V1='{"tool_name":"Bash","tool_input":{"command":"git add plans/approved/x.md"}}'
+assert_exit "V1: git add plans/approved/x.md, talon -> exit 0 (non-mutating)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V1}
+JSON
+"
+
+PAYLOAD_V2='{"tool_name":"Bash","tool_input":{"command":"cat plans/approved/x.md"}}'
+assert_exit "V2: cat plans/approved/x.md, talon -> exit 0 (non-mutating)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V2}
+JSON
+"
+
+PAYLOAD_V3='{"tool_name":"Bash","tool_input":{"command":"ls plans/approved/"}}'
+assert_exit "V3: ls plans/approved/, talon -> exit 0 (non-mutating)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V3}
+JSON
+"
+
+PAYLOAD_V4='{"tool_name":"Bash","tool_input":{"command":"grep foo plans/approved/x.md"}}'
+assert_exit "V4: grep foo plans/approved/x.md, talon -> exit 0 (non-mutating)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V4}
+JSON
+"
+
+PAYLOAD_V5='{"tool_name":"Bash","tool_input":{"command":"sed -i '"'"'s/a/b/'"'"' plans/approved/x.md"}}'
+assert_exit "V5: sed -i s/a/b/ plans/approved/x.md, talon -> exit 2 (in-place edit)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V5}
+JSON
+"
+
+PAYLOAD_V6='{"tool_name":"Bash","tool_input":{"command":"touch plans/approved/new.md"}}'
+assert_exit "V6: touch plans/approved/new.md, talon -> exit 2 (mutation)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V6}
+JSON
+"
+
+PAYLOAD_V7='{"tool_name":"Bash","tool_input":{"command":"echo foo >plans/approved/x.md"}}'
+assert_exit "V7: echo foo >plans/approved/x.md, talon -> exit 2 (redirect = write)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_V7}
+JSON
+"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
