@@ -4,10 +4,14 @@ Date: 2026-04-23
 Repo: missmp/company-os (work concern)
 PR: https://github.com/missmp/company-os/pull/75
 Companion: PR #70 (xfails — branch `feat/firebase-auth-2c-xfails`)
-Commits: `965a97b` (impl), `0362bb3` (tests)
+Commits: `965a97b` (impl), `0362bb3` (tests), `749502f/98c6ab3/047e025` (reconcile)
 Comment posted: https://github.com/missmp/company-os/pull/75#issuecomment-4301280108
+Re-review: https://github.com/missmp/company-os/pull/75#issuecomment-4301743149
 Verdict: Request changes (advisory — posted as comment under duongntd99 because
 `reviewer-auth.sh` is broken for missmp/company-os).
+Re-review verdict (2026-04-23, post-reconciliation): COMMENT/advisory-LGTM with
+I1 TOCTOU gate for follow-up. B1+B2 cleanly resolved; Vi's xfail-harness merge
+verified clean (0 xpassed, 146 xfail, -4 baseline failures).
 
 ## Top findings
 
