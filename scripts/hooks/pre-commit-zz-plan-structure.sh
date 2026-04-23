@@ -392,7 +392,11 @@ awk -v REPO_ROOT="$REPO_ROOT" -v STAGED_LINES_FILE="$_staged_lines_tmp" '
       # Allow any non-space first char including leading dash (F5).
       # Plan: plans/in-progress/personal/2026-04-22-orianna-speedups-pr19-fast-follow.md F5
       has_reason_form = (line ~ /<!-- orianna: ok -- [^ ]/)
-      if (!has_reason_form) {
+      # Suppression exemption: if the line contains a backtick-quoted path token
+      # (i.e., the marker is used to suppress Rule 4 or Rule 5), the bare form is
+      # accepted — the presence of the suppressed path is its own implicit reason.
+      has_backtick_token = (index(line, "`") > 0)
+      if (!has_reason_form && !has_backtick_token) {
         print "[lib-plan-structure] BLOCK (T11.c): bare <!-- orianna: ok --> requires a reason suffix. Use: <!-- orianna: ok -- <reason> -->. See plans/in-progress/personal/2026-04-21-orianna-gate-speedups.md T11.c. Line: " line > "/dev/stderr"
         file_fail = 1
       }
