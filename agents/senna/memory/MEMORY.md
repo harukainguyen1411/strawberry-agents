@@ -23,6 +23,9 @@ PR reviewer — surface logic, security, edge cases. Opus executor.
 - Cold-start cache pattern: the module-level variable must be written after the Firestore read — null-checking it without populating it is a dead cache.
 
 ## Recurring review patterns
+- **Guard-vs-skill chicken-and-egg (PR #33, 2026-04-23)**: PreToolUse guards that block a tool-pattern must have a caller-scoped bypass if a sanctioned skill uses that same tool-pattern. Skills run in the calling agent's context, so "admin identity" bypass alone is insufficient. Look for env-signal escape hatch (`SKILL_NAME=1`) — absence is a red flag.
+- **Substring allow-rules are smuggleable**: `old CONTAINS X AND new CONTAINS Y` always lets arbitrary other content ride along. Require exact equality or diff-line-count constraint.
+- **Matcher-without-payload-awareness**: if a matcher lists a tool (e.g. MultiEdit) but the payload parser only handles sibling tools' schema (`tool_input.old_string` vs `tool_input.edits[]`), legitimate calls fail-closed and the matcher is effectively block-all. Audit matcher/parser alignment.
 - Bats xfail vacuous-pass: `source` fails non-zero when lib absent → `status -ne 0` test passes without exercising the function. Guard with `[ -f "${LIB}" ] || return 1`.
 - bats `$stderr` only populated with `run --separate-stderr` (bats-core 1.5+); bare `$stderr` assertions are no-ops.
 - Constant-equality assertions fail the "not a tautology" TDD criterion — need to test function behaviour, not string values.
