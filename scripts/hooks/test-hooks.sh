@@ -301,5 +301,15 @@ else
 fi
 
 echo ""
+echo "=== cleanup-merged-branches.sh tests ==="
+if bash "$REPO_ROOT/scripts/test-cleanup-merged-branches.sh" 2>/dev/null; then
+  echo "  PASS: test-cleanup-merged-branches.sh (5 invariants)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-cleanup-merged-branches.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
