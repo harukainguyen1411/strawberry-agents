@@ -42,19 +42,47 @@ Orianna will:
 
 ## Authorization
 
-The `scripts/hooks/pre-commit-plan-promote-guard.sh` hook enforces:
+### Physical enforcement (PreToolUse hook — sole gate)
 
-- **Promotion commits** (moving a file out of `plans/proposed/`): require the commit
-  author email to match `scripts/hooks/_orianna_identity.txt` **AND** the commit
-  message to carry a `Promoted-By: Orianna` trailer.
-- **Trailer forgery** blocked: a non-Orianna author with `Promoted-By: Orianna` is
-  rejected.
-- **Direct creation** in non-proposed stage directories (approved, in-progress,
-  implemented, archived) by a non-Orianna, non-admin author is rejected.
-- **Admin bypass**: Duong's admin identity (`harukainguyen1411@gmail.com`) may promote
-  or create in any stage without the trailer.
-- **Admin-only paths**: `.claude/agents/orianna.md` and
-  `scripts/hooks/_orianna_identity.txt` may only be modified by the admin identity.
+`scripts/hooks/pretooluse-plan-lifecycle-guard.sh` is wired into `.claude/settings.json`
+as a PreToolUse hook for the `Bash` and `Write|Edit|NotebookEdit` tool matchers. It fires
+**before** any tool executes, enforcing the following rules for non-Orianna agents:
+
+**Blocked** (non-Orianna agents):
+- `Bash` commands that reference protected paths (git mv, mv, cp, rm, etc.)
+- `Write` to a **non-existing** file inside a protected directory (new-file creation)
+
+**Permitted** (non-Orianna agents):
+- `Edit` or `NotebookEdit` on an **existing** file in a protected directory — agents
+  such as Aphelios and Xayah must be able to append Tasks/Test-plan sections to
+  in-progress plans.
+- `Write` to an **existing** file in a protected directory (overwrite = edit semantics).
+
+Protected directories:
+- `plans/approved/`
+- `plans/in-progress/`
+- `plans/implemented/`
+- `plans/archived/`
+
+Any agent whose `$CLAUDE_AGENT_NAME` / `$STRAWBERRY_AGENT` (case-insensitive) is not
+`orianna` is rejected with exit 2 before the tool runs. Fail-closed: if neither env var
+is set, the guard rejects access to protected paths.
+
+`plans/proposed/` and its subtrees remain freely writable by any agent (plan authoring).
+
+This is the **only** enforcement layer. The commit-phase guards
+(`pre-commit-plan-promote-guard.sh`, `commit-msg-plan-promote-guard.sh`) were archived
+to `scripts/hooks/_archive/v2-commit-phase-plan-guards/` by
+`plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md` — at the commit
+layer, identity is cheaply spoofable (the Ekko incident, 2026-04-23). The physical
+layer prevents the move before it ever reaches git.
+
+### Bypass detection (post-hoc, non-blocking)
+
+`scripts/orianna-bypass-audit.sh` walks protected plan directories and checks that each
+plan file was last introduced by an Orianna-authored commit. It reports orphan files to
+stdout and always exits 0. This is detection only — it does not re-introduce a second
+gate. Run locally: `bash scripts/orianna-bypass-audit.sh`.
 
 ---
 
@@ -104,6 +132,8 @@ and enforces five rules (see inline comments in the script). Plans under
 |------|---------|
 | `.claude/agents/orianna.md` | Orianna's callable agent definition |
 | `agents/orianna/memory/git-identity.sh` | Sets Orianna's git identity on session start |
-| `scripts/hooks/pre-commit-plan-promote-guard.sh` | Hook enforcing promotion authorization |
+| `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` | PreToolUse physical guard — sole enforcement layer |
+| `scripts/orianna-bypass-audit.sh` | Post-hoc bypass detection (non-blocking) |
+| `scripts/hooks/_archive/v2-commit-phase-plan-guards/` | Archived v2 commit-phase guards (superseded) |
 | `scripts/hooks/_orianna_identity.txt` | Canonical Orianna email for hook check |
 | `architecture/archive/v1-orianna-gate/plan-lifecycle.md` | Previous lifecycle doc (v1 regime) |
