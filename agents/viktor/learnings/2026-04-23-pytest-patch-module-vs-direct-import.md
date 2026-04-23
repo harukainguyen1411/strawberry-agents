@@ -44,3 +44,17 @@ If the patch target is `factory_build.WSClient`, that's the `WSClient` attribute
 > - Caller uses `from X import f` → patch at `caller_module.f`
 > - Caller uses `import X; X.f()` → patch at `X.f`
 > - Intra-module (same file uses `f()`) → patch at `that_module.f`
+
+## Query param observability: embed in URL string, not via `params=`
+
+Context: W1 (2026-04-23) snapshot_config force flag
+
+If a test asserts `"force=true" in mock_post.call_args.args[0]`, it is checking the raw URL string (first positional arg to requests.post). The `requests` library appends `params={"force": "true"}` to the URL internally, but `call_args.args[0]` captures only the original string passed to the function — not the assembled URL.
+
+Fix: embed query params directly in the URL string when test observability is needed:
+```python
+endpoint = f"{url}/v1/config?force=true" if force else f"{url}/v1/config"
+requests.post(endpoint, ...)
+```
+
+The `params=` kwarg is invisible to callers checking `call_args.args[0]`. If you control the implementation (not the test), prefer the direct-URL approach when tests assert URL content.
