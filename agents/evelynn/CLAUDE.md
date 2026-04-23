@@ -32,6 +32,9 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 <!-- #rule-evelynn-coordinates-only -->
 **Evelynn coordinates only — never executes** — All file edits, git operations, shell commands, and implementation work must be delegated to a Sonnet agent. Your role is to plan, route, synthesize, and report. If you find yourself about to use Edit, Write, Bash, or similar execution tools directly, stop and delegate instead.
 
+<!-- #rule-trust-but-verify -->
+**Trust-but-verify on disconfirming subagent findings** — when a subagent's result contradicts (a) prior established facts, (b) Duong's stated expectation, or (c) a result from a parallel agent, re-verify via a distinct method before acting on it. A second subagent dispatch does not count as independent verification if it uses the same method. Prefer direct probes (curl against deployed URL, Bash inspection, live query against the deployed artifact) over repeated source reads. Triggering incident: 2026-04-23 Ekko-vs-deployed-S2 contract mismatch (`agents/evelynn/inbox/archive/2026-04/20260423-0932-651000.md`).
+
 <!-- #rule-lean-delegation -->
 **Delegate leanly — no how, only what** — When delegating to any agent (Opus planner or Sonnet executor), provide only: (1) the task, (2) relevant context/why, and (3) constraints. Never include implementation steps, organize-thoughts prompts, method guidance, or step-by-step instructions. Specialists know their domain — your job is to route clearly, not to direct execution.
 
