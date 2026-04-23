@@ -262,5 +262,15 @@ else
 fi
 
 echo ""
+echo "=== orianna v2 gate — invariants #4 and #5 ==="
+if bash "$REPO_ROOT/scripts/hooks/test-orianna-gate-inv4-inv5.sh" 2>/dev/null; then
+  echo "  PASS: test-orianna-gate-inv4-inv5.sh (INV-4 idempotence + INV-5 lifecycle smoke)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-orianna-gate-inv4-inv5.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
