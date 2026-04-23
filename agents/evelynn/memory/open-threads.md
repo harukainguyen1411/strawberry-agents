@@ -4,10 +4,19 @@ Last updated: 2026-04-23 (post-session-close, pointing at new top-of-queue items
 
 ---
 
-## Sona inbox monitor not firing on send.sh writes
+## Sona inbox monitor asymmetric — investigate tomorrow
 
-**Current status (2026-04-23):** Observed twice today — messages written via `bash scripts/agent-ops/send.sh sona evelynn ...` land on disk correctly but Sona's live terminal monitor does not surface them. Pull-based `/check-inbox` still works. Likely same shape as inbox-write-guard: monitor probably hooks `Write|Edit` and Bash-script writes bypass it.
-**Next:** Investigate tomorrow. Dispatch Explore to map monitor architecture, then decide fix path (hook the monitor into send.sh, or switch watcher to FS-event-based). Full notes in `agents/evelynn/learnings/2026-04-23-sona-inbox-monitor-not-firing.md`.
+**Current status (2026-04-23):** Monitor works Sona→Evelynn (confirmed at 14:50 — task-notification fired correctly on `agents/evelynn/inbox/20260423-1450-955853.md`). Monitor silent Evelynn→Sona (failed twice today at 11:54 and 14:44). Rules out the initial "Bash writes bypass the hook" hypothesis — Sona's watcher is either not running or mis-scoped. Pull-based `/check-inbox` works in both directions.
+**Next:** Dispatch Explore tomorrow to read `.claude/settings.json` + any monitor script to check how the per-coordinator watcher is wired; check whether Sona's session boot spawns it at all. Full notes in `agents/evelynn/learnings/2026-04-23-sona-inbox-monitor-not-firing.md`.
+
+---
+
+## Identity leaks on work-repo PRs (Evelynn-owned fix)
+
+**Current status (2026-04-23):** Duong flagged two leaks on missmp/company-os PRs #91 and #96 post-merge. (1) Senna/Lucian reviewer verdicts sign `— <name>` in body text, posted verbatim under Duong's identity → external viewers see agent names. (2) Commit author = `viktor@strawberry.local` / `orianna@strawberry.local` etc. on impl commits → external git log exposes orchestration layer. Both violate the spirit of CLAUDE.md "Never include AI authoring references in commits" (rule text is Anthropic-strict; spirit covers any external agent-system disclosure). Confirmed this session: Swain commits → Orianna identity; Rakan xfail → Viktor identity — per-worktree `.git/config` inherits whoever-last-committed's identity.
+**Scope:** Evelynn owns the system-wide fix (subagent identity bootstrap + reviewer verdict templates). Work-repo-specific hook installs on missmp/company-os are Sona's lane.
+**Next:** Tomorrow — commission Karma quick-lane plan. System-wide fix scope: (a) process-level GIT_AUTHOR_NAME/EMAIL binding per subagent spawn via Agent-tool harness or startup hook; (b) strip `— <name>` footer from Senna/Lucian reviewer verdict templates on any non-personal concern, OR from the /tmp/*-verdict.md → gh pr comment pipeline. Coordinate with Sona on the third gap (missmp/company-os pre-push + tdd-gate CI install).
+**Refs:** `agents/evelynn/inbox/archive/2026-04/20260423-1450-955853.md` (Sona's flagging message), `agents/sona/learnings/2026-04-23-w2-tdd-ordering-violation-viktor.md` patterns 3-4.
 
 ---
 
