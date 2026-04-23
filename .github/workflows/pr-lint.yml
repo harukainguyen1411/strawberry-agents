@@ -19,7 +19,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""')
-          CHANGED_FILES=$(gh pr diff "$PR_NUMBER" --repo "$REPO" --name-only)
+          CHANGED_FILES=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename')
 
           # ---------------------------------------------------------------
           # scripts/ci/pr-lint-check.sh — inlined (POSIX-portable)
