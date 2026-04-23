@@ -7,6 +7,14 @@
 #
 # Run: bash scripts/hooks/tests/pretooluse-inbox-write-guard.test.sh
 # Exit 0 — all cases pass; non-zero — one or more failures.
+#
+# Round-3 changes (2026-04-23):
+#   - Removed case (g): STRAWBERRY_SKILL env-var bypass removed from guard.
+#     /agent-ops send now writes via bash script — no Write tool, no bypass needed.
+#   - Removed case (h): moot once bypass removed.
+#   - Added case (n): Edit where "status: pending" appears only in body (not frontmatter)
+#     must still be blocked — guard must anchor the match to frontmatter line only.
+#   - Added case (o): read_at value must match ISO-8601 shape; non-ISO value blocked.
 
 set -u
 
@@ -83,20 +91,10 @@ run_case "f: Write to non-inbox path — guard ignores" \
   0
 
 # ============================================================================
-# Fix 1 (CRITICAL): agent-ops skill bypass — STRAWBERRY_SKILL=agent-ops
+# Fix 1 (CRITICAL): env-var bypass removed — /agent-ops send uses bash script.
+# Cases (g) and (h) removed: STRAWBERRY_SKILL bypass no longer exists in guard.
+# Write to inbox is always blocked unless admin identity.
 # ============================================================================
-
-# --- Case g: Write to inbox with STRAWBERRY_SKILL=agent-ops — expect exit 0 ---
-run_case "g: Write to inbox via agent-ops skill — allowed" \
-  '{"tool_name":"Write","tool_input":{"file_path":"agents/talon/inbox/20260423-123456.md","content":"msg"}}' \
-  0 \
-  "STRAWBERRY_SKILL=agent-ops"
-
-# --- Case h: Write to inbox with wrong skill value — expect exit 2 (blocked) ---
-run_case "h: Write to inbox with wrong skill value — blocked" \
-  '{"tool_name":"Write","tool_input":{"file_path":"agents/talon/inbox/20260423-123456.md","content":"msg"}}' \
-  2 \
-  "STRAWBERRY_SKILL=some-other-skill"
 
 # ============================================================================
 # Fix 2 (IMPORTANT): Edit allow-rule tightening — only status line may change
@@ -135,6 +133,26 @@ run_case "l: Write to inbox with absolute path — blocked" \
 # --- Case m: Write with path traversal (../../agents/...) — expect exit 2 ------
 run_case "m: Write to inbox via path traversal — blocked" \
   '{"tool_name":"Write","tool_input":{"file_path":"plans/../agents/evelynn/inbox/abc12345.md","content":"msg"}}' \
+  2
+
+# ============================================================================
+# Fix 5 (MINOR): status line must be frontmatter-anchored (^status: pending$)
+# ============================================================================
+
+# --- Case n: Edit where "status: pending" appears only in body text — blocked ---
+# The body text contains the phrase but the frontmatter line is already "status: read".
+# Guard must NOT allow this — the match must be on a standalone frontmatter line only.
+run_case "n: Edit — status: pending in body only, frontmatter already read — blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","old_string":"status: read\n\nThis message has status: pending items.\n","new_string":"status: read\n\nThis message has status: pending items.\nread_at: 2026-04-23T10:00:00Z\n"}}' \
+  2
+
+# ============================================================================
+# Fix 6 (MINOR): read_at value must match ISO-8601 shape
+# ============================================================================
+
+# --- Case o: Edit — read_at value is not ISO-8601 — blocked ---
+run_case "o: Edit inbox — read_at with non-ISO value — blocked" \
+  '{"tool_name":"Edit","tool_input":{"file_path":"agents/evelynn/inbox/abc12345.md","old_string":"status: pending\n","new_string":"status: read\nread_at: not-a-date\n"}}' \
   2
 
 # --- Summary ---
