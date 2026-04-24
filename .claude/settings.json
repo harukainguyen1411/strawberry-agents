@@ -104,6 +104,14 @@
             "command": "bash scripts/hooks/agent-identity-default.sh"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/pretooluse-monitor-arming-gate.sh"
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -131,6 +139,15 @@
           {
             "type": "command",
             "command": "jq -r '{subagent: (.tool_input.subagent_type // \"unknown\"), description: (.tool_input.description // \"unknown\")} | \"REMINDER: TaskCreate for subagent \\u2018\" + .subagent + \"\\u2019 \\u2014 \\u2018\" + .description + \"\\u2019. Set owner=\" + .subagent + \".\"' | { read -r msg; printf '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":\"%s\"}}' \"$(echo \"$msg\" | sed 's/\"/\\\\\"/g')\"; }"
+          }
+        ]
+      },
+      {
+        "matcher": "Monitor",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/posttooluse-monitor-arm-sentinel.sh"
           }
         ]
       }
