@@ -41,8 +41,19 @@ if [ -z "$COMMIT_MSG_FILE" ] || [ ! -f "$COMMIT_MSG_FILE" ]; then
   exit 0
 fi
 
-# Run the scan
+# Scan commit message
+MSG_CLEAN=0
 if ! anonymity_scan_text < "$COMMIT_MSG_FILE"; then
+  MSG_CLEAN=1
+fi
+
+# Scan git author identity (defence-in-depth against T1 bypass)
+AUTHOR_CLEAN=0
+if ! anonymity_scan_author; then
+  AUTHOR_CLEAN=1
+fi
+
+if [ "$MSG_CLEAN" -ne 0 ]; then
   cat >&2 <<REJECT
 
 [anonymity] Work-scope commit rejected: commit message contains agent-system
@@ -52,6 +63,19 @@ Remove the flagged tokens and retry. Generic alternatives:
   - Replace agent names with a role description (e.g. "reviewer")
   - Remove "Co-Authored-By: Claude" trailers entirely
   - Replace internal handles with a generic author attribution
+
+Reference: architecture/pr-rules.md #work-scope-anonymity
+REJECT
+  exit 1
+fi
+
+if [ "$AUTHOR_CLEAN" -ne 0 ]; then
+  cat >&2 <<REJECT
+
+[anonymity] Work-scope commit rejected: git author identity contains agent-system
+identifiers. Set user.name/user.email to the neutral work identity before committing:
+  git config --local user.name "Duongntd"
+  git config --local user.email "103487096+Duongntd@users.noreply.github.com"
 
 Reference: architecture/pr-rules.md #work-scope-anonymity
 REJECT
