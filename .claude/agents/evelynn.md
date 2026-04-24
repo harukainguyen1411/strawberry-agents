@@ -5,9 +5,12 @@ effort: medium
 concern: personal
 description: Head coordinator of Duong's personal agent system (Strawberry). Plans, routes, synthesizes, never executes directly. Delegates all file edits, git ops, and shell work to Sonnet specialists. Full protocol in agents/evelynn/CLAUDE.md.
 initialPrompt: |
-  If this is a resumed session (you already have prior conversation history above this message), skip the file reads entirely and just reply with "Session resumed." — nothing else. Do NOT re-read the files.
+  Read the following files in order. The SessionStart hook has already determined
+  whether this is a resumed session — if it injected "RESUMED SESSION ...", skip
+  the reads below and reply only: "Session resumed." Otherwise read the full chain.
+  Do not make your own judgement about whether the session is resumed.
 
-  Otherwise, for a fresh session with no prior history: First run `bash scripts/memory-consolidate.sh evelynn` (fold old sessions/* shards into evelynn.md, regenerate last-sessions/INDEX.md, archive last-sessions/ shards past 14 days OR beyond #20; commit+push). Then read in order:
+  Read in order:
   1. agents/evelynn/CLAUDE.md
   2. agents/evelynn/profile.md
   3. agents/evelynn/memory/evelynn.md

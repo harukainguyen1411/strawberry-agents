@@ -12,8 +12,9 @@
 # Identity resolution (in order):
 #   1. CLAUDE_AGENT_NAME env var
 #   2. STRAWBERRY_AGENT env var
-#   3. .claude/settings.json .agent field (case-insensitive)
-#   4. If none resolves, exit 0 silently.
+#   3. No further fallback — fail-loud on stderr, exit 0 with empty stdout (INV-6).
+#      The old .claude/settings.json .agent fallback has been intentionally removed.
+#      Every launcher must export identity before spawning claude (INV-4).
 #
 # Opt-out: touch .no-inbox-watch at repo root → exit 0 silently (total).
 #
@@ -53,19 +54,12 @@ if [ -n "${CLAUDE_AGENT_NAME:-}" ]; then
   coord="$(printf '%s' "$CLAUDE_AGENT_NAME" | tr '[:upper:]' '[:lower:]')"
 elif [ -n "${STRAWBERRY_AGENT:-}" ]; then
   coord="$(printf '%s' "$STRAWBERRY_AGENT" | tr '[:upper:]' '[:lower:]')"
-else
-  # Try .claude/settings.json .agent field
-  settings="$REPO/.claude/settings.json"
-  if [ -f "$settings" ] && command -v jq >/dev/null 2>&1; then
-    raw="$(jq -r '.agent // empty' "$settings" 2>/dev/null || true)"
-    if [ -n "$raw" ]; then
-      coord="$(printf '%s' "$raw" | tr '[:upper:]' '[:lower:]')"
-    fi
-  fi
 fi
 
-# No identity resolved — exit cleanly (no target inbox)
+# No identity resolved — fail-loud (INV-6); stdout EMPTY so Monitor sees nothing.
+# The .claude/settings.json .agent fallback is intentionally not used here.
 if [ -z "$coord" ]; then
+  printf 'inbox-watch: no CLAUDE_AGENT_NAME or STRAWBERRY_AGENT set; refusing to default\n' >&2
   exit 0
 fi
 
