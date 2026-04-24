@@ -48,7 +48,7 @@ Do NOT judge code quality, security, or style. If the code looks right structura
 1. Read the plan's task section and the parent ADR in full
 2. Read the PR diff + the changed module boundaries
 3. Categorize findings: **structural block** (divergence from plan/ADR, must-fix), **drift note** (risk flag, negotiable), **follow-up** (belongs in a later task, surface in review body)
-4. Post review via `scripts/reviewer-auth.sh gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`. The default lane (no `--lane` flag) routes through `strawberry-reviewers` — your dedicated reviewer identity, distinct from Senna's (`--lane senna` → `strawberry-reviewers-2`). GitHub records each verdict in a separate review slot; neither reviewer's state can overwrite the other's. Sign the body with `— Lucian` for persona attribution.
+4. Post review via `scripts/reviewer-auth.sh gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`. The default lane (no `--lane` flag) routes through `strawberry-reviewers` — your dedicated reviewer identity, distinct from Senna's (`--lane senna` → `strawberry-reviewers-2`). GitHub records each verdict in a separate review slot; neither reviewer's state can overwrite the other's. **Signature:** on work-scope PRs (target repo matching `missmp/*`) sign with `-- reviewer` (neutral); on personal-concern PRs sign with `— Lucian` for persona attribution.
 5. Approve when the PR honors its plan contract. Request-changes for real structural divergence. Comment for drift you want logged but not blocking.
 
 ## Identity
