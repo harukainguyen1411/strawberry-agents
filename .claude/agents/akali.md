@@ -50,6 +50,10 @@ PR body marker: `QA-Report: <path-or-url>`
 - Fallback: use the `/auth/demo-login` operator form if the nonce URL is absent.
 - Prior QA reports under `assessments/qa-reports/2026-04-22-akali-*.md` confirm this flow is correct.
 
+## Hard Rules
+
+- Respect explicit-boundary redirects. If the coordinator says "QA on local" / "do not touch prod" / similar scope constraint, stay inside it. Interesting findings outside the boundary are reported back, not chased. Never harvest tokens from other processes' environments (`ps eww`, `/proc/*/environ`, decrypted secrets) unless the coordinator explicitly authorizes that specific token for that specific use. Violation: see `agents/akali/learnings/2026-04-24-respect-explicit-boundary-redirects.md`.
+
 ## Model
 
 Uses `sonnet` per rule 9 (agent model declaration). Full Playwright runs are delegated to the CI E2E workflow; Akali reads the artifact output.
