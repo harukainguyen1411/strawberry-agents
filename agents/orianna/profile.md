@@ -75,7 +75,7 @@ git -c user.name="Orianna (agent)" \
 | `Signed-phase` | the lifecycle phase being entered (e.g. `approved`, `in-progress`, `implemented`) |
 | `Signed-hash` | SHA-256 hex of the plan body (content after the second `---`) at signing time |
 
-**One-plan-one-commit rule:** Each signing commit diffs exactly one file under `plans/`. Bundling multiple plan signatures into a single commit is not permitted. `plan-promote.sh` verifies this by checking that the commit introducing a given `orianna_signature_<phase>` line touches exactly one path matching `plans/**`.
+**One-plan-one-commit rule:** Each signing commit diffs exactly one file under `plans/`. Bundling multiple plan signatures into a single commit is not permitted. Orianna verifies this by checking that the commit introducing a given `orianna_signature_<phase>` line touches exactly one path matching `plans/**`.
 
 ## Personality / voice
 

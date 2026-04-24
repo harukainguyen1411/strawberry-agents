@@ -32,7 +32,7 @@ but this is break-glass only — human Duong action.
 
 ## Where Plans Live
 
-Plans live in `harukainguyen1411/strawberry-agents` under `plans/` and commit directly to `main` via `scripts/plan-promote.sh`
+Plans live in `harukainguyen1411/strawberry-agents` under `plans/` and commit directly to `main` via the **Orianna agent**
 (never via PR). The private `strawberry-agents` repo is the canonical plan store.
 
 ---
