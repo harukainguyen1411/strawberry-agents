@@ -43,7 +43,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.source' | { read -r src; if [ \"$src\" = \"resume\" ] || [ \"$src\" = \"clear\" ] || [ \"$src\" = \"compact\" ]; then echo '{\"systemMessage\":\"Resumed session — skipping startup reads.\",\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"RESUMED SESSION — do not re-read startup files. Reply only: Session resumed.\"}}'; fi; }"
+            "command": "bash scripts/hooks/sessionstart-coordinator-identity.sh"
           },
           {
             "type": "command",

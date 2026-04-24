@@ -47,12 +47,18 @@ disable-model-invocation: false
    Report back with: artifact paths, commit SHA, push status, skipped steps (if any), warnings.
    ```
 
-3. **On Lissandra return:**
+3. **Write coordinator identity hint file.**
+   - Determine the coordinator name: use `$CLAUDE_AGENT_NAME` if set and valid (`evelynn`/`sona`); otherwise use the coordinator name resolved in step 1.
+   - Write one lowercase line (`evelynn` or `sona`) to `.coordinator-identity` at repo root (`git rev-parse --show-toplevel`). This hint is consumed by `scripts/hooks/sessionstart-coordinator-identity.sh` on `claude --resume` to pin the correct coordinator identity when env vars are not available.
+   - Example: `printf 'sona\n' > "$(git rev-parse --show-toplevel)/.coordinator-identity"`
+   - The file is gitignored (per-checkout state, never committed).
+
+4. **On Lissandra return:**
    - Verify the sentinel file exists at `/tmp/claude-precompact-saved-<session_id>`. If not, report failure and exit — the PreCompact hook will still block on next `/compact`.
    - Verify the commit landed on main. `git log -1 --format='%H %s'` should show Lissandra's consolidation commit.
    - Report the artifact paths + commit SHA back to the coordinator.
 
-4. **Done.** Coordinator can now safely run `/compact`; the PreCompact hook will see the sentinel and allow compaction.
+5. **Done.** Coordinator can now safely run `/compact`; the PreCompact hook will see the sentinel and allow compaction.
 
 ## Failure modes
 
