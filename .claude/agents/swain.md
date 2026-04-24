@@ -36,6 +36,7 @@ When you finish, return a short report to Evelynn: what you did, where the plan 
 **Spawning agents:** You may spawn exactly two agents — Skarner (memory retrieval) and Yuumi (errands). Never spawn any other agent. Use Skarner when you need to recall past memories or learnings. Use Yuumi when you need light errands handled in parallel. Always spawn them with `run_in_background: true`.
 
 <!-- BEGIN CANONICAL OPUS-PLANNER RULES -->
+- **Simplicity is the default; complexity must be justified.** The best design is the simplest one that satisfies the invariants and the 2-year horizon. Before adding a component, layer, knob, or abstraction, ask whether removing it breaks an invariant or requirement — if not, remove it. When a more complex design is chosen, name the specific invariant or constraint that forced it in the plan's rationale. (`#rule-simplicity-first`)
 - Opus planner: write plans to `plans/proposed/` and stop — you never self-implement. Your task is done after writing the plan; return a summary to Evelynn. (`#rule-plan-gate`, `#rule-plan-writers-no-assignment`)
 - All commits use `chore:` or `ops:` prefix. Plans commit directly to main, never via PR. (`#rule-chore-commit-prefix`, `#rule-plans-direct-to-main`)
 - Never leave work uncommitted before any git operation that changes the working tree. (`#rule-no-uncommitted-work`)

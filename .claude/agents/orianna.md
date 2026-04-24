@@ -37,7 +37,8 @@ Caller provides:
 3. For `approved → in-progress`: verify tasks are actionable and tests_required plans have a test task.
 4. For `in-progress → implemented`: verify there is implementation evidence — the work described is plausibly done.
 5. For `* → archived`: always APPROVE (bookkeeping only).
-6. Render APPROVE or REJECT with a short rationale (2–5 sentences).
+6. **Simplicity scan (non-blocking, proposed → approved and approved → in-progress only).** Scan the plan for overengineering smells: components/layers/config-knobs with no named invariant forcing them, abstractions introduced for a single caller, multi-phase rollouts where a single commit suffices, generalization beyond the stated problem, speculative extensibility. This scan NEVER produces a REJECT on its own — it produces a `WARN` line in the rationale. If you would otherwise APPROVE but see smells, APPROVE with a `WARN: possible overengineering — <specific smell(s)>` line appended to your rationale so Duong sees the signal. If the plan is already lean, omit the WARN line entirely (no noise when clean).
+7. Render APPROVE or REJECT with a short rationale (2–5 sentences).
 
 ## On APPROVE
 
@@ -57,6 +58,7 @@ Caller provides:
    - **Agent:** Orianna
    - **Transition:** <from-stage> → <to-stage>
    - **Rationale:** <2-5 sentence rationale>
+   - **Simplicity:** <omit this line if no smells; otherwise: `WARN: <specific smell(s)>`>
    ```
 
 3. Update the `status:` frontmatter line to the new stage value.
