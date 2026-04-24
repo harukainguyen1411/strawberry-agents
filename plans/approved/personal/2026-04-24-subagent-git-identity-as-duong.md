@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-24
@@ -98,3 +98,10 @@ Execution:
 - Existing env-injector: `scripts/hooks/agent-identity-default.sh`
 - Orianna identity carve-out: `.claude/agents/orianna.md` line 21
 - Dirty commits (forward-only, not remediated): `missmp/company-os` d7241b0e (#114), 9c9b0f2e (#115), f83d4b5e (#117)
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (karma), four concrete tasks with explicit files and DoDs, T1 xfail-first per Rule 12, and an unambiguous Orianna carve-out with the exemption path documented. Non-goals are crisp (no history rewrite, no coordinator-commit change, no committer-line anonymisation). Scope is well-motivated by the three observed leak commits and the existing approved plan's gap. No unresolved TBD/TODO/Decision-pending in gating sections.
