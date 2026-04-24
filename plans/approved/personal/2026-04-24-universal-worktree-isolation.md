@@ -1,7 +1,7 @@
 ---
 title: Universal subagent worktree isolation — opt-out, not opt-in
 owner: azir
-status: proposed
+status: approved
 concern: personal
 complexity: normal
 tests_required: true
@@ -160,3 +160,10 @@ All four OQs resolved 2026-04-24 by Duong (ADR ready for Orianna promotion):
 ## Handoff
 
 Per architect closeout: this ADR stops at design. Task breakdown is Kayn's (normal-lane breakdown) once Orianna promotes proposed → approved. Do not assign an implementer in the breakdown — that is Evelynn's call after approval.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Azir-authored ADR with clear owner, concrete decision (opt-out over opt-in) grounded in three dated incidents, and an explicit opt-out set with per-agent rationale. All four open questions are resolved with named decisions and artifacts (Skarner-write retirement already landed in commit 103dd3e, merge-back helper scoped, migration ordering committed to a single 3-commit PR). Eight invariants are declared with concrete test-file paths honoring tests_required, and the supersedes relationship preserves the prior plan's inline-edit-discipline subgoal. Nothing gating on proposed→approved is outstanding.
