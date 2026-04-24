@@ -49,9 +49,9 @@ The plan you write must include:
 - Never raw `age -d` — `tools/decrypt.sh`
 - Never rebase
 
-## Plan structure hook — quick checklist
+## Plan structure — quick checklist
 
-The `pre-commit-zz-plan-structure.sh` hook matches heading strings literally. Getting these wrong produces misleading BLOCK findings at commit time.
+The `pre-commit-zz-plan-structure.sh` hook has been retired (2026-04-24, archived to `scripts/hooks/_archive/v2-plan-structure-lint/`). Structural plan checks are now the responsibility of the Orianna v2 Opus gate. The heading constraints below still apply — Orianna enforces them at promotion time, not at commit time.
 
 **Section headings — canonical shape:**
 
