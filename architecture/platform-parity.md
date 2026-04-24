@@ -24,7 +24,7 @@ See `plans/proposed/2026-04-09-operating-protocol-v2.md` Layer 0 for the governa
 | `scripts/windows/launch-evelynn.ps1` | NOT SUPPORTED | supported | Windows PowerShell launcher. |
 | `scripts/windows/launch-yuumi.bat` | NOT SUPPORTED | supported | Windows batch launcher for Yuumi. |
 | `scripts/safe-checkout.sh` | supported | supported | POSIX. See `#rule-git-worktree` in root `CLAUDE.md`. |
-| `scripts/plan-promote.sh` | supported | supported | POSIX. See `#rule-plan-promote-sh` in root `CLAUDE.md`. |
+| Orianna agent (plan promotion) | supported | supported | Invoked via Agent tool. See `architecture/plan-lifecycle.md` and Rule 19 in root `CLAUDE.md`. |
 | `scripts/clean-jsonl.py` | supported | supported | Python. Used by /end-session. |
 | `scripts/hooks/pre-commit-secrets-guard.sh` | supported | supported | POSIX. See `#rule-no-raw-age-d` in root `CLAUDE.md`. Installed via `scripts/install-hooks.sh` dispatcher. |
 | `scripts/lint-subagent-rules.sh` | supported | supported | POSIX. Diffs canonical rule blocks in `.claude/agents/*.md` against reference sets. |
