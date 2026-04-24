@@ -53,7 +53,7 @@ die() { printf '[subagent-merge-back] ERROR: %s\n' "$*" >&2; exit 1; }
 # Requires: SUBAGENT_BRANCH, BRANCH_LOCAL, BRANCH_REMOTE are set.
 do_cleanup() {
     log "Pushing main to origin..."
-    git push origin main 2>&1 | while IFS= read -r line; do log "  push: $line"; done
+    git push origin main 2>&1 | while IFS= read -r line; do log "  push: $line"; done || warn "origin main push failed"
 
     if [ -n "$BRANCH_REMOTE" ]; then
         log "Deleting remote branch origin/$SUBAGENT_BRANCH..."
@@ -189,13 +189,20 @@ else
 fi
 
 # Attempt the merge; detect conflicts.
-# Note: set -e is active; git merge returns non-zero on conflict, so we use || true.
-git merge --no-ff "$MERGE_REF" --no-edit 2>&1 || true
+# Capture HEAD before merge to distinguish conflict from other non-zero exits.
+HEAD_BEFORE_MERGE="$(git rev-parse HEAD)"
+MERGE_EXIT=0
+git merge --no-ff "$MERGE_REF" --no-edit 2>&1 || MERGE_EXIT=$?
 
 # Check if we are in a conflicted state.
 CONFLICTED_FILES="$(git diff --name-only --diff-filter=U 2>/dev/null || true)"
 
 if [ -z "$CONFLICTED_FILES" ]; then
+    if [ "$MERGE_EXIT" -ne 0 ] && [ "$(git rev-parse HEAD)" = "$HEAD_BEFORE_MERGE" ]; then
+        # Merge exited non-zero but HEAD didn't advance and no conflict markers —
+        # this is a non-conflict merge error (e.g. lock file, detached HEAD, etc.).
+        die "Merge failed with a non-conflict error (exit $MERGE_EXIT). HEAD unchanged. Check git output above."
+    fi
     # Merge succeeded cleanly.
     NEW_MAIN="$(git rev-parse HEAD)"
     log "No-ff merge succeeded. main is now: $NEW_MAIN"
@@ -209,9 +216,8 @@ log "Merge conflict detected in: $CONFLICTED_FILES"
 HAS_PLAN_CONFLICT=""
 HAS_CODE_CONFLICT=""
 HAS_MEMORY_CONFLICT=""
-HAS_OTHER_CONFLICT=""
 
-for f in $CONFLICTED_FILES; do
+while IFS= read -r f; do
     case "$f" in
         plans/*)
             HAS_PLAN_CONFLICT="yes"
@@ -222,11 +228,10 @@ for f in $CONFLICTED_FILES; do
         agents/*/memory/*)
             HAS_MEMORY_CONFLICT="yes"
             ;;
-        *)
-            HAS_OTHER_CONFLICT="yes"
-            ;;
     esac
-done
+done <<EOF
+$(git diff --name-only --diff-filter=U)
+EOF
 
 # Abort the merge in all conflict cases — coordinator must resolve manually.
 git merge --abort 2>/dev/null || true
