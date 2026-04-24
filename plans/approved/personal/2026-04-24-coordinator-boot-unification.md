@@ -2,7 +2,7 @@
 date: 2026-04-24
 owner: azir
 concern: personal
-status: proposed
+status: approved
 complexity: normal
 topic: coordinator-boot-unification
 supersedes: []
@@ -389,3 +389,10 @@ OQ-1 is the only genuine fork. All other decisions were made in §4.
 - `scripts/windows/launch-evelynn.ps1`, `launch-evelynn.bat` — Windows.
 - Repo-root `CLAUDE.md` — rule 10 (POSIX-portable bash).
 - `architecture/compact-workflow.md` — related SessionStart behaviour.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (Azir), a coherent problem statement with root-cause analysis, six named invariants, eight testable acceptance criteria, and file-level design for seven concrete surfaces (A–G). The single open question (OQ-1) was resolved inline with the safer reversible default — keep the `.agent` field, gate hooks to ignore it. The plan itself flags §4.2.G's tool-call-counter as overengineered and defers the simplification to Kayn's breakdown, which is the right seam. Approved for promotion to `plans/approved/personal/`.
