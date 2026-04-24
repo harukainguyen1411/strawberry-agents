@@ -1,7 +1,7 @@
 # Compact Workflow — Lissandra + PreCompact Hook
 
 > Source of truth: `plans/in-progress/personal/2026-04-20-lissandra-precompact-consolidator.md`
-> Implementation plan status: promoted to `implemented/` via `plan-promote.sh`.
+> Implementation plan status: promoted to `implemented/` via the Orianna agent.
 >
 > Related: [coordinator-boot.md](coordinator-boot.md) — canonical coordinator launch sequence and SessionStart hook mechanics.
 
