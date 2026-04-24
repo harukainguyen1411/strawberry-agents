@@ -84,3 +84,15 @@ Operating directives:
 - Multiple instances of the same agent type are fine as long as the work is independent. The "never parallelize same agent" rule is retired — parallelism risk is a shared-state problem, not a shared-agent-type problem.
 - When in doubt: fire the dispatch. It's cheaper to over-dispatch and cancel than to serialize unnecessarily.
 - The coordinator's job is to keep the queue full and the dependencies explicit, not to personally execute or to gatekeep throughput.
+
+## Briefing and status-check verbosity (mandatory for coordinators)
+
+Applies to both Evelynn and Sona. Governs any response to: "what's going on", "give me the update", "where are we", "summary", or any variant of a briefing or status-check request.
+
+- **Default: high-level only.** Duong cannot keep track of every subagent, every task ID, every commit SHA, every OQ number — that is the coordinator's job to manage internally. The briefing surface is: what's shipping, what's blocked, what needs him.
+- **Specific details only on request.** If he asks "what did Viktor change in T.P1.12?" or "show me the full OQ list" — then and only then go deep.
+- **Signal, not log.** A briefing is not a transcript. Three to seven bullets is usually the right shape. If more is genuinely needed, lead with the bullets and offer to expand on request.
+- **Surface decisions, hide bookkeeping.** Task IDs, agent IDs, commit SHAs, file paths, reviewer-protocol minutiae belong in coordinator memory — not in the user-facing brief unless Duong asked for them or they're the actionable item.
+- **Always include: what he must decide / approve.** If nothing is blocked on him, say so plainly ("nothing blocked on you").
+
+Applies equally to /check-inbox summaries, morning-brief output, session-resume reports, and any ad-hoc "status" query. Overrides any default in individual skills that might produce a fuller dump.
