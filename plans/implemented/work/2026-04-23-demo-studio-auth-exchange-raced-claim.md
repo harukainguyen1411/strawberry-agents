@@ -2,7 +2,7 @@
 date: 2026-04-23
 created: 2026-04-23
 concern: work
-status: in-progress
+status: implemented
 author: karma
 owner: karma
 complexity: quick
@@ -108,3 +108,10 @@ Target branch: `fix/demo-studio-v3-auth-exchange-raced-claim` off `feat/demo-stu
 - **Agent:** Orianna
 - **Transition:** approved → in-progress
 - **Rationale:** Owner confirmed as Vi by the work-concern coordinator; Vi dispatch follows this push. Tasks remain actionable with clear files, estimates, and DoDs; the two xfail tests are correctly sequenced ahead of the implementation commit to satisfy Rule 12 for this `tests_required: true` plan. Fix scope is narrow and anchored to `tools/demo-studio-v3/main.py:1952-1976` <!-- orianna: ok -- cross-repo path in missmp/company-os --> with explicit out-of-scope fences. Ready for execution.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** in-progress → implemented
+- **Rationale:** PR #104 (`feat/demo-studio-v3-auth-raced-claim`) merged into `feat/demo-studio-v3` with the specified behavioral changes: `auth_exchange` in `tools/demo-studio-v3/main.py` now re-reads the session after `set_session_owner`, compares `winner_uid` against `caller_uid`, and raises `HTTPException(403, detail={"reason": "raced_claim"})` directly instead of redirecting — matching Task 3 and the Recommended fix. The distinct `auth_exchange_raced_claim` WARN log with `sid`/`caller_uid`/`winner_uid` satisfies Task 4 and the log-accuracy invariant. Tests in `tests/test_auth_exchange_raced_claim.py` (Tasks 1 and 2) are green post-implementation, and Akali Playwright QA ran during review. Implementation evidence is plausible and the work described is done.
