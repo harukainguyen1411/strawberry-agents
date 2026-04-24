@@ -73,20 +73,27 @@ fi
 # script below — single source of truth is the lib; update both together.
 # ---------------------------------------------------------------------------
 TMPFILE="$(mktemp)"
-PYFILE="$(mktemp /tmp/post-reviewer-strip-XXXXXX.py)"
+PYFILE="$(mktemp)"
 trap 'rm -f "$TMPFILE" "$PYFILE"' EXIT
 
+# Agent names sourced from the shared lib via $_ANONYMITY_AGENT_NAMES (single source of truth).
+# Export it so the Python script can read via os.environ.
+export _ANONYMITY_AGENT_NAMES
+
 cat > "$PYFILE" << 'PYEOF'
-import sys, re
+import sys, re, os
 
 fpath = sys.argv[1]
 outpath = sys.argv[2]
 
-# Agent names (single source of truth mirrors _lib_reviewer_anonymity.sh denylist)
-AGENT_NAMES = (
-    "Senna", "Lucian", "Evelynn", "Sona", "Viktor", "Jayce", "Azir", "Swain",
-    "Orianna", "Karma", "Talon", "Ekko", "Heimerdinger", "Syndra", "Akali", "Ahri", "Ori"
-)
+# Agent names from shared lib env var — single source of truth is _lib_reviewer_anonymity.sh.
+# The shell wrapper exports $_ANONYMITY_AGENT_NAMES before invoking this script.
+names_raw = os.environ.get("_ANONYMITY_AGENT_NAMES", "")
+AGENT_NAMES = tuple(n for n in names_raw.split() if n)
+
+if not AGENT_NAMES:
+    sys.exit(1)  # Fail if lib not sourced — don't strip blindly
+
 # Match trailing signature lines: "-- Senna" or "— Lucian" (em-dash or double-hyphen)
 names_re = "|".join(re.escape(n) for n in AGENT_NAMES)
 SIG_RE = re.compile(r'^(?:—|--)\s*(?:' + names_re + r')\s*$', re.UNICODE)
