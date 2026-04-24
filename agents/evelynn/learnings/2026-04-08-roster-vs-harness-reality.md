@@ -24,13 +24,19 @@ When I "spawned Ornn" or "spawned Fiora" or "spawned Caitlyn" during this sessio
 
 ## Why it matters
 
-The "no parallel clones" rule (don't run two katarinas in parallel) needs a tighter formulation given this reality:
+_Note: The harness-registration gap described here is fully resolved — the roster now has 20+ registered `.claude/agents/<name>.md` files. The "no parallel clones" / "only two executor slots" constraints below were Windows-mode-specific and no longer apply._
 
-- Don't run two of `katarina`
-- Don't run two of `general-purpose`
-- Don't give two `general-purpose` agents the same brief shape — even if I label them as different champions internally, they're the same shape from the harness's perspective
+_The broader "never parallelize same agent" rule was also retired 2026-04-21. The dispatch criterion is task independence, not agent identity. See `agents/evelynn/learnings/2026-04-21-coordinator-parallelism-mandatory.md` (mirrored under `agents/sona/learnings/`)._
 
-I have effectively **TWO Sonnet executor slots:** `katarina` + `general-purpose`. For Sonnet parallelism, those are the only two distinct subagents I can spawn concurrently. Anything beyond that is either serialization or role-played duplication.
+~~The "no parallel clones" rule (don't run two katarinas in parallel) needs a tighter formulation given this reality:~~
+
+~~- Don't run two of `katarina`~~
+~~- Don't run two of `general-purpose`~~
+~~- Don't give two `general-purpose` agents the same brief shape — even if I label them as different champions internally, they're the same shape from the harness's perspective~~
+
+~~I have effectively **TWO Sonnet executor slots:** `katarina` + `general-purpose`. For Sonnet parallelism, those are the only two distinct subagents I can spawn concurrently. Anything beyond that is either serialization or role-played duplication.~~
+
+(Retired — harness now has a full registered roster; same-agent-type parallelism is permitted when tasks are independent.)
 
 ## Why this wasn't documented
 
@@ -38,9 +44,11 @@ The roster.md was written FIRST during the original Strawberry design. Mac mode 
 
 ## How to apply
 
-1. **Before routing parallel work**, ask: *"Do I have two actual harness subagents whose domains match these tasks?"* If yes, spawn them. If no, **serialize** the work or accept that you'll be using `general-purpose` as a stand-in (which is fine — but only ONE general-purpose stand-in at a time, and tagged honestly in your reports).
-2. **When telling Duong what you're spawning**, name the actual `subagent_type` you're using, even if you're role-briefing it as a different champion. He should be able to verify against the available roster. Example: "spawning `general-purpose` (briefed as Ornn-style) for the new feature work" not just "spawning Ornn."
-3. **Treat the gap as a real problem to fix**: each champion in roster.md should have a corresponding `.claude/agents/<name>.md` for Windows mode parity. That's a Syndra plan to write systematically. It's open thread #3 in the next-session handoff.
+_Note: Items 1 and 3 below are retired — the roster gap is closed and the serialization rule no longer applies. Item 2 remains useful practice._
+
+1. ~~**Before routing parallel work**, ask: *"Do I have two actual harness subagents whose domains match these tasks?"* If yes, spawn them. If no, **serialize** the work or accept that you'll be using `general-purpose` as a stand-in (which is fine — but only ONE general-purpose stand-in at a time, and tagged honestly in your reports).~~ _Retired 2026-04-21: dispatch is gated on task independence, not registered-agent count._
+2. **When telling Duong what you're spawning**, name the actual `subagent_type` you're using. He should be able to verify against the available roster.
+3. ~~**Treat the gap as a real problem to fix**: each champion in roster.md should have a corresponding `.claude/agents/<name>.md` for Windows mode parity.~~ _Resolved — roster is fully registered._
 
 ## How it surfaced
 
