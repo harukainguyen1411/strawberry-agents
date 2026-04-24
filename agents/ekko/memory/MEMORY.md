@@ -149,6 +149,8 @@
 
 - 2026-04-23 (ekko): Archived Evelynn inbox msg 20260423-0932-651000.md to agents/evelynn/inbox/archive/2026-04/ (gitignored, filesystem-only). Added trust-but-verify rule to both agents/evelynn/CLAUDE.md and agents/sona/CLAUDE.md under Coordinator-Specific Critical Rules. Commit f50c173, pushed to main.
 
+- 2026-04-24 (ekko — Sona dispatch): T.P1.E1 + T.P1.E2 env var provisioning. E1 was already done (demo-factory had all 5 vars from prior deploy). E2: added FACTORY_BASE_URL + FACTORY_TOKEN (secret DS_FACTORY_TOKEN) to live demo-studio service via `gcloud run services update --update-env-vars/--update-secrets`. New revision: demo-studio-00028-2n2 (Ready, 13.9s). No source commit needed — deploy.sh was already correct. Cloud Run service name mapping: demo-studio-v3 (code/plan name) = `demo-studio` (Cloud Run service name).
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
