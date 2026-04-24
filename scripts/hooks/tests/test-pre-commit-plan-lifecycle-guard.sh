@@ -30,18 +30,6 @@ echo "=== pre-commit-plan-lifecycle-guard.sh tests ==="
 # The hook is called as a pre-commit hook, so we set GIT_DIR / GIT_WORK_TREE
 # to point at the temp repo's .git, then run the hook from the temp worktree.
 
-run_case() {
-  local label="$1"      # human label
-  local want_rc="$2"    # expected exit code (0 = permit, non-zero = block)
-  shift 2
-  # Remaining args: environment assignments passed as NAME=VALUE pairs,
-  # then the staged-path setup command (a shell snippet to run inside the temp repo).
-  # We receive them as: env_vars (array), staged_setup_fn (function name)
-  # — for simplicity, caller sets up the repo externally and just runs the hook.
-  # Actual caller protocol: run_hook_in_repo <tmpdir> <env...> -> exit code
-  :
-}
-
 # Helper: create a temp git repo, configure it, and return its path.
 mk_tmp_repo() {
   local tmpdir
@@ -81,22 +69,16 @@ stage_plan_inprogress_edit() {
   git -C "$repo" add plans/in-progress/personal/bar.md
 }
 
-# Helper: invoke git commit in the repo (calls the pre-commit hook).
-# Returns the git commit exit code.
-attempt_commit() {
-  local repo="$1"
-  shift
-  # env vars passed as NAME=VALUE args via env
-  env "$@" git -C "$repo" -c user.email=t@t.com -c user.name=T \
-    commit --no-verify=false -q -m "test commit" 2>/tmp/hook_stderr_$$ </dev/null
-}
-
 # We can't call `git commit` without --no-verify because the hook runs automatically.
 # Instead, run the hook directly against the repo's git index using GIT_DIR.
+# env -u clears any CLAUDE_AGENT_NAME / STRAWBERRY_AGENT / STRAWBERRY_AGENT_MODE that
+# may be present in the outer Claude Code shell, so each case starts from a known baseline.
+# Individual cases pass NAME=VALUE args after the repo arg to set what they need.
 invoke_hook_directly() {
   local repo="$1"
   shift  # remaining: env vars as NAME=VALUE
-  env GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" "$@" bash "$HOOK" 2>/tmp/hook_stderr_$$
+  env -u CLAUDE_AGENT_NAME -u STRAWBERRY_AGENT -u STRAWBERRY_AGENT_MODE \
+    GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" "$@" bash "$HOOK" 2>/tmp/hook_stderr_$$
 }
 
 # ---- Case 1: non-Orianna agent, plan rename proposed->approved → block ----
