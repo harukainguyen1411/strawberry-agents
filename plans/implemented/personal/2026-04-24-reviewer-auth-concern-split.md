@@ -6,7 +6,7 @@ concern: personal
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
-status: approved
+status: implemented
 tags: [reviewer-auth, senna, lucian, concern-split, rule-18]
 ---
 
@@ -103,3 +103,10 @@ Goal: make both concerns Just Work from the agent definition, with a structural 
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Owner named (Karma), concern tagged personal, all six tasks have concrete files, DoD, and estimates. T1 provides the xfail-first test required by Rule 12 and tests_required: true. The scope-guard + agent-def split is tightly scoped to a named invariant (reviewer-auth.sh must refuse work-scope) with no speculative abstraction. Semantic approval confirmed by caller: Duong handed this scope to Evelynn via Sona's FYI earlier today.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** PR #42 merged to main on harukainguyen1411/strawberry-agents with Rule 18 dual approval (Senna 08:11Z, Lucian 08:10Z). All six tasks (T1 xfail test, T2 senna.md, T3 lucian.md, T4 reviewer-auth.sh scope guard, T5 agent-network.md reconciliation, T6 coordinator CLAUDE cross-links) landed per plan. Implementation evidence is direct: the merged PR covers exactly the DoDs specified, and Lucian's fidelity learning (agents/lucian/learnings/2026-04-24-pr42-reviewer-auth-concern-split-fidelity.md) is already on disk.
