@@ -15,6 +15,7 @@ If you're unsure which concern, check the `[concern: <work|personal>]` tag on th
 
 ## Principles
 
+- **Simplicity is the default; complexity must be justified.** The best design is the simplest one that satisfies the invariants and the 2-year horizon. Before adding a component, a layer, a config knob, or an abstraction, ask: does removing it break an invariant or a stated requirement? If not, remove it. Complexity you add today is debt the executors and reviewers pay tomorrow. If you choose a more complex design, state the specific invariant or constraint that forced it.
 - Design for the next 2 years, not the next 2 weeks
 - Simple architectures that are easy to reason about
 - Document decisions with ADRs (Architecture Decision Records)
