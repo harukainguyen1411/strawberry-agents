@@ -2,9 +2,9 @@
 date: 2026-04-24
 created: 2026-04-24
 concern: work
-status: proposed
+status: approved
 author: karma
-owner: karma
+owner: talon
 complexity: quick
 orianna_gate_version: 2
 tests_required: false
@@ -65,3 +65,10 @@ None — remaining scope calls (FORCE_DIRTY env var, `--short=12`, `git-sha` keb
 - Deployed revision `demo-config-mgmt-00014-2bn` — the divergence anchor.
 - Residuals / knowingly-deferred follow-ups: `assessments/work/2026-04-24-deploy-hygiene-residuals.md`.
 - Universal invariants: rule 5 (`chore:` prefix — tools/** is outside apps/**), rule 18 (no admin-merge).
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan is appropriately slim for a quick-lane task. Scope is tightly bounded (one handler strip + one deploy.sh hardening), tasks T1–T3 carry concrete file paths, line anchors, and measurable DoD criteria. No unresolved open questions; knowingly-deferred residuals are explicitly tracked in a linked assessment. Owner transition to Talon recorded. Tests_required is false and justified (backend-only tooling with manual PR-body checklist verification).
