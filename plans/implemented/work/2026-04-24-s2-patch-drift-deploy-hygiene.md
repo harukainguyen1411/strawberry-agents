@@ -2,7 +2,7 @@
 date: 2026-04-24
 created: 2026-04-24
 concern: work
-status: in-progress
+status: implemented
 author: karma
 owner: talon
 complexity: quick
@@ -79,3 +79,10 @@ None — remaining scope calls (FORCE_DIRTY env var, `--short=12`, `git-sha` keb
 - **Agent:** Orianna
 - **Transition:** approved → in-progress
 - **Rationale:** Tasks T1–T3 remain concrete and actionable with clear file paths, line anchors, and measurable DoD. No blockers surfaced since the approved-gate APPROVE at 5a69916. Owner Talon is ready for dispatch on the quick lane. tests_required=false is justified (backend tooling with manual PR-body verification checklist); no test task is therefore required for the in-progress transition.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** in-progress → implemented
+- **Rationale:** Implementation evidence is concrete and plausible: PR #103 (`feat/s2-patch-drift-deploy-hygiene`) merged into `feat/demo-studio-v3`, delivering both in-scope tasks — T1 orphan `@app.patch` handler stripped from `tools/demo-config-mgmt/main.py`, and T2 `deploy.sh` hardened with the dirty-tree guard, `FORCE_DIRTY` escape hatch, and `--labels=git-sha=...` revision stamp per the Decision block. T3 (PR open + merge) is satisfied by the merge itself. Knowingly-deferred residuals (peer-tool sweep, negative-regression xfail, static-text smoke) are explicitly parked in `assessments/work/2026-04-24-deploy-hygiene-residuals.md` and out of this plan's scope. Promoting to implemented.
