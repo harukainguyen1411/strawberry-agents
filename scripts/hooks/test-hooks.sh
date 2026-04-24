@@ -335,5 +335,15 @@ else
 fi
 
 echo ""
+echo "=== sessionstart-coordinator-identity tests ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/test-sessionstart-coordinator-identity.sh" 2>/dev/null; then
+  echo "  PASS: test-sessionstart-coordinator-identity.sh (4 invariants)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-sessionstart-coordinator-identity.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "Results: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
