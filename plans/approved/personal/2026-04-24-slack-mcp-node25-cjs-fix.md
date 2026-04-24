@@ -2,7 +2,7 @@
 title: Slack MCP — Node 25 CJS interop fix for @slack/web-api
 slug: 2026-04-24-slack-mcp-node25-cjs-fix
 concern: personal
-status: proposed
+status: approved
 complexity: quick
 owner: karma
 planner: karma
@@ -69,3 +69,11 @@ Manual verification: T4 boots the server against real Slack API (or fails on mis
 - Failing symptom: `SyntaxError: The requested module '@slack/web-api' does not provide an export named 'retryPolicies'` at `src/server.ts:11` under Node 25.4.0 + tsx 4.19.
 - `@slack/web-api@7.15.1` `package.json` — pure CJS, no `exports` field. Node 25 ESM loader requires namespace-import shape for interop.
 - Rule 12 (xfail-first), Rule 5 (commit prefix scoping), Rule 18 (no admin merge bypass), Rule 3 (worktree via safe-checkout).
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (karma planner, talon implementer), concrete per-task DoD, explicit xfail-first test in T1 satisfying Rule 12, and cross-references to Rules 3/5/18. Namespace-import strategy is well-justified as minimal-blast-radius and preserves the existing 40-test `vi.mock` surface unchanged. No TBDs, no unresolved decisions. Implementation target (`Duongntd/strawberry`) explicitly noted to avoid concern confusion.
+
