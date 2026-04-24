@@ -2,6 +2,8 @@
 
 > Source of truth: `plans/in-progress/personal/2026-04-20-lissandra-precompact-consolidator.md`
 > Implementation plan status: promoted to `implemented/` via `plan-promote.sh`.
+>
+> Related: [coordinator-boot.md](coordinator-boot.md) — canonical coordinator launch sequence and SessionStart hook mechanics.
 
 ## Overview
 
