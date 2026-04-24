@@ -1,6 +1,6 @@
 ---
 title: Consolidate MCP servers — migrate from stale strawberry/ repo into strawberry-agents/mcps/
-status: proposed
+status: approved
 owner: karma
 concern: personal
 complexity: quick
@@ -80,3 +80,10 @@ Quick-lane is appropriate: single top-level concern (local MCP config), no schem
 - `.mcp.json` (lines 3-50) — current MCP config pointing at the stale tree.
 - `plans/implemented/personal/2026-04-24-custom-slack-mcp.md` — the separate Slack source-fix plan this one assumes is handled independently.
 - `CLAUDE.md` auto-mode rule 5 — irreversible deletion requires explicit confirmation.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Owner (karma) declared; five tasks each have concrete files, detail, and DoD. Reconnaissance diff results are recorded in Context, so T1 is a verify-then-record rather than open-ended investigation. T5 (irreversible deletion of `/Users/duongntd99/Documents/Personal/strawberry/`) is explicitly gated on Duong confirmation and offers an archival-rename fallback, satisfying auto-mode rule 5. No unresolved TBD/TODO in gating sections; quick-lane scope is appropriate for local MCP config changes.
