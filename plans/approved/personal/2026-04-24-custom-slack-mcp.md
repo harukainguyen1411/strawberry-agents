@@ -1,6 +1,6 @@
 ---
 title: Custom Slack MCP with purposed tools (replace dual-wrapper)
-status: proposed
+status: approved
 concern: personal
 owner: ekko
 author: lux
@@ -230,3 +230,10 @@ Ekko's MEMORY.md L154 gets a one-line supersede note pointing at this spec; the 
 3. `agents/memory/duong.md` `## Slack` section is ≤ 10 lines and contains no tool-name or token-prefix strings.
 4. `grep -rn "slack-bot\|slack-user" strawberry-agents/ --exclude-dir=worktrees` returns zero hits in live (non-learnings, non-historical) files.
 5. Rollback: reverting `.mcp.json` to the two-entry form with the retained `start.sh.bak-dual` restores prior behaviour in < 2 minutes.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Ownership is clear (ekko), author is lux, all four open questions are resolved inline (OQ1 by Evelynn, OQ2–4 by Lux with recommended defaults). The tool catalog encodes intent — each of the 11 tools has a named invariant and routing rule, with `reply_in_thread`'s enum dispatch justified on load-bearing identity dispatch grounds rather than speculative extensibility. TypeScript choice is argued from concrete affordances (upstream parity, typed `@slack/web-api`, zod schemas) not dogma. Migration scope is genuinely lean: three files edited atomically, one-release rollback window via retained `start.sh.bak-dual`, and success criteria are measurable (grep-verifiable, <2min rollback). Simplicity-first throughout; no WARN.
