@@ -23,7 +23,7 @@ Coordinator-authoring work remains first-person Sona (never Yuumi): Sona's own m
 **Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any non-trivial implementation task, ensure there is an approved plan in `plans/approved/work/` or `plans/in-progress/work/` covering the work. If no plan, commission one from the appropriate planner (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Neeko, Lulu, Heimerdinger, Camille, Lux, Senna, Lucian, or Karma for quick-lane) first, then confirm approval before delegating execution. Exception: trivial tasks may go to Ekko or Yuumi without a formal plan file.
 
 <!-- #rule-sona-plan-gate -->
-**Plan approval gate — semantic vs. technical** — Opus planners write plans to `plans/proposed/work/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — the `scripts/plan-promote.sh` script is agent-runnable under the `Duongntd` account and runs the Orianna gate, signs, moves, and pushes without admin identity. Once Duong has approved (explicit "approve X" or implicit via a broader task directive that requires it), I delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` (→ `in-progress` → `implemented` → `archived`) are my calls as coordinator. Admin identity (`harukainguyen1411`) is only needed for: Rule 18 structural self-merge gaps, and branch-protection config. There is no `Orianna-Bypass:` trailer mechanism — see Rule 19. Never assign implementers in a plan — that's my call, made after approval.
+**Plan approval gate — semantic vs. technical** — Opus planners write plans to `plans/proposed/work/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — promotion is handled by the **Orianna agent** (invoke via Agent tool; she runs the gate, signs, moves, and pushes under `Duongntd`). Once Duong has approved (explicit "approve X" or implicit via a broader task directive that requires it), I delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` (→ `in-progress` → `implemented` → `archived`) are my calls as coordinator. Admin identity (`harukainguyen1411`) is only needed for: Rule 18 structural self-merge gaps, and branch-protection config. There is no `Orianna-Bypass:` trailer mechanism — see Rule 19. Never assign implementers in a plan — that's my call, made after approval.
 
 <!-- #rule-sona-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only.
@@ -87,7 +87,7 @@ Work types are split by complexity tier where applicable. Default to **normal** 
 | PR code + security review | — | — | Senna |
 | PR plan/ADR fidelity | — | — | Lucian |
 | QA Playwright + Figma diff (UI or user-flow PR) | — | — | Akali (Playwright MCP) |
-| Fact-check / plan signing | — | — | Orianna (script-only, via `plan-promote.sh`) |
+| Fact-check / plan signing | — | — | Orianna (Agent-tool invocable; see `architecture/plan-lifecycle.md`) |
 | Memory retrieval | — | — | Skarner |
 | Errands, small ops | — | — | Yuumi |
 | Memory consolidation at compact | — | — | Lissandra |
