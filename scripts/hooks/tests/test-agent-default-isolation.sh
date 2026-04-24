@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Tests for scripts/hooks/agent-default-isolation.sh (PreToolUse Agent hook).
-# Plan: plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md
-# Covers INV-1: auto-isolation fires for whitelisted subagent types (default_isolation: worktree frontmatter present),
-# and is a no-op for non-whitelisted subagents.
+# Original plan: plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md
+# Updated for opt-out regime: plans/approved/personal/2026-04-24-universal-worktree-isolation.md
+#
+# Covers:
+#   INV-1a: aphelios/kayn/xayah/caitlyn still get isolation (now by default, not by frontmatter opt-in).
+#   INV-1b: yuumi NOW also gets isolation (universal opt-out regime — not opt-in).
+#           Previously this tested "yuumi does NOT mutate" (opt-in era); updated for opt-out.
+#   INV-1c: explicit isolation is preserved (no overwrite).
 set -eu
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-HOOK="$REPO_ROOT/scripts/hooks/agent-default-isolation.sh"
+# Allow HOOK env var override for development testing.
+HOOK="${HOOK:-$REPO_ROOT/scripts/hooks/agent-default-isolation.sh}"
 
 PASS=0
 FAIL=0
@@ -33,7 +39,7 @@ run_hook() {
   echo "$input" | bash "$HOOK" 2>/dev/null || true
 }
 
-# INV-1a: whitelisted subagents get isolation injected.
+# INV-1a: frontmatter-opted-in subagents still get isolation injected (now by default regime).
 for agent in aphelios kayn xayah caitlyn; do
   out="$(run_hook "$agent" "")"
   if echo "$out" | grep -q '"isolation"[[:space:]]*:[[:space:]]*"worktree"'; then
@@ -43,12 +49,14 @@ for agent in aphelios kayn xayah caitlyn; do
   fi
 done
 
-# INV-1b: non-whitelisted subagent (yuumi) does not mutate.
+# INV-1b (updated for opt-out): yuumi NOW gets isolation (universal default applies).
+# Under opt-in regime yuumi had no frontmatter and was skipped. Under opt-out she
+# is not in the allowlist so injection applies. See ADR 2026-04-24.
 out="$(run_hook yuumi "")"
-if echo "$out" | grep -q '"isolation"'; then
-  fail "yuumi — unexpected isolation mutation; got: $out"
+if echo "$out" | grep -q '"isolation"[[:space:]]*:[[:space:]]*"worktree"'; then
+  pass "yuumi — isolation=worktree injected (universal opt-out; not in allowlist)"
 else
-  pass "yuumi — no mutation (non-whitelisted, no frontmatter field)"
+  fail "yuumi — expected isolation=worktree injection under opt-out regime; got: $out"
 fi
 
 # INV-1c: explicit isolation already set is preserved (no overwrite).
