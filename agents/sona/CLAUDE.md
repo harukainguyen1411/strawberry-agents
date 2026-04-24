@@ -196,4 +196,4 @@ Per the Identity Model section above, Senna/Lucian on work PRs post verdicts as 
 
 **Failure modes.** If `gh` under `duongntd99` hits a 403/404, verify the agent ran `gh auth switch` (the active account on startup is not guaranteed). If `gh pr comment` fails twice after retry, re-dispatch the reviewer read-only, write verdict to `/tmp/<reviewer>-pr-N-verdict.md`, and Yuumi posts it. Never fall back to `--admin` merge or self-approval.
 
-**Note on Evelynn-side Senna/Lucian flow:** The parent agent definitions for Senna / Lucian live under `.claude/agents/` and are shared across concerns. Evelynn owns the agent-def edit to make the concern-scoped behavior explicit — this CLAUDE.md section is the Sona-side protocol; the agent-def change is tracked separately on Evelynn's side (inbox FYI sent 2026-04-24).
+**Note on Evelynn-side Senna/Lucian flow:** The parent agent definitions for Senna / Lucian live under `.claude/agents/` and are shared across concerns. Both agent defs now include the concern-split protocol (personal vs work paths). See `plans/implemented/personal/2026-04-24-reviewer-auth-concern-split.md` for the full implementation record.

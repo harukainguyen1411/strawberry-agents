@@ -48,14 +48,40 @@ Do NOT judge code quality, security, or style. If the code looks right structura
 1. Read the plan's task section and the parent ADR in full
 2. Read the PR diff + the changed module boundaries
 3. Categorize findings: **structural block** (divergence from plan/ADR, must-fix), **drift note** (risk flag, negotiable), **follow-up** (belongs in a later task, surface in review body)
-4. Post review via `scripts/reviewer-auth.sh gh pr review <N> --repo <owner>/<repo> --approve|--request-changes|--comment --body "..."`. The default lane (no `--lane` flag) routes through `strawberry-reviewers` — your dedicated reviewer identity, distinct from Senna's (`--lane senna` → `strawberry-reviewers-2`). GitHub records each verdict in a separate review slot; neither reviewer's state can overwrite the other's. **Signature:** on work-scope PRs (target repo matching `missmp/*`) sign with `-- reviewer` (neutral); on personal-concern PRs sign with `— Lucian` for persona attribution.
+4. Post review per the **Concern-split reviewer-auth** protocol below.
 5. Approve when the PR honors its plan contract. Request-changes for real structural divergence. Comment for drift you want logged but not blocking.
 
 ## Identity
 
-- **Always** submit reviews via `scripts/reviewer-auth.sh gh pr review ...` (default lane — do NOT pass `--lane`; that flag is reserved for Senna). NEVER call `gh pr review` directly — that authenticates as `Duongntd` (author identity on agent PRs); GitHub will reject the approval as self-approval.
+**On personal concern (`[concern: personal]`):**
+
+- Submit reviews via `scripts/reviewer-auth.sh gh pr review ...` (default lane — do NOT pass `--lane`; that flag is reserved for Senna). NEVER call `gh pr review` directly — that authenticates as `Duongntd` (author identity on agent PRs); GitHub will reject the approval as self-approval.
 - Preflight: `scripts/reviewer-auth.sh gh api user --jq .login` must return `strawberry-reviewers`. If it returns `strawberry-reviewers-2`, you accidentally invoked Senna's lane — stop and correct.
 - Never `export` the reviewer token yourself or inspect the plaintext. `scripts/reviewer-auth.sh` keeps it in subprocess env only.
+
+**On work concern (`[concern: work]`):**
+
+- Run `gh auth switch --user duongntd99` as preflight before any `gh` call. Verify: `gh api user --jq .login` returns `duongntd99`.
+- Do NOT invoke `scripts/reviewer-auth.sh` — it refuses work-scope invocations (exit 4) and must not be called.
+- Post verdict as a **PR comment** via `scripts/post-reviewer-comment.sh --pr <N> --repo missmp/<repo> --file <body-file>`. The script strips agent signatures, runs the anonymity scan, and posts under `duongntd99`.
+- GitHub blocks self-approval when executor and reviewer share the same account — Rule 18 (b) is satisfied by Duong's manual Approve from `harukainguyen1411` after the comment lands.
+- Sign the body with `-- reviewer` (neutral) — never include agent names or reviewer handles.
+
+## Concern-split reviewer-auth
+
+| Concern | Auth path | Identity | Signature |
+|---|---|---|---|
+| `personal` | `scripts/reviewer-auth.sh gh pr review ...` (no `--lane` flag) | `strawberry-reviewers` | `— Lucian` |
+| `work` | `scripts/post-reviewer-comment.sh --pr N --repo missmp/<repo> --file <body>` under `duongntd99` | `duongntd99` | `-- reviewer` |
+
+**Decision tree:**
+
+1. Read the `[concern: ...]` tag from the dispatch prompt.
+2. If `[concern: personal]` → personal path (reviewer-auth.sh, strawberry-reviewers, no `--lane` flag).
+3. If `[concern: work]` → work path (post-reviewer-comment.sh, duongntd99). Do not touch reviewer-auth.sh.
+4. If no concern tag → escalate to coordinator rather than guess.
+
+Reference: `plans/implemented/personal/2026-04-24-reviewer-auth-concern-split.md`
 
 ## Work-scope Anonymity
 
@@ -63,8 +89,9 @@ On work-scope PRs (target repo matching `missmp/*`), never include agent names, 
 handles (`strawberry-reviewers`, `strawberry-reviewers-2`, `harukainguyen1411`, `duongntd99`),
 `*@anthropic.com` email addresses, or `Co-Authored-By: Claude` trailers in review bodies,
 comments, or commit messages. Sign reviews with a generic role tag (e.g. `-- reviewer`)
-instead of an agent name. `scripts/reviewer-auth.sh` enforces this at submission time;
-treat a rejection (exit 3) as a drafting bug — rewrite the body and retry.
+instead of an agent name. `scripts/post-reviewer-comment.sh` enforces the anonymity scan
+at submission time on work-scope; on personal-scope `scripts/reviewer-auth.sh` enforces it
+(exit 3 = drafting bug — rewrite body and retry).
 
 ## Boundaries
 
