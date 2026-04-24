@@ -645,6 +645,294 @@ work-concern throughout.
 Reasoning for Aphelios over Kayn: concern is `work`, all implementation
 PRs land on the work-side repos, Aphelios has the conventions.
 
+## Tasks
+
+_Added 2026-04-24 by Aphelios (D1A inline breakdown). Owner: Sona (work-concern
+coordinator). Executor-tier convention: **normal-track** = Jayce (TS) / Vi
+(Go); **complex-track** = Viktor (deep-reasoning impl) / Rakan (devops)._
+
+### Decisions embedded at breakdown time
+
+- **OQ-1 (Config.SuperAdmin delivery)** — **Routed to Heimerdinger.** Blocks
+  PR 4 only. Tracked as T15; see dependency chain. Does not block PRs 1–3.
+- **OQ-2 (`STRAWBERRY_AGENT=sona` belt-and-braces gate)** — **Accepted as
+  default ON for v1.** Cheap defense-in-depth for a founder-only tool. Wired
+  in T9 alongside the Duong-allowlist check.
+- **OQ-3 (`reason` field structured vs free-text)** — **Free-text for v1**,
+  with a suggested-format doc comment in the tool schema
+  (`"<category>: <detail>"`, e.g. `"customer-support: debug issuer X"`).
+  Ship simple; revisit if audit-grep friction emerges.
+- **OQ-4/5/6 (email-vs-userid, postgres-MCP, Metabase-MCP)** — **Deferred.**
+  Option B scaffolding (T13) is dormant-by-design per Duong's approval-time
+  amendment, so the three Option-B-adjacent questions stay unresolved until
+  B is revived.
+
+### Scope reinforcement — Option B dormancy (binding)
+
+Per Duong's approval amendment: **Option B is configured but not filled in
+— no env, no secrets, structural + documentation only.** T13 is a stub-and-
+doc task. **No task under this breakdown may** (a) add env vars, (b) add
+secret placeholders, (c) wire a postgres/Metabase connection, or (d)
+exercise an Option-B code path at runtime. Violations are a breakdown
+failure; escalate to Sona.
+
+### Executor tiers
+
+- **Vi** (normal, Go) — T2, T4, T5, T8
+- **Viktor** (complex, Go deep-reasoning) — T3
+- **Jayce** (normal, TS/MCP) — T7, T9, T10, T12, T13
+- **Seraphine** (normal, tests/docs) — T1, T6, T11, T14
+- **Heimerdinger** (devops, human-gated) — T15, T16
+- **Aphelios** (breakdown, cleanup only) — T17
+
+### PR grouping
+
+- **PR-1 (wallet-studio repo, Go backend)** — T1–T6. Ships the
+  `SuperAdminInviteUserToOrg` handler + route.
+- **PR-2 (mcps/wallet-studio repo, TS)** — T7–T12. Ships the
+  `walletstudio_superadmin_invite_user_to_org` tool + audit-memory schema
+  in the Strawberry repo (same PR for the MCP code; the memory schema is
+  a separate direct-to-main commit on strawberry-agents since plans/docs
+  do not go through PR — see T11).
+- **PR-3 (mcps/wallet-studio repo, TS, optional parallel to PR-2)** —
+  T13. Option B dormant scaffold + doc.
+- **Ops-4 (one-time human config edit, no PR)** — T15–T16. Heimerdinger
+  lands Duong in `Config.SuperAdmin` on stg then prod.
+- **Direct-to-main (strawberry-agents)** — T11 (audit-memory schema),
+  T14 (runbook).
+
+### Tasks — PR-1: tse backend endpoint
+
+- [ ] **T1** — Draft handler contract + audit-log structured field list in
+  an ADR-stub comment at the top of the new handler file. estimate_minutes:
+  20. Files:
+  `~/Documents/Work/mmp/workspace/wallet-studio/core/tse/api/v3/superadmin_invites.go`.
+  DoD: file exists with package decl + a top-of-file block comment naming
+  request body schema (§4.2), response schema, and the audit log field set
+  from §A.1; no handler body yet. Owner: Seraphine. depends-on: none.
+  blocks: T2, T3.
+
+- [ ] **T2** — xfail unit test for `SuperAdminInviteUserToOrg` happy path
+  (new user, invite to org as OrgOwner). estimate_minutes: 40. Files:
+  `core/tse/api/v3/superadmin_invites_test.go`. DoD: test compiles, runs
+  via `go test ./core/tse/api/v3/... -run TestSuperAdminInviteUserToOrg_NewUserOrgOwner`,
+  and fails with a clear "not implemented" error. Test references this plan
+  (`// plan: 2026-04-24-self-invite-to-walletstudio-org`) per Rule 12.
+  Owner: Vi. depends-on: T1. blocks: T3.
+
+- [ ] **T3** — Implement `SuperAdminInviteUserToOrg` handler — the four
+  semantic branches from §A.1 (create-user-and-invite, add-to-org,
+  update-role, already-member), response shape from §4.2, structured audit
+  log line. estimate_minutes: 60. Files: `core/tse/api/v3/superadmin_invites.go`.
+  DoD: T2 passes; all four branches covered by separate sub-tests added in
+  T5; handler calls the same user-creation + invite-email code path as
+  `a.InviteUsers` (reuse, do not fork); audit log line emitted via the
+  existing admin-action log sink (whichever sink `TransferProjectToNewOrgHandler`
+  uses today — reuse for consistency). Owner: Viktor (complex-track due to
+  branching logic + reuse of invite code path). depends-on: T2. blocks: T4, T5.
+
+- [ ] **T4** — Wire the route: add
+  `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` under
+  the existing `admin` group. estimate_minutes: 20. Files:
+  `core/tse/api/v3/api.go`. DoD: route compiles, shows up under
+  `/v3/superadmin/invite-user-to-org`, gated by existing
+  `CheckPermissionSuperAdmin()` middleware. Owner: Vi. depends-on: T3.
+  blocks: T6.
+
+- [ ] **T5** — Expand T2 into full branch coverage: add unit tests for
+  (a) existing user, not a member → added, (b) existing user, member with
+  different role → role updated with `previousRole` populated, (c) existing
+  user, member with same role → `already_member` no-op, (d) unknown org →
+  400, (e) malformed body → 400, (f) caller not SuperAdmin → 403 via
+  middleware. estimate_minutes: 60. Files:
+  `core/tse/api/v3/superadmin_invites_test.go`. DoD: all six branch tests
+  pass; coverage ≥ 90% for `superadmin_invites.go`; no test uses
+  `--no-verify`. Owner: Vi. depends-on: T3. blocks: T6.
+
+- [ ] **T6** — Open PR-1 against `wallet-studio` main; PR body includes link
+  to this plan, the four semantic branches table, and `QA-Waiver: backend
+  endpoint, no UI or user-flow surface`. estimate_minutes: 20. Files: PR
+  metadata only. DoD: PR green on required checks (unit, tdd-gate); one
+  approving review from a non-author identity (Rule 18); ready to merge.
+  Owner: Seraphine. depends-on: T4, T5. blocks: T15.
+
+### Tasks — PR-2: mcps/wallet-studio tool + strawberry audit schema
+
+- [ ] **T7** — Add API wrapper
+  `superAdminInviteUserToOrg({orgId, email, role, reason})` in the static
+  operations file; includes request construction, `X-API-Key` / `X-Client-Reason`
+  / `X-Client-Agent: "sona-self-invite"` headers, response typing.
+  estimate_minutes: 40. Files:
+  `~/Documents/Work/mmp/workspace/mcps/wallet-studio/src/walletstudio-api.ts`.
+  DoD: function exported, typed against the response shape from §4.2,
+  passes `tsc --noEmit`; no runtime call yet. Owner: Jayce. depends-on:
+  T6 (contract must be stable before TS client is built — or uses mock
+  response shape if PR-1 is still in review). blocks: T9, T10.
+
+- [ ] **T8** — (Placeholder — no task. Slot reserved to keep numbering
+  aligned with the ADR's conceptual sections. Skip in execution.)
+  estimate_minutes: 0.
+
+- [ ] **T9** — Add tool contract + schema for
+  `walletstudio_superadmin_invite_user_to_org` (args `{orgId, email, role,
+  reason}`, `role` enum excludes `SuperAdmin` per §4.3). Includes description
+  string explicitly naming SuperAdmin as the required caller role and noting
+  Duong-founder-only allowlist. estimate_minutes: 40. Files:
+  `mcps/wallet-studio/src/tool-contracts.ts`. DoD: contract compiles; zod/JSON
+  schema rejects `role="SuperAdmin"`; `reason` marked required with a doc
+  comment suggesting `"<category>: <detail>"` format (OQ-3 decision). Owner:
+  Jayce. depends-on: T7. blocks: T10, T11.
+
+- [ ] **T10** — Implement preInterceptor gate in `server.ts`:
+  (a) call `GET /v3/me` with configured API key → `configured_email`,
+  (b) check `configured_email ∈ DuongAllowlist` (env
+  `WALLET_STUDIO_MCP_SELF_INVITE_ALLOWLIST`, fail-closed if unset),
+  (c) check target `email` arg ∈ same allowlist (prevents inviting
+  non-Duong identities),
+  (d) **OQ-2 gate:** check `process.env.STRAWBERRY_AGENT === "sona"`;
+  reject otherwise with "self-invite tool is gated to the Sona agent",
+  (e) forward upstream on success. estimate_minutes: 60. Files:
+  `mcps/wallet-studio/src/server.ts`. DoD: xfail-first test in T12 covers
+  all four reject paths + happy path; `tsc --noEmit` clean; no allowlist
+  values hardcoded. Owner: Jayce. depends-on: T9. blocks: T12.
+
+- [ ] **T11** — Create audit-memory schema directory + README template in
+  strawberry-agents. **Direct-to-main commit** (Rule 4 — this is a plan/memory
+  artifact, not code). estimate_minutes: 30. Files:
+  `agents/sona/memory/self-invite-audit/README.md`,
+  `agents/sona/memory/self-invite-audit/.gitkeep`. DoD: README documents the
+  YAML frontmatter schema from §5.3 verbatim, plus a one-line example entry
+  filename (`2026-04-24-143022-ORG-ABC.md`); commit message `chore: seed
+  sona self-invite audit memory schema` per Rule 5 (non-apps path). Owner:
+  Seraphine. depends-on: none (can run parallel to PR-1/PR-2). blocks: T12.
+
+- [ ] **T12** — Wire MCP tool to write an audit-memory entry after a
+  successful upstream call: Node-side helper that `fs.writeFile`s to
+  `agents/sona/memory/self-invite-audit/<ts>-<orgId>.md` with the §5.3 YAML
+  frontmatter populated from the upstream response (`upstream_action`,
+  `upstream_request_id`) + the call args. xfail-first test exists. Plus:
+  xfail tests for T10's four reject paths. estimate_minutes: 60. Files:
+  `mcps/wallet-studio/src/audit-memory.ts` (new),
+  `mcps/wallet-studio/src/server.test.ts` (or analogue). DoD: unit tests
+  for T10 reject paths + T12 audit-write pass; tool end-to-end happy path
+  writes a file at the expected path; `tsc --noEmit` clean. Owner: Jayce.
+  depends-on: T10, T11. blocks: T14.
+
+### Tasks — PR-3 (optional, parallel): Option B dormant scaffold
+
+- [ ] **T13** — Option B dormant scaffold. Per Duong's approval amendment:
+  **structural + documentation only.** Create an empty module
+  `mcps/wallet-studio/src/option-b-fallback.ts` with (i) a top-of-file
+  JSDoc block citing §3.2 of this ADR, (ii) unimplemented function
+  signatures for `harvestOrgOwnerApiKeyViaPostgres(orgId)` and
+  `harvestOrgOwnerApiKeyViaMetabase(orgId)` that `throw new Error("Option
+  B is dormant-by-design; see plan 2026-04-24-self-invite-to-walletstudio-org.md
+  §3.2. Do not wire without a fresh Azir ADR.")`, (iii) a `README-OPTION-B.md`
+  sibling in the same directory explaining the when/why/how-to-revive.
+  **Forbidden in this task:** adding env vars, adding secret placeholders,
+  wiring any data source, importing a postgres client, importing a Metabase
+  client. estimate_minutes: 45. Files:
+  `mcps/wallet-studio/src/option-b-fallback.ts`,
+  `mcps/wallet-studio/src/README-OPTION-B.md`. DoD: both files exist; `tsc
+  --noEmit` clean (signatures compile); functions throw on call; no env
+  vars added to `.env.example` or equivalent; grep for `process.env` in
+  the new file returns zero matches. Owner: Jayce. depends-on: none (can
+  ship before or after PR-2). blocks: none.
+
+### Tasks — Direct-to-main: runbook
+
+- [ ] **T14** — Write a short runbook at
+  `architecture/runbooks/sona-self-invite.md` covering:
+  (1) how to call the tool from a Sona session,
+  (2) where audit entries land (both WalletStudio audit log table and the
+  Strawberry memory dir from T11),
+  (3) how to revoke Duong's SuperAdmin (remove from `Config.SuperAdmin`,
+  redeploy tse),
+  (4) how to revive Option B if ever needed (pointer to T13's README).
+  estimate_minutes: 40. Files:
+  `architecture/runbooks/sona-self-invite.md`. DoD: runbook committed
+  direct-to-main (Rule 4, `chore:` prefix); cross-linked from this plan
+  via an "Implementation artifacts" section appended in a follow-up
+  (not required for T14 itself). Owner: Seraphine. depends-on: T12.
+  blocks: none.
+
+### Tasks — Ops-4: one-time config edit (human-gated)
+
+- [ ] **T15** — **Heimerdinger task, blocked on OQ-1 resolution.** Determine
+  where tse loads `Config.SuperAdmin` from on stg and prod (k8s ConfigMap /
+  GCP Secret Manager / committed YAML) and document the answer in
+  `architecture/runbooks/sona-self-invite.md` §5 (appended to T14 or as a
+  follow-up edit). Then add Duong's founder email to the stg `Config.SuperAdmin`
+  list and redeploy/reload tse on stg. estimate_minutes: 45 (assuming OQ-1
+  is ConfigMap or Secret Manager; longer if it turns out to be a
+  committed-YAML redeploy). Files: tse stg config source (path TBD by
+  Heimerdinger). DoD: Duong's email appears in the stg SuperAdmin list;
+  a curl to `GET /v3/me` with his API key against stg returns his user
+  row; a curl to `POST /v3/superadmin/invite-user-to-org` against stg
+  (after PR-1 deploys) returns 200. Owner: Heimerdinger. depends-on:
+  T6 (PR-1 merged + deployed to stg). blocks: T16.
+
+- [ ] **T16** — **Heimerdinger task, prod rollout.** Mirror T15 on prod
+  only after (a) T15 passes on stg, (b) T12 merged, (c) one end-to-end
+  self-invite executed successfully on stg by Sona. estimate_minutes: 30.
+  Files: tse prod config source. DoD: same as T15 but for prod; prod
+  post-deploy smoke (Rule 17) green; rollback path tested. Owner:
+  Heimerdinger. depends-on: T15, T12. blocks: none.
+
+### Tasks — cleanup
+
+- [ ] **T17** — After T16 lands, request Orianna to promote this plan
+  `approved → in-progress` (on first PR merge) and then `in-progress →
+  implemented` (after T16 green). estimate_minutes: 10. Files: this plan's
+  location only. DoD: plan moved under `plans/implemented/work/`;
+  `Promoted-By: Orianna` trailer present. Owner: Aphelios (request-only;
+  Orianna executes the move). depends-on: T16. blocks: none.
+
+### Dependency graph (critical path)
+
+```
+T1 (20) → T2 (40) → T3 (60) → T4 (20) → T6 (20) → T15 (45) → T16 (30) → T17 (10)
+                           ↘ T5 (60) ↗
+```
+
+Parallel branches:
+- PR-2 chain: T7 (40) → T9 (40) → T10 (60) → T12 (60) → T14 (40)
+- PR-2 schema: T11 (30) joins at T12
+- PR-3: T13 (45) — fully parallel to everything else
+- T8 is a reserved no-op (0 min)
+
+**Critical path** = T1 → T2 → T3 → T5 (longest branch, 60 vs T4's 20) → T6
+→ T15 → T16 → T17 = **20 + 40 + 60 + 60 + 20 + 45 + 30 + 10 = 285 minutes**
+of serial work (≈ 4h 45min), not counting Heimerdinger's human-gated
+scheduling latency on T15/T16.
+
+Secondary path (PR-2 chain, gated on T6 for contract stability):
+T6 → T7 → T9 → T10 → T12 → T14 = 20 + 40 + 40 + 60 + 60 + 40 = **260 min**
+from T6 forward, running in parallel with T15.
+
+### Recommended first dispatch
+
+**T1** (Seraphine, 20 min) — draft the handler contract comment. This
+unblocks both T2 (xfail test, Vi) and T3 (impl, Viktor) and is the only
+task with no dependencies that lives on the critical path. Dispatching T1
+first also establishes the audit-log field shape which T12's audit-memory
+writer needs to align with downstream.
+
+Parallel-first dispatches (same batch as T1): **T11** (Seraphine, schema
+dir — direct-to-main, zero code risk) and **T13** (Jayce, Option B dormant
+scaffold — zero coupling to PR-1 or PR-2). Both can start immediately.
+
+### Open questions — status
+
+- **OQ-1** (Config.SuperAdmin source) — routed to Heimerdinger via T15;
+  not a blocker for PRs 1–3.
+- **OQ-2** (STRAWBERRY_AGENT=sona gate) — resolved: **yes, wired in T10**.
+- **OQ-3** (reason field shape) — resolved: **free-text with format-hint
+  comment, wired in T9**.
+- **OQ-4** (email-vs-userid for allowlist) — deferred; not v1.
+- **OQ-5** (postgres MCP to tse DB) — deferred; Option B dormant.
+- **OQ-6** (Metabase MCP availability) — deferred; Option B dormant.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
