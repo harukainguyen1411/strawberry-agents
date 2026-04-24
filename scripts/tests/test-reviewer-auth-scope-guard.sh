@@ -24,15 +24,6 @@ _fail() { echo "FAIL: $1"; FAIL=$((FAIL + 1)); }
 echo "=== reviewer-auth scope-guard tests ==="
 
 # -----------------------------------------------------------------------
-# XFAIL marker — guard not yet implemented; test exits 1 signalling xfail
-# Remove/replace this block after T4 implements the guard (flip to green).
-# -----------------------------------------------------------------------
-if true; then
-  printf 'XFAIL: work-scope refusal guard not yet in reviewer-auth.sh — T4 not implemented (plan 2026-04-24-reviewer-auth-concern-split.md T4)\n'
-  exit 1
-fi
-
-# -----------------------------------------------------------------------
 # Case (a): work-scope MOCK → must exit non-zero + cite post-reviewer-comment.sh
 # -----------------------------------------------------------------------
 work_output="$(
