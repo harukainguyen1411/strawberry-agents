@@ -1,6 +1,6 @@
 ---
 title: S2 demo-config-mgmt — add --min-instances=1 to prevent scale-to-zero session wipe
-status: approved
+status: in-progress
 concern: work
 complexity: quick
 owner: karma
@@ -47,3 +47,10 @@ Risk: increases idle cost marginally (1 always-warm instance × Cloud Run pricin
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Clear owner (karma), P0 ship-blocker grounded in Ekko's S2 in-memory contract finding, concrete one-line `--min-instances=1` addition with bash-syntax and annotation-verification DoDs across stg+prod. Follow-up durable-persistence plan is explicitly decoupled and referenced. Merge-order note with Wave C confirms no file conflict. `tests_required: false` is appropriate for a deploy-script flag tweak validated by `gcloud run services describe`.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Plan body unchanged since approved-stage gate at 2a961ed6; tasks T1–T3 are actionable with concrete file paths, DoDs, and verification commands. `tests_required: false` remains appropriate for a deploy-flag tweak. Duong has given explicit go-ahead; Wave C non-overlap reconfirmed. Ready for Talon dispatch on `fix/s2-min-instances`.
