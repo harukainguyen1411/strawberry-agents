@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-24
@@ -125,3 +125,10 @@ xfail-first discipline (Rule 12): each implementation commit must be preceded on
 - Existing work-scope anonymity infra: `scripts/hooks/_lib_reviewer_anonymity.sh`, `scripts/hooks/pre-commit-reviewer-anonymity.sh`, `scripts/reviewer-auth.sh`.
 - CLAUDE.md Rule on AI authoring references (spirit extension).
 - Open-threads entry: `agents/evelynn/memory/open-threads.md` section "Identity leaks on work-repo PRs (Evelynn-owned fix)".
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (karma), concrete decisions with no unresolved TBDs — OQ1 is explicitly resolved with Duong's hand-commit identity (`Duongntd <103487096+Duongntd@users.noreply.github.com>`) and OQ2 has a named fallback path if the Agent-tool harness can't pass env. The two leak classes are diagnosed structurally (commit author inheritance from per-worktree config; fallback comment bypassing `reviewer-auth.sh`) and the six tasks are actionable with DoD each. tests_required is honoured by four invariants (INV-1..4) covering work-scope enforcement, personal-scope untouched, wrapper scrub+scan behaviour, and env-injection scoping — sufficient for a quick-lane plan. Scope guardrail explicitly excludes work-repo changes (Sona's lane), keeping blast radius contained.
