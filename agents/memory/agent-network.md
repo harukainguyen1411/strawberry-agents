@@ -126,6 +126,53 @@ Evelynn communicates with agents via:
 - **Agent tool launch prompt** — for standalone one-off tasks; include full context in the prompt
 - `/agent-ops send <agent> <message>` — fire-and-forget inbox message
 
+## Coordinator-to-Coordinator FYI (mandatory, both sides)
+
+Evelynn and Sona run side-by-side — Sona for work concern, Evelynn for
+personal + agent infra. Whenever one coordinator observes something that
+affects the other's surface, **send an unprompted info-level inbox FYI**.
+Do not wait to be asked. Do not wait for the next session boundary.
+
+**Triggers (any):**
+- A cross-concern agent's `.claude/agents/<name>.md` gets amended (new
+  Hard Rule, tool revoked, boundary tightened, severity-high learning).
+  Cross-concern agents today: akali, skarner, yuumi, lissandra, orianna,
+  ekko, soraka, syndra, karma, talon.
+- A cross-concern agent hits a framework security warning or is caught
+  violating an explicit boundary.
+- A shared script changes an invariant or gains a new failure mode —
+  `scripts/coordinator-boot.sh`, `scripts/safe-checkout.sh`, anything
+  under `scripts/hooks/`, `scripts/subagent-merge-back.sh`, any file
+  referenced by both coordinators' SessionStart chain.
+- A numbered Rule in repo-root `CLAUDE.md` is being proposed for amendment.
+- A cross-concern MCP tool's contract shifts (slack, discord, gcp,
+  gdrive, gcalendar, etc.).
+- A trust-but-verify finding exposes a method-level pitfall worth
+  propagating (don't let the other coordinator re-learn the same trap).
+
+**Message shape (lean — target under 10 lines):**
+1. One paragraph: what happened and where it surfaced.
+2. One line: who's fixing it on the sender's side, if anyone.
+3. One line: when the receiver should escalate (if ever).
+4. Signature.
+
+**Discipline:**
+- `priority: info` — not `normal`, never `urgent` unless genuinely blocking.
+- Fire and forget. No acknowledgement expected.
+- Use `/agent-ops send <evelynn|sona> ...` or write directly to the
+  other coordinator's inbox.
+
+**When NOT to send:**
+- Same-concern-only work (no value for the other side).
+- Transient session state that resolves within the same session.
+- Stuff already tracked on a shared surface (`open-threads.md`,
+  `CLAUDE.md`, architecture docs) — the other coordinator picks it up on
+  next boot.
+
+Originating incident: 2026-04-24 Sona's unprompted Akali-breach FYI
+(`agents/evelynn/inbox/archive/2026-04/20260424-0733-016030.md`);
+evelynn learning `2026-04-24-sona-unprompted-cross-concern-fyi.md`.
+
 ## Memory & Learnings (Mandatory)
 
 Every agent except Skarner and Yuumi **must** write to two places at session end:
