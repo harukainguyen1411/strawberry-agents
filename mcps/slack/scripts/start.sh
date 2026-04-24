@@ -10,7 +10,7 @@ USER_TOKEN="$(grep '^user_token=' "$TOKEN_FILE" | head -1 | cut -d= -f2-)"
 [ -n "$USER_TOKEN" ] || { echo "slack-mcp: user_token missing" >&2; exit 1; }
 
 cd "$(dirname "$0")/.."
-[ -x "./node_modules/.bin/tsx" ] || { echo "slack-mcp: node_modules missing — run 'npm install' in $(pwd)" >&2; exit 1; }
+[ -x "./node_modules/.bin/tsx" ] || npm install --silent
 exec env \
   SLACK_BOT_TOKEN="$BOT_TOKEN" \
   SLACK_USER_TOKEN="$USER_TOKEN" \
