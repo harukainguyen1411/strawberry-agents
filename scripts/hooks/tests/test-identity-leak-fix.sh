@@ -760,6 +760,279 @@ test_senna_i3_empty_stdin_passthrough() {
 # ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# BP-1: git -c "user.email=viktor@strawberry.local" commit (QUOTED -c value)
+# Senna round 3: literal quote between -c and user. defeats prior regex
+# ---------------------------------------------------------------------------
+test_bp1_quoted_dash_c_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-1: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Double-quoted form: -c "user.email=viktor@strawberry.local"
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c \"user.email=viktor@strawberry.local\" commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-1 (double-quoted -c email): git -c \"user.email=persona@...\" commit blocked"
+  else
+    fail "BP-1 (BYPASS): git -c \"user.email=persona@...\" commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp1_single_quoted_dash_c_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-1b: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Single-quoted form: -c 'user.email=viktor@strawberry.local'
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c '"'"'user.email=viktor@strawberry.local'"'"' commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-1b (single-quoted -c email): git -c 'user.email=persona@...' commit blocked"
+  else
+    fail "BP-1b (BYPASS): git -c 'user.email=persona@...' commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp1_quoted_dash_c_name_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-1c: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Quoted name form: -c "user.name=Viktor"
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c \"user.name=Viktor\" commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-1c (quoted -c name): git -c \"user.name=Persona\" commit blocked"
+  else
+    fail "BP-1c (BYPASS): git -c \"user.name=Persona\" commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# BP-2: git commit --author "Viktor <viktor@strawberry.local>" (SPACE separator)
+# Senna round 3: --author X (space) not caught by --author=.* regex
+# ---------------------------------------------------------------------------
+test_bp2_author_space_separator_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-2: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Space form: --author "Viktor <viktor@strawberry.local>"
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author \"Viktor <viktor@strawberry.local>\" -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-2 (--author space form): git commit --author \"Persona <...>\" blocked"
+  else
+    fail "BP-2 (BYPASS): git commit --author \"Persona <...>\" NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp2_author_space_name_only_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-2b: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Space form with neutral email but persona NAME
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author \"Viktor <103487096+Duongntd@users.noreply.github.com>\" -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-2b (--author space, persona name + neutral email): blocked"
+  else
+    fail "BP-2b (BYPASS): --author with persona name + neutral email NOT blocked (exit=$exit_code)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# BP-3: Name-only leak paths
+# GIT_AUTHOR_NAME=Viktor (neutral email, persona name)
+# GIT_COMMITTER_NAME=Viktor
+# -c user.name=Viktor (unquoted, neutral email)
+# ---------------------------------------------------------------------------
+test_bp3_git_author_name_env_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-3a: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # GIT_AUTHOR_NAME=Viktor with neutral email (name-only leak)
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_NAME=Viktor git commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-3a: GIT_AUTHOR_NAME=Persona git commit blocked"
+  else
+    fail "BP-3a (BYPASS): GIT_AUTHOR_NAME=Persona git commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp3_git_committer_name_env_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-3b: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"GIT_COMMITTER_NAME=Jayce git commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-3b: GIT_COMMITTER_NAME=Persona git commit blocked"
+  else
+    fail "BP-3b (BYPASS): GIT_COMMITTER_NAME=Persona git commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp3_dash_c_name_unquoted_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-3c: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # -c user.name=Viktor (no strawberry.local, just persona name)
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c user.name=Viktor commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-3c: git -c user.name=Persona commit blocked"
+  else
+    fail "BP-3c (BYPASS): git -c user.name=Persona commit NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_bp3_author_flag_persona_name_neutral_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-3d: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # --author= with persona name but neutral email
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author=\"Soraka <103487096+Duongntd@users.noreply.github.com>\" -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "BP-3d: git commit --author=Persona<neutral-email> blocked"
+  else
+    fail "BP-3d (BYPASS): git commit --author=Persona<neutral-email> NOT blocked (exit=$exit_code)"
+  fi
+}
+
+# Non-persona neutral --author must PASS (regression guard)
+test_bp3_author_neutral_name_passes() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "BP-3e: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author=\"Duongntd <103487096+Duongntd@users.noreply.github.com>\" -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -ne 2 ]; then
+    pass "BP-3e: git commit --author=Duongntd (neutral) passes hook"
+  else
+    fail "BP-3e (REGRESSION): neutral --author blocked (exit=2)"
+  fi
+}
+
 printf '=== Identity-leak fix xfail tests ===\n\n'
 
 test_inv1a_pretooluse_rewrites_identity
@@ -792,6 +1065,18 @@ test_senna_c1_inline_c_email_blocked
 test_senna_c2_env_var_email_blocked
 test_senna_c3_author_flag_blocked
 test_senna_i3_empty_stdin_passthrough
+
+# Senna round-3 bypass shapes — BP-1/BP-2/BP-3
+test_bp1_quoted_dash_c_email_blocked
+test_bp1_single_quoted_dash_c_email_blocked
+test_bp1_quoted_dash_c_name_blocked
+test_bp2_author_space_separator_blocked
+test_bp2_author_space_name_only_blocked
+test_bp3_git_author_name_env_blocked
+test_bp3_git_committer_name_env_blocked
+test_bp3_dash_c_name_unquoted_blocked
+test_bp3_author_flag_persona_name_neutral_email_blocked
+test_bp3_author_neutral_name_passes
 
 printf '\n=== Results: %d pass, %d fail, %d xfail ===\n' "$PASS" "$FAIL" "$XFAIL"
 
