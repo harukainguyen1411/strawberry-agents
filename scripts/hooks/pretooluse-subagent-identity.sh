@@ -73,47 +73,146 @@ fi
 # Extract command (fail-closed on parse error)
 COMMAND="$(printf '%s' "$INPUT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('tool_input',{}).get('command',''))" 2>/dev/null)" || block "JSON parse failure on command — commit blocked to prevent identity leak."
 
-# Detect git commit: allow any non-separator tokens between 'git' and 'commit'
-# (handles: git -c user.name=X commit, git -C /path commit, git commit, etc.)
-if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];|&])git([[:space:]]+[^;|&[:space:]]+)*[[:space:]]+commit([[:space:]]|$)'; then
-  exit 0
-fi
+# ---------------------------------------------------------------------------
+# shlex-based identity scanner (round 4 structural fix — replaces regex scanner)
+#
+# Senna found that regex scanning of the raw command string is defeated by:
+#   NEW-BP-1: Shell-special chars (;|&) inside quoted -c values
+#   NEW-BP-2: Quote char immediately after = in GIT_*_NAME=, or leading space
+#             inside quoted value
+#   NEW-BP-3: Persona name as middle/trailing token in multi-word quoted value
+#
+# Fix: tokenize with python shlex.split(), which strips quotes and handles shell
+# special chars exactly as git's execve call sees them. Regex check is then
+# performed on clean token values, not the raw command string.
+#
+# Command is passed via SHLEX_CMD env var (stdin is used for Python script code).
+# ---------------------------------------------------------------------------
 
-# Persona name denylist — all known agent identities (case-insensitive match via grep -i).
-# Used to block name-only leaks where email may be neutral but author NAME is a persona.
-# Update this list when new agents are added (auto-derive follow-up: derive from .claude/agents/*.md).
-PERSONA_NAME_PATTERN='(Akali|Aphelios|Azir|Caitlyn|Camille|Ekko|Evelynn|Heimerdinger|Jayce|Karma|Kayn|Lissandra|Lucian|Lulu|Lux|Neeko|Orianna|Rakan|Senna|Seraphine|Skarner|Sona|Soraka|Swain|Syndra|Talon|Vi|Viktor|Xayah|Yuumi)'
+# Write the Python scanner to a tempfile to avoid quoting gymnastics.
+_SCANNER_TMP="$(mktemp /tmp/pretooluse-scanner.XXXXXX.py)"
+cat > "$_SCANNER_TMP" << 'PYEOF'
+import os, sys, re, shlex
 
-# C1: Detect inline -c user.email= or -c user.name= overrides.
-# Catches: -c user.email=X, -c "user.email=X", -c 'user.email=X' (with optional quotes around value).
-# Blocks on @strawberry.local email OR persona name in user.name.
-# BP-1 fix: strip optional surrounding quotes from the value before pattern match.
-if printf '%s' "$COMMAND" | grep -qE -- "-c[[:space:]]+['\"]?user\.email=[^'\"[:space:]]*@strawberry\.local"; then
-  block "Blocked: inline git -c user.email= override with persona identity (@strawberry.local). Remove the -c override; identity is managed by the universal hook."
-fi
-if printf '%s' "$COMMAND" | grep -iE -- "-c[[:space:]]+['\"]?user\.name=${PERSONA_NAME_PATTERN}['\"]?([[:space:]]|\$)" >/dev/null 2>&1; then
-  block "Blocked: inline git -c user.name= override with persona name. Remove the -c override; identity is managed by the universal hook."
-fi
+PERSONA_NAMES = [
+    'Akali','Aphelios','Azir','Caitlyn','Camille','Ekko','Evelynn',
+    'Heimerdinger','Jayce','Karma','Kayn','Lissandra','Lucian','Lulu','Lux',
+    'Neeko','Orianna','Rakan','Senna','Seraphine','Skarner','Sona','Soraka',
+    'Swain','Syndra','Talon','Vi','Viktor','Xayah','Yuumi',
+]
 
-# C2: Detect env var identity overrides (GIT_AUTHOR_* / GIT_COMMITTER_*).
-# Blocks on @strawberry.local email AND on persona NAME in GIT_AUTHOR_NAME / GIT_COMMITTER_NAME.
-# BP-3 fix: add name-based check for GIT_AUTHOR_NAME= and GIT_COMMITTER_NAME= persona values.
-if printf '%s' "$COMMAND" | grep -qE 'GIT_(AUTHOR|COMMITTER)_(EMAIL)=[^[:space:]]*@strawberry\.local'; then
-  block "Blocked: GIT_AUTHOR_*/GIT_COMMITTER_* env var override with persona identity (@strawberry.local). Remove the env var override."
-fi
-if printf '%s' "$COMMAND" | grep -iE "GIT_(AUTHOR|COMMITTER)_NAME=${PERSONA_NAME_PATTERN}([[:space:]]|\$)" >/dev/null 2>&1; then
-  block "Blocked: GIT_AUTHOR_NAME or GIT_COMMITTER_NAME env var set to persona name. Remove the env var override; identity is managed by the universal hook."
-fi
+# Word-boundary pattern: blocks "Viktor", "Viktor Kesler", "The Viktor" but
+# not "Victoria", "Viktor2", "MyViktor".
+PERSONA_RE = re.compile(
+    r'\b(' + '|'.join(re.escape(n) for n in PERSONA_NAMES) + r')\b',
+    re.IGNORECASE,
+)
 
-# C3: Detect --author flag with persona domain or persona name.
-# BP-2 fix: catch both --author=X and --author X (space separator) forms.
-# Also block persona NAME even with neutral email (BP-3).
-# --author value format is "Name <email>"; we match on @strawberry.local OR persona name.
-if printf '%s' "$COMMAND" | grep -qE -- '--author[= ].*@strawberry\.local'; then
-  block "Blocked: git commit --author with persona identity (@strawberry.local). Remove the --author flag; identity is managed by the universal hook."
-fi
-if printf '%s' "$COMMAND" | grep -iE -- "--author[= ]['\"]?${PERSONA_NAME_PATTERN}[[:space:]]" >/dev/null 2>&1; then
-  block "Blocked: git commit --author with persona name. Remove the --author flag; identity is managed by the universal hook."
+command = os.environ.get('SHLEX_CMD', '')
+
+# Fast pre-check: if command doesn't contain "git" and "commit" at all, pass.
+if 'git' not in command or 'commit' not in command:
+    sys.exit(0)
+
+try:
+    tokens = shlex.split(command)
+except ValueError:
+    # Unterminated quotes etc — can't parse; pass through (no false block)
+    sys.exit(0)
+
+# Check whether this is a git commit invocation.
+git_idx = None
+for i, tok in enumerate(tokens):
+    if tok == 'git':
+        git_idx = i
+        break
+
+if git_idx is None:
+    sys.exit(0)
+
+# Scan tokens after "git" for "commit" (allowing flags before it)
+has_commit = False
+for tok in tokens[git_idx + 1:]:
+    if tok == 'commit':
+        has_commit = True
+        break
+    # Stop scanning at shell separator tokens
+    if tok in (';', '|', '&&', '||', '&'):
+        break
+
+if not has_commit:
+    sys.exit(0)
+
+# It's a git commit command. Scan all tokens for identity overrides.
+
+def check_email_value(val):
+    return '@strawberry.local' in val
+
+def check_name_value(val):
+    return bool(PERSONA_RE.search(val))
+
+# ENV VAR tokens: appear as leading tokens before "git" (shell env prefix syntax)
+env_var_prefixes_email = ('GIT_AUTHOR_EMAIL=', 'GIT_COMMITTER_EMAIL=')
+env_var_prefixes_name  = ('GIT_AUTHOR_NAME=', 'GIT_COMMITTER_NAME=')
+
+for tok in tokens:
+    for pfx in env_var_prefixes_email:
+        if tok.startswith(pfx):
+            val = tok[len(pfx):]
+            if check_email_value(val):
+                sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: GIT_AUTHOR_*/GIT_COMMITTER_* env var override with persona identity (@strawberry.local). Remove the env var override."}\n')
+                sys.exit(2)
+    for pfx in env_var_prefixes_name:
+        if tok.startswith(pfx):
+            val = tok[len(pfx):]
+            if check_name_value(val):
+                sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: GIT_AUTHOR_NAME or GIT_COMMITTER_NAME env var set to persona name. Remove the env var override; identity is managed by the universal hook."}\n')
+                sys.exit(2)
+
+# -c KEY=VALUE tokens: git -c user.email=X  or  git -c user.name=X
+for i, tok in enumerate(tokens):
+    if tok == '-c' and i + 1 < len(tokens):
+        kv = tokens[i + 1].strip()
+        if '=' in kv:
+            key, val = kv.split('=', 1)
+            key = key.strip()
+            if key == 'user.email' and check_email_value(val):
+                sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: inline git -c user.email= override with persona identity (@strawberry.local). Remove the -c override; identity is managed by the universal hook."}\n')
+                sys.exit(2)
+            if key == 'user.name' and check_name_value(val):
+                sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: inline git -c user.name= override with persona name. Remove the -c override; identity is managed by the universal hook."}\n')
+                sys.exit(2)
+
+# --author flag: --author=VALUE (one token) or --author VALUE (two tokens)
+author_value = None
+for i, tok in enumerate(tokens):
+    if tok.startswith('--author='):
+        author_value = tok[len('--author='):].strip()
+        break
+    if tok == '--author' and i + 1 < len(tokens):
+        author_value = tokens[i + 1].strip()
+        break
+
+if author_value is not None:
+    if check_email_value(author_value):
+        sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: git commit --author with persona identity (@strawberry.local). Remove the --author flag; identity is managed by the universal hook."}\n')
+        sys.exit(2)
+    if check_name_value(author_value):
+        sys.stdout.write('{"decision":"block","reason":"[identity-guard] Blocked: git commit --author with persona name. Remove the --author flag; identity is managed by the universal hook."}\n')
+        sys.exit(2)
+
+sys.exit(0)
+PYEOF
+
+SCANNER_OUTPUT="$(SHLEX_CMD="$COMMAND" python3 "$_SCANNER_TMP" 2>/dev/null)"
+SCANNER_EXIT=$?
+rm -f "$_SCANNER_TMP"
+
+if [ "$SCANNER_EXIT" -eq 2 ]; then
+  printf '%s\n' "$SCANNER_OUTPUT"
+  exit 2
+elif [ "$SCANNER_EXIT" -ne 0 ]; then
+  block "shlex scanner exited $SCANNER_EXIT — commit blocked to prevent identity leak."
 fi
 
 # Resolve effective cwd: try tool_input.cwd then fall back to $PWD
