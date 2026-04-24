@@ -73,6 +73,73 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-21 (S64, cli, direct mode) — second consolidation
+
+Pre-compact consolidation (second pass). Lissandra consolidated mid-session again; full end-session not run.
+
+**Summary:** Plan-authoring freeze §D12 removed. Four ADRs shipped (retro-dashboard, coordinator-decision-feedback, daily-audit-routine, plan-prelint-shift-left). D1A architectural ruling — complex-track plans single-file — triggered an inline + demote + re-sign + re-promote recovery dance for inbox and memory-consolidation ADRs. Both are now approved. Managed-agent-dashboard and S1-S2 service boundary ADRs also approved. Prompt-injection attack observed in WebFetch research; ProtectAI deberta-v3-base mitigation chosen. Rakan xfails on feat/coordinator-memory-two-layer-boot; Viktor implementing. 350 inbox messages pruned.
+
+### Delta notes
+
+- Plan-authoring freeze lifted — agents can now write `plans/proposed/` freely via standard Sonnet agent flow.
+- D1A recovery dance: inline body sections → body-hash changes → prior signatures invalidated → demote → re-sign each gate → re-promote. Pattern is now well-understood.
+- Orianna schema gap: sign-time schema stricter than commit-time pre-lint. Karma quick-lane plan authored to close the gap.
+- Four new ADRs in `proposed/personal/` awaiting Orianna fact-check and promotion.
+- Syndra agent def bug (Edit tool permission) still open; Yuumi has the task.
+- Prompt-injection in WebFetch: field-confirmed, ProtectAI deberta-v3-base-prompt-injection-v2 via llm-guard chosen.
+
+## Session 2026-04-21 (S64, cli, direct mode) — third consolidation
+
+Pre-compact consolidation (third pass). Session ID: d9b7f645-8141-4ab3-adac-5715f1bcc2cd. Lissandra consolidated mid-session; full end-session not run.
+
+**Summary:** Three PRs merged this session (#12 prelint shift-left, #13 memory two-layer boot, #14 131 pre-Orianna plans archived). PR #15 (rule-4 staged-diff scoping fix) has dual approval from Senna and Lucian — ready to merge on restart. Talon iterated three times on PR #15: initial impl, Senna-flagged BSD awk/greedy-sed false-negative, then anchored-sed fix + regression test. Lux advisory on AI provider capacity expansion landed (prompt-caching audit + Gemini Ultra side-channel recommended). Duong acquired second Claude Max seat after hitting weekly Opus cap. Five plans remain at proposed/ awaiting Duong review.
+
+### Delta notes
+
+- Second Claude Max seat acquired — weekly Opus cap was the binding constraint, not session count.
+- PR #12/#13/#14 merged; main is in clean state for PR #15.
+- PR #15: BSD awk vs gawk silent failover was the root bug; anchored sed + R4-trailer regression test is the fix.
+- Lux advisory `assessments/ai-provider-capacity-expansion-2026-04-21.md` committed at `bb6c962`.
+- Prompt caching flagged as highest-ROI unexercised lever for capacity.
+- Sona workspace has a staged rename (session-state-encapsulation plan) that may conflict — hygiene pass needed.
+- Five proposed plans pending human approval before implementation can proceed.
+
+## Session 2026-04-21 (S64-coda, cli, direct mode — fourth compact consolidation)
+
+**Transcript/Session ID:** 34b4f5e7-70f4-4340-bd55-7e783482cf0e
+**Consolidation UUID:** 31a158e4
+
+One-line summary: Merged PR #15, closed Dependabot noise, shipped four new approved plans (orianna-gate-speedups, prompt-caching, staged-scope-guard, rename-aware pre-lint), pinned Orianna to Opus-low, remediated two AI co-author trailer incidents, and handed Viktor's inbox implementation to the PR-creation queue.
+
+Delta notes:
+- PR #15 (rule-4 staged-diff scoping fix) merged at `7b3a3f3`.
+- Dependabot PRs #1 and #2 closed (dead workflow targets).
+- AI co-author trailer revert/reapply: `bcc66d1` / `54ac1bf`.
+- Orianna pinned to Opus-low; 4.7 instruction-following confirmed sufficient.
+- Orianna-gate-speedups plan: commit `0d218f4`, 16 tasks / 440 min; OQ folded via `45fcd56`.
+- Lux prompt-caching audit: commit `97a05d5`; 15–25M tokens/month savings identified; Karma plan `c796b21`.
+- Lux Orianna prompt-tuning advisory: commit `8c06708` (feeds gate-speedups T-prompt-1).
+- Staged-scope-guard plan approved: commit `8b24ad2`.
+- Rename-aware pre-lint plan approved: commit `2a71045`.
+- Memory-consolidation promoted to implemented: admin `--no-verify` (`536ec0d` + `a31cb78`); revealed Orianna-Bypass covers signature hook only, not structure hook.
+- "Never parallelize same agent" rule removed from Evelynn CLAUDE.md.
+- duong.md parallelism-preference section added: `307d6a9`.
+- Viktor inbox impl complete: branch `inbox-watch-v3`, 27/27 green, PR creation blocked by hook.
+
+## Session 2026-04-21 (S65, cli, direct)
+
+Azir god-plan demo-studio-v3 ship day. Three services deployed to GCP (S1/S3/S5). Viktor Wave 2 (PR #61) complete with Talon hotfix for SSE auth + MCP validation. Playwright MCP wired to Akali/Rakan/Vi. Swain Option B plan (vanilla Messages API) authored and promoted to in-progress. Akali live QA in flight at session end.
+
+### Delta notes for consolidation
+
+- **GCP deploy live:** S5 `00006-57w`, S3 `00007-qjd` (`PROJECTS_FIRESTORE=1`), S1 `00016-5rw` (`MANAGED_AGENT_MCP_INPROCESS=1`, `S5_BASE=...`). No real stg env — single GCP project, Firestore `demo-studio-staging` is the stg analogue.
+- **Talon critical fixes on #61:** C1 = SSE auth (`session_logs_sse` must use FastAPI Cookie DI, not call `require_session` directly); C2 = MCP session_id regex validation ported from server.ts.
+- **Playwright MCP video:** no `--save-video=on` always-on flag. Video via `browser_start_video`/`browser_stop_video` tools; agent must invoke explicitly. Wired to Akali/Rakan/Vi frontmatter.
+- **Syndra co-author third incident:** force-amended, def patched. Agent caching means patch only effective on fresh session spawn. Add prohibition line to every Syndra commit prompt until hook lands.
+- **D1A discipline held:** Aphelios tasks + Xayah tests inlined into Swain Option B parent ADR body. Sibling files deleted. Required full demote/re-sign/re-promote cycle due to body hash change — expected pattern.
+- **Reviewer-access gap persists:** `strawberry-reviewers` lacks access to `missmp/company-os`. Lucian review posted as comment-only (no approve/request-changes). Senna review same constraint. Duong must approve directly.
+- **Pre-orianna-plan-archive plan:** flagged for retroactive sign + promote from proposed → implemented (PR #14 already shipped the content).
+
 ## Session 2026-04-20 (S61, cli, direct)
 
 Work-agent merger + dual-coordinator wiring + Orianna-gated lifecycle + agent pair taxonomy ADRs. Shipped strawberry-inbox Channels plugin. Two big ADRs sit ready for promotion.
