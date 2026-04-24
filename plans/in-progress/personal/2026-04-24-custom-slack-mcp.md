@@ -1,6 +1,6 @@
 ---
 title: Custom Slack MCP with purposed tools (replace dual-wrapper)
-status: approved
+status: in-progress
 concern: personal
 owner: lux
 author: lux
@@ -298,3 +298,10 @@ None. OQ1–OQ4 all resolved in the plan body or at dispatch. No fresh OQs surfa
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Ownership is clear (ekko), author is lux, all four open questions are resolved inline (OQ1 by Evelynn, OQ2–4 by Lux with recommended defaults). The tool catalog encodes intent — each of the 11 tools has a named invariant and routing rule, with `reply_in_thread`'s enum dispatch justified on load-bearing identity dispatch grounds rather than speculative extensibility. TypeScript choice is argued from concrete affordances (upstream parity, typed `@slack/web-api`, zod schemas) not dogma. Migration scope is genuinely lean: three files edited atomically, one-release rollback window via retained `start.sh.bak-dual`, and success criteria are measurable (grep-verifiable, <2min rollback). Simplicity-first throughout; no WARN.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Tasks are concretely actionable — each of the 27 items names files, gives a DoD, and carries an estimate; nothing is a placeholder. Rule 12 is structurally satisfied: phase C2 precedes C3 on the same branch and registers six xfail test tasks (T6–T11) covering all 11 tools, OQ2 prefix behavior, error envelopes, retry config, and list/resolve shapes — with the explicit instruction to confirm red against C1 HEAD before C3. Four-commit ordering (C1 scaffold → C2 xfail → C3 impl → C4 migration) cleanly separates the cross-repo boundary between `mcps/slack/` and `strawberry-agents/`. Simplicity-scan: 395 AI-min across 27 tasks for a 250-LOC single-file server reads proportionate, not bloated — task granularity of 15–45 min reflects thin wrappers over typed SDKs, test breadth tracks the 11-tool surface rather than inventing paranoid edge cases, and the cross-repo split is mandated by layout not by over-decomposition. No WARN.
