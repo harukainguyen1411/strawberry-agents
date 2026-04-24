@@ -1,7 +1,7 @@
 ---
 id: 2026-04-24-rule-19-guard-hole-pre-staged-moves
 title: Rule 19 — close commit-phase hole for pre-staged plan-lifecycle moves
-status: approved
+status: implemented
 concern: personal
 owner: karma
 complexity: quick
@@ -74,4 +74,11 @@ All four cases live in `scripts/hooks/tests/test-pre-commit-plan-lifecycle-guard
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Clear owner (Karma), concrete task breakdown with files and DoDs, Rule 12 satisfied by xfail-first T1 before T2 impl, and the test plan enumerates four invariants including the false-positive-lockout and edit-in-place cases. Scope is surgical — one new hook script, one new test file, and wiring updates — no speculative architecture. Identity resolution at commit phase is well-reasoned against the `agent-identity-default.sh` constraint.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** PR #43 merged at 2026-04-24T09:11:42Z (merge commit bbd90ab7) with Rule 18 dual approval — Lucian APPROVE followed by Senna APPROVE after the changes-requested round. All T1–T5 deliverables present on main: `scripts/hooks/pre-commit-plan-lifecycle-guard.sh` (160 LoC), `scripts/hooks/tests/test-pre-commit-plan-lifecycle-guard.sh` (155 LoC), `scripts/hooks/test-hooks.sh` wiring, `scripts/install-hooks.sh` header comment, and `architecture/plan-lifecycle.md` defence-in-depth paragraph. Implementation evidence verified via fast-forward pull and file inspection.
 
