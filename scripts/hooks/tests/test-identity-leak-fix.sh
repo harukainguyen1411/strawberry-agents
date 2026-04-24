@@ -342,11 +342,12 @@ test_inv4_agent_harness_env_personal_scope() {
 
   cleanup_dirs "$pdir"
 
-  # Should exit 0 with no modification (or empty output)
-  if ! printf '%s' "$output" | grep -q "GIT_AUTHOR_NAME"; then
-    pass "INV-4b: personal-scope cwd — no GIT_AUTHOR_NAME injected"
+  # Universal injection (plan 2026-04-24-subagent-git-identity-as-duong.md):
+  # personal-scope dispatches now also get neutral identity injected.
+  if printf '%s' "$output" | grep -q "GIT_AUTHOR_NAME"; then
+    pass "INV-4b: personal-scope cwd — GIT_AUTHOR_NAME injected (universal behaviour)"
   else
-    fail "INV-4b: GIT_AUTHOR_NAME incorrectly injected for personal-scope (output='$output')"
+    fail "INV-4b: GIT_AUTHOR_NAME not injected for personal-scope (output='$output')"
   fi
 }
 
