@@ -2,7 +2,7 @@
 date: 2026-04-24
 created: 2026-04-24
 concern: work
-status: approved
+status: in-progress
 author: karma
 owner: talon
 complexity: quick
@@ -72,3 +72,10 @@ None — remaining scope calls (FORCE_DIRTY env var, `--short=12`, `git-sha` keb
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Plan is appropriately slim for a quick-lane task. Scope is tightly bounded (one handler strip + one deploy.sh hardening), tasks T1–T3 carry concrete file paths, line anchors, and measurable DoD criteria. No unresolved open questions; knowingly-deferred residuals are explicitly tracked in a linked assessment. Owner transition to Talon recorded. Tests_required is false and justified (backend-only tooling with manual PR-body checklist verification).
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Tasks T1–T3 remain concrete and actionable with clear file paths, line anchors, and measurable DoD. No blockers surfaced since the approved-gate APPROVE at 5a69916. Owner Talon is ready for dispatch on the quick lane. tests_required=false is justified (backend tooling with manual PR-body verification checklist); no test task is therefore required for the in-progress transition.
