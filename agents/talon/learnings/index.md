@@ -1,1 +1,1 @@
-_No learnings recorded yet._
+- 2026-04-24-git-commit-intercept-regex-and-failclosed.md — git commit regex must allow any non-separator token (not just dash-flags); denylist via env var; fail-closed on JSON parse | last_used: 2026-04-24
