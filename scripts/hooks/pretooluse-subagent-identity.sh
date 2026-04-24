@@ -79,21 +79,41 @@ if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];|&])git([[:space:]]+[^;|&[
   exit 0
 fi
 
-# C1: Detect inline -c user.email= or -c user.name= overrides containing persona domain.
-# These win over local config and cannot be defeated by post-commit config writes.
-if printf '%s' "$COMMAND" | grep -qE -- '-c[[:space:]]+user\.(email|name)=[^[:space:]]*@strawberry\.local'; then
-  block "Blocked: inline git -c user.email/name= override with persona identity (@strawberry.local). Remove the -c override; identity is managed by the universal hook."
+# Persona name denylist — all known agent identities (case-insensitive match via grep -i).
+# Used to block name-only leaks where email may be neutral but author NAME is a persona.
+# Update this list when new agents are added (auto-derive follow-up: derive from .claude/agents/*.md).
+PERSONA_NAME_PATTERN='(Akali|Aphelios|Azir|Caitlyn|Camille|Ekko|Evelynn|Heimerdinger|Jayce|Karma|Kayn|Lissandra|Lucian|Lulu|Lux|Neeko|Orianna|Rakan|Senna|Seraphine|Skarner|Sona|Soraka|Swain|Syndra|Talon|Vi|Viktor|Xayah|Yuumi)'
+
+# C1: Detect inline -c user.email= or -c user.name= overrides.
+# Catches: -c user.email=X, -c "user.email=X", -c 'user.email=X' (with optional quotes around value).
+# Blocks on @strawberry.local email OR persona name in user.name.
+# BP-1 fix: strip optional surrounding quotes from the value before pattern match.
+if printf '%s' "$COMMAND" | grep -qE -- "-c[[:space:]]+['\"]?user\.email=[^'\"[:space:]]*@strawberry\.local"; then
+  block "Blocked: inline git -c user.email= override with persona identity (@strawberry.local). Remove the -c override; identity is managed by the universal hook."
+fi
+if printf '%s' "$COMMAND" | grep -iE -- "-c[[:space:]]+['\"]?user\.name=${PERSONA_NAME_PATTERN}['\"]?([[:space:]]|\$)" >/dev/null 2>&1; then
+  block "Blocked: inline git -c user.name= override with persona name. Remove the -c override; identity is managed by the universal hook."
 fi
 
-# C2: Detect env var identity overrides (GIT_AUTHOR_* / GIT_COMMITTER_*) with persona domain.
-if printf '%s' "$COMMAND" | grep -qE 'GIT_(AUTHOR|COMMITTER)_(EMAIL|NAME)=[^[:space:]]*@strawberry\.local'; then
+# C2: Detect env var identity overrides (GIT_AUTHOR_* / GIT_COMMITTER_*).
+# Blocks on @strawberry.local email AND on persona NAME in GIT_AUTHOR_NAME / GIT_COMMITTER_NAME.
+# BP-3 fix: add name-based check for GIT_AUTHOR_NAME= and GIT_COMMITTER_NAME= persona values.
+if printf '%s' "$COMMAND" | grep -qE 'GIT_(AUTHOR|COMMITTER)_(EMAIL)=[^[:space:]]*@strawberry\.local'; then
   block "Blocked: GIT_AUTHOR_*/GIT_COMMITTER_* env var override with persona identity (@strawberry.local). Remove the env var override."
 fi
+if printf '%s' "$COMMAND" | grep -iE "GIT_(AUTHOR|COMMITTER)_NAME=${PERSONA_NAME_PATTERN}([[:space:]]|\$)" >/dev/null 2>&1; then
+  block "Blocked: GIT_AUTHOR_NAME or GIT_COMMITTER_NAME env var set to persona name. Remove the env var override; identity is managed by the universal hook."
+fi
 
-# C3: Detect --author= flag with persona domain.
-# The --author value may be quoted ("Name <email>") so we allow any chars until @strawberry.local.
-if printf '%s' "$COMMAND" | grep -qE -- '--author=.*@strawberry\.local'; then
-  block "Blocked: git commit --author= with persona identity (@strawberry.local). Remove the --author flag; identity is managed by the universal hook."
+# C3: Detect --author flag with persona domain or persona name.
+# BP-2 fix: catch both --author=X and --author X (space separator) forms.
+# Also block persona NAME even with neutral email (BP-3).
+# --author value format is "Name <email>"; we match on @strawberry.local OR persona name.
+if printf '%s' "$COMMAND" | grep -qE -- '--author[= ].*@strawberry\.local'; then
+  block "Blocked: git commit --author with persona identity (@strawberry.local). Remove the --author flag; identity is managed by the universal hook."
+fi
+if printf '%s' "$COMMAND" | grep -iE -- "--author[= ]['\"]?${PERSONA_NAME_PATTERN}[[:space:]]" >/dev/null 2>&1; then
+  block "Blocked: git commit --author with persona name. Remove the --author flag; identity is managed by the universal hook."
 fi
 
 # Resolve effective cwd: try tool_input.cwd then fall back to $PWD

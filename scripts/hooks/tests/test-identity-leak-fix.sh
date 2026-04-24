@@ -434,17 +434,19 @@ test_c1_bypass_combined() {
 
   local payload
   payload='{"tool_name":"Bash","tool_input":{"command":"git -c user.name=Viktor -C '"$wdir"' commit -m msg","cwd":"'"$wdir"'"}}'
-  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
 
-  local name
-  name="$(git -C "$wdir" config user.name 2>/dev/null || true)"
+  local exit_code
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
 
   cleanup_dirs "$wdir"
 
-  if [ "$name" = "Duongntd" ]; then
-    pass "C1-bypass3: git -c ... -C /path commit — identity rewritten to neutral"
+  # With BP-3 name-blocking: -c user.name=Viktor must be BLOCKED (exit 2) at PreToolUse layer.
+  # Prior behavior was to rewrite config; stricter behavior is to block outright.
+  if [ "$exit_code" -eq 2 ]; then
+    pass "C1-bypass3: git -c user.name=Persona -C /path commit — blocked at PreToolUse layer (exit 2)"
   else
-    fail "C1-bypass3 (REGRESSION): combined -c + -C commit bypasses hook (name='$name', expected 'Duongntd')"
+    fail "C1-bypass3 (REGRESSION): combined -c user.name=Persona + -C commit not blocked (exit=$exit_code)"
   fi
 }
 
