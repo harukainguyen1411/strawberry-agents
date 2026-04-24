@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-24 · bd9bb7cc · **Session:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1 (second pre-compact of this session;  first was bd910f2); **Coordinator:** Evelynn | **Concern:** personal | **Date:** 2026-04-24
 - 2026-04-24 · 4f8b78fd · **Date:** 2026-04-24; **Session:** S66 (direct mode, personal concern); **Session-id:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
 - 2026-04-23 · c4af884e · - **Date:** 2026-04-23; - **Session:** S65 (hands-off continuation, auto mode); - **Session-id:** c4af884e
 - 2026-04-23 · ad4fe689 · **Consolidation UUID:** ad4fe689; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 26406c02 (same session, earlier compact)

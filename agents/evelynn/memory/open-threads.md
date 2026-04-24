@@ -1,22 +1,22 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-24 (Lissandra pre-compact consolidation, mid-session S66).
+Last updated: 2026-04-24 (Lissandra pre-compact consolidation 2, session 5e94cd09).
 
 ---
 
-## Talon identity-leak impl — in-flight (isolation:worktree)
+## Identity-leak fix — RESOLVED
 
-**Current status (2026-04-24):** Talon dispatched for identity-leak implementation from `plans/approved/` (e211779). Dispatched with `isolation:worktree`. In-flight at compact boundary.
-**Next:** On resume, check `git worktree list` for Talon's worktree. Once complete, dispatch Senna + Lucian for review, then merge.
-**Shard:** 4f8b78fd
+**Current status (2026-04-24):** PR #35 MERGED — dual approval (Lucian + Senna, round 2 after REQUEST CHANGES), merge commit `90c830012d`. Covers: xfail-first TDD, regex bypass fix for `git -c` / `git -C`, denylist single-source-of-truth (I2), fail-closed hardening (I1). Talon's impl landed cleanly.
+**Shards:** 4f8b78fd, bd9bb7cc.
+**Next:** None for the fix itself. Residual: personal-scope subagent identity mis-attribution (separate thread below).
 
 ---
 
-## Kayn worktree-isolation breakdown — in-flight
+## Kayn worktree-isolation breakdown — complete, impl queued
 
-**Current status (2026-04-24):** Kayn dispatched for D1A breakdown of universal worktree-isolation ADR (promoted to `approved/`, 678c971). In-flight at compact boundary.
-**Next:** On resume, check Kayn's output. Review breakdown, then dispatch Jayce or Viktor for implementation.
-**Shard:** 4f8b78fd
+**Current status (2026-04-24):** Kayn breakdown committed on main. 14 tasks across 3 commits. Implementation queued after Slack MCP (explicit Duong ordering). Universal-isolation rollout makes the individual Kayn opt-in question moot.
+**Next:** Dispatch impl agent once Jayce's Slack MCP C4 migration PR lands and is merged.
+**Shard:** bd9bb7cc
 
 ---
 
@@ -30,13 +30,46 @@ Last updated: 2026-04-24 (Lissandra pre-compact consolidation, mid-session S66).
 
 ---
 
-## Identity leaks on work-repo PRs (Evelynn-owned fix)
+## Identity leaks on work-repo PRs (Evelynn-owned fix) — RESOLVED
 
-**Current status (2026-04-24):** Karma quick-lane plan commissioned and completed. OQ1 resolved by Duong: `Duongntd` is the canonical agent identity for all strawberry-agent commits. Plan promoted to `approved/` (e211779). Talon dispatched for implementation with `isolation:worktree` — in-flight (see Talon thread above).
-**Scope:** Evelynn owns the system-wide fix (subagent identity bootstrap + reviewer verdict templates). Work-repo-specific hook installs on missmp/company-os are Sona's lane.
-**Next:** Monitor Talon's impl. On completion, verify identity bootstrap across worktree spawns; coordinate with Sona for company-os hook install.
-**Refs:** `agents/evelynn/inbox/archive/2026-04/20260423-1450-955853.md` (Sona's flagging message), `agents/sona/learnings/2026-04-23-w2-tdd-ordering-violation-viktor.md` patterns 3-4.
-**Shard:** 4f8b78fd
+**Current status (2026-04-24):** PR #35 MERGED. Identity-leak fix landed (`90c830012d`). System-wide fix (subagent identity bootstrap, regex bypass for `git -c`/`git -C`, fail-closed hardening) is live. Residual: personal-scope subagent identity mis-attribution is a separate, non-blocking issue (see thread below).
+**Shards:** 4f8b78fd, bd9bb7cc.
+**Next:** Coordinate with Sona for company-os hook install if needed. Otherwise resolved.
+
+---
+
+## Slack MCP impl — Jayce in flight
+
+**Current status (2026-04-24):** Custom Slack MCP spec authored by Lux (11 purposed tools), approved by Orianna (no WARN), Kayn 27-task breakdown committed. Jayce dispatched for implementation — in flight, ~6h. Phases C1-C3 in `strawberry/mcps/slack/` (separate repo); C4 migration commit + PR touches strawberry-agents main working tree.
+**Notification insight:** `xoxp-` tokens cannot ping Duong regardless of channel (Slack routes by author); bot token (`xoxb-`) DM to user ID `U03KDE6SS9J` is the correct pattern. Canonical channel `C0ANVLZQ17X` noted but deprecated as notification target.
+**Next:** On resume, check Jayce output. If C4 migration PR open, dispatch Senna + Lucian review then merge. Do not commit to main working tree until C4 lands.
+**Refs:** `plans/in-progress/personal/2026-04-24-custom-slack-mcp.md`
+**Shard:** bd9bb7cc
+
+---
+
+## Coordinator-boot-unification — plan in-progress, not yet implemented
+
+**Current status (2026-04-24):** Azir authored, Orianna promoted twice (proposed→approved→in-progress). Kayn 26-task breakdown / 545 AI-min / 3 commits. Planned commits: C1 coordinator-boot.sh + launchers, C2 xfail tests INV-1..INV-6, C3 hook identity hardening + Signal B removal + stateless Monitor-arming gate. Sona inbox-monitor asymmetry (task #3) is subsumed — closes when this plan's impl lands.
+**Next:** Dispatch Jayce or Viktor after Slack MCP impl clears. This is the explicit second-in-queue per Duong's ordering.
+**Refs:** `plans/in-progress/personal/2026-04-24-coordinator-boot-unification.md`
+**Shard:** bd9bb7cc
+
+---
+
+## Personal-scope subagent identity mis-attribution — new
+
+**Current status (2026-04-24):** Kayn's breakdown commits (and other subagent commits in personal-scope) landed as author `Orianna <orianna@strawberry.local>` due to inherited git config. Personal-scope has no identity-rewriting hook — that hook exists only for work-scope per PR #35. Not blocking. Future cleanup needed.
+**Next:** Commission Ekko or Talon to add identity-rewriting hook for personal-scope subagent worktrees. Coordinate with Sona to confirm work-scope hook is sufficient for that side.
+**Shard:** bd9bb7cc
+
+---
+
+## Orianna simplicity WARN gate — shipped
+
+**Current status (2026-04-24):** Syndra added simplicity-first principle to Azir (via shared include) + Swain (inline). Orianna Decision-process step 6 now annotates APPROVE rationales with `WARN:` when overengineering smell detected. Committed `f8e0288`. Three plans have run through the gate cleanly (no WARN): boot-unification, custom-slack-mcp (approved + in-progress).
+**Next:** Monitor in practice. No action required.
+**Shard:** bd9bb7cc
 
 ---
 
