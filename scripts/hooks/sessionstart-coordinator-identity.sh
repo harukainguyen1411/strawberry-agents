@@ -46,10 +46,10 @@ fi
 # Emit final JSON with identity context appended.
 if [ -n "$COORDINATOR" ]; then
   _cap="$(printf '%s' "$COORDINATOR" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')"
-  _additional="RESUMED SESSION — do not re-read startup files. Reply only: Session resumed. Coordinator identity resolved: you are $_cap. Do NOT apply the no-greeting Evelynn default — identity is already pinned."
+  _additional="RESUMED SESSION — do not re-read startup files. Identity pinned: you are $_cap. Do NOT apply the no-greeting Evelynn default. On your next turn: scan the TaskList for in_progress items and resume that work. If the TaskList is empty or the /compact summary is thin, check agents/$(printf '%s' "$COORDINATOR")/memory/last-sessions/ for the most recent shard and resume from there. If the /compact summary contains an explicit pause or handoff directive, honour it instead of auto-continuing."
   printf '{"systemMessage":"Resumed session — skipping startup reads.","hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}' "$_additional"
 else
   # Tier 3: fail-loud — neither env var nor hint file resolved identity.
-  _additional="RESUMED SESSION — coordinator identity unresolved. DO NOT assume Evelynn-default. Ask Duong which coordinator this session is before reading any coordinator startup files."
+  _additional="RESUMED SESSION — coordinator identity unresolved. DO NOT assume Evelynn-default. DO NOT auto-continue any in-flight work. Ask Duong which coordinator this session is before reading any coordinator startup files or resuming any task."
   printf '{"systemMessage":"Resumed session — skipping startup reads.","hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"%s"}}' "$_additional"
 fi
