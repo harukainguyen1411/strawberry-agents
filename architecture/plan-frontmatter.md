@@ -2,7 +2,7 @@
 
 Reference for the five YAML frontmatter fields introduced or formalized by the
 Orianna gate v2 ADR (`plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md`).
-These fields are read by `scripts/plan-promote.sh`, `scripts/orianna-sign.sh`,
+These fields are read by the **Orianna agent** (`.claude/agents/orianna.md`), `scripts/orianna-sign.sh`,
 and `scripts/orianna-verify-signature.sh`.
 
 ## Field reference
@@ -16,7 +16,7 @@ and `scripts/orianna-verify-signature.sh`.
 | Default | absent (grandfathered v1 behavior) |
 
 Declares that the plan opts into the v2 gating regime. When absent,
-`plan-promote.sh` logs a warning (`"grandfathered plan; gate-v1 rules applied"`)
+Orianna logs a warning (`"grandfathered plan; gate-v1 rules applied"`)
 and falls back to the existing single-phase fact-check behavior. When present
 and equal to `2`, the full §D2 phase-specific Orianna checks are enforced at
 every transition.
@@ -61,7 +61,7 @@ verifies:
 3. Commit diff is scoped to exactly one file — the plan being signed.
 4. Body hash recomputed from the current file matches the stored hash.
 
-`plan-promote.sh` requires the relevant `orianna_signature_<phase>` field to be
+The Orianna agent requires the relevant `orianna_signature_<phase>` field to be
 present and pass all four checks before allowing a transition. It also enforces
 carry-forward: a transition to `in-progress` requires a valid
 `orianna_signature_approved`; a transition to `implemented` requires both prior
