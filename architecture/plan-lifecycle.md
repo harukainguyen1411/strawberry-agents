@@ -72,12 +72,29 @@ identities (`harukainguyen1411`, `Duongntd`) are the only bypass; there is no
 
 `plans/proposed/` and its subtrees remain freely writable by any agent (plan authoring).
 
-This is the **only** enforcement layer. The commit-phase guards
+The PreToolUse guard is the primary enforcement layer. The earlier commit-phase guards
 (`pre-commit-plan-promote-guard.sh`, `commit-msg-plan-promote-guard.sh`) were archived
 to `scripts/hooks/_archive/v2-commit-phase-plan-guards/` by
 `plans/implemented/personal/2026-04-23-plan-lifecycle-physical-guard.md` — at the commit
 layer, identity is cheaply spoofable (the Ekko incident, 2026-04-23). The physical
 layer prevents the move before it ever reaches git.
+
+### Defence-in-depth at commit phase — pre-staged moves are also gated
+
+`scripts/hooks/pre-commit-plan-lifecycle-guard.sh` runs as a pre-commit hook (auto-picked
+up by the strawberry dispatcher). It inspects `git diff --cached --name-status -M` for
+plan-lifecycle mutations — renames, additions, deletions, and copies touching a protected
+root — and rejects the commit if the calling identity is not Orianna.
+
+Identity is resolved from `$CLAUDE_AGENT_NAME` → `$STRAWBERRY_AGENT`. If both are empty
+and `$STRAWBERRY_AGENT_MODE` is also unset, the commit is treated as a human/admin Duong
+operation and is permitted. Pure modifications (M status) to already-tracked files in
+protected roots are always permitted — this preserves the edit-in-place semantics that
+agents like Aphelios and Xayah rely on to append Tasks sections to in-progress plans.
+
+This hook closes the gap where a plan-file move could be pre-staged by an earlier tool
+call and then committed via `git commit` without the PreToolUse hook observing the move
+directly.
 
 ### Bypass detection (post-hoc, non-blocking)
 
@@ -155,7 +172,8 @@ For full rationale and the original 131-plan migration, see
 |------|---------|
 | `.claude/agents/orianna.md` | Orianna's callable agent definition |
 | `agents/orianna/memory/git-identity.sh` | Sets Orianna's git identity on session start |
-| `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` | PreToolUse physical guard — sole enforcement layer |
+| `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` | PreToolUse physical guard — primary enforcement layer |
+| `scripts/hooks/pre-commit-plan-lifecycle-guard.sh` | Pre-commit defence-in-depth guard — blocks pre-staged lifecycle moves |
 | `scripts/orianna-bypass-audit.sh` | Post-hoc bypass detection (non-blocking) |
 | `scripts/hooks/_archive/v2-commit-phase-plan-guards/` | Archived v2 commit-phase guards (superseded) |
 | `architecture/archive/v1-orianna-gate/plan-lifecycle.md` | Previous lifecycle doc (v1 regime) |
