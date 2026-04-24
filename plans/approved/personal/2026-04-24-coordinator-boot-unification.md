@@ -390,6 +390,78 @@ OQ-1 is the only genuine fork. All other decisions were made in §4.
 - Repo-root `CLAUDE.md` — rule 10 (POSIX-portable bash).
 - `architecture/compact-workflow.md` — related SessionStart behaviour.
 
+## Tasks
+
+Breakdown owner: Kayn, 2026-04-24. Three-commit split mandated by Evelynn (Rule 12, infra-safety):
+
+- **C1** — additive launcher/boot-script work (T1–T9). No behaviour flip.
+- **C2** — xfail tests covering INV-1..INV-6 + AC-1..AC-8 (T10–T16). Must fail against current state and land BEFORE C3.
+- **C3** — behaviour flip: hook identity hardening, Signal B removal, Monitor-arming gate wiring (T17–T24).
+
+Preamble (T0) runs before C1; its outcome gates an optional follow-up (T23) but does NOT gate any invariant.
+
+Tasks tagged `[TOP-LEVEL]` touch coordinator write surfaces (`.claude/agents/evelynn.md`, `.claude/agents/sona.md`, `.claude/settings.json`) — implementer must flag back to Evelynn before committing.
+
+### P0 — Preamble probe (pre-C1, gates only T23)
+
+- [ ] **T0** — 60-second framework-behaviour probe: does Claude Code read `.claude/settings.json .agent`? Launch a disposable session with the field set to a unique sentinel string (e.g. `"ProbeSentinel"`), grep the SessionStart hook payload JSON and `CLAUDE_CODE_AGENT` env for the sentinel, record result in `assessments/probes/2026-04-24-settings-agent-field-probe.md`. Determines whether T23 is in scope. estimate_minutes: 10. Files: `assessments/probes/2026-04-24-settings-agent-field-probe.md` (new). DoD: probe note committed with explicit YES/NO verdict and evidence snippet; the field is NOT modified by this task.
+
+### C1 — Additive launcher & boot-script work (no behaviour flip)
+
+- [ ] **T1** — Author `scripts/coordinator-boot.sh` (POSIX-portable bash). Validate coordinator arg against whitelist (`Evelynn`|`Sona`); export `CLAUDE_AGENT_NAME`, `STRAWBERRY_AGENT`, `STRAWBERRY_CONCERN` (personal for Evelynn, work for Sona); `cd` to repo root; run `bash scripts/memory-consolidate.sh <name>`; `exec claude --agent <name>`. Unknown arg → exit 2 with stderr message. estimate_minutes: 35. Files: `scripts/coordinator-boot.sh` (new). DoD: `bash scripts/coordinator-boot.sh BadName` exits 2; `shellcheck` clean; script marked `chmod +x`; runs on macOS bash 3.2 and Git Bash (Rule 10).
+- [ ] **T2** — Update `scripts/mac/aliases.sh` so `evelynn` and `sona` aliases invoke `coordinator-boot.sh <Name>` instead of bare `claude --agent <Name>`. estimate_minutes: 10. Files: `scripts/mac/aliases.sh`. DoD: both aliases route through coordinator-boot.sh; sourcing `aliases.sh` in a fresh zsh does not error.
+- [ ] **T3** — Update `scripts/mac/launch-evelynn.sh` iTerm launcher to export `CLAUDE_AGENT_NAME=Evelynn` (either directly or by delegating to `coordinator-boot.sh Evelynn`). estimate_minutes: 15. Files: `scripts/mac/launch-evelynn.sh`. DoD: launcher exports identity before `claude` spawns; spot-check via `env | grep CLAUDE_AGENT_NAME` in a launched session.
+- [ ] **T4** — Update `scripts/windows/launch-evelynn.ps1` to set `$env:CLAUDE_AGENT_NAME='Evelynn'`, `$env:STRAWBERRY_AGENT='Evelynn'`, `$env:STRAWBERRY_CONCERN='personal'` before invoking `claude`. estimate_minutes: 15. Files: `scripts/windows/launch-evelynn.ps1`. DoD: PowerShell parse check passes; env vars set prior to `claude` invocation line.
+- [ ] **T5** — Update `scripts/windows/launch-evelynn.bat` to `set CLAUDE_AGENT_NAME=Evelynn` (plus siblings) before invoking `claude`. estimate_minutes: 10. Files: `scripts/windows/launch-evelynn.bat`. DoD: `.bat` sets all three env vars before the `claude` line.
+- [ ] **T6** — Add Sona launcher parity on Windows: `scripts/windows/launch-sona.ps1` and `scripts/windows/launch-sona.bat`, mirroring the Evelynn ones but with `Sona`/`work`. estimate_minutes: 20. Files: `scripts/windows/launch-sona.ps1` (new), `scripts/windows/launch-sona.bat` (new). DoD: both exist and export identity identically-shaped to the Evelynn equivalents.
+- [ ] **T7** — Add Sona launcher parity on macOS: `scripts/mac/launch-sona.sh` (if not present) delegating to `coordinator-boot.sh Sona`. estimate_minutes: 10. Files: `scripts/mac/launch-sona.sh` (new or modify). DoD: launcher present, executable, routes through coordinator-boot.sh.
+- [ ] **T8** — Document the launcher/boot-script surface in `architecture/coordinator-boot.md`: invariants INV-1..INV-6, the single boot script, identity resolution order, failure modes. estimate_minutes: 25. Files: `architecture/coordinator-boot.md` (new). DoD: page renders; cross-linked from `architecture/compact-workflow.md` "related".
+- [ ] **T9** — **C1 commit**: conventional `chore:` prefix (scripts outside `apps/**` plus docs). Subject: `chore: add coordinator-boot.sh + launcher identity exports`. Body summarises T1–T8. No behaviour flip yet. estimate_minutes: 10. Files: commit only. DoD: single commit on branch containing T1–T8 diffs; pre-push hooks pass; no files from C2/C3 included.
+
+### C2 — xfail tests (must fail against current state, land BEFORE C3)
+
+Tests live under `scripts/hooks/tests/` matching existing naming (`test-<what>.sh`, POSIX bash; follow the style of any existing test there).
+
+- [ ] **T10** — Test: `test-coordinator-boot-identity-export.sh`. Asserts AC-4 — after sourcing `coordinator-boot.sh Evelynn` in a subshell, `CLAUDE_AGENT_NAME=Evelynn`, `STRAWBERRY_AGENT=Evelynn`, `STRAWBERRY_CONCERN=personal`; same for Sona/work. Stubs the `exec claude` call (replaces `claude` in PATH with an `#!/bin/sh\nenv > "$OUT"` stub). estimate_minutes: 30. Files: `scripts/hooks/tests/test-coordinator-boot-identity-export.sh` (new). DoD: test executable, runs under plain bash; guards AC-4 regression (xfail property is weak here — C1 already provides the script by the time this test runs, but it still must fail if coordinator-boot.sh is reverted).
+- [ ] **T11** — Test: `test-inbox-watch-fail-loud.sh`. Asserts AC-6 — with both `CLAUDE_AGENT_NAME` and `STRAWBERRY_AGENT` unset, `bash scripts/hooks/inbox-watch.sh` exits 0, emits a stderr diagnostic containing `no CLAUDE_AGENT_NAME`, and produces EMPTY stdout (no fallback to Evelynn's inbox). estimate_minutes: 25. Files: `scripts/hooks/tests/test-inbox-watch-fail-loud.sh` (new). DoD: xfail on C1 HEAD (current script falls back to `.agent` field → non-empty stdout scoped to Evelynn); will pass after C3/T17.
+- [ ] **T12** — Test: `test-inbox-watch-scopes-by-env.sh`. Asserts AC-5 — with `CLAUDE_AGENT_NAME=Sona` set and a test-fixture Sona inbox containing a known sentinel message, `inbox-watch.sh` stdout contains the Sona sentinel and NOT any Evelynn-only sentinel. Uses a tmpdir fixture for inbox paths. estimate_minutes: 30. Files: `scripts/hooks/tests/test-inbox-watch-scopes-by-env.sh` (new). DoD: xfail on C1 HEAD because current chain falls through to `.agent=Evelynn`; will pass after C3/T17 when the `.agent` fallback is removed.
+- [ ] **T13** — Test: `test-monitor-arming-gate-stateless.sh`. Asserts the simplified stateless gate (Evelynn's simplicity tightening): with sentinel `/tmp/claude-monitor-armed-${CLAUDE_SESSION_ID}` absent, the PreToolUse gate emits `INBOX WATCHER NOT ARMED` on EVERY tool call (not just the N-th); with sentinel present, gate is a silent no-op (`[ -f ... ]` returns 0, nothing emitted). Test simulates PreToolUse JSON payload on stdin and asserts systemMessage/additionalContext output. estimate_minutes: 30. Files: `scripts/hooks/tests/test-monitor-arming-gate-stateless.sh` (new). DoD: xfail on C1 HEAD (hook does not yet exist); will pass after C3/T21.
+- [ ] **T14** — Test: `test-monitor-gate-coordinator-scoped.sh`. Asserts §4.2.G scope callout — with `CLAUDE_AGENT_NAME=Kayn` (a subagent), gate is silent even without sentinel. Only fires for `Evelynn`/`Sona`. estimate_minutes: 20. Files: `scripts/hooks/tests/test-monitor-gate-coordinator-scoped.sh` (new). DoD: xfail on C1 HEAD; will pass after C3/T21.
+- [ ] **T15** — Test: `test-initialprompt-signal-b-absent.sh`. Asserts AC-8 + INV-2 — `grep -i 'resumed session' .claude/agents/evelynn.md .claude/agents/sona.md` returns ONLY lines that reference the SessionStart hook (Signal A), not the model-level heuristic paragraph. Negative grep: the string "skip the file reads" must not appear in either initialPrompt. estimate_minutes: 20. Files: `scripts/hooks/tests/test-initialprompt-signal-b-absent.sh` (new). DoD: xfail on C1 HEAD (Signal B currently present); will pass after C3/T19+T20.
+- [ ] **T16** — **C2 commit**: conventional `chore:` prefix (tests outside `apps/**`). Subject: `chore: xfail tests for coordinator-boot-unification (INV-1..INV-6, AC-1..AC-8)`. Per Rule 12 these xfail tests MUST land before any implementation commit on the branch; this commit MUST come before C3. estimate_minutes: 10. Files: commit only. DoD: single commit with T10–T15 diffs; `bash scripts/hooks/tests/test-*.sh` shows T11/T12/T13/T14/T15 failing (xfail); pre-push passes.
+
+### C3 — Behaviour flip (lands last, after C2 xfail tests prove contract)
+
+- [ ] **T17** — Harden `scripts/hooks/inbox-watch.sh`: drop the `.claude/settings.json .agent` third fallback; identity chain becomes `CLAUDE_AGENT_NAME → STRAWBERRY_AGENT → fail-loud`. On missing env, print `inbox-watch: no CLAUDE_AGENT_NAME or STRAWBERRY_AGENT set; refusing to default` to stderr and `exit 0` with empty stdout. estimate_minutes: 20. Files: `scripts/hooks/inbox-watch.sh`. DoD: diff matches §4.2.E exactly; T11 and T12 now PASS; shellcheck clean.
+- [ ] **T18** — Harden `scripts/hooks/inbox-watch-bootstrap.sh`: same identity-chain simplification as T17; remove `.agent` field read; simplify the Monitor nudge `additionalContext` to an imperative first-action instruction. estimate_minutes: 25. Files: `scripts/hooks/inbox-watch-bootstrap.sh`. DoD: no reference to `.claude/settings.json` or `.agent` remains in the script; shellcheck clean; Monitor nudge is a single unambiguous imperative block.
+- [ ] **T19** — **[TOP-LEVEL]** Remove Signal B from `.claude/agents/evelynn.md` `initialPrompt`: delete the "If this is a resumed session ... reply with 'Session resumed.'" paragraph; replace with the §4.2.D block. Move the `memory-consolidate.sh` invocation OUT of `initialPrompt` (now in coordinator-boot.sh per T1). estimate_minutes: 20. Files: `.claude/agents/evelynn.md`. DoD: Signal B paragraph removed; initialPrompt is a pure file-reads chain; after T20, `diff .claude/agents/evelynn.md .claude/agents/sona.md` shows only the three-token variance per AC-8. Implementer MUST flag to Evelynn before committing.
+- [ ] **T20** — **[TOP-LEVEL]** Mirror T19 changes into `.claude/agents/sona.md`. estimate_minutes: 15. Files: `.claude/agents/sona.md`. DoD: same structure as evelynn.md post-T19; T15 PASSES; `diff` constraint from T19/AC-8 satisfied. Implementer MUST flag to Evelynn before committing.
+- [ ] **T21** — Author `scripts/hooks/pretooluse-monitor-arming-gate.sh` implementing the stateless gate (Evelynn's simplicity tightening): on every PreToolUse invocation, `[ -f /tmp/claude-monitor-armed-${CLAUDE_SESSION_ID} ]` — if present, silent exit 0 (no-op); if absent AND `CLAUDE_AGENT_NAME` ∈ {Evelynn,Sona}, emit `{"hookSpecificOutput":{"hookEventName":"PreToolUse","additionalContext":"INBOX WATCHER NOT ARMED — invoke Monitor with bash scripts/hooks/inbox-watch.sh now."}}`. For non-coordinator identities, silent no-op. No counter, no state beyond the sentinel file. estimate_minutes: 35. Files: `scripts/hooks/pretooluse-monitor-arming-gate.sh` (new). DoD: shellcheck clean; T13 and T14 PASS; POSIX-portable bash (Rule 10); single `[ -f ]` check when sentinel present.
+- [ ] **T22** — Add a Monitor-arming sentinel writer: when the Monitor tool is invoked with `scripts/hooks/inbox-watch.sh`, `touch /tmp/claude-monitor-armed-${CLAUDE_SESSION_ID}`. Implement via a matching PreToolUse or PostToolUse hook on the Monitor tool. estimate_minutes: 25. Files: `scripts/hooks/posttooluse-monitor-arm-sentinel.sh` (new). DoD: arming Monitor with the inbox-watch command creates the sentinel; T13's "sentinel present → silent" arm succeeds against this hook.
+- [ ] **T23** — **[TOP-LEVEL]** **Conditional on T0.** Wire the new PreToolUse and PostToolUse hooks from T21/T22 into `.claude/settings.json`. If T0 probe shows the framework does NOT read `.agent`, also remove the `"agent": "Evelynn"` field from `.claude/settings.json`. If T0 shows the framework DOES read it, leave the field and document in `architecture/coordinator-boot.md` §identity (JSON has no comments). estimate_minutes: 30. Files: `.claude/settings.json`, optionally `architecture/coordinator-boot.md`. DoD: hooks wired under the appropriate `hooks` section; `.claude/settings.json` parses as valid JSON; field-deletion decision justified by the T0 probe note. Implementer MUST flag to Evelynn before committing.
+- [ ] **T24** — **C3 commit**: conventional `chore:` prefix (no `apps/**` diff; all scripts + agent defs + settings). Subject: `chore: harden coordinator identity resolution + remove Signal B + wire Monitor-arming gate`. Body notes this is the behaviour flip; links back to C1/C2 commit SHAs. If pre-push TDD gate fails, investigate — do NOT use `--no-verify`. estimate_minutes: 15. Files: commit only. DoD: single commit with T17–T23 diffs; pre-push passes; all C2 tests now PASS; AC-1..AC-8 satisfiable by T25 smoke.
+
+### Post-flip verification
+
+- [ ] **T25** — Manual smoke: run AC-1..AC-8 verification, scripted where possible, by-hand where not. Record results in `assessments/qa-reports/2026-04-24-coordinator-boot-unification-smoke.md`. estimate_minutes: 40. Files: `assessments/qa-reports/2026-04-24-coordinator-boot-unification-smoke.md` (new). DoD: each of AC-1..AC-8 has PASS/FAIL line with evidence (command + output snippet).
+
+### Phase gates
+
+- **Gate C1 → C2**: C1 committed before any C2 test is authored. C2 tests must xfail against C1 HEAD (not raw `main`) for T11–T15 — C1 is additive only and does not affect existing hook behaviour, so the xfail property holds transitively.
+- **Gate C2 → C3**: C2 commit SHA recorded in the C3 commit body. C3 MUST NOT be pushed before C2. Rule 12 enforced by the pre-push TDD gate.
+- **Gate C3 → done**: T25 smoke report committed; all 8 ACs PASS.
+
+### Totals
+
+- Task count: 26 (T0 + T1..T25).
+- Total estimate_minutes: 10 + (35+10+15+15+10+20+10+25+10) + (30+25+30+30+20+20+10) + (20+25+20+15+35+25+30+15) + 40 = **545 minutes** (~9 hours of AI execution across one probe + three commits).
+- `[TOP-LEVEL]` tasks: T19, T20, T23 (three — all coordinator write surfaces).
+- Max single-task estimate: 40 minutes (T25). All tasks ≤ 60 minutes per breakdown rules.
+
+### Open questions
+
+None. OQ-1 was pre-resolved by Evelynn (accept Azir's default, probe via T0, optional delete via T23). The simplicity tightening of §4.2.G is encoded in T13/T21 (stateless gate, no counter). No new OQs surfaced during breakdown.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
