@@ -37,11 +37,25 @@
       ],
       "env": {}
     },
-    "slack": {
+    "slack-bot": {
       "type": "stdio",
       "command": "bash",
       "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/scripts/start.sh"
+        "/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/scripts/start.sh",
+        "--token-kind",
+        "bot"
+      ],
+      "env": {
+        "SLACK_TEAM_ID": "T18MLBHC5"
+      }
+    },
+    "slack-user": {
+      "type": "stdio",
+      "command": "bash",
+      "args": [
+        "/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/scripts/start.sh",
+        "--token-kind",
+        "user"
       ],
       "env": {
         "SLACK_TEAM_ID": "T18MLBHC5"

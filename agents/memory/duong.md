@@ -9,6 +9,22 @@
 - Uses Claude Code CLI as primary AI tool
 - Agents named after League of Legends champions
 
+## Slack
+
+- Workspace: `merisier.slack.com`, team `T18MLBHC5`
+- User ID: `U03KDE6SS9J`
+- Canonical channel for agent→Duong notifications: `C0ANVLZQ17X` — use `mcp__slack-bot__slack_post_message` (the BOT token) to this channel; it actually pings him. Do NOT post there via the user token — no notification.
+- Self-DM `D03KB0DTV3M` is never a notification target regardless of token — Slack suppresses self-message pings.
+
+### Token pick-rule
+
+| Use case | Token |
+|----------|-------|
+| Notifications / alerts / "agent speaks as itself" | `slack-bot` (xoxb-) |
+| Ghost-writing as Duong | `slack-user` (xoxp-) |
+| Reading channels the bot isn't invited to | `slack-user` (xoxp-) |
+| Broader read scopes (DMs, private channels) | `slack-user` (xoxp-) |
+
 ## GitHub Accounts
 - `harukainguyen1411` — HUMAN account, Duong's personal identity. Owns strawberry-app + strawberry-agents repos. Has admin bypass. Reviewer identity on PRs authored by the agent account. Canonical for ALL Google services.
 - `Duongntd` — AGENT account. Invited collaborator with push permission on repos owned by harukainguyen1411. Canonical pusher for all agent-driven commits. No bypass. PATs for agent ops are minted from this account.
