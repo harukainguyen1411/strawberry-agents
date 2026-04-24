@@ -100,15 +100,21 @@ When in doubt between normal and quick: pick normal.
 
 Retired / do-not-invoke work-only agents: **jhin** (→ Senna), nami, nautilus, thresh, zilean, demo-agent, janna, orianna-workspace-variant.
 
-## Two-Identity Model
+## Identity Model — Work Scope
 
-| Identity | GitHub account | Who uses it |
-|---|---|---|
-| Executor | `Duongntd` | Jayce, Viktor, Ekko, Seraphine, Yuumi, Vi, Akali, Skarner |
-| Reviewer | `strawberry-reviewers` | Senna, Lucian (via `scripts/reviewer-auth.sh`) |
-| Human owner | `harukainguyen1411` | Duong only |
+**Single-account rule:** All work-concern agents (executor AND reviewer) operate under the `duongntd99` account. The `strawberry-reviewers` / `strawberry-reviewers-2` accounts are **personal-concern only** (Evelynn side) and MUST NOT be used for any `missmp/*` repo action.
 
-Executor agents MUST NOT source `scripts/reviewer-auth.sh`.
+| Identity | GitHub account | Who uses it | Notes |
+|---|---|---|---|
+| All work agents | `duongntd99` | Jayce, Viktor, Ekko, Seraphine, Yuumi, Vi, Akali, Skarner, Talon, **Senna, Lucian** | One account, all work actions |
+| Human owner | `harukainguyen1411` | Duong only | Break-glass admin; approves work PRs manually |
+
+**Consequence for Rule 18 (b) on work PRs.** Because executor and reviewer share the `duongntd99` account, reviewers cannot post GitHub approving Reviews on PRs authored by executors (GitHub blocks self-approval). Therefore:
+
+- **Senna / Lucian post verdicts as PR comments**, NOT as GitHub Reviews. Use `gh pr comment <N> --repo missmp/<repo> -F <body-file>` under `duongntd99`. The audit trail is preserved in the PR conversation; no approval claim is made.
+- **Duong approves work PRs manually** from `harukainguyen1411` via the GitHub web UI after reading the reviewer's comment. This is the Rule 18 (b) satisfier for work scope.
+- `scripts/reviewer-auth.sh` is **not used for work scope**. It remains valid for personal-concern reviewers on Evelynn's side only.
+- Executor agents MUST NOT source `scripts/reviewer-auth.sh` regardless of concern.
 
 ## Startup Sequence
 
@@ -175,14 +181,16 @@ Quick lane (Karma → Talon) stays collapsed by design — this split does NOT a
 
 Viktor/Jayce must not author their own xfail tests. Rakan/Vi own that slot.
 
-## Reviewer-failure fallback
+## Reviewer flow — work scope (default path)
 
-When Senna or Lucian fails to post a review (subagent hits a permission denial or `scripts/reviewer-auth.sh` won't go through):
+Per the Identity Model section above, Senna/Lucian on work PRs post verdicts as **PR comments under `duongntd99`**, and Duong approves manually from `harukainguyen1411`. No `reviewer-auth.sh` involved. Canonical flow:
 
-1. Retry once with a fresh spawn + `mode: bypassPermissions`.
-2. If still failing, re-dispatch the reviewer **read-only**: fetch PR via raw `gh` under `Duongntd` (reads are fine — Rule 18 only gates approvals), produce verdict body, write to `/tmp/<reviewer>-pr-N-verdict.md`, exit.
-3. Yuumi picks up the file and posts it as a **PR comment** (not a review) via `gh pr comment N -F <file>` under `Duongntd`. Audit trail preserved; no approval claimed.
-4. Rule 18 only requires **one** approving review from a non-author identity. Senna's approval alone satisfies the gate — Lucian is plan-fidelity nice-to-have.
-5. If **Senna also** fails: escalate to Duong for manual web-UI Approve.
+1. Dispatch Senna / Lucian with `[concern: work]`. They ensure `gh auth switch --user duongntd99` is active before any `gh` call.
+2. Reviewer produces verdict body and posts via `gh pr comment <N> --repo missmp/<repo> -F <body-file>` under `duongntd99`. Audit trail lands in the PR conversation.
+3. Rule 18 (a) — checks green — verified by the reviewer or coordinator.
+4. Rule 18 (b) — non-author approval — satisfied by Duong's manual web-UI Approve from `harukainguyen1411`. I surface the PR to Duong with a direct link once the reviewer comment is posted and checks are green.
+5. Once both (a) and (b) are satisfied, any work agent may `gh pr merge <N>` under `duongntd99`.
 
-Never fall back to `--admin` merge or self-approval.
+**Failure modes.** If `gh` under `duongntd99` hits a 403/404, verify the agent ran `gh auth switch` (the active account on startup is not guaranteed). If `gh pr comment` fails twice after retry, re-dispatch the reviewer read-only, write verdict to `/tmp/<reviewer>-pr-N-verdict.md`, and Yuumi posts it. Never fall back to `--admin` merge or self-approval.
+
+**Note on Evelynn-side Senna/Lucian flow:** The parent agent definitions for Senna / Lucian live under `.claude/agents/` and are shared across concerns. Evelynn owns the agent-def edit to make the concern-scoped behavior explicit — this CLAUDE.md section is the Sona-side protocol; the agent-def change is tracked separately on Evelynn's side (inbox FYI sent 2026-04-24).
