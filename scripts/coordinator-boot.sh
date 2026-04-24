@@ -83,7 +83,8 @@ NAME_LOWER="$(printf '%s' "$COORDINATOR" | tr '[:upper:]' '[:lower:]')"
 
 if [ -f "$REPO_ROOT/scripts/memory-consolidate.sh" ]; then
   # Run consolidation; tolerate failure (boot continues either way)
-  bash "$REPO_ROOT/scripts/memory-consolidate.sh" "$NAME_LOWER" 2>&1 || true
+  bash "$REPO_ROOT/scripts/memory-consolidate.sh" "$NAME_LOWER" >/dev/null 2>&1 \
+    || printf 'coordinator-boot: warn: memory-consolidate.sh failed for %s (continuing)\n' "$COORDINATOR" >&2
 fi
 
 # ────────────────────────────────────────────────────────────────
