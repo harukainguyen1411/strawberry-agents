@@ -216,6 +216,32 @@ How this pattern works:
 
 Plaintext `.env` files in MCP dirs (currently present for most work MCPs) are **migrated away** as part of Phase 1. The ADR does not depend on Rule 6 being enforced at MCP boot — it IS the enforcement, applied consistently.
 
+#### Multi-secret inventory (T-new-B — 2026-04-24)
+
+Read-only survey of each Phase-1 MCP's `.env` (or `start.sh` if no `.env`). Only
+secret/auth credential names are enumerated — no values read into context.
+
+| MCP | credential name(s) | secret count | classification | T-new-C gate? |
+|---|---|---|---|---|
+| `slack` | `SLACK_USER_TOKEN` (`xoxp-` user OAuth) | 1 | **single** | No — can migrate immediately after T-new-D |
+| `gdrive` | `gcp-oauth.keys.json` (OAuth client: `client_id` / `client_secret`) + `.gdrive-server-credentials.json` (user refresh token) | 2 credential files | **multi** | Yes — T-new-C must land before T7a/T7b/T8 |
+| `gcalendar` | `gcp-oauth.keys.json` (OAuth client) + `.gcalendar-credentials.json` (user refresh token) — same structure as gdrive; may share the same GCP OAuth client (OQ-P1-5 still open) | 2 credential files | **multi** | Yes — T-new-C must land before T9 |
+| `mmp-fathom` | `FATHOM_API_KEY` + `HUBSPOT_USER_TOKEN` + `SLACK_WEBHOOK_URL` | 3 | **multi** | Yes — T-new-C must land before T4 |
+| `postgres` | `DB_DEV_TSE_URL` + `DB_DEV_EMAIL_URL` + `DB_DEV_MAILROUTER_URL` + `DB_PRD_TSE_URL` + `DB_PRD_EMAIL_URL` + `DB_PRD_MAILROUTER_URL` | 6 | **multi** | Yes — T-new-C must land before T5 |
+| `wallet-studio` | `WALLET_STUDIO_API_KEY` + `WALLET_STUDIO_TOKEN` + `MCP_AUTH_TOKEN` (+ `WALLET_STUDIO_BASE_URL` which is a config URL, not a secret) | 3 auth credentials | **multi** | Yes — T-new-C must land before T6 |
+| `mcp-atlassian` | `CONFLUENCE_TOKEN` + `JIRA_TOKEN` (+ `CONFLUENCE_URL`, `CONFLUENCE_USERNAME`, `JIRA_URL`, `JIRA_USERNAME` which are config, not secrets) | 2 auth tokens | **multi** | Yes — T-new-C must land before T10/T11 |
+| `gmail` | `gmail-oauth.age` (single OAuth refresh token — separate Google OAuth flow required) | 1 | **single** | No — can migrate on canonical pattern after T14-Duong |
+
+**Slack decision: single token.** The work-side Slack MCP (`mcps/slack/server.py`) consumes
+`SLACK_USER_TOKEN` only. `SLACK_DEFAULT_USER` in `.env` is a user-ID config value (not a
+credential). `SLACK_WEBHOOK_URL` appears in `.env` but is NOT consumed by the Slack MCP
+server — it is present as residual config. Slack migration (P1-T2) proceeds immediately
+after T-new-D on the canonical single-`--var` pattern. **T-new-C is NOT blocking for Slack.**
+
+**T-new-C scope:** T-new-C is blocking for gdrive, gcalendar, fathom, postgres,
+wallet-studio, and mcp-atlassian — six of the eight Phase-1 MCPs. Only `slack` and `gmail`
+can migrate without T-new-C.
+
 #### Multi-secret MCPs — known Phase-1 residual
 
 `tools/decrypt.sh` currently accepts exactly ONE `--var` / `--target` pair per invocation. MCPs that require multiple secrets (Slack, if both bot and user tokens are in play; potentially others surfaced by T-new-B) cannot use the canonical `--exec` pattern as-is — a single `start.sh` can't chain two `exec` calls to install two env vars into the same child process.
@@ -343,7 +369,7 @@ These tasks supersede the original P1-T0 "decide pattern" step. The pattern is r
 
 - [x] **T-new-A** — Rewrite ADR §4.2 to specify `--exec` as the canonical pattern, add the "Multi-secret MCPs" subsection documenting the known Phase-1 residual, and mark OQ-P1-4 RESOLVED. estimate_minutes: 30. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (§4.2 + OQ table). DoD: §4.2 template is self-contained and reads cleanly on its own (no external advisory doc required); explanatory paragraph under the template covers stdin, `--target`, and `--exec` semantics; multi-secret carve-out documented; OQ-P1-4 row says RESOLVED. Owner: Aphelios (done in this commit). Direct-to-main (plan edit, Rule 4). Blocks: T-new-B, T-new-C, T-new-D, T-new-E. Status: DONE in the commit that introduces this section.
 
-- [ ] **T-new-B** — Inventory secretary MCPs for multi-secret needs. Read-only survey of each MCP in the Phase-1 scope (Slack, Gdrive, Gcalendar, Gmail, Atlassian, Fathom, Postgres, Wallet-Studio) to identify how many distinct secrets each requires at runtime. Output is a bullet list amended into the plan under a new "§4.2 multi-secret inventory" subsection OR a row added to the Phase-1 tasks table noting `single` / `multi` per MCP. Specifically confirm whether Slack uses one token (user `xoxp-`) or two (user + bot `xoxb-`). estimate_minutes: 15. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (inventory subsection or table column). DoD: every Phase-1 MCP tagged single-secret or multi-secret with the credential names enumerated; if any multi-secret MCP is found, T-new-C is explicitly flagged blocking for that MCP's migration task. Owner: Ekko (read-only survey). Direct-to-main (plan edit). BlockedBy: T-new-A. Blocks: T-new-C (gate: only runs if >1 multi-secret MCP found), all multi-secret migration tasks.
+- [x] **T-new-B** — Inventory secretary MCPs for multi-secret needs. Read-only survey of each MCP in the Phase-1 scope (Slack, Gdrive, Gcalendar, Gmail, Atlassian, Fathom, Postgres, Wallet-Studio) to identify how many distinct secrets each requires at runtime. Output is a bullet list amended into the plan under a new "§4.2 multi-secret inventory" subsection OR a row added to the Phase-1 tasks table noting `single` / `multi` per MCP. Specifically confirm whether Slack uses one token (user `xoxp-`) or two (user + bot `xoxb-`). estimate_minutes: 15. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (inventory subsection or table column). DoD: every Phase-1 MCP tagged single-secret or multi-secret with the credential names enumerated; if any multi-secret MCP is found, T-new-C is explicitly flagged blocking for that MCP's migration task. Owner: Ekko (read-only survey). Direct-to-main (plan edit). BlockedBy: T-new-A. Blocks: T-new-C (gate: only runs if >1 multi-secret MCP found), all multi-secret migration tasks.
 
 - [ ] **T-new-C** (conditional on T-new-B outcome) — Extend `tools/decrypt.sh` with multi-var mode. Two candidate designs: (a) repeatable `--var` / `--target` pairs (same call decrypts multiple blobs, all env vars injected into the one `--exec` child); (b) `--env-file` source mode reading an age-encrypted blob containing multiple `KEY=value` lines. Syndra picks the design after reading the tool's current implementation, writes the extension, and Heimerdinger does a threat-model review focused on: (i) does plaintext leak to argv / env of sibling processes during the decrypt phase; (ii) does the new code path preserve the single-`exec` guarantee (never `$(...)`-capture). estimate_minutes: 60. Files: `tools/decrypt.sh`, `tools/tests/decrypt-multi-var.bats` or equivalent. DoD: either design works end-to-end with a fixture `.age` blob; threat-model review committed as a note in the commit body or a linked journal entry; no regressions in existing single-var callers. Owner: Syndra (code + test), Heimerdinger (threat-model review). PR (code change, not plan). BlockedBy: T-new-B (gate: only execute if T-new-B surfaces >1 secret for at least one MCP). Blocks: multi-secret MCP migration tasks (specifically P1-T3 if Slack has two tokens, plus any others flagged by T-new-B).
 
