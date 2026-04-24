@@ -46,7 +46,7 @@ Agents where isolation is pointless overhead (the agent does not mutate the work
 
 | Agent | Role | Opt-out rationale |
 |---|---|---|
-| **skarner** | Memory excavator (read-only search mode) | Never mutates tree in search mode. Note: Skarner also has a **write mode** for session summaries. If a caller invokes Skarner-write, they should pass `isolation: "worktree"` explicitly. Hook-level opt-out is a soft default, not a hard block. |
+| **skarner** | Memory excavator (read-only) | Never mutates the working tree — read-only by definition post-2026-04-24 retirement of write mode. Hook-level opt-out is a clean full-opt-out; no two-mode caveat. |
 | **orianna** | Script-only plan promoter | Not Agent-tool invocable; runs under `scripts/plan-promote.sh` with its own identity (`Duongntd`). Listed defensively — never reached via the hook. |
 
 Agents **kept in the default-isolated set** (explicitly re-evaluated, not grandfathered):
@@ -137,15 +137,15 @@ Test files (new):
 
 ## Open questions
 
-These need Duong's call before task breakdown begins:
+All four OQs resolved 2026-04-24 by Duong (ADR ready for Orianna promotion):
 
-1. **Opt-out scope for Skarner-write mode.** Skarner has two modes (search, write). The proposed opt-out applies to both. Options: (a) opt out Skarner fully, require explicit `isolation: "worktree"` when calling her in write mode (current proposal — coordinator discipline); (b) keep Skarner in the default-isolated set and accept a worktree on every search (simpler but wasteful); (c) split Skarner into two agent defs (`skarner-search` opted out, `skarner-write` default-isolated). Recommendation: (a), with a note in `.claude/agents/skarner.md` reminding callers to pass isolation explicitly for write mode. Needs Duong to confirm.
+1. **OQ1 — Skarner-write mode.** **RESOLVED: retire Skarner-write entirely.** Duong confirmed the write mode was a legacy want ("I used to want Skarner to write memories for subagents when they're done with their task, but that's dumb"). Skarner is pure read-only. `.claude/agents/skarner.md` updated 2026-04-24 to remove the Write/Edit tools and the "Mode: Write" section. Skarner is now cleanly in the opt-out allowlist with no two-mode caveat.
 
-2. **Does the merge-back helper belong in coordinator startup or as a harness hook?** Options: (a) ship `scripts/subagent-merge-back.sh`, Evelynn/Sona call it manually after every subagent returns (explicit, auditable, adds one tool call per dispatch); (b) implement a PostToolUse `Agent` hook that auto-merges on return (automatic, zero coordinator overhead, but harder to reason about when it fails mid-merge). Recommendation: (a) to start — ship explicit, iterate to (b) after a week of production use if the coordinator burden is real. Needs Duong's call.
+2. **OQ2 — Merge-back mechanism.** **RESOLVED: explicit helper script, start here.** Ship `scripts/subagent-merge-back.sh`. Evelynn/Sona invoke it manually per returned subagent. Observability-first — a new mechanism across the full roster deserves explicit surface before we collapse it to auto-hook. If coordinators invoke the helper identically every time for a week with no branching, revisit and automate via PostToolUse hook. Not before.
 
-3. **Should the coordinator's own Agent tool default change to `run_in_background: true` alongside this?** Evelynn's coordinator rules already require every Agent call to include `run_in_background: true`. Universal worktree isolation makes background dispatch strictly safer (no foreground blocking on a tree that's now isolated). No action needed here — flagging that the two policies compose cleanly.
+3. **OQ3 — `run_in_background` composition.** **RESOLVED: no action.** Coordinator rules already mandate `run_in_background: true` on every Agent call. Universal worktree isolation composes cleanly; flagging only.
 
-4. **Migration ordering.** Proposed sequence: (i) land merge-back helper + coordinator documentation; (ii) land xfail tests; (iii) flip the hook to opt-out. All three in the same PR or separate PRs? Recommendation: one PR, because the xfail gate (Rule 12) requires the test commit to precede the impl commit on the same branch — and the coordinator-docs update must land before the hook flip to avoid the "subagent done, coordinator confused" migration gap. Breakdown agent should confirm the ordering is representable as a single PR's commit sequence.
+4. **OQ4 — Migration ordering.** **RESOLVED: single PR, three commits in sequence.** (i) merge-back helper + coordinator doc updates, (ii) xfail tests citing this plan's INV-1 through INV-8, (iii) hook flip from opt-in to opt-out. Rule 12 forces xfail-commit and impl-commit on the same branch; splitting into stacked PRs adds ceremony without meaningful review isolation. Breakdown agent confirms three-commit representability as part of task sequencing.
 
 ## References
 
