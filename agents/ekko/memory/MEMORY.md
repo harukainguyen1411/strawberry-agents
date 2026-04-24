@@ -152,6 +152,7 @@
 - 2026-04-24 (ekko — Sona dispatch): T.P1.E1 + T.P1.E2 env var provisioning. E1 was already done (demo-factory had all 5 vars from prior deploy). E2: added FACTORY_BASE_URL + FACTORY_TOKEN (secret DS_FACTORY_TOKEN) to live demo-studio service via `gcloud run services update --update-env-vars/--update-secrets`. New revision: demo-studio-00028-2n2 (Ready, 13.9s). No source commit needed — deploy.sh was already correct. Cloud Run service name mapping: demo-studio-v3 (code/plan name) = `demo-studio` (Cloud Run service name).
 
 - Slack workspace team ID: `T18MLBHC5`. Token file `strawberry-agents/secrets/slack-bot-token.txt` has two lines: `bot_token=xoxb-...` and `user_token=xoxp-...`. `start.sh` accepts `--token-kind bot|user`, reads the matching line via grep+cut, exports as `SLACK_BOT_TOKEN`. Absolute path to token file hardcoded — no REPO_ROOT resolution. Two MCP entries in `.mcp.json`: `slack-bot` and `slack-user`. Canonical notification target for agent→Duong: `mcp__slack-bot__slack_post_message` with `channel_id: "U03KDE6SS9J"` (bot DM to Duong's user ID).
+**Superseded 2026-04-24** by `plans/in-progress/personal/2026-04-24-custom-slack-mcp.md` — dual-wrapper replaced by single `mcp__slack__*` server; use `mcp__slack__notify_duong(text)` for agent→Duong notifications.
 
 ## Archive Note
 
