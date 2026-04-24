@@ -1068,6 +1068,165 @@ test_senna_c2_env_var_email_blocked
 test_senna_c3_author_flag_blocked
 test_senna_i3_empty_stdin_passthrough
 
+# ---------------------------------------------------------------------------
+# NEW-BP-1: semicolon/pipe inside quoted -c value defeats token scan
+# git -c 'user.email=viktor@strawberry.local;' commit
+# git -c 'user.email=viktor@strawberry.local|more'
+# ---------------------------------------------------------------------------
+test_new_bp1_semicolon_in_quoted_c_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-1a: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Semicolon inside quoted -c value — current regex early-terminates on ';'
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c '\''user.email=viktor@strawberry.local;'\'' commit -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-1a: git -c 'user.email=persona;' commit blocked (shlex tokenizer)"
+  else
+    fail "NEW-BP-1a (BYPASS): semicolon in quoted -c email NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_new_bp1_pipe_in_quoted_c_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-1b: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Pipe inside quoted -c value
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c '\''user.email=viktor@strawberry.local|more'\'' commit -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-1b: git -c 'user.email=persona|more' commit blocked (shlex tokenizer)"
+  else
+    fail "NEW-BP-1b (BYPASS): pipe in quoted -c email NOT blocked (exit=$exit_code)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# NEW-BP-2: quote char immediately after = in GIT_AUTHOR_NAME defeats regex anchor
+# GIT_AUTHOR_NAME='Viktor Kesler' git commit
+# git -c " user.name=Viktor" commit  (leading space in quoted -c value)
+# git commit --author=' Viktor <neutral-email>'  (leading space, name-only)
+# ---------------------------------------------------------------------------
+test_new_bp2_quoted_git_author_name_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-2a: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Quoted multi-word GIT_AUTHOR_NAME — regex requires name immediately after =
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_NAME='\''Viktor Kesler'\'' git commit -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-2a: GIT_AUTHOR_NAME='Viktor Kesler' git commit blocked (shlex tokenizer)"
+  else
+    fail "NEW-BP-2a (BYPASS): quoted GIT_AUTHOR_NAME with persona NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_new_bp2_leading_space_in_quoted_c_name_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-2b: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Leading space in quoted -c value: git -c " user.name=Viktor" commit
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c \" user.name=Viktor\" commit -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-2b: git -c \" user.name=Persona\" commit blocked (shlex tokenizer)"
+  else
+    fail "NEW-BP-2b (BYPASS): leading space in quoted -c name NOT blocked (exit=$exit_code)"
+  fi
+}
+
+test_new_bp2_author_leading_space_name_only_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-2c: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # --author with leading space inside quoted value, neutral email (name-only bypass)
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author='\'' Viktor <103487096+Duongntd@users.noreply.github.com>'\'' -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-2c: --author=' Viktor <neutral-email>' blocked (shlex tokenizer, word-boundary name match)"
+  else
+    fail "NEW-BP-2c (BYPASS): --author with leading space + persona name NOT blocked (exit=$exit_code)"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# NEW-BP-3: persona name as middle/trailing token in multi-word quoted value
+# GIT_AUTHOR_NAME='The Viktor' git commit
+# ---------------------------------------------------------------------------
+test_new_bp3_persona_as_middle_token_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "NEW-BP-3: hook does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  # Persona name appears after other text in quoted value
+  local payload exit_code
+  payload='{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_NAME='\''The Viktor'\'' git commit -m msg","cwd":"'"$wdir"'"}}'
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "NEW-BP-3: GIT_AUTHOR_NAME='The Viktor' blocked (shlex tokenizer, word-boundary name match)"
+  else
+    fail "NEW-BP-3 (BYPASS): persona name as middle token NOT blocked (exit=$exit_code)"
+  fi
+}
+
 # Senna round-3 bypass shapes — BP-1/BP-2/BP-3
 test_bp1_quoted_dash_c_email_blocked
 test_bp1_single_quoted_dash_c_email_blocked
@@ -1079,6 +1238,14 @@ test_bp3_git_committer_name_env_blocked
 test_bp3_dash_c_name_unquoted_blocked
 test_bp3_author_flag_persona_name_neutral_email_blocked
 test_bp3_author_neutral_name_passes
+
+# Senna round-4 bypass shapes — NEW-BP-1/2/3 (shlex tokenizer required)
+test_new_bp1_semicolon_in_quoted_c_email_blocked
+test_new_bp1_pipe_in_quoted_c_email_blocked
+test_new_bp2_quoted_git_author_name_blocked
+test_new_bp2_leading_space_in_quoted_c_name_blocked
+test_new_bp2_author_leading_space_name_only_blocked
+test_new_bp3_persona_as_middle_token_blocked
 
 printf '\n=== Results: %d pass, %d fail, %d xfail ===\n' "$PASS" "$FAIL" "$XFAIL"
 
