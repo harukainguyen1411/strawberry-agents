@@ -1,7 +1,7 @@
 ---
 id: 2026-04-24-rule-19-guard-hole-pre-staged-moves
 title: Rule 19 — close commit-phase hole for pre-staged plan-lifecycle moves
-status: proposed
+status: approved
 concern: personal
 owner: karma
 complexity: quick
@@ -67,3 +67,11 @@ All four cases live in `scripts/hooks/tests/test-pre-commit-plan-lifecycle-guard
 - Identity rewrite (why `git config user.name` is not distinguishing): `scripts/hooks/agent-identity-default.sh`
 - Orianna agent def: `.claude/_script-only-agents/orianna.md`
 - Prior lifecycle plan: `plans/approved/personal/2026-04-23-plan-lifecycle-physical-guard.md`
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Clear owner (Karma), concrete task breakdown with files and DoDs, Rule 12 satisfied by xfail-first T1 before T2 impl, and the test plan enumerates four invariants including the false-positive-lockout and edit-in-place cases. Scope is surgical — one new hook script, one new test file, and wiring updates — no speculative architecture. Identity resolution at commit phase is well-reasoned against the `agent-identity-default.sh` constraint.
+
