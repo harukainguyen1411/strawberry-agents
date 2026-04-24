@@ -24,12 +24,19 @@ const { WebClient } = slackWebApi;
  * In vitest, vi.mock factories expose retryPolicies as a direct named export on the namespace.
  * In Node 25 + tsx real runtime, the CJS module's retryPolicies is only accessible via
  * module.exports (the `.default` wrapper on the namespace object when __esModule:true is set).
+ *
+ * Accepts an optional namespace parameter so the .default fallback branch is unit-testable
+ * by passing a stub object without going through vi.mock (which validates mock exports and
+ * would throw before the property access).
  */
-export function resolveRetryPolicies(): typeof slackWebApi.retryPolicies {
-  if (slackWebApi.retryPolicies !== undefined) return slackWebApi.retryPolicies;
+export function resolveRetryPolicies(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ns: any = slackWebApi
+): typeof slackWebApi.retryPolicies {
+  if (ns.retryPolicies !== undefined) return ns.retryPolicies;
   // Node 25 CJS interop fallback: module.exports is exposed as .default on the namespace
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cjsExports = (slackWebApi as any).default;
+  const cjsExports = (ns as any).default;
   if (cjsExports?.retryPolicies !== undefined) return cjsExports.retryPolicies;
   throw new Error(
     "slack-mcp: cannot resolve retryPolicies from @slack/web-api. " +
