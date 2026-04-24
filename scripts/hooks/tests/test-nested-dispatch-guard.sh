@@ -25,7 +25,8 @@
 set -eu
 
 REPO_ROOT_REAL="$(git rev-parse --show-toplevel)"
-HOOK="$REPO_ROOT_REAL/scripts/hooks/agent-default-isolation.sh"
+# Allow HOOK env var override for development testing (e.g. pointing at a worktree copy).
+HOOK="${HOOK:-$REPO_ROOT_REAL/scripts/hooks/agent-default-isolation.sh}"
 
 PASS=0
 FAIL=0

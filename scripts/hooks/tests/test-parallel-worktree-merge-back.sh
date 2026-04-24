@@ -25,7 +25,8 @@
 set -eu
 
 REPO_ROOT_REAL="$(git rev-parse --show-toplevel)"
-MERGE_BACK="$REPO_ROOT_REAL/scripts/subagent-merge-back.sh"
+# Allow MERGE_BACK env var override for development testing (e.g. pointing at a worktree copy).
+MERGE_BACK="${MERGE_BACK:-$REPO_ROOT_REAL/scripts/subagent-merge-back.sh}"
 
 PASS=0
 FAIL=0

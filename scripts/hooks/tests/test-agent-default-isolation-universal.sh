@@ -19,7 +19,8 @@
 set -eu
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
-HOOK="$REPO_ROOT/scripts/hooks/agent-default-isolation.sh"
+# Allow HOOK env var override for development testing (e.g. pointing at a worktree copy).
+HOOK="${HOOK:-$REPO_ROOT/scripts/hooks/agent-default-isolation.sh}"
 
 PASS=0
 FAIL=0
@@ -120,7 +121,8 @@ default_isolation: none
 AGEOF
 
 _fixture_input="{\"tool_name\":\"Agent\",\"tool_input\":{\"subagent_type\":\"fixture-none-agent\"}}"
-_out="$(REPO_ROOT="$TMPDIR_FIXTURE" printf '%s' "$_fixture_input" | bash "$HOOK" 2>/dev/null || true)"
+# Export REPO_ROOT so it is visible to bash "$HOOK" subprocess.
+_out="$(printf '%s' "$_fixture_input" | REPO_ROOT="$TMPDIR_FIXTURE" bash "$HOOK" 2>/dev/null || true)"
 # INV-5 reference: ADR §INV-5 — default_isolation: none frontmatter is honored.
 assert_no_mutation "INV-5 fixture-none-agent (default_isolation: none)" "$_out"
 unset _fixture_input _out
