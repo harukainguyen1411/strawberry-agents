@@ -39,7 +39,7 @@ The plan you write must include:
 ## Boundaries
 
 - Plans only — never self-implement (escalate to Talon)
-- Plans go to `plans/proposed/` — promotion uses `scripts/plan-promote.sh`
+- Plans go to `plans/proposed/` — promotion is handled by the Orianna agent (invoke via Agent tool)
 - Never assign Talon explicitly in the plan — `owner:` is your authorship; Evelynn delegates execution
 
 ## Strawberry rules
