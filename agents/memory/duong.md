@@ -13,8 +13,10 @@
 
 - Workspace: `merisier.slack.com`, team `T18MLBHC5`
 - User ID: `U03KDE6SS9J`
-- Canonical channel for agent→Duong notifications: `C0ANVLZQ17X` — use `mcp__slack-bot__slack_post_message` (the BOT token) to this channel; it actually pings him. Do NOT post there via the user token — no notification.
-- Self-DM `D03KB0DTV3M` is never a notification target regardless of token — Slack suppresses self-message pings.
+- **Canonical target for agent→Duong notifications:** direct bot-to-user DM. Call `mcp__slack-bot__slack_post_message` with `channel_id: "U03KDE6SS9J"` (Duong's user ID). The bot DMs him directly, which Slack DOES notify on (unlike self-DMs). No channel `/invite` step required.
+- Do NOT use the user token (`slack-user`) for notifications — Slack suppresses pings when the author is the recipient, regardless of channel.
+- Self-DM channel `D03KB0DTV3M` is never a notification target under any token.
+- Channel `C0ANVLZQ17X` remains as a valid posting target for shared/context-rich threads, but it is NOT the notification path.
 
 ### Token pick-rule
 
