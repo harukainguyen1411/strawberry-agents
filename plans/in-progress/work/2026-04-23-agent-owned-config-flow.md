@@ -1,5 +1,5 @@
 ---
-status: approved
+status: in-progress
 complexity: complex
 concern: work
 owner: swain
@@ -256,3 +256,12 @@ Peak concurrency (during W3): 3 agents
 **Impact.** W1 scope shrinks: seed-POST to S2 on /session/new only, no session-doc patch. W2/W3/W4/W5 unchanged — SSE payload carries version transiently; frontend reads version from SSE event or S2 GET, never from session doc.
 
 **Authored-by.** Swain (ADR amendment, Sona-dispatched, schema review by Sona against deployed S2 rev 00014-2bn + live session.py).
+
+---
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Corrective lifecycle flip to reflect that W1 and W2 have already shipped via PRs #91 and #96 (merged); the plan was never moved out of `approved/` at the time implementation began. Plan content is concrete, has a clear owner (Swain), actionable W1-W5 tasks with DoD + estimates, xfail-first test plan satisfying Rule 12, and the prior approval block confirms gating items were resolved. Phase discipline requires the status to match reality — approving the in-progress transition.
