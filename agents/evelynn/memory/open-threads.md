@@ -1,22 +1,42 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-23 (post-session-close, pointing at new top-of-queue items).
+Last updated: 2026-04-24 (Lissandra pre-compact consolidation, mid-session S66).
 
 ---
 
-## Sona inbox monitor asymmetric — investigate tomorrow
+## Talon identity-leak impl — in-flight (isolation:worktree)
 
-**Current status (2026-04-23):** Monitor works Sona→Evelynn (confirmed at 14:50 — task-notification fired correctly on `agents/evelynn/inbox/20260423-1450-955853.md`). Monitor silent Evelynn→Sona (failed twice today at 11:54 and 14:44). Rules out the initial "Bash writes bypass the hook" hypothesis — Sona's watcher is either not running or mis-scoped. Pull-based `/check-inbox` works in both directions.
-**Next:** Dispatch Explore tomorrow to read `.claude/settings.json` + any monitor script to check how the per-coordinator watcher is wired; check whether Sona's session boot spawns it at all. Full notes in `agents/evelynn/learnings/2026-04-23-sona-inbox-monitor-not-firing.md`.
+**Current status (2026-04-24):** Talon dispatched for identity-leak implementation from `plans/approved/` (e211779). Dispatched with `isolation:worktree`. In-flight at compact boundary.
+**Next:** On resume, check `git worktree list` for Talon's worktree. Once complete, dispatch Senna + Lucian for review, then merge.
+**Shard:** 4f8b78fd
+
+---
+
+## Kayn worktree-isolation breakdown — in-flight
+
+**Current status (2026-04-24):** Kayn dispatched for D1A breakdown of universal worktree-isolation ADR (promoted to `approved/`, 678c971). In-flight at compact boundary.
+**Next:** On resume, check Kayn's output. Review breakdown, then dispatch Jayce or Viktor for implementation.
+**Shard:** 4f8b78fd
+
+---
+
+## Sona inbox monitor asymmetric — root cause identified, fix pending
+
+**Current status (2026-04-24):** Root cause confirmed: `scripts/hooks/inbox-watch-bootstrap.sh` reads `.agent` field from project-root `.claude/settings.json`, hardcoded to `'Evelynn'`. Sona sessions don't export `STRAWBERRY_AGENT` at launch, so watcher always spawns as Evelynn. Monitor works Sona→Evelynn; silent Evelynn→Sona.
+**Fix options:** (a) Add `STRAWBERRY_AGENT=Sona` export to Sona's coordinator launch alias, or (b) runtime-agent-context resolution in the bootstrap script.
+**Next:** Implement fix — patch bootstrap script or Sona launch alias. Dispatch Ekko if trivial.
+**Refs:** `agents/evelynn/learnings/2026-04-23-sona-inbox-monitor-not-firing.md`
+**Shard:** 4f8b78fd
 
 ---
 
 ## Identity leaks on work-repo PRs (Evelynn-owned fix)
 
-**Current status (2026-04-23):** Duong flagged two leaks on missmp/company-os PRs #91 and #96 post-merge. (1) Senna/Lucian reviewer verdicts sign `— <name>` in body text, posted verbatim under Duong's identity → external viewers see agent names. (2) Commit author = `viktor@strawberry.local` / `orianna@strawberry.local` etc. on impl commits → external git log exposes orchestration layer. Both violate the spirit of CLAUDE.md "Never include AI authoring references in commits" (rule text is Anthropic-strict; spirit covers any external agent-system disclosure). Confirmed this session: Swain commits → Orianna identity; Rakan xfail → Viktor identity — per-worktree `.git/config` inherits whoever-last-committed's identity.
+**Current status (2026-04-24):** Karma quick-lane plan commissioned and completed. OQ1 resolved by Duong: `Duongntd` is the canonical agent identity for all strawberry-agent commits. Plan promoted to `approved/` (e211779). Talon dispatched for implementation with `isolation:worktree` — in-flight (see Talon thread above).
 **Scope:** Evelynn owns the system-wide fix (subagent identity bootstrap + reviewer verdict templates). Work-repo-specific hook installs on missmp/company-os are Sona's lane.
-**Next:** Tomorrow — commission Karma quick-lane plan. System-wide fix scope: (a) process-level GIT_AUTHOR_NAME/EMAIL binding per subagent spawn via Agent-tool harness or startup hook; (b) strip `— <name>` footer from Senna/Lucian reviewer verdict templates on any non-personal concern, OR from the /tmp/*-verdict.md → gh pr comment pipeline. Coordinate with Sona on the third gap (missmp/company-os pre-push + tdd-gate CI install).
+**Next:** Monitor Talon's impl. On completion, verify identity bootstrap across worktree spawns; coordinate with Sona for company-os hook install.
 **Refs:** `agents/evelynn/inbox/archive/2026-04/20260423-1450-955853.md` (Sona's flagging message), `agents/sona/learnings/2026-04-23-w2-tdd-ordering-violation-viktor.md` patterns 3-4.
+**Shard:** 4f8b78fd
 
 ---
 
@@ -196,11 +216,19 @@ Last updated: 2026-04-23 (post-session-close, pointing at new top-of-queue items
 
 ---
 
+## Universal worktree-isolation ADR — approved, breakdown in-flight
+
+**Current status (2026-04-24):** Azir commissioned to author universal worktree-isolation ADR. All 4 OQs resolved by Duong: Skarner write-mode retired entirely (103dd3e), explicit merge-back helper to be included, single-PR migration ordering required. ADR promoted to `approved/` (678c971). Kayn dispatched for D1A breakdown — in-flight (see Kayn thread above).
+**Next:** Check Kayn's breakdown on resume. Dispatch impl agent once breakdown reviewed.
+**Shard:** 4f8b78fd
+
+---
+
 ## Subagent-worktree-and-edit-only plan
 
-**Current status (2026-04-23):** Plan at `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md` (`de41618` + `9c425ec`). `isolation: "worktree"` on Agent calls is the structural fix for parallel-subagent write races (materialized today: Ekko #33 + #32 git-raced). Awaiting Duong review.
-**Shards:** c95a8d3b.
-**Next:** Duong approves → Orianna sign + promote → dispatch impl.
+**Current status (2026-04-24):** This plan was the precursor; universal worktree-isolation ADR (above) supersedes it in scope. Skarner write-mode now retired (103dd3e). CLAUDE.md rule 20 updated with the 4-agent opt-in list. Original plan at `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md` may be archived once ADR impl lands.
+**Next:** Archive after universal ADR impl completes.
+**Shards:** c95a8d3b, 4f8b78fd.
 
 ---
 
