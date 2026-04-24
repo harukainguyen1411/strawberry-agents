@@ -157,6 +157,7 @@
 - 2026-04-24 (ekko): PR #38 — subagent-merge-back.sh polish (4 Senna PR #37 findings). Commit aaef4946 on chore/merge-back-polish. Fix1: push pipe + `|| warn`, Fix2: HEAD-compare for non-conflict error discrimination, Fix3: `while IFS= read -r f` + heredoc replaces `for f in $VAR`, Fix4: removed dead HAS_OTHER_CONFLICT. Tests: 6/6 green. PR open, awaiting non-author approval before merge.
 
 - 2026-04-24 (ekko): PR #40 — boot-unification-polish (2 Senna PR #39 suggestions). Fix1: corrected misleading headers on launch-evelynn.sh + launch-sona.sh (said "delegates to coordinator-boot.sh", actually inlines env vars + execs claude directly). Fix2: coordinator-boot.sh memory-consolidate failure now emits stderr warn instead of silently swallowing. Commit 5e236214. Tests: 30 non-xfail bats + 7/7 boot-chain-order. PR #40 open, awaiting non-author approval.
+- 2026-04-24 (ekko): PR #40 Senna REQUEST_CHANGES resolved. New header comments falsely claimed scripts sourced coordinator-boot.sh — rewrote to say explicitly they do NOT source it; memory consolidation/startup reads happen inside coordinator session via SessionStart. Commit e5a9c257. Re-review requested via `gh pr edit 40 --add-reviewer strawberry-reviewers-2` (note: `gh pr review --request-review` flag does not exist).
 
 ## Archive Note
 
