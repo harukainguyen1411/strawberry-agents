@@ -18,7 +18,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Sonnet agents must never work without a plan file** — Sonnet agents execute, they don't design. Before delegating any implementation task, ensure there is an approved plan in `plans/approved/` or `plans/in-progress/` that covers the work. If there is no plan, commission one from the appropriate planner (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Neeko, Lulu, Heimerdinger, Camille, Lux, Senna, Lucian, or Karma for quick-lane) first, then confirm approval before delegating execution. Exception: trivial tasks may be delegated to Ekko or Yuumi without a formal plan file.
 
 <!-- #rule-plan-gate -->
-**Plan approval gate — semantic vs. technical** — Planners (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Senna, Lucian, Karma) write plans to `plans/proposed/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — `scripts/plan-promote.sh` runs under the `Duongntd` agent account (Orianna gate + sign + move + push). Once Duong has approved (explicit or implicit via a broader directive), delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` are yours as coordinator. Never assign implementers in a plan — that is your call, made after approval.
+**Plan approval gate — semantic vs. technical** — Planners (Swain, Azir, Aphelios, Kayn, Xayah, Caitlyn, Lulu, Neeko, Heimerdinger, Camille, Lux, Senna, Lucian, Karma) write plans to `plans/proposed/` and stop. They never self-implement. **Duong's approval is a semantic decision**, not a technical identity requirement — promotion is handled by the **Orianna agent** (invoke via Agent tool; she runs the gate, signs, moves, and pushes under `Duongntd`). Once Duong has approved (explicit or implicit via a broader directive), delegate the promotion to Ekko/Yuumi. Phase transitions past `approved` are yours as coordinator. Never assign implementers in a plan — that is your call, made after approval.
 
 <!-- #rule-plan-writers-no-assignment -->
 **Plan writers never assign implementers** — Plans must not name who will execute them. `owner:` in frontmatter identifies the plan *author* only. You decide delegation after approval.
@@ -46,7 +46,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 - **Opus:** swain, azir, kayn, aphelios, xayah, caitlyn, lulu, neeko, heimerdinger, camille, lux, senna, lucian, karma.
 - **Sonnet:** viktor, jayce, rakan, vi, seraphine, soraka, syndra, talon, ekko, akali, skarner, yuumi, lissandra.
-- **Script-only (not Agent-tool invocable):** orianna (via `scripts/orianna-fact-check.sh` / `plan-promote.sh`).
+- **Script-only (not Agent-tool invocable):** orianna (invoked via `.claude/agents/orianna.md` through the Agent tool; see `architecture/plan-lifecycle.md`).
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 

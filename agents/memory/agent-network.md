@@ -110,7 +110,7 @@ Single-lane:
 - Duong → Evelynn → Heimerdinger (DevOps advice) → Ekko (execution)
 - Duong → Evelynn → Camille (git/security advice)
 - Duong/Evelynn → Senna (PR code quality + security review) + Lucian (PR plan/ADR fidelity review) — both review every PR before merge
-- Duong/Evelynn → `scripts/orianna-fact-check.sh` (called automatically by `plan-promote.sh`) — Orianna is script-only, not invocable via the Agent tool
+- Duong/Evelynn → Orianna agent (`.claude/agents/orianna.md`) — invocable via the Agent tool; she runs the gate, signs, moves, and pushes
 
 Quick lane:
 - Duong → Evelynn → Karma (quick plan) → Talon (quick execution) — for trivial tasks
@@ -220,7 +220,7 @@ Therefore, before invoking `/end-subagent-session`:
 - Evelynn delegates execution, moving to `plans/in-progress/`
 - On completion, move to `plans/implemented/`
 
-**Promoting plans:** Use `scripts/plan-promote.sh <file> <target-status>` — never raw `git mv` out of `proposed/`. `plan-promote.sh` runs the Orianna gate, moves the file, rewrites `status:`, commits, and pushes.
+**Promoting plans:** Invoke the **Orianna agent** (`.claude/agents/orianna.md`) via the Agent tool — never raw `git mv` out of `proposed/`. Orianna runs the gate, moves the file, rewrites `status:`, commits, and pushes. See `architecture/plan-lifecycle.md`.
 
 No agent self-implements their own plan without approval.
 
@@ -234,7 +234,7 @@ All agents must follow these rules — see `CLAUDE.md` for full detail and ancho
 4. Plans go directly to main, never via PR
 5. Conventional commit prefixes scoped by diff — non-code: `chore:` or `ops:`; code in `apps/**`: `feat:`, `fix:`, `perf:`, `refactor:`, or `chore:`; breaking: `feat!:` or `BREAKING CHANGE:` footer
 6. Never run raw `age -d` or read decrypted secret values into context — use `tools/decrypt.sh` exclusively
-7. Use `scripts/plan-promote.sh` to move plans out of `proposed/` — never raw `git mv`
+7. Invoke the Orianna agent to move plans out of `proposed/` — never raw `git mv`
 8. Always invoke `/end-session` before closing any top-level session; subagents invoke `/end-subagent-session`
 9. Agent model selection is explicit or inherited — `model:` field in frontmatter; Opus for planners, Sonnet for executors; Haiku is retired
 10. Scripts in `scripts/` (outside `scripts/mac/` and `scripts/windows/`) must be POSIX-portable bash
