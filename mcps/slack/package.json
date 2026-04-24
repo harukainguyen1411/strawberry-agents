@@ -1,0 +1,26 @@
+{
+  "name": "@strawberry/slack-mcp",
+  "version": "1.0.0",
+  "description": "Custom Slack MCP server with purposed tools",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "test": "vitest run --passWithNoTests",
+    "test:unit": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2",
+    "@slack/web-api": "^7.9.2",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  },
+  "tdd": {
+    "enabled": true
+  }
+}

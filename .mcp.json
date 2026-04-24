@@ -1,23 +1,10 @@
 {
   "mcpServers": {
-    "evelynn": {
-      "type": "stdio",
-      "command": "bash",
-      "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/evelynn/scripts/start.sh"
-      ],
-      "env": {
-        "AGENTS_PATH": "/Users/duongntd99/Documents/Personal/strawberry/agents",
-        "WORKSPACE_PATH": "/Users/duongntd99/Documents/Personal/strawberry",
-        "ITERM_PROFILES_PATH": "/Users/duongntd99/Library/Application Support/iTerm2/DynamicProfiles/agents.json",
-        "TELEGRAM_CHAT_ID": "7922315245"
-      }
-    },
     "discord": {
       "type": "stdio",
       "command": "bash",
       "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/discord/scripts/start.sh"
+        "/Users/duongntd99/Documents/Personal/strawberry-agents/mcps/discord/scripts/start.sh"
       ],
       "env": {}
     },
@@ -25,7 +12,7 @@
       "type": "stdio",
       "command": "bash",
       "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/cloudflare/scripts/start.sh"
+        "/Users/duongntd99/Documents/Personal/strawberry-agents/mcps/cloudflare/scripts/start.sh"
       ],
       "env": {}
     },
@@ -33,7 +20,7 @@
       "type": "stdio",
       "command": "bash",
       "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/gcp/scripts/start.sh"
+        "/Users/duongntd99/Documents/Personal/strawberry-agents/mcps/gcp/scripts/start.sh"
       ],
       "env": {}
     },
@@ -41,7 +28,7 @@
       "type": "stdio",
       "command": "bash",
       "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/scripts/start.sh"
+        "/Users/duongntd99/Documents/Personal/strawberry-agents/mcps/slack/scripts/start.sh"
       ],
       "env": {
         "SLACK_TEAM_ID": "T18MLBHC5",

@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Parse --token-kind bot|user (default: bot)
+TOKEN_KIND="bot"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --token-kind)
+      TOKEN_KIND="$2"
+      shift 2
+      ;;
+    *)
+      echo "slack-mcp: unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+if [ "$TOKEN_KIND" != "bot" ] && [ "$TOKEN_KIND" != "user" ]; then
+  echo "slack-mcp: --token-kind must be 'bot' or 'user', got: $TOKEN_KIND" >&2
+  exit 1
+fi
+
+# Token file lives in strawberry-agents/secrets/ (absolute path — not relative to this script's repo)
+TOKEN_FILE="/Users/duongntd99/Documents/Personal/strawberry-agents/secrets/slack-bot-token.txt"
+
+if [ ! -f "$TOKEN_FILE" ]; then
+  echo "slack-mcp: missing $TOKEN_FILE" >&2
+  exit 1
+fi
+
+# Extract the value for the matching key (bot_token= or user_token=)
+KEY="${TOKEN_KIND}_token"
+TOKEN="$(grep "^${KEY}=" "$TOKEN_FILE" | head -1 | cut -d= -f2-)"
+
+if [ -z "$TOKEN" ]; then
+  echo "slack-mcp: key '${KEY}' not found in $TOKEN_FILE" >&2
+  exit 1
+fi
+
+exec env SLACK_BOT_TOKEN="$TOKEN" npx -y @modelcontextprotocol/server-slack
