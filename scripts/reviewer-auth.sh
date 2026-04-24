@@ -116,32 +116,32 @@ if [[ -f "$LIB_ANONYMITY" ]]; then
             _is_work=1
         fi
 
+        # ---------------------------------------------------------------------------
+        # Work-scope refusal guard (T4 — plan 2026-04-24-reviewer-auth-concern-split.md)
+        # reviewer-auth.sh is personal-concern only. Work-scope invocations are
+        # rejected here — before any PAT decryption — with a clear pointer to the
+        # correct codepath. Exit 4 is distinct from anonymity rejection (exit 3).
+        # ANONYMITY_MOCK_REPO_URL is honoured so tests can exercise this path.
+        # ---------------------------------------------------------------------------
         if [[ "$_is_work" == "1" ]]; then
-            # Extract --body / -b value from args
-            _body=""
-            _prev_arg=""
-            for _arg in "$@"; do
-                if [[ "$_prev_arg" == "--body" || "$_prev_arg" == "-b" ]]; then
-                    _body="$_arg"
-                    break
-                fi
-                _prev_arg="$_arg"
-            done
+            cat >&2 <<WORK_SCOPE_REJECT
 
-            if [[ -n "$_body" ]]; then
-                if ! printf '%s' "$_body" | anonymity_scan_text; then
-                    cat >&2 <<REJECT
+[reviewer-auth] Work-scope PR rejected (exit 4).
 
-[anonymity] Work-scope PR review/comment rejected: body contains agent-system
-identifiers that must not appear in MMP-visible surfaces.
+reviewer-auth.sh is for personal-concern PRs only (strawberry-reviewers identities).
+For work-concern PRs (missmp/* repos), use scripts/post-reviewer-comment.sh instead:
 
-Remove the flagged tokens and retry. Use "-- reviewer" instead of an agent name.
-Reference: architecture/pr-rules.md #work-scope-anonymity
-REJECT
-                    exit 3
-                fi
-            fi
+  scripts/post-reviewer-comment.sh --pr <N> --repo missmp/<repo> --file <body-file>
+
+Then Duong manually approves from harukainguyen1411 to satisfy Rule 18 (b).
+No PAT was decrypted. Reference: plans/implemented/personal/2026-04-24-reviewer-auth-concern-split.md
+WORK_SCOPE_REJECT
+            exit 4
         fi
+
+        # Work-scope (missmp/*) is already handled above (exit 4).
+        # Personal-scope PRs do not require anonymity scanning — reviewer identities
+        # (strawberry-reviewers, strawberry-reviewers-2) are acceptable on personal repos.
     fi
 
     # ANONYMITY_DRY_RUN=1: skip actual gh exec (used by test fixtures d/e/f)
