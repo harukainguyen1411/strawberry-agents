@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Launch Evelynn on Mac — Remote Control + dangerously-skip-permissions
-# Delegates to coordinator-boot.sh to export identity env vars (INV-4).
-# CLAUDE_AGENT_NAME and siblings are set before claude spawns.
+# Sets CLAUDE_AGENT_NAME / STRAWBERRY_AGENT / STRAWBERRY_CONCERN identity env
+# vars inline (INV-4), then execs `claude` directly.
+# Does NOT source coordinator-boot.sh — memory consolidation and startup reads
+# are skipped here; they happen inside the coordinator session via SessionStart.
 REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 export CLAUDE_AGENT_NAME="Evelynn"
 export STRAWBERRY_AGENT="Evelynn"
