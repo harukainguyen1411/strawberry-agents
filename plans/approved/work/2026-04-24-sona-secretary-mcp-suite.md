@@ -196,26 +196,31 @@ secrets/work/encrypted/
 └── github-pat-work.age               # Sona's path, separate from gh CLI's keychain
 ```
 
-Each `start.sh` pattern (template, adapted per MCP):
+Each `start.sh` pattern (canonical template per Heimerdinger's OQ-P1-4 advisory — uses `tools/decrypt.sh --exec`, which NEVER emits plaintext to stdout):
 
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-REPO="/Users/duongntd99/Documents/Personal/strawberry-agents"
-
-# Decrypt into env of the child process only — never to disk.
-TOKEN="$("$REPO/tools/decrypt.sh" "$REPO/secrets/work/encrypted/<name>.age")"
-[ -n "$TOKEN" ] || { echo "<mcp>: decryption failed" >&2; exit 1; }
-
-exec env \
-  SOME_TOKEN="$TOKEN" \
-  ... \
-  uvx|node|python3 "$DIR/..."
+REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+cd "$REPO_ROOT"
+exec ./tools/decrypt.sh \
+  --target "secrets/work/runtime/<name>.env" \
+  --var    "SOME_TOKEN" \
+  --exec -- <runner> <args...>  < "secrets/work/encrypted/<name>.age"
 ```
 
+How this pattern works:
+- Ciphertext arrives on stdin via `< secrets/work/encrypted/<name>.age`; plaintext never touches argv or parent-shell memory past the `age -d` call inside `tools/decrypt.sh`.
+- `--target secrets/work/runtime/<name>.env` writes a sibling runtime env-file (gitignored under `secrets/`) — this is required by the tool's current interface, which always materializes a target path. The runtime-dir path is ephemeral but on disk; operators may add a trap-cleanup in per-MCP `start.sh` if stricter residency is required.
+- `--exec -- <runner> <args...>` replaces the shell with the MCP runner process; `SOME_TOKEN` (named by `--var`) lives in the child-process env only and is never echoed to stdout, logged, or captured by `$(...)`.
+
 Plaintext `.env` files in MCP dirs (currently present for most work MCPs) are **migrated away** as part of Phase 1. The ADR does not depend on Rule 6 being enforced at MCP boot — it IS the enforcement, applied consistently.
+
+#### Multi-secret MCPs — known Phase-1 residual
+
+`tools/decrypt.sh` currently accepts exactly ONE `--var` / `--target` pair per invocation. MCPs that require multiple secrets (Slack, if both bot and user tokens are in play; potentially others surfaced by T-new-B) cannot use the canonical `--exec` pattern as-is — a single `start.sh` can't chain two `exec` calls to install two env vars into the same child process.
+
+Until `tools/decrypt.sh` gains a multi-var mode (see T-new-C below — repeatable `--var/--target` pairs, or an `--env-file` source mode that reads an age-encrypted blob containing multiple `KEY=value` lines), **multi-secret MCPs stay on their existing plaintext-`.env` pattern as a known Phase-1 residual**. They are listed in the migration tracker but gated on T-new-C landing. This is the one scope carve-out in Phase 1; all single-secret MCPs migrate on the canonical pattern immediately.
 
 ### 4.3 Data residency
 
@@ -332,6 +337,22 @@ No self-implementation in this ADR. `owner: swain` is authorship; Evelynn assign
 
 ### Task list
 
+#### OQ-P1-4 resolution tasks (inserted 2026-04-24 per Heimerdinger's advisory)
+
+These tasks supersede the original P1-T0 "decide pattern" step. The pattern is ratified (`tools/decrypt.sh --exec`) and §4.2 is rewritten. What remains is inventory (T-new-B), the conditional multi-var extension (T-new-C), the reference start.sh (T-new-D), and a positive test (T-new-E). Secret-migration tasks (P1-T2…P1-T16) now blockedBy T-new-D rather than P1-T0 for single-secret MCPs; multi-secret MCPs additionally blockedBy T-new-C.
+
+- [x] **T-new-A** — Rewrite ADR §4.2 to specify `--exec` as the canonical pattern, add the "Multi-secret MCPs" subsection documenting the known Phase-1 residual, and mark OQ-P1-4 RESOLVED. estimate_minutes: 30. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (§4.2 + OQ table). DoD: §4.2 template is self-contained and reads cleanly on its own (no external advisory doc required); explanatory paragraph under the template covers stdin, `--target`, and `--exec` semantics; multi-secret carve-out documented; OQ-P1-4 row says RESOLVED. Owner: Aphelios (done in this commit). Direct-to-main (plan edit, Rule 4). Blocks: T-new-B, T-new-C, T-new-D, T-new-E. Status: DONE in the commit that introduces this section.
+
+- [ ] **T-new-B** — Inventory secretary MCPs for multi-secret needs. Read-only survey of each MCP in the Phase-1 scope (Slack, Gdrive, Gcalendar, Gmail, Atlassian, Fathom, Postgres, Wallet-Studio) to identify how many distinct secrets each requires at runtime. Output is a bullet list amended into the plan under a new "§4.2 multi-secret inventory" subsection OR a row added to the Phase-1 tasks table noting `single` / `multi` per MCP. Specifically confirm whether Slack uses one token (user `xoxp-`) or two (user + bot `xoxb-`). estimate_minutes: 15. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (inventory subsection or table column). DoD: every Phase-1 MCP tagged single-secret or multi-secret with the credential names enumerated; if any multi-secret MCP is found, T-new-C is explicitly flagged blocking for that MCP's migration task. Owner: Ekko (read-only survey). Direct-to-main (plan edit). BlockedBy: T-new-A. Blocks: T-new-C (gate: only runs if >1 multi-secret MCP found), all multi-secret migration tasks.
+
+- [ ] **T-new-C** (conditional on T-new-B outcome) — Extend `tools/decrypt.sh` with multi-var mode. Two candidate designs: (a) repeatable `--var` / `--target` pairs (same call decrypts multiple blobs, all env vars injected into the one `--exec` child); (b) `--env-file` source mode reading an age-encrypted blob containing multiple `KEY=value` lines. Syndra picks the design after reading the tool's current implementation, writes the extension, and Heimerdinger does a threat-model review focused on: (i) does plaintext leak to argv / env of sibling processes during the decrypt phase; (ii) does the new code path preserve the single-`exec` guarantee (never `$(...)`-capture). estimate_minutes: 60. Files: `tools/decrypt.sh`, `tools/tests/decrypt-multi-var.bats` or equivalent. DoD: either design works end-to-end with a fixture `.age` blob; threat-model review committed as a note in the commit body or a linked journal entry; no regressions in existing single-var callers. Owner: Syndra (code + test), Heimerdinger (threat-model review). PR (code change, not plan). BlockedBy: T-new-B (gate: only execute if T-new-B surfaces >1 secret for at least one MCP). Blocks: multi-secret MCP migration tasks (specifically P1-T3 if Slack has two tokens, plus any others flagged by T-new-B).
+
+- [ ] **T-new-D** — Author the canonical `start.sh` (single-secret MCP first — Slack is the smallest, chosen as the reference). Implements exactly the §4.2 canonical template, including the ciphertext-on-stdin redirect, the `--target` runtime path under `secrets/work/runtime/slack.env` (gitignored), and `--exec --` replacing the shell with the Slack MCP runner. Copy-pasteable for subsequent MCP migrations. estimate_minutes: 30. Files: `mcps/slack/scripts/start.sh` (rewritten), possibly `secrets/work/runtime/.gitkeep` + `secrets/.gitignore` confirmation. DoD: `bash mcps/slack/scripts/start.sh` spawns the Slack MCP with `SLACK_USER_TOKEN` set in its env; `ps` / `env` inspection of the parent shell shows no plaintext token; `claude mcp list` from the work workspace shows `slack` Connected. Owner: Ekko. PR (code change). BlockedBy: T-new-A. Blocks: all other migration tasks (P1-T4…P1-T16) that were previously blockedBy the original P1-T0 reference-demonstration clause.
+
+- [ ] **T-new-E** — Add a positive test under `scripts/tests/` exercising `tools/decrypt.sh --exec` with a fixture `.age` blob. The test creates a known-plaintext blob (age-encrypted against the repo's age key in a fixture subdir, or a throwaway key generated in-test), invokes `tools/decrypt.sh --target /tmp/fixture.env --var FIXTURE_TOKEN --exec -- /bin/sh -c 'test "$FIXTURE_TOKEN" = "expected"'`, and asserts exit 0. Also asserts: (i) `/tmp/fixture.env` is cleaned up or writable-only-by-owner; (ii) no plaintext appears in any parent-process log. estimate_minutes: 45. Files: `scripts/tests/decrypt-exec.bats` (or `.sh` if bats isn't in use), `tests/fixtures/decrypt/fixture.age` + fixture key or generator. DoD: test passes locally on macOS; test is wired into the pre-commit hook's test lane for `tools/` changes so future refactors of `tools/decrypt.sh` can't silently break the `--exec` contract. Owner: Syndra. PR (code change). BlockedBy: T-new-A. Runs in parallel with T-new-D.
+
+#### Original Phase-1 tasks (P1-T0 partially superseded — see above)
+
 - [ ] **P1-T0** — Decide decrypt integration pattern. The ADR §4.2 template uses `TOKEN="$(tools/decrypt.sh ...)"` (stdout capture), but the current `tools/decrypt.sh` refuses to echo plaintext to stdout — it writes to a `secrets/<group>.env` file or execs a child with env injected via `--exec`. Heimerdinger + Ekko reconcile: either (a) adopt the `--exec` pattern in every `start.sh` (cleanest, no plaintext ever touches disk past the age-armored blob — preferred), or (b) add a narrow stdout-capable mode to `tools/decrypt.sh` gated by a flag. Amend §4.2 of the ADR inline with the chosen pattern before any migration task runs. estimate_minutes: 45. Files: `plans/approved/work/2026-04-24-sona-secretary-mcp-suite.md` (§4.2 amendment), possibly `tools/decrypt.sh`. DoD: §4.2 template updated to reflect the sanctioned pattern; one reference start.sh (Slack, chosen because it's smallest) rewritten to demonstrate; Heimerdinger signs off in the plan commit trailer or a journal note. Owner: Heimerdinger (advise) + Ekko (execute). Direct-to-main for the plan amendment; PR-A for any `tools/decrypt.sh` change. Blocks: all secret-migration tasks.
 
 - [ ] **P1-T1** — Create `secrets/work/encrypted/` subdirectory structure and `secrets/work/REVOCATION.md` stub per §4.4. No encrypted blobs yet, just the directory and the revocation doc with a placeholder row per credential that later tasks will fill in. estimate_minutes: 20. Files: `secrets/work/encrypted/.gitkeep`, `secrets/work/REVOCATION.md`. DoD: directory exists, `REVOCATION.md` has the §4.4 table skeleton committed. Owner: Ekko. PR: can ride with PR-A or be its own direct-to-main plan-adjacent commit (it's a new doc, no `apps/**` or `mcps/**` touched — `chore:` prefix). Blocks: all secret-migration tasks (T2-T8, T10, T14).
@@ -383,13 +404,13 @@ No self-implementation in this ADR. `owner: swain` is authorship; Evelynn assign
 | OQ-P1-1 | Is Duong's current Gdrive user refresh token at `mcps/gdrive/.gdrive-server-credentials.json` healthy, or has it silently broken since the last use? If broken, do we migrate-as-is (encrypt a broken token — useless) or defer T7b until next natural re-auth? | T7b blocks on this. | Sona asks Duong; Ekko runs a health probe first to inform the ask. |
 | OQ-P1-2 | Does `mcps/postgres/.env` contain any connection string with a non-rotatable embedded credential (service account provisioned by a MMP admin other than Duong, legacy readonly user, etc.)? If yes, is migration-in-place acceptable or do we need a rotation-first step? | T5 blocks on this. | Ekko inspects during T5; escalates to Sona if any row is non-rotatable. |
 | OQ-P1-3 | The ADR §3.1 row 4 names `@gongrzhe/server-gmail-autoauth-mcp`. At T13 execution time, is that package still maintained (last commit < 90d) and functional against current Gmail OAuth? If not, which alternative (`@modelcontextprotocol/server-gmail` or other community fork) do we swap to? | T13 blocks on this. | Ekko inspects at task time; Sona approves the swap if needed. |
-| OQ-P1-4 | The current `tools/decrypt.sh` does not emit plaintext to stdout (by design per Rule 6). The ADR's §4.2 template assumed a `$(...)` capture. T0 reconciles this. **Surfacing here because the reconciliation is a one-line decision with repo-wide implications for all future MCP start.sh files, not just work-concern.** | T0 blocks on this. | Heimerdinger + Ekko propose; Sona ratifies; plan gets amended. |
+| OQ-P1-4 | **RESOLVED (2026-04-24)** — Heimerdinger's advisory ratified the `tools/decrypt.sh --exec` canonical pattern (ciphertext on stdin, env-var name via `--var`, runtime target via `--target`, child process replaces the shell via `--exec --`). §4.2 rewritten inline with the canonical template + a "Multi-secret MCPs" carve-out. Multi-secret MCPs (Slack if two tokens, any others from T-new-B inventory) stay on plaintext `.env` until T-new-C extends the tool. New Phase-1 tasks T-new-A (this amendment), T-new-B (inventory), T-new-C (conditional multi-var extension), T-new-D (reference start.sh), T-new-E (positive test) appended to the task list. | Resolved. Was blocking T0 (now superseded by T-new-A/D). | Heimerdinger (advised) + Aphelios (amended plan). |
 | OQ-P1-5 | Gcalendar: no `.env` exists; the node dist likely reads credentials from a hardcoded relative path or from the gdrive refresh token. T9's inspection step may reveal the credential is SHARED with gdrive (same Google OAuth refresh token). If shared, do we keep one `.age` blob and symlink-via-doc, or duplicate for decoupled rotation? | T9 design decision. | Ekko proposes during T9; Sona ratifies. |
 
 ### Task count and critical path summary
 
-- **Total tasks:** 17 (T0, T1, T2, T3, T4, T5, T6, T7a, T7b, T8, T9, T10, T11, T12, T13, T14-Duong, T15, T16). T3 may no-op and fold into T2.
-- **Critical path:** T0 → T1 → T13 → **T14-Duong** → T15 → T16. Duong's Gmail OAuth step is the single longest real-world-clock gate.
+- **Total tasks:** 22 (T-new-A [DONE], T-new-B, T-new-C [conditional], T-new-D, T-new-E, plus original T0, T1, T2, T3, T4, T5, T6, T7a, T7b, T8, T9, T10, T11, T12, T13, T14-Duong, T15, T16). T3 may no-op and fold into T2. T-new-C conditional on T-new-B finding multi-secret MCPs.
+- **Critical path (updated):** T-new-A (DONE) → T-new-D → then P1-T2/T4/T5/T6 secret-migration cluster can fan out. T-new-C specifically gates Slack migration (P1-T3) if Slack has multiple tokens. Gmail leg still: T13 → **T14-Duong** → T15 → T16. Duong's Gmail OAuth step remains the longest real-world-clock gate.
 - **Parallelizable after T0+T1:** PR-B cluster (T2, T4, T5, T6), PR-C cluster (T7a → T7b → T8 → T9), PR-D cluster (T10 → T11 → T12). Ekko can run PR-B and PR-D in parallel if Duong has pre-generated the Atlassian token.
 - **Duong-in-the-loop tasks:** T10 (Atlassian token generation, ~2 min), T14-Duong (Gmail OAuth, ~20 min), OQ-P1-1 resolution (async).
 - **Estimate totals:** T0 (45) + T1 (20) + T2 (35) + T3 (20) + T4 (35) + T5 (40) + T6 (25) + T7a (15) + T7b (20) + T8 (50) + T9 (35) + T10 (30) + T11 (30) + T12 (15) + T13 (45) + T14 (20) + T15 (35) + T16 (15) = **530 min of active work (~8.8h)** plus Duong wait time. Wall-clock expectation: 1.5–2 days with Ekko executing sequentially, ~1 day if PR-B and PR-D parallelize.
