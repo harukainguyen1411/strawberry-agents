@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 complexity: normal
 concern: work
 owner: Azir
@@ -644,3 +644,11 @@ work-concern throughout.
 
 Reasoning for Aphelios over Kayn: concern is `work`, all implementation
 PRs land on the work-side repos, Aphelios has the conventions.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** ADR has a clear owner (Azir), a decisive recommendation (Option A — SuperAdmin), concrete prerequisite work (A.1 backend endpoint, A.2 config, A.3 MCP tool), a documented fallback (Option B), and a well-specified audit + allowlist design. The three open questions in §6.3 are breakdown-time decisions, not gating blockers. Duong gave verbal approval to Sona after reviewing Azir's ADR at commit 9d8bd5ee.
+- **Amendment (per Duong):** Option B (API-key-harvest) is to be treated as "scaffolded, dry, documented for emergency use, never wired live." Structural scaffolding and documentation only — no env vars, no secrets, no live connections. This tightens §3.2 beyond the ADR's "fallback only" framing. Aphelios must respect this during task breakdown: Option B surface is documentation/stubs at most; do not create any task that wires it to real data sources.
