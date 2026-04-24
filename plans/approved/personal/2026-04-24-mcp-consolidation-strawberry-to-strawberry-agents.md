@@ -81,6 +81,19 @@ Quick-lane is appropriate: single top-level concern (local MCP config), no schem
 - `plans/implemented/personal/2026-04-24-custom-slack-mcp.md` — the separate Slack source-fix plan this one assumes is handled independently.
 - `CLAUDE.md` auto-mode rule 5 — irreversible deletion requires explicit confirmation.
 
+## Inventory reconciliation (T1 — 2026-04-24, Talon)
+
+| MCP | Diff result | Canonical source | Decision |
+|-----|-------------|-----------------|---------|
+| evelynn | byte-identical | strawberry-agents/mcps/evelynn/ | use as-is |
+| discord | byte-identical | strawberry-agents/mcps/discord/ | use as-is |
+| cloudflare | byte-identical | strawberry-agents/mcps/cloudflare/ | use as-is |
+| gcp | byte-identical | strawberry-agents/mcps/gcp/ | use as-is |
+| shared | byte-identical | strawberry-agents/mcps/shared/ | use as-is |
+| slack | only in strawberry/mcps/slack/ | strawberry/mcps/slack/ @ talon/slack-mcp-node25-cjs-fix | migrate (patched) |
+
+No blocking shared-lib deltas found. Proceed with migration.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
