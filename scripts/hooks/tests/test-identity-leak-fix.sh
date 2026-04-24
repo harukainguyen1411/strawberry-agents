@@ -645,6 +645,119 @@ test_i1_failclosed_json_parse_failure() {
 }
 
 # ---------------------------------------------------------------------------
+# Senna C1: git -c user.email=persona@strawberry.local commit — hook must BLOCK
+# (inline -c overrides local config; hook must detect and reject at PreToolUse layer)
+# ---------------------------------------------------------------------------
+test_senna_c1_inline_c_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "Senna-C1: pretooluse-subagent-identity.sh does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git -c user.email=viktor@strawberry.local commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+
+  cleanup_dirs "$wdir"
+
+  # Hook must BLOCK (exit 2) to prevent inline -c email bypass
+  if [ "$exit_code" -eq 2 ]; then
+    pass "Senna-C1: git -c user.email=persona@... commit blocked at PreToolUse layer"
+  else
+    fail "Senna-C1 (BYPASS): git -c user.email=persona@... commit not blocked (exit=$exit_code, output='$output')"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Senna C2: GIT_AUTHOR_EMAIL=persona@strawberry.local git commit — hook must BLOCK
+# (env var override wins over local config; hook must detect at PreToolUse layer)
+# ---------------------------------------------------------------------------
+test_senna_c2_env_var_email_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "Senna-C2: pretooluse-subagent-identity.sh does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"GIT_AUTHOR_EMAIL=viktor@strawberry.local git commit -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "Senna-C2: GIT_AUTHOR_EMAIL=persona@... git commit blocked at PreToolUse layer"
+  else
+    fail "Senna-C2 (BYPASS): GIT_AUTHOR_EMAIL=persona@... git commit not blocked (exit=$exit_code, output='$output')"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Senna C3: git commit --author="Viktor <viktor@strawberry.local>" — hook must BLOCK
+# (explicit --author flag wins over local config)
+# ---------------------------------------------------------------------------
+test_senna_c3_author_flag_blocked() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "Senna-C3: pretooluse-subagent-identity.sh does not exist yet"
+    return
+  fi
+
+  local wdir
+  wdir="$(make_work_scope_repo)"
+
+  local payload
+  payload='{"tool_name":"Bash","tool_input":{"command":"git commit --author=\"Viktor <viktor@strawberry.local>\" -m msg","cwd":"'"$wdir"'"}}'
+
+  local output exit_code
+  output="$(printf '%s' "$payload" | bash "$hook" 2>&1)"
+  exit_code=$?
+
+  cleanup_dirs "$wdir"
+
+  if [ "$exit_code" -eq 2 ]; then
+    pass "Senna-C3: git commit --author=persona blocked at PreToolUse layer"
+  else
+    fail "Senna-C3 (BYPASS): git commit --author=persona not blocked (exit=$exit_code, output='$output')"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# Senna I3: empty stdin → pass-through (exit 0), not fail-closed block
+# (hook should not block when there is no PreToolUse payload — graceful degradation)
+# ---------------------------------------------------------------------------
+test_senna_i3_empty_stdin_passthrough() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
+  if [ ! -f "$hook" ]; then
+    xfail "Senna-I3: pretooluse-subagent-identity.sh does not exist yet"
+    return
+  fi
+
+  local output exit_code
+  output="$(printf '' | bash "$hook" 2>&1)"
+  exit_code=$?
+
+  if [ "$exit_code" -eq 0 ]; then
+    pass "Senna-I3: empty stdin → pass-through (exit 0), not over-aggressive block"
+  else
+    fail "Senna-I3: empty stdin caused exit $exit_code (expected 0 pass-through, output='$output')"
+  fi
+}
+
+# ---------------------------------------------------------------------------
 # Run all tests
 # ---------------------------------------------------------------------------
 printf '=== Identity-leak fix xfail tests ===\n\n'
@@ -673,6 +786,12 @@ test_i3_inv4a_json_parse_git_author_name
 
 # I1 fail-closed (must FAIL before fix)
 test_i1_failclosed_json_parse_failure
+
+# Senna bypass shapes — C1/C2/C3 + I3 empty-stdin
+test_senna_c1_inline_c_email_blocked
+test_senna_c2_env_var_email_blocked
+test_senna_c3_author_flag_blocked
+test_senna_i3_empty_stdin_passthrough
 
 printf '\n=== Results: %d pass, %d fail, %d xfail ===\n' "$PASS" "$FAIL" "$XFAIL"
 
