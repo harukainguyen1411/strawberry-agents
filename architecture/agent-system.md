@@ -127,3 +127,30 @@ Each signing commit is enforced by `scripts/hooks/pre-commit-orianna-signature-g
 ### Bypass
 
 The `Orianna-Bypass: <reason>` commit trailer allows promotion without a signature as a break-glass escape. It is **restricted to Duong's admin identity** (`harukainguyen1411@gmail.com`). Agent accounts are blocked from using it by `scripts/hooks/pre-commit-plan-promote-guard.sh` (the pre-commit hook). See ADR `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D9.1`.
+
+---
+
+## Git Identity Discipline
+
+All subagent commits (across both personal-concern and work-scope worktrees) author as Duong's canonical noreply identity:
+
+```
+user.name  = Duongntd
+user.email = 103487096+Duongntd@users.noreply.github.com
+```
+
+This prevents GitHub's squash-merge UI from prefilling `Co-authored-by: <persona>@strawberry.local` trailers into the squash body when merging PRs — a leak that would violate the global rule "never include AI authoring references in commits".
+
+**How it is enforced (two layers):**
+
+1. `scripts/hooks/pretooluse-subagent-identity.sh` — PreToolUse Bash hook. On every `git commit` Bash dispatch, the hook writes `user.name`/`user.email` into the per-worktree local git config before the commit runs. Covers any cwd that is a git repo, regardless of origin. Registered in `.claude/settings.json` under `PreToolUse` / `Bash` matcher.
+
+2. `scripts/hooks/agent-identity-default.sh` — PreToolUse Agent hook. On every Agent tool dispatch, injects `GIT_AUTHOR_NAME`, `GIT_AUTHOR_EMAIL`, `GIT_COMMITTER_NAME`, `GIT_COMMITTER_EMAIL` into `tool_input.env` (neutral identity wins via `{**existing_env, **neutral_env}` merge). Registered in `.claude/settings.json` under `PreToolUse` / `Agent` matcher.
+
+**Orianna carve-out (sole exception):**
+
+Orianna's plan-promotion commits retain `orianna@strawberry.local` as author — this is the tamper-evidence mechanism for plan signing (see the "Orianna — Plan Lifecycle Signing Role" section above). Both hooks exempt Orianna by checking `CLAUDE_AGENT_NAME=Orianna` or `STRAWBERRY_AGENT=Orianna`. Orianna never opens PRs to work-repos; her commits land only on `strawberry-agents` main.
+
+**Persona attribution:**
+
+Persona identity continues to live in inbox messages, learnings, memory, and plan `owner:` frontmatter. Git metadata is never the attribution surface.
