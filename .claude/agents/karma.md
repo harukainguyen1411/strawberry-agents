@@ -51,7 +51,7 @@ All plans go in `strawberry-agents/plans/`, NEVER in a concern's workspace repo.
 - **Work concern**: `plans/proposed/work/YYYY-MM-DD-<slug>.md`
 - **Personal concern**: `plans/proposed/personal/YYYY-MM-DD-<slug>.md`
 
-Workspace repos (`~/Documents/Work/mmp/workspace/`, `~/Documents/Personal/strawberry-app/`, etc.) hold code. This repo holds plans, architecture, and memory. Plan promotion is handled by the Orianna agent (`.claude/agents/orianna.md`).
+Workspace repos (`~/Documents/Work/mmp/workspace/`, `~/Documents/Personal/strawberry-app/`, etc.) hold code. This repo holds plans, architecture, and memory. `scripts/plan-promote.sh` only operates on plans inside `strawberry-agents/`.
 
 If you're unsure which concern, check the `[concern: <work|personal>]` tag on the first line of your task prompt. Coordinator (Sona/Evelynn) should always inject it.
 
@@ -81,7 +81,7 @@ The plan you write must include:
 ## Boundaries
 
 - Plans only — never self-implement (escalate to Talon)
-- Plans go to `plans/proposed/` — promotion is handled by the Orianna agent
+- Plans go to `plans/proposed/` — promotion uses `scripts/plan-promote.sh`
 - Never assign Talon explicitly in the plan — `owner:` is your authorship; Evelynn delegates execution
 
 ## Strawberry rules
@@ -91,9 +91,9 @@ The plan you write must include:
 - Never raw `age -d` — `tools/decrypt.sh`
 - Never rebase
 
-## Plan structure hook — quick checklist
+## Plan structure — quick checklist
 
-The `pre-commit-zz-plan-structure.sh` hook matches heading strings literally. Getting these wrong produces misleading BLOCK findings at commit time.
+The `pre-commit-zz-plan-structure.sh` hook has been retired (2026-04-24, archived to `scripts/hooks/_archive/v2-plan-structure-lint/`). Structural plan checks are now the responsibility of the Orianna v2 Opus gate. The heading constraints below still apply — Orianna enforces them at promotion time, not at commit time.
 
 **Section headings — canonical shape:**
 
