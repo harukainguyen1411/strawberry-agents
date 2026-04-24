@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (post-compact session 84b7ba50; fifth consolidation — shard b3d87376).
+Last updated: 2026-04-24 (session 576ce828; sixth consolidation — shard dad16397).
 
 ---
 
@@ -108,28 +108,32 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 ## Self-invite ADR — in execution (2026-04-24, open)
 
-**Status:** Azir wrote ADR; Duong approved; Orianna promoted (`775b2b90`). Aphelios decomposed 17 tasks (`0314b7cc`). First batch:
-- T1 Seraphine PR #2108 (tse): Lucian REQUEST CHANGES — 3 foreign commits from stale base. Needs rebase onto clean base before re-review.
+**Status:** Azir wrote ADR; Duong approved; Orianna promoted (`775b2b90`). Aphelios decomposed 17 tasks (`0314b7cc`). Progress this segment:
+- T1 Jayce cherry-pick cleanup: PR #2108 stripped of 3 foreign commits (new SHA 8d0d33a). Senna clean-LGTM + Lucian APPROVE. **Ready for Duong harukainguyen1411 approve + merge.**
+- T2 Rakan: PR #2109 re-parented (new SHA 9dbeb60). Senna advisory-LGTM + Lucian LGTM. **Ready for Duong approve + merge. Stack: #2108 first.**
+- **Blocker (task #102):** Senna flag on #2109 — route `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` not registered in `core/tse/api/v3/api.go`. T3 Viktor handler impl MUST include this registration. Tests currently 404-not-panic; xfail still satisfied pre-T3.
 - T11 Seraphine: audit schema committed `6d60964e` — DONE.
-- T13 Jayce PR #32 (mcps): Senna+Lucian both APPROVE — awaiting Duong merge.
-**Next action:** (1) Seraphine rebase T1 PR #2108 onto clean base, then re-dispatch Senna+Lucian. (2) Duong merge T13 PR #32 (mcps). (3) Dispatch remaining tasks per Aphelios breakdown.
-**Shard pointers:** 2026-04-24-b3d87376.
+- T13 Jayce PR #32 (mcps): Senna advisory-LGTM (dormant) + Lucian drift-non-blocking — awaiting Duong merge.
+**Next action:** (1) Duong approve+merge #2108 then #2109. (2) T3 Viktor dispatch MUST include route registration (task #102). (3) Dispatch remaining tasks T4/T5/T6/T15/T16/T17 per breakdown. (4) Duong merge T13 PR #32 (mcps).
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
 
 ---
 
 ## Wave D unblocker — company-os PR #32 (2026-04-24, open)
 
-**Status:** Viktor flipped T.P1.12 xfail (commit `64eb362`). 4/4 integration tests pass in 0.37s. Scope-creep prod bug fix in `demo-factory/project.py` `post_clone_fixup` shallow-copy included. Senna+Lucian reviews in flight. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
-**Next action:** Await Senna+Lucian verdicts → Duong approve → merge → Wave D unblocked.
-**Shard pointers:** 2026-04-24-b3d87376.
+**Status:** Viktor fix-up commit 6d3c15b: sys.path.insert→sys.path.append (Senna correctness landmine), `_mem_store` autouse reset fixture in inner conftest.py, `create_session` required-kwargs restored. T.P1.12 tests 4/4 green. Senna #103 re-review (agentId aea086f0250597a79) + Lucian #104 fidelity re-review (agentId aec154259d685f405) in-flight at compact boundary. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
+**Next action:** Await #103/#104 verdicts → if both clean, surface to Duong for approve → merge → Wave D unblocked.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
 
 ---
 
-## Swain secretary ADR — in flight (2026-04-24, open)
+## Swain secretary ADR — in execution (2026-04-24, open)
 
-**Status:** Duong directive: turn Sona into a real secretary with MCPs for Slack + Gmail + Calendar + Drive + Jira + Asana + Linear + HubSpot-direct + LinkedIn + morning-brief routine. Swain background agent `a7a2e536e88f2ac30` writing `plans/proposed/work/2026-04-24-sona-secretary-mcp-suite.md`.
-**Next action:** Await Swain return → Duong review → Orianna promotion if approved.
-**Shard pointers:** 2026-04-24-b3d87376.
+**Status:** Duong approved; Orianna promoted to `plans/approved/work/` (commit 8f9e8829). Aphelios decomposed 17 tasks (commit b3171945). Critical path: T0→T1→T13→T14-Duong→T15→T16.
+**OQ-P1-4 resolved:** Heimerdinger confirmed `tools/decrypt.sh` already implements `--exec` mode. ADR §4.2 template was wrong. Canonical pattern: ciphertext via stdin, `--target` runtime env-file, `--exec --`. Multi-secret MCPs (Slack) need `decrypt.sh` extension before migration (Syndra job gated by threat-model review).
+**Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 in-flight rewriting ADR §4.2 + appending T-new-A..E + marking OQ-P1-4 RESOLVED.
+**Next action:** Await Aphelios #101 return → verify ADR rewrite → begin Phase 1 execution: Ekko T0/T-new-D (canonical start.sh), T-new-B inventory, conditional T-new-C (Syndra decrypt.sh extension for multi-secret), T-new-E (positive test), then T2/T4/T5/T6 parallel secret migrations, T10 Atlassian, T13 Gmail, T14-Duong (OAuth — Duong-in-loop).
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
 
 ---
 
