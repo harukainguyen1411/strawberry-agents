@@ -5,28 +5,29 @@
 
 ## Active shards (newest first)
 
-- 2026-04-24 · 002efe6a · **Date:** 2026-04-20; **Session:** S63 (post-compact coda — same session continued from S62/S63 main body, Lissandra consolidated mid-session at 16:45); **Transcript:** `agents/evelynn/transcripts/2026-04-20-002efe6a.md`
-- 2026-04-24 · 02f8c677 · (no summary extractable)
-- 2026-04-24 · 1423e23d · **Session ID:** 1423e23d-e7aa-41ee-9558-fa5f6deed2b3; **Consolidation UUID:** 1423e23d; **Date:** 2026-04-22
-- 2026-04-24 · 26406c02 · **Consolidation UUID:** 26406c02; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** c95a8d3b (same session, earlier compact)
-- 2026-04-24 · 2cb962cd · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Date:** 2026-04-21; **Consolidated by:** Lissandra (pre-compact, mid-session)
-- 2026-04-24 · 31a158e4 · **Session ID:** 34b4f5e7-70f4-4340-bd55-7e783482cf0e; **Consolidation UUID:** 31a158e4; **Date:** 2026-04-21
-- 2026-04-24 · 3e165c51 · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Consolidation UUID:** 3e165c51; **Date:** 2026-04-21
-- 2026-04-24 · 4f8b78fd · **Date:** 2026-04-24; **Session:** S66 (direct mode, personal concern); **Session-id:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
-- 2026-04-24 · 5d90ae6c · (no summary extractable)
-- 2026-04-24 · 69f3fb3e · (no summary extractable)
-- 2026-04-24 · 7c1cb4b8 · Short afternoon session. Orianna promotion cycle, Sona bootstrap reply, Orianna invocation lockdown.
-- 2026-04-24 · ad4fe689 · **Consolidation UUID:** ad4fe689; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 26406c02 (same session, earlier compact)
-- 2026-04-24 · b9780cda · Migration tail + restructure kickoff + portfolio v0 prep.
+- 2026-04-24 · 683a3ab7 · **Session:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1 (third pre-compact of this session;  prior shards: 4f8b78fd, bd9bb7cc); **Coordinator:** Evelynn | **Concern:** personal | **Date:** 2026-04-24
 - 2026-04-24 · bd9bb7cc · **Session:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1 (second pre-compact of this session;  first was bd910f2); **Coordinator:** Evelynn | **Concern:** personal | **Date:** 2026-04-24
-- 2026-04-24 · c4af884e · - **Date:** 2026-04-23; - **Session:** S65 (hands-off continuation, auto mode); - **Session-id:** c4af884e
-- 2026-04-24 · c95a8d3b · **Consolidation UUID:** c95a8d3b; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 02f8c677 (same session, earlier compact)
-- 2026-04-24 · cea94956 · **Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe; **Consolidation UUID:** cea94956; **Date:** 2026-04-22
-- 2026-04-24 · ceb9f69c · **Session ID:** ceb9f69c-807b-44ab-91ca-eb7fb805609b; **Consolidation UUID:** ceb9f69c; **Date:** 2026-04-22
-- 2026-04-24 · e49b10d8 · **Session ID:** d9b7f645-8141-4ab3-adac-5715f1bcc2cd; **Consolidation UUID:** e49b10d8; **Date:** 2026-04-21
-- 2026-04-24 · ef2bbc31 · **Session ID:** 0cf7b28e-bad0-46b2-8a0b-78cc0d04d52e; **Consolidation UUID:** ef2bbc31; **Date:** 2026-04-21
-- 2026-04-24 · f61a62e1 · **Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe; **Consolidation UUID:** f61a62e1; **Date:** 2026-04-22
-- 2026-04-24 · f62318f1 · Work-agent migration + dual-coordinator + plan-lifecycle overhaul.
+- 2026-04-24 · 4f8b78fd · **Date:** 2026-04-24; **Session:** S66 (direct mode, personal concern); **Session-id:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
+- 2026-04-23 · c4af884e · - **Date:** 2026-04-23; - **Session:** S65 (hands-off continuation, auto mode); - **Session-id:** c4af884e
+- 2026-04-23 · ad4fe689 · **Consolidation UUID:** ad4fe689; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 26406c02 (same session, earlier compact)
+- 2026-04-23 · 26406c02 · **Consolidation UUID:** 26406c02; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** c95a8d3b (same session, earlier compact)
+- 2026-04-23 · c95a8d3b · **Consolidation UUID:** c95a8d3b; **Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14; **Prior shard:** 02f8c677 (same session, earlier compact)
+- 2026-04-23 · 02f8c677 · (no summary extractable)
+- 2026-04-23 · 69f3fb3e · (no summary extractable)
+- 2026-04-22 · f61a62e1 · **Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe; **Consolidation UUID:** f61a62e1; **Date:** 2026-04-22
+- 2026-04-22 · ceb9f69c · **Session ID:** ceb9f69c-807b-44ab-91ca-eb7fb805609b; **Consolidation UUID:** ceb9f69c; **Date:** 2026-04-22
+- 2026-04-22 · 1423e23d · **Session ID:** 1423e23d-e7aa-41ee-9558-fa5f6deed2b3; **Consolidation UUID:** 1423e23d; **Date:** 2026-04-22
+- 2026-04-22 · cea94956 · **Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe; **Consolidation UUID:** cea94956; **Date:** 2026-04-22
+- 2026-04-22 · 2cb962cd · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Date:** 2026-04-21; **Consolidated by:** Lissandra (pre-compact, mid-session)
+- 2026-04-21 · ef2bbc31 · **Session ID:** 0cf7b28e-bad0-46b2-8a0b-78cc0d04d52e; **Consolidation UUID:** ef2bbc31; **Date:** 2026-04-21
+- 2026-04-21 · 31a158e4 · **Session ID:** 34b4f5e7-70f4-4340-bd55-7e783482cf0e; **Consolidation UUID:** 31a158e4; **Date:** 2026-04-21
+- 2026-04-21 · e49b10d8 · **Session ID:** d9b7f645-8141-4ab3-adac-5715f1bcc2cd; **Consolidation UUID:** e49b10d8; **Date:** 2026-04-21
+- 2026-04-21 · 3e165c51 · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Consolidation UUID:** 3e165c51; **Date:** 2026-04-21
+- 2026-04-21 · 002efe6a · **Date:** 2026-04-20; **Session:** S63 (post-compact coda — same session continued from S62/S63 main body, Lissandra consolidated mid-session at 16:45); **Transcript:** `agents/evelynn/transcripts/2026-04-20-002efe6a.md`
+- 2026-04-20 · 5d90ae6c · (no summary extractable)
+- 2026-04-20 · 7c1cb4b8 · Short afternoon session. Orianna promotion cycle, Sona bootstrap reply, Orianna invocation lockdown.
+- 2026-04-20 · f62318f1 · Work-agent migration + dual-coordinator + plan-lifecycle overhaul.
+- 2026-04-19 · b9780cda · Migration tail + restructure kickoff + portfolio v0 prep.
 
 ## Archived
 

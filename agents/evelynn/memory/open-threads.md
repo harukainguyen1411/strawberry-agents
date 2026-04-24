@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-24 (Lissandra pre-compact consolidation 2, session 5e94cd09).
+Last updated: 2026-04-24 (Lissandra pre-compact consolidation 3, session 5e94cd09).
 
 ---
 
@@ -12,11 +12,11 @@ Last updated: 2026-04-24 (Lissandra pre-compact consolidation 2, session 5e94cd0
 
 ---
 
-## Kayn worktree-isolation breakdown — complete, impl queued
+## Universal worktree isolation — SHIPPED
 
-**Current status (2026-04-24):** Kayn breakdown committed on main. 14 tasks across 3 commits. Implementation queued after Slack MCP (explicit Duong ordering). Universal-isolation rollout makes the individual Kayn opt-in question moot.
-**Next:** Dispatch impl agent once Jayce's Slack MCP C4 migration PR lands and is merged.
-**Shard:** bd9bb7cc
+**Current status (2026-04-24):** PR #37 merged (opt-in → opt-out flip; ADR promoted to implemented at 760f3ac6 + 3be20a2d). PR #38 merged — subagent-merge-back.sh polish (4 Senna findings). All new subagent dispatches auto-isolate; call scripts/subagent-merge-back.sh for every subagent returning a branch. Individual Kayn opt-in question is moot — universal default covers it.
+**Next:** Monitor behavior; verify Sona inbox-monitor asymmetry root cause is closed by PR #39.
+**Shards:** 4f8b78fd, bd9bb7cc, 683a3ab7
 
 ---
 
@@ -38,22 +38,29 @@ Last updated: 2026-04-24 (Lissandra pre-compact consolidation 2, session 5e94cd0
 
 ---
 
-## Slack MCP impl — Jayce in flight
+## Slack MCP impl — SHIPPED
 
-**Current status (2026-04-24):** Custom Slack MCP spec authored by Lux (11 purposed tools), approved by Orianna (no WARN), Kayn 27-task breakdown committed. Jayce dispatched for implementation — in flight, ~6h. Phases C1-C3 in `strawberry/mcps/slack/` (separate repo); C4 migration commit + PR touches strawberry-agents main working tree.
-**Notification insight:** `xoxp-` tokens cannot ping Duong regardless of channel (Slack routes by author); bot token (`xoxb-`) DM to user ID `U03KDE6SS9J` is the correct pattern. Canonical channel `C0ANVLZQ17X` noted but deprecated as notification target.
-**Next:** On resume, check Jayce output. If C4 migration PR open, dispatch Senna + Lucian review then merge. Do not commit to main working tree until C4 lands.
-**Refs:** `plans/in-progress/personal/2026-04-24-custom-slack-mcp.md`
-**Shard:** bd9bb7cc
+**Current status (2026-04-24):** PR #36 merged — custom Slack MCP migration (dual-token → single purposed-tool MCP). Strawberry sibling repo main at 2ec3f99. Plan promoted to implemented.
+**Next:** None. RESOLVED.
+**Refs:** `plans/implemented/personal/2026-04-24-custom-slack-mcp.md`
+**Shards:** bd9bb7cc, 683a3ab7
 
 ---
 
-## Coordinator-boot-unification — plan in-progress, not yet implemented
+## Coordinator-boot-unification — SHIPPED
 
-**Current status (2026-04-24):** Azir authored, Orianna promoted twice (proposed→approved→in-progress). Kayn 26-task breakdown / 545 AI-min / 3 commits. Planned commits: C1 coordinator-boot.sh + launchers, C2 xfail tests INV-1..INV-6, C3 hook identity hardening + Signal B removal + stateless Monitor-arming gate. Sona inbox-monitor asymmetry (task #3) is subsumed — closes when this plan's impl lands.
-**Next:** Dispatch Jayce or Viktor after Slack MCP impl clears. This is the explicit second-in-queue per Duong's ordering.
-**Refs:** `plans/in-progress/personal/2026-04-24-coordinator-boot-unification.md`
-**Shard:** bd9bb7cc
+**Current status (2026-04-24):** PR #39 merged. New scripts/coordinator-boot.sh live, Signal B heuristic removed, stateless Monitor-arming gate in place. Plan promoted to implemented at 8f942bc1. Ekko currently running polish PR (branch chore/boot-unification-polish) for 2 non-blocking Senna findings: launch-*.sh headers + memory-consolidate silent-failure warn.
+**Next:** Check Ekko output on resume; dispatch Senna + Lucian review, merge polish PR.
+**Refs:** `plans/implemented/personal/2026-04-24-coordinator-boot-unification.md`
+**Shards:** bd9bb7cc, 683a3ab7
+
+---
+
+## Resume-session coordinator-identity drift — plan drafting
+
+**Current status (2026-04-24):** Sona flagged via inbox (archived at agents/evelynn/inbox/archive/2026-04/20260424-0647-013277.md). Resume sessions may drift coordinator identity. Karma currently drafting quick-lane plan in plans/proposed/personal/.
+**Next:** Review Karma's plan on resume; approve or send back; commission impl if approved.
+**Shard:** 683a3ab7
 
 ---
 
