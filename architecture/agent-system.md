@@ -87,7 +87,7 @@ author name:  Orianna (agent)
 author email: orianna@agents.strawberry.local
 ```
 
-The committer remains the authenticated pusher (`Duongntd`). Authorship is the tamper-evidence mechanism — `plan-promote.sh` walks `git log --follow` to find the commit that introduced each signature line and verifies its author email matches `orianna@agents.strawberry.local`.
+The committer remains the authenticated pusher (`Duongntd`). Authorship is the tamper-evidence mechanism — the Orianna agent walks `git log --follow` to find the commit that introduced each signature line and verifies its author email matches `orianna@agents.strawberry.local`.
 
 ### Three lifecycle signatures
 
@@ -107,7 +107,7 @@ orianna_signature_in_progress: "sha256:<body-hash>:<iso-timestamp>"
 orianna_signature_implemented: "sha256:<body-hash>:<iso-timestamp>"
 ```
 
-The body hash covers the plan body (content after the second `---`) normalized by `scripts/orianna-hash-body.sh` (strip frontmatter, normalize line endings, strip trailing whitespace per line). If the plan body is edited after signing, the hash no longer matches and `plan-promote.sh` refuses the next transition until Orianna re-signs.
+The body hash covers the plan body (content after the second `---`) normalized by `scripts/orianna-hash-body.sh` (strip frontmatter, normalize line endings, strip trailing whitespace per line). If the plan body is edited after signing, the hash no longer matches and the Orianna agent refuses the next transition until Orianna re-signs.
 
 ### Signing commit shape (§D1.2)
 
@@ -120,11 +120,10 @@ Each signing commit is enforced by `scripts/hooks/pre-commit-orianna-signature-g
 ### Relevant scripts
 
 - `scripts/orianna-hash-body.sh` — computes the normalized body hash (exists).
-- `scripts/orianna-fact-check.sh` — runs the `plan-check` prompt; used by `plan-promote.sh` today and by `orianna-sign.sh` as a precondition at the `approved` gate.
-- `scripts/plan-promote.sh` — calls signature verification on every phase transition once T6.x integration lands.
+- `scripts/orianna-fact-check.sh` — runs the `plan-check` prompt; used by `orianna-sign.sh` as a precondition at the `approved` gate.
 - `scripts/orianna-sign.sh` — entry point for Orianna's signing flow; invokes phase-appropriate prompt, computes hash, writes signature, commits (inbound — Jayce T2.1).
-- `scripts/orianna-verify-signature.sh` — called by `plan-promote.sh`; returns 0 on valid signature, non-zero with stderr diagnosis (inbound — Jayce T2.2).
+- `scripts/orianna-verify-signature.sh` — called by the Orianna agent; returns 0 on valid signature, non-zero with stderr diagnosis (inbound — Jayce T2.2).
 
 ### Bypass
 
-The `Orianna-Bypass: <reason>` commit trailer allows promotion without a signature as a break-glass escape. It is **restricted to Duong's admin identity** (`harukainguyen1411@gmail.com`). Agent accounts are blocked from using it by `scripts/hooks/pre-commit-plan-promote-guard.sh`. See ADR `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D9.1`.
+The `Orianna-Bypass: <reason>` commit trailer allows promotion without a signature as a break-glass escape. It is **restricted to Duong's admin identity** (`harukainguyen1411@gmail.com`). Agent accounts are blocked from using it by `scripts/hooks/pre-commit-plan-promote-guard.sh` (the pre-commit hook). See ADR `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md §D9.1`.
