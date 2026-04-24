@@ -227,3 +227,5 @@ When Senna or Lucian fails to post a review (subagent hits a permission denial o
 5. If **Senna also** fails: escalate to Duong for manual web-UI Approve.
 
 Never fall back to `--admin` merge or self-approval.
+
+Audit trail preserved; no approval claimed. See `plans/implemented/personal/2026-04-24-reviewer-auth-concern-split.md` for the concern-split reviewer-auth protocol (personal vs work concern codepaths).
