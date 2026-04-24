@@ -31,7 +31,7 @@ Orianna is a callable agent. She promotes plans. No signing scripts needed.
 |------|-------|---------|
 | `.claude/agents/orianna.md` | Invoked via Agent tool | Reads plan + requested stage, renders APPROVE or REJECT, on APPROVE does the git mv + commit + push |
 | `agents/orianna/memory/git-identity.sh` | Run at session start | Sets `user.email = orianna@strawberry.local` and `user.name = Orianna` |
-| `scripts/hooks/pre-commit-plan-promote-guard.sh` | Via dispatcher | Enforces promotion authorization (Orianna identity + Promoted-By trailer, or admin identity) |
+| `scripts/hooks/pre-commit-plan-promote-guard.sh` | Via dispatcher | Enforces promotion authorization (Orianna identity + `Promoted-By:` trailer, or admin identity) |
 | `scripts/hooks/_orianna_identity.txt` | Read by hook | Single-line canonical email for the hook's identity check |
 
 See `architecture/plan-lifecycle.md` for the full promotion flow.
