@@ -55,6 +55,11 @@
 - 2026-04-20 (sync-shared-rules + pre-commit hook): Built scripts/sync-shared-rules.sh + scripts/hooks/pre-commit-agent-shared-rules.sh per taxonomy ADR §D4.3/D4.3a. 24/24 bats tests pass. PR #4 opened, reviewers Senna+Lucian.
 - 2026-04-20 (T1.3 plan-frontmatter doc): Created architecture/plan-frontmatter.md (978 words, 199 lines). Committed direct to main at 75b4fa5.
 
+- [2026-04-24 custom-slack-mcp vitest+InMemory](../learnings/2026-04-24-custom-slack-mcp-vitest-inmemory.md) — InMemoryTransport for in-process MCP testing, it.fails() xfail lifecycle, vi.mock instance capture, --passWithNoTests, heredoc/pretooluse-guard issue, strawberry repo local-only
+
+## Sessions
+- 2026-04-24: Implemented custom Slack MCP end-to-end (T1-T27). C1 scaffold `36fd2b4`, C2 xfail `146da13`, C3 impl `e337328`, T23 bak-dual `51a62a7` all on feat/slack-mcp-custom in strawberry repo (local, no remote). C4 migration `240161c0` on chore/slack-mcp-migration in strawberry-agents. PR #36 open: https://github.com/harukainguyen1411/strawberry-agents/pull/36
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
