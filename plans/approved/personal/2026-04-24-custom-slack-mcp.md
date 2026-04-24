@@ -2,7 +2,7 @@
 title: Custom Slack MCP with purposed tools (replace dual-wrapper)
 status: approved
 concern: personal
-owner: ekko
+owner: lux
 author: lux
 created: 2026-04-24
 kind: adr-lite
