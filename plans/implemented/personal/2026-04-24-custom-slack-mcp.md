@@ -1,6 +1,6 @@
 ---
 title: Custom Slack MCP with purposed tools (replace dual-wrapper)
-status: in-progress
+status: implemented
 concern: personal
 owner: lux
 author: lux
@@ -305,3 +305,10 @@ None. OQ1–OQ4 all resolved in the plan body or at dispatch. No fresh OQs surfa
 - **Agent:** Orianna
 - **Transition:** approved → in-progress
 - **Rationale:** Tasks are concretely actionable — each of the 27 items names files, gives a DoD, and carries an estimate; nothing is a placeholder. Rule 12 is structurally satisfied: phase C2 precedes C3 on the same branch and registers six xfail test tasks (T6–T11) covering all 11 tools, OQ2 prefix behavior, error envelopes, retry config, and list/resolve shapes — with the explicit instruction to confirm red against C1 HEAD before C3. Four-commit ordering (C1 scaffold → C2 xfail → C3 impl → C4 migration) cleanly separates the cross-repo boundary between `mcps/slack/` and `strawberry-agents/`. Simplicity-scan: 395 AI-min across 27 tasks for a 250-LOC single-file server reads proportionate, not bloated — task granularity of 15–45 min reflects thin wrappers over typed SDKs, test breadth tracks the 11-tool surface rather than inventing paranoid edge cases, and the cross-repo split is mandated by layout not by over-decomposition. No WARN.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Transition:** in-progress → implemented
+- **Agent:** Orianna
+- **Rationale:** PR #36 merged at commit `7aeb15ba` on strawberry-agents delivers the §6 atomic C4 migration exactly as specified (`.mcp.json` collapsed to one slack entry, `agents/memory/duong.md` Slack section rewritten, Ekko MEMORY.md supersede note appended). Server-side C1–C3 landed in the sibling strawberry repo across commits 36fd2b4 / 146da13 / e337328 / 51a62a7 / 2ec3f99 shipping all 11 purposed tools from the §2 catalog (notify_duong, post_as_bot, post_as_duong, reply_in_thread, add_reaction, read_channel_history, read_thread, read_dm, list_users, list_channels, resolve_user). 40/40 tests green satisfies the Rule 12 xfail-first contract; Lucian and Senna each APPROVEd independently. The remaining session-restart + live DM smoke per §10.2 is post-merge operator verification, not blocking implementation work.
