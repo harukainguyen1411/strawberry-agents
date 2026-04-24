@@ -1,6 +1,6 @@
 ---
 title: Sona secretary — MCP suite + morning brief
-status: proposed
+status: approved
 concern: work
 owner: swain
 author: swain
@@ -304,3 +304,10 @@ On Duong's approval of §2 decisions and §8 open questions:
 6. Phase 1 ships and operates for 1 week before Phase 2 lands.
 
 No self-implementation in this ADR. `owner: swain` is authorship; Evelynn assigns implementers.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** ADR has clear owner (swain), concrete decisions D1-D10 with stated rationales, and a phased rollout with measurable success criteria per phase. All 8 open questions have been resolved by Sona under Duong's delegated hands-off authority (OQ-1 deferred to Phase 3; OQ-2 through OQ-8 accept the ADR defaults). Phase 1 scope is actionable and ready for Aphelios breakdown. `tests_required: false` is appropriate — this is a workflow ADR, not production code.
