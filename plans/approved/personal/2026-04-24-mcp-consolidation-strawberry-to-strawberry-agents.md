@@ -94,6 +94,22 @@ Quick-lane is appropriate: single top-level concern (local MCP config), no schem
 
 No blocking shared-lib deltas found. Proceed with migration.
 
+## Smoke results (T4 — 2026-04-24, Talon)
+
+`claude mcp list` from strawberry-agents worktree:
+
+| MCP | Status | Prior status | Regression? |
+|-----|--------|-------------|-------------|
+| evelynn | ✓ Connected | ✓ Connected | No |
+| discord | ✓ Connected | ✓ Connected | No |
+| cloudflare | ✗ Failed | ✗ Failed | No (pre-existing) |
+| gcp | ✓ Connected | ✓ Connected | No |
+| slack | ✗ Failed | ✗ Failed | No (equal — boot error is API auth, not Node 25 import) |
+
+Node 25 CJS import fix confirmed: `bash scripts/start.sh </dev/null` exits 0 (server boots, waits on stdin). tsx direct run with fake tokens is error-free. Prior failure was `SyntaxError: retryPolicies not a named export` — now gone. Slack ✗ Failed in `claude mcp list` is a health-probe timeout or API auth, not an import error.
+
+Zero regressions. T5 proceeds when Duong confirms.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
