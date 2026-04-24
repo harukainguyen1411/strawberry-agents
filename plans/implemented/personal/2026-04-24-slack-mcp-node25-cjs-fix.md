@@ -2,7 +2,7 @@
 title: Slack MCP — Node 25 CJS interop fix for @slack/web-api
 slug: 2026-04-24-slack-mcp-node25-cjs-fix
 concern: personal
-status: approved
+status: implemented
 complexity: quick
 owner: karma
 planner: karma
@@ -76,4 +76,11 @@ Manual verification: T4 boots the server against real Slack API (or fails on mis
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Plan has clear owner (karma planner, talon implementer), concrete per-task DoD, explicit xfail-first test in T1 satisfying Rule 12, and cross-references to Rules 3/5/18. Namespace-import strategy is well-justified as minimal-blast-radius and preserves the existing 40-test `vi.mock` surface unchanged. No TBDs, no unresolved decisions. Implementation target (`Duongntd/strawberry`) explicitly noted to avoid concern confusion.
+
+## Orianna approval — approved → implemented
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** Fully shipped in PR #44 (merge commit `80b78802`). Namespace-import refactor in `src/server.ts` plus `resolveRetryPolicies(ns?)` helper with `.default` fallback landed together; test suite is 42/42 green including a new `.default`-fallback unit test beyond the originally planned scope. All four tasks satisfied — runtime-boot xfail test added then flipped, type-check green, manual start.sh smoke documented. Plan carried into PR #44's source branch as part of the consolidated slack work.
 
