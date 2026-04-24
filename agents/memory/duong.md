@@ -20,9 +20,17 @@
   generic post tools.
 
 ## GitHub Accounts
-- `harukainguyen1411` — HUMAN account, Duong's personal identity. Owns strawberry-app + strawberry-agents repos. Has admin bypass. Reviewer identity on PRs authored by the agent account. Canonical for ALL Google services.
-- `Duongntd` — AGENT account. Invited collaborator with push permission on repos owned by harukainguyen1411. Canonical pusher for all agent-driven commits. No bypass. PATs for agent ops are minted from this account.
-- `duong.nguyen.thai` — Work account. NOT used for Strawberry.
+
+Three accounts, scoped by concern. Coordinators (Evelynn, Sona) and their subagents MUST use the right account for the right scope. `gh auth switch --user <login>` to change the active identity.
+
+- **`duongntd99`** — WORK account. Always use for work-scope (Sona side): `missmp/*` orgs including `missmp/company-os`, `missmp/workspace`. This is the canonical account for opening/viewing/commenting on work-repo PRs and for any `gh` operation under work concern.
+- **`Duongntd`** — AGENT account for personal stuff (Evelynn side). Invited collaborator with push permission on `harukainguyen1411`-owned repos (strawberry-agents, strawberry-app). Canonical pusher for agent-driven commits on personal concern. No admin bypass.
+- **`harukainguyen1411`** — ADMIN account, Duong's personal human identity. Owns the strawberry-* repos. Has admin bypass on branch protection. **Not available to agents by default** — only use when Duong explicitly authorizes it for a specific break-glass action. Default active account on `gh auth status` does NOT imply you may act as it; check scope before acting.
+
+**Scope check before `gh` ops:**
+- Sona operating on work-repo PR → ensure active account is `duongntd99`.
+- Evelynn operating on personal-repo PR → `Duongntd` is fine; `harukainguyen1411` only with explicit permission.
+- Cross-account reads are generally OK; writes/merges/reviews are not.
 
 ## Personal Context
 - Work-life balance is an ongoing challenge — work absorbs most available time
