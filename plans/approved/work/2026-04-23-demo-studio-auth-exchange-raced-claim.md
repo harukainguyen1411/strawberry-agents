@@ -2,7 +2,7 @@
 date: 2026-04-23
 created: 2026-04-23
 concern: work
-status: proposed
+status: approved
 author: karma
 owner: karma
 complexity: quick
@@ -94,3 +94,10 @@ Invariants the xfails protect:
 
 Target branch: `fix/demo-studio-v3-auth-exchange-raced-claim` off `feat/demo-studio-v3` <!-- orianna: ok -- prospective branch names, not filesystem paths -->
 (or its successor after PR #75 merges). Single PR, dual-reviewed.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear author (Karma) and a confirmed owner for execution (Vi, per Duong's semantic approval today). The TOCTOU context is concrete with line-anchored references in `tools/demo-studio-v3/main.py:1952-1976` <!-- orianna: ok -- cross-repo path in missmp/company-os -->, and the recommended fix is fully specified (re-read, compare uids, raise 403 with `raced_claim` reason, distinct WARN log). Tasks are actionable with estimates and DoDs, and `tests_required: true` is satisfied by two xfail tests sequenced ahead of the implementation commit per Rule 12. Test-plan invariants match the fix's behavioral claims. No TBD/TODO/decision-pending markers in any gating section.
