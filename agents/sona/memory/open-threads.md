@@ -1,6 +1,22 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 2026-04-23-536df25c).
+Last updated: 2026-04-24 (pre-compact shard 2026-04-24-4eb1eb78; second consolidation session 84b7ba50).
+
+---
+
+## SECURITY INCIDENT — transcript secret leak (2026-04-24, CRITICAL)
+
+**Status:** Partially mitigated. Duong rotation action required.
+**Incident:** Sona `cat`-ed `.env.local` for local W3 debugging, exposing ANTHROPIC_API_KEY, FIREBASE_WEB_API_KEY, CONFIG_MGMT_TOKEN, INTERNAL_SECRET, DEMO_STUDIO_MCP_TOKEN, WALLET_STUDIO_API_KEY into the live session JSONL.
+**Yuumi scrub:** Round 1 scrubbed 43 JSONL occurrences + 54 task-output files. Round 2 scrubbed pre-existing leaks in `agents/sona/transcripts/2026-04-21-0cf7b28e.md` (INTERNAL_SECRET at line 10137) + `agents/sona/transcripts/2026-04-17.md` (Bearer token at line 398) + committed `74632bfc`. Round 2b scrubbed 8 residual `fb5c` + 6 residual `b812740` lines from live JSONL. Backups at `~/.claude-transcript-backups/`.
+**Git history contamination:** INTERNAL_SECRET + CONFIG_MGMT_TOKEN are in git history (commit `0c2c5362`). MUST ROTATE on GCP side.
+**History-clean but session-leaked:** ANTHROPIC_API_KEY, FIREBASE_WEB_API_KEY, WALLET_STUDIO_API_KEY, DEMO_STUDIO_MCP_TOKEN (gitignored; not in history; were in JSONL; now scrubbed).
+**Hardening recs pending:**
+  1. Add `INTERNAL_SECRET=[a-f0-9]{40,}` + `Authorization:\s*Bearer\s+[a-f0-9]{40,}` to default pre-scrub regex list.
+  2. Add rule: agents must never transcribe `.env` file contents verbatim into session summaries (Skarner rec).
+  3. Coordinator standing rule: never `cat` `.env` files — use narrow `grep` patterns or probe running services via `/health`, `/auth/config`, etc.
+**Next action:** Duong rotate INTERNAL_SECRET + CONFIG_MGMT_TOKEN on GCP. Then rotate session-leaked keys. Then implement Yuumi + Skarner hardening recs.
+**Shard:** 2026-04-24-4eb1eb78.
 
 ---
 
@@ -78,11 +94,11 @@ Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 202
 
 ---
 
-## P1 factory build — Phase E in review; T.P1.12 xfails committed (2026-04-24)
+## P1 factory build — PRs #105/#106 merged; PR #109 ready to merge (2026-04-24)
 
-**Status (2026-04-24):** PRs #83+#84 merged (prior session or this session — confirmed closed). Ekko T.P1.E1/E2 env vars live on staging. Rakan T.P1.12 xfails committed on `chore/p1-t12-xfail` (commit `f026f92`) — awaiting deps `feat/p1-s3-stream` + `test/p1-t7-fault-injection` before PR opens. Talon unblocked P1 chain: PRs #105 + #106 opened. Senna + Lucian reviewed both. Post-review fixes applied: BuildFailed stub `15c8407`, AI-trailer scrub `01f67ef`. Awaiting Duong web-UI approve + merge. Zombie Firestore records (Senna finding on #105) parked as follow-up, gated behind `FACTORY_REAL_BUILD=1`.
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384.
-**Next action:** Duong merge PRs #105 + #106. Once merged, open PR for T.P1.12 once deps land. Then T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA).
+**Status (2026-04-24):** PRs #105 (T.P1.5b) + #106 (T.P1.7) MERGED after two rounds of conflict resolution by Talon (git merge, no rebase, Rule 11 followed). Stale `@P1_XFAIL` decorators replaced with base-parity on merge. PR #107 (W3 config-flow) MERGED — W3 is live. PR #109 (T.P1.12 cleanup) open: Talon stripped 10 W3-gated xfails + `_w3_impl_present()` helper; restored `strict=True` on P1_XFAIL (Lucian nit from #105). Lucian CLEAN. Senna LGTM. 2 non-blocking suggestions (stale docstring; dead P1_XFAIL code). Ready to merge. T.P1.12 xfail PR on `chore/p1-t12-xfail` (commit `f026f92`) still awaiting deps `feat/p1-s3-stream` + `test/p1-t7-fault-injection`. Zombie Firestore records parked gated behind `FACTORY_REAL_BUILD=1`.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** Duong merge PR #109. Once merged, open T.P1.12 PR when deps land. Then T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA).
 
 ---
 
@@ -110,19 +126,19 @@ Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 202
 
 ---
 
-## TOCTOU I1 — PR #104 MERGED; plan flip to implemented pending (2026-04-24)
+## TOCTOU I1 — RESOLVED (2026-04-24)
 
-**Status (2026-04-24):** PR #104 merged. Akali Rule-16 QA PASS. Pre-existing legacy-cookie 500 bug re-flagged (known from PR #75 era, not a new regression). Plan still needs phase flip: proposed/in-progress → implemented. Coordinator action required.
-**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384.
-**Next action:** Flip TOCTOU plan to implemented via Orianna. Thread closes after flip.
+**Status (2026-04-24):** PR #104 MERGED. Plan flipped to implemented by Orianna (commit `4fa6ef8b` on main). Thread closed.
+**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** None.
 
 ---
 
-## Config-architecture ADR — W3 in flight (2026-04-24)
+## Config-architecture ADR — W3 MERGED; W4/W5 unblocked (2026-04-24)
 
-**Status (2026-04-24):** W1+W2 shipped (prior session). W3 (set_config schema flip + SSE `configVersion` piggyback) dispatched this session. Rakan xfails on `test/w3-config-schema-flip-xfail` (commit `5a8ad11`), self-healing guard via `_w3_impl_present()`. Viktor impl running at compact boundary. ADR corrective phase promotion: Orianna flipped approved → in-progress (commit `5f08075`). W4+W5 still blocked on W3 landing.
-**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c, 2026-04-24-9b238384.
-**Next action:** Await Viktor W3 impl return. Open PR, run Senna+Lucian review. Then dispatch W4 (parallel window opens after W3 merge). OQ-K2 + OQ-K4 still need Duong input.
+**Status (2026-04-24):** W3 (set_config schema flip + SSE `configVersion` piggyback) SHIPPED. Viktor impl `2a10732` + Rakan xfails `5a8ad11`. Senna found 2 critical blockers (SSE `status` event dropped, wrong error_code on force-retry) + 2 important; Viktor `51a39e2` fixed all. Lucian CLEAN with 3 drift notes (D-1 slug typo fixed, D-2/D-3 non-blocking). PR #107 merged. End-to-end verified locally by Duong (W3 write path confirmed via deployed S2). W4+W5 dispatch window is now open. OQ-K2 + OQ-K4 still need Duong input. P1 umbrella + ADR in-progress status stays (no flip to implemented yet).
+**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** Dispatch W4 (config-flow read side or next wave per ADR). Resolve OQ-K2 + OQ-K4 with Duong.
 
 ---
 
@@ -166,11 +182,22 @@ Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 202
 
 ---
 
-## S2 PATCH drift — PR #103 MERGED; plan flip to implemented pending (2026-04-24)
+## S2 PATCH drift — RESOLVED (2026-04-24)
 
-**Status (2026-04-24):** PR #103 (patch-drift remediation) merged. Thread functionally closed. Plan still needs phase flip to implemented. Coordinator action required.
-**Shard pointers:** 2026-04-23-536df25c, 2026-04-24-9b238384.
-**Next action:** Flip S2 patch-drift plan to implemented. Thread closes after flip.
+**Status (2026-04-24):** PR #103 MERGED. Plan flipped to implemented by Orianna (commit `d4112dd8` on main). Thread closed. Note: local S2 stub at `tools/demo-config-mgmt/main.py` is still pre-W3 (create-only, reads `initialConfig`); tracked separately as a local-dev residual.
+**Shard pointers:** 2026-04-23-536df25c, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** None. (See local S2 stub divergence thread for the residual.)
+
+---
+
+## Local S2 stub divergence from deployed (2026-04-24)
+
+**Status:** Residual — deferred. Non-blocking since workaround is in place.
+**Issue:** `tools/demo-config-mgmt/main.py` (local S2 stub, PR #103-era) reads `initialConfig` (pre-W3) and is create-only. Deployed S2 on Cloud Run implements full W3 contract: `{sessionId, config}`, validates, `?force=true` bypasses + upserts with version bump.
+**Workaround (Duong's directive):** Comment out `CONFIG_MGMT_URL=http://localhost:8002` + `CONFIG_MGMT_TOKEN=dev-token` in `.env.local`; fall back to `.env` prod URL for local dev. Local stub is effectively bypassed.
+**Root cause of "no fix to S2":** Duong scoped this as an S1-fix-only, not an S2 stub update. Stub divergence is a local-dev concern only.
+**Next action:** Document in `assessments/work/` as a local-dev residual for future reference. Low priority. Candidate for a follow-up Talon task to bring stub to W3 parity if local offline dev becomes required.
+**Shard:** 2026-04-24-4eb1eb78.
 
 ---
 
@@ -192,9 +219,9 @@ Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 202
 
 ## reviewer-auth.sh gap for missmp/company-os
 
-**Status (2026-04-22):** Both Senna and Lucian fail `reviewer-auth.sh` against `missmp/company-os` PRs. Current workaround: advisory comment only; Rule 18 satisfied only by Duong harukainguyen1411 web-UI approve. Structural gap — not a transient failure.
-**Shard pointers:** 2026-04-22-3a5b4781.
-**Next action:** Commission plan to extend `reviewer-auth.sh` for multi-repo org context, or grant `strawberry-reviewers` collaborator access to `missmp/company-os`.
+**Status (2026-04-24):** Both `strawberry-reviewers` AND `strawberry-reviewers-2` return 404 on `missmp/company-os`. All PR reviews today (#105, #106, #107, #109) posted as advisory comments via executor auth (`duongntd99`). Structural gap — not a transient failure. Third identity or org-access grant for `strawberry-reviewers-2` is the structural fix.
+**Shard pointers:** 2026-04-22-3a5b4781, 2026-04-24-4eb1eb78.
+**Next action:** Commission plan to extend `reviewer-auth.sh` for multi-repo org context, or grant `strawberry-reviewers-2` collaborator access to `missmp/company-os`.
 
 ---
 
