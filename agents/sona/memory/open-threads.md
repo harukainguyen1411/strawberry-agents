@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-23 (session-close leg 5, shard 2026-04-23-536df25c; prior shards 2026-04-23-148e1b03 + 5bc52df0 + cbe48dfe + b1acd96a + earlier).
+Last updated: 2026-04-24 (pre-compact shard 2026-04-24-9b238384; prior close 2026-04-23-536df25c).
 
 ---
 
@@ -78,11 +78,27 @@ Last updated: 2026-04-23 (session-close leg 5, shard 2026-04-23-536df25c; prior 
 
 ---
 
-## P1 factory build — Phase B+C+D shipped; Phase E pending merge
+## P1 factory build — Phase E in review; T.P1.12 xfails committed (2026-04-24)
 
-**Status (2026-04-23, updated):** Phase A+B+C complete. T.P1.10a SSE relay writer complete (`feat/p1-t10a-sse-relay-writer`). T.P1.10b SSE fallback GET: PR #84 reviewed (Lucian APPROVE + Senna LGTM), awaiting Duong merge. T.P1.13b demo-ready panel (Soraka): PR #83 reviewed (Lucian APPROVE), awaiting Duong merge. Loop 2d W1/W2/W5 (slack scaffolding removal) merged as PRs #80/#81/#82. PR #77 (T.P1.9) — merged. T.COORD.5 slack-triage T.0–T.6 complete (PR #79).
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
-**Next action:** Duong merge PRs #83+#84 → dispatch T.P1.12 (Rakan integration test) → T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA). Verify T.P1.10a PR status.
+**Status (2026-04-24):** PRs #83+#84 merged (prior session or this session — confirmed closed). Ekko T.P1.E1/E2 env vars live on staging. Rakan T.P1.12 xfails committed on `chore/p1-t12-xfail` (commit `f026f92`) — awaiting deps `feat/p1-s3-stream` + `test/p1-t7-fault-injection` before PR opens. Talon unblocked P1 chain: PRs #105 + #106 opened. Senna + Lucian reviewed both. Post-review fixes applied: BuildFailed stub `15c8407`, AI-trailer scrub `01f67ef`. Awaiting Duong web-UI approve + merge. Zombie Firestore records (Senna finding on #105) parked as follow-up, gated behind `FACTORY_REAL_BUILD=1`.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384.
+**Next action:** Duong merge PRs #105 + #106. Once merged, open PR for T.P1.12 once deps land. Then T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA).
+
+---
+
+## Zombie Firestore records — follow-up (2026-04-24)
+
+**Status (2026-04-24):** Senna finding on PR #105: `FACTORY_REAL_BUILD=1` path can leave orphaned Firestore build records when the factory returns without writing `buildId` back. Parked with Duong's acknowledgment. Gated — only surfaces in production factory runs with real builds.
+**Shard pointers:** 2026-04-24-9b238384.
+**Next action:** After `FACTORY_REAL_BUILD=1` is toggled (post P1 ship), dispatch Vi or Rakan to reproduce and fix.
+
+---
+
+## Stale worktrees — 38 on company-os (2026-04-24)
+
+**Status (2026-04-24):** 38 stale worktrees detected on missmp/company-os. Deferred sweep — not blocking any current work.
+**Shard pointers:** 2026-04-24-9b238384.
+**Next action:** Assign Ekko to sweep stale worktrees as a standalone non-urgent task.
 
 ---
 
@@ -94,19 +110,19 @@ Last updated: 2026-04-23 (session-close leg 5, shard 2026-04-23-536df25c; prior 
 
 ---
 
-## TOCTOU I1 — plan exists, no owner assigned
+## TOCTOU I1 — PR #104 MERGED; plan flip to implemented pending (2026-04-24)
 
-**Status (2026-04-23, updated):** Plan authored by Karma: `plans/proposed/work/2026-04-23-demo-studio-auth-exchange-raced-claim.md`. No executor assigned. Must be addressed before final ship.
-**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
-**Next action:** Assign owner (Vi or Camille). Plan needs Orianna promotion before execution.
+**Status (2026-04-24):** PR #104 merged. Akali Rule-16 QA PASS. Pre-existing legacy-cookie 500 bug re-flagged (known from PR #75 era, not a new regression). Plan still needs phase flip: proposed/in-progress → implemented. Coordinator action required.
+**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384.
+**Next action:** Flip TOCTOU plan to implemented via Orianna. Thread closes after flip.
 
 ---
 
-## Config-architecture ADR — W1+W2 SHIPPED; W3 next (2026-04-23)
+## Config-architecture ADR — W3 in flight (2026-04-24)
 
-**Status (2026-04-23, session-close leg 5):** W1 (seed on session create) merged as PR #91 commit `79d6c19`. Amended once for BD.B.3 cross-ADR conflict (`configVersion`/`seededConfig`/`seedSentAt` mirror dropped); ADR amendment committed as `b4a0edf`. W2 (system-block injection) merged as PR #96, final head `144fbb6`, reworked once via merge-based reconstruction to resolve Rule 12 ordering violation Lucian caught. W3 (set_config schema flip + SSE `configVersion` piggyback) is next — not yet dispatched. W4+W5 still blocked.
-**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c.
-**Next action:** Dispatch W3 complex-lane parallel pair (Rakan xfails ‖ Viktor impl) per amended ADR §186-192. Resolve OQ-K2 (SSE schema flexibility) before W3.T6.
+**Status (2026-04-24):** W1+W2 shipped (prior session). W3 (set_config schema flip + SSE `configVersion` piggyback) dispatched this session. Rakan xfails on `test/w3-config-schema-flip-xfail` (commit `5a8ad11`), self-healing guard via `_w3_impl_present()`. Viktor impl running at compact boundary. ADR corrective phase promotion: Orianna flipped approved → in-progress (commit `5f08075`). W4+W5 still blocked on W3 landing.
+**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c, 2026-04-24-9b238384.
+**Next action:** Await Viktor W3 impl return. Open PR, run Senna+Lucian review. Then dispatch W4 (parallel window opens after W3 merge). OQ-K2 + OQ-K4 still need Duong input.
 
 ---
 
@@ -150,11 +166,11 @@ Last updated: 2026-04-23 (session-close leg 5, shard 2026-04-23-536df25c; prior 
 
 ---
 
-## S2 PATCH drift — Ekko investigation complete, remediation pending (2026-04-23)
+## S2 PATCH drift — PR #103 MERGED; plan flip to implemented pending (2026-04-24)
 
-**Status:** `tools/demo-config-mgmt/main.py` locally has PATCH handler (line 238); deployed rev `00014-2bn` does NOT. Ekko investigated: `deploy.sh` uses `gcloud run deploy --source .` which builds from local working directory at deploy time, not git HEAD. No CI deploy pipeline exists. PR #87 already shipped a caller-side POST+RMW workaround, so the divergence is functionally inert. Three options: (1) strip local PATCH to match deployed, (2) redeploy prod to match local, (3) fix deploy.sh to embed git SHA and fail on dirty working tree. Ekko recommends (1) + (3) as separate ADR.
-**Shard pointers:** 2026-04-23-536df25c.
-**Next action:** Duong picks (1)/(2)/(3). If (3), commission plan.
+**Status (2026-04-24):** PR #103 (patch-drift remediation) merged. Thread functionally closed. Plan still needs phase flip to implemented. Coordinator action required.
+**Shard pointers:** 2026-04-23-536df25c, 2026-04-24-9b238384.
+**Next action:** Flip S2 patch-drift plan to implemented. Thread closes after flip.
 
 ---
 
