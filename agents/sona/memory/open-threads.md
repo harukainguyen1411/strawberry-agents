@@ -1,21 +1,68 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (pre-compact shard 2026-04-24-4eb1eb78; second consolidation session 84b7ba50).
+Last updated: 2026-04-24 (post-compact session 576ce828; runway section added).
 
 ---
 
-## SECURITY INCIDENT — transcript secret leak (2026-04-24, CRITICAL)
+## RUNWAY — E2E ship of demo-studio-v3 (live)
 
-**Status:** Partially mitigated. Duong rotation action required.
-**Incident:** Sona `cat`-ed `.env.local` for local W3 debugging, exposing ANTHROPIC_API_KEY, FIREBASE_WEB_API_KEY, CONFIG_MGMT_TOKEN, INTERNAL_SECRET, DEMO_STUDIO_MCP_TOKEN, WALLET_STUDIO_API_KEY into the live session JSONL.
-**Yuumi scrub:** Round 1 scrubbed 43 JSONL occurrences + 54 task-output files. Round 2 scrubbed pre-existing leaks in `agents/sona/transcripts/2026-04-21-0cf7b28e.md` (INTERNAL_SECRET at line 10137) + `agents/sona/transcripts/2026-04-17.md` (Bearer token at line 398) + committed `74632bfc`. Round 2b scrubbed 8 residual `fb5c` + 6 residual `b812740` lines from live JSONL. Backups at `~/.claude-transcript-backups/`.
-**Git history contamination:** INTERNAL_SECRET + CONFIG_MGMT_TOKEN are in git history (commit `0c2c5362`). MUST ROTATE on GCP side.
-**History-clean but session-leaked:** ANTHROPIC_API_KEY, FIREBASE_WEB_API_KEY, WALLET_STUDIO_API_KEY, DEMO_STUDIO_MCP_TOKEN (gitignored; not in history; were in JSONL; now scrubbed).
-**Hardening recs pending:**
+The goal: user opens studio → chats → brand flips via `set_config` → clicks Build → "Demo ready" panel renders → clicks "Open iPad demo" → new tab loads brand-correct iPad preview. Everything below is what stands between us and that working end-to-end. Update this section as state changes.
+
+### What's already green on `feat/demo-studio-v3`
+
+| Subsystem | Status | Landed via |
+|---|---|---|
+| Session lifecycle + TOCTOU-safe auth exchange | ✅ | PR #104 (missmp/company-os) |
+| Chat `set_config` whole-snapshot schema + force-retry + SSE additivity | ✅ | PR #107 (W3) |
+| S2 (Config-Mgmt) deployed + round-trip verified | ✅ | PR #103 + live probe 2026-04-24 |
+| P1 factory S3 `factory_build` + fault-injection fixture | ✅ | PRs #105 + #106 |
+| "Demo ready" panel in `studio.js` (T.P1.13a+13b) | ✅ | PR #83 (merged 2026-04-23) |
+| P1 xfail cleanup + P1_XFAIL strict=True restore (T.P1.12) | ✅ | PR #109 (merged 06:46Z today) |
+| Local env provisioning (T.P1.E1/E2) | ✅ | Ekko |
+
+### What stands between us and E2E ship (ordered waves)
+
+**Wave A — verification (in flight now):**
+- [Explore #43] — Confirm `demo-preview` actually reads from S2 post-PR #67. Duong reports preview still showing stale brand; verdict determines whether PR #67 held or T2 needs a do-over. **Landing shortly.**
+
+**Wave B — preview triage completion (unlocks after A):**
+- IF Explore = FIXED → Rakan writes T1 xfail (brand-correctness Playwright) + Viktor implements T3 (fullview + CORS) + T4 (studio.js URL paths, xfail flip, deploy.sh branch-guard) on feat/demo-studio-v3. One PR per Rule 13.
+- IF Explore = BROKEN → rewrite T2, re-dispatch. Don't touch T1/T3/T4 until preview actually wires to S2.
+
+**Wave C — deploy hygiene (prerequisite for Wave D prod push):**
+- [plan proposed] `plans/proposed/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Karma quick-lane plan for 6 peer-tool deploy.sh scripts (demo-dashboard, demo-factory, demo-preview, demo-studio-mcp, demo-studio-v3, demo-verification) with dirty-tree guard + `--labels=git-sha=` stamp. Awaits Duong approve → Orianna promote → Talon exec → Senna+Lucian review → merge. **~2 hrs end-to-end.**
+
+**Wave D — the ship (prod-touching, needs Duong explicit confirm):**
+- [T.P1.14 Ekko] — Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. No canary (internal users). Post-deploy smoke per Rule 17; rollback via `scripts/deploy/rollback.sh` if prod smoke fails. **Gate satisfied as of T.P1.12 merge; blocked only by Wave B (preview) + Wave C (deploy hygiene) + Duong go-ahead.**
+- [T.P1.16 Akali] — Playwright MCP E2E QA on deployed stack: session create → chat → build → panel → click → verify demo URL loads brand-correct content. Video + screenshots + QA report at `assessments/qa-reports/2026-04-22-p1-factory-build.md`. Links into PR #32 body.
+- Merge PR #32 (the demo-studio-v3 god PR into main).
+
+### Testable checkpoints after each wave
+
+- **After Wave A:** Read Explore's verdict — know whether preview wiring is actually fixed.
+- **After Wave B:** Local `pytest tests/test_preview_iframe_brand_sync.py` green; manual deployed-preview probe shows brand-correct HTML.
+- **After Wave C:** Dirty-tree deploy attempts fail with uniform error; `test_deploy_hygiene.sh` asserts 6 scripts have the required tokens.
+- **After Wave D:** Akali QA report covers all four checkpoints (create, build-click, panel-render, demo-URL-load); PR #32 merges with `QA-Report:` line green.
+
+### Post-ship residuals (non-blocking, carried)
+
+- T.P1.15 Viktor: delete `FACTORY_REAL_BUILD` flag + mock branch after 7-day soak
+- S1 `load_dotenv` gap (`.env.local` not auto-loaded in demo-studio-v3)
+- W4/W5 legs of `2026-04-23-agent-owned-config-flow.md`
+- Yuumi/Skarner scrub hardening recs (regex + `.env`-cat rule)
+- 38 stale worktrees cleanup (Ekko follow-up)
+- Zombie Firestore records on FACTORY_REAL_BUILD=1 failure path
+
+---
+
+## SECURITY INCIDENT — transcript secret leak (2026-04-24, CLOSED per Duong)
+
+**Status:** CLOSED 2026-04-24. Duong directive: "No rotation needed, don't remind me about this anymore." Do NOT re-surface this thread in future queue/status reports.
+**Scrub work (complete):** Yuumi round 1 (43 JSONL + 54 task-output), round 2 (transcripts `2026-04-21-0cf7b28e.md` + `2026-04-17.md`, commit `74632bfc`), round 2b (8+6 JSONL residuals). Skarner post-scrub audit clean. Backups at `~/.claude-transcript-backups/`.
+**Hardening recs (tracked as normal follow-ups, NOT security blockers):**
   1. Add `INTERNAL_SECRET=[a-f0-9]{40,}` + `Authorization:\s*Bearer\s+[a-f0-9]{40,}` to default pre-scrub regex list.
-  2. Add rule: agents must never transcribe `.env` file contents verbatim into session summaries (Skarner rec).
-  3. Coordinator standing rule: never `cat` `.env` files — use narrow `grep` patterns or probe running services via `/health`, `/auth/config`, etc.
-**Next action:** Duong rotate INTERNAL_SECRET + CONFIG_MGMT_TOKEN on GCP. Then rotate session-leaked keys. Then implement Yuumi + Skarner hardening recs.
+  2. Rule: agents must never transcribe `.env` file contents verbatim into session summaries.
+  3. Coordinator standing rule: never `cat` `.env` files — use narrow `grep` or probe running services.
 **Shard:** 2026-04-24-4eb1eb78.
 
 ---
