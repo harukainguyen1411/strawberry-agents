@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (post-compact session 576ce828; runway section added).
+Last updated: 2026-04-24 (post-compact session 576ce828; third consolidation — shard 4df78d45).
 
 ---
 
@@ -22,15 +22,15 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 ### What stands between us and E2E ship (ordered waves)
 
-**Wave A — verification (in flight now):**
-- [Explore #43] — Confirm `demo-preview` actually reads from S2 post-PR #67. Duong reports preview still showing stale brand; verdict determines whether PR #67 held or T2 needs a do-over. **Landing shortly.**
+**Wave A — COMPLETE (verdict: FIXED):**
+- Explore verdict confirmed: `demo-preview` code is correct — `server.py:99` calls S2 via urllib; deployed rev `demo-preview-00010-ff4` has correct env; `/preview/test-session` returns 404 from S2 (not stub). Local regression test passes. Prod Cloud Run not yet redeployed with today's changes — confirm with Duong before Wave B prod-validation.
 
-**Wave B — preview triage completion (unlocks after A):**
-- IF Explore = FIXED → Rakan writes T1 xfail (brand-correctness Playwright) + Viktor implements T3 (fullview + CORS) + T4 (studio.js URL paths, xfail flip, deploy.sh branch-guard) on feat/demo-studio-v3. One PR per Rule 13.
-- IF Explore = BROKEN → rewrite T2, re-dispatch. Don't touch T1/T3/T4 until preview actually wires to S2.
+**Wave B — preview triage completion (gate: confirm prod redeploy with Duong):**
+- Explore = FIXED → Rakan writes T1 xfail (brand-correctness Playwright) + Viktor implements T3 (fullview + CORS) + T4 (studio.js URL paths, xfail flip, deploy.sh branch-guard) on feat/demo-studio-v3. One PR per Rule 13.
+- Akali Playwright QA dispatched on local uvicorn `http://127.0.0.1:8080`. Check inbox for return; re-dispatch if none.
 
-**Wave C — deploy hygiene (prerequisite for Wave D prod push):**
-- [plan proposed] `plans/proposed/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Karma quick-lane plan for 6 peer-tool deploy.sh scripts (demo-dashboard, demo-factory, demo-preview, demo-studio-mcp, demo-studio-v3, demo-verification) with dirty-tree guard + `--labels=git-sha=` stamp. Awaits Duong approve → Orianna promote → Talon exec → Senna+Lucian review → merge. **~2 hrs end-to-end.**
+**Wave C — deploy hygiene (in-progress, pending Talon dispatch):**
+- Plan `plans/in-progress/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Karma quick-lane plan for 6 peer-tool deploy.sh scripts (demo-dashboard, demo-factory, demo-preview, demo-studio-mcp, demo-studio-v3, demo-verification) with dirty-tree guard + `--labels=git-sha=` stamp. Orianna gated proposed→approved (`0b0d15bf`); approved→in-progress Orianna call (task #48) still running at consolidation. Talon dispatch pending task #48 completion.
 
 **Wave D — the ship (prod-touching, needs Duong explicit confirm):**
 - [T.P1.14 Ekko] — Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. No canary (internal users). Post-deploy smoke per Rule 17; rollback via `scripts/deploy/rollback.sh` if prod smoke fails. **Gate satisfied as of T.P1.12 merge; blocked only by Wave B (preview) + Wave C (deploy hygiene) + Duong go-ahead.**
@@ -141,11 +141,11 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 ---
 
-## P1 factory build — PRs #105/#106 merged; PR #109 ready to merge (2026-04-24)
+## P1 factory build — PRs #105/#106/#107/#109 all merged (2026-04-24)
 
-**Status (2026-04-24):** PRs #105 (T.P1.5b) + #106 (T.P1.7) MERGED after two rounds of conflict resolution by Talon (git merge, no rebase, Rule 11 followed). Stale `@P1_XFAIL` decorators replaced with base-parity on merge. PR #107 (W3 config-flow) MERGED — W3 is live. PR #109 (T.P1.12 cleanup) open: Talon stripped 10 W3-gated xfails + `_w3_impl_present()` helper; restored `strict=True` on P1_XFAIL (Lucian nit from #105). Lucian CLEAN. Senna LGTM. 2 non-blocking suggestions (stale docstring; dead P1_XFAIL code). Ready to merge. T.P1.12 xfail PR on `chore/p1-t12-xfail` (commit `f026f92`) still awaiting deps `feat/p1-s3-stream` + `test/p1-t7-fault-injection`. Zombie Firestore records parked gated behind `FACTORY_REAL_BUILD=1`.
-**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
-**Next action:** Duong merge PR #109. Once merged, open T.P1.12 PR when deps land. Then T.P1.14 (Ekko deploy) → T.P1.16 (Akali final QA).
+**Status (2026-04-24, shard 4df78d45):** PR #109 (T.P1.12 cleanup) MERGED at `cb667fed` by Duong. T.P1.12 + T.P1.13a + T.P1.13b all complete. P1 factory build chain is fully green through the test cleanup wave. Zombie Firestore records parked gated behind `FACTORY_REAL_BUILD=1`.
+**Next action (Wave D, blocked):** T.P1.14 (Ekko deploy S1+S3 to stg+prod with FACTORY_REAL_BUILD=1). Gate: Wave B (preview) + Wave C (deploy hygiene) + Duong explicit go-ahead. Then T.P1.16 (Akali final QA) → PR #32 merge.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384, 2026-04-24-4eb1eb78, 2026-04-24-4df78d45.
 
 ---
 
@@ -373,9 +373,14 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 ## Coordinator identity misroute on post-compact resume
 
-**Status (2026-04-22):** Open — class of bug, not just the one-off this session. Full postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Fired when the session did Sona-concern work under an Evelynn tag. Mitigation #3 (bash cwd-wedge protocol) landed (`8e796f1`).
-**Shard pointers:** 2026-04-22-0cf7b28e.
-**Next action:** Commission Swain or Karma for a concern-check-on-resume mechanism (post-compact identity re-validation + `/end-session` argument verification + default-escalate-not-silent-fallback).
+**Status (2026-04-24, shard 4df78d45):** Recurred this session. Session 576ce828 resumed post-/compact without "Hey Sona" greeting; booted as Evelynn by default, merged PR #37 (Evelynn's work) before mis-routing caught. Stopped misrouted monitor, re-armed as Sona. Apology note sent to Evelynn inbox (`agents/evelynn/inbox/20260424-0647-013277.md`). Proposed fix: resolve coordinator identity from prior session JSONL greeting on resume, not fall back to Evelynn default. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Original postmortem: `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Mitigation #3 (bash cwd-wedge protocol) landed (`8e796f1`) in April 22 session.
+**Shard pointers:** 2026-04-22-0cf7b28e, 2026-04-24-4df78d45.
+**Next action:** Commission Swain or Karma for concern-check-on-resume mechanism. Coordinate with Evelynn on the JSONL-greeting-resolution proposal.
+
+## Stale open-threads checkbox audit
+
+**Status (2026-04-24, shard 4df78d45):** Two stale-checkbox discoveries in this session: (a) T.P1.13b already merged via PR #83 on 2026-04-23 — Lulu delivered redundant brief, Soraka surfaced the stale tick; (b) T1/T3/T4 of preview-iframe-staleness-triage all committed in PR #67 (`ccd7a32`), Rakan verified all 4 test invariants pass locally — open-threads still showed them as pending. Pattern: Lissandra consolidations capture state at compact boundary but don't reconcile with git merge history.
+**Next action:** Before each session start, audit open-threads RUNWAY subsystem checkboxes against `git log --oneline feat/demo-studio-v3 | head -30`. Close stale items before dispatching. Standing rule: trust git log over open-threads for "done" status on task items.
 
 ## Coordinator QA verification discipline — standing rule
 
