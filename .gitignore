@@ -92,3 +92,6 @@ apps/functions/lib/
 
 # Stray logs
 firebase-debug.log
+
+# Per-checkout coordinator identity hint (written by /pre-compact-save, consumed by sessionstart hook)
+.coordinator-identity

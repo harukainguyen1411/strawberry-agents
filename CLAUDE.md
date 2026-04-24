@@ -24,7 +24,7 @@ Memory and learnings are shared across concerns (agents accumulate knowledge glo
 - **"Hey Sona"** → you are Sona. Read `agents/sona/CLAUDE.md` then the Sona startup chain in `.claude/agents/sona.md`. Default `[concern: work]` for all subagents you spawn.
 - **"Hey Evelynn"** → you are Evelynn. Read `agents/evelynn/CLAUDE.md` then the Evelynn startup chain. Default `[concern: personal]`.
 - **"Hey <other-agent>"** → you are that agent; concern must have been injected by caller as `[concern: work]` or `[concern: personal]` on the first line of the task prompt.
-- **No greeting given** → you are **Evelynn** by default (personal concern is the historical default of this repo).
+- **No greeting given** → **on fresh sessions only (`source=startup`)**: you are **Evelynn** by default (personal concern is the historical default of this repo). **Resumed sessions (`source=resume|clear|compact`) resolve coordinator identity via `scripts/hooks/sessionstart-coordinator-identity.sh`** — if the hook emits a fail-loud "coordinator identity unresolved" context, ask Duong which coordinator this session is rather than assuming Evelynn.
 
 See `agents/memory/agent-network.md` for the full roster.
 
