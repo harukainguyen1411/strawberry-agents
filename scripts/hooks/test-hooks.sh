@@ -245,6 +245,16 @@ else
 fi
 
 echo ""
+echo "=== pre-commit plan-lifecycle-guard tests (commit-phase defence-in-depth) ==="
+if bash "$REPO_ROOT/scripts/hooks/tests/test-pre-commit-plan-lifecycle-guard.sh" 2>/dev/null; then
+  echo "  PASS: test-pre-commit-plan-lifecycle-guard.sh (4 invariants)"
+  PASS=$((PASS+1))
+else
+  echo "  FAIL: test-pre-commit-plan-lifecycle-guard.sh"
+  FAIL=$((FAIL+1))
+fi
+
+echo ""
 echo "=== pretooluse plan-lifecycle-guard tests (physical guard) ==="
 if bash "$REPO_ROOT/scripts/hooks/tests/test-pretooluse-plan-lifecycle-guard.sh" 2>/dev/null; then
   echo "  PASS: test-pretooluse-plan-lifecycle-guard.sh (6 invariants)"
