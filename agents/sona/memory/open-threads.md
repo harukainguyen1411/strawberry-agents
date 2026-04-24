@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (post-compact session 576ce828; fourth consolidation — shard ec53a0d6).
+Last updated: 2026-04-24 (post-compact session 84b7ba50; fifth consolidation — shard b3d87376).
 
 ---
 
@@ -79,6 +79,57 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **Status:** Rule 19 gap — guard doesn't cover already-staged-then-committed paths. Commit `b11eb761` swept in a staged plan-directory file from a parallel session. Evelynn inbox'd item 1 of 5-item backlog (20260424-0759-017564.md).
 **Next action:** Evelynn triage; structural fix needed in pre-commit or pre-push hook.
 **Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Plan lifecycle guard — heredoc false-close (2026-04-24, open, HIGH SEVERITY)
+
+**Status:** bashlex AST scan in `pretooluse-plan-lifecycle-guard.sh` fires fail-closed on heredoc Bash blocks containing plan-directory path strings. Hit 3 times today: Aphelios (`0314b7cc`), Sona, Lucian. Evelynn inbox'd with high-severity flag. Distinct from staged-commit hole above — different failure mode.
+**Next action:** Evelynn structural fix — scope guard scan to command portion only, not heredoc bodies. Interim: use Read tool instead of Bash cat for plan files.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Co-authored-by Viktor leak on main (2026-04-24, open)
+
+**Status:** PRs #114/#115/#117 merged to `missmp/company-os` main with `Co-authored-by: Viktor <viktor@strawberry.local>` trailers injected by GitHub squash-merge UI. Forward-only fix (cannot rewrite protected main). Root cause: per-worktree `.git/config` agent identity. Evelynn inbox'd for structural fix. Learning written.
+**Next action:** Evelynn implements per-process GIT_AUTHOR_NAME binding or commit-msg hook stripping `@strawberry.local` trailers. Port to company-os pre-push hook.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Dual-reviewer protocol — Senna+Lucian parallel (2026-04-24, corrected — standing rule update)
+
+**Status:** Four work PRs (#114/#115/#116/#117) dispatched to Senna only; Lucian skipped. Duong flagged. Corrected as of this session. Both reviewers now dispatched in same turn. Evelynn inbox'd to add enforcement note to Sona CLAUDE.md reviewer section. Learning written.
+**Next action:** Evelynn adds explicit "both Senna AND Lucian in same turn" rule to Sona CLAUDE.md. Monitor next review dispatch to confirm pattern holds.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Self-invite ADR — in execution (2026-04-24, open)
+
+**Status:** Azir wrote ADR; Duong approved; Orianna promoted (`775b2b90`). Aphelios decomposed 17 tasks (`0314b7cc`). First batch:
+- T1 Seraphine PR #2108 (tse): Lucian REQUEST CHANGES — 3 foreign commits from stale base. Needs rebase onto clean base before re-review.
+- T11 Seraphine: audit schema committed `6d60964e` — DONE.
+- T13 Jayce PR #32 (mcps): Senna+Lucian both APPROVE — awaiting Duong merge.
+**Next action:** (1) Seraphine rebase T1 PR #2108 onto clean base, then re-dispatch Senna+Lucian. (2) Duong merge T13 PR #32 (mcps). (3) Dispatch remaining tasks per Aphelios breakdown.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Wave D unblocker — company-os PR #32 (2026-04-24, open)
+
+**Status:** Viktor flipped T.P1.12 xfail (commit `64eb362`). 4/4 integration tests pass in 0.37s. Scope-creep prod bug fix in `demo-factory/project.py` `post_clone_fixup` shallow-copy included. Senna+Lucian reviews in flight. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
+**Next action:** Await Senna+Lucian verdicts → Duong approve → merge → Wave D unblocked.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Swain secretary ADR — in flight (2026-04-24, open)
+
+**Status:** Duong directive: turn Sona into a real secretary with MCPs for Slack + Gmail + Calendar + Drive + Jira + Asana + Linear + HubSpot-direct + LinkedIn + morning-brief routine. Swain background agent `a7a2e536e88f2ac30` writing `plans/proposed/work/2026-04-24-sona-secretary-mcp-suite.md`.
+**Next action:** Await Swain return → Duong review → Orianna promotion if approved.
+**Shard pointers:** 2026-04-24-b3d87376.
 
 ---
 
