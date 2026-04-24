@@ -231,6 +231,67 @@ Ekko's MEMORY.md L154 gets a one-line supersede note pointing at this spec; the 
 4. `grep -rn "slack-bot\|slack-user" strawberry-agents/ --exclude-dir=worktrees` returns zero hits in live (non-learnings, non-historical) files.
 5. Rollback: reverting `.mcp.json` to the two-entry form with the retained `start.sh.bak-dual` restores prior behaviour in < 2 minutes.
 
+## Tasks
+
+**Breakdown by Kayn, 2026-04-24.** Four commits (C1 scaffold → C2 xfail tests → C3 impl → C4 migration) per Rule 12. Tasks T1–T5 land in C1, T6–T11 in C2, T12–T22 in C3, T23–T27 in C4. C1–C3 commit inside `/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/` (separate repo from strawberry-agents). C4 commits inside `strawberry-agents/`. Executor: Ekko (owner per frontmatter) — Sonnet tier is sufficient; all tasks are thin wrappers with typed SDKs and locked decisions. Total estimate: ~395 AI-min across 27 tasks.
+
+### Phase C1 — Scaffold + token loader (commits in `strawberry/mcps/slack/`)
+
+- [ ] **T1** — Init TS project skeleton. estimate_minutes: 15. Files: `mcps/slack/package.json`, `mcps/slack/tsconfig.json`, `mcps/slack/.gitignore`. DoD: `package.json` declares `type: "module"`, deps `@modelcontextprotocol/sdk`, `@slack/web-api`, `zod`; devDeps `typescript`, `tsx`, `vitest`, `@types/node`; `tsconfig.json` targets `ES2022` + `moduleResolution: "bundler"` + `strict: true`; `.gitignore` excludes `node_modules/` and `dist/`.
+- [ ] **T2** — Install and lockfile. estimate_minutes: 10. Files: `mcps/slack/package-lock.json`, `mcps/slack/node_modules/` (gitignored). DoD: `npm install` completes clean; `package-lock.json` committed.
+- [ ] **T3** — Token-loader module. estimate_minutes: 30. Files: `mcps/slack/src/tokens.ts`. DoD: exports `loadTokens()` that reads `SLACK_BOT_TOKEN` + `SLACK_USER_TOKEN` from env, throws a typed error naming the missing var when absent; exports `DUONG_USER_ID` + `SLACK_TEAM_ID` with env overrides and defaults `U03KDE6SS9J` / `T18MLBHC5`. No MCP handlers yet.
+- [ ] **T4** — Bootstrap stub `src/server.ts`. estimate_minutes: 20. Files: `mcps/slack/src/server.ts`. DoD: minimal stdio MCP server that registers zero tools and starts cleanly; imports `loadTokens()` and fails fast on missing tokens; used by C2 tests to assert "no tool found" errors.
+- [ ] **T5** — `start.sh` entrypoint + header comment in secret file. estimate_minutes: 20. Files: `mcps/slack/scripts/start.sh`, `secrets/slack-bot-token.txt` (edit only — add `# contains both bot_token= and user_token=` header per OQ1). DoD: `start.sh` matches §5 contract exactly (reads both tokens, exports as env, `exec npx -y tsx src/server.ts`); `chmod +x`; running it with missing file or missing keys exits non-zero with clear stderr. **[TOP-LEVEL]** because `secrets/slack-bot-token.txt` is in the `strawberry-agents/` repo (gitignored) — Ekko must edit it out-of-band, not in the `mcps/slack/` commit.
+
+**C1 commit** (in `mcps/slack/` repo): `chore: scaffold custom slack mcp (T1-T5)`.
+
+### Phase C2 — xfail integration tests (commits in `strawberry/mcps/slack/`)
+
+All tests use `vitest`, spawn `src/server.ts` via stdio MCP client, and mock `@slack/web-api`'s `WebClient` via `vi.mock` to avoid real Slack calls. Must FAIL against C1 HEAD (no handlers registered → every tool call errors with "tool not found"). Rule 12 satisfied.
+
+- [ ] **T6** — Test harness. estimate_minutes: 40. Files: `mcps/slack/test/harness.ts`, `mcps/slack/vitest.config.ts`. DoD: `harness.ts` exports `spawnServer()` returning a connected MCP client + a `mockWebClient` handle for asserting `chat.postMessage` / `reactions.add` / etc. calls; `vitest.config.ts` enables `test.globals`, points at `test/**/*.test.ts`.
+- [ ] **T7** — Bot-token-routed tool tests. estimate_minutes: 45. Files: `mcps/slack/test/bot-tools.test.ts`. DoD: xfail tests for `notify_duong`, `post_as_bot`, `reply_in_thread(as="bot")`, `add_reaction` — assert (a) call routes through `botClient`, (b) `notify_duong` passes `channel="U03KDE6SS9J"`, (c) `thread_ts` propagates when provided, (d) zod rejects missing required args.
+- [ ] **T8** — User-token-routed tool tests. estimate_minutes: 45. Files: `mcps/slack/test/user-tools.test.ts`. DoD: xfail tests for `post_as_duong`, `reply_in_thread(as="duong")`, `read_channel_history`, `read_thread`, `read_dm`, `list_users`, `list_channels`, `resolve_user` — assert (a) each routes through `userClient`, (b) API method and args match §2 table, (c) `read_dm` does `conversations.open` → `conversations.history` sequence.
+- [ ] **T9** — `from_agent` prefix tests (OQ2). estimate_minutes: 20. Files: `mcps/slack/test/from-agent.test.ts`. DoD: xfail tests asserting `notify_duong({text, from_agent: "evelynn"})` posts `"[evelynn] <text>"`; omitting `from_agent` posts bare `text`; same behaviour for `post_as_bot` and `post_as_duong`.
+- [ ] **T10** — Error path tests. estimate_minutes: 40. Files: `mcps/slack/test/errors.test.ts`. DoD: xfail tests cover (a) missing `SLACK_BOT_TOKEN` env → server fails fast on boot with typed error; (b) Slack returns `ok:false, error:"channel_not_found"` → MCP error response shape; (c) malformed JSON from SDK mock → graceful MCP error, no crash; (d) 429 retry engages (assert `retryConfig.fiveRetriesInFiveMinutes` on both clients via SDK constructor-call inspection).
+- [ ] **T11** — List/resolve shape tests. estimate_minutes: 25. Files: `mcps/slack/test/list-shapes.test.ts`. DoD: xfail tests assert `list_users({query})` filters on `name`/`real_name`/`profile.display_name` client-side; `list_channels({member_only: true})` filters by `is_member`; `resolve_user("@duong")` strips `@` and returns `{user_id, real_name, tz}`.
+
+**C2 commit** (in `mcps/slack/` repo): `chore: xfail tests for all 11 slack mcp tools (T6-T11)` — must be run against C1 HEAD and confirmed red before implementation.
+
+### Phase C3 — Handler implementation (commits in `strawberry/mcps/slack/`)
+
+All tasks edit `mcps/slack/src/server.ts`. Order matters only in that T12–T14 must land before any tool handler compiles.
+
+- [ ] **T12** — WebClient construction + retry config (OQ3). estimate_minutes: 20. Files: `mcps/slack/src/server.ts`. DoD: `botClient` and `userClient` instantiated with `retryConfig: RetryOptions.fiveRetriesInFiveMinutes`; exported for handler use; T10 retry-config test passes.
+- [ ] **T13** — Shared zod schemas + response-envelope helper. estimate_minutes: 25. Files: `mcps/slack/src/server.ts`. DoD: common schemas (`channelId`, `threadTs`, `text`, `userId`) defined once; helper `okEnvelope(payload)` / `errEnvelope(slackError)` returns MCP-compliant response shapes.
+- [ ] **T14** — `from_agent` prefix helper (OQ2). estimate_minutes: 10. Files: `mcps/slack/src/server.ts`. DoD: `applyAgentPrefix(text, from_agent?)` returns `"[${from_agent}] ${text}"` when provided, else `text`; unit-tested inline.
+- [ ] **T15** — `notify_duong` handler. estimate_minutes: 20. Files: `mcps/slack/src/server.ts`. DoD: zod schema `{text, thread_ts?, from_agent?}`; calls `botClient.chat.postMessage({channel: DUONG_USER_ID, text: applyAgentPrefix(...), thread_ts})`; T7 + T9 subsets pass.
+- [ ] **T16** — `post_as_bot` + `post_as_duong` handlers. estimate_minutes: 25. Files: `mcps/slack/src/server.ts`. DoD: both handlers with `{channel_id, text, thread_ts?, from_agent?}`; correct client routing; T7 + T8 + T9 subsets pass.
+- [ ] **T17** — `reply_in_thread` dispatch handler. estimate_minutes: 20. Files: `mcps/slack/src/server.ts`. DoD: zod enum `as: "bot"|"duong"` default `"bot"`; required `thread_ts`; delegates to `post_as_bot`/`post_as_duong` internals; T7 + T8 reply subsets pass.
+- [ ] **T18** — `add_reaction` handler. estimate_minutes: 15. Files: `mcps/slack/src/server.ts`. DoD: schema `{channel_id, timestamp, emoji}`; calls `botClient.reactions.add`; T7 subset passes.
+- [ ] **T19** — `read_channel_history` + `read_thread` + `read_dm` handlers. estimate_minutes: 40. Files: `mcps/slack/src/server.ts`. DoD: three handlers per §2 table; `read_dm` performs `conversations.open` → `conversations.history`; cursor/limit defaults applied; T8 read subset passes.
+- [ ] **T20** — `list_users` + `list_channels` handlers. estimate_minutes: 35. Files: `mcps/slack/src/server.ts`. DoD: `users.list` with client-side query filter; `conversations.list` with `types=public_channel,private_channel` and `is_member` filter when `member_only=true`; T11 passes.
+- [ ] **T21** — `resolve_user` handler. estimate_minutes: 20. Files: `mcps/slack/src/server.ts`. DoD: strips leading `@`; searches `users.list` by `name`/`display_name`/`real_name`; returns `{user_id, real_name, tz}` or typed `user_not_found` error; T11 resolve subset passes.
+- [ ] **T22** — Error-envelope plumbing + final green. estimate_minutes: 25. Files: `mcps/slack/src/server.ts`. DoD: all Slack API errors surface as MCP errors via `errEnvelope`; missing-token boot error wired; all of T7–T11 green; `npm test` clean.
+
+**C3 commit** (in `mcps/slack/` repo): `feat: implement 11 slack mcp tool handlers (T12-T22)`.
+
+### Phase C4 — Migration (commits in `strawberry-agents/`)
+
+Cross-repo phase. `start.sh.bak-dual` rename happens in the `mcps/slack/` repo as a separate tiny commit; everything else is one atomic commit in `strawberry-agents/`.
+
+- [ ] **T23** — Rename old dual-wrapper `start.sh` → `start.sh.bak-dual`. estimate_minutes: 5. Files: `mcps/slack/scripts/start.sh.bak-dual` (renamed from old content preserved pre-T5). DoD: the prior npm-wrapper script is preserved under the `.bak-dual` name for one-week rollback per §6; commit in `mcps/slack/` repo: `chore: retain old dual-wrapper slack start.sh as bak-dual for rollback`.
+- [ ] **T24** — `.mcp.json` — drop `slack-bot` + `slack-user`, add single `slack` entry. estimate_minutes: 15. Files: `/Users/duongntd99/Documents/Personal/strawberry-agents/.mcp.json`. DoD: matches §6 spec exactly (command `bash`, args pointing at `mcps/slack/scripts/start.sh`, env `SLACK_TEAM_ID` + `DUONG_USER_ID`); JSON valid. **[TOP-LEVEL]** — `.mcp.json` is coordinator-owned top-level infra.
+- [ ] **T25** — Rewrite `agents/memory/duong.md` Slack section. estimate_minutes: 15. Files: `/Users/duongntd99/Documents/Personal/strawberry-agents/agents/memory/duong.md`. DoD: lines 12–29 replaced with the 5-line `## Slack` block from §7 verbatim; no tool-name or token-prefix strings remain; success criterion §10.3 satisfied. **[TOP-LEVEL]** — `agents/memory/duong.md` is a shared top-level memory file.
+- [ ] **T26** — Ekko MEMORY.md supersede note. estimate_minutes: 5. Files: `/Users/duongntd99/Documents/Personal/strawberry-agents/agents/ekko/memory/MEMORY.md`. DoD: L154 dual-wrapper note gets a one-line `**Superseded 2026-04-24** by plans/approved/personal/2026-04-24-custom-slack-mcp.md` appended; historical wiring detail preserved.
+- [ ] **T27** — Grep-verify success criteria §10.4 + restart-session smoke. estimate_minutes: 10. Files: none (verification only). DoD: `grep -rn "slack-bot\|slack-user" strawberry-agents/ --exclude-dir=worktrees --exclude-dir=learnings --exclude=*.bak-dual` returns zero hits; after Claude-session restart, `mcp__slack__notify_duong("migration smoke")` delivers DM per §10.2.
+
+**C4 commit** (in `strawberry-agents/` repo, atomic): `chore: migrate to custom slack mcp (T24-T26)` — covers `.mcp.json`, `agents/memory/duong.md`, `agents/ekko/memory/MEMORY.md`.
+
+### Open questions
+
+None. OQ1–OQ4 all resolved in the plan body or at dispatch. No fresh OQs surfaced by this breakdown.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
