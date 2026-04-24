@@ -191,7 +191,7 @@ Defined in: ADR §D5.
 
 | Script | Role |
 |--------|------|
-| `scripts/plan-promote.sh` | Reads all five fields; enforces gate checks before moving a plan file |
+| Orianna agent (`.claude/agents/orianna.md`) | Reads all five fields; enforces gate checks before moving a plan file |
 | `scripts/orianna-sign.sh` | Writes `orianna_signature_<phase>` after running the phase-appropriate check |
 | `scripts/orianna-verify-signature.sh` | Validates a signature field against git history and current body hash |
 | `scripts/orianna-hash-body.sh` | Normalizes plan body and emits SHA-256; sourced by sign and verify scripts |
