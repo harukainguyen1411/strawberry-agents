@@ -1,6 +1,42 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-24 (Lissandra pre-compact consolidation 3, session 5e94cd09).
+Last updated: 2026-04-24 (Lissandra pre-compact consolidation 4, session 5e94cd09).
+
+---
+
+## Queued backlog — Duong directive (finish in-flight first)
+
+Per Duong via Sona FYI (inbox archive `20260424-0759-017564.md`): finish in-flight work before pulling fresh plan items. Route cross-concern system/pattern fixes to Evelynn. Commission Karma plans for these after Talon #59 lands.
+
+1. **Rule 19 guard hole — pre-staged-then-committed plan moves bypass the PreToolUse plan-lifecycle guard.** Hit twice today (Sona's b11eb761 sweep of s2-min-instances.md; Orianna's own first-session sweep of ekko files into a promotion commit). Guard covers Bash-mv/cp/rm/tee/touch + Write/Edit/NotebookEdit, but not `git commit` of pre-existing staged changes. Needs a pre-commit hook variant that rejects protected-plan-dir paths in the staged index unless committing identity is Orianna.
+2. **Plan-checkbox-vs-git-history audit pattern.** Three stale-plan-state discoveries in one Sona session today. Checkboxes say `[ ]` but work is committed. Needs a script — pre-commit hook or weekly audit — cross-referencing plan checkboxes against commits touching the same paths.
+3. **scripts/plan-promote.sh phantom reference cleanup.** Script doesn't exist (verified via Yuumi on Sona side); doc references still survive. Yuumi-size.
+
+Already in flight or shipped: Sona's "Senna/Lucian agent-def work-scope fix" is Talon #59 (reviewer-auth concern-split plan, PR pending). "Resume-session identity drift" is shipped (PR #41 merged 360edeb9; plan implemented 3c1c4cde); Sona sees it on her next session restart.
+
+---
+
+## Reviewer-auth concern-split — Talon in-flight
+
+**Current status (2026-04-24):** Originated from Sona FYI about Duong's work-side reviewer identity correction. Karma drafted quick-lane plan (70min / 6 tasks). Orianna promoted to approved at 4cefd75f. Talon #59 currently implementing (branch TBD).
+**Next:** On resume, check Talon #59 output. Dispatch Senna + Lucian review. Merge when approved.
+**Shard:** 8df9ce09
+
+---
+
+## Cross-concern FYI pattern — codified
+
+**Current status (2026-04-24):** Mandatory unprompted coordinator-to-coordinator FYI pattern now codified in agents/memory/agent-network.md (commit 5f894715). Both coordinators required to send FYIs for cross-concern events (shared agents, shared scripts, universal invariant amendments). Triggered by Duong's direct praise of Sona's Akali-breach FYI. Learning filed: `agents/evelynn/learnings/2026-04-24-sona-unprompted-cross-concern-fyi.md`. Two reciprocal FYIs already sent to Sona this session.
+**Next:** None — rule is live. Practice on every qualifying event.
+**Shard:** 8df9ce09
+
+---
+
+## Rule 12 drift — pre-push-tdd.sh shell-test gap
+
+**Current status (2026-04-24):** Lucian flagged non-blocking on PR #41: T1+T3 (xfail + impl) landed in the same commit due to pre-push-tdd.sh not gating shell-only tests. Systemic gap — shell tests are not covered by the TDD gate. Not blocking current work.
+**Next:** Commission a follow-up plan (Karma quick-lane) to close the gap when capacity allows. Not urgent.
+**Shard:** 8df9ce09
 
 ---
 
@@ -47,20 +83,20 @@ Last updated: 2026-04-24 (Lissandra pre-compact consolidation 3, session 5e94cd0
 
 ---
 
-## Coordinator-boot-unification — SHIPPED
+## Coordinator-boot-unification — FULLY SHIPPED
 
-**Current status (2026-04-24):** PR #39 merged. New scripts/coordinator-boot.sh live, Signal B heuristic removed, stateless Monitor-arming gate in place. Plan promoted to implemented at 8f942bc1. Ekko currently running polish PR (branch chore/boot-unification-polish) for 2 non-blocking Senna findings: launch-*.sh headers + memory-consolidate silent-failure warn.
-**Next:** Check Ekko output on resume; dispatch Senna + Lucian review, merge polish PR.
+**Current status (2026-04-24):** PR #39 merged (coordinator-boot.sh, stateless Monitor-arming gate). PR #40 merged (efd8be8b) — boot-unification polish: launcher headers + memory-consolidate silent-failure warn. Senna REQUEST_CHANGES → Ekko re-fix → Senna re-approve → merged. Arc complete.
+**Next:** None. RESOLVED.
 **Refs:** `plans/implemented/personal/2026-04-24-coordinator-boot-unification.md`
-**Shards:** bd9bb7cc, 683a3ab7
+**Shards:** bd9bb7cc, 683a3ab7, 8df9ce09
 
 ---
 
-## Resume-session coordinator-identity drift — plan drafting
+## Resume-session coordinator-identity drift — RESOLVED
 
-**Current status (2026-04-24):** Sona flagged via inbox (archived at agents/evelynn/inbox/archive/2026-04/20260424-0647-013277.md). Resume sessions may drift coordinator identity. Karma currently drafting quick-lane plan in plans/proposed/personal/.
-**Next:** Review Karma's plan on resume; approve or send back; commission impl if approved.
-**Shard:** 683a3ab7
+**Current status (2026-04-24):** Sona flagged via inbox (archived at agents/evelynn/inbox/archive/2026-04/20260424-0647-013277.md). Karma drafted quick-lane plan. Talon implemented. PR #41 merged (360edeb9). SessionStart source-based identity resolution live. Plan promoted to implemented at 3c1c4cde.
+**Next:** None. RESOLVED.
+**Shards:** 683a3ab7, 8df9ce09
 
 ---
 
