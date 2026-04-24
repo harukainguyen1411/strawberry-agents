@@ -60,9 +60,9 @@ cleanup_dirs() {
 # INV-1a: T1 — PreToolUse hook rewrites persona identity to neutral on work-scope
 # ---------------------------------------------------------------------------
 test_inv1a_pretooluse_rewrites_identity() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
-    xfail "INV-1a: pretooluse-work-scope-identity.sh does not exist yet"
+    xfail "INV-1a: pretooluse-subagent-identity.sh does not exist yet"
     return
   fi
 
@@ -155,12 +155,12 @@ test_inv1c_precommit_passes_neutral_author() {
 }
 
 # ---------------------------------------------------------------------------
-# INV-1d: T1 — personal-scope repo left untouched by pretooluse hook
+# INV-1d: T2 — personal-scope repo gets neutral identity rewritten by universal hook
 # ---------------------------------------------------------------------------
-test_inv1d_pretooluse_ignores_personal_scope() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+test_inv1d_pretooluse_rewrites_personal_scope() {
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
-    xfail "INV-1d: pretooluse-work-scope-identity.sh does not exist yet"
+    xfail "INV-1d: pretooluse-subagent-identity.sh does not exist yet"
     return
   fi
 
@@ -174,13 +174,15 @@ test_inv1d_pretooluse_ignores_personal_scope() {
 
   printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
 
-  local name
+  local name email
   name="$(git -C "$pdir" config user.name 2>/dev/null || true)"
+  email="$(git -C "$pdir" config user.email 2>/dev/null || true)"
 
-  if [ "$name" = "Viktor" ]; then
-    pass "INV-1d: personal-scope persona config left untouched by pretooluse hook"
+  # Universal promise: personal-scope subagents also commit as Duong, not as persona.
+  if [ "$name" = "Duongntd" ] && [ "$email" = "103487096+Duongntd@users.noreply.github.com" ]; then
+    pass "INV-1d: personal-scope persona identity rewritten to neutral Duong (universal hook)"
   else
-    fail "INV-1d: personal-scope config was mutated (name='$name')"
+    fail "INV-1d: personal-scope identity not rewritten (name='$name' email='$email')"
   fi
 
   cleanup_dirs "$pdir"
@@ -356,7 +358,7 @@ test_inv4_agent_harness_env_personal_scope() {
 # Senna PR#35 review: regex misses git -c user.name=Viktor commit
 # ---------------------------------------------------------------------------
 test_c1_bypass_dash_c_key_val() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
     xfail "C1-bypass1: hook does not exist yet"
     return
@@ -388,7 +390,7 @@ test_c1_bypass_dash_c_key_val() {
 # C1-REGRESSION: INV-1a bypass via -C /path positional arg
 # ---------------------------------------------------------------------------
 test_c1_bypass_dash_C_path() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
     xfail "C1-bypass2: hook does not exist yet"
     return
@@ -419,7 +421,7 @@ test_c1_bypass_dash_C_path() {
 # C1-REGRESSION: combined -c ... -C /path commit
 # ---------------------------------------------------------------------------
 test_c1_bypass_combined() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
     xfail "C1-bypass3: hook does not exist yet"
     return
@@ -622,7 +624,7 @@ except Exception:
 # I1: fail-closed — missing python3 or JSON parse failure should BLOCK, not pass
 # ---------------------------------------------------------------------------
 test_i1_failclosed_json_parse_failure() {
-  local hook="$REPO_ROOT/scripts/hooks/pretooluse-work-scope-identity.sh"
+  local hook="$REPO_ROOT/scripts/hooks/pretooluse-subagent-identity.sh"
   if [ ! -f "$hook" ]; then
     xfail "I1-failclosed: hook does not exist yet"
     return
@@ -650,7 +652,7 @@ printf '=== Identity-leak fix xfail tests ===\n\n'
 test_inv1a_pretooluse_rewrites_identity
 test_inv1b_precommit_blocks_persona_author
 test_inv1c_precommit_passes_neutral_author
-test_inv1d_pretooluse_ignores_personal_scope
+test_inv1d_pretooluse_rewrites_personal_scope
 test_inv2a_wrapper_strips_signature
 test_inv2b_wrapper_rejects_inline_token
 test_inv2c_wrapper_passes_clean_body

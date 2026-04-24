@@ -100,10 +100,5 @@ if ! git -C "$CWD" config --local user.email "$NEUTRAL_EMAIL" 2>/dev/null; then
   exit 2
 fi
 
-# Also set committer to Duong for belt-and-braces defence against squash-merge co-author prefill
-if ! git -C "$CWD" config --local user.name "$NEUTRAL_NAME" 2>/dev/null; then
-  exit 0  # author already set; committer is a best-effort layer
-fi
-
 # Success — config rewritten, proceed silently
 exit 0
