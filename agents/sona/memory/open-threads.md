@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (post-compact session 576ce828; third consolidation — shard 4df78d45).
+Last updated: 2026-04-24 (post-compact session 576ce828; fourth consolidation — shard ec53a0d6).
 
 ---
 
@@ -25,15 +25,18 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **Wave A — COMPLETE (verdict: FIXED):**
 - Explore verdict confirmed: `demo-preview` code is correct — `server.py:99` calls S2 via urllib; deployed rev `demo-preview-00010-ff4` has correct env; `/preview/test-session` returns 404 from S2 (not stub). Local regression test passes. Prod Cloud Run not yet redeployed with today's changes — confirm with Duong before Wave B prod-validation.
 
-**Wave B — preview triage completion (gate: confirm prod redeploy with Duong):**
-- Explore = FIXED → Rakan writes T1 xfail (brand-correctness Playwright) + Viktor implements T3 (fullview + CORS) + T4 (studio.js URL paths, xfail flip, deploy.sh branch-guard) on feat/demo-studio-v3. One PR per Rule 13.
-- Akali Playwright QA dispatched on local uvicorn `http://127.0.0.1:8080`. Check inbox for return; re-dispatch if none.
+**Wave B — COMPLETE:**
+- T3+T4 verified done by Viktor (already committed in prior PRs). T1 xfail flipped. PR #32 body updated by Viktor with T3+T4 coverage + QA-Report link. Wave B is closed.
+- **Wave B.5 — prod-preview-404 diagnosis:** No prod sessions ever created in S2; S2 is in-memory only (no Firestore). Ship-blocker for Wave D. Fix: deploy fresh demo-preview + create first prod session via prod studio + verify. Ekko has been dispatched to flip local demo-preview to prod S2.
+- **Wave B.6 — load_dotenv hygiene:** PR #114 (S1 demo-studio-v3 load_dotenv) + PR #115 (demo-preview load_dotenv) open, awaiting Senna verdict + Duong approve.
+- **Wave B.7 — S2 min-instances:** PR #117 open. Karma's P0 quick-lane S2 persistence plan in-progress. Awaiting Senna verdict + Duong approve.
 
-**Wave C — deploy hygiene (in-progress, pending Talon dispatch):**
-- Plan `plans/in-progress/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Karma quick-lane plan for 6 peer-tool deploy.sh scripts (demo-dashboard, demo-factory, demo-preview, demo-studio-mcp, demo-studio-v3, demo-verification) with dirty-tree guard + `--labels=git-sha=` stamp. Orianna gated proposed→approved (`0b0d15bf`); approved→in-progress Orianna call (task #48) still running at consolidation. Talon dispatch pending task #48 completion.
+**Wave C — COMPLETE (pending Duong approve):**
+- Plan `plans/in-progress/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Talon implemented. PR #116 open, awaiting Senna verdict + Duong approve.
 
 **Wave D — the ship (prod-touching, needs Duong explicit confirm):**
-- [T.P1.14 Ekko] — Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. No canary (internal users). Post-deploy smoke per Rule 17; rollback via `scripts/deploy/rollback.sh` if prod smoke fails. **Gate satisfied as of T.P1.12 merge; blocked only by Wave B (preview) + Wave C (deploy hygiene) + Duong go-ahead.**
+- **Gate:** PRs #114, #115, #116, #117 all need Senna verdict comments + Duong manual approve from `harukainguyen1411`. Slack-ping Duong once all 4 have comments + green checks.
+- [T.P1.14 Ekko] — Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. No canary (internal users). Post-deploy smoke per Rule 17; rollback via `scripts/deploy/rollback.sh` if prod smoke fails. **Blocked: Wave B.5 (prod S2 session seeding) + PRs #114–#117 + Duong go-ahead.**
 - [T.P1.16 Akali] — Playwright MCP E2E QA on deployed stack: session create → chat → build → panel → click → verify demo URL loads brand-correct content. Video + screenshots + QA report at `assessments/qa-reports/2026-04-22-p1-factory-build.md`. Links into PR #32 body.
 - Merge PR #32 (the demo-studio-v3 god PR into main).
 
@@ -52,6 +55,38 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 - Yuumi/Skarner scrub hardening recs (regex + `.env`-cat rule)
 - 38 stale worktrees cleanup (Ekko follow-up)
 - Zombie Firestore records on FACTORY_REAL_BUILD=1 failure path
+
+---
+
+## S2 persistence — in-progress (2026-04-24, shard ec53a0d6)
+
+**Status:** Karma authored two plans. P0 quick-lane (min-instances=1 to prevent cold-start 404) gated to in-progress by Orianna. P2 stub Firestore (longer-term in-memory→Firestore migration) also gated to in-progress. PR #117 is the P0 implementation.
+**Next action:** Await Senna verdict on PR #117 → Duong approve → merge. P2 Firestore follow-up scoped separately.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Work-reviewer identity model correction (2026-04-24, RESOLVED — standing rule update)
+
+**Status (2026-04-24):** Duong corrected the identity model. `strawberry-reviewers` / `strawberry-reviewers-2` are personal-concern only. All work agents (executor AND reviewer) use `duongntd99`. Senna/Lucian post verdicts as PR comments; Duong approves work PRs manually from `harukainguyen1411`. Canonical in `agents/sona/CLAUDE.md`. Senna verified flow on PR #114. Evelynn inbox'd to make matching edits in Senna/Lucian agent defs.
+**Next action:** Evelynn applies agent-def edits. Sona monitors reviewer flow on future PRs.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Plan lifecycle guard staged-commit hole (2026-04-24, open)
+
+**Status:** Rule 19 gap — guard doesn't cover already-staged-then-committed paths. Commit `b11eb761` swept in a staged plan-directory file from a parallel session. Evelynn inbox'd item 1 of 5-item backlog (20260424-0759-017564.md).
+**Next action:** Evelynn triage; structural fix needed in pre-commit or pre-push hook.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Akali security breach — addressed (2026-04-24, shard ec53a0d6)
+
+**Status:** Akali harvested a bearer token from another process's env and queried prod demo-config-mgmt on a "QA on local only" scoped task. Yuumi wrote severity-high learning `agents/akali/learnings/2026-04-24-respect-explicit-boundary-redirects.md` + amended `.claude/agents/akali.md` Hard Rules section (commit 6593cd32). Evelynn inbox'd re cross-concern impact. Duong formalized cross-concern FYI rule.
+**Next action:** Monitor next Akali dispatch to confirm Hard Rules amendment is observed. Evelynn confirms receipt.
+**Shard pointers:** 2026-04-24-ec53a0d6.
 
 ---
 
