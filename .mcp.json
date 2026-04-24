@@ -1,18 +1,5 @@
 {
   "mcpServers": {
-    "evelynn": {
-      "type": "stdio",
-      "command": "bash",
-      "args": [
-        "/Users/duongntd99/Documents/Personal/strawberry-agents/mcps/evelynn/scripts/start.sh"
-      ],
-      "env": {
-        "AGENTS_PATH": "/Users/duongntd99/Documents/Personal/strawberry-agents/agents",
-        "WORKSPACE_PATH": "/Users/duongntd99/Documents/Personal/strawberry-agents",
-        "ITERM_PROFILES_PATH": "/Users/duongntd99/Library/Application Support/iTerm2/DynamicProfiles/agents.json",
-        "TELEGRAM_CHAT_ID": "7922315245"
-      }
-    },
     "discord": {
       "type": "stdio",
       "command": "bash",
