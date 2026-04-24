@@ -371,18 +371,18 @@ test_c1_bypass_dash_c_key_val() {
 
   local payload
   payload='{"tool_name":"Bash","tool_input":{"command":"git -c user.name=Viktor -c user.email=viktor@strawberry.local commit -m msg","cwd":"'"$wdir"'"}}'
-  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
 
-  local name
-  name="$(git -C "$wdir" config user.name 2>/dev/null || true)"
+  local exit_code
+  printf '%s' "$payload" | bash "$hook" >/dev/null 2>&1
+  exit_code=$?
 
   cleanup_dirs "$wdir"
 
-  # XFAIL: current regex misses -c KEY=VAL positional — identity not rewritten
-  if [ "$name" = "Duongntd" ]; then
-    pass "C1-bypass1: git -c user.name=Viktor commit — identity rewritten to neutral"
+  # New behavior: hook BLOCKS (exit 2) on @strawberry.local email in -c override
+  if [ "$exit_code" -eq 2 ]; then
+    pass "C1-bypass1: git -c user.name/email=persona commit — blocked at PreToolUse layer (exit 2)"
   else
-    fail "C1-bypass1 (REGRESSION): git -c KEY=VAL commit bypasses hook (name='$name', expected 'Duongntd')"
+    fail "C1-bypass1 (REGRESSION): git -c KEY=VAL commit bypasses hook (exit=$exit_code, expected 2)"
   fi
 }
 

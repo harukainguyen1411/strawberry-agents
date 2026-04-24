@@ -53,6 +53,11 @@ fi
 # Read stdin into a variable
 INPUT="$(cat)"
 
+# I3: empty stdin → pass-through silently (no payload means no commit context to guard)
+if [ -z "$INPUT" ]; then
+  exit 0
+fi
+
 # Fail-closed: require python3 to be available
 if ! command -v python3 >/dev/null 2>&1; then
   block "python3 not found — cannot parse PreToolUse JSON; commit blocked to prevent identity leak."
@@ -72,6 +77,23 @@ COMMAND="$(printf '%s' "$INPUT" | python3 -c "import sys,json; d=json.load(sys.s
 # (handles: git -c user.name=X commit, git -C /path commit, git commit, etc.)
 if ! printf '%s' "$COMMAND" | grep -qE '(^|[[:space:];|&])git([[:space:]]+[^;|&[:space:]]+)*[[:space:]]+commit([[:space:]]|$)'; then
   exit 0
+fi
+
+# C1: Detect inline -c user.email= or -c user.name= overrides containing persona domain.
+# These win over local config and cannot be defeated by post-commit config writes.
+if printf '%s' "$COMMAND" | grep -qE -- '-c[[:space:]]+user\.(email|name)=[^[:space:]]*@strawberry\.local'; then
+  block "Blocked: inline git -c user.email/name= override with persona identity (@strawberry.local). Remove the -c override; identity is managed by the universal hook."
+fi
+
+# C2: Detect env var identity overrides (GIT_AUTHOR_* / GIT_COMMITTER_*) with persona domain.
+if printf '%s' "$COMMAND" | grep -qE 'GIT_(AUTHOR|COMMITTER)_(EMAIL|NAME)=[^[:space:]]*@strawberry\.local'; then
+  block "Blocked: GIT_AUTHOR_*/GIT_COMMITTER_* env var override with persona identity (@strawberry.local). Remove the env var override."
+fi
+
+# C3: Detect --author= flag with persona domain.
+# The --author value may be quoted ("Name <email>") so we allow any chars until @strawberry.local.
+if printf '%s' "$COMMAND" | grep -qE -- '--author=.*@strawberry\.local'; then
+  block "Blocked: git commit --author= with persona identity (@strawberry.local). Remove the --author flag; identity is managed by the universal hook."
 fi
 
 # Resolve effective cwd: try tool_input.cwd then fall back to $PWD
