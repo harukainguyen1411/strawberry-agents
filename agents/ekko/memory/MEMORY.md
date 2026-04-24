@@ -159,6 +159,8 @@
 - 2026-04-24 (ekko): PR #40 — boot-unification-polish (2 Senna PR #39 suggestions). Fix1: corrected misleading headers on launch-evelynn.sh + launch-sona.sh (said "delegates to coordinator-boot.sh", actually inlines env vars + execs claude directly). Fix2: coordinator-boot.sh memory-consolidate failure now emits stderr warn instead of silently swallowing. Commit 5e236214. Tests: 30 non-xfail bats + 7/7 boot-chain-order. PR #40 open, awaiting non-author approval.
 - 2026-04-24 (ekko): PR #40 Senna REQUEST_CHANGES resolved. New header comments falsely claimed scripts sourced coordinator-boot.sh — rewrote to say explicitly they do NOT source it; memory consolidation/startup reads happen inside coordinator session via SessionStart. Commit e5a9c257. Re-review requested via `gh pr edit 40 --add-reviewer strawberry-reviewers-2` (note: `gh pr review --request-review` flag does not exist).
 
+- 2026-04-24 (ekko — Sona dispatch): P1-T1 + T-new-B for Sona secretary MCP suite ADR. Created secrets/work/encrypted/.gitkeep + REVOCATION.md (§4.4 skeleton, one row per credential). Updated .gitignore to carve out secrets/work/ with appropriate exceptions. T-new-B: surveyed all 8 Phase-1 MCPs — Slack=SINGLE (xoxp- user token only, no bot token), gmail=SINGLE, all others (gdrive/gcalendar/fathom/postgres/wallet-studio/atlassian) MULTI. T-new-C gates 6/8 MCPs; Slack migration (P1-T2) unblocked. Commits: P1-T1=81edd095, T-new-B=b2469e98.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
