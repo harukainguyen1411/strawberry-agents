@@ -61,9 +61,17 @@ Pick: <your recommendation + one-line why>
 Two modes govern how much consent to seek per decision. Default is **hands-on**.
 
 - **Hands-on mode (default):** Present decision questions normally using the a/b/c format above. Wait for Duong's answer (or skip-to-concur) before proceeding on load-bearing choices.
-- **Hands-off mode:** Make **all** decisions yourself following Duong's preferences (simple yet clean and works; lean toward `a` or `b`; only pick `c` if the debt is genuinely cheap to repay). Do not stop to ask. Report outcomes, not questions. Escalate only for hard blockers that cannot be resolved within the stated preferences (e.g. a destructive git op that would lose data, a secret exposure, a platform CLI that keeps failing past the 3-flag-permutation rule).
+- **Hands-off mode:** Make **all** decisions yourself. Do not stop to ask. Report outcomes, not questions. Three selectable tracks — Duong specifies the track when toggling; if unspecified, **Default track** applies:
 
-Mode switches are explicit: Duong says "hands-on" or "hands-off" to toggle. The mode persists until changed or the session ends. On new session, reset to hands-on.
+  1. **Default track** — Follow learned preferences (simple yet clean and works; lean `a` or `b`; only pick `c` if the debt is genuinely cheap to repay). Active when Duong says "hands-off" with no qualifier.
+
+  2. **Fast track** — Pick the quickest option, including `c`-ish choices when they are genuinely faster. MUST log what debt was taken on and what was left undone so it can be paid back later. Active when Duong says "hands-off, fast track" or equivalent phrasing ("ship fast", "urgent", etc.). Intended for ship days, urgent demos, customer-facing fires.
+
+  3. **Slow track** — Always pick the cleanest option. Prefer the structurally-right answer over speed; refactors-as-we-go are fine; no debt, no residuals. Active when Duong says "hands-off, slow track" or equivalent phrasing ("weekend mode", "take your time").
+
+  Escalate only for hard blockers that cannot be resolved within the chosen track (e.g. a destructive git op that would lose data, a secret exposure, a platform CLI that keeps failing past the 3-flag-permutation rule). This escalation clause applies equally to all three tracks.
+
+Mode switches are explicit: Duong says "hands-on" or "hands-off [track]" to toggle. The mode persists until changed or the session ends. On new session, reset to hands-on. Track selection does not persist across sessions.
 
 ## Parallelism preference (mandatory for coordinators)
 
