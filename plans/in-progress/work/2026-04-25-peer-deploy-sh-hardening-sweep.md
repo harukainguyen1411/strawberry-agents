@@ -1,6 +1,6 @@
 ---
 title: Peer deploy.sh hardening sweep — dirty-tree guard + git-sha stamp on 6 peer tools
-status: approved
+status: in-progress
 concern: work
 complexity: quick
 owner: karma
@@ -70,3 +70,10 @@ Out of scope for this plan (explicit non-goals):
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Plan has clear owner (karma), concrete sized tasks with per-task DoD, `tests_required: true` is honored by T1 as an explicit xfail-first shell test asserting the two literal tokens across all 6 peer scripts, and no TBDs or unresolved decisions remain in gating sections. Reference implementation is cited verbatim with load-bearing tokens identified so Talon cannot re-derive drift. Non-goals are explicit — notably the deliberate refusal to extract a shared helper, which correctly keeps the sweep at the right granularity. Urgency is legitimate: closes assessment residual §1 ahead of T.P1.14 prod push on the demo-studio-v3 critical path.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Tasks are actionable with explicit file paths and per-task DoD. T1 delivers the required xfail-first shell test (asserting literal `git status --porcelain` and `--labels=git-sha=` tokens across the 6 peer scripts) satisfying the `tests_required: true` contract before T2 impl. T2 specifies verbatim-transplant semantics with a byte-identical error-message requirement so the ops guard-failure shape stays single-contract. T3 is trivial residual bookkeeping. Sona has accepted the approved plan and is dispatching Talon; moving to in-progress is a pure coordinator phase hop.
