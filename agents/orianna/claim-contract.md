@@ -63,11 +63,11 @@ anchor — a reproducible reference a reviewer can verify in under 30 seconds.
 | # | Claim category | Example | Required anchor shape |
 |---|---|---|---|
 | C1 | Integration / service name | "Firebase GitHub App" | File path + line, or `gh api` call confirming the integration exists, or link to official vendor docs if it is a bare vendor name not on the allowlist |
-| C2a | **Internal-prefix repo path** — token begins with an internal-prefix (see §5b opt-back list and §5b personal routing). Miss severity: **block**. | `scripts/plan-promote.sh`, `agents/orianna/claim-contract.md` | `test -e` returns success against the correct repo checkout |
+| C2a | **Internal-prefix repo path** — token begins with an internal-prefix (see §5b opt-back list and §5b personal routing). Miss severity: **block**. | `scripts/install-hooks.sh`, `agents/orianna/claim-contract.md` | `test -e` returns success against the correct repo checkout |
 | C2b | **Other path-shaped token** — a token that contains `/` or ends in a recognized extension but does NOT begin with an internal-prefix. Miss severity: **info** (no filesystem check performed). | `/auth/login`, `company-os/tools/demo-studio-v3/agent_proxy.py` | Not required; logged as info if unresolvable |
 | C3 | Command / CLI flag | `firebase deploy --only functions:api` | Citation of the tool's help output or a docs URL |
 | C4 | GitHub Actions workflow or secret name | `.github/workflows/deploy.yml`, `FIREBASE_SERVICE_ACCOUNT` | File path in `.github/workflows/` + `grep` match for the secret name |
-| C5 | Script or tool path | `scripts/plan-promote.sh` | `ls` hit against this repo |
+| C5 | Script or tool path | `scripts/safe-checkout.sh` | `ls` hit against this repo |
 | C6 | Architecture claim | "discord-relay runs on GCE" | Reference to the architecture doc or deploy config that asserts the same fact |
 | C7 | Existing plan reference | `plans/approved/2026-04-17-deployment-pipeline.md` | `ls plans/**` hit |
 
