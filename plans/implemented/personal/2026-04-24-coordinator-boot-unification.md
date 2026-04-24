@@ -2,7 +2,7 @@
 date: 2026-04-24
 owner: azir
 concern: personal
-status: approved
+status: implemented
 complexity: normal
 topic: coordinator-boot-unification
 supersedes: []
@@ -468,3 +468,10 @@ None. OQ-1 was pre-resolved by Evelynn (accept Azir's default, probe via T0, opt
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Plan has a clear owner (Azir), a coherent problem statement with root-cause analysis, six named invariants, eight testable acceptance criteria, and file-level design for seven concrete surfaces (A–G). The single open question (OQ-1) was resolved inline with the safer reversible default — keep the `.agent` field, gate hooks to ignore it. The plan itself flags §4.2.G's tool-call-counter as overengineered and defers the simplification to Kayn's breakdown, which is the right seam. Approved for promotion to `plans/approved/personal/`.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented (skipping in-progress per same pattern as 2026-04-24-universal-worktree-isolation — Kayn's breakdown is in-plan, PR branch held the impl phase)
+- **Rationale:** PR #39 merged to main with the mandated three-commit TDD-ordered split: C1 `986bf7f7` adds `scripts/coordinator-boot.sh` plus launcher identity exports (T1–T9), C2 `bcf0a5f0` lands xfail tests for INV-1..INV-6 and AC-1..AC-8 (T10–T16), C3 `e7c92bf1` flips behaviour — identity hardening, Signal B removal, Monitor-arming gate (T17–T24). Implementation files verified present on disk (`scripts/coordinator-boot.sh`, `scripts/hooks/pretooluse-monitor-arming-gate.sh`). Lucian and Senna both APPROVEd. T0 probe and T25 live-session smoke are post-merge operator verification (require interactive sessions) and explicitly non-blocking. Evidence is conclusive.
