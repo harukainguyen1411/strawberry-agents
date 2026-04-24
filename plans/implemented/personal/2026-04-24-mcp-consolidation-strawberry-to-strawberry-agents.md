@@ -1,6 +1,6 @@
 ---
 title: Consolidate MCP servers — migrate from stale strawberry/ repo into strawberry-agents/mcps/
-status: approved
+status: implemented
 owner: karma
 concern: personal
 complexity: quick
@@ -87,3 +87,11 @@ Quick-lane is appropriate: single top-level concern (local MCP config), no schem
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Owner (karma) declared; five tasks each have concrete files, detail, and DoD. Reconnaissance diff results are recorded in Context, so T1 is a verify-then-record rather than open-ended investigation. T5 (irreversible deletion of `/Users/duongntd99/Documents/Personal/strawberry/`) is explicitly gated on Duong confirmation and offers an archival-rename fallback, satisfying auto-mode rule 5. No unresolved TBD/TODO in gating sections; quick-lane scope is appropriate for local MCP config changes.
+
+## Orianna approval — approved → implemented
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** Substantive migration scope (T1 inventory reconciliation, T2 slack copy + npm install, T3 `.mcp.json` rewrite, T4 smoke verification) shipped together in PR #44 (merge commit `80b78802`). T5 (`rm -rf /Users/duongntd99/Documents/Personal/strawberry`) was intentionally deferred — the plan itself pre-gates T5 on explicit Duong confirmation per auto-mode rule 5, so non-execution here is compliant with plan design rather than incomplete work. Partial scope annotated below; T5 remains a follow-up action, not a re-opened plan.
+- **Partial scope:** T1–T4 shipped. T5 (stale `strawberry/` repo deletion) pending Duong confirmation per the plan's own human-gate. If Duong later declines deletion or chooses the archival-rename fallback, a brief follow-up note in this file closes the loop; no new plan required.
