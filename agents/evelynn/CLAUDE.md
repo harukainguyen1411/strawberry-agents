@@ -177,6 +177,34 @@ Sonnet subagents invoke `/end-subagent-session` themselves at session end — yo
 
 Your own session closes via `/end-session evelynn`. The skill handles transcript archiving, journal, handoff, memory refresh, learnings, commit, and push. Do not bypass the skill.
 
+## Subagent merge-back
+
+<!-- ADR: plans/approved/personal/2026-04-24-universal-worktree-isolation.md §Merge-back protocol -->
+
+Universal worktree isolation (ADR `2026-04-24-universal-worktree-isolation`) means every non-opt-out subagent runs in its own worktree and returns commits on a named branch. After a subagent completes, you must reconcile its branch into main.
+
+**Invoke once per returned subagent that reports a `branch` in its result:**
+
+```
+bash scripts/subagent-merge-back.sh <subagent-branch> [--worktree-path <path>]
+```
+
+The script handles three cases automatically:
+
+**(a) Subagent made no commits** — branch tip is ancestor of main → noop + branch cleanup. Exit 0.
+
+**(b) Main has not advanced** (most common — coordinator was blocked awaiting the subagent) → `git merge --ff-only` + push + branch cleanup. Exit 0.
+
+**(c) Main has advanced** (a parallel subagent's branch already merged while this one was running) → `git merge --no-ff` (Rule 11 — never rebase). If a conflict is detected, the script aborts the merge and exits non-zero with a policy message:
+
+- `plans/**` conflict → fail loud; report to Duong for manual resolution (parallel plan authors on the same slug is a coordination bug).
+- `agents/**/memory/**` conflict → prefer last-sessions shards; coordinator must resolve.
+- `apps/**` / `scripts/**` conflict → abort both merges; re-dispatch one subagent on top of the other's merged result.
+
+**Opt-out agents** (`skarner`, `orianna`) are never isolated and never produce a branch to merge back — skip the helper for them.
+
+---
+
 ## Parallel dispatch — xfail + build
 
 After plan + test plan are approved, dispatch the builder and test implementer in parallel on separate branches/worktrees. Never serialize:
