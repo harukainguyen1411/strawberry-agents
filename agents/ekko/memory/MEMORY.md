@@ -154,6 +154,8 @@
 - Slack workspace team ID: `T18MLBHC5`. Token file `strawberry-agents/secrets/slack-bot-token.txt` has two lines: `bot_token=xoxb-...` and `user_token=xoxp-...`. `start.sh` accepts `--token-kind bot|user`, reads the matching line via grep+cut, exports as `SLACK_BOT_TOKEN`. Absolute path to token file hardcoded — no REPO_ROOT resolution. Two MCP entries in `.mcp.json`: `slack-bot` and `slack-user`. Canonical notification target for agent→Duong: `mcp__slack-bot__slack_post_message` with `channel_id: "U03KDE6SS9J"` (bot DM to Duong's user ID).
 **Superseded 2026-04-24** by `plans/in-progress/personal/2026-04-24-custom-slack-mcp.md` — dual-wrapper replaced by single `mcp__slack__*` server; use `mcp__slack__notify_duong(text)` for agent→Duong notifications.
 
+- 2026-04-24 (ekko): PR #38 — subagent-merge-back.sh polish (4 Senna PR #37 findings). Commit aaef4946 on chore/merge-back-polish. Fix1: push pipe + `|| warn`, Fix2: HEAD-compare for non-conflict error discrimination, Fix3: `while IFS= read -r f` + heredoc replaces `for f in $VAR`, Fix4: removed dead HAS_OTHER_CONFLICT. Tests: 6/6 green. PR open, awaiting non-author approval before merge.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
