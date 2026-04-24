@@ -1,7 +1,7 @@
 ---
 title: Universal subagent worktree isolation — opt-out, not opt-in
 owner: azir
-status: approved
+status: implemented
 concern: personal
 complexity: normal
 tests_required: true
@@ -217,3 +217,10 @@ T1–T14 sum to ~300 minutes (5 hours) of Sonnet-medium execution time. No gatin
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Azir-authored ADR with clear owner, concrete decision (opt-out over opt-in) grounded in three dated incidents, and an explicit opt-out set with per-agent rationale. All four open questions are resolved with named decisions and artifacts (Skarner-write retirement already landed in commit 103dd3e, merge-back helper scoped, migration ordering committed to a single 3-commit PR). Eight invariants are declared with concrete test-file paths honoring tests_required, and the supersedes relationship preserves the prior plan's inline-edit-discipline subgoal. Nothing gating on proposed→approved is outstanding.
+
+## Orianna approval
+
+- **Date:** 2026-04-24
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** PR #37 merged to main with the OQ4-mandated three-commit sequence intact on main: C1 ff2d3e0d (merge-back helper + Evelynn/Sona doc updates), C2 ad63e39d (xfail tests covering INV-1..INV-8, Rule 12 satisfied), C3 e2097372 (hook flip opt-in → opt-out). Jayce reported xfail-red at C2 and green at C3 (11/11 universal, 4/4 nested-dispatch, 6/6 parallel merge-back, 6/6 legacy regression). Both Lucian and Senna APPROVEd the PR; Senna's four suggestions are non-blocking polish tracked as follow-up. Direct approved→implemented transition is appropriate here — the in-progress stage was logically held by Kayn's in-plan breakdown and the PR #37 branch, and a two-hop promotion would produce bookkeeping churn with no artifact change.
