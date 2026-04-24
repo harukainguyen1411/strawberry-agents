@@ -161,6 +161,56 @@ All four OQs resolved 2026-04-24 by Duong (ADR ready for Orianna promotion):
 
 Per architect closeout: this ADR stops at design. Task breakdown is Kayn's (normal-lane breakdown) once Orianna promotes proposed → approved. Do not assign an implementer in the breakdown — that is Evelynn's call after approval.
 
+## Tasks
+
+Normal-lane breakdown. Single PR, three commits in OQ4-mandated order: (C1) merge-back helper + coordinator docs, (C2) xfail tests covering INV-1..INV-8, (C3) hook flip opt-in → opt-out. Rule 12 forces xfail tests (C2) to commit BEFORE the impl flip (C3) on the same branch.
+
+**Legend:** kind = `script` | `test` | `doc-edit`. `[TOP-LEVEL]` marks tasks touching `.claude/agents/*.md` (top-level-coordinator write surface — implementer must flag back to Evelynn before commit; PreToolUse plan-lifecycle guard does not block these, but they are Evelynn's surface by convention).
+
+### Commit 1 — Merge-back helper + coordinator docs
+
+- [ ] **T1** — Author `scripts/subagent-merge-back.sh`. kind: script. estimate_minutes: 45. Files: `scripts/subagent-merge-back.sh` (new). DoD: POSIX-portable bash (Rule 10), executable bit set, takes `<subagent-branch>` arg (and optional `--worktree-path`), implements the three ADR cases: (a) no-commits → noop + log, (b) commits + main-not-advanced → `git merge --ff-only`, (c) main advanced → `git merge --no-ff` (Rule 11 — never rebase). Conflict policy per ADR §Merge-back: plans/** → fail loud, memory/** → prefer last-sessions shards, code → abort both merges and exit non-zero with guidance. Prints subagent branch + resulting main SHA. Script includes `-h/--help`. Runs `git fetch origin` first. Deletes subagent branch after successful merge. No worktree prune (harness handles).
+- [ ] **T2** — Smoke-test the helper locally. kind: script. estimate_minutes: 15. Files: none (throwaway). DoD: create a throwaway branch with one commit, run `scripts/subagent-merge-back.sh <branch>`, confirm ff-merge + branch deletion + clean exit. Not committed; evidence in PR description.
+- [ ] **T3** — Document merge-back in Evelynn's CLAUDE.md. kind: doc-edit. estimate_minutes: 20. Files: `agents/evelynn/CLAUDE.md`. DoD: append a "Subagent merge-back" subsection referencing `scripts/subagent-merge-back.sh`, the three cases, and the invocation pattern (one call per returned subagent that reported a `branch`). Cross-link the ADR slug.
+- [ ] **T4** — Document merge-back in Sona's CLAUDE.md. kind: doc-edit. estimate_minutes: 15. Files: `agents/sona/CLAUDE.md`. DoD: same substance as T3, adapted to Sona's work-concern tone. Cross-link the ADR slug.
+- [ ] **T5** — Commit C1. kind: script. estimate_minutes: 5. Files: (all of the above). DoD: single commit `chore: subagent merge-back helper + coordinator docs (ADR 2026-04-24-universal-worktree-isolation)`. Do not touch the hook or test files yet.
+
+T1–T4 can be parallelized (four disjoint files). T5 is the serialization point.
+
+### Commit 2 — xfail tests (must land BEFORE C3)
+
+- [ ] **T6** — Write `scripts/hooks/tests/test-agent-default-isolation-universal.sh`. kind: test. estimate_minutes: 50. Files: `scripts/hooks/tests/test-agent-default-isolation-universal.sh` (new). DoD: POSIX bash test harness matching shape of existing tests under `scripts/hooks/tests/`. Covers INV-1 (feed tool_input JSON for ekko, yuumi, lissandra, akali, and 3 planners through the hook; assert `isolation: "worktree"` injected for each), INV-2 (skarner → no mutation), INV-3 (yuumi + explicit `isolation: "none"` → no mutation), INV-5 (fixture agent def with `default_isolation: none` in temp REPO_ROOT → no mutation), INV-7 (skarner behavioral mirror of INV-2), INV-8 (yuumi behavioral mirror of INV-1). Each assertion must reference this ADR slug in a comment. **Tests must FAIL against the current opt-in hook** (that is the xfail guarantee — Rule 12). Include a top-of-file comment stating "xfail against current opt-in hook; passes after C3 flip."
+- [ ] **T7** — Write `scripts/hooks/tests/test-nested-dispatch-guard.sh`. kind: test. estimate_minutes: 30. Files: `scripts/hooks/tests/test-nested-dispatch-guard.sh` (new). DoD: simulates running inside a worktree by setting up a temp git repo with an actual `git worktree add` and invoking the hook with cwd inside the worktree. Covers INV-4: feed tool_input for `aphelios`; assert no mutation (exit 0, empty stdout). Use `git rev-parse --git-dir` vs `--git-common-dir` divergence as the detection signal (matches ADR §Nested-dispatch detection). xfail against current hook.
+- [ ] **T8** — Write `scripts/hooks/tests/test-parallel-worktree-merge-back.sh`. kind: test. estimate_minutes: 40. Files: `scripts/hooks/tests/test-parallel-worktree-merge-back.sh` (new). DoD: integration-style test for INV-6. Mock two writer subagent dispatches producing two distinct worktree paths + branches; run `scripts/subagent-merge-back.sh` serially against each; assert both commits end up on main after one ff + one `--no-ff`. If a full harness mock is out of scope, the test may assert the helper's behavior against two pre-created throwaway branches instead (ADR explicitly allows deferred INV-6 harness — document the deferral in the test file header). xfail against current state (helper exists post-C1 but the parallel-branch scenario exercises the --no-ff path which is new).
+- [ ] **T9** — Run all three tests locally, confirm they FAIL (xfail) against current hook. kind: test. estimate_minutes: 10. Files: none. DoD: capture failure output in PR description; this is the evidence that Rule 12 / TDD gate is satisfied.
+- [ ] **T10** — Commit C2. kind: test. estimate_minutes: 5. Files: (T6, T7, T8 outputs). DoD: single commit `test: xfail coverage for universal worktree isolation (INV-1..INV-8)`. Body references ADR slug. Pre-push TDD gate should be satisfied by this commit sitting on the branch before C3.
+
+T6, T7, T8 can be written in parallel (three disjoint test files). T9 is a serialization gate before T10.
+
+### Commit 3 — Hook flip (gated behind C2 landing on branch)
+
+- [ ] **T11** — Rewrite `scripts/hooks/agent-default-isolation.sh` bash wrapper to add parent-worktree detection. kind: script. estimate_minutes: 20. Files: `scripts/hooks/agent-default-isolation.sh`. DoD: before invoking Python, compare `git rev-parse --git-dir` vs `git rev-parse --git-common-dir`; if they differ, exit 0 immediately (nested-dispatch guard — INV-4). Preserve `set -eu`, `REPO_ROOT` export, and the mktemp/trap idioms.
+- [ ] **T12** — Rewrite the Python block in `scripts/hooks/agent-default-isolation.sh` from opt-in to opt-out. kind: script. estimate_minutes: 30. Files: `scripts/hooks/agent-default-isolation.sh` (same file as T11 — serialize). DoD: (a) define `OPT_OUT = {"skarner", "orianna"}` as a module-level constant with a comment citing ADR §Opt-out set; (b) after the existing caller-isolation-wins check, consult the frontmatter: if `default_isolation: none` → exit 0 (INV-5); if `default_isolation: worktree` → inject (preserves legacy-frontmatter semantics, now a no-op documentation hint per ADR §Migration); (c) if subagent in `OPT_OUT` → exit 0 (INV-2/INV-7); (d) otherwise inject `isolation: "worktree"` (INV-1/INV-8). Update the top-of-file comment block to cite this ADR instead of 2026-04-23. Unsupported `default_isolation` values still warn to stderr per existing behavior.
+- [ ] **T13** — Run all three new tests + any pre-existing hook tests; confirm they PASS. kind: test. estimate_minutes: 10. Files: none. DoD: green output; capture in PR description.
+- [ ] **T14** — Commit C3. kind: script. estimate_minutes: 5. Files: `scripts/hooks/agent-default-isolation.sh`. DoD: single commit `chore: flip agent-default-isolation hook from opt-in to opt-out`. Body references ADR slug + INV-1..INV-8.
+
+T11 and T12 touch the same file — serialize (do T11 first, then T12, or combine in one editing pass). T13 gates T14.
+
+### Out-of-scope (flag-back items)
+
+- [ ] **T15 [TOP-LEVEL]** — (Optional, defer unless Evelynn asks.) Remove now-redundant `default_isolation: worktree` frontmatter from aphelios/kayn/xayah/caitlyn. kind: doc-edit. estimate_minutes: 10. Files: `.claude/agents/aphelios.md`, `.claude/agents/kayn.md`, `.claude/agents/xayah.md`, `.claude/agents/caitlyn.md`. DoD: **do not execute in this PR** per ADR §Migration ("leave it in place as documentation-of-intent"). Listed here only to mark the top-level write surface for future reference; implementer should NOT touch these files.
+
+### Parallelization summary
+
+- Parallel within C1: T1, T3, T4 (three disjoint files); T2 after T1.
+- Parallel within C2: T6, T7, T8 (three disjoint test files); T9 after all three.
+- C3 fully serial: T11 → T12 (same file) → T13 → T14.
+- Commit order is strictly C1 → C2 → C3 (OQ4 + Rule 12).
+
+### AI-minute total
+
+T1–T14 sum to ~300 minutes (5 hours) of Sonnet-medium execution time. No gating questions — ADR resolved all four OQs; the breakdown sits cleanly within the implementer's scope.
+
 ## Orianna approval
 
 - **Date:** 2026-04-24
