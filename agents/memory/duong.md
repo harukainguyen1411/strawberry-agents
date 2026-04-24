@@ -1,6 +1,7 @@
 # Duong
 
 ## Profile
+
 - Name: Duong
 - Male, single
 - Born: 14 November 1999
@@ -9,34 +10,19 @@
 - Uses Claude Code CLI as primary AI tool
 - Agents named after League of Legends champions
 
-## Slack
-
-- Workspace: `merisier.slack.com`, team `T18MLBHC5`
-- Duong's user ID: `U03KDE6SS9J`
-- Routing is encoded in MCP tool names — see `mcp__slack__*`. Canonical
-  agent→Duong notification: `mcp__slack__notify_duong(text)`. Do not
-  reconstruct routing from memory; if a tool for an intent is missing,
-  file it against the custom-slack-mcp plan rather than improvising with
-  generic post tools.
-
 ## GitHub Accounts
 
 Three accounts, scoped by concern. Coordinators (Evelynn, Sona) and their subagents MUST use the right account for the right scope. `gh auth switch --user <login>` to change the active identity.
 
-- **`duongntd99`** — WORK account. Always use for work-scope (Sona side): `missmp/*` orgs including `missmp/company-os`, `missmp/workspace`. This is the canonical account for opening/viewing/commenting on work-repo PRs and for any `gh` operation under work concern.
-- **`Duongntd`** — AGENT account for personal stuff (Evelynn side). Invited collaborator with push permission on `harukainguyen1411`-owned repos (strawberry-agents, strawberry-app). Canonical pusher for agent-driven commits on personal concern. No admin bypass.
-- **`harukainguyen1411`** — ADMIN account, Duong's personal human identity. Owns the strawberry-* repos. Has admin bypass on branch protection. **Not available to agents by default** — only use when Duong explicitly authorizes it for a specific break-glass action. Default active account on `gh auth status` does NOT imply you may act as it; check scope before acting.
+- `**duongntd99**` — WORK account. Always use for work-scope (Sona side): `missmp/*` orgs including `missmp/company-os`, `missmp/workspace`. This is the canonical account for opening/viewing/commenting on work-repo PRs and for any `gh` operation under work concern.
+- `**Duongntd**` — AGENT account for personal stuff (Evelynn side). Invited collaborator with push permission on `harukainguyen1411`-owned repos (strawberry-agents, strawberry-app). Canonical pusher for agent-driven commits on personal concern. No admin bypass.
+- `**harukainguyen1411**` — ADMIN account, Duong's personal human identity. Owns the strawberry-* repos. Has admin bypass on branch protection. **Not available to agents by default** — only use when Duong explicitly authorizes it for a specific break-glass action. Default active account on `gh auth status` does NOT imply you may act as it; check scope before acting.
 
 **Scope check before `gh` ops:**
+
 - Sona operating on work-repo PR → ensure active account is `duongntd99`.
 - Evelynn operating on personal-repo PR → `Duongntd` is fine; `harukainguyen1411` only with explicit permission.
 - Cross-account reads are generally OK; writes/merges/reviews are not.
-
-## Personal Context
-- Work-life balance is an ongoing challenge — work absorbs most available time
-- Has side project interests and learning goals that get deprioritized
-- Values systems and structure — if it's not tracked, it doesn't happen
-- Prefers agents with distinct personalities and honest communication
 
 ## Decision-Presentation Format (mandatory)
 
@@ -62,13 +48,9 @@ Two modes govern how much consent to seek per decision. Default is **hands-on**.
 
 - **Hands-on mode (default):** Present decision questions normally using the a/b/c format above. Wait for Duong's answer (or skip-to-concur) before proceeding on load-bearing choices.
 - **Hands-off mode:** Make **all** decisions yourself. Do not stop to ask. Report outcomes, not questions. Three selectable tracks — Duong specifies the track when toggling; if unspecified, **Default track** applies:
-
   1. **Default track** — Follow learned preferences (simple yet clean and works; lean `a` or `b`; only pick `c` if the debt is genuinely cheap to repay). Active when Duong says "hands-off" with no qualifier.
-
   2. **Fast track** — Pick the quickest option, including `c`-ish choices when they are genuinely faster. MUST log what debt was taken on and what was left undone so it can be paid back later. Active when Duong says "hands-off, fast track" or equivalent phrasing ("ship fast", "urgent", etc.). Intended for ship days, urgent demos, customer-facing fires.
-
   3. **Slow track** — Always pick the cleanest option. Prefer the structurally-right answer over speed; refactors-as-we-go are fine; no debt, no residuals. Active when Duong says "hands-off, slow track" or equivalent phrasing ("weekend mode", "take your time").
-
   Escalate only for hard blockers that cannot be resolved within the chosen track (e.g. a destructive git op that would lose data, a secret exposure, a platform CLI that keeps failing past the 3-flag-permutation rule). This escalation clause applies equally to all three tracks.
 
 Mode switches are explicit: Duong says "hands-on" or "hands-off [track]" to toggle. The mode persists until changed or the session ends. On new session, reset to hands-on. Track selection does not persist across sessions.
