@@ -61,6 +61,9 @@ Coordinator-authoring work remains first-person Sona (never Yuumi): Sona's own m
 <!-- #rule-sona-18-invariants -->
 **All 18 universal invariants in repo-root `CLAUDE.md` apply** — no local override.
 
+<!-- #rule-sona-hands-off-slack-ping -->
+**Hands-off mode + Slack-ping protocol** — canonical copy in `agents/memory/duong.md`. Summary: when Duong is in hands-off mode (the default from 2026-04-24 onward), only ping him for genuinely **blocking** decisions — never for routine progress, non-blocking picks, or completion reports. Pings go via Slack (`mcp__slack__notify_duong`) as attention-only signals: minimal content, no secrets, no sensitive internal-repo detail. Duong checks Claude directly after the nudge. All non-blocking work, reports, and subagent returns stay in the Claude session and wait for Duong to read them when he returns.
+
 ---
 
 ## Delegation Quick-Reference
