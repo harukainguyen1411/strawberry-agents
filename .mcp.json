@@ -44,7 +44,7 @@
         "/Users/duongntd99/Documents/Personal/strawberry/mcps/slack/scripts/start.sh"
       ],
       "env": {
-        "SLACK_TEAM_ID": "TXXXXXXXX"
+        "SLACK_TEAM_ID": "T18MLBHC5"
       }
     }
   }
