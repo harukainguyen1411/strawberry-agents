@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-24 (Lissandra pre-compact consolidation 4, session 5e94cd09).
+Last updated: 2026-04-24 (Lissandra pre-compact consolidation 5, session 5e94cd09).
 
 ---
 
@@ -8,19 +8,46 @@ Last updated: 2026-04-24 (Lissandra pre-compact consolidation 4, session 5e94cd0
 
 Per Duong via Sona FYI (inbox archive `20260424-0759-017564.md`): finish in-flight work before pulling fresh plan items. Route cross-concern system/pattern fixes to Evelynn. Commission Karma plans for these after Talon #59 lands.
 
-1. **Rule 19 guard hole — pre-staged-then-committed plan moves bypass the PreToolUse plan-lifecycle guard.** Hit twice today (Sona's b11eb761 sweep of s2-min-instances.md; Orianna's own first-session sweep of ekko files into a promotion commit). Guard covers Bash-mv/cp/rm/tee/touch + Write/Edit/NotebookEdit, but not `git commit` of pre-existing staged changes. Needs a pre-commit hook variant that rejects protected-plan-dir paths in the staged index unless committing identity is Orianna. **STATUS (2026-04-24 post-compact):** Karma dispatched (task #64) to author quick-lane plan.
-2. ~~**Plan-checkbox-vs-git-history audit pattern.**~~ **RESOLVED** — Skarner found Sona already codified this in `agents/sona/learnings/2026-04-24-stale-plan-checkbox-state.md` across 4 occurrences with a clean remediation rule ("before trusting plan/thread-file checkboxes, verify via `git log --oneline <branch>` and `gh pr list --state merged`"). Evelynn-side doesn't maintain a RUNWAY queue so no cross-filing needed. Personal adoption: same rule applies whenever I read open-threads.md checkbox state.
-3. **scripts/plan-promote.sh phantom reference cleanup.** Script doesn't exist (verified via Yuumi on Sona side); doc references still survive. Yuumi-size. Queued until Karma (#64) lands to avoid flooding plan-authoring surface.
+1. ~~**Rule 19 guard hole.**~~ **RESOLVED** — PR #43 merged. Pre-commit hook variant now rejects protected-plan-dir paths in staged index unless committing identity is Orianna. Plan implemented at `e05b59be`. Karma #64 planned, Orianna #66 promoted, Talon #68 implemented, dual-APPROVE, merged.
+2. ~~**Plan-checkbox-vs-git-history audit pattern.**~~ **RESOLVED** — Skarner found Sona already codified this in `agents/sona/learnings/2026-04-24-stale-plan-checkbox-state.md`. Personal adoption: same rule applies whenever I read open-threads.md checkbox state.
+3. ~~**scripts/plan-promote.sh phantom reference cleanup.**~~ **RESOLVED** — Yuumi scrubbed 30 prescriptive references across 17 files (commits `467dc48b`, `465c5b9b`). Historical references in implemented/archived plans left intact.
 
-Already in flight or shipped: Sona's "Senna/Lucian agent-def work-scope fix" is Talon #59 (reviewer-auth concern-split plan, PR pending). "Resume-session identity drift" is shipped (PR #41 merged 360edeb9; plan implemented 3c1c4cde); Sona sees it on her next session restart.
+All three backlog items resolved. Finish-in-flight directive fully executed.
 
 ---
 
-## Reviewer-auth concern-split — Talon in-flight
+## Reviewer-auth concern-split — RESOLVED
 
-**Current status (2026-04-24):** Originated from Sona FYI about Duong's work-side reviewer identity correction. Karma drafted quick-lane plan (70min / 6 tasks). Orianna promoted to approved at 4cefd75f. Talon #59 currently implementing (branch TBD).
-**Next:** On resume, check Talon #59 output. Dispatch Senna + Lucian review. Merge when approved.
-**Shard:** 8df9ce09
+**Current status (2026-04-24):** PR #42 merged. Senna APPROVE (4 non-blocking nits), Lucian APPROVE (1 non-blocking pre-existing path typo). Plan promoted to implemented at `22ec765a` / `063b8901`.
+**Next:** None. RESOLVED.
+**Shards:** 8df9ce09, 3bc945c0
+
+---
+
+## Talon #82 — MCP consolidation + Slack Node 25 fix
+
+**Current status (2026-04-24):** In flight at compact boundary. Talon implementing MCP consolidation + Slack MCP Node 25 ESM fix carry-forward from Duongntd/strawberry (PR #187 closed unmerged — billing-blocked archive repo). Slack fix (Node 25 ESM loader can't resolve `retryPolicies` named export from `@slack/web-api@7.15.1` via tsx) is required before T2 of consolidation.
+**Next:** On resume, check Talon #82 output. Dispatch Senna + Lucian for dual review. Merge when approved. Then chain MCP consolidation Talon (T2 onwards).
+**Plans:** `plans/approved/personal/2026-04-24-slack-mcp-node25-cjs-fix.md`, `plans/approved/personal/2026-04-24-mcp-consolidation.md`
+**Shard:** 3bc945c0
+
+---
+
+## Talon #85 — subagent git-identity-as-Duong
+
+**Current status (2026-04-24):** In flight at compact boundary. Sona FYI flagged live rule-violation: agent git-identity leaking into merged main via squash-merge Co-authored-by on every PR. Karma (#83) drafted plan; Orianna (#84) promoted to approved. Talon #85 implementing.
+**Next:** On resume, check Talon #85 output. Dispatch Senna + Lucian for dual review. Merge when approved.
+**Plan:** `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md`
+**Shard:** 3bc945c0
+
+---
+
+## Rule 19 guard-hole — RESOLVED
+
+**Current status (2026-04-24):** PR #43 merged. Pre-commit hook now rejects staged protected-plan-dir paths unless committing identity is Orianna. Karma #64 planned, Orianna #66 promoted (`62a9b3f6`), Talon #68 implemented, Senna+Lucian dual-APPROVE, merged. Plan implemented at `e05b59be`.
+**Next:** None. RESOLVED.
+**Note:** AST scanner false-positive on plan-path substrings in `gh pr review --body` arg — workaround is `--body-file`. Follow-up pass needed; queue Karma when capacity allows.
+**Shard:** 3bc945c0
 
 ---
 
