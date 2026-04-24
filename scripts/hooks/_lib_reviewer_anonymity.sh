@@ -72,6 +72,35 @@ anonymity_scan_text() {
 }
 
 # ---------------------------------------------------------------------------
+# anonymity_scan_author
+# Scans the git author identity for denylist tokens.
+# Source of author ident (in priority order):
+#   1. ANONYMITY_TEST_AUTHOR env var (for unit tests)
+#   2. `git var GIT_AUTHOR_IDENT` in ANONYMITY_HOOK_REPO (or cwd)
+# Returns: 0 = clean, 1 = denylist hit; prints matched tokens to stderr.
+# ---------------------------------------------------------------------------
+anonymity_scan_author() {
+  local author_ident
+
+  if [ -n "${ANONYMITY_TEST_AUTHOR:-}" ]; then
+    author_ident="$ANONYMITY_TEST_AUTHOR"
+  else
+    local repo_dir="${ANONYMITY_HOOK_REPO:-.}"
+    author_ident="$(git -C "$repo_dir" var GIT_AUTHOR_IDENT 2>/dev/null || true)"
+  fi
+
+  if [ -z "$author_ident" ]; then
+    return 0
+  fi
+
+  # GIT_AUTHOR_IDENT: "Name <email> timestamp timezone" — strip trailing timestamp
+  local name_email
+  name_email="$(printf '%s' "$author_ident" | sed 's/ [0-9][0-9]* [+-][0-9][0-9]*$//')"
+
+  printf '%s' "$name_email" | anonymity_scan_text
+}
+
+# ---------------------------------------------------------------------------
 # anonymity_is_work_scope <dir>
 # Returns 0 if the git repo rooted at <dir> has origin matching [:/]missmp/
 # Returns 1 otherwise (personal scope or no remote)
