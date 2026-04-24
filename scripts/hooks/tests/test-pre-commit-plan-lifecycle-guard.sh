@@ -2,30 +2,20 @@
 # test-pre-commit-plan-lifecycle-guard.sh
 # Tests for pre-commit-plan-lifecycle-guard.sh
 #
-# Rule 12 — xfail test committed before T2 implementation.
-# Refs: plans/approved/personal/2026-04-24-rule-19-guard-hole-pre-staged-moves.md T1
+# Refs: plans/approved/personal/2026-04-24-rule-19-guard-hole-pre-staged-moves.md T1-T3
 #
 # Test cases:
 #   Case 1 — non-Orianna agent (CLAUDE_AGENT_NAME=kayn) stages a plan rename
-#             proposed->approved → git commit must fail with [plan-lifecycle-guard] stderr.
-#   Case 2 — Orianna agent (CLAUDE_AGENT_NAME=orianna) stages same rename → commit must succeed.
-#   Case 3 — no agent env vars at all (admin/human path) → commit must succeed.
+#             proposed->approved → hook must exit non-zero with [plan-lifecycle-guard] stderr.
+#   Case 2 — Orianna agent (CLAUDE_AGENT_NAME=orianna) stages same rename → must succeed.
+#   Case 3 — no agent env vars at all (admin/human path) → must succeed.
 #   Case 4 — non-Orianna agent modifies (not renames) an existing plans/in-progress/ file
-#             → commit must succeed (edit-in-place is permitted).
-#
-# xfail-skip guard: if the hook does not yet exist, skip with "xfail" exit 0.
-# (Matches repo convention in test-pretooluse-plan-lifecycle-guard.sh.)
+#             → must succeed (edit-in-place is permitted).
 
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 HOOK="$REPO_ROOT/scripts/hooks/pre-commit-plan-lifecycle-guard.sh"
-
-# ---- xfail guard -------------------------------------------------------
-if [ ! -x "$HOOK" ]; then
-  echo "xfail: $HOOK not yet implemented — skipping (Rule 12 xfail pattern)"
-  exit 0
-fi
 
 # ---- helpers -----------------------------------------------------------
 PASS=0
