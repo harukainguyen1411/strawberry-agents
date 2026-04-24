@@ -73,6 +73,8 @@ is_orianna() {
 }
 
 is_admin() {
+  # Note: `env -i git commit` can bypass this by clearing all env; PreToolUse guard is the
+  # primary defence — see architecture/plan-lifecycle.md.
   # Both identity vars empty AND no agent-mode flag → treat as human/admin Duong.
   [ -z "$_agent" ] && [ -z "$_agent_mode" ]
 }
@@ -80,7 +82,9 @@ is_admin() {
 reject() {
   _path="$1"
   _shape="$2"
-  printf '%s Agent '\''%s'\'' cannot %s files in %s at commit phase.\n' \
+  # _shape encodes verb+preposition: "add files to", "delete files from",
+  # "rename/copy files involving" — format: cannot <_shape> <path>
+  printf '%s Agent '\''%s'\'' cannot %s %s at commit phase.\n' \
     "$REJECT_MSG_PREFIX" "$_agent" "$_shape" "$_path" >&2
   printf 'Plan lifecycle moves (rename/add/delete in protected roots) are reserved to the Orianna agent.\n' >&2
   printf 'Dispatch Orianna via Agent(subagent_type='\''orianna'\'') instead.\n' >&2
@@ -90,6 +94,8 @@ reject() {
 # --- scan staged changes ------------------------------------------------
 
 # git diff --cached --name-status -M --diff-filter=ACDRM
+# Note: --diff-filter excludes T (typechange, e.g. symlink↔file) intentionally —
+# typechanges do not move plan files between lifecycle roots and are not lifecycle events.
 # Output format per line:
 #   M<TAB>path                      (modification)
 #   A<TAB>path                      (addition)
@@ -105,8 +111,6 @@ if [ -z "$_diff_output" ]; then
   exit 0
 fi
 
-_found_violation=0
-
 while IFS='	' read -r _status _path1 _path2; do
   # Ignore empty lines
   [ -z "$_status" ] && continue
@@ -117,17 +121,17 @@ while IFS='	' read -r _status _path1 _path2; do
       ;;
     A*)
       if is_protected_path "$_path1"; then
-        _found_violation=1
+
         if ! is_orianna && ! is_admin; then
-          reject "$_path1" "add"
+          reject "$_path1" "add files to"
         fi
       fi
       ;;
     D*)
       if is_protected_path "$_path1"; then
-        _found_violation=1
+
         if ! is_orianna && ! is_admin; then
-          reject "$_path1" "delete from"
+          reject "$_path1" "delete files from"
         fi
       fi
       ;;
@@ -142,9 +146,9 @@ while IFS='	' read -r _status _path1 _path2; do
         _blocked="$_path2"
       fi
       if [ -n "$_blocked" ]; then
-        _found_violation=1
+
         if ! is_orianna && ! is_admin; then
-          reject "$_blocked" "rename/copy involving"
+          reject "$_blocked" "rename/copy files involving"
         fi
       fi
       ;;
