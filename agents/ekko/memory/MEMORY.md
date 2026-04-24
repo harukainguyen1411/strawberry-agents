@@ -151,6 +151,8 @@
 
 - 2026-04-24 (ekko — Sona dispatch): T.P1.E1 + T.P1.E2 env var provisioning. E1 was already done (demo-factory had all 5 vars from prior deploy). E2: added FACTORY_BASE_URL + FACTORY_TOKEN (secret DS_FACTORY_TOKEN) to live demo-studio service via `gcloud run services update --update-env-vars/--update-secrets`. New revision: demo-studio-00028-2n2 (Ready, 13.9s). No source commit needed — deploy.sh was already correct. Cloud Run service name mapping: demo-studio-v3 (code/plan name) = `demo-studio` (Cloud Run service name).
 
+- Slack workspace team ID: `T18MLBHC5`. Token in `strawberry-agents/secrets/slack-bot-token.txt` is an `xoxp-` user token (works with `@modelcontextprotocol/server-slack`). Token must also exist at `strawberry/secrets/slack-bot-token.txt` (not committed — gitignored) because `mcps/slack/scripts/start.sh` resolves REPO_ROOT to the old strawberry repo.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
