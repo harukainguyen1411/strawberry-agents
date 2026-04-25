@@ -66,15 +66,38 @@ function computeWallActiveDeltas(turns) {
 // ---------------------------------------------------------------------------
 
 /**
+ * Look up the most canonical stage for a planSlug from planStageEvents.
+ * Preference order (per §Q2 + OQ-R3): trailer > frontmatter-mtime > dispatch-prompt-slug-match.
+ * Returns the stage string from the highest-priority signal event, or null if not found.
+ *
+ * @param {string|null} planSlug
+ * @param {Array<Object>} planStageEvents
+ * @returns {string|null}
+ */
+function lookupTrailerStage(planSlug, planStageEvents) {
+  if (!planSlug || !planStageEvents || planStageEvents.length === 0) return null;
+  const SIGNAL_PRIORITY = { trailer: 0, 'frontmatter-mtime': 1, 'dispatch-prompt-slug-match': 2 };
+  let best = null;
+  for (const ps of planStageEvents) {
+    if (ps.planSlug !== planSlug) continue;
+    const priority = SIGNAL_PRIORITY[ps.signal] ?? 99;
+    const bestPriority = best !== null ? (SIGNAL_PRIORITY[best.signal] ?? 99) : 999;
+    if (priority < bestPriority) best = ps;
+  }
+  return best ? best.stage : null;
+}
+
+/**
  * Parse a parent session JSONL file and emit turn events.
  *
  * Coordinator-inline sessions: no isSidechain flag, path not under subagents/.
- * Plan attribution: from first user message slug match (dispatch-prompt-slug-match signal).
+ * Plan attribution: prefers trailer signal from planStageEvents when available,
+ * falls back to dispatch-prompt-slug-match (path in first user message).
  *
  * @param {string} filePath — absolute path to the session JSONL
  * @param {string} sessionId — derived from the filename (without .jsonl)
  * @param {string} slug — project slug
- * @param {Array<Object>} planStageEvents — for future stage-timeline attribution
+ * @param {Array<Object>} planStageEvents — plan-stage events (trailer wins per §Q2 + OQ-R3)
  * @returns {Array<Object>} turn events
  */
 export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
@@ -95,6 +118,14 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
     ? firstUserMsg.content.filter(c => c && c.type === 'text').map(c => c.text).join(' ')
     : (firstUserMsg && typeof firstUserMsg.content === 'string' ? firstUserMsg.content : '');
   const planMatch = extractPlanSlugFromText(firstUserText);
+
+  // Prefer trailer signal stage over dispatch-prompt-slug-match path stage (I2 fix).
+  // Invariant 5 (trailer canonical): the trailer signal is the most authoritative
+  // stage source; dispatch-prompt path reflects the plan's directory at dispatch time,
+  // which may lag behind an Orianna promotion.
+  const planSlug = planMatch ? planMatch.slug : null;
+  const dispatchStage = planMatch ? planMatch.stage : null;
+  const canonicalStage = lookupTrailerStage(planSlug, planStageEvents) || dispatchStage;
 
   // Gather assistant turns in order, tracking preceding timestamps
   const assistantRows = [];
@@ -137,8 +168,8 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
       cache_creation_input_tokens: row.usage.cache_creation_input_tokens || 0,
       model: row.model,
       wall_active_delta_s: deltas[i],
-      planSlug: planMatch ? planMatch.slug : null,
-      stage: planMatch ? planMatch.stage : null,
+      planSlug,
+      stage: canonicalStage,
       agentId: null,
     });
   }
@@ -156,7 +187,7 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
  * @param {string} jsonlPath — absolute path to agent-<id>.jsonl
  * @param {string} metaPath — absolute path to agent-<id>.meta.json
  * @param {string} agentId — extracted from filename
- * @param {Array<Object>} planStageEvents — for plan attribution
+ * @param {Array<Object>} planStageEvents — plan-stage events (trailer wins per §Q2 + OQ-R3)
  * @returns {{ turns: Array<Object>, dispatch: Object | null }}
  */
 export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEvents) {
@@ -188,6 +219,11 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
     ? firstUserMsg.content.filter(c => c && c.type === 'text').map(c => c.text).join(' ')
     : '';
   const planMatch = extractPlanSlugFromText(firstUserText);
+
+  // Prefer trailer signal stage over dispatch-prompt-slug-match path stage (I2 fix).
+  const planSlug = planMatch ? planMatch.slug : null;
+  const dispatchStage = planMatch ? planMatch.stage : null;
+  const canonicalStage = lookupTrailerStage(planSlug, planStageEvents) || dispatchStage;
 
   // Gather assistant turns (isSidechain:true rows)
   const assistantRows = [];
@@ -232,8 +268,8 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
       cache_creation_input_tokens: row.usage.cache_creation_input_tokens || 0,
       model: row.model,
       wall_active_delta_s: deltas[i],
-      planSlug: planMatch ? planMatch.slug : null,
-      stage: planMatch ? planMatch.stage : null,
+      planSlug,
+      stage: canonicalStage,
     });
   }
 
@@ -305,10 +341,13 @@ export function loadGitLogPlanData(repoRoot) {
       return [];
     }
   }
-  // Real git log: find commits touching plans/** with Promoted-By trailer
+  // Real git log: find commits touching plans/** with Promoted-By trailer.
+  // Use %x1e (ASCII record separator, 0x1e) as a record delimiter so that
+  // multi-paragraph commit bodies (which contain blank lines) do not split
+  // the record prematurely. Split on \x1e instead of \n\n in parseRealGitLog.
   try {
     const raw = execSync(
-      'git log --all --format="%H%x00%s%x00%b%x00%aI" -- "plans/" 2>/dev/null',
+      'git log --all --format="%x1e%H%x00%s%x00%b%x00%aI" -- "plans/" 2>/dev/null',
       { cwd: repoRoot, stdio: 'pipe', encoding: 'utf8', timeout: 10000 }
     );
     return parseRealGitLog(raw);
@@ -324,7 +363,11 @@ export function loadGitLogPlanData(repoRoot) {
  */
 function parseRealGitLog(raw) {
   const entries = [];
-  const blocks = raw.split('\n\n').filter(Boolean);
+  // Split on ASCII record separator 0x1e (injected as %x1e in git log --format).
+  // This avoids the multi-paragraph-body bug: splitting on \n\n would break any
+  // commit body that contains blank lines (e.g. Orianna promotion rationale),
+  // causing Promoted-By trailers in the second paragraph to be silently lost.
+  const blocks = raw.split('\x1e').filter(Boolean);
   for (const block of blocks) {
     const parts = block.split('\x00');
     if (parts.length < 3) continue;
@@ -338,11 +381,14 @@ function parseRealGitLog(raw) {
     // Extract planSlug from subject
     const slugMatch = subject && subject.match(/promote\s+(\S+)\s+to\s+(\S+)/);
     if (!slugMatch && !trailers['Promoted-By']) continue;
+    // Use a deterministic sentinel when isoDate is absent rather than new Date()
+    // (non-deterministic clock calls break the R2 byte-identical-output invariant).
+    const trimmedDate = isoDate && isoDate.trim();
     entries.push({
       commit: hash && hash.trim(),
       subject: subject && subject.trim(),
       trailers,
-      timestamp: (isoDate && isoDate.trim()) || new Date().toISOString(),
+      timestamp: trimmedDate || '0000-00-00T00:00:00.000Z',
       planSlug: slugMatch ? slugMatch[1] : null,
       toStage: slugMatch ? slugMatch[2] : null,
     });

@@ -10,9 +10,9 @@
  * Fixture: idle-gap-session.jsonl
  *   Turn timestamps and deltas between consecutive assistant turns:
  *     T1 → T2: delta = 30s  (active, <= 90s)
- *     T2 → T3: delta = 125s (idle gap, > 90s — STRIP)
+ *     T2 → T3: delta = 135s (idle gap, > 90s — STRIP)
  *     T3 → T4: delta = 45s  (active, <= 90s)
- *     T4 → T5: delta = 91s  (idle gap, > 90s — STRIP)
+ *     T4 → T5: delta = 105s (idle gap, > 90s — STRIP)
  *     T5 → T6: delta = 60s  (active, <= 90s)
  *
  *   wall_active_minutes = (30 + 45 + 60) / 60 = 2.25
@@ -76,22 +76,22 @@ describe('TP1.T3: wall_active_minutes strips inter-turn gaps > 90s', { skip: !IM
   });
 
   it('gaps > 90s contribute zero to wall_active_delta_s', () => {
-    // Turns at index 2 (T3, delta=125s) and index 4 (T5, delta=91s) must have wall_active_delta_s=0
+    // Turns at index 2 (T3, delta=135s) and index 4 (T5, delta=105s) must have wall_active_delta_s=0
     const turns = events
       .filter(e => e.kind === 'turn' && e.sessionId === 'sess-idle-gap')
       .sort((a, b) => new Date(a.ts) - new Date(b.ts));
 
-    // T3 is the turn after the 125s gap — its wall_active_delta_s should be 0
+    // T3 is the turn after the 135s gap — its wall_active_delta_s should be 0
     const t3 = turns.find(t => t.ts === '2026-04-22T10:02:55.000Z');
-    assert.ok(t3, 'Turn T3 (post-125s-gap) must exist');
+    assert.ok(t3, 'Turn T3 (post-135s-gap) must exist');
     assert.equal(t3.wall_active_delta_s, 0,
-      `T3 has a 125s gap before it; wall_active_delta_s must be 0, got ${t3.wall_active_delta_s}`);
+      `T3 has a 135s gap before it; wall_active_delta_s must be 0, got ${t3.wall_active_delta_s}`);
 
-    // T5 is the turn after the 91s gap — its wall_active_delta_s should be 0
+    // T5 is the turn after the 105s gap — its wall_active_delta_s should be 0
     const t5 = turns.find(t => t.ts === '2026-04-22T10:05:25.000Z');
-    assert.ok(t5, 'Turn T5 (post-91s-gap) must exist');
+    assert.ok(t5, 'Turn T5 (post-105s-gap) must exist');
     assert.equal(t5.wall_active_delta_s, 0,
-      `T5 has a 91s gap before it; wall_active_delta_s must be 0, got ${t5.wall_active_delta_s}`);
+      `T5 has a 105s gap before it; wall_active_delta_s must be 0, got ${t5.wall_active_delta_s}`);
   });
 
   it('edge-case: gap of exactly 90s IS counted (boundary inclusive — <=90s criterion)', () => {

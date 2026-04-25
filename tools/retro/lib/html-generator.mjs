@@ -14,6 +14,31 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { escapeHtml } from './template.mjs';
 
+/**
+ * Sanitize a plan slug before interpolating it into an output filename.
+ * Rejects path-traversal sequences and limits characters to safe slug chars.
+ * Throws if the slug is unsafe so callers can skip or log the offending slug.
+ *
+ * @param {string} slug
+ * @returns {string} the slug unchanged if safe
+ * @throws {Error} if the slug contains path-traversal or non-slug characters
+ */
+function sanitizeSlugForFilename(slug) {
+  if (!slug || typeof slug !== 'string') {
+    throw new Error(`Slug must be a non-empty string; got: ${JSON.stringify(slug)}`);
+  }
+  // Reject any path component that could traverse directories
+  if (slug.includes('..') || slug.includes('/') || slug.includes('\\')) {
+    throw new Error(`Slug contains path-traversal sequence and cannot be used as a filename: "${slug}"`);
+  }
+  // Only allow date-prefix slugs (YYYY-MM-DD-<rest>) and general kebab-case identifiers.
+  // Characters allowed: alphanumeric, hyphens, underscores, dots (for versioning).
+  if (!/^[\w.-]+$/.test(slug)) {
+    throw new Error(`Slug contains characters not safe for filenames: "${slug}"`);
+  }
+  return slug;
+}
+
 // ---------------------------------------------------------------------------
 // Plan row HTML for index.html
 // ---------------------------------------------------------------------------
@@ -175,14 +200,21 @@ export function generateHtml({ dataDir, distDir, templatesDir, events = [] }) {
 
   // Generate plan-<slug>.html for each known plan slug
   for (const slug of allPlanSlugs) {
+    let safeSlug;
+    try {
+      safeSlug = sanitizeSlugForFilename(slug);
+    } catch (err) {
+      process.stderr.write(`[retro:render] Skipping plan-detail for unsafe slug: ${err.message}\n`);
+      continue;
+    }
     const rows = rollupRows.filter(r => r.plan_slug === slug);
     const slugPlanStageEvents = events.filter(
       e => e.kind === 'plan-stage' && (e.planSlug || e.plan_slug) === slug
     );
     const stageRowsHtml = buildStageRows(rows, slugPlanStageEvents);
     const detailHtml = detailTpl
-      .replace(/\{\{PLAN_SLUG\}\}/g, escapeHtml(slug))
+      .replace(/\{\{PLAN_SLUG\}\}/g, escapeHtml(safeSlug))
       .replace('{{STAGE_ROWS}}', stageRowsHtml);
-    writeFileSync(join(distDir, `plan-${slug}.html`), detailHtml, 'utf8');
+    writeFileSync(join(distDir, `plan-${safeSlug}.html`), detailHtml, 'utf8');
   }
 }
