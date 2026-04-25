@@ -375,27 +375,131 @@ Refactor — this plan IS an architecture-layout change. After execution:
 
 ## Tasks
 
-T.COORD.1 — Dispatch breakdown to Aphelios — kind: coord — estimate_minutes: 5
+### Aphelios breakdown notes (2026-04-25)
 
-T.COORD.2 — Resolve §10 open questions with Duong before Aphelios's per-wave T-tasks finalize — kind: coord — estimate_minutes: 10
+**Wave-collapse decision (re Orianna's simplicity WARN):** Plan's §9 names six waves (0–5). Aphelios collapses to **five waves** by merging the original Wave 3 (whole-file archives, 3 files) and Wave 5 (flag-resolution archives, 4 files) into a single consolidated archive wave. Rationale: both sub-waves are mechanically identical (whole-file `git mv` + archive-marker stamp at top of moved file), share the same risk class (R2 — forgotten marker), and a 7-file archive batch is still trivially reviewable as one diff. Original Wave 0 (skeleton + README rewrites) and Wave 1 (bulk pure-renames) are **kept separate** — Wave 0 contains the rewritten `architecture/README.md` and the new `architecture/agent-network-v1/README.md` policy text, which is intellectual work needing its own review surface; Wave 1 is mechanical and benefits from a clean "renames only" commit log. Original Wave 4 (cross-ref sweep) stays separate — it must run after all moves are stable, otherwise it re-sweeps. Final wave numbering below: W0, W1, W2, W3 (combined archives), W4 (cross-ref sweep).
 
-T.COORD.3 — Sequence verification with cornerstone plan owner: confirm this plan's Wave 4 completes before `canonical-v1.md` lock-activation — kind: coord — estimate_minutes: 5
+**Commit rhythm decision (re OQ-7):** Per-logical-group, not per-file and not per-wave. Specifically: Wave 1 ships as 3 grouped commits (network-internals group, repo-discipline group, single-file moves group); Wave 2 ships one commit per rewrite (6 commits — each rewrite is a distinct intellectual artifact and reverts cleanly file-by-file); Wave 3 ships one batch commit (7 archive moves — mechanical, batches well); Wave 4 ships one sweep commit. Total commits across all waves: ~13. This compromises between OQ-7's two extremes: not 30+ per-file commits (spammy `git log`), not 5 per-wave commits (loses per-file revertability where it matters — the rewrites).
 
-T.COORD.4 — Communicate wave-start signals to Evelynn so concurrent `architecture/`-touching dispatches pause during each wave — kind: coord — estimate_minutes: 5
+**OQ-2 default applied:** For rewrites, old version preserved under `archive/` for `system-overview.md`, `git-workflow.md`, `pr-rules.md` (cleaner audit trail). NOT preserved for `infrastructure.md`, `plan-frontmatter.md` (no historical value — `plan-frontmatter.md` archives only the v1-orianna fields, which are already captured by `archive/v1-orianna-gate/` precedent), `README.md` (overwrite is fine — it was an index, not a content doc). Aphelios proceeds on this default. If Duong overrides, only Wave 2 task DoDs change.
 
-T.WAVE.0.placeholder — Wave 0 directory + README skeleton creation — kind: build — estimate_minutes: 30
+**Owner_role legend:** All Wave 0–4 build tasks are `sonnet builder` tier unless otherwise marked. Rewrites (Wave 2) are `sonnet builder` because the source-of-truth material to write from is concrete (current agent-defs, current hooks, current memory/agent-network.md); none require novel reasoning. The §7 canonical-source policy text (T.W0.3) is treated as a `sonnet builder` task using the §7.1–7.3 plan body as the verbatim source.
 
-T.WAVE.1.placeholder — Wave 1 bulk pure-renames (16 files, grouped commits) — kind: build — estimate_minutes: 60
+**Concurrency note:** Per §9, no `architecture/` overlap with the three in-flight Viktor branches. Coordinator (T.COORD.4) still announces wave start so Evelynn can pause any future `architecture/`-touching dispatch during each wave's open window.
 
-T.WAVE.2.placeholder — Wave 2 rewrites (6 files, one commit each) — kind: build — estimate_minutes: 180
+### Coordination tasks
 
-T.WAVE.3.placeholder — Wave 3 whole-file archives (3 files) — kind: build — estimate_minutes: 30
+- [x] **T.COORD.1** — Dispatch breakdown to Aphelios. estimate_minutes: 5. Files: n/a. DoD: Aphelios session opened with this plan path.
+- [ ] **T.COORD.2** — Resolve OQ-2/6/7 with Duong (non-blocking refinements). estimate_minutes: 10. Files: this plan §10. DoD: §10 OQ-2/6/7 each get a "Resolution (Duong, YYYY-MM-DD)" line, OR Duong explicitly accepts Aphelios's defaults documented above. blockedBy: none. blocks: none (Aphelios's defaults proceed if Duong silent).
+- [ ] **T.COORD.3** — Sequence verification with cornerstone plan owner: confirm Wave 4 completes before `architecture/canonical-v1.md` lock-activation. estimate_minutes: 5. Files: cross-plan check. DoD: Evelynn (or Sona) confirms in inbox.md that the cornerstone plan's lock-activation phase has not started, or has been paused, until T.W4.* tasks merge. blocks: T.W0.1.
+- [ ] **T.COORD.4** — Announce wave-start signals to Evelynn so concurrent `architecture/`-touching dispatches pause during each wave's open window. estimate_minutes: 5. Files: `agents/evelynn/inbox.md` (one entry per wave start). DoD: 5 inbox entries (one per W0–W4) posted as each wave begins; each entry names the wave's open file scope. blockedBy: T.COORD.3.
 
-T.WAVE.4.placeholder — Wave 4 cross-reference sweep + fix — kind: build — estimate_minutes: 45
+### Phase gate W0 — Skeleton + canonical-source policy
 
-T.WAVE.5.placeholder — Wave 5 flag-resolution archive moves: `mcp-servers.md`, `discord-relay.md`, `telegram-relay.md`, `claude-runlock.md` all archive (OQ-1/3/4/5 resolved 2026-04-25) — kind: build — estimate_minutes: 30
+Goal: directory tree exists, READMEs written, policy text live. No content moves yet.
 
-The T.WAVE.* placeholders are stubs — Aphelios fills these into per-file tasks with exact paths, sed-pass commands, and per-rewrite content checkpoints. `tests_required: false` reflects that this is a doc-tree refactor; there is no behavioral change to test. The cross-reference sweep (Wave 4) is verifiable by a `grep` against the old paths returning zero results across the repo.
+- [ ] **T.W0.1** — Create canonical and apps directory skeletons. estimate_minutes: 5. Files: `architecture/agent-network-v1/.gitkeep` (created then removed when README lands), `architecture/apps/.gitkeep`, `architecture/archive/pre-network-v1/.gitkeep`, `architecture/archive/billing-research/.gitkeep`. DoD: `git status` shows the four directories as new; no content moved yet. blockedBy: T.COORD.3.
+- [ ] **T.W0.2** — Rewrite `architecture/README.md` per §7.3. estimate_minutes: 30. Files: `architecture/README.md`. DoD: file (a) states the canonical-folder rule from §7.1 verbatim or paraphrased ≤10% drift, (b) indexes `agent-network-v1/`, `apps/`, `archive/` (no `mcp/` per OQ-1 resolution), (c) documents the doc-creation guidance from §7.2. Old index of legacy paths removed entirely. blockedBy: T.W0.1.
+- [ ] **T.W0.3** — Author `architecture/agent-network-v1/README.md` (canonical-folder index + scoped policy). estimate_minutes: 25. Files: `architecture/agent-network-v1/README.md`. DoD: file is ≤80 lines, (a) opens with §7.1 "law-of-the-land" framing, (b) lists the 21 canonical files with one-line summaries (placeholder where files don't yet exist — these get filled in W1/W2), (c) restates §7.2 author-discipline. blockedBy: T.W0.1.
+- [ ] **T.W0.4** — Author `architecture/apps/README.md` (one-paragraph scope statement). estimate_minutes: 10. Files: `architecture/apps/README.md`. DoD: ≤20 lines, states the apps subtree is app-domain knowledge (deploy targets, hosting, infra) and explicitly distinguishes from agent-network canon. blockedBy: T.W0.1.
+- [ ] **T.W0.5** — Author `architecture/archive/README.md` (archive subtree explainer per §5). estimate_minutes: 15. Files: `architecture/archive/README.md`. DoD: ≤30 lines, explains retirement-tag convention (§5.1), the archive-marker contract (§5.4), and lists current subdirs (`v1-orianna-gate/`, `pre-network-v1/`, `billing-research/`). blockedBy: T.W0.1.
+- [ ] **T.W0.6** — Single W0 commit. estimate_minutes: 5. Files: all from T.W0.1–T.W0.5. DoD: one commit titled `chore: architecture wave 0 — canonical skeleton + READMEs`. Commit body cites this plan path. `chore:` prefix per Rule 5 (touches `architecture/**`, not `apps/**`). blockedBy: T.W0.1, T.W0.2, T.W0.3, T.W0.4, T.W0.5.
+
+### Phase gate W1 — Bulk pure-renames (16 files, 3 grouped commits)
+
+Goal: §6.1 table executed via `git mv`. Internal `[link](other-file.md)` paths within each moved file fixed to relative new-tree paths in the same commit. No external cross-refs touched (W4 owns those).
+
+**Group A — agent-network-internals (7 files, one commit):**
+
+- [ ] **T.W1.A.1** — `git mv architecture/agent-pair-taxonomy.md architecture/agent-network-v1/taxonomy.md`. estimate_minutes: 5. DoD: file at new path; old path absent.
+- [ ] **T.W1.A.2** — `git mv architecture/agent-routing.md architecture/agent-network-v1/routing.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.A.3** — `git mv architecture/coordinator-boot.md architecture/agent-network-v1/coordinator-boot.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.A.4** — `git mv architecture/coordinator-memory.md architecture/agent-network-v1/coordinator-memory.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.A.5** — `git mv architecture/compact-workflow.md architecture/agent-network-v1/compact-workflow.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.A.6** — `git mv architecture/plan-lifecycle.md architecture/agent-network-v1/plan-lifecycle.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.A.7** — `git mv architecture/git-identity-enforcement.md architecture/agent-network-v1/git-identity.md`. estimate_minutes: 5. DoD: as above (note: filename short-form change).
+- [ ] **T.W1.A.8** — Sweep moved files for in-file `[link](sibling.md)` references that now need `agent-network-v1/`-relative or `../`-prefixed paths. estimate_minutes: 15. Files: the 7 files above. DoD: `grep -nE '\]\((agent-pair-taxonomy|agent-routing|coordinator-boot|coordinator-memory|compact-workflow|plan-lifecycle|git-identity-enforcement)\.md\)' architecture/agent-network-v1/` returns zero results, AND no broken in-file relative paths (manual scan).
+- [ ] **T.W1.A.9** — Group A commit. estimate_minutes: 5. DoD: single commit titled `chore: architecture wave 1A — agent-network-internals renames`. blockedBy: T.W1.A.1..A.8.
+
+**Group B — repo-discipline (6 files, one commit):**
+
+- [ ] **T.W1.B.1** — `git mv architecture/cross-repo-workflow.md architecture/agent-network-v1/cross-repo.md`. estimate_minutes: 5. DoD: file at new path.
+- [ ] **T.W1.B.2** — `git mv architecture/key-scripts.md architecture/agent-network-v1/key-scripts.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.B.3** — `git mv architecture/platform-parity.md architecture/agent-network-v1/platform-parity.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.B.4** — `git mv architecture/platform-split.md architecture/agent-network-v1/platform-split.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.B.5** — `git mv architecture/plugins.md architecture/agent-network-v1/plugins.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.B.6** — `git mv architecture/testing.md architecture/agent-network-v1/testing.md`. estimate_minutes: 5. DoD: as above.
+- [ ] **T.W1.B.7** — In-file link sweep for Group B (same shape as T.W1.A.8). estimate_minutes: 10. DoD: `grep` of old basenames inside the 6 moved files returns zero results.
+- [ ] **T.W1.B.8** — Group B commit titled `chore: architecture wave 1B — repo-discipline renames`. estimate_minutes: 5. blockedBy: T.W1.B.1..B.7.
+
+**Group C — single-file moves (3 files, one commit):**
+
+- [ ] **T.W1.C.1** — `git mv architecture/security-debt.md architecture/agent-network-v1/security-debt.md`. estimate_minutes: 3. DoD: file at new path.
+- [ ] **T.W1.C.2** — `git mv architecture/deployment.md architecture/apps/deployment.md`. estimate_minutes: 3. DoD: as above.
+- [ ] **T.W1.C.3** — `git mv architecture/firebase-storage-cors.md architecture/apps/firebase-storage-cors.md`. estimate_minutes: 3. DoD: as above.
+- [ ] **T.W1.C.4** — In-file link sweep for Group C (3 files). estimate_minutes: 5. DoD: as W1.A.8 shape.
+- [ ] **T.W1.C.5** — Group C commit titled `chore: architecture wave 1C — single-file moves into agent-network-v1 and apps`. estimate_minutes: 5. blockedBy: T.W1.C.1..C.4.
+
+### Phase gate W2 — Rewrites (6 files, one commit per rewrite)
+
+Goal: §6.2 rewrites land. Each rewritten file is a fresh authoring against a named source-of-truth, NOT a copy-edit of the old file. Old file (where §6.2 calls for archive) is `git mv`'d to its archive destination in the SAME commit, with the §5.4 archive-marker stamp added.
+
+- [ ] **T.W2.1** — Rewrite `architecture/README.md` (already done in W0 as T.W0.2). estimate_minutes: 0 (deduplicated — covered by W0). DoD: confirm T.W0.2 deliverable still satisfies §6.2 row 1; if not, supplement here. Note: this row in §6.2 collapses into W0; no separate W2 task needed.
+- [ ] **T.W2.2** — Rewrite system-overview into canonical `overview.md`. estimate_minutes: 45. Files: `architecture/agent-network-v1/overview.md` (NEW), `architecture/agent-network.md` → no (different file — leave for W3), `architecture/system-overview.md` → `archive/pre-network-v1/system-overview.md`. DoD: new `overview.md` is one screen (≤80 lines), names current roster as referencing `agents/memory/agent-network.md` rather than enumerating, drops Bard/Zoe/Irelia/agent-manager mentions entirely. Archived original gets §5.4 stamp `Archived: superseded by architecture/agent-network-v1/overview.md on 2026-04-25` at top. New file frontmatter line `Supersedes: archive/pre-network-v1/system-overview.md`. Single commit titled `chore: architecture wave 2.2 — rewrite system-overview into agent-network-v1/overview.md`. blockedBy: T.W0.6.
+- [ ] **T.W2.3** — Author canonical `agents.md` (replaces retired `agent-system.md` top half). estimate_minutes: 40. Files: `architecture/agent-network-v1/agents.md` (NEW). Source: `agents/memory/agent-network.md` + the W1-A.1 `taxonomy.md` matrix. DoD: file is roster + role table only, ≤120 lines, NO Plan-Lifecycle-Signing-Role section (that was the retired v1 Orianna gate — captured by `archive/v1-orianna-gate/` already), references `taxonomy.md` for the deeper pair-mapping. The source `agent-system.md` is NOT moved here — it whole-file archives in W3. Single commit titled `chore: architecture wave 2.3 — author agent-network-v1/agents.md`. blockedBy: T.W0.6.
+- [ ] **T.W2.4** — Rewrite `plan-frontmatter.md` (drop v1-Orianna fields). estimate_minutes: 30. Files: `architecture/agent-network-v1/plan-frontmatter.md` (NEW), `architecture/plan-frontmatter.md` → `archive/v1-orianna-gate/plan-frontmatter.md`. DoD: new file documents only current fields (`status`, `concern`, `owner`, `created`, `tests_required`, `architecture_changes`, `architecture_impact`, `complexity`, `tags`, `related`); no `orianna_signature_<phase>` or `orianna_gate_version`. Archived original gets §5.4 stamp. Single commit titled `chore: architecture wave 2.4 — rewrite plan-frontmatter.md, archive v1-Orianna-fields version`. blockedBy: T.W0.6.
+- [ ] **T.W2.5** — Rewrite `git-workflow.md` (drop retired Tier-3 PR matrix and pre-Rule-5 commit prefixes). estimate_minutes: 40. Files: `architecture/agent-network-v1/git-workflow.md` (NEW), `architecture/git-workflow.md` → `archive/pre-network-v1/git-workflow.md`. DoD: new file's commit-prefix section matches Rule 5 verbatim (chore/ops/feat/fix/perf/refactor scoped by diff), branch-protection and worktree sections preserved, no Lissandra/Rek'Sai/Bard mentions. Archived original gets §5.4 stamp. Single commit titled `chore: architecture wave 2.5 — rewrite git-workflow.md`. blockedBy: T.W0.6.
+- [ ] **T.W2.6** — Rewrite `pr-rules.md` (drop TeamCreate review loop). estimate_minutes: 40. Files: `architecture/agent-network-v1/pr-rules.md` (NEW), `architecture/pr-rules.md` → `archive/pre-network-v1/pr-rules.md`. DoD: new file's review section names current `strawberry-reviewers` / `strawberry-reviewers-2` identities and the Rule-18 author-cannot-self-approve gate; QA-gate (Rule 16) section, work-scope-anonymity section, account-roles section preserved. No `TeamCreate` / Katarina / Lissandra mentions. Archived original gets §5.4 stamp. Single commit titled `chore: architecture wave 2.6 — rewrite pr-rules.md`. blockedBy: T.W0.6.
+- [ ] **T.W2.7** — Rewrite `infrastructure.md` (drop agent-manager/evelynn MCP claims, mark Telegram bridge stalled→archived per OQ-4). estimate_minutes: 30. Files: `architecture/apps/infrastructure.md` (NEW or rewrite-in-place via Edit). Source `architecture/infrastructure.md` is NOT preserved (per OQ-2 default: rewrite-in-place, no archive copy). DoD: VPS section accurate (Hetzner CX22 / current PM2 processes), MCP servers section deleted entirely (the canonical surface for MCP listings is now nonexistent — `mcp-servers.md` archives in W3), Telegram-bridge "Planned" paragraph removed (refer reader to `archive/2026-04-25-telegram-relay.md`). Single commit titled `chore: architecture wave 2.7 — rewrite infrastructure.md into apps subtree`. blockedBy: T.W0.6.
+- [ ] **T.W2.8** — Author canonical `communication.md` (replaces archived `agent-network.md` Phase-1 content). estimate_minutes: 30. Files: `architecture/agent-network-v1/communication.md` (NEW). DoD: per §6.5 decision, file states "Live roster source of truth: `agents/memory/agent-network.md`" up front, then documents the protocol/contract surface (inbox/outbox, dispatch shape, decision-feedback contract pointers) without enumerating the roster. Single commit titled `chore: architecture wave 2.8 — author agent-network-v1/communication.md`. blockedBy: T.W0.6. Note: source `architecture/agent-network.md` archives in W3 (whole-file).
+
+### Phase gate W3 — Whole-file archives (consolidated, 7 files in one commit)
+
+Goal: §6.3 (3 files) + §9 Wave 5 (4 files) executed as one batch. Per Aphelios's wave-collapse, both subwaves merge here.
+
+- [ ] **T.W3.1** — `git mv architecture/agent-network.md archive/pre-network-v1/agent-network.md`. estimate_minutes: 3. DoD: archived file gets §5.4 stamp `Archived: superseded by architecture/agent-network-v1/communication.md on 2026-04-25` at top.
+- [ ] **T.W3.2** — `git mv architecture/agent-system.md archive/pre-network-v1/agent-system.md`. estimate_minutes: 3. DoD: §5.4 stamp pointing to `architecture/agent-network-v1/agents.md` (top half) and `archive/v1-orianna-gate/` (bottom half — Plan-Lifecycle-Signing-Role).
+- [ ] **T.W3.3** — `git mv architecture/claude-billing-comparison.md archive/billing-research/2026-04-05-claude-billing-comparison.md`. estimate_minutes: 3. DoD: §5.4 stamp `Archived: market-research record from 2026-04-05; decision (team plan via Claude Code OAuth) is in effect`.
+- [ ] **T.W3.4** — `git mv architecture/mcp-servers.md archive/2026-04-25-mcp-servers.md`. estimate_minutes: 3. DoD: §5.4 stamp `Archived: evelynn MCP retired (OQ-1, 2026-04-25); no canonical replacement` at top. (Top-level `archive/<date>-<slug>.md` per §5.1 — single retired file, no associated regime.)
+- [ ] **T.W3.5** — `git mv architecture/discord-relay.md archive/2026-04-25-discord-relay.md`. estimate_minutes: 3. DoD: §5.4 stamp `Archived: stalled (OQ-3, 2026-04-25); no canonical replacement`.
+- [ ] **T.W3.6** — `git mv architecture/telegram-relay.md archive/2026-04-25-telegram-relay.md`. estimate_minutes: 3. DoD: §5.4 stamp `Archived: stalled / abandoned (OQ-4, 2026-04-25); no canonical replacement`.
+- [ ] **T.W3.7** — `git mv architecture/claude-runlock.md archive/2026-04-25-claude-runlock.md`. estimate_minutes: 3. DoD: §5.4 stamp `Archived: no live participants (OQ-5, 2026-04-25); no canonical replacement`.
+- [ ] **T.W3.8** — Single W3 commit. estimate_minutes: 5. Files: all W3.1–W3.7. DoD: commit titled `chore: architecture wave 3 — whole-file archives (pre-network-v1 + billing + flag-resolved retirements)`. blockedBy: T.W3.1..W3.7, T.W2.8 (since communication.md must exist before agent-network.md archives — its archive-marker points to it).
+
+### Phase gate W4 — Cross-reference sweep
+
+Goal: every reference to an old `architecture/<old-path>.md` across the entire repo points to its new location. R1 mitigation.
+
+- [ ] **T.W4.1** — Enumerate all old paths into a sweep script. estimate_minutes: 15. Files: scratch list (committed as `assessments/2026-04-25-architecture-consolidation-sweep.md` — a sweep audit log; this is an assessment, not architecture, so it doesn't bloat the canonical tree). DoD: file lists each of the 23 source paths from §6.1+§6.2+§6.3+W3 with its destination. blockedBy: T.W3.8.
+- [ ] **T.W4.2** — `grep -rn` sweep across `agents/`, `plans/`, `.claude/`, `scripts/`, root `CLAUDE.md`, `architecture/` (in-tree cross-refs surviving W1–W3) for each old path. estimate_minutes: 20. Files: same audit log appended with hit list. DoD: every hit catalogued with (file, line, surrounding context).
+- [ ] **T.W4.3** — Apply fixes per audit log. estimate_minutes: 30. Files: every file in the audit-log hit list. DoD: each old-path reference rewritten to its destination; quoted-prose mentions updated; relative-path references resolved. After-fix `grep -rn` pass returns zero hits for any of the 23 old paths.
+- [ ] **T.W4.4** — Verification grep + W4 commit. estimate_minutes: 10. Files: all touched in T.W4.3. DoD: `grep -rn -E '(architecture/(agent-pair-taxonomy|agent-routing|agent-network|agent-system|coordinator-boot|coordinator-memory|compact-workflow|plan-lifecycle|plan-frontmatter|git-identity-enforcement|git-workflow|cross-repo-workflow|key-scripts|platform-parity|platform-split|plugins|testing|security-debt|deployment|firebase-storage-cors|infrastructure|system-overview|pr-rules|mcp-servers|discord-relay|telegram-relay|claude-runlock|claude-billing-comparison|README)\.md)' .` returns zero hits except inside `architecture/archive/` paths (where the old basenames legitimately survive as archive content) and inside this plan body. Single commit titled `chore: architecture wave 4 — cross-reference sweep`. blockedBy: T.W4.1, T.W4.2, T.W4.3.
+
+### Closeout
+
+- [ ] **T.CLOSE.1** — Verify §12 architecture-impact summary holds: `architecture/` top-level count is now ≤2 (`README.md`, `canonical-v1.md` once cornerstone ships). estimate_minutes: 5. DoD: `ls architecture/*.md` shows expected files only; everything else lives in `agent-network-v1/`, `apps/`, or `archive/`. blockedBy: T.W4.4.
+- [ ] **T.CLOSE.2** — Move plan to `plans/implemented/personal/` via Orianna. estimate_minutes: 10. DoD: Orianna invocation request sent; plan committed in `plans/implemented/personal/2026-04-25-architecture-consolidation-v1.md` with `Promoted-By: Orianna` trailer. blockedBy: T.CLOSE.1.
+
+### Estimate roll-up
+
+- W0: 90 min (5 build tasks + 1 commit task)
+- W1: ~110 min (16 mv + 3 sweeps + 3 commits)
+- W2: ~255 min (6 rewrites; W2.1 deduplicates into W0)
+- W3: ~26 min (7 mv + 1 commit)
+- W4: ~75 min (sweep + fix + verify)
+- COORD + CLOSE: ~40 min
+- **Total: ~9.9 hours of build + ~40 min of coord/close** spread across one operator over 2–3 sessions, OR parallelized across 2 builders with W2 rewrites split (T.W2.2/T.W2.3/T.W2.4 to one builder, T.W2.5/T.W2.6/T.W2.7/T.W2.8 to the other) reducing wall-clock to ~6 hours.
+- Total task count: **49 tasks** (4 COORD + 6 W0 + 17 W1 + 7 W2 + 8 W3 + 4 W4 + 2 CLOSE + 1 deduplicated W2.1 placeholder).
+
+`tests_required: false` reflects that this is a doc-tree refactor; there is no behavioral change to test. The cross-reference sweep (T.W4.4) is verifiable by a `grep` against the old paths returning zero results across the repo.
+
+### New OQs surfaced by Aphelios's breakdown
+
+OQ-A1. **`agents.md` vs `taxonomy.md` overlap.** §4 target tree lists both `agents.md` (rewritten roster) and `taxonomy.md` (current `agent-pair-taxonomy.md`). T.W2.3 authors `agents.md` from the same source material the taxonomy doc covers. Risk: two canonical docs documenting overlapping concerns. Suggested resolution: `agents.md` becomes a 30-line roster-only entry and explicitly defers depth to `taxonomy.md`, or `agents.md` is dropped entirely and `taxonomy.md` absorbs its scope. Default: 30-line roster-only `agents.md` with clear "see taxonomy.md for pair-mapping detail" pointer, since the tree benefits from a single-file "who is currently in the network" view. Confirm or override before T.W2.3 fires.
+
+OQ-A2. **Sweep audit log path.** T.W4.1 puts the audit log at `assessments/2026-04-25-architecture-consolidation-sweep.md`. Alternative: discard after sweep (no permanent record). Default: keep — the audit log is a useful record of what cross-refs the consolidation touched, and `assessments/` is the right home for refactor-sweep artifacts. Confirm or override.
+
+OQ-A3. **Wave order: W2 vs W3.** Current order is W0 → W1 (renames) → W2 (rewrites with archives of source) → W3 (whole-file archives of remaining). T.W3.1 (archive `agent-network.md`) is blockedBy T.W2.8 (author `communication.md`) because the archive-marker references it. This blocking is cross-wave but trivial. Alternative: reorder so W3 comes before W2 (archive first, rewrite second). Rejected — current order keeps W3 as a single mechanical batch and W2 builders can author rewrites without first dealing with archive-stamps in their commits. Documented to make the cross-wave dependency explicit.
 
 ## Orianna approval
 
