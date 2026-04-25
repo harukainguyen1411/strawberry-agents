@@ -1,0 +1,13 @@
+[
+  {
+    "commit": "frontmatter001abc",
+    "subject": "chore: update plan status",
+    "trailers": {},
+    "timestamp": "2026-04-22T10:00:00.000Z",
+    "planSlug": "2026-04-22-frontmatter-only-plan",
+    "frontmatterStatusChange": {
+      "from": "proposed",
+      "to": "approved"
+    }
+  }
+]

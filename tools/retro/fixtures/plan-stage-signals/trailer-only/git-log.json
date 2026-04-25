@@ -1,0 +1,13 @@
+[
+  {
+    "commit": "trailer001abc",
+    "subject": "chore: promote 2026-04-22-trailer-only-plan to approved",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-22T09:00:00.000Z",
+    "planSlug": "2026-04-22-trailer-only-plan",
+    "fromStage": "proposed",
+    "toStage": "approved"
+  }
+]
