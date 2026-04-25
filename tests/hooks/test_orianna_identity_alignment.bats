@@ -40,7 +40,8 @@ PREPUSH_HOOK="$REPO_ROOT/scripts/hooks/pre-push-resolved-identity.sh"
 ZERO_SHA="0000000000000000000000000000000000000000"
 
 # xfail flag: 1 = push expected to be BLOCKED (old persona identity); 0 = must pass
-XFAIL=1
+# T2 landed: git-identity.sh now sets neutral identity — xfail removed.
+XFAIL=0
 
 pass=0
 fail=0
