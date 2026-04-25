@@ -7,16 +7,16 @@
 # Output (stdout): JSON with hookSpecificOutput.additionalContext, or nothing.
 #
 # Behaviour:
-#   - source != "startup" → exit 0 silently (no re-bootstrap on resume/clear/compact)
+#   - source not in {startup,resume,clear,compact} → exit 0 silently
 #   - .no-inbox-watch exists → exit 0 silently (total opt-out)
 #   - coordinator identity unresolved → exit 0 silently
-#   - source = "startup" + identity resolved + no opt-out → emit bootstrap nudge JSON
+#   - source in allowlist + identity resolved + no opt-out → emit bootstrap nudge JSON
 #
-# Identity resolution (same chain as inbox-watch.sh):
+# Identity resolution (same three-tier chain as inbox-watch.sh):
 #   1. CLAUDE_AGENT_NAME env var
 #   2. STRAWBERRY_AGENT env var
-#   3. No further fallback — exit 0 silently if neither is set.
-#      The .claude/settings.json .agent fallback is intentionally removed (INV-4/INV-6).
+#   3. .coordinator-identity file at repo root (written atomically by launchers)
+#   If all three miss: exit 0 silently.
 #
 # POSIX-portable bash (Rule 10).
 set -eu
@@ -35,10 +35,11 @@ else
   source_val="$(printf '%s' "$payload" | grep -o '"source":"[^"]*"' | sed 's/"source":"//;s/"//' 2>/dev/null || true)"
 fi
 
-# Only bootstrap on a fresh session start
-if [ "$source_val" != "startup" ]; then
-  exit 0
-fi
+# Bootstrap on startup, resume, clear, or compact; silent on anything else.
+case "$source_val" in
+  startup|resume|clear|compact) ;;
+  *) exit 0 ;;
+esac
 
 # ────────────────────────────────────────────────────────────────
 # Resolve repo root
@@ -64,13 +65,25 @@ fi
 
 coord=""
 
+# Tier 1: CLAUDE_AGENT_NAME env var
 if [ -n "${CLAUDE_AGENT_NAME:-}" ]; then
   coord="$(printf '%s' "$CLAUDE_AGENT_NAME" | tr '[:upper:]' '[:lower:]')"
-elif [ -n "${STRAWBERRY_AGENT:-}" ]; then
+fi
+
+# Tier 2: STRAWBERRY_AGENT env var
+if [ -z "$coord" ] && [ -n "${STRAWBERRY_AGENT:-}" ]; then
   coord="$(printf '%s' "$STRAWBERRY_AGENT" | tr '[:upper:]' '[:lower:]')"
 fi
 
-# No identity resolved — exit cleanly (no .agent fallback per INV-4/INV-6)
+# Tier 3: .coordinator-identity hint file (written atomically by launchers)
+if [ -z "$coord" ] && [ -f "$REPO/.coordinator-identity" ]; then
+  _hint="$(tr '[:upper:]' '[:lower:]' < "$REPO/.coordinator-identity" | tr -d '[:space:]')"
+  case "$_hint" in
+    evelynn|sona) coord="$_hint" ;;
+  esac
+fi
+
+# No identity resolved — exit cleanly
 if [ -z "$coord" ]; then
   exit 0
 fi
