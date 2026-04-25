@@ -42,6 +42,8 @@ When authoring a task breakdown, classify every task with a `parallel_slice_cand
 
 Field semantics: the coordinator (Evelynn / Sona) reads this field at dispatch time to decide whether to slice the dispatch into parallel streams. Default `no` if field is absent — fail-soft, backward-compatible.
 
+Valid values: exactly `yes`, `no`, or `wait-bound` (lowercase, hyphen). Typos (e.g. `Yes`, `wait_bound`) silently treat as `no` — fail-soft, not fail-loud.
+
 <!-- include: _shared/breakdown.md -->
 # Task breakdown role — shared rules
 

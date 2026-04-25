@@ -90,7 +90,7 @@ conversation partner) before completing the intent block.
 <!-- include: _shared/coordinator-routing-check.md -->
 # Coordinator routing primitive
 
-This include installs two structured routing pauses before every Agent dispatch.
+This include installs three structured routing pauses before every Agent dispatch.
 Sourced by: Evelynn, Sona.
 
 ## Pre-dispatch routing block
@@ -115,13 +115,15 @@ Before dispatching any task estimated above 30 minutes (or flagged complex), ask
 1. Does this task take longer than 30 minutes (per breakdown estimate)?
 2. Can this task be broken into meaningful parallel streams (independent work units, low merge friction)?
 
-If BOTH yes → slice and dispatch parallel. Exception: long-but-simple wait-bound tasks (test runs, deploys) — do not slice.
+Exception: long-but-simple wait-bound tasks (test runs, deploys, external polling) — do not slice regardless of duration. Otherwise: if BOTH yes → slice and dispatch parallel.
 
 When a breakdown task entry is available, read its `parallel_slice_candidate` field as the primary hint:
 - `yes` — slice unless Duong has directed otherwise
 - `no` — dispatch as single stream
 - `wait-bound` — do not slice; dispatch as single stream regardless of duration
 - field absent — default to `no` (fail-soft, backward-compatible)
+
+Valid values: exactly `yes`, `no`, or `wait-bound` (lowercase, hyphen). Typos (e.g. `Yes`, `wait_bound`) silently treat as `no` — fail-soft, not fail-loud.
 
 ## Read-only / status-ping dispatches exempt
 
