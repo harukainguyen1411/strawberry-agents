@@ -120,6 +120,8 @@ See `agents/memory/agent-network.md` for the full roster.
 <!-- #rule-subagent-auto-isolation -->
 20. **Breakdown and test-plan subagents auto-isolate into worktrees; `Write` is revoked for inline-edit discipline** — Agent defs may declare `default_isolation: worktree` in frontmatter; the PreToolUse `Agent` hook (`scripts/hooks/agent-default-isolation.sh`) reads the target subagent's def and injects `isolation: "worktree"` into the dispatch when the caller did not supply an explicit value. Opt-ins today: `aphelios`, `kayn`, `xayah`, `caitlyn` — these same four also have `Write` removed from their `tools:` list so they cannot create sibling `-tasks.md` / `-breakdown.md` files (D1A inline enforcement via tool permissions). See `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md` for rationale. New breakdown/plan-authoring roles opt in by adding the frontmatter field.
 
+21. **No AI attribution — three-layer defense.** (a) Prompt: every agent def includes `.claude/agents/_shared/no-ai-attribution.md` (canonical marker list, non-exhaustive) via the `<!-- include: -->` mechanism — synced by `scripts/sync-shared-rules.sh`. (b) Hook: `scripts/hooks/commit-msg-no-ai-coauthor.sh` blocks any `Co-Authored-By:` trailer (universal) and AI markers in the commit body (`Claude`, `Anthropic`, `Sonnet`, `Opus`, `Haiku`, `🤖`, `AI-generated`, `claude.com`, etc.). (c) CI: `.github/workflows/pr-lint.yml` job `pr-no-ai-attribution` scans PR body and PR comments via `scripts/ci/pr-lint-no-ai-attribution.sh`; fails on match. Override for all three layers: `Human-Verified: yes` trailer in the commit message or PR body.
+
 ## File Structure
 
 | Path | Purpose |
