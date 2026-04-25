@@ -73,6 +73,110 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-21 (S64, cli, direct mode)
+
+Pre-compact consolidation — full end-session equivalent not run; Lissandra consolidated mid-session.
+
+**Summary:** Talon completed Orianna Step E external-claim verification. Yuumi reverted the failed Channels inbox implementation. Azir amended the inbox plan to v3.1 (Monitor-based watcher). Lux delivered a memory-consolidation redesign assessment with Duong answering all gating questions (proceed). Ekko in-flight fact-checking the inbox plan; Swain writing the memory-consolidation ADR (uncommitted).
+
+### Delta notes
+
+- Orianna Step E now live — `ORIANNA_EXTERNAL_BUDGET=15` default, test green.
+- Inbox plan Channels approach confirmed dead; v3.1 Monitor-based approach is the live candidate.
+- Memory-consolidation redesign path confirmed: open-threads manifest + INDEX + lazy shards. Implementation pending ADR approval.
+- Key process learning: sign plans only after all body sections exist — post-sign section additions invalidate the body hash and break all prior signatures.
+
+---
+
+## Session 2026-04-22 (S65, cli, auto mode — post-compact continuation)
+
+Same session UUID (2cb962cd), continuation after pre-compact + CLI crash recovery.
+
+**Summary:** PR #16 (boot-chain cache reorder) and PR #17 (staged-scope-guard hook) both merged. `permissionMode: bypassPermissions` stripped from 27 agent defs per Lux research on Claude Code bug #29610. Rakan/Vi xfail-ownership split and reviewer-failure fallback protocol codified into both coordinator CLAUDE.md files. Three plan promotes incomplete (commit-msg-no-ai, gate-speedups, pre-lint-rename-aware) — Ekko hit rate limit mid-work.
+
+### Delta notes
+
+- Prompt-caching Lux T1 (boot-chain reorder) **LANDED** via PR #16 `d36b925`. Projected 8-15M tokens/month savings realized.
+- Staged-scope-guard **LANDED** via PR #17 `e58a96d`. Agents now have opt-in `STAGED_SCOPE` env var to defend against parallel-commit sweep-up; broader adoption plan queued.
+- `permissionMode: bypassPermissions` is a red herring at best, bug trigger at worst. Frontmatter flag is ignored under parent `auto` mode (our setup), and cited in Claude Code #29610 as cause of terminal denials on background subagents for out-of-project-root paths.
+- Reviewer-failure fallback protocol validated end-to-end (Lucian PR #16 via /tmp verdict + Yuumi comment). Rule 18 requires only *one* non-author approval; Senna's approval alone satisfies the gate when Lucian fails.
+- Jayce can pinch-hit for Talon when Talon stalls on permissions; cross-lane fallback on quick-lane is OK for fix work on existing in-progress plans.
+- CLI stuck state recovery: `pkill -9 -f claude && pkill -9 -f 'node.*claude' && rm -rf /tmp/claude-501 && cd ~ && claude` — works when "unknown error (Unexpected)" or "working directory no longer exists" appears.
+
+## Session 2026-04-22 (cea94956, cli, direct mode)
+
+**One-line summary:** Orianna gate rescope (substance-vs-format), three PRs merged (#18 inbox-watch, #19 speedups, #20 STAGED_SCOPE), PR #21 rescope open for review; concurrent-staging race fixed; speedups fast-follow plan authored; three plans promoted to `implemented/` by parallel Ekkos.
+
+### Delta notes
+
+- **PRs closed this session:** #18 (`9ee2f2e`), #19 (`98d310c`), #20 (`e718928`).
+- **PRs opened this session:** #21 (Orianna rescope, open under Senna+Lucian review).
+- **New plans authored:** speedups fast-follow (F1/F2/F3 findings); `plans/proposed/personal/2026-04-22-agent-staged-scope-adoption.md`.
+- **Swain ADR OQs answered:** `1a 2a 3a 4b 5b 6b` — Duong's direction now encoded in rescope impl.
+- **Concurrent-staging race resolved:** STAGED_SCOPE env var live on main via PR #20.
+- **Lucian pattern note:** Twice skipped final-message verdict summary while still posting GH reviews. Monitor for recurrence; add explicit instruction if it repeats.
+- **TDD discipline:** Rakan, Viktor, Talon all performed cleanly on xfail-first discipline this session.
+- **Open carry-forward threads:** PR #21 review, speedups fast-follow Talon dispatch, STAGED_SCOPE adoption, rename-aware pre-lint (blocked), commit-msg hook, prompt-caching T2-T5, PR #61/#62 Duong merge, P2/P3/P1/P4 sequencing.
+
+## Session 2026-04-22 (1423e23d, cli, direct mode)
+
+**One-line summary:** Cascading system incident (bash-cwd wedge → FD exhaustion → iTerm spinloop → reboot) dominated the first half; PR #22 concurrent-coordinator race closeout achieved dual approval (Senna + Lucian) in the second half.
+
+### Delta notes
+
+- **Cascade incident:** bash-cwd wedge fired (Claude Code harness #29610), FD exhaustion from ulimit INT_MAX, iTerm 96% CPU spinloop, iTerm TCC reinstall chain, reboot recovery. Documented in `incidents/2026-04-22-cwd-wedge-fd-exhaust-iterm-spinloop-incident.md` (8bb4dc7) + learning `2026-04-22-maxfiles-ulimit-iterm-spinloop.md` (4c73ec9).
+- **CLAUDE.md rule updates:** bash-cwd wedge `/exit` protocol and `ulimit -n 65536` cap added to both Evelynn + Sona CLAUDE.mds (commit 8e796f1 via Syndra).
+- **Pop sound recovery:** `.claude/settings.local.json` Stop hook (`afplay Pop.aiff`) installed as replacement after system reboot lost the native Pop sound.
+- **PR #22:** Karma plan (7 tasks, 95m) → Talon impl → Senna CHANGES_REQUESTED (C1 worktree-lock) → Talon fix → Senna APPROVED + Lucian APPROVED. Dual-approved, merge-ready.
+- **Post-compact resume:** This session resumed from 69f3fb3e / cea94956 compact.
+- **Sona inbox action:** Yuumi assigned ulimit/plist/GH#51885 follow-up per Sona inbox message.
+- **Open carry-forward:** PR #22 Duong merge, plan promote after merge, Talon fast-follow plan (I1/I2/$BASHPID), PR #21 review outcome, STAGED_SCOPE adoption admin bypass, speedups fast-follow Talon dispatch, rename-aware pre-lint (blocked), commit-msg hook.
+
+## Session 2026-04-22 (ceb9f69c, cli, direct mode)
+
+**Summary:** Four PRs merged (substance-rescope #21, concurrent-coordinator race #22, speedups fast-follow #23, Rule-18 amendment #24); two governance-amendment plans authored and promoted; Ekko re-sign chain for 3 merged plans stalled on API auth expiry mid-run.
+
+**Delta notes:**
+
+- Rule 18 amended: agent self-merge now permitted under dual-approval + green checks. PR #24 was first use.
+- Ekko #53 re-sign chain incomplete: 3 plans still need `implemented/` promotion (residue from `fedae13` body-fix).
+- Sona inbox channel clarified: directory-drop only (`agents/sona/inbox/<file>.md`), never committed `inbox.md`.
+- Rule 16 strengthening + work-scope reviewer anonymity plans in promote chain via Ekko.
+
+## Session 2026-04-22 (f61a62e1, cli, direct mode — post-incident recovery + rule amendments)
+
+**One-line summary:** Post-cwd-wedge/iTerm-reinstall recovery; PRs #21–#24 merged (orianna rescope, race closeout, speedups fast-follow, Rule 18 amendment); Rule 16 QA mandate and reviewer-anonymity plans authored; coordinator lock live; Pop sound restored; 3 in-progress plans re-sign chain + 2 impl dispatches still in flight at compact.
+
+### Delta notes
+
+- **PRs merged this segment:** #21 (`fbfc23e` orianna rescope), #22 (`94c65ca` race closeout), #23 (`c38d776` speedups F1/F2/F3), #24 (`b9e3113` Rule 18 amendment).
+- **Rule 18 amended:** Agents may now merge own PRs when (a) all required status checks green and (b) at least one non-author approval. `--admin` bypass still prohibited.
+- **Rule 16 strengthened:** Karma plan authored (5 tasks, 63m) — Akali+PlaywrightMCP mandatory for UI/user-flow PRs. Promote chain + Talon impl in flight.
+- **Reviewer-anonymity plan:** Karma plan authored (5 tasks, 95m) — no AI agent names/emails in work-scope PR comments/commits/reviews. Promote chain + Talon impl in flight.
+- **Coordinator lock live:** `scripts/_lib_coordinator_lock.sh` merged (`149f8ac`); Evelynn+Sona concurrent sessions now safe.
+- **Incident documented:** `incidents/2026-04-22-cwd-wedge-fd-exhaust-iterm-spinloop-incident.md`; both coordinator CLAUDE.mds updated with `/exit` first + ulimit cap rule.
+- **Pop sound restored:** `afplay Pop.aiff` in Stop hook (settings.local.json).
+- **In-flight at compact:** Ekko #53 (re-sign 3 plans), Ekko #60 (Rule 16 promote), Ekko #64 (reviewer-anonymity promote). Talon impls gated on promote completion.
+
+## Session 2026-04-22 → 2026-04-23 (cli)
+
+Closed all personal in-progress plans: Ekko batch-promoted 5 to implemented/, staged-scope-guard promoted, commit-msg-no-ai-coauthor-hook built by Jayce (PR #29 merged clean) and promoted. Zero personal in-progress plans at session end. Duong directed Orianna v2 simplification — plan drafted by Karma (`plans/proposed/personal/2026-04-22-orianna-gate-simplification.md`), Talon dispatch paused for scope revision (archive-don't-overwrite).
+
+Delta notes for next consolidation:
+- Rule 18 self-merge is now the norm for dual-approved PRs — PR #29 was the second agent-self-merge (after PR #24). Flow is smooth.
+- Lissandra's coordinator-detection heuristic has a false-positive surface: compacted Sona sessions that get handed to Evelynn as coordinator. Not my problem to fix but worth remembering — if /pre-compact-save refuses unexpectedly, that's likely the cause.
+- Fact-check artifact pile-up (~200 untracked at session close) is the main overhead friction. Orianna v2 plan's T7 retires the generator.
+
+## Session 2026-04-23 (02f8c677, cli, pre-compact)
+
+Evelynn startup parity shipped; Orianna v2 plan revised to archive-semantics and promoted to `approved/`; Swain's memory-flow simplification ADR authored and queued for approval; two Ekko background agents in flight at compact.
+
+Delta notes:
+- Orianna v2 plan body now correct (archive not delete). Ekko promote chain in flight for `approved→in-progress`.
+- Memory-flow ADR is the biggest pending thread: 13 tasks, ~400 min. Will restructure both coordinators' close/startup flows.
+- sign/promote divergence: `orianna-sign.sh` returned APPROVE but `plan-promote.sh` structure hook blocked during this session. Learning filed.
+- Sona inbox message about drift bug archived — subsumed into memory-flow ADR. No duplication.
+
 ## Session 2026-04-21 (S64, cli, direct mode) — second consolidation
 
 Pre-compact consolidation (second pass). Lissandra consolidated mid-session again; full end-session not run.
