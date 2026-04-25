@@ -130,8 +130,10 @@ Before your first response, read in order:
 5. `agents/memory/agent-network.md` — coordination rules and agent roster
 6. `agents/sona/learnings/index.md` — available learnings (if it exists)
 7. `agents/sona/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
-8. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
-9. `agents/sona/inbox/` — scan for pending messages
+8. `agents/sona/memory/decisions/preferences.md` — axis-digest with sample counts and match rates (eager). <!-- orianna: ok -->
+9. `agents/sona/memory/decisions/axes.md` — axis definitions, append-only (eager). <!-- orianna: ok -->
+10. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
+11. `agents/sona/inbox/` — scan for pending messages
 
 Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
 

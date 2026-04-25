@@ -1,0 +1,358 @@
+#!/usr/bin/env bats
+# xfail: TT-INT — cross-task integration smoke for the full coordinator-decision flow.
+#
+# Pipeline test in a temp git repo: bootstrap decisions/ tree → capture a
+# decision via capture-decision.sh → run memory-consolidate.sh --decisions-only →
+# verify INDEX + preferences updated → verify boot-chain positions 8/9 reference
+# the new content → inject a second decision with match:false → re-run rollup →
+# verify Notable misses: gains the new entry.
+#
+# Exercises: T2 (capture-decision.sh) + T4 (memory-consolidate.sh) +
+#            T6 (end-session Step 6c shape) + T8 (bootstrap) + T9 (boot chain) +
+#            T10 (CLAUDE.md Startup Sequence)
+#
+# Refs: plans/approved/personal/2026-04-21-coordinator-decision-feedback.md
+#       §5.2, §9, TT-INT
+# xfail: all tests are expected to fail until T4 + T9 land.
+
+REPO_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
+CAPTURE_SCRIPT="$REPO_ROOT/scripts/capture-decision.sh"
+CONSOLIDATE_SCRIPT="$REPO_ROOT/scripts/memory-consolidate.sh"
+EVELYNN_AGENT="$REPO_ROOT/.claude/agents/evelynn.md"
+END_SESSION_SKILL="$REPO_ROOT/.claude/skills/end-session/SKILL.md"
+
+setup() {
+  export DECISION_TEST_MODE=1
+  # Build a minimal temp git repo simulating the coordinator's memory structure
+  TMPDIR_INT="$(mktemp -d)"
+  cd "$TMPDIR_INT"
+  git init -q
+  git config user.email "test@test.local"
+  git config user.name "Test"
+
+  COORD_DIR="$TMPDIR_INT/agents/evelynn/memory"
+  mkdir -p "$COORD_DIR/decisions/log"
+
+  # Seed axes.md (T8 bootstrap)
+  cat > "$COORD_DIR/decisions/axes.md" <<'EOF'
+# Axes — evelynn
+
+## scope-vs-debt
+  Added: 2026-04-21
+  Definition: Cleanness vs debt.
+
+## explicit-vs-implicit
+  Added: 2026-04-21
+  Definition: Declare vs infer.
+
+## hand-curated-vs-automated
+  Added: 2026-04-21
+  Definition: Human vs machine.
+
+## rollout-phased-vs-single-cutover
+  Added: 2026-04-21
+  Definition: Phased vs single.
+EOF
+
+  # Seed empty preferences.md template (T8 bootstrap)
+  cat > "$COORD_DIR/decisions/preferences.md" <<'EOF'
+# Preferences — evelynn (personal)
+
+Last calibrated: never · Total decisions: 0 · Axes tracked: 4
+
+## Axis: scope-vs-debt
+  Samples: 0 (a: 0, b: 0, c: 0) · Match rate: 0% · Confidence: low
+  Summary: No data yet.
+  Notable misses: none yet.
+
+## Axis: explicit-vs-implicit
+  Samples: 0 (a: 0, b: 0, c: 0) · Match rate: 0% · Confidence: low
+  Summary: No data yet.
+  Notable misses: none yet.
+
+## Axis: hand-curated-vs-automated
+  Samples: 0 (a: 0, b: 0, c: 0) · Match rate: 0% · Confidence: low
+  Summary: No data yet.
+  Notable misses: none yet.
+
+## Axis: rollout-phased-vs-single-cutover
+  Samples: 0 (a: 0, b: 0, c: 0) · Match rate: 0% · Confidence: low
+  Summary: No data yet.
+  Notable misses: none yet.
+EOF
+
+  touch "$COORD_DIR/decisions/log/.gitkeep"
+  git add -A && git commit -q -m "chore: bootstrap decisions/ for integration test"
+
+  export STRAWBERRY_MEMORY_ROOT="$TMPDIR_INT"
+}
+
+teardown() {
+  rm -rf "$TMPDIR_INT"
+}
+
+# ── Step 1 + 2: capture-decision.sh writes file and exits 0 ──────────────────
+
+@test "TT-INT: capture-decision.sh writes decision log file at correct path and exits 0" {
+  # xfail: requires T2 (capture-decision.sh) and T8 (decisions/log/ exists)
+  [ -f "$CAPTURE_SCRIPT" ]
+  LOG_FIXTURE="$(mktemp)"
+  cat > "$LOG_FIXTURE" <<'YAML'
+---
+decision_id: 2026-04-25-integration-test-decision
+date: 2026-04-25
+session_short_uuid: int00001
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Integration test decision?"
+options:
+  - letter: a
+    description: "Clean"
+  - letter: b
+    description: "Balanced"
+  - letter: c
+    description: "Fast"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00001
+---
+
+## Context
+Integration test decision.
+
+## Why this matters
+Pipeline integration test.
+YAML
+  run bash "$CAPTURE_SCRIPT" evelynn --file "$LOG_FIXTURE"
+  [ "$status" -eq 0 ]
+  # stdout is the final path
+  [ -n "$output" ]
+  [ -f "$output" ]
+  rm -f "$LOG_FIXTURE"
+}
+
+# ── Step 3: memory-consolidate.sh --decisions-only updates INDEX + preferences ─
+
+@test "TT-INT: memory-consolidate.sh --decisions-only regenerates INDEX.md after capture" {
+  # xfail: requires T4 (--decisions-only flag)
+  [ -f "$CAPTURE_SCRIPT" ] && [ -f "$CONSOLIDATE_SCRIPT" ]
+  LOG_FIXTURE="$(mktemp)"
+  cat > "$LOG_FIXTURE" <<'YAML'
+---
+decision_id: 2026-04-25-index-regen-test
+date: 2026-04-25
+session_short_uuid: int00002
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Index regen test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00002
+---
+
+## Context
+Index regen integration test.
+
+## Why this matters
+Verifies INDEX.md is regenerated by --decisions-only.
+YAML
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG_FIXTURE" >/dev/null
+  run bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only
+  [ "$status" -eq 0 ]
+  INDEX_FILE="$TMPDIR_INT/agents/evelynn/memory/decisions/INDEX.md"
+  [ -f "$INDEX_FILE" ]
+  # INDEX must contain a row for our decision
+  run grep "index-regen-test" "$INDEX_FILE"
+  [ "$status" -eq 0 ]
+  rm -f "$LOG_FIXTURE"
+}
+
+@test "TT-INT: preferences.md Samples: line is updated after first decision is captured" {
+  # xfail: requires T4
+  [ -f "$CAPTURE_SCRIPT" ] && [ -f "$CONSOLIDATE_SCRIPT" ]
+  LOG_FIXTURE="$(mktemp)"
+  cat > "$LOG_FIXTURE" <<'YAML'
+---
+decision_id: 2026-04-25-prefs-update-test
+date: 2026-04-25
+session_short_uuid: int00003
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Prefs update test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00003
+---
+
+## Context
+Preferences update integration test.
+
+## Why this matters
+Verifies preferences.md Samples: line is updated after capture + rollup.
+YAML
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG_FIXTURE" >/dev/null
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null
+  PREF_FILE="$TMPDIR_INT/agents/evelynn/memory/decisions/preferences.md"
+  # scope-vs-debt Samples: must now read 1 not 0
+  run grep "Samples: 1" "$PREF_FILE"
+  [ "$status" -eq 0 ]
+  rm -f "$LOG_FIXTURE"
+}
+
+# ── Step 5: second decision with match:false → Notable misses: updated ────────
+
+@test "TT-INT: second decision with match:false adds entry to Notable misses: in preferences.md" {
+  # xfail: requires T4 (rollup pass + notable-misses logic)
+  [ -f "$CAPTURE_SCRIPT" ] && [ -f "$CONSOLIDATE_SCRIPT" ]
+  # First: a match=true decision
+  LOG1="$(mktemp)"
+  cat > "$LOG1" <<'YAML'
+---
+decision_id: 2026-04-25-miss-test-match
+date: 2026-04-25
+session_short_uuid: int00004a
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Match test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00004a
+---
+## Context
+Match.
+## Why this matters
+Setup for notable-misses test.
+YAML
+  # Second: a match=false decision
+  LOG2="$(mktemp)"
+  cat > "$LOG2" <<'YAML'
+---
+decision_id: 2026-04-25-miss-test-mismatch
+date: 2026-04-25
+session_short_uuid: int00004b
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Mismatch test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: b
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: false
+decision_source: /end-session-shard-int00004b
+---
+## Context
+Mismatch.
+## Why this matters
+Verifies Notable misses: gets populated after a miss.
+YAML
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG1" >/dev/null
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG2" >/dev/null
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null
+  PREF_FILE="$TMPDIR_INT/agents/evelynn/memory/decisions/preferences.md"
+  # The miss slug must appear in Notable misses:
+  run grep "miss-test-mismatch" "$PREF_FILE"
+  [ "$status" -eq 0 ]
+  rm -f "$LOG1" "$LOG2"
+}
+
+# ── I4: --decisions-only concurrent lock safety ──────────────────────────────
+
+@test "TT-INT: two concurrent --decisions-only invocations do not corrupt INDEX.md" {
+  # guards Invariant: advisory lock covers --decisions-only short-circuit
+  # Refs: PR #64 review finding I4.
+  # Spawns two parallel --decisions-only runs on the same coordinator dir and
+  # asserts INDEX.md is not corrupted (non-empty, valid header row present).
+  [ -f "$CONSOLIDATE_SCRIPT" ]
+  grep -q "decisions-only" "$CONSOLIDATE_SCRIPT"
+  # Seed one decision so INDEX.md will have content
+  LOG_FIXTURE="$(mktemp)"
+  cat > "$LOG_FIXTURE" <<'YAML'
+---
+decision_id: 2026-04-25-lock-race-test
+date: 2026-04-25
+session_short_uuid: int00005
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Lock race test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00005
+---
+## Context
+Lock race test.
+## Why this matters
+Verifies concurrent --decisions-only does not corrupt INDEX.md.
+YAML
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG_FIXTURE" >/dev/null
+  rm -f "$LOG_FIXTURE"
+  # Run two --decisions-only invocations concurrently
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null 2>&1 &
+  pid1=$!
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null 2>&1 &
+  pid2=$!
+  wait "$pid1" || true
+  wait "$pid2" || true
+  INDEX_FILE="$TMPDIR_INT/agents/evelynn/memory/decisions/INDEX.md"
+  # INDEX.md must exist and contain the decision row (not be truncated/empty)
+  [ -f "$INDEX_FILE" ]
+  run grep "lock-race-test" "$INDEX_FILE"
+  [ "$status" -eq 0 ]
+}
+
+# ── Step 6: /end-session Step 6c shape grep ──────────────────────────────────
+
+@test "TT-INT: end-session/SKILL.md Step 6c shape confirms regen before commit" {
+  # xfail: requires T6 (Step 6c added to end-session SKILL.md)
+  # This test is a shape grep — not a runtime test of the skill execution
+  [ -f "$END_SESSION_SKILL" ]
+  # decisions-only flag must be present (Step 6c invokes it)
+  grep -q "decisions-only" "$END_SESSION_SKILL"
+  # Step 6c must precede Step 9 (commit)
+  step_6c_line="$(grep -n "6c\|decisions-only" "$END_SESSION_SKILL" | head -1 | cut -d: -f1)"
+  step_9_line="$(grep -n "^## Step 9\|^### Step 9\|Step 9 " "$END_SESSION_SKILL" | head -1 | cut -d: -f1)"
+  [ -n "$step_6c_line" ]
+  [ -n "$step_9_line" ]
+  [ "$step_6c_line" -lt "$step_9_line" ]
+}
