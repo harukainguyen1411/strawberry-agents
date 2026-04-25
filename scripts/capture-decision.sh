@@ -25,6 +25,10 @@ fi
 # shellcheck source=scripts/_lib_decision_capture.sh
 . "$LIB"
 
+# Clean up decision-lib tmpfiles from the current PID on exit (belt-and-suspenders;
+# lib already rm -f's at every return path, this guards abnormal exits).
+trap 'rm -f "${TMPDIR:-/tmp}/decisions_"*"_$$" 2>/dev/null || true' EXIT INT TERM
+
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------

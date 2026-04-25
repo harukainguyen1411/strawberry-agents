@@ -321,8 +321,12 @@ infer_slug() {
     candidate="${base_slug}-${n}"
     n=$((n + 1))
     if [ "$n" -gt 10 ]; then
-      # Exhausted suffix space; return last candidate
-      break
+      # Exhausted suffix space; fail loud at lib level so caller can handle cleanly.
+      # capture-decision.sh already has its own collision guard — this ensures the
+      # lib-level contract is explicit rather than silently falling through.
+      printf '[lib-decision] BLOCK: infer_slug collision exhausted for slug "%s" (tried -2 through -10)\n' \
+        "$base_slug" >&2
+      return 1
     fi
   done
 
@@ -870,7 +874,9 @@ if os.path.isfile(pref_file):
         line = lines[i]
 
         # Detect axis section headers: ## Axis: axis-name
-        m = re.match(r'^## Axis: (.+?)(?:\s+\(deprecated\))?$', line.rstrip('\n'))
+        # Trailing whitespace is tolerated (\s*$ instead of $) — editors sometimes
+        # leave trailing spaces on header lines.
+        m = re.match(r'^## Axis: (.+?)(?:\s+\(deprecated\))?\s*$', line.rstrip('\n'))
         if m:
             current_axis = m.group(1).strip()
             out_lines.append(line)

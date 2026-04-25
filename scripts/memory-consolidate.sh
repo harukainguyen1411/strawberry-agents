@@ -198,6 +198,9 @@ _cleanup() {
     if [ "${_LOCK_PATH_NOCLOBBER:-}" = "1" ]; then
         rm -f "${LOCK_FILE}"
     fi
+    # Belt-and-suspenders: clean up any decision-lib tmpfiles from the current PID
+    # (lib already rm -f's at every return path; this guards against abnormal exits)
+    rm -f "${TMPDIR:-/tmp}/decisions_"*"_$$" 2>/dev/null || true
 }
 trap '_cleanup' EXIT INT TERM
 
