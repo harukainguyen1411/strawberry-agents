@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: azir
 created: 2026-04-25
@@ -252,3 +252,11 @@ Out of scope for the test plan: validating that `lulu.md`'s Stage-2 usability pa
 - `architecture/agent-network-v1/taxonomy.md` (plan template — gains §UX Spec scaffolding in T2)
 - `plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md` (parallel — §UX Spec feeds Akali's `head_sha` and Figma-diff target; D5 a11y floor pairs with Akali's `cite_kind: verified` a11y findings)
 - `plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md` (parallel — tactical Akali patch; cross-ref to ensure §UX Spec consumption is captured in Akali's report contract)
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (Azir), concrete tasks T1-T7 with files and DoD, an xfail-first test plan keyed to Rule 12, well-defined gating (Rule 22 + plan-structure linter + PR-body markers), and routing logic in D6. Open Questions are pre-resolved with recommendations rather than left as blockers. Authority for promotion comes from synthesis ADR §7.5 Answers (commit c4be153b), Group E hands-off default. tests_required: true and a §Test plan is present.
+- **Simplicity:** WARN: possible overengineering — three PR-body markers (`Design-Spec:`, `Accessibility-Check:`, `Visual-Diff:`) layered on top of the existing `QA-Report:` line plus a separate dispatch-time hook plus a promote-time linter plus coordinator-prompt bullets is more enforcement layers than the single named invariant ("UI without design does not land") strictly requires; consider whether `Visual-Diff:` collapses into Rule 16's `QA-Report:` and whether `Accessibility-Check:` belongs in the §UX Spec rather than the PR body during T5 implementation.
