@@ -23,26 +23,26 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const startSh = readFileSync(join(__dirname, "../scripts/start.sh"), "utf8");
 
-it.fails(
-  "T-new-D-xfail: old start.sh must not reference plaintext token file or use $() capture for secrets",
+it(
+  "T-new-D: old plaintext token file reference and $() capture are gone",
   () => {
-    // The old script reads from secrets/slack-bot-token.txt — must be gone
+    // Regression guard: the old script read from secrets/slack-bot-token.txt — must be absent
     expect(startSh).not.toContain("slack-bot-token.txt");
-    // The old script captures tokens via $() — must be gone
+    // Regression guard: the old script captured tokens via $() — must be absent
     expect(startSh).not.toMatch(/\$\(grep.*TOKEN/);
   }
 );
 
 // These 5 tests describe the T-new-D implementation target.
 // They are marked skip until the canonical start.sh lands in the next commit.
-it.skip(
+it(
   "T-new-D: start.sh uses tools/decrypt.sh as sole decryption entry point",
   () => {
     expect(startSh).toContain("tools/decrypt.sh");
   }
 );
 
-it.skip(
+it(
   "T-new-D: start.sh uses --exec flag (no subshell capture of plaintext)",
   () => {
     expect(startSh).toContain("--exec");
@@ -51,7 +51,7 @@ it.skip(
   }
 );
 
-it.skip(
+it(
   "T-new-D: start.sh names SLACK_USER_TOKEN as the --var",
   () => {
     expect(startSh).toContain("--var");
@@ -59,14 +59,14 @@ it.skip(
   }
 );
 
-it.skip(
+it(
   "T-new-D: start.sh reads ciphertext from secrets/work/encrypted/slack-user-token.age",
   () => {
     expect(startSh).toContain("secrets/work/encrypted/slack-user-token.age");
   }
 );
 
-it.skip(
+it(
   "T-new-D: start.sh writes runtime env to secrets/work/runtime/slack.env",
   () => {
     expect(startSh).toContain("secrets/work/runtime/slack.env");

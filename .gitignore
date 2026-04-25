@@ -20,11 +20,13 @@ secrets/encrypted/*
 secrets/work/*
 !secrets/work/encrypted/
 !secrets/work/REVOCATION.md
+!secrets/work/runtime/
 secrets/work/encrypted/*
 !secrets/work/encrypted/*.age
 !secrets/work/encrypted/*.age.sha256
 !secrets/work/encrypted/.gitkeep
-secrets/work/runtime/
+secrets/work/runtime/*
+!secrets/work/runtime/.gitkeep
 
 # Agent-local settings (contains API keys)
 settings.local.json
