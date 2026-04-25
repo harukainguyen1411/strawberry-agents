@@ -285,11 +285,13 @@ ${PAYLOAD_R3_6}
 JSON
 "
 
-# R3-7: malformed bash referencing plans path (parse error) -> exit 2 fail-closed, no tokenizer fallback
-# Command must reference "plans" to pass the pre-filter and reach the AST scanner.
-# Scanner must exit non-zero on parse error; guard must treat non-zero scanner exit as fail-closed.
+# R3-7: malformed bash referencing UNPROTECTED plans path (parse error) -> exit 0
+# Updated per plan 2026-04-25-plan-lifecycle-guard-heredoc-fp.md two-stage parse strategy:
+# When bashlex exits 3, the conservative fallback runs. The command moves plans/proposed/
+# (unprotected) to ;; (no path), so conservative scan finds no protected path — exit 0.
+# The must-still-block counterpart for protected paths inside unparseable scripts is B-8.
 PAYLOAD_R3_7='{"tool_name":"Bash","tool_input":{"command":"git mv plans/proposed/x.md ;;"}}'
-assert_exit "R3-7: malformed bash with plans path (parse error), ekko -> exit 2 fail-closed" 2 \
+assert_exit "R3-7: malformed bash with unprotected plans path (parse error) -> exit 0 via conservative fallback" 0 \
   bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
 ${PAYLOAD_R3_7}
 JSON
