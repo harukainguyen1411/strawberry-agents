@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: lux
 created: 2026-04-21
@@ -750,3 +750,11 @@ None in v1. The system is additive:
 No architectural component or interface changes. No new universal invariant added to CLAUDE.md (the trigger stanza rides via shared-rules include, not via a rule-number entry). No existing rule modified.
 
 If the feedback system becomes a first-class named component in the agent-system story, a follow-up ADR adds it to `architecture/agent-system.md` and creates `architecture/feedback-system.md`. Deferred until volume justifies. <!-- orianna: ok -->
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (Lux), no unresolved TBDs in gating sections, and tasks T1-T14 are concretely scoped with explicit DoDs. The five-layer architecture (Write/Broadcast/Encourage/Ritual/Consolidate) is each justified against named alternatives (e.g. §D3 candidate table, §D7 candidate table) rather than added speculatively. Invariants, rollback, and disable paths are spelled out. Open questions are deferred-with-rationale, not blockers.
+- **Simplicity:** WARN: possible overengineering — five layers, two new skills, depth-2 nested-include resolution, and a weekly digest pipeline land in a single ADR. Each layer is individually justified, but the breadth before any usage data exists is significant; consider whether G1+G3 (write schema + shared-rules trigger) could ship first and G4/G5 (rituals + consolidation) could wait until 2-3 weeks of feedback volume validates the trigger calibration.
