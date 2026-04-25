@@ -75,16 +75,16 @@ The classification axis is:
 | 16 | `key-scripts.md` | 57 | canonical-keep | Current. Becomes `agent-network-v1/key-scripts.md`. |
 | 17 | `platform-parity.md` | 57 | canonical-keep | Current. Becomes `agent-network-v1/platform-parity.md`. |
 | 18 | `platform-split.md` | 45 | canonical-keep | Current (Mac/Windows/GCE contract). Becomes `agent-network-v1/platform-split.md`. |
-| 19 | `mcp-servers.md` | 51 | rewrite + flag | Documents `evelynn` MCP and `agent-manager` (archived). The `evelynn` MCP itself is largely obsolete — Telegram tools never shipped; only `end_all_sessions` and `commit_agent_state_to_main` are live, and current usage is unclear. **Flag for Duong:** is `mcps/evelynn/` still load-bearing or fully retired? If retired, archive the whole file; if live, rewrite to drop `agent-manager` and trim. |
+| 19 | `mcp-servers.md` | 51 | **archive** | `mcps/evelynn/` is retired (OQ-1 resolved 2026-04-25). Archive whole file. `architecture/mcp/` subdir is NOT created. |
 | 20 | `plugins.md` | 32 | canonical-keep | Current plugin list. Becomes `agent-network-v1/plugins.md`. |
 | 21 | `testing.md` | 131 | canonical-keep | Current TDD/Rule-12-15 enforcement description. Becomes `agent-network-v1/testing.md`. |
 | 22 | `deployment.md` | 98 | canonical-keep | Current Firebase/`strawberry-app` deploy flow. Sits awkwardly in agent-network folder — see §4 on sub-organization. |
 | 23 | `firebase-storage-cors.md` | 75 | canonical-keep (relocate) | App-domain knowledge, not network. Stays under architecture root or moves to `architecture/apps/`; see §4. |
 | 24 | `infrastructure.md` | 75 | rewrite | VPS section is current (Hetzner CX22 / PM2 / Discord-relay PM2 processes). MCP servers section names "agent-manager, evelynn" — partially stale. Telegram bridge section is "Planned" since 2026-04-04 and shows no progress; classify as planned-and-stalled (flag). Rewrite to drop dead claims. |
-| 25 | `discord-relay.md` | 64 | flag | "Status: Planned — blocked on Duong providing bot token" — has the spec ever shipped? Verify against `apps/discord-relay/`. If shipped, rewrite to as-built; if stalled and abandoned, archive. |
-| 26 | `telegram-relay.md` | 62 | flag | "Status: Planned — bridge script not yet implemented". Same question as discord-relay: still alive, or abandoned? If abandoned, archive. |
+| 25 | `discord-relay.md` | 64 | **archive** | Stalled (OQ-3 resolved 2026-04-25). Archive whole file. |
+| 26 | `telegram-relay.md` | 62 | **archive** | Stalled / abandoned (OQ-4 resolved 2026-04-25). Archive whole file. |
 | 27 | `claude-billing-comparison.md` | 118 | archive | "Current Setup (as of 2026-04-05)" describes team-plan transition and recommends API. Decision-record-style content; the *decision* (team plan via Claude Code OAuth) is in effect, the comparison itself is stale market research. Move to `archive/billing-research/` or just `archive/2026-04-05-billing-comparison.md`. |
-| 28 | `claude-runlock.md` | 84 | flag | Owned by `plans/proposed/2026-04-09-sister-research-agent-karma.md` (Bee plan). Lists Bee + autonomous-pipeline as participants. Both plans are still in `proposed/` and may have stalled. **Flag:** is this contract live for any current participant? If no current participant, archive. |
+| 28 | `claude-runlock.md` | 84 | **archive** | No live participants, stalled (OQ-5 resolved 2026-04-25). Archive whole file. |
 | 29 | `security-debt.md` | 7 | canonical-keep | Current 1-paragraph debt note. Stays. |
 | 30 | `archive/v1-orianna-gate/plan-lifecycle.md` | 372 | already-archived | No change. Existing `archive/` precedent. |
 | 31 | `archive/v1-orianna-gate/key-scripts-excerpt.md` | 25 | already-archived | No change. |
@@ -93,9 +93,9 @@ The classification axis is:
 
 - canonical-keep (verbatim or near-verbatim relocation): **15** files — items 5, 6, 7, 8, 9, 10, 13, 15, 16, 17, 18, 20, 21, 22, 23, 29.
 - rewrite (current concept, stale execution): **6** files — items 1, 2, 11, 12, 14, 24.
-- rewrite + split or rewrite + flag: **2** files — items 4 (rewrite + split), 19 (rewrite + flag).
-- archive (whole file outdated): **2** files — items 3, 27.
-- flag (Duong input needed): **3** files — items 25, 26, 28.
+- rewrite + split: **1** file — item 4 (rewrite + split).
+- archive (whole file outdated): **6** files — items 3, 19, 25, 26, 27, 28. (Items 19/25/26/28 resolved 2026-04-25; see §10 OQ-1/3/4/5.)
+- flag (Duong input needed): **0** — all flags resolved.
 - already-archived (no change): **2** files — items 30, 31.
 
 Total: 30 active + 2 already-archived = 32 entries (item 4 is one file with two classifications).
@@ -136,8 +136,7 @@ architecture/
 │   ├── deployment.md                 # was deployment.md
 │   ├── firebase-storage-cors.md      # was firebase-storage-cors.md
 │   └── infrastructure.md             # was infrastructure.md (rewritten — drops agent-manager)
-├── mcp/                              # MCP surface — its own concern, retain or archive per §10 OQ-1
-│   └── (one of: mcp-servers.md rewritten, OR archived entirely; see flag)
+│   # mcp/ subdir NOT created — mcp-servers.md archives (OQ-1 resolved 2026-04-25)
 └── archive/
     ├── v1-orianna-gate/              # existing; unchanged
     │   ├── plan-lifecycle.md
@@ -155,7 +154,7 @@ architecture/
 
 - `agent-network-v1/` is the canonical heart. Everything here is authoritative for the v1 agent system.
 - `apps/` separates application-domain knowledge (deploy targets, hosting, CORS) from agent-network knowledge. A reader investigating "how does the agent system work" should not collide with myapps Firebase deploy details.
-- `mcp/` is a placeholder that depends on the §10 OQ-1 answer. If `mcps/evelynn/` is fully retired, `mcp/` is empty (or nonexistent) and `mcp-servers.md` archives. If still load-bearing, `mcp/` holds the rewritten file.
+- `mcp/` subdir is NOT created. `mcps/evelynn/` is retired (OQ-1 resolved 2026-04-25); `mcp-servers.md` archives to `archive/`.
 
 Single-folder alternatives were considered and rejected:
 
@@ -316,7 +315,7 @@ The cornerstone plan (`plans/approved/personal/2026-04-25-retrospection-dashboar
 - **Wave 2** — rewrites (§6.2, 6 files). One commit per rewritten file. Each commit also archives the source if §6.2 calls for it.
 - **Wave 3** — whole-file archives (§6.3, 3 files).
 - **Wave 4** — internal cross-reference fixes. After all moves, sweep for broken `[link](path)` references and fix in one commit (sed-pass + manual review of result).
-- **Wave 5** — flag resolutions (only after Duong answers §10 OQ-1, OQ-3, OQ-4, OQ-5).
+- **Wave 5** — flag-resolution archive moves: `mcp-servers.md`, `discord-relay.md`, `telegram-relay.md`, `claude-runlock.md` all archive. OQ-1/3/4/5 resolved 2026-04-25; this wave is now unblocked.
 
 ### Conflict-avoidance with three concurrent Viktor branches
 
@@ -334,13 +333,21 @@ The cornerstone plan's `architecture/canonical-v1.md` deliverable IS in `archite
 
 OQ-1. **Is the `evelynn` MCP (`mcps/evelynn/`) still load-bearing?** If retired, archive `mcp-servers.md` whole; if live, rewrite to drop `agent-manager`. (Survey item 19.)
 
+**Resolution (Duong, 2026-04-25):** Retired. Archive `mcp-servers.md` whole. Do NOT create `architecture/mcp/` subdir — the placeholder in §4 is dropped.
+
 OQ-2. **For "rewrite" files, do you want the old version preserved under `archive/`?** My default is yes for `system-overview.md`, `git-workflow.md`, `pr-rules.md` (cleaner audit trail), and no for `infrastructure.md` and `plan-frontmatter.md` (no historical value). Confirm or override.
 
 OQ-3. **Discord-relay status.** Is `apps/discord-relay/` shipped/active, or stalled and abandoned? Determines rewrite-vs-archive for `discord-relay.md`. (Survey item 25.)
 
+**Resolution (Duong, 2026-04-25):** Stalled. Archive `discord-relay.md`.
+
 OQ-4. **Telegram-relay status.** Same question. (Survey item 26.) Note `mcps/evelynn/server.py` already has the tools built but the bridge script doesn't exist; this likely correlates with OQ-1.
 
+**Resolution (Duong, 2026-04-25):** Stalled / abandoned. Archive `telegram-relay.md`.
+
 OQ-5. **Claude runlock contract.** Are Bee or the autonomous-pipeline plans live participants? If both proposed-and-stalled, archive `claude-runlock.md`. (Survey item 28.)
+
+**Resolution (Duong, 2026-04-25):** None live, stalled. Archive `claude-runlock.md`.
 
 OQ-6. **Plans-tree hygiene scope.** This plan scopes to `architecture/`. Want a parallel pass on `plans/in-progress/` to graduate-or-close stale plans? My default: no, separate plan if you want it. The in-progress directory is full of legitimately in-flight work and a sweep risks closing things prematurely.
 
@@ -362,7 +369,7 @@ R5. **Rewrites introduce new errors.** A "current concept, stale execution" file
 
 Refactor — this plan IS an architecture-layout change. After execution:
 
-- `architecture/` top-level files reduce from 30 to ~3 (the rewritten `README.md`, the cornerstone-plan-owned `canonical-v1.md`, and possibly `mcp-servers.md` if it survives §10 OQ-1).
+- `architecture/` top-level files reduce from 30 to ~2 (the rewritten `README.md` and the cornerstone-plan-owned `canonical-v1.md`). `mcp-servers.md` archives (OQ-1 resolved).
 - Canonical heart lives at `architecture/agent-network-v1/` (~21 files).
 - `architecture/apps/` (~3 files), `architecture/mcp/` (0–1 files), `architecture/archive/` (5+ files across multiple subdirs).
 
@@ -386,6 +393,6 @@ T.WAVE.3.placeholder — Wave 3 whole-file archives (3 files) — kind: build �
 
 T.WAVE.4.placeholder — Wave 4 cross-reference sweep + fix — kind: build — estimate_minutes: 45
 
-T.WAVE.5.placeholder — Wave 5 flag-resolution-dependent moves (executed only after OQ-1/3/4/5 answers) — kind: build — estimate_minutes: 60
+T.WAVE.5.placeholder — Wave 5 flag-resolution archive moves: `mcp-servers.md`, `discord-relay.md`, `telegram-relay.md`, `claude-runlock.md` all archive (OQ-1/3/4/5 resolved 2026-04-25) — kind: build — estimate_minutes: 30
 
 The T.WAVE.* placeholders are stubs — Aphelios fills these into per-file tasks with exact paths, sed-pass commands, and per-rewrite content checkpoints. `tests_required: false` reflects that this is a doc-tree refactor; there is no behavioral change to test. The cross-reference sweep (Wave 4) is verifiable by a `grep` against the old paths returning zero results across the repo.
