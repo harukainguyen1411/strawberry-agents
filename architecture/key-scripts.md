@@ -48,6 +48,7 @@ Hooks live at `scripts/hooks-dispatchers/` (tracked in-repo, committed). This di
 - New worktrees created via `scripts/worktree-add.sh` confirm hook inheritance at creation time.
 - Re-run `bash scripts/install-hooks.sh` after pulling a commit that adds or removes sub-hooks (in `scripts/hooks/*.sh`) to regenerate the dispatchers.
 - The stale `.git/hooks/` and `.git/worktrees/*/hooks/` directories are inert once `core.hooksPath` is set; they may be deleted manually but are harmless.
+- **Feature branches forked before this PR merged lack the `scripts/hooks-dispatchers/` directory.** Because `core.hooksPath = scripts/hooks-dispatchers` is a relative path resolved against the worktree root at hook-trigger time, any worktree checked out to such a branch will silently have no hooks fire (git emits a warning to stderr but does not block). Mitigation: `git merge main` (or `git rebase main`) on any open feature branch to pick up the `scripts/hooks-dispatchers/` directory. Worktrees on un-merged branches have no hook coverage until then.
 
 ## Notes
 

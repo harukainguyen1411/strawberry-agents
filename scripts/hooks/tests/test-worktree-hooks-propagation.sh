@@ -3,158 +3,175 @@
 #
 # xfail test for plan: plans/approved/personal/2026-04-25-worktree-hooks-propagation.md
 #
-# INV-1: A pre-commit guard installed on main MUST fire when invoked from inside
-#        a freshly-created worktree of the same clone.
+# INV-1: A pre-commit guard installed on main MUST fire when `git commit` is run
+#        from inside a freshly-created worktree — exercising core.hooksPath and the
+#        dispatcher, not the guard directly.
+#
+# Soundness contract:
+#   - Assert commit is BLOCKED when core.hooksPath=scripts/hooks-dispatchers (T2 in effect).
+#   - Assert commit SUCCEEDS when core.hooksPath is unset (proves it was the hook blocking it).
+#   Both assertions must hold for INV-1 to be considered tested.
 #
 # INV-2: Running install-hooks.sh twice must NOT corrupt dispatchers or unset
 #        core.hooksPath.
 #
-# xfail: This test FAILS on current main (before T2) because install-hooks.sh
-#        writes dispatchers to .git/hooks/, which is per-worktree. Once T2 lands
-#        and core.hooksPath points to scripts/hooks-dispatchers/, this test passes.
-#
-# Exit 0 = all assertions passed (test passes).
+# Exit 0 = all assertions passed.
 # Exit 1 = one or more assertions failed.
 
 set -u
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-HOOK="$REPO_ROOT/scripts/hooks/pre-commit-plan-lifecycle-guard.sh"
 INSTALL_HOOKS="$REPO_ROOT/scripts/install-hooks.sh"
 
 PASS=0
 FAIL=0
-XFAIL_EXPECTED=0  # set to non-zero counts once T2 lands
 
 pass() { echo "  PASS: $1"; PASS=$((PASS+1)); }
 fail() { echo "  FAIL: $1"; FAIL=$((FAIL+1)); }
 
 echo "=== test-worktree-hooks-propagation.sh ==="
-echo "    (xfail against main HEAD; passes once T2 lands)"
 echo ""
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Helper: shallow-clone the repo into a temp dir
 # ---------------------------------------------------------------------------
-
-# Create a temp git clone of the real repo so we can:
-#   - run install-hooks.sh inside it (which writes core.hooksPath)
-#   - then add a worktree from that clone
-#   - then stage a plan rename inside the worktree
-#   - then verify the pre-commit hook fires inside the worktree
 mk_tmp_clone() {
   local tmpdir
   tmpdir="$(mktemp -d)"
-  # Shallow clone to keep it fast; we only need the scripts/hooks dir and git config
   git clone -q --local "$REPO_ROOT" "$tmpdir"
   echo "$tmpdir"
 }
 
-# Stage a plan rename (proposed->approved) inside a given repo dir
+# Helper: stage a plan rename (proposed->approved) inside a repo dir and
+# leave it staged (not committed).
 stage_plan_rename() {
   local repo="$1"
   mkdir -p "$repo/plans/proposed/personal" "$repo/plans/approved/personal"
-  echo "fake plan" > "$repo/plans/proposed/personal/foo-test.md"
-  git -C "$repo" add plans/proposed/personal/foo-test.md
-  git -C "$repo" -c user.email=t@t.com -c user.name=T commit -q --no-verify -m "init test plan"
-  git -C "$repo" mv plans/proposed/personal/foo-test.md plans/approved/personal/foo-test.md
-}
-
-# Invoke the pre-commit hook directly (without running git commit) against a given dir.
-# Remaining args after $1 are env vars as NAME=VALUE.
-invoke_hook_directly() {
-  local repo="$1"; shift
-  env -u CLAUDE_AGENT_NAME -u STRAWBERRY_AGENT -u STRAWBERRY_AGENT_MODE \
-    GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" "$@" bash "$HOOK" 2>/tmp/wt_hook_stderr_$$
+  printf 'fake plan\n' > "$repo/plans/proposed/personal/inv1-test.md"
+  git -C "$repo" add plans/proposed/personal/inv1-test.md
+  # Commit the seed so we can then stage the rename
+  git -C "$repo" \
+    -c user.email=t@t.com -c user.name=T \
+    commit -q --no-verify \
+    -m "seed: add test plan"
+  git -C "$repo" mv \
+    plans/proposed/personal/inv1-test.md \
+    plans/approved/personal/inv1-test.md
+  # Staged rename is now waiting in the index.
 }
 
 # ---------------------------------------------------------------------------
-# INV-1: Hook fires inside a fresh worktree
+# INV-1a: commit from worktree IS blocked when core.hooksPath is set (T2)
 # ---------------------------------------------------------------------------
-echo "--- INV-1: Hook fires inside worktree ---"
+echo "--- INV-1a: git commit from worktree blocked via core.hooksPath dispatcher ---"
 {
   clone="$(mk_tmp_clone)"
 
-  # Run install-hooks.sh on the clone — this is the key step that should
-  # set core.hooksPath to scripts/hooks-dispatchers/ (post-T2).
-  # Pre-T2: it writes to .git/hooks/ which is clone-local and NOT inherited by worktrees.
+  # Install hooks — sets core.hooksPath = scripts/hooks-dispatchers (T2)
   (cd "$clone" && bash "$INSTALL_HOOKS" >/dev/null 2>&1) || true
 
-  # Record what core.hooksPath is set to (expected: scripts/hooks-dispatchers post-T2)
-  configured_path="$(git -C "$clone" config core.hooksPath 2>/dev/null || echo '')"
+  configured="$(git -C "$clone" config core.hooksPath 2>/dev/null || echo '')"
 
-  # Create a worktree from the clone
   wt_dir="$(mktemp -d)"
-  rm -rf "$wt_dir"  # git worktree add requires the dir not to exist
-  git -C "$clone" worktree add -q -b "wt-test-branch-$$" "$wt_dir"
+  rm -rf "$wt_dir"
+  git -C "$clone" worktree add -q -b "inv1a-branch-$$" "$wt_dir"
 
-  # Stage a plan rename inside the worktree
+  # Stage a non-Orianna plan rename inside the worktree
   stage_plan_rename "$wt_dir"
 
-  # Now invoke the plan-lifecycle-guard hook from inside the worktree as a non-Orianna agent.
-  # Expect: exit non-zero (blocked) if hook fires; exit 0 (unblocked) if hook doesn't fire.
+  # Attempt git commit from inside the worktree (NO --no-verify).
+  # CLAUDE_AGENT_NAME=kayn + STRAWBERRY_AGENT_MODE=agent => pre-commit guard should block.
   rc=0
-  env -u CLAUDE_AGENT_NAME -u STRAWBERRY_AGENT -u STRAWBERRY_AGENT_MODE \
-    GIT_DIR="$wt_dir/.git" GIT_WORK_TREE="$wt_dir" \
+  ( cd "$wt_dir" && \
     CLAUDE_AGENT_NAME=kayn STRAWBERRY_AGENT_MODE=agent \
-    bash "$HOOK" >/dev/null 2>/tmp/wt_hook_stderr_$$ || rc=$?
+    git -c user.email=t@t.com -c user.name=T \
+      commit -m "should be blocked by plan-lifecycle-guard" \
+      >/dev/null 2>&1 \
+  ) || rc=$?
 
   if [ "$rc" -ne 0 ]; then
-    pass "INV-1: plan-lifecycle-guard fired inside worktree (blocked non-Orianna rename, exit $rc)"
-    if [ -z "$configured_path" ]; then
-      echo "  NOTE: core.hooksPath not set — hook fired because we invoked it explicitly."
-      echo "        Post-T2 this should fire via the dispatcher automatically."
-    else
-      echo "  INFO: core.hooksPath = $configured_path"
-    fi
+    pass "INV-1a: commit blocked (exit $rc) — dispatcher fired via core.hooksPath='$configured'"
   else
-    fail "INV-1: plan-lifecycle-guard did NOT fire inside worktree (non-Orianna rename was not blocked)"
-    echo "        core.hooksPath = '${configured_path}'"
-    echo "        This is the expected xfail on current main (pre-T2)."
-    echo "        Once T2 sets core.hooksPath=scripts/hooks-dispatchers/, this test passes."
+    fail "INV-1a: commit SUCCEEDED (exit 0) — dispatcher did NOT fire; core.hooksPath='$configured'"
   fi
 
   # Cleanup
   git -C "$clone" worktree remove --force "$wt_dir" 2>/dev/null || true
-  rm -rf "$clone" "$wt_dir" /tmp/wt_hook_stderr_$$
+  rm -rf "$clone" "$wt_dir"
 }
 
 # ---------------------------------------------------------------------------
-# INV-2: Idempotent install — run install-hooks.sh twice, verify consistency
+# INV-1b: commit from worktree SUCCEEDS when core.hooksPath is unset
+#         (proves the hook was what was blocking — not git or env)
+# ---------------------------------------------------------------------------
+echo ""
+echo "--- INV-1b: git commit from worktree succeeds when core.hooksPath unset ---"
+{
+  clone="$(mk_tmp_clone)"
+
+  # Ensure core.hooksPath is NOT set in this clone
+  git -C "$clone" config --unset core.hooksPath 2>/dev/null || true
+
+  wt_dir="$(mktemp -d)"
+  rm -rf "$wt_dir"
+  git -C "$clone" worktree add -q -b "inv1b-branch-$$" "$wt_dir"
+
+  stage_plan_rename "$wt_dir"
+
+  # Attempt git commit — hooks will NOT fire (no local core.hooksPath and we
+  # override any global core.hooksPath by pointing it at a non-existent dir).
+  # This proves the blockage in INV-1a came from the dispatcher, not from something else.
+  rc=0
+  ( cd "$wt_dir" && \
+    CLAUDE_AGENT_NAME=kayn STRAWBERRY_AGENT_MODE=agent \
+    git -c user.email=t@t.com -c user.name=T \
+      -c core.hooksPath=/dev/null/no-hooks \
+      commit -m "should succeed with no hooks path" \
+      >/dev/null 2>&1 \
+  ) || rc=$?
+
+  if [ "$rc" -eq 0 ]; then
+    pass "INV-1b: commit succeeded (exit 0) when core.hooksPath unset — confirms INV-1a isolation"
+  else
+    fail "INV-1b: commit failed (exit $rc) even with core.hooksPath unset — unexpected; check git env"
+  fi
+
+  # Cleanup
+  git -C "$clone" worktree remove --force "$wt_dir" 2>/dev/null || true
+  rm -rf "$clone" "$wt_dir"
+}
+
+# ---------------------------------------------------------------------------
+# INV-2: Idempotent install
 # ---------------------------------------------------------------------------
 echo ""
 echo "--- INV-2: Idempotent install ---"
 {
   clone="$(mk_tmp_clone)"
 
-  # First run
   (cd "$clone" && bash "$INSTALL_HOOKS" >/dev/null 2>&1) || true
   path_after_first="$(git -C "$clone" config core.hooksPath 2>/dev/null || echo '')"
 
-  # Second run
   (cd "$clone" && bash "$INSTALL_HOOKS" >/dev/null 2>&1) || true
   path_after_second="$(git -C "$clone" config core.hooksPath 2>/dev/null || echo '')"
 
   if [ "$path_after_first" = "$path_after_second" ]; then
-    pass "INV-2: core.hooksPath unchanged after second install run ('${path_after_second}')"
+    pass "INV-2: core.hooksPath unchanged after second install ('${path_after_second}')"
   else
     fail "INV-2: core.hooksPath changed between runs: '${path_after_first}' -> '${path_after_second}'"
   fi
 
-  # Post-T2: verify the three dispatcher files exist and are identical across runs
-  # Pre-T2: scripts/hooks-dispatchers/ doesn't exist, skip file-content check
   dispatchers_dir="$clone/scripts/hooks-dispatchers"
   if [ -d "$dispatchers_dir" ]; then
     for verb in pre-commit pre-push commit-msg; do
       if [ -f "$dispatchers_dir/$verb" ]; then
-        pass "INV-2: dispatcher file '$verb' exists in scripts/hooks-dispatchers/"
+        pass "INV-2: dispatcher '$verb' exists in scripts/hooks-dispatchers/"
       else
-        fail "INV-2: dispatcher file '$verb' missing from scripts/hooks-dispatchers/"
+        fail "INV-2: dispatcher '$verb' missing from scripts/hooks-dispatchers/"
       fi
     done
   else
-    echo "  NOTE: scripts/hooks-dispatchers/ not present (expected pre-T2 — xfail)"
-    XFAIL_EXPECTED=$((XFAIL_EXPECTED+1))
+    fail "INV-2: scripts/hooks-dispatchers/ directory not present in clone"
   fi
 
   rm -rf "$clone"
@@ -165,7 +182,4 @@ echo "--- INV-2: Idempotent install ---"
 # ---------------------------------------------------------------------------
 echo ""
 echo "Results: $PASS passed, $FAIL failed"
-if [ "$XFAIL_EXPECTED" -gt 0 ]; then
-  echo "Note: $XFAIL_EXPECTED xfail condition(s) detected — expected before T2 lands."
-fi
 [ "$FAIL" -eq 0 ]

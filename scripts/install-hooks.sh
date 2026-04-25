@@ -42,15 +42,10 @@ HOOKS_SRC="$REPO_ROOT/scripts/hooks"
 HOOKS_DIR="$REPO_ROOT/scripts/hooks-dispatchers"
 
 # Honor an explicit manual override — if core.hooksPath is already set to something
-# other than our default (or the old default of .git/hooks), respect it.
-# Migration note: the old install wrote to .git/hooks (per-checkout); we migrate
-# that automatically to the new in-repo tracked location.
+# other than our default, respect it.  If unset or already pointing at our default,
+# set (or confirm) it idempotently.
 configured=$(git config --local core.hooksPath 2>/dev/null || echo "")
-_git_common_dir="$(git rev-parse --git-common-dir 2>/dev/null || git rev-parse --git-dir)"
-_old_default="$_git_common_dir/hooks"
-if [ -n "$configured" ] \
-   && [ "$configured" != "scripts/hooks-dispatchers" ] \
-   && [ "$configured" != "$_old_default" ]; then
+if [ -n "$configured" ] && [ "$configured" != "scripts/hooks-dispatchers" ]; then
   echo "[install-hooks] core.hooksPath manually overridden to '$configured' — using that path."
   HOOKS_DIR="$configured"
 else
@@ -75,6 +70,7 @@ install_dispatcher() {
   cat > "$tmp" <<DISPATCHER
 #!/bin/sh
 # strawberry-managed dispatcher for $verb
+# Writes to scripts/hooks-dispatchers/$verb (tracked in-repo).
 # Re-run install-hooks.sh to regenerate.
 set -e
 REPO_ROOT="\$(git rev-parse --show-toplevel)"
