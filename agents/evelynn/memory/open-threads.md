@@ -20,10 +20,15 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Cornerstone Plan B (coordinator-decision-feedback) — PR #64 in active review
+## Cornerstone Plan B (coordinator-decision-feedback) — MERGED
 
-**Current status (2026-04-25):** PR #64 open. Viktor #113 running on Senna B1 match-rate formula bug + I1-4 findings + Lucian drift notes. Review cycle continues when Viktor returns.
-**Next:** Await Viktor #113 return. Senna+Lucian dual review once fixes applied. Merge after Plan A (PR #63) merges.
+**Current status (2026-04-25):** PR #64 merged at `0ea2959f`. Senna round 2 APPROVE (`PRR_kwDOSGFeXc745hl-`, 16:13) + Lucian round 2 APPROVE. Branch delete blocked by worktree at `/private/tmp/strawberry-coordinator-decision-feedback` — left in place per protocol.
+**Post-merge advisories S1-S4 (Senna, review `PRR_kwDOSGFeXc745hl-`) — follow up on T7 PR or separate quick-lane:**
+- S1: stale xfail `T5-skill-stdin-pipe-documented` in `test-decision-capture-skill.sh:72` — remove or rewrite to assert `--file` documented.
+- S2: `test-decision-capture-skill.sh` + `test-end-session-step-6c.sh` still in xfail mode (missed in `c664fef7` flip) — flip to assert mode.
+- S3: bind-contract validators at `_lib_decision_capture.sh:122/156/184/205` fire unconditionally on `DECISION_RENAME_*` in prod — consider gating on `DECISION_TEST_MODE=1` to match accessor pattern.
+- S4: `concurred:true + match:false` counts as match in `_lib_decision_capture.sh:811` — add one-line comment clarifying intent.
+**Next:** Dispatch T7 (Lissandra parity) follow-up. Address S1-S4 in T7 PR or separate quick-lane.
 **Shard:** f6b6dc2e
 
 ---
