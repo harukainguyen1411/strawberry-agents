@@ -207,6 +207,21 @@ Rules:
 - Adding a new axis is a coordinator action at session close. Requires ≥ 2 example decisions that don't fit existing axes before adding.
 - Removing an axis is explicitly forbidden. Mark deprecated; old decisions keep tagging it.
 
+### 3.5 Dashboard schema-bind points — decision-log read contract
+
+Per `plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md` §Q7 and §Q8, the retrospection dashboard's coordinator drill-down panel reads decision-log files (`agents/<coordinator>/memory/decisions/*.md`) as a calibration metric — surfacing per-axis pick-vs-prediction match-rates over time.
+
+**Bind-points the dashboard depends on** (the only fields it reads — additive frontmatter is non-breaking, mutating these IS breaking):
+
+| Field | Source | Type | Contract |
+|-------|--------|------|----------|
+| `axes` | §3.1 frontmatter | YAML list of strings (axis-slug-kebab) | Drill-down GROUP BY axis. Multi-axis decisions are counted in each axis they tag (no double-weighting heuristic at the dashboard layer). |
+| `match` | §3.1 frontmatter | boolean | The numerator of the calibration metric (`match_rate = sum(match) / count`) per `(coordinator, axis)` slice. |
+| `coordinator_confidence` | §3.1 frontmatter | enum: `low` \| `medium` \| `medium-high` \| `high` | Used to bucket calibration: a `high`-confidence wrong pick weights heavier in the "miscalibrated" view than a `low`-confidence wrong pick. Display-only on the dashboard; the buckets are the §3.2 confidence buckets. |
+| `decision_id` | §3.1 frontmatter (also = filename stem) | string (`YYYY-MM-DD-<slug>`) | Stable URL key for drill-through links from dashboard rows back to the source decision file. |
+
+**Invariant:** any future schema change that renames, removes, or retypes the four bind-points above is a breaking change against the dashboard. The change MUST land paired with a dashboard-side compatibility update in the same PR (or behind a schema-version bump that the dashboard reads first and dispatches on). Adding new frontmatter fields (e.g. `decision_tags`, `revisit_at`) is non-breaking and requires no dashboard work. Other §3.1 fields (`coordinator_pick`, `duong_pick`, `coordinator_rationale`, `duong_rationale`, `decision_source`, etc.) remain stable per §3.1 schema rules but are NOT part of this bind contract — the dashboard does not read them today; if it starts to, this section is the place to extend. The §3.3 INDEX.md is also a derivable view over the same four fields, so a breaking change here cascades to INDEX consumers identically.
+
 ## 4. Capture mechanism
 
 ### 4.1 New helper `scripts/_lib_decision_capture.sh` (sourced-only) <!-- orianna: ok -->
