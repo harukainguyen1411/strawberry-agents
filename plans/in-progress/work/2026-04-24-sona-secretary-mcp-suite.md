@@ -1,6 +1,6 @@
 ---
 title: Sona secretary — MCP suite + morning brief
-status: approved
+status: in-progress
 concern: work
 owner: swain
 author: swain
@@ -517,4 +517,12 @@ Although the plan-level `tests_required: false` reflects that the ADR is a workf
 - **Critical path (updated):** T-new-A (DONE) → T-new-D → then P1-T2/T4/T5/T6 secret-migration cluster can fan out. T-new-C specifically gates Slack migration (P1-T3) if Slack has multiple tokens. Gmail leg still: T13 → **T14-Duong** → T15 → T16. Duong's Gmail OAuth step remains the longest real-world-clock gate.
 - **Parallelizable after T0+T1:** PR-B cluster (T2, T4, T5, T6), PR-C cluster (T7a → T7b → T8 → T9), PR-D cluster (T10 → T11 → T12). Ekko can run PR-B and PR-D in parallel if Duong has pre-generated the Atlassian token.
 - **Duong-in-the-loop tasks:** T10 (Atlassian token generation, ~2 min), T14-Duong (Gmail OAuth, ~20 min), OQ-P1-1 resolution (async).
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** approved → in-progress
+- **Rationale:** Plan was scope-corrected today (commit 70d275f9) after two consecutive PR closures (#48, #33) revealed an architectural error — modifying upstream company-shared MCP files instead of wrapping them. The correction is structural: §0 preamble, rewritten §4.2 specifying wrappers at `mcps/wrappers/<service>-launcher.sh` in strawberry-agents, universal scope rule on T2-T16 making upstream files read-only, T-new-D rewritten as wrapper authorship with co-landing xfail (T-new-D-xfail) and end-to-end smoke (T-new-D-smoke) protecting four named invariants. Tasks are actionable with clear owners (Talon for wrappers, Ekko for blob/config, Syndra for verification, Duong-in-loop for OAuth). T-new-D is dispatch-ready.
+- **Simplicity:** WARN: possible overengineering — §4.2 inventory enumerates 6/8 MCPs as multi-secret, gating much of Phase 1 on T-new-C (`tools/decrypt.sh` multi-var extension); a per-MCP runtime env-file with `set -a; source` shape may be simpler than extending the tool surface. Also the four-PR split (PR-A..PR-E) for what is functionally one wave of credential migrations adds rollout ceremony — a single per-MCP commit cadence would achieve the same revertability.
 - **Estimate totals:** T0 (45) + T1 (20) + T2 (35) + T3 (20) + T4 (35) + T5 (40) + T6 (25) + T7a (15) + T7b (20) + T8 (50) + T9 (35) + T10 (30) + T11 (30) + T12 (15) + T13 (45) + T14 (20) + T15 (35) + T16 (15) = **530 min of active work (~8.8h)** plus Duong wait time. Wall-clock expectation: 1.5–2 days with Ekko executing sequentially, ~1 day if PR-B and PR-D parallelize.
