@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Evelynn session close, session c1463e58).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session ce6fec9a, shard 7735fdc1).
 
 ---
 
@@ -505,7 +505,35 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 
 **Current status (2026-04-25):** PR #46 merged (`3faa54da`). Karma quick-lane plan, Talon impl, Senna+Lucian dual approve. Replaces `Reply only:` stop directive on line 49 of `sessionstart-coordinator-identity.sh` with continue directive (scan TaskList, fall back to last-sessions/, honor pause). Fail-loud branch explicitly carves out auto-continue. Fixes the coordinator-idle-after-/compact UX bug Duong flagged.
 **Next:** Orianna sweep `plans/approved/personal/2026-04-24-sessionstart-compact-auto-continue.md` → `implemented/`.
-**Shard:** c1463e58
+**Shards:** c1463e58, 7735fdc1
+
+---
+
+## SessionStart literal-sentinel fix — SHIPPED
+
+**Current status (2026-04-25):** Shipped direct-to-main as `b6321bcd`. Fresh sessions now emit `FRESH SESSION` sentinel; both coordinators stop mistaking fresh for resumed. No observable cross-component coupling — this one was genuinely surgical. Monitor armed correctly on next session open.
+**Next:** None. RESOLVED.
+**Shard:** 7735fdc1
+
+---
+
+## Env-hygiene gate-bypass incident — REVERTED, Karma plan in flight
+
+**Current status (2026-04-25):** Yuumi commit `240bd394` (exec-env launcher rewrite) went direct-to-main without Karma chain. Silently broke inbox-watch.sh identity resolution: Monitor-spawned subprocess does not inherit `exec env`-set vars; watcher exits 0 silently. Duong flagged with "why is starting a script so hard." Reverted as `bcbe4a3b`. Karma quick-lane plan (coordinator-identity-leak-watcher-fix) now in Orianna gating to do this properly with regression tests.
+**Learning filed:** `agents/evelynn/learnings/2026-04-25-gate-bypass-on-surgical-infra-commits.md`
+**Next:** Orianna approval → Talon impl → Senna+Lucian review → merge.
+**Shard:** 7735fdc1
+
+---
+
+## Three Karma quick-lane plans in Orianna gating
+
+**Current status (2026-04-25):** Three plans authored this leg, all sitting in Orianna gating at consolidation time:
+1. **worktree-hooks-propagation** — backlog #94. `scripts/install-hooks.sh` doesn't propagate hooks into `.git/worktrees/*/hooks/`. Root cause of two live bypasses: Senna's Rule 19 bypass + Talon's PR #45 identity leak.
+2. **plan-lifecycle-guard-heredoc-fp** — backlog #98. `pretooluse-plan-lifecycle-guard.sh` fails-closed on heredoc bodies containing plan-path tokens. Tighten bashlex AST walker to file-modifying verbs only.
+3. **coordinator-identity-leak-watcher-fix** — env-hygiene incident recovery. Proper coupled fix for exec-env + watcher-identity-propagation with regression tests.
+**Next:** Each needs Orianna approval → Talon impl → Senna+Lucian dual review → merge.
+**Shard:** 7735fdc1
 
 ---
 
