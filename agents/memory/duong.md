@@ -78,3 +78,5 @@ Applies to both Evelynn and Sona. Governs any response to: "what's going on", "g
 - **Always include: what he must decide / approve.** If nothing is blocked on him, say so plainly ("nothing blocked on you").
 
 Applies equally to /check-inbox summaries, morning-brief output, session-resume reports, and any ad-hoc "status" query. Overrides any default in individual skills that might produce a fuller dump.
+
+"High level" means PM-altitude — rich on outcome, risk, and decision; no SHAs, paths, IDs, or tool jargon unless asked. It is not "terse."
