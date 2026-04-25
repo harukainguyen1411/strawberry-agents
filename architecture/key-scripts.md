@@ -7,7 +7,9 @@ Reference table for operational scripts. See `architecture/platform-parity.md` f
 | Script | Usage | Purpose |
 |--------|-------|---------|
 | Orianna agent (`.claude/agents/orianna.md`) | Invoke via Agent tool with `PLAN_PATH` and `TARGET_STAGE` | Promote a plan — reads plan, renders APPROVE or REJECT, on APPROVE moves file, rewrites `status:`, commits with `Promoted-By: Orianna` trailer, pushes. Valid stages: `approved`, `in-progress`, `implemented`, `archived`. Never use raw `git mv` for this. |
-| `scripts/safe-checkout.sh <branch>` | `bash scripts/safe-checkout.sh my-branch` | Safe branch switch via git worktree — never use raw `git checkout` |
+| `scripts/safe-checkout.sh <branch>` | `bash scripts/safe-checkout.sh my-branch` | Safe branch switch — never use raw `git checkout` |
+| `scripts/worktree-add.sh <path> [options]` | `bash scripts/worktree-add.sh /tmp/my-worktree -b my-branch` | Safe worktree creation — thin wrapper around `git worktree add`. Fails loudly if `core.hooksPath` is not set in repo-local config; run `install-hooks.sh` first. All worktrees created via this wrapper automatically inherit hooks via `core.hooksPath`. |
+| `scripts/install-hooks.sh` | `bash scripts/install-hooks.sh` | Install git hook dispatchers into `scripts/hooks-dispatchers/` (tracked, in-repo) and set `core.hooksPath = scripts/hooks-dispatchers` so all worktrees of this clone share the same hooks. Re-run after pulling new sub-hooks. Idempotent. |
 | `tools/decrypt.sh` | Called internally by scripts needing secrets | Decrypt age-encrypted secrets; keeps plaintext in child process env only. Never call `age -d` directly. |
 
 ## Quality / Security Scripts
@@ -37,6 +39,16 @@ Orianna is a callable agent. She promotes plans. No signing scripts needed.
 See `architecture/plan-lifecycle.md` for the full promotion flow.
 
 **v1 scripts archived at** `scripts/_archive/v1-orianna-gate/` and `scripts/hooks/_archive/v1-orianna-gate/`. Reference: `architecture/archive/v1-orianna-gate/key-scripts-excerpt.md`.
+
+## Hooks — Dispatcher Location and Propagation
+
+Hooks live at `scripts/hooks-dispatchers/` (tracked in-repo, committed). This directory is set as the git `core.hooksPath` for the repo, which means:
+
+- All worktrees of any clone share the same dispatchers automatically — no per-worktree hook installation needed.
+- New worktrees created via `scripts/worktree-add.sh` confirm hook inheritance at creation time.
+- Re-run `bash scripts/install-hooks.sh` after pulling a commit that adds or removes sub-hooks (in `scripts/hooks/*.sh`) to regenerate the dispatchers.
+- The stale `.git/hooks/` and `.git/worktrees/*/hooks/` directories are inert once `core.hooksPath` is set; they may be deleted manually but are harmless.
+- **Feature branches forked before this PR merged lack the `scripts/hooks-dispatchers/` directory.** Because `core.hooksPath = scripts/hooks-dispatchers` is a relative path resolved against the worktree root at hook-trigger time, any worktree checked out to such a branch will silently have no hooks fire (git emits a warning to stderr but does not block). Mitigation: `git merge main` (or `git rebase main`) on any open feature branch to pick up the `scripts/hooks-dispatchers/` directory. Worktrees on un-merged branches have no hook coverage until then.
 
 ## Notes
 

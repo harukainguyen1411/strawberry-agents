@@ -1,5 +1,6 @@
 #!/bin/sh
-# Installs strawberry git hook dispatchers into .git/hooks.
+# Installs strawberry git hook dispatchers into scripts/hooks-dispatchers/ (tracked, in-repo).
+# Sets core.hooksPath = scripts/hooks-dispatchers so all worktrees share the same hooks.
 # Each dispatcher verb (pre-commit, pre-push, commit-msg) runs every scripts/hooks/<verb>-*.sh in order.
 # Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
 #
@@ -35,11 +36,23 @@ set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 HOOKS_SRC="$REPO_ROOT/scripts/hooks"
-HOOKS_DIR="$(git rev-parse --git-dir)/hooks"
 
-configured=$(git config core.hooksPath 2>/dev/null || echo "")
-if [ -n "$configured" ]; then
+# Default: write dispatchers into the tracked in-repo directory so all worktrees
+# of this clone share them automatically via core.hooksPath.
+HOOKS_DIR="$REPO_ROOT/scripts/hooks-dispatchers"
+
+# Honor an explicit manual override — if core.hooksPath is already set to something
+# other than our default, respect it.  If unset or already pointing at our default,
+# set (or confirm) it idempotently.
+configured=$(git config --local core.hooksPath 2>/dev/null || echo "")
+if [ -n "$configured" ] && [ "$configured" != "scripts/hooks-dispatchers" ]; then
+  echo "[install-hooks] core.hooksPath manually overridden to '$configured' — using that path."
   HOOKS_DIR="$configured"
+else
+  # Set or confirm the repo-local core.hooksPath to our tracked directory.
+  # This is idempotent; re-running is safe.
+  git config core.hooksPath "scripts/hooks-dispatchers"
+  echo "[install-hooks] core.hooksPath set to: scripts/hooks-dispatchers"
 fi
 
 mkdir -p "$HOOKS_DIR"
@@ -57,6 +70,7 @@ install_dispatcher() {
   cat > "$tmp" <<DISPATCHER
 #!/bin/sh
 # strawberry-managed dispatcher for $verb
+# Writes to scripts/hooks-dispatchers/$verb (tracked in-repo).
 # Re-run install-hooks.sh to regenerate.
 set -e
 REPO_ROOT="\$(git rev-parse --show-toplevel)"
