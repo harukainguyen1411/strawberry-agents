@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: swain
 created: 2026-04-25
@@ -281,3 +281,10 @@ Phase 1/2/3 implementation tasks are Aphelios's job; this plan supplies the arch
 - **Phase 2 rollback:** revert the coordinator-detail page commits; home page degrades to plan-only view.
 - **Phase 3 rollback:** delete `architecture/canonical-v1*.md` and the lock-bypass hook lint. The retro skill removal is one commit.
 - **Full rollback:** delete `tools/retro/` and the architecture lock files. The two approved feedback plans are unaffected (this plan only consumes their outputs).
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (Swain), all three open questions resolved inline by Duong in §7 with citations, concrete coordinator-level tasks (T.COORD.1–4) with estimates and kinds, explicit test plan satisfying `tests_required: true`, three-phase scoping with task counts and minute estimates, integration sequencing locked against the two approved sibling plans via 5–15 line schema-bind amendments, and a documented rollback per phase. Architecture choices are explicitly justified against rejected alternatives (Langfuse, Vue/SPA) on cost-vs-scale grounds. Ready for breakdown.
