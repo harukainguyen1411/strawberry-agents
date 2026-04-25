@@ -1,0 +1,16 @@
+#!/bin/sh
+# strawberry-managed dispatcher for commit-msg
+# Re-run install-hooks.sh to regenerate.
+set -e
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+HOOKS_SRC="$REPO_ROOT/scripts/hooks"
+_rc=0
+for _sub in $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | sort); do
+  _base=$(basename "$_sub")
+  case "$_base" in
+    commit-msg-*.sh)
+      "$_sub" "$@" || _rc=$?
+      ;;
+  esac
+done
+exit $_rc
