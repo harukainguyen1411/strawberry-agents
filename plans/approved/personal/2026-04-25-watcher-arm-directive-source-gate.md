@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-25
@@ -91,3 +91,10 @@ None. Sona's combined fix recommendation, plan author's verification of the dire
 - `scripts/hooks/tests/inbox-watch-test.sh:372-402` — the existing bootstrap source-gate tests this plan activates.
 - PR #49 — deliberation-primitive shipping the literal-vs-goal pattern this plan instances.
 - PR #51 — prior source-gate extension on a related hook (referenced as the established gate-extension pattern).
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan is well-scoped with a clear owner (karma), four concrete tasks with estimates totaling ~60min, and TDD-first ordering per Rule 12 (T1 lands xfail tests before T2/T3 implementation). The two-pronged fix is justified: source-gate eliminates the failure structurally on the known-failing path, and the verify-then-arm rewrite hardens any remaining emission surface — each prong serves a named invariant captured by tests. Open questions are explicitly resolved; existing test scaffolding at lines 383–402 already encodes the source-gate invariant. No TBDs, no speculative extensibility, single PR.
