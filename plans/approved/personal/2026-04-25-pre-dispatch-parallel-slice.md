@@ -3,7 +3,7 @@ slug: pre-dispatch-parallel-slice
 date: 2026-04-25
 owner: karma
 concern: personal
-status: proposed
+status: approved
 complexity: quick
 tier: quick
 impl_set: [talon]
@@ -59,3 +59,10 @@ No xfail-first required: these are doc/prompt edits, not code changes in a TDD-e
 - Source feedback: `feedback/2026-04-25-pre-dispatch-parallel-slice-check.md`
 - Routing primitive: `.claude/agents/_shared/coordinator-routing-check.md`
 - Agent routing matrix: `architecture/agent-routing.md`
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Owner (karma) is clear, scope is doc/prompt edits only, all five tasks have concrete files and DoDs, and the deferral of time-estimation calibration to dashboard v1.5 is explicit. Rule 12 xfail-first exception is correctly noted (no TDD-service code touched). Soft-default `no` for `parallel_slice_candidate` is a sensible pre-canonical-v1 stance that avoids in-flight breakage. No unresolved TBDs or decision-pending blocks.
