@@ -123,6 +123,27 @@ commit message body and the cosmetic block.
 
 ---
 
+## Project linking
+
+Plans may declare a `project: <slug>` field in their frontmatter linking them to an entry under
+`projects/<concern>/active/<slug>.md` (or `proposed/`). This is the primary mechanism that
+connects a plan to a project's goal, DoD, and budget.
+
+Orianna gate v2 behaviour (from 2026-04-25 onward):
+
+- **No `project:` field** on a plan authored after 2026-04-25 → Orianna emits a **warning** at
+  `proposed → approved`. Promote-to-reject once the retroactive sweep lands.
+- **`project:` set** → Orianna verifies `projects/<concern>/active/<slug>.md` OR
+  `projects/<concern>/proposed/<slug>.md` exists. Missing → reject.
+
+The gate is intentionally lenient (warn-not-reject) for the first adoption window to avoid
+blocking infrastructure plans that genuinely have no project parent.
+
+See `architecture/agent-network-v1/projects.md` for the full project doctrine, schema, and
+lifecycle.
+
+---
+
 ## Authoring
 
 Use `plans/_template.md` for new plans. Required frontmatter:

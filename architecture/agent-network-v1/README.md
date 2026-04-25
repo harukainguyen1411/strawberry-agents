@@ -32,6 +32,7 @@ See `git-workflow.md` §Lock-Bypass contract for the full protocol.
 | `plugins.md` | Plugin list — current active Claude Code plugins |
 | `testing.md` | TDD enforcement — Rule 12–15, xfail discipline, test gate mechanics |
 | `security-debt.md` | Outstanding security debt — current known gaps |
+| `projects.md` | Project-based context doctrine — `projects/<concern>/<slug>.md` schema, lifecycle, plan linking, agent access |
 
 ## §7.2 Author discipline (scoped to this folder)
 
