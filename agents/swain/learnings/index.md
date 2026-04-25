@@ -1,5 +1,6 @@
 # Swain learnings index
 
+- 2026-04-25-tag-the-trust-contract-not-the-capability.md — when failure mode is "agent says X about source but claim is unverified inference", the structural lever is the report contract (per-finding `cite_kind: verified | inferred` + `cite_evidence:`), NOT removing the agent's `Read`/`Grep` tools; capability removal discards good verified output as collateral, is brittle to back-doors via Bash, and masks coordinator-side failures (e.g. PR #32 wrong-head verification). Coupled: on mid-flight framing retraction, do targeted Edits on §Context + load-bearing decision sections rather than full rewrite | last_used: 2026-04-25
 - 2026-04-23-ast-scanner-fail-closed-on-heredoc.md — pretooluse-plan-lifecycle-guard AST scanner exits 3 on multi-line HEREDOC commit messages with no breadcrumb; use short single-line `-m` for plan commits | last_used: 2026-04-23
 - 2026-04-19-schema-change-propagation.md — schema changes touching derived totals must propagate through data model, invariants, architecture, UI, and snapshot semantics in the same edit pass | last_used: 2026-04-19
 - 2026-04-19-audit-the-doc-not-the-rule.md — when auditing governance docs, verify each "enforced by X" claim against the actual hook/CI artifact; stale enforcement claims are the worst class of drift because they create false confidence | last_used: 2026-04-19
