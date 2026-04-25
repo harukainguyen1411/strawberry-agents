@@ -1,0 +1,6 @@
+{"type":"user","role":"user","content":[{"type":"text","text":"Run the weekly retro ingest."}],"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:00:00.000Z"}
+{"type":"assistant","role":"assistant","content":[{"type":"text","text":"Starting retro ingest..."}],"usage":{"input_tokens":120,"output_tokens":50,"cache_read_input_tokens":0,"cache_creation_input_tokens":0},"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:00:10.000Z","model":"claude-sonnet-4-6"}
+{"type":"user","role":"user","content":[{"type":"text","text":"Continue."}],"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:00:50.000Z"}
+{"type":"assistant","role":"assistant","content":[{"type":"text","text":"Processing plan-stage events..."}],"usage":{"input_tokens":200,"output_tokens":80,"cache_read_input_tokens":30,"cache_creation_input_tokens":0},"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:01:10.000Z","model":"claude-sonnet-4-6"}
+{"type":"user","role":"user","content":[{"type":"text","text":"Done?"}],"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:03:05.000Z"}
+{"type":"assistant","role":"assistant","content":[{"type":"text","text":"Ingest complete."}],"usage":{"input_tokens":150,"output_tokens":40,"cache_read_input_tokens":0,"cache_creation_input_tokens":10},"sessionId":"sess-parent-001","timestamp":"2026-04-20T08:03:20.000Z","model":"claude-sonnet-4-6"}
