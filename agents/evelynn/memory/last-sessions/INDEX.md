@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-25 · e7221955 · (no summary extractable)
 - 2026-04-25 · 7735fdc1 · (no summary extractable)
 - 2026-04-25 · c1463e58 · (no summary extractable)
 - 2026-04-24 · 3bc945c0 · **Session:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1 (fifth pre-compact of this session;  prior shards: 4f8b78fd, bd9bb7cc, 683a3ab7, 8df9ce09); **Coordinator:** Evelynn | **Concern:** personal | **Date:** 2026-04-24

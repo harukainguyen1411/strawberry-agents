@@ -1,6 +1,46 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session ce6fec9a, shard 7735fdc1).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard e7221955).
+
+---
+
+## Coordinator deliberation primitive — SHIPPED
+
+**Current status (2026-04-25):** PR #49 merged (`7cb7fb07`). `_shared/coordinator-intent-check.md` inlined into both `.claude/agents/evelynn.md` and `.claude/agents/sona.md`. Three sections: intent block, surgical-trap recognition, altitude classifier. Senna caught a critical wiring defect (build-time `<!-- include: -->` marker shipping as dead text); Talon revised with proper inline at `600876a0`. Deliberation primitive now lives at coordinator boot. Self-bound into working context for this session.
+**Next:** Monitor in practice. Cross-concern port to Sona is complete (included in PR #49). No further action.
+**Shard:** e7221955
+
+---
+
+## Anti-AI-attribution defense-in-depth — SHIPPED
+
+**Current status (2026-04-25):** PR #53 merged (`a08daf10`). Three-layer hardening: (a) `_shared/no-ai-attribution.md` inlined into all 30 agent defs via `scripts/sync-shared-rules.sh`, (b) `scripts/hooks/commit-msg-no-ai-coauthor.sh` extended to universal `Co-Authored-By:` block, (c) `.github/workflows/pr-lint.yml` job `pr-no-ai-attribution` + `scripts/ci/pr-lint-no-ai-attribution.sh`. `Human-Verified: yes` trailer overrides all three. Senna found F1/F2 bypass gaps (variant spellings like `Sonnet4.6`, `(Sonnet)`, `[Opus]`); Talon revised. Cross-repo port to work concern is Sona's lane (FYI delivered via `/agent-ops send sona`).
+**Next:** None for personal concern. Sona's lane: cross-repo port.
+**Shard:** e7221955
+
+---
+
+## Orianna git-index race anomaly — open observation
+
+**Current status (2026-04-25):** Observed twice this session: sibling sync commits absorb staged plan moves into their commit body (e.g. `3dc8bbd8` "chore: sync agent memory and learnings" absorbed Orianna's PR #45-pivot promotion). Plan ends up correctly on disk but audit trail is contaminated. No fix in flight.
+**Next:** Surface to Duong or commission Azir for an ADR on commit-timing isolation between Orianna promotions and concurrent memory-sync commits.
+**Shard:** e7221955
+
+---
+
+## Filing-question reflex learning — queue
+
+**Current status (2026-04-25):** Failure pattern identified this session: asking *where* to put words (which file, which section) instead of *what* behavioral change would accomplish the goal. Captured in deliberation primitive but warrants a standalone learning entry.
+**Next:** File `agents/evelynn/learnings/2026-04-25-filing-question-reflex.md`. Low priority — can fold into next session close.
+**Shard:** e7221955
+
+---
+
+## Cross-agent learning drift sweep — queued
+
+**Current status (2026-04-25):** Yuumi flagged ~30 untracked learnings from Lucian, Senna, Sona, Syndra sessions. Not yet committed.
+**Next:** Dispatch Yuumi for a bulk sweep commit when queue is at stable hold-state.
+**Shard:** e7221955
 
 ---
 
@@ -526,32 +566,30 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 
 ---
 
-## Three Karma quick-lane plans in Orianna gating
+## Three Karma quick-lane plans — SHIPPED
 
-**Current status (2026-04-25):** Three plans authored this leg, all sitting in Orianna gating at consolidation time:
-1. **worktree-hooks-propagation** — backlog #94. `scripts/install-hooks.sh` doesn't propagate hooks into `.git/worktrees/*/hooks/`. Root cause of two live bypasses: Senna's Rule 19 bypass + Talon's PR #45 identity leak.
-2. **plan-lifecycle-guard-heredoc-fp** — backlog #98. `pretooluse-plan-lifecycle-guard.sh` fails-closed on heredoc bodies containing plan-path tokens. Tighten bashlex AST walker to file-modifying verbs only.
-3. **coordinator-identity-leak-watcher-fix** — env-hygiene incident recovery. Proper coupled fix for exec-env + watcher-identity-propagation with regression tests.
-**Next:** Each needs Orianna approval → Talon impl → Senna+Lucian dual review → merge.
-**Shard:** 7735fdc1
-
----
-
-## Worktree hooks propagation gap — high priority
-
-**Current status (2026-04-25):** `scripts/install-hooks.sh` doesn't propagate hooks into git worktree directories (`.git/worktrees/<name>/hooks/`). Caused two live bypasses today: (1) Senna's closing commit `4f5d715e` pre-staged plan moves bypassing Rule 19 pre-commit guard from PR #43; (2) all of Talon's PR #45 commits authored as `orianna@strawberry.local` because universal identity hook not installed on his worktree. Same root cause, two failure modes.
-**Fix direction:** set `core.hooksPath` repo-wide so worktrees inherit, or iterate `.git/worktrees/*/hooks/` and symlink. Probably both.
-**Next:** Karma quick-lane plan once PR #45 architectural-pivot decision is made (related hygiene).
-**Backlog:** task #94. **Shard:** c1463e58
+**Current status (2026-04-25):** All three plans approved by Orianna and merged via Talon + dual review:
+1. **worktree-hooks-propagation → PR #50 merged (`bf38b505`)** — `scripts/install-hooks.sh` now propagates hooks via `core.hooksPath`. Closes the root cause of two live bypasses (Rule 19 + identity leak).
+2. **plan-lifecycle-guard-heredoc-fp → PR #52 merged (`2113ee2b`)** — bashlex AST walker tightened to file-modifying verbs only. Closes false-positive that blocked Aphelios, Sona, Lucian, Orianna.
+3. **coordinator-identity-leak-watcher-fix → PR #51 merged (`5fa097ac`)** — Identity passed inline at watcher spawn; no env-var inheritance dependency. Windows `.bat` nested-quote breakage non-blocking.
+**Next:** None. All three RESOLVED. Residuals: three missing block-corpus tests in #52 (Lucian, non-blocking); Windows `.bat` fix for #51 (Senna, non-blocking).
+**Shard:** e7221955
 
 ---
 
-## Plan-lifecycle guard heredoc fail — high priority
+## Worktree hooks propagation gap — RESOLVED
 
-**Current status (2026-04-25):** `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` fails-closed on `git commit -m "$(cat <<EOF...EOF)"` pattern. Hit by Aphelios + Sona + Lucian (gh pr review --body) this session. Workaround: split commands or use `--body-file`. Existing learning at `agents/sona/learnings/2026-04-24-plan-lifecycle-guard-blocks-sona.md`.
-**Fix direction:** tighten bashlex AST walker to only flag plan-path tokens in file-modifying verbs (mv/rm/tee/cp), not in heredoc bodies or string contents.
-**Next:** Karma quick-lane plan when capacity allows. Sona has hit it multiple times.
-**Backlog:** task #98. **Shard:** c1463e58
+**Current status (2026-04-25):** PR #50 merged (`bf38b505`). `scripts/install-hooks.sh` now propagates hooks via `core.hooksPath`. Both live bypass modes closed.
+**Next:** None. RESOLVED.
+**Shard:** e7221955
+
+---
+
+## Plan-lifecycle guard heredoc fail — RESOLVED
+
+**Current status (2026-04-25):** PR #52 merged (`2113ee2b`). AST walker now flags plan-path tokens only in file-modifying verbs. False-positive closed. Residual: three missing block-corpus tests (`eval`, `bash -c`, variable-resolution paths — Lucian non-blocking). Residual conservative-mode bypass classes noted by Senna (non-blocking follow-up hardening).
+**Next:** None for the main fix. Block-corpus tests queue to Talon when capacity allows.
+**Shard:** e7221955
 
 ---
 
