@@ -1,6 +1,6 @@
 # Coordinator routing primitive
 
-This include installs two structured routing pauses before every Agent dispatch.
+This include installs three structured routing pauses before every Agent dispatch.
 Sourced by: Evelynn, Sona.
 
 ## Pre-dispatch routing block
@@ -17,6 +17,23 @@ Before any `Agent` tool call where a plan path is cited or implied, emit a 4-lin
 Pattern-match speed is not a license to skip the routing block. The canonical failure mode: a task surface that "feels small" (Error 1 — Talon dispatched on a Swain plan) or "the builder lane is right so we're fine" (Error 2 — Viktor dispatched without Rakan's xfail commit). Both errors happened in the same session. The routing block catches both shapes; skipping it for "obvious" dispatches is where the errors live.
 
 When the dispatch feels obvious, that is the signal to run the block anyway, not the signal to skip it.
+
+## Slice-for-parallelism check
+
+Before dispatching any task estimated above 30 minutes (or flagged complex), ask:
+
+1. Does this task take longer than 30 minutes (per breakdown estimate)?
+2. Can this task be broken into meaningful parallel streams (independent work units, low merge friction)?
+
+Exception: long-but-simple wait-bound tasks (test runs, deploys, external polling) — do not slice regardless of duration. Otherwise: if BOTH yes → slice and dispatch parallel.
+
+When a breakdown task entry is available, read its `parallel_slice_candidate` field as the primary hint:
+- `yes` — slice unless Duong has directed otherwise
+- `no` — dispatch as single stream
+- `wait-bound` — do not slice; dispatch as single stream regardless of duration
+- field absent — default to `no` (fail-soft, backward-compatible)
+
+Valid values: exactly `yes`, `no`, or `wait-bound` (lowercase, hyphen). Typos (e.g. `Yes`, `wait_bound`) silently treat as `no` — fail-soft, not fail-loud.
 
 ## Read-only / status-ping dispatches exempt
 
