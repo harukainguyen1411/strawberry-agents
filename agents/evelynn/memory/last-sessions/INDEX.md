@@ -25,9 +25,7 @@
 - 2026-04-21 · ef2bbc31 · **Session ID:** 0cf7b28e-bad0-46b2-8a0b-78cc0d04d52e; **Consolidation UUID:** ef2bbc31; **Date:** 2026-04-21
 - 2026-04-21 · 31a158e4 · **Session ID:** 34b4f5e7-70f4-4340-bd55-7e783482cf0e; **Consolidation UUID:** 31a158e4; **Date:** 2026-04-21
 - 2026-04-21 · e49b10d8 · **Session ID:** d9b7f645-8141-4ab3-adac-5715f1bcc2cd; **Consolidation UUID:** e49b10d8; **Date:** 2026-04-21
-- 2026-04-21 · 3e165c51 · **Session ID:** 2cb962cd-0412-49d8-a441-64bed3964627; **Consolidation UUID:** 3e165c51; **Date:** 2026-04-21
 - 2026-04-21 · 002efe6a · **Date:** 2026-04-20; **Session:** S63 (post-compact coda — same session continued from S62/S63 main body, Lissandra consolidated mid-session at 16:45); **Transcript:** `agents/evelynn/transcripts/2026-04-20-002efe6a.md`
-- 2026-04-20 · 5d90ae6c · (no summary extractable)
 - 2026-04-20 · 7c1cb4b8 · Short afternoon session. Orianna promotion cycle, Sona bootstrap reply, Orianna invocation lockdown.
 - 2026-04-20 · f62318f1 · Work-agent migration + dual-coordinator + plan-lifecycle overhaul.
 - 2026-04-19 · b9780cda · Migration tail + restructure kickoff + portfolio v0 prep.
@@ -41,7 +39,9 @@
 - archive/288d26b4
 - archive/28dec2a6
 - archive/3dbb267a
+- archive/3e165c51
 - archive/5999126d
+- archive/5d90ae6c
 - archive/80828706
 - archive/a7a754c2
 - archive/a8081406
