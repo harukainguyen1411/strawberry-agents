@@ -246,6 +246,58 @@ env_case() {
 env_case
 
 # ---------------------------------------------------------------------------
+# T7 positive/boundary tests
+# ---------------------------------------------------------------------------
+
+# POS-1: neutral Duongntd identity passes
+pos_neutral_identity() {
+  if [ ! -f "$HOOK" ]; then
+    printf 'XFAIL (hook absent): POS-1 neutral Duongntd identity\n'
+    skip=$((skip + 1))
+    return
+  fi
+  local repo
+  repo="$(make_repo)"
+  # make_repo sets Duongntd config already
+  local actual_exit=0
+  GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" bash "$HOOK" >/dev/null 2>&1 || actual_exit=$?
+  rm -rf "$repo"
+  if [ "$actual_exit" -eq 0 ]; then
+    printf 'PASS: POS-1 neutral Duongntd identity allowed\n'
+    pass=$((pass + 1))
+  else
+    printf 'FAIL: POS-1 neutral Duongntd identity was blocked (false positive)\n' >&2
+    fail=$((fail + 1))
+  fi
+}
+pos_neutral_identity
+
+# POS-2: STRAWBERRY_AGENT=orianna with persona-named author — must PASS pre-commit (carve-out)
+pos_orianna_carveout() {
+  if [ ! -f "$HOOK" ]; then
+    printf 'XFAIL (hook absent): POS-2 Orianna carve-out\n'
+    skip=$((skip + 1))
+    return
+  fi
+  local repo
+  repo="$(make_repo)"
+  git -C "$repo" config user.name "Orianna"
+  git -C "$repo" config user.email "orianna@strawberry.local"
+  local actual_exit=0
+  STRAWBERRY_AGENT=orianna GIT_DIR="$repo/.git" GIT_WORK_TREE="$repo" bash "$HOOK" >/dev/null 2>&1 \
+    || actual_exit=$?
+  rm -rf "$repo"
+  if [ "$actual_exit" -eq 0 ]; then
+    printf 'PASS: POS-2 Orianna carve-out allows persona author at pre-commit\n'
+    pass=$((pass + 1))
+  else
+    printf 'FAIL: POS-2 Orianna carve-out was not honored (blocked when it should allow)\n' >&2
+    fail=$((fail + 1))
+  fi
+}
+pos_orianna_carveout
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 total=$((pass + fail + skip))
