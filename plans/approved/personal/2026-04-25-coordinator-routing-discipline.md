@@ -4,7 +4,7 @@ slug: coordinator-routing-discipline
 date: 2026-04-25
 owner: karma
 concern: personal
-status: proposed
+status: approved
 complexity: quick
 orianna_gate_version: 2
 tier: quick
@@ -165,3 +165,10 @@ No data migration, no hook changes, no schema changes — pure additive surface,
 - **PreToolUse hook (Lux's option C).** Deferred per Lux §2.3 to a follow-up plan after the canonical-v1 measurement window. This plan does **not** scaffold, prototype, or specify the hook. If A+B prove insufficient over the canonical-v1 retro window, a separate plan introduces it then.
 - **Backfilling other coordinators.** Only Evelynn and Sona dispatch — no other agent defs receive the include.
 - **Frontmatter changes to existing agent defs or plans.** The taxonomy is already first-class; this plan is glue only.
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (karma), concrete artifact specs with section-by-section detail, six well-scoped tasks with explicit DoD criteria, and Rule-12 xfail-first sequencing baked into T1/T6. Test plan names invariants (wiring, existence, content shape). Rollback is enumerated step-by-step and reversible. Out-of-scope explicitly defers Lux's option C hook to a post-retro follow-up — disciplined scope. No unresolved TBDs in gating sections.
