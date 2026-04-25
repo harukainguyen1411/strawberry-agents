@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: azir
 created: 2026-04-25
@@ -278,3 +278,11 @@ The rollback is mechanical and reversible because no plan content lives in `idea
 - **OQ2** — Should `/backlog` accept a `--concern <work|personal>` filter, or always emit the coordinator's home concern? Recommendation: default to home concern; `--all` shows both.
 - **OQ3** — When Karma authors a quick-lane plan inline, does that plan get a `priority:` field? Recommendation: no — Karma quick-lane plans skip `proposed/` entirely (they go straight to `in-progress/`). The priority field is `proposed/`-only.
 - **OQ4** — Should the `last_reviewed` bump on grooming be automated (touch every plan the coordinator considered) or manual (coordinator types the date)? Recommendation: a `/backlog --groom` mode that bumps everything in the displayed list, then prints the diff for the coordinator to commit.
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (azir), no unresolved TBDs in gating sections, and answers all five architecture decisions (A1–A5) with concrete defaults plus a directory/contract spec (D1). Authority for promotion is the synthesis ADR §7.5 recommended-default approval (commit `c4be153b`) covering Group A which governs this ADR, plus Duong's 2026-04-25 hands-off Default-track directive. Tests_required:false is correctly scoped — implementation tests belong on the Kayn breakdown. Rollback is mechanical and complete.
+- **Simplicity:** WARN: possible overengineering — five interlocking mechanisms (priority field, parking-lot directory, /backlog skill, per-session grooming, staleness tiers at 30/90/180 days) are bundled into one ADR; the staleness thresholds in particular are speculative numbers chosen without observed backlog-decay data. Consider whether v1 could ship priority + ideas/ alone and add staleness/grooming once the backlog has enough history to calibrate the thresholds.
