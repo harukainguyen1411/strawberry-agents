@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-24 (session 576ce828; sixth consolidation — shard dad16397).
+Last updated: 2026-04-25 (session 84b7ba50; seventh consolidation — shard 84b7ba50).
 
 ---
 
@@ -82,6 +82,15 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 ---
 
+## Cleaner-stitching false-positive on /end-session (2026-04-25, open, MEDIUM SEVERITY)
+
+**Status:** `scripts/clean-jsonl.py` regex `sk-[A-Za-z0-9_-]{20,}` produced a synthetic 27-char match at output line 221 of session 84b7ba50's transcript even though the source jsonl chain had **zero contiguous 20+ matches** in any single line (verified via raw grep + JSON-decoded string walk). Mechanism: cleaner strips system-reminders/envelope blocks from inside a single text block, joining the surviving halves into a chain that exceeds 20 chars across what was originally a separator. Sona/Duong wasted ~6 round-trips finding it because: (a) cleaner only reports `pattern=sk-api-key. line=221` with no offending bytes (correctly fail-loud-no-leak), (b) Sona pointed Duong at the wrong jsonl file in a `chain_len=2` setup.
+**Workaround used this session:** I wrote rendered output to /tmp/sona-render-probe.txt (deleted after use), printed only `BEFORE`/`AFTER` 200-char context with the match itself replaced by a length placeholder, then guided Duong to search the right jsonl file (`5e94cd09`) for a phrase ending in `...ism`. Duong scrubbed manually.
+**Recommended fixes (Evelynn lane, system-config):** (1) cleaner emits both source paths verbatim when `chain_len > 1`. (2) Add a `--debug-line N` flag to clean-jsonl.py with strict masking (first 4 + last 2 chars + length, plus 50-char prose context) so /end-session has a sanctioned discovery path that doesn't require ad-hoc python+importlib (which the harness blocks). (3) Consider a higher threshold ({30,}?) or context-anchoring (preceding `key`/`token`/`bearer` keyword) to suppress benign hyphenated-word stitches.
+**Shard pointer:** 2026-04-24-84b7ba50.
+
+---
+
 ## Plan lifecycle guard — heredoc false-close (2026-04-24, open, HIGH SEVERITY)
 
 **Status:** bashlex AST scan in `pretooluse-plan-lifecycle-guard.sh` fires fail-closed on heredoc Bash blocks containing plan-directory path strings. Hit 3 times today: Aphelios (`0314b7cc`), Sona, Lucian. Evelynn inbox'd with high-severity flag. Distinct from staged-commit hole above — different failure mode.
@@ -115,15 +124,17 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 - T11 Seraphine: audit schema committed `6d60964e` — DONE.
 - T13 Jayce PR #32 (mcps): Senna advisory-LGTM (dormant) + Lucian drift-non-blocking — awaiting Duong merge.
 **Next action:** (1) Duong approve+merge #2108 then #2109. (2) T3 Viktor dispatch MUST include route registration (task #102). (3) Dispatch remaining tasks T4/T5/T6/T15/T16/T17 per breakdown. (4) Duong merge T13 PR #32 (mcps).
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
+**2026-04-24/25 update:** Duong asked "is the api existing already?" — I checked: existing `POST /v3/orgs/:orgId/invites` is mounted under the `org` group with `CheckPermissionForOrg` middleware whose rego (`has_role = role { role = input.user.org_roles[org_id] }`) keys per-org. No global-SuperAdmin bypass. New `/v3/superadmin/*` route is structurally needed. **Swain #108 dispatched (paused before fire) to dig deeper for any pre-existing flow OR an existing flow that grants SuperAdmin role to others — resume next session.** Also: T15 target is tse deploy config (standalone `missmp/tse` repo), not wallet-studio — ADR §T1 path was Azir's guess, Seraphine corrected at impl.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
 
 ---
 
 ## Wave D unblocker — company-os PR #32 (2026-04-24, open)
 
-**Status:** Viktor fix-up commit 6d3c15b: sys.path.insert→sys.path.append (Senna correctness landmine), `_mem_store` autouse reset fixture in inner conftest.py, `create_session` required-kwargs restored. T.P1.12 tests 4/4 green. Senna #103 re-review (agentId aea086f0250597a79) + Lucian #104 fidelity re-review (agentId aec154259d685f405) in-flight at compact boundary. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
-**Next action:** Await #103/#104 verdicts → if both clean, surface to Duong for approve → merge → Wave D unblocked.
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
+**Status:** Viktor fix-up commit 6d3c15b: sys.path.insert→sys.path.append (Senna correctness landmine), `_mem_store` autouse reset fixture in inner conftest.py, `create_session` required-kwargs restored. T.P1.12 tests 4/4 green. Senna #103 LGTM + Lucian #104 APPROVE both landed (post-compact). Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
+**Blocker:** `mergeable: CONFLICTING` against main. Viktor must rebase/merge-from-main before merge can fire (no rebase per Rule 11 — use merge-from-main).
+**Next action:** Dispatch Viktor for conflict resolution → re-confirm CI green → surface to Duong → merge → Wave D unblocked.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
 
 ---
 
@@ -131,9 +142,10 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 **Status:** Duong approved; Orianna promoted to `plans/approved/work/` (commit 8f9e8829). Aphelios decomposed 17 tasks (commit b3171945). Critical path: T0→T1→T13→T14-Duong→T15→T16.
 **OQ-P1-4 resolved:** Heimerdinger confirmed `tools/decrypt.sh` already implements `--exec` mode. ADR §4.2 template was wrong. Canonical pattern: ciphertext via stdin, `--target` runtime env-file, `--exec --`. Multi-secret MCPs (Slack) need `decrypt.sh` extension before migration (Syndra job gated by threat-model review).
-**Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 in-flight rewriting ADR §4.2 + appending T-new-A..E + marking OQ-P1-4 RESOLVED.
-**Next action:** Await Aphelios #101 return → verify ADR rewrite → begin Phase 1 execution: Ekko T0/T-new-D (canonical start.sh), T-new-B inventory, conditional T-new-C (Syndra decrypt.sh extension for multi-secret), T-new-E (positive test), then T2/T4/T5/T6 parallel secret migrations, T10 Atlassian, T13 Gmail, T14-Duong (OAuth — Duong-in-loop).
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397.
+**Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 ADR §4.2 rewrite committed (`18f90d7e`).
+**2026-04-24/25 progress:** T-new-A DONE (ADR rewrite). T-new-B DONE (`b2469e98`, Ekko inventory): **6 of 8 MCPs are multi-secret** — gdrive, gcalendar, fathom (3 secrets), postgres (6 connection strings), wallet-studio (3), atlassian (2). Slack and gmail single-secret. **T-new-C is now load-bearing, not conditional.** P1-T1 secrets dir scaffold DONE (`81edd095`, Ekko). T-new-E DONE (PR #47, Syndra) — positive `decrypt.sh --exec` test using in-memory age-keygen approach.
+**Next action:** Review + merge PR #47 (Senna #109 + Lucian #110 created but not dispatched). Then Ekko T-new-D (canonical Slack start.sh). Then Syndra+Heimerdinger T-new-C (multi-var decrypt.sh extension w/ threat-model review). Then T2 (Slack migration, single-secret, doesn't wait on T-new-C). Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
 
 ---
 
