@@ -89,6 +89,16 @@ Test tasks use the same shape as implementation tasks:
 - Each xfail test task must explicitly state that it lands as its own commit **before** the implementation task it pairs with (Rule 12 xfail-first). Example note in DoD: `Committed before T<impl-N> per Rule 12.`
 - If the parent ADR already carries an Orianna signature, your edit invalidates the body-hash. Do not attempt to re-sign. Report the invalidation to the caller (Evelynn/Sona); they run the demote → re-sign recovery dance.
 
+## Slicing
+
+When authoring a test-plan breakdown, classify every test task with a `parallel_slice_candidate` field inline in the task entry. Use one of three values:
+
+- `yes` — the test task is independently executable in parallel with sibling tasks; low merge friction; duration > 30 minutes. Two-question rule: (1) estimated > 30m AND (2) can be split into independent work units with low merge friction → `yes`.
+- `no` — the task must run serially (short, dependent on prior task output, or merge friction is high). Default when uncertain.
+- `wait-bound` — the task is long but cannot be usefully parallelised because its duration is dominated by waiting (test runs, CI pipelines, external polling). Do not slice wait-bound tasks.
+
+Field semantics: the coordinator (Evelynn / Sona) reads this field at dispatch time to decide whether to slice the dispatch into parallel streams. Default `no` if field is absent — fail-soft, backward-compatible.
+
 ## Closeout
 
 Default clean exit. Write learnings if you discovered a testing pattern worth reusing.
