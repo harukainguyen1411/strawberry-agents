@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard 2b638235).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard f6b6dc2e).
 
 ---
 
@@ -12,19 +12,19 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Cornerstone Plan A (agent-feedback-system) — G1 impl in flight
+## Cornerstone Plan A (agent-feedback-system) — PR #63 in active Senna review
 
-**Current status (2026-04-25):** Viktor and Rakan dispatched onto `viktor-rakan/feedback-system-g1`. Rakan xfail commits `c656cb3c`, `3ed12228`, `2949f448`, `ae1dcb83` landed (59 tests). Viktor running T1–T3. PR will surface when Viktor returns.
-**Next:** Await Viktor return. Senna+Lucian dual review. Merge. Then sequence Plan B.
-**Shard:** 2b638235
+**Current status (2026-04-25):** PR #63 open. Viktor applied fixes for Senna B1 fork-bomb + B2 idempotency + I1 pipe-injection + I2 INDEX-stage-overwrite. 63/63 tests passing. Senna re-review in flight (comment thread #135).
+**Next:** Await Senna verdict on #135. On APPROVE + green checks: merge, then sequence Plan B (PR #64).
+**Shard:** f6b6dc2e
 
 ---
 
-## Cornerstone Plan B (coordinator-decision-feedback) — impl in flight
+## Cornerstone Plan B (coordinator-decision-feedback) — PR #64 in active review
 
-**Current status (2026-04-25):** Viktor and Rakan dispatched onto `viktor-rakan/coordinator-decision-feedback`. Rakan 8 xfail commits `fd94e420`..`76e55688` landed (~120 assertions). Viktor running T1–T6. PR will surface when Viktor returns.
-**Next:** Await Viktor return. Senna+Lucian dual review. Sequence after Plan A merges.
-**Shard:** 2b638235
+**Current status (2026-04-25):** PR #64 open. Viktor #113 running on Senna B1 match-rate formula bug + I1-4 findings + Lucian drift notes. Review cycle continues when Viktor returns.
+**Next:** Await Viktor #113 return. Senna+Lucian dual review once fixes applied. Merge after Plan A (PR #63) merges.
+**Shard:** f6b6dc2e
 
 ---
 
@@ -44,11 +44,35 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Architecture-consolidation — Waves 2/3/4 in queue
+## Architecture-consolidation — Waves 3/4 remaining
 
-**Current status (2026-04-25):** Wave 0 (PR #61, `853dedf0`) and Wave 1 (PR #62, `553a6bcb`) shipped today. Swain ADR + Aphelios breakdown (49 tasks, 5 waves) landed. Wave 2 = 6 rewrites (~1 commit each). Wave 3 = whole-file archives. Wave 4 = cross-ref sweep (must address CLAUDE.md:11/118/133 stale paths flagged by Jayce in W1 PR body). Senna+Lucian flagged Lock-Bypass clause underspecified in Wave 0 README — full §Q6 contract (trailer + log + no-no-verify) to fold into Wave 2 `git-workflow.md` / `canonical-v1.md`.
-**Next:** Dispatch Aphelios Wave 2 impl when Viktor/Plan A+B PRs settle. Must complete before canonical-v1 lock at Phase 2 ship.
-**Shard:** 2b638235
+**Current status (2026-04-25):** Wave 0 (PR #61, `853dedf0`), Wave 1 (PR #62, `553a6bcb`), and Wave 2 (PR #65, `48b229fb`) all shipped. Lock-Bypass §Q6 contract folded into Wave 2. Wave 3 = whole-file archives. Wave 4 = cross-ref sweep (must address CLAUDE.md:11/118/133 stale paths flagged by Jayce in W1 PR body). All waves must complete before canonical-v1 lock activates (at Phase 2 dashboard ship).
+**Next:** Dispatch Wave 3 after Plan A/B PRs clear. Wave 4 follows. Canonical-v1 lock target: Saturday post-Phase-2-dashboard.
+**Shard:** f6b6dc2e
+
+---
+
+## Swain synthesis 20-OQ decision — CRITICAL, gating W0-W4
+
+**Current status (2026-04-25):** Swain ADR `12e16ed0` produced 7-conflict-resolved unified process synthesis with 20 open questions across 5 decision areas (A-E). Recommended defaults: `A1a A2a A3a B1a B2a B3a C1a C2a C3a C4a C5a D1a D2a D3a D4a E1a E2a E3a E4a E5a`. Present compact form to Duong on resume — his answers gate W0-W4 wave-plan implementation.
+**Next:** Present recommended defaults to Duong. Await confirmation or adjustments. On approval: queue Orianna sweep for all 6 ADRs, then dispatch Wave plan implementation.
+**Shard:** f6b6dc2e
+
+---
+
+## 6 ADRs in proposed — promotion gated on Swain synthesis approval
+
+**Current status (2026-04-25):** Five parallel architects produced 6 ADRs: plan-of-plans + parking lot (`cd237f93`, Azir), frontend/UX process + assessments folder structure (`b1003cc0`, Azir+Lux), structured QA pipeline (`8df81d67`, Azir), PR reviewer tooling + guidelines (`4bf46ba2`, Azir), unified process synthesis (`12e16ed0`, Swain). None can be promoted until Duong answers Swain's 20 OQs.
+**Next:** After Duong confirms synthesis defaults, sweep all 6 through Orianna for promotion. Then dispatch W0-W4 implementation.
+**Shard:** f6b6dc2e
+
+---
+
+## PR #66 (parallel-slice doctrine) — CI re-run pending, ready to merge
+
+**Current status (2026-04-25):** Both Senna and Lucian APPROVED. Layer 3 CI fail on `.claude/` substring resolved via `Human-Verified: yes` trailer. Awaiting CI re-run to confirm green.
+**Next:** Confirm CI green then merge.
+**Shard:** f6b6dc2e
 
 ---
 
