@@ -52,12 +52,16 @@ set -euo pipefail
 # Parse arguments
 # ---------------------------------------------------------------------------
 INDEX_ONLY=0
+DECISIONS_ONLY=0
 SECRETARY=""
 
 for arg in "$@"; do
     case "$arg" in
         --index-only)
             INDEX_ONLY=1
+            ;;
+        --decisions-only)
+            DECISIONS_ONLY=1
             ;;
         -*)
             echo "memory-consolidate: unknown flag '${arg}'" >&2
@@ -67,7 +71,7 @@ for arg in "$@"; do
             if [ -z "$SECRETARY" ]; then
                 SECRETARY="$arg"
             else
-                echo "usage: memory-consolidate.sh <secretary> [--index-only]" >&2
+                echo "usage: memory-consolidate.sh <secretary> [--index-only] [--decisions-only]" >&2
                 exit 1
             fi
             ;;
@@ -75,7 +79,7 @@ for arg in "$@"; do
 done
 
 if [ -z "$SECRETARY" ]; then
-    echo "usage: memory-consolidate.sh <secretary> [--index-only]" >&2
+    echo "usage: memory-consolidate.sh <secretary> [--index-only] [--decisions-only]" >&2
     exit 1
 fi
 
@@ -152,6 +156,20 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Source the decision capture library (for --decisions-only pass)
+# ---------------------------------------------------------------------------
+LIB_DECISION="${SCRIPT_DIR}/_lib_decision_capture.sh"
+if [ -f "$LIB_DECISION" ]; then
+    # shellcheck source=scripts/_lib_decision_capture.sh
+    . "$LIB_DECISION"
+else
+    if [ "$DECISIONS_ONLY" -eq 1 ]; then
+        echo "memory-consolidate: ERROR — decision library not found: ${LIB_DECISION}" >&2
+        exit 1
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # --index-only mode: fast path
 # ---------------------------------------------------------------------------
 if [ "$INDEX_ONLY" -eq 1 ]; then
@@ -162,6 +180,64 @@ if [ "$INDEX_ONLY" -eq 1 ]; then
     INDEX_FILE="${LAST_SESSIONS_DIR}/INDEX.md"
     regenerate_index "$LAST_SESSIONS_DIR" "$INDEX_FILE"
     echo "memory-consolidate [${SECRETARY}]: --index-only complete, wrote ${INDEX_FILE}" >&2
+    exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# --decisions-only mode: fast path — decisions INDEX regen + preferences rollup
+# Runs decision pass only (no archive move, no sessions fold, no commit/push).
+# Ordering: runs after last-sessions/ pass (full run only); as a standalone mode
+# it only touches decisions/ artifacts.
+#
+# Reads STRAWBERRY_MEMORY_ROOT shim (T4 requirement).
+# ---------------------------------------------------------------------------
+if [ "$DECISIONS_ONLY" -eq 1 ]; then
+    if [ -z "${LIB_DECISION:-}" ] && [ ! -f "$LIB_DECISION" ]; then
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decision library required for --decisions-only" >&2
+        exit 1
+    fi
+
+    # Resolve coordinator dir for decisions (MEMORY_BASE already set above)
+    if [ -n "${STRAWBERRY_MEMORY_ROOT:-}" ]; then
+        COORD_MEMORY_BASE="${STRAWBERRY_MEMORY_ROOT}/agents/${SECRETARY}/memory"
+    else
+        COORD_MEMORY_BASE="${REPO_ROOT}/agents/${SECRETARY}/memory"
+    fi
+
+    DECISIONS_DIR="${COORD_MEMORY_BASE}/decisions"
+    DECISIONS_LOG_DIR="${DECISIONS_DIR}/log"
+    DECISIONS_INDEX_FILE="${DECISIONS_DIR}/INDEX.md"
+    DECISIONS_PREFS_FILE="${DECISIONS_DIR}/preferences.md"
+    DECISIONS_AXES_FILE="${DECISIONS_DIR}/axes.md"
+
+    if [ ! -d "$DECISIONS_LOG_DIR" ]; then
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decisions/log/ not found at ${DECISIONS_LOG_DIR}" >&2
+        exit 1
+    fi
+
+    if [ ! -f "$DECISIONS_PREFS_FILE" ]; then
+        echo "memory-consolidate [${SECRETARY}]: WARNING — preferences.md not found; skipping rollup" >&2
+    fi
+
+    # Step 1: Regenerate decisions/INDEX.md
+    if regenerate_decisions_index "${COORD_MEMORY_BASE}" "${DECISIONS_INDEX_FILE}"; then
+        echo "memory-consolidate [${SECRETARY}]: decisions INDEX.md regenerated" >&2
+    else
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decisions INDEX regen failed" >&2
+        exit 1
+    fi
+
+    # Step 2: Rollup preferences.md counts (if it exists)
+    if [ -f "$DECISIONS_PREFS_FILE" ]; then
+        if rollup_preferences_counts "${COORD_MEMORY_BASE}" "${DECISIONS_PREFS_FILE}"; then
+            echo "memory-consolidate [${SECRETARY}]: preferences.md rolled up" >&2
+        else
+            echo "memory-consolidate [${SECRETARY}]: ERROR — preferences rollup failed" >&2
+            exit 1
+        fi
+    fi
+
+    echo "memory-consolidate [${SECRETARY}]: --decisions-only complete" >&2
     exit 0
 fi
 
