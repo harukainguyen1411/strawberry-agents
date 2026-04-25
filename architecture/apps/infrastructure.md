@@ -69,7 +69,7 @@ Duong uses Claude subscription (not API billing). CLI on VPS authenticates via `
 
 ## Relay bridges (stalled)
 
-- **Discord relay** — stalled as of 2026-04-25. See `architecture/archive/2026-04-25-discord-relay.md` for the prior design.
-- **Telegram bridge** — stalled / abandoned as of 2026-04-25. See `architecture/archive/2026-04-25-telegram-relay.md` for the prior design.
+- **Discord relay** — stalled as of 2026-04-25. Archive pending W3.
+- **Telegram bridge** — stalled / abandoned as of 2026-04-25. Archive pending W3.
 
-No new MCP server architecture exists for agent dispatch; `mcp-servers.md` was archived on 2026-04-25 (see `architecture/archive/2026-04-25-mcp-servers.md`).
+No new MCP server architecture exists for agent dispatch. `discord-relay.md`, `telegram-relay.md`, and `mcp-servers.md` are candidates for archival in W3; they remain at their current paths until that wave lands.

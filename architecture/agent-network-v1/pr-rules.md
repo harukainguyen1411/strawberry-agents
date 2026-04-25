@@ -93,7 +93,7 @@ See `CLAUDE.md` Rule 15 (`#rule-e2e-required`).
 
 ## Post-deploy smoke tests (Rule 17)
 
-Smoke tests run on stg and prod after deploy. Prod smoke failures trigger auto-revert via `scripts/deploy/rollback.sh`. No bypass for prod.
+Smoke tests run on stg and prod after deploy. Prod smoke failures trigger auto-revert. No bypass for prod. (Rollback script is a future deliverable — not yet in repo.)
 
 See `CLAUDE.md` Rule 17 (`#rule-smoke-tests`).
 

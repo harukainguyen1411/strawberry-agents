@@ -50,7 +50,7 @@ Background subagent branches are merged back into main by the coordinator via `s
 
 ## Decision-feedback contract
 
-When a coordinator makes a structural decision (plan approval, architecture choice, agent routing call), it may write a decision record to `feedback/` via the decision-feedback skill. These records are read by the retrospection dashboard (Phase 2). Format and triggers are defined in the decision-feedback plan (`plans/in-progress/personal/2026-04-25-coordinator-decision-feedback-plan.md`).
+When a coordinator makes a structural decision (plan approval, architecture choice, agent routing call), it may write a decision record to `feedback/` via the decision-feedback skill. These records are read by the retrospection dashboard (Phase 2). Format and triggers are defined in the decision-feedback plan (`plans/approved/personal/2026-04-21-coordinator-decision-feedback.md`).
 
 ---
 
@@ -60,7 +60,7 @@ Slack is a **pointer surface, not a content surface**. This is a load-bearing po
 
 - **CLI is the source of truth.** All substantive agent output — plans, commit SHAs, findings, task results, analysis — lives in the CLI session and is committed to the repo.
 - **Slack receives pointers only.** A Slack ping may contain: a one-line summary, a link or path to where the full content lives, and a "see CLI for details" note. Never paste full agent output, plan text, or multi-line analysis into Slack.
-- **Rationale:** Slack content is not referenceble from git history, not searchable by future agents, and creates a split-brain where some decisions are recoverable and others are not. Keeping Slack as pointer-only preserves the commit log as the single authoritative record.
+- **Rationale:** Slack content is not referenceable from git history, not searchable by future agents, and creates a split-brain where some decisions are recoverable and others are not. Keeping Slack as pointer-only preserves the commit log as the single authoritative record.
 
 Enforcement: agent defs do not include `mcp__slack__*` tool calls that post substantive content. Coordinators are responsible for enforcing this boundary when dispatching subagents that have Slack MCP access.
 
