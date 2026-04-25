@@ -49,6 +49,16 @@ if [ -z "$staged_feedback_files" ]; then
   exit 0
 fi
 
+# I2 guard: if only feedback/INDEX.md is staged (no source feedback file),
+# the user is likely trying to commit a hand-edit of the generated file.
+# Abort with a clear message rather than silently overwriting the staged edit.
+staged_source_files="$(printf '%s\n' "$staged_feedback_files" | grep -v '^feedback/INDEX\.md$' || true)"
+if [ -z "$staged_source_files" ]; then
+  printf 'pre-commit-feedback-index: ERROR: feedback/INDEX.md is generated — do not hand-edit or commit it directly.\n' >&2
+  printf '  Stage the source feedback file (feedback/YYYY-MM-DD-*.md) instead; the hook will regenerate INDEX.md automatically.\n' >&2
+  exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # 2. Validate all staged feedback/*.md files against §D1 schema
 # ---------------------------------------------------------------------------

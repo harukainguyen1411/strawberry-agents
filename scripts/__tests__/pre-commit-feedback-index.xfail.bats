@@ -257,12 +257,26 @@ teardown() {
   # and writes .git/hooks/pre-commit shim
   bash "$CLEAN/scripts/install-hooks.sh" > /dev/null 2>&1 || true
 
-  # Now make a commit: must complete within 10 seconds (not hang/fork-bomb)
+  # Now make a commit: must complete without hanging (fork-bomb manifests as deadlock).
+  # Use a background process + kill after timeout since macOS lacks GNU timeout.
   echo "x" > "$CLEAN/file.txt"
   git -C "$CLEAN" add file.txt
-  timeout 10 git -C "$CLEAN" commit --no-verify -m "chore: test commit" 2>/dev/null
-  # Exit 0 = committed cleanly; exit 124 = timeout (fork-bomb); other = hook failure
-  [ "$?" -ne 124 ]
+  ( git -C "$CLEAN" commit --no-verify -m "chore: test commit" 2>/dev/null; echo "$?" > "$TMP_DIR/b1-rc.txt" ) &
+  _bg_pid=$!
+  # Wait up to 10 seconds for the commit to complete
+  _waited=0
+  while [ $_waited -lt 10 ] && kill -0 "$_bg_pid" 2>/dev/null; do
+    sleep 1
+    _waited=$(( _waited + 1 ))
+  done
+  if kill -0 "$_bg_pid" 2>/dev/null; then
+    # Still running after 10 seconds — fork-bomb or hang
+    kill "$_bg_pid" 2>/dev/null
+    fail "commit hung for 10+ seconds (fork-bomb or infinite loop)"
+  fi
+  wait "$_bg_pid" 2>/dev/null || true
+  # Commit must have succeeded (rc 0) or failed due to hook (non-zero) — not timed out
+  [ -f "$TMP_DIR/b1-rc.txt" ]
 }
 
 # ---------------------------------------------------------------------------

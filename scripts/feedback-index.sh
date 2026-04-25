@@ -56,13 +56,18 @@ err() { printf '%s\n' "$*" >&2; }
 extract_field() {
   local file="$1"
   local field="$2"
-  # Grab only the frontmatter block (between first pair of --- delimiters)
+  # Grab only the frontmatter block (between first pair of --- delimiters).
+  # NOTE: $field is interpolated into the awk regex; all current callers pass
+  # hard-coded field names from REQUIRED_FRONTMATTER_FIELDS so this is safe.
   awk '
-    /^---$/ { if (fm==0) { fm=1; next } else { exit } }
+    /^---[[:space:]]*$/ { if (fm==0) { fm=1; next } else { exit } }
     fm==1 && /^'"$field"':/ {
       sub(/^'"$field"':[ \t]*/, "")
       # Remove surrounding quotes
       gsub(/^["'"'"']|["'"'"']$/, "")
+      # Trim trailing whitespace (prevents confusing enum-mismatch errors
+      # like "value '\''open  '\'' not in enum" when the field has trailing spaces)
+      gsub(/[[:space:]]+$/, "")
       print
       exit
     }
@@ -75,7 +80,7 @@ has_section() {
   local section="$2"
   # Look outside the frontmatter block
   awk '
-    /^---$/ { dashes++; next }
+    /^---[[:space:]]*$/ { dashes++; next }
     dashes>=2 && /^'"$section"'/ { found=1 }
     END { exit (found ? 0 : 1) }
     BEGIN { dashes=0; found=0 }
@@ -106,9 +111,9 @@ validate_file() {
     return 1
   fi
 
-  # Must have frontmatter delimiters
+  # Must have frontmatter delimiters (use [[:space:]]* to tolerate CRLF line endings)
   local dash_count
-  dash_count=$(grep -c '^---$' "$file" 2>/dev/null || echo 0)
+  dash_count=$(grep -c '^---[[:space:]]*$' "$file" 2>/dev/null || echo 0)
   if [ "$dash_count" -lt 2 ]; then
     err "feedback-index: §D1 schema error in $file: missing frontmatter delimiters (---)"
     return 1
@@ -242,7 +247,9 @@ render_index() {
   local out="$2"
 
   local tmp
-  tmp="$(mktemp)"
+  # Create temp file in the same directory as the output to ensure the final
+  # mv is an atomic rename within the same filesystem (avoids cross-fs copy+unlink).
+  tmp="$(mktemp "$out.XXXXXX")"
 
   # Stable timestamp: use the latest mtime of any .md file in dir so that
   # running twice on an unchanged tree produces zero diff (Invariant 4).
@@ -251,6 +258,11 @@ render_index() {
   local f_mtime
   for mf in "$dir"/*.md; do
     [ -f "$mf" ] || continue
+    # Skip the output file itself and INDEX.md — their mtime is bumped by each
+    # render, which would make the _Generated: timestamp advance on every
+    # invocation even when no source content changed (Invariant 4 violation).
+    [ "$(basename "$mf")" = "INDEX.md" ] && continue
+    [ "$mf" = "$out" ] && continue
     # BSD (macOS) stat: stat -f %m; GNU stat: stat -c %Y
     # Strip non-numeric characters and trailing whitespace to ensure clean integer
     f_mtime="$(stat -f '%m' "$mf" 2>/dev/null || stat -c '%Y' "$mf" 2>/dev/null || echo 0)"
@@ -333,7 +345,14 @@ render_index() {
       low)    count_low=$(( count_low + 1 )) ;;
     esac
 
-    rows="$rows${severity}|${date}|${author}|${category}|${slug}|${cost}"$'\n'
+    # Escape any literal pipe characters in field values before concatenating
+    # with the pipe column delimiter — prevents markdown-table column injection
+    # when free-form fields (author, slug) contain pipe characters (I1).
+    local safe_author safe_slug safe_cost
+    safe_author="$(printf '%s' "$author" | sed 's/|/\\|/g')"
+    safe_slug="$(printf '%s' "$slug" | sed 's/|/\\|/g')"
+    safe_cost="$(printf '%s' "$cost" | sed 's/|/\\|/g')"
+    rows="$rows${severity}|${date}|${safe_author}|${category}|${safe_slug}|${safe_cost}"$'\n'
   done
 
   # Sort rows by severity (high → medium → low), then date
@@ -418,6 +437,11 @@ done
 
 if [ "$MODE" = "check" ]; then
   if [ -n "$SINGLE_FILE" ]; then
+    # --audit-history is not meaningful for single-file mode (it requires git log over a dir)
+    if [ "$AUDIT_HISTORY" -eq 1 ]; then
+      err "feedback-index: --audit-history requires --dir; it is not supported in single-file mode"
+      exit 1
+    fi
     # Validate a single file
     validate_file "$SINGLE_FILE"
     exit $?
@@ -456,6 +480,7 @@ else
 
   # Validate all files first (Invariant 4: idempotent generation requires valid inputs)
   failed=0
+  seen_slugs=""
   for f in "$DIR"/*.md; do
     [ -f "$f" ] || continue
     [ "$(basename "$f")" = "INDEX.md" ] && continue
@@ -464,6 +489,16 @@ else
     # silently skipped so they do not appear in the generated INDEX.
     printf '%s' "$(basename "$f")" | grep -qE '^[0-9]{4}-[0-9]{2}-[0-9]{2}-' || continue
     validate_file "$f" || failed=1
+    # Duplicate-slug detection: derive slug from filename and check for collisions
+    _bname="$(basename "$f" .md)"
+    _slug="$(printf '%s' "$_bname" | sed 's/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[0-9][0-9][0-9][0-9]-[^-]*-//' | sed 's/^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]-[^-]*-//' )"
+    [ -z "$_slug" ] && _slug="$_bname"
+    if printf '%s\n' "$seen_slugs" | grep -qxF "$_slug"; then
+      err "feedback-index: duplicate slug detected: '$_slug' (in $(basename "$f"))"
+      failed=1
+    else
+      seen_slugs="$(printf '%s\n%s' "$seen_slugs" "$_slug")"
+    fi
   done
   if [ $failed -ne 0 ]; then
     err "feedback-index: schema errors found — index not generated"

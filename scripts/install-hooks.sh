@@ -113,13 +113,6 @@ for _sub in $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | sort); do
       ;;
   esac
 done
-# Fallback: if .git/hooks/VERB exists and is executable (and not this script),
-# invoke it. This supports repos that install hooks directly to .git/hooks/
-# (e.g. test isolation repos set up by bats test harnesses).
-_git_hook="$(git rev-parse --git-dir 2>/dev/null)/hooks/VERB"
-if [ -f "$_git_hook" ] && [ -x "$_git_hook" ] && [ "$_git_hook" != "$0" ]; then
-  "$_git_hook" "$@" || _rc=$?
-fi
 exit $_rc
 LOOP
 
@@ -147,8 +140,24 @@ if [ -d "$_git_hooks_dir" ]; then
 #!/bin/sh
 # strawberry compatibility shim — delegates to scripts/hooks-dispatchers/pre-commit
 # Wired by scripts/install-hooks.sh alongside pre-commit-feedback-index and other hooks.
+#
+# Recursion guard: when core.hooksPath=scripts/hooks-dispatchers git already invoked
+# the dispatcher directly via that path.  The shim must not re-invoke it — that would
+# compose shim→dispatcher→shim→... infinitely.  Detect this by checking core.hooksPath.
 _root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
-_dispatcher="$_root/scripts/hooks-dispatchers/pre-commit"
+_hooks_path="$(git config --get core.hooksPath 2>/dev/null || echo '')"
+# Resolve to absolute for comparison (core.hooksPath may be relative)
+case "$_hooks_path" in
+  /*) _abs_hooks_path="$_hooks_path" ;;
+  "")  _abs_hooks_path="" ;;
+  *)   _abs_hooks_path="$_root/$_hooks_path" ;;
+esac
+_dispatcher_dir="$_root/scripts/hooks-dispatchers"
+if [ "$_abs_hooks_path" = "$_dispatcher_dir" ]; then
+  # Dispatcher was already invoked by git via core.hooksPath — exit cleanly.
+  exit 0
+fi
+_dispatcher="$_dispatcher_dir/pre-commit"
 if [ -x "$_dispatcher" ]; then
   exec "$_dispatcher" "$@"
 fi

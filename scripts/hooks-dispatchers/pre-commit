@@ -14,11 +14,4 @@ for _sub in $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | sort); do
       ;;
   esac
 done
-# Fallback: if .git/hooks/pre-commit exists and is executable (and not this script),
-# invoke it. This supports repos that install hooks directly to .git/hooks/
-# (e.g. test isolation repos set up by bats test harnesses).
-_git_hook="$(git rev-parse --git-dir 2>/dev/null)/hooks/pre-commit"
-if [ -f "$_git_hook" ] && [ -x "$_git_hook" ] && [ "$_git_hook" != "$0" ]; then
-  "$_git_hook" "$@" || _rc=$?
-fi
 exit $_rc
