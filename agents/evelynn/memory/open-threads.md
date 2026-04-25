@@ -1,6 +1,46 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard bc09be92).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard 56777883).
+
+---
+
+## Dashboard Phase 1 — Viktor impl pending
+
+**Current status (2026-04-25):** Breakdown complete (6 tasks, `26db3ffe`), test plan complete (7 tests, `93328148`). Rakan xfail commits landed on branch `viktor-rakan/dashboard-phase-1` (PR #59 draft, 7 commits `8a9a6a0d` through `c93e93ce`). Viktor impl dispatch held for post-compact.
+**Next:** Dispatch Viktor onto branch `viktor-rakan/dashboard-phase-1`. Honor `RETRO_GIT_LOG_MOCK` env var contract (see Rakan's PR #59 body). Confirm OQ-R3 answer (trailer wins + log warning) before dispatching.
+**Shard:** 56777883
+
+---
+
+## Cornerstone Plan A (agent-feedback-system) — slicing decision pending
+
+**Current status (2026-04-25):** Breakdown complete (16 tasks, ~620 min, Aphelios). Test plan complete (11 test tasks, `9a3a9257`). Promoted to approved (`c70084a9`). Implementation NOT started.
+**Next:** Duong decides: 3 sliced PRs by group vs 1 mega-PR. Viktor cannot start until decision is made.
+**Shard:** 56777883
+
+---
+
+## Cornerstone Plan B (coordinator-decision-feedback) — impl blocked on Plan A
+
+**Current status (2026-04-25):** Breakdown complete (12 tasks, `b2485dcb`). Test plan complete (11 tests, `9da29f40`). Promoted to approved (`25b4879b`). Implementation NOT started.
+**Next:** Dispatch Rakan + Viktor (complex lane) or Vi + Jayce (normal lane) after Plan A is at least in-progress.
+**Shard:** 56777883
+
+---
+
+## Coordinator routing discipline — PR #57 and PR #58 shipped
+
+**Current status (2026-04-25):** PR #57 merged (orianna-identity-protocol-alignment, tip `b1d85e15`). PR #58 merged (coordinator-routing-discipline) — cheat-sheet at `architecture/agent-routing.md`, `_shared/coordinator-routing-check.md` include sourced by both coordinators, two structured lane/pair-set pauses. Three coordinator slips logged at `feedback/2026-04-25-coordinator-discipline-slips.md`. Slip 3 (compact-watch miss) NOT covered by PR #58 — candidate for canonical-v1 retro.
+**Next:** Internalize routing check pause on every dispatch. Slip 3 fix deferred to canonical-v1 retro.
+**Shard:** 56777883
+
+---
+
+## canonical-v1 lock-watch
+
+**Current status (2026-04-25):** Lock activates at dashboard Phase 2 ship. All `.claude/agents/*.md` and hook edits must land pre-lock.
+**Next:** Track any outstanding infra changes before Phase 2 ships.
+**Shard:** 56777883
 
 ---
 
@@ -20,11 +60,11 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Cornerstone plans — implementation pending Duong direction
+## Cornerstone plans — breakdowns done, impl gated on Duong decisions
 
-**Current status (2026-04-25):** `agent-feedback-system` promoted to approved (`c70084a9`). `coordinator-decision-feedback` promoted to approved (`25b4879b`). Duong framed both as "cornerstones for self-improving and self-sustaining system" with hands-on then "use all the Swain lane" direction.
-**Next:** Duong gives next instruction. No implementation agents commissioned yet.
-**Shard:** bc09be92
+**Current status (2026-04-25):** Both cornerstone plans broken down and test-planned this leg. Plan A (agent-feedback-system): 16 tasks, 11 test tasks, implementation gated on slicing decision. Plan B (coordinator-decision-feedback): 12 tasks, 11 tests, gated on Plan A in-progress. See dedicated threads above for per-plan status.
+**Next:** Duong's slicing decision for Plan A unblocks Viktor. Plan B follows.
+**Shard:** 56777883
 
 ---
 
