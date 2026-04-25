@@ -104,3 +104,12 @@ firebase-debug.log
 
 # Per-checkout coordinator identity hint (written by /pre-compact-save, consumed by sessionstart hook)
 .coordinator-identity
+
+# Per-checkout precompact opt-out marker (touched by Duong to skip /pre-compact-save gate)
+.no-precompact-save
+
+# Local scheduler lock
+.claude/scheduled_tasks.lock
+
+# Playwright/Akali QA runtime artifacts (logs + page snapshots; reports remain tracked)
+assessments/qa-artifacts/
