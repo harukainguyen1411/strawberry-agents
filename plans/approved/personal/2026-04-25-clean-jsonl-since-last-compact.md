@@ -1,6 +1,6 @@
 ---
 title: clean-jsonl --since-last-compact slice flag
-status: proposed
+status: approved
 concern: personal
 complexity: quick
 orianna_gate_version: 2
@@ -40,3 +40,10 @@ No integration test needed — single-script, stdlib-only, exercised end-to-end 
 - `scripts/clean-jsonl.py` (argparse around L567, `clean_chain` / `build_output` pipeline)
 - `agents/evelynn/memory/last-sessions/bc09be92.md` (auth source — Lissandra `d0f20fd9` consolidation note)
 - Rule 12 (xfail-first), Rule 10 (POSIX-portable — N/A here, stdlib Python)
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (karma), concrete task decomposition with named files, DoDs, and a fixture matrix that maps directly to the four invariants (marker priority, recency, fallback, fail-loud, regression byte-stability). `tests_required: true` is honoured by T1 shipping xfail tests before T2 implementation per Rule 12. Single-file impl, stdlib only, no TBDs or unresolved decisions. Scope is bounded to the canonical-v1-lock window and the deferred-excerpt pattern justifies promotion now.
