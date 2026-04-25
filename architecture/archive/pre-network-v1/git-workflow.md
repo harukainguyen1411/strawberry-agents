@@ -1,3 +1,5 @@
+<!-- Archived: superseded by architecture/agent-network-v1/git-workflow.md on 2026-04-25 -->
+
 # Git Workflow
 
 ## Two-Repo Model

@@ -1,3 +1,5 @@
+<!-- Archived: superseded by architecture/agent-network-v1/plan-frontmatter.md on 2026-04-25 (v1 Orianna-gate fields orianna_gate_version and orianna_signature_<phase> retired) -->
+
 # Plan Frontmatter Fields
 
 Reference for the five YAML frontmatter fields introduced or formalized by the

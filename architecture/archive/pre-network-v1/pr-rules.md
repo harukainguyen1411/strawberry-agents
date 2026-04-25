@@ -1,3 +1,5 @@
+<!-- Archived: superseded by architecture/agent-network-v1/pr-rules.md on 2026-04-25 -->
+
 # PR Rules
 
 Rules for all pull requests. Implementation PRs live in `harukainguyen1411/strawberry-app` (code). Plans commit directly to `harukainguyen1411/strawberry-agents` main (never via PR).
