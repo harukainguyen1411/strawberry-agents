@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-25 (session c1463e58; eighth consolidation — shard f993d23d).
+Last updated: 2026-04-25 (session c1463e58; ninth consolidation — shard a3c891b2).
 
 ---
 
@@ -36,9 +36,9 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 
 **Wave D — the ship (prod-touching, needs Duong explicit confirm):**
 - **Gate:** PRs #114, #115, #116, #117 all need Senna verdict comments + Duong manual approve from `harukainguyen1411`. Slack-ping Duong once all 4 have comments + green checks.
-- [T.P1.14 Ekko] — Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. No canary (internal users). Post-deploy smoke per Rule 17; rollback via `scripts/deploy/rollback.sh` if prod smoke fails. **Blocked: Wave B.5 (prod S2 session seeding) + PRs #114–#117 + Duong go-ahead.**
-- [T.P1.16 Akali] — Playwright MCP E2E QA on deployed stack: session create → chat → build → panel → click → verify demo URL loads brand-correct content. Video + screenshots + QA report at `assessments/qa-reports/2026-04-22-p1-factory-build.md`. Links into PR #32 body.
-- Merge PR #32 (the demo-studio-v3 god PR into main).
+- [T.P1.14 Ekko] — **DONE (2026-04-25).** Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. All five Cloud Run revisions green: demo-factory-00012-9mg, demo-studio-00029-8bk, demo-config-mgmt-00014-2bn, demo-studio-verification-00005-756, demo-preview-00010-ff4. No rollbacks fired.
+- [T.P1.16 Akali] — **FAIL (2026-04-25).** QA returned two blockers: F1 (factory_bridge wired to v1 scaffold — `tool_dispatch.py:127` imports wrong module + v1 "approved" guard has no UI route + v1 has unimplemented `factory_client.start_build` TODO) + F2 (.env.local baked into prod Docker image hardcoding `__s5Base = http://localhost:8090`). **Blocked: F1 design call (Duong) + F1+F2 fix dispatch → Ekko redeploy → Akali re-QA.** Note: PR #32's own scope (config-mgmt + dashboard) does NOT touch the broken code — this is a merge-gate-only block. QA findings pending write to `assessments/qa-reports/` via Yuumi.
+- Merge PR #32 (the demo-studio-v3 god PR into main). **Re-blocked pending F1+F2.**
 
 ### Testable checkpoints after each wave
 
@@ -124,8 +124,8 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 - T11 Seraphine: audit schema committed `6d60964e` — DONE.
 - T13 Jayce PR #32 (mcps): Senna advisory-LGTM (dormant) + Lucian drift-non-blocking — awaiting Duong merge.
 **Next action:** (1) Duong approve+merge #2108 then #2109 from `harukainguyen1411`. (2) After merge: resume Swain #108 (existing-flow/SuperAdmin-grant dig) + dispatch Viktor T3 (MUST include `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` route registration in `core/tse/api/v3/api.go`). (3) Parallel: T4/T5/T6/T15. (4) Duong merge T13 PR #32 (mcps).
-**2026-04-24/25 update:** Skarner dig confirmed: SuperAdmin primary path, scaffolded-DRY fallback (no env, no secrets). Critical path T0→T1→T13→T14(Duong)→T15→T16. Swain #108 paused before fire — open question to fold in on resume: "does an existing flow grant SuperAdmin role to others?" Existing `POST /v3/orgs/:orgId/invites` keyed per-org; no global SuperAdmin bypass; new `/v3/superadmin/*` route structurally needed. Also: T15 target is tse deploy config (standalone `missmp/tse` repo).
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
+**2026-04-25 correction (CRITICAL — carry forward):** SuperAdmin two-call flow (`Config.SuperAdmin` argocd list) is NOT a global rego override. OPA input builder at `core/tse/authz/opa.go:159-177` never injects `Config.SuperAdmin`; rego consults only `input.user.org_roles[org_id]` per `authz/rego/main.rego:21-23`. Duong's case is bootstrap-from-zero (no existing SuperAdmin/OrgOwner in target org). Under "no tse change" constraint the only path is direct DB write to `users_orgs`. Runbook at `assessments/work/2026-04-25-superadmin-self-invite-runbook.md` needs "Bootstrap-from-zero" supplement once Duong confirms prd DB access. ADR archived `3b69faf1`. Learning at `agents/swain/learnings/2026-04-25-config-list-not-rego-input.md`.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d, 2026-04-25-a3c891b2.
 
 ---
 
@@ -144,9 +144,9 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **OQ-P1-4 resolved:** Heimerdinger confirmed `tools/decrypt.sh` already implements `--exec` mode. ADR §4.2 template was wrong. Canonical pattern: ciphertext via stdin, `--target` runtime env-file, `--exec --`. Multi-secret MCPs (Slack) need `decrypt.sh` extension before migration (Syndra job gated by threat-model review).
 **Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 ADR §4.2 rewrite committed (`18f90d7e`).
 **2026-04-24/25 progress:** T-new-A DONE (ADR rewrite). T-new-B DONE (`b2469e98`, Ekko inventory): **6 of 8 MCPs are multi-secret** — gdrive, gcalendar, fathom (3 secrets), postgres (6 connection strings), wallet-studio (3), atlassian (2). Slack and gmail single-secret. **T-new-C is now load-bearing, not conditional.** P1-T1 secrets dir scaffold DONE (`81edd095`, Ekko). T-new-E DONE (PR #47, Syndra) — positive `decrypt.sh --exec` test using in-memory age-keygen approach.
-**Progress this session:** PR #47 (T-new-E) MERGED at `5081069` — Senna formal APPROVE (`strawberry-reviewers-2`) + Lucian APPROVE (`strawberry-reviewers`). Note: Senna's commit `d7d6793e` authored as `Orianna <orianna@strawberry.local>` — known worktree-identity leak class, Evelynn-side structural fix open. T-new-D (PR #48, canonical Slack start.sh) opened by Ekko: xfail-first `51843cd2` + impl `29dbd9a9`. Lucian APPROVED. Senna returned REQUEST_CHANGES: C1 blocker — Ekko authored against `mcps/slack/` (personal-repo TS MCP requiring both SLACK_BOT_TOKEN + SLACK_USER_TOKEN) instead of work-repo path. D2 drift: server.ts may not consume SLACK_BOT_TOKEN — Senna's lane to verify.
-**Next action:** Resolve PR #48 Senna C1 blocker (re-impl targeting correct work-repo Slack start.sh path, or scope correction). Then fire T-new-C (Syndra+Heimerdinger, multi-var decrypt.sh extension w/ threat-model review) + T2 Slack migration in parallel. Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
+**Progress this session:** PR #47 (T-new-E) MERGED at `5081069` — Senna + Lucian APPROVE. T-new-D (PR #54, canonical Slack wrapper) SHIPPED — third attempt after PR #48 (wrong codebase) + PR #33 (wrong scope) closures. Senna + Lucian both formal-APPROVE. Merged as duongntd at 06:57:08Z. Four smoke assertions PASS (wrapper exit 0, sentinel injected, runtime mode 0600, no plaintext to parent). Three non-blocking polish items: dead grep in assertion d, bats skip weakness in xfail body, "or absent" fallback — folded as future-work. Universal scope rule (wrapper-not-modify) now in plan §0 via Karma revised plan `70d275f9` + commit `baf56941`. **T-new-D COMPLETE.**
+**Next action:** P1-T2 (Slack age blob provisioning + .mcp.json registration) when Duong confirms direction. In parallel: T-new-C (Syndra+Heimerdinger, multi-var decrypt.sh extension + threat-model review). Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d, 2026-04-25-a3c891b2.
 
 ---
 
