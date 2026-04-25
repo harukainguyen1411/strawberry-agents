@@ -1,0 +1,14 @@
+[
+  {
+    "plan_slug": "2026-04-21-agent-feedback-system",
+    "stage": "implemented",
+    "agent_id": null,
+    "tokens_input": 470,
+    "tokens_output": 170,
+    "tokens_cache_read": 30,
+    "tokens_cache_creation": 10,
+    "wall_active_minutes": 0.75,
+    "turns": 3,
+    "tool_calls": 0
+  }
+]
