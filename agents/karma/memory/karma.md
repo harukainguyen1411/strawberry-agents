@@ -42,4 +42,8 @@ Smoke attempt: 2026-04-23. PR #34 (`feat/subagent-denial-probe`) is still open �
 
 Structural observation from current `settings.json`: the existing `PostToolUse.Agent` hook fires at parent-session level after the Agent tool call completes (not inside the subagent's own tool execution). This matches the "parent-level only" hypothesis. If the denial-probe relied on seeing individual Edit/Write/Bash results from within the subagent, it would likely require the SubagentStop fallback path (pivot note in OQ1 of the plan). Recommend confirming empirically once PR #34 merges.
 
+## Literal-vs-goal pattern — watcher-arm source-gate (2026-04-25)
+
+The inbox-watch-bootstrap.sh SessionStart hook was re-emitting the "arm watcher" directive on resume/clear/compact continuations, causing duplicate inbox-watch.sh Monitor processes. Root cause: the directive said "arm it before doing anything else" — a literal action form — when the goal was "have a watcher armed." On /compact the prior Monitor task persists, so literal compliance spawned a second process. This is the same pattern as the deliberation-primitive failure (PR #49): literal directive vs. goal diverge when the goal is already satisfied. Fix was two-pronged: (1) source-gate narrowed to startup-only so the directive is never emitted on non-startup sessions; (2) directive rewritten to verify-then-arm form (check Monitor tasks + ps aux, no-op if already armed) so even if the gate is ever widened, literal compliance produces idempotent behaviour. Bug first reported by Sona in agents/evelynn/inbox/20260425-0729-102180.md. Implemented in PR #TBD (branch watcher-arm-source-gate), plan 2026-04-25-watcher-arm-directive-source-gate.
+
 ## Sessions
