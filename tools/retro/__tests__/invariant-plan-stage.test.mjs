@@ -205,9 +205,7 @@ describe('TP1.T4-E [OQ-R3 RESOLVED]: rank-tie — single-commit: trailer vs fron
 //
 // xfail: skipped until plan-stage-detect.mjs accumulates cross-commit conflicts (I1 fix).
 // ---------------------------------------------------------------------------
-describe('TP1.T4-F [xfail I1]: rank-tie two-commit — cross-commit trailer vs frontmatter emits signal_conflict', {
-  skip: 'xfail I1: parsePlanStageFromGitLog does not yet detect cross-commit (slug, stage) disagreement. Fix: accumulate per-slug events and emit signal_conflict when a later frontmatter entry disagrees with a trailer entry for the same slug.',
-}, () => {
+describe('TP1.T4-F [xfail I1]: rank-tie two-commit — cross-commit trailer vs frontmatter emits signal_conflict', () => {
   let events;
 
   before(() => {

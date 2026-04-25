@@ -143,9 +143,7 @@ const MULTI_PARA_RAW_NEWLINE_NEWLINE = [
   'abc002simple\x00chore: promote 2026-04-22-simple-plan to approved\x00Promoted-By: Orianna\n\x002026-04-22T15:00:00+07:00',
 ].join('\n\n');
 
-describe('TP1.T8 [xfail — B1 regression]: parseRealGitLog multi-paragraph body', {
-  skip: 'xfail B1: sources.mjs parseRealGitLog splits on \\n\\n — multi-paragraph body breaks trailer extraction. Fix: use %x1e separator in git log --format.',
-}, () => {
+describe('TP1.T8 [xfail — B1 regression]: parseRealGitLog multi-paragraph body', () => {
   it('documents the bug: broken parser drops Promoted-By trailer from multi-paragraph body', () => {
     // This assertion PASSES before the fix — it documents the breakage
     const entriesBroken = parseRealGitLogBroken(MULTI_PARA_RAW_NEWLINE_NEWLINE);

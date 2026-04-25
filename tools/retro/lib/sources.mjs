@@ -381,7 +381,7 @@ function parseRealGitLog(raw) {
     // Extract planSlug from subject
     const slugMatch = subject && subject.match(/promote\s+(\S+)\s+to\s+(\S+)/);
     if (!slugMatch && !trailers['Promoted-By']) continue;
-    // Use a deterministic sentinel when isoDate is absent rather than new Date()
+    // Use a deterministic sentinel when isoDate is absent rather than wall-clock now()
     // (non-deterministic clock calls break the R2 byte-identical-output invariant).
     const trimmedDate = isoDate && isoDate.trim();
     entries.push({
