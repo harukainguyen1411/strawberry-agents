@@ -5,13 +5,14 @@
 # Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
 #
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
-#   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
-#   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
-#   pre-commit-plan-lifecycle-guard.sh  — commit-phase guard: blocks non-Orianna plan-lifecycle moves (defence-in-depth)
-#   pre-commit-reviewer-anonymity.sh    — blocks agent-system identifiers in work-scope (missmp/) commit msgs
-#   pre-commit-secrets-guard.sh         — blocks secrets in committed files
-#   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
-#   pre-commit-unit-tests.sh            — runs unit tests for changed packages
+#   pre-commit-agent-shared-rules.sh       — agent identity + CLAUDE.md rule guards
+#   pre-commit-artifact-guard.sh           — blocks accidental artifact commits
+#   pre-commit-plan-lifecycle-guard.sh     — commit-phase guard: blocks non-Orianna plan-lifecycle moves (defence-in-depth)
+#   pre-commit-resolved-identity.sh        — PRIMARY GATE: blocks persona-named author/committer via git var (resolved identity)
+#   pre-commit-reviewer-anonymity.sh       — blocks agent-system identifiers in work-scope (missmp/) commit msgs
+#   pre-commit-secrets-guard.sh            — blocks secrets in committed files
+#   pre-commit-staged-scope-guard.sh       — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
+#   pre-commit-unit-tests.sh               — runs unit tests for changed packages
 #
 # NOTE: pre-commit-plan-promote-guard.sh and commit-msg-plan-promote-guard.sh have been
 # archived to scripts/hooks/_archive/v2-commit-phase-plan-guards/ by
@@ -28,6 +29,7 @@
 # Execution order is alphabetical (ls | sort).
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
+#   pre-push-resolved-identity.sh       — BACKSTOP: blocks persona-named author/committer via git cat-file (closes commit-tree path)
 #   pre-push-tdd.sh                     — TDD gate enforcement
 #
 # Commit-msg hooks picked up automatically from scripts/hooks/commit-msg-*.sh:
