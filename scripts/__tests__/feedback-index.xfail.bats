@@ -329,3 +329,96 @@ FIXTURE
   run bash "$SCRIPT" --check "$tmpfile"
   [ "$status" -ne 0 ]
 }
+
+# ---------------------------------------------------------------------------
+# B2 regression: idempotency must hold in production layout where --out is
+# inside --dir. The mtime loop must skip the output file itself, otherwise
+# each render bumps INDEX.md's mtime and the _Generated: timestamp advances.
+# xfail-guard: committed before fix per universal invariant rule 12
+# Plan-ref: plans/approved/personal/2026-04-21-agent-feedback-system.md
+# ---------------------------------------------------------------------------
+
+@test "TT2-B2: production idempotency — rendering twice with --out inside --dir produces zero diff" {
+  # xfail: B2 INDEX.md mtime exclusion not yet applied in render_index()
+  [ -f "$SCRIPT" ]
+
+  # Use a temp dir that mirrors the production layout: output is inside the source dir
+  PROD_DIR="$TMP_DIR/prod-feedback"
+  mkdir -p "$PROD_DIR"
+  cp "$FIXTURES_VALID/"*.md "$PROD_DIR/" 2>/dev/null || true
+  INDEX_PATH="$PROD_DIR/INDEX.md"
+
+  run bash "$SCRIPT" --dir "$PROD_DIR" --out "$INDEX_PATH"
+  [ "$status" -eq 0 ]
+  first_content="$(cat "$INDEX_PATH")"
+
+  # Sleep 1s so mtime would advance if the bug is present
+  sleep 1
+
+  run bash "$SCRIPT" --dir "$PROD_DIR" --out "$INDEX_PATH"
+  [ "$status" -eq 0 ]
+  second_content="$(cat "$INDEX_PATH")"
+
+  [ "$first_content" = "$second_content" ]
+}
+
+# ---------------------------------------------------------------------------
+# I1 regression: pipe character in field values must not corrupt the INDEX
+# markdown table. Fields containing | must be escaped or the table row must
+# not shift subsequent columns.
+# xfail-guard: committed before fix per universal invariant rule 12
+# Plan-ref: plans/approved/personal/2026-04-21-agent-feedback-system.md
+# ---------------------------------------------------------------------------
+
+@test "TT2-I1: author field containing pipe character does not corrupt INDEX table rows" {
+  # xfail: I1 pipe-injection guard not yet implemented in render_index()
+  [ -f "$SCRIPT" ]
+
+  # Create a valid fixture where author contains a pipe character
+  PIPE_FIXTURE="$TMP_DIR/pipe-author.md"
+  cat > "$PIPE_FIXTURE" <<'FIXTURE'
+---
+date: 2026-04-21
+time: "09:00"
+author: evil|pipe|author
+concern: work
+category: other
+severity: low
+friction_cost_minutes: 5
+related_feedback: []
+state: open
+---
+
+# Pipe injection test
+
+## What went wrong
+
+Author field contains pipe characters to test column injection.
+
+## Suggestion
+
+- Escape pipe characters in field values.
+
+## Why I'm writing this now
+
+Test fixture for I1 pipe-injection regression.
+FIXTURE
+
+  PIPE_DIR="$TMP_DIR/pipe-dir"
+  mkdir -p "$PIPE_DIR"
+  cp "$PIPE_FIXTURE" "$PIPE_DIR/2026-04-21-0900-evil-pipe-author.md"
+  INDEX_OUT="$TMP_DIR/pipe-index.md"
+
+  run bash "$SCRIPT" --dir "$PIPE_DIR" --out "$INDEX_OUT"
+  [ "$status" -eq 0 ]
+
+  # The INDEX must contain exactly one data row (not extra columns from pipe splitting)
+  # Count non-header, non-separator, non-empty, non-summary table lines
+  row_count=$(grep -c '^|' "$INDEX_OUT" | head -1)
+  # Expect: 1 header + 1 separator + 1 data row = 3 pipe-starting lines
+  # If injection occurred, the author "evil|pipe|author" splits into extra columns
+  # producing more rows or malformed entries. We check the data row contains
+  # the escaped/sanitized author without producing extra table rows.
+  data_rows=$(grep -E '^\|[^-]' "$INDEX_OUT" | grep -v 'Severity\|Date\|Author' | wc -l | tr -d ' ')
+  [ "$data_rows" -eq 1 ]
+}

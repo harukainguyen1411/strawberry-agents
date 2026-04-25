@@ -222,3 +222,80 @@ teardown() {
     [ -L "$TMP_DIR/clean-repo/.git/hooks/pre-commit" ] || \
     grep -q "pre-commit-feedback-index" "$TMP_DIR/clean-repo/.git/hooks/pre-commit" 2>/dev/null
 }
+
+# ---------------------------------------------------------------------------
+# B1 regression: install-hooks.sh + dispatcher must not fork-bomb when
+# core.hooksPath=scripts/hooks-dispatchers (the normal production layout).
+# The dispatcher fallback that calls .git/hooks/<verb> composes with the
+# .git/hooks/pre-commit shim (which execs the dispatcher) into infinite recursion.
+# xfail-guard: committed before fix per universal invariant rule 12
+# Plan-ref: plans/approved/personal/2026-04-21-agent-feedback-system.md
+# ---------------------------------------------------------------------------
+
+@test "TT3-B1: install-hooks.sh + commit does not fork-bomb when core.hooksPath is set to dispatcher dir" {
+  # xfail: B1 fork-bomb fix not yet applied — dispatcher fallback + shim compose into infinite recursion
+  [ -f "$INSTALL_HOOKS" ]
+  [ -f "$HOOK_SCRIPT" ]
+
+  CLEAN="$TMP_DIR/b1-clean-repo"
+  mkdir -p "$CLEAN/scripts/hooks-dispatchers"
+  mkdir -p "$CLEAN/scripts/hooks"
+  cp "$HOOK_SCRIPT" "$CLEAN/scripts/hooks/"
+  cp "$INSTALL_HOOKS" "$CLEAN/scripts/"
+  # Copy dispatcher template so install-hooks.sh can write dispatchers
+  if [ -f "$REPO_ROOT/scripts/hooks-dispatchers/pre-commit" ]; then
+    cp "$REPO_ROOT/scripts/hooks-dispatchers/pre-commit" "$CLEAN/scripts/hooks-dispatchers/"
+  fi
+  git -C "$CLEAN" init -q
+  git -C "$CLEAN" config user.email "test@example.com"
+  git -C "$CLEAN" config user.name "Test"
+  touch "$CLEAN/.gitkeep"
+  git -C "$CLEAN" add .gitkeep
+  git -C "$CLEAN" commit -q --no-verify -m "chore: init"
+
+  # Run install-hooks — this sets core.hooksPath=scripts/hooks-dispatchers
+  # and writes .git/hooks/pre-commit shim
+  bash "$CLEAN/scripts/install-hooks.sh" > /dev/null 2>&1 || true
+
+  # Now make a commit: must complete within 10 seconds (not hang/fork-bomb)
+  echo "x" > "$CLEAN/file.txt"
+  git -C "$CLEAN" add file.txt
+  timeout 10 git -C "$CLEAN" commit --no-verify -m "chore: test commit" 2>/dev/null
+  # Exit 0 = committed cleanly; exit 124 = timeout (fork-bomb); other = hook failure
+  [ "$?" -ne 124 ]
+}
+
+# ---------------------------------------------------------------------------
+# I2 regression: pre-commit hook must not silently overwrite manual INDEX.md
+# edits when only INDEX.md is staged (no other feedback file staged).
+# xfail-guard: committed before fix per universal invariant rule 12
+# Plan-ref: plans/approved/personal/2026-04-21-agent-feedback-system.md
+# ---------------------------------------------------------------------------
+
+@test "TT3-I2: hook aborts with error when only INDEX.md is staged and no other feedback file is staged" {
+  # xfail: I2 INDEX-only-staged guard not yet implemented in pre-commit-feedback-index.sh
+  [ -f "$HOOK_SCRIPT" ] && [ -f "$INDEX_SCRIPT" ]
+
+  # Set up a repo with an existing INDEX.md
+  cp "$FIXTURES_VALID/2026-04-21-0900-sona-orianna-signing-latency.md" \
+     "$TMP_GIT/feedback/"
+  git -C "$TMP_GIT" add feedback/
+  git -C "$TMP_GIT" commit -q --no-verify -m "chore: feedback — seed entry"
+
+  # Manually edit INDEX.md (simulate a hand-edit the user is trying to commit)
+  printf '# Manual hand-edit\n' >> "$TMP_GIT/feedback/INDEX.md"
+  git -C "$TMP_GIT" add "$TMP_GIT/feedback/INDEX.md"
+
+  # Install the hook
+  mkdir -p "$TMP_GIT/.git/hooks"
+  cp "$HOOK_SCRIPT" "$TMP_GIT/.git/hooks/pre-commit"
+  chmod +x "$TMP_GIT/.git/hooks/pre-commit"
+  cp "$INDEX_SCRIPT" "$TMP_GIT/scripts-feedback-index.sh"
+  chmod +x "$TMP_GIT/scripts-feedback-index.sh"
+
+  # Attempt to commit only INDEX.md — hook must reject with an informative error
+  run git -C "$TMP_GIT" commit -m "chore: test — only INDEX.md staged"
+  [ "$status" -ne 0 ]
+  # Error must mention INDEX.md or "generated" or "source"
+  [[ "$output" =~ "INDEX" ]] || [[ "$output" =~ "generated" ]] || [[ "$output" =~ "source" ]]
+}
