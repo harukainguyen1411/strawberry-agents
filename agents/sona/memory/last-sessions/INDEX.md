@@ -5,11 +5,12 @@
 
 ## Active shards (newest first)
 
+- 2026-04-25 · 2026-04-25-f993d23d · Session ID: c1463e58-16f0-4a89-b958-ffc669430619
+- 2026-04-25 · 2026-04-24-4df78d45 · **Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22; **Date:** 2026-04-24 (compact boundary — third consolidation this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-25 · 2026-04-24-84b7ba50 · **Date:** 2026-04-24 → 2026-04-25 (crossed UTC midnight); **Mode:** hands-off slow-track; **Coordinator:** Sona
 - 2026-04-24 · 2026-04-24-dad16397 · **Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22; **Date:** 2026-04-24 (compact boundary — sixth consolidation, resumed post-compact); **Concern:** work
 - 2026-04-24 · 2026-04-24-b3d87376 · **Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3; **Date:** 2026-04-24 (compact boundary — fifth consolidation, post-compact round 4); **Concern:** work
 - 2026-04-24 · 2026-04-24-ec53a0d6 · **Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22; **Date:** 2026-04-24 (compact boundary — fourth consolidation this session); **Concern:** work
-- 2026-04-24 · 2026-04-24-4df78d45 · **Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22; **Date:** 2026-04-24 (compact boundary — third consolidation this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-24 · 2026-04-24-4eb1eb78 · **Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3; **Date:** 2026-04-24 (compact boundary — second consolidation this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-24 · 2026-04-24-9b238384 · **Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3; **Date:** 2026-04-24 (compact boundary); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-23 · 2026-04-23-536df25c · **Session ID:** `536df25c-700d-43f8-bf9a-98a86580e003`; **Date:** 2026-04-23 (closed 2026-04-23T14:56Z / evening local); **Mode:** cli, final post-compact leg (5th compact of session)
