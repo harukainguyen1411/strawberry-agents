@@ -20,9 +20,13 @@
 # tests exercise the production code path.
 # ---------------------------------------------------------------------------
 
-# Field name resolution — honours DECISION_RENAME_* env vars in test mode
+# Field name resolution — DECISION_RENAME_* env vars are honoured ONLY when
+# DECISION_TEST_MODE=1 is active. In production (DECISION_TEST_MODE unset or 0)
+# the overrides are ignored to prevent hostile env vars from causing gratuitous
+# bind-contract failures in deployed coordinator sessions.
+# Refs: PR #64 review finding I3.
 _decision_field_axes() {
-  if [ -n "${DECISION_RENAME_AXES:-}" ]; then
+  if [ "${DECISION_TEST_MODE:-0}" = "1" ] && [ -n "${DECISION_RENAME_AXES:-}" ]; then
     printf '%s' "${DECISION_RENAME_AXES}"
   else
     printf 'axes'
@@ -30,7 +34,7 @@ _decision_field_axes() {
 }
 
 _decision_field_match() {
-  if [ -n "${DECISION_RENAME_MATCH:-}" ]; then
+  if [ "${DECISION_TEST_MODE:-0}" = "1" ] && [ -n "${DECISION_RENAME_MATCH:-}" ]; then
     printf '%s' "${DECISION_RENAME_MATCH}"
   else
     printf 'match'
@@ -38,7 +42,7 @@ _decision_field_match() {
 }
 
 _decision_field_coord_conf() {
-  if [ -n "${DECISION_RENAME_COORD_CONF:-}" ]; then
+  if [ "${DECISION_TEST_MODE:-0}" = "1" ] && [ -n "${DECISION_RENAME_COORD_CONF:-}" ]; then
     printf '%s' "${DECISION_RENAME_COORD_CONF}"
   else
     printf 'coordinator_confidence'
@@ -46,7 +50,7 @@ _decision_field_coord_conf() {
 }
 
 _decision_field_decision_id() {
-  if [ -n "${DECISION_RENAME_DECISION_ID:-}" ]; then
+  if [ "${DECISION_TEST_MODE:-0}" = "1" ] && [ -n "${DECISION_RENAME_DECISION_ID:-}" ]; then
     printf '%s' "${DECISION_RENAME_DECISION_ID}"
   else
     printf 'decision_id'
