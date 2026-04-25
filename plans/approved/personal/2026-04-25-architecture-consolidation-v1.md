@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: swain
 created: 2026-04-25
@@ -396,3 +396,11 @@ T.WAVE.4.placeholder — Wave 4 cross-reference sweep + fix — kind: build — 
 T.WAVE.5.placeholder — Wave 5 flag-resolution archive moves: `mcp-servers.md`, `discord-relay.md`, `telegram-relay.md`, `claude-runlock.md` all archive (OQ-1/3/4/5 resolved 2026-04-25) — kind: build — estimate_minutes: 30
 
 The T.WAVE.* placeholders are stubs — Aphelios fills these into per-file tasks with exact paths, sed-pass commands, and per-rewrite content checkpoints. `tests_required: false` reflects that this is a doc-tree refactor; there is no behavioral change to test. The cross-reference sweep (Wave 4) is verifiable by a `grep` against the old paths returning zero results across the repo.
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (swain), concrete decision, full survey of all 30 architecture files with per-file classification, named sequencing constraint (must precede cornerstone canonical-v1 lock activation), and explicit migration discipline. All four blocking OQs (OQ-1/3/4/5) resolved by Duong on 2026-04-25; remaining OQs (OQ-2/6/7) are non-blocking refinements that Aphelios's breakdown can absorb. Risks are enumerated with concrete mitigations. Tasks are actionable with named wave groupings.
+- **Simplicity:** WARN: possible overengineering — 6-wave migration for ~30 file moves is at the edge of ceremony; rationale (per-wave revert, clean git log --follow, conflict-avoidance with concurrent Viktor branches) is named and defensible, but Aphelios should consider collapsing Waves 0+1 or Waves 3+5 into single commits if review burden is dominating.
