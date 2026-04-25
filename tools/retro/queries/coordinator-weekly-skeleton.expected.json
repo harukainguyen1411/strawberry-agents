@@ -1,0 +1,10 @@
+[
+  {
+    "coordinator_session_id": "sess-parent-001",
+    "iso_week": "2026-W17",
+    "inline_tool_calls": 0,
+    "delegated_tool_calls": 0,
+    "delegate_ratio": null,
+    "dispatch_count": 1
+  }
+]

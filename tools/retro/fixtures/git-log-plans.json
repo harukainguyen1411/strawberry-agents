@@ -1,0 +1,36 @@
+[
+  {
+    "commit": "abc123def456",
+    "subject": "chore: promote 2026-04-21-agent-feedback-system to implemented",
+    "trailers": {
+      "Promoted-By": "Orianna",
+      "Orianna-Phase": "proposed->approved->in-progress->implemented"
+    },
+    "timestamp": "2026-04-21T14:00:00.000Z",
+    "planSlug": "2026-04-21-agent-feedback-system",
+    "fromStage": "in-progress",
+    "toStage": "implemented"
+  },
+  {
+    "commit": "def456abc789",
+    "subject": "chore: promote 2026-04-21-agent-feedback-system to in-progress",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-21T10:00:00.000Z",
+    "planSlug": "2026-04-21-agent-feedback-system",
+    "fromStage": "approved",
+    "toStage": "in-progress"
+  },
+  {
+    "commit": "ghi789jkl012",
+    "subject": "chore: promote 2026-04-21-agent-feedback-system to approved",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-21T08:00:00.000Z",
+    "planSlug": "2026-04-21-agent-feedback-system",
+    "fromStage": "proposed",
+    "toStage": "approved"
+  }
+]
