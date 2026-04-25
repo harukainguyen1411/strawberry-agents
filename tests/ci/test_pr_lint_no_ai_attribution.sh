@@ -66,6 +66,33 @@ run_case "Comment payload containing Sonnet 4.6" \
   "This PR was reviewed by Sonnet 4.6" \
   1
 
+# F1 adversarial: prefix chars (, [, :, " (Senna finding F1)
+run_case "F1: (Sonnet) in PR body — paren prefix" \
+  "## Summary
+Built with (Sonnet) model" \
+  1
+
+run_case "F1: [Opus] in PR body — bracket prefix" \
+  "## Summary
+Using [Opus] here" \
+  1
+
+run_case "F1: :Claude in PR body — colon prefix" \
+  "## Summary
+model:Claude was used" \
+  1
+
+# F2 adversarial: marker glued to digit (Senna finding F2)
+run_case "F2: Sonnet4.6 in PR body — digit postfix" \
+  "## Summary
+Written by Sonnet4.6" \
+  1
+
+run_case "F2: Opus4 in PR body — digit postfix" \
+  "## Summary
+Using Opus4" \
+  1
+
 # --- Summary ---
 
 printf '\nT5: %d passed, %d failed\n' "$pass" "$fail"

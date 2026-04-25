@@ -28,6 +28,12 @@
 # Exit codes:
 #   0  all agents synced (or skipped with warning)
 #   1  one or more shared files missing (fatal)
+#
+# Invariant (S4):
+#   Any prose written between two adjacent <!-- include: --> markers will be
+#   silently discarded on the next sync run, because the script replaces
+#   everything from one marker's closing newline up to (but not including) the
+#   next marker. Do not write hand-authored content in those inter-marker gaps.
 
 set -euo pipefail
 

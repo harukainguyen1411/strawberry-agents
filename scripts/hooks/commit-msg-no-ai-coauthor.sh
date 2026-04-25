@@ -75,10 +75,13 @@ fi
 # Anchoring uses two-pass approach: first grep for marker keywords with broad
 # pattern, then validate surrounding context to avoid false positives.
 # BSD grep (macOS) ERE does not support complex nested character classes reliably,
-# so we use a simple word-boundary simulation: require whitespace or start/end of
-# line on at least one side of the marker. The "maintain" false-positive is avoided
-# because "ai" alone is not in the marker list — only full tokens are.
-BODY_MARKERS='(^|[[:space:]])(claude|anthropic|sonnet|opus|haiku|AI-generated)([[:space:]]|[[:punct:]]|$)'
+# so we use a simple word-boundary simulation: require a non-alphanumeric char or
+# start-of-line before the marker, and a non-alpha char (space, punct, digit) or
+# end-of-line after. Using [[:punct:][:space:]] as prefix covers (, [, `, :, ", /, etc.
+# Postfix includes [0-9] so "Sonnet4.6" and "Opus4" are caught (F2 fix).
+# The "maintain" false-positive is avoided because "ai" alone is not in the marker
+# list — only full tokens are; "Sonnets" is avoided because 's' is alpha (not caught).
+BODY_MARKERS='(^|[[:punct:][:space:]])(claude|anthropic|sonnet|opus|haiku|AI-generated)([[:space:]]|[[:punct:]]|[0-9]|$)'
 body_marker_lines="$(grep -iE "$BODY_MARKERS" "$COMMIT_MSG_FILE" 2>/dev/null || true)"
 if [ -n "$body_marker_lines" ]; then
   offending="$offending

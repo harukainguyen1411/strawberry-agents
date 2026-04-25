@@ -40,7 +40,7 @@ coauthor="$(grep -iE '^Co-Authored-By:' "$tmpfile" 2>/dev/null || true)"
 $coauthor"
 
 # AI markers (word-boundary anchored — same logic as commit-msg hook)
-body_markers="$(grep -iE '(^|[[:space:]])(claude|anthropic|sonnet|opus|haiku|AI-generated)([[:space:]]|[[:punct:]]|$)' "$tmpfile" 2>/dev/null || true)"
+body_markers="$(grep -iE '(^|[[:punct:][:space:]])(claude|anthropic|sonnet|opus|haiku|AI-generated)([[:space:]]|[[:punct:]]|[0-9]|$)' "$tmpfile" 2>/dev/null || true)"
 [ -n "$body_markers" ] && offending="$offending
 $body_markers"
 

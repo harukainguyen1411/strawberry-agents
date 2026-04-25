@@ -87,6 +87,50 @@ run_case "Body mentioning Sonnet 4.6 (model name is a marker)" \
 This was written by Sonnet 4.6 model" \
   1
 
+# F1 adversarial: prefix chars (, [, backtick, :, ", / (Senna finding F1)
+run_case "F1: (Sonnet) in body — paren prefix" \
+  "chore: some work
+
+Built with (Sonnet) model" \
+  1
+
+run_case "F1: [Opus] in body — bracket prefix" \
+  "chore: some work
+
+Using [Opus] here" \
+  1
+
+run_case "F1: :Sonnet in body — colon prefix" \
+  "chore: some work
+
+model:Sonnet was used" \
+  1
+
+run_case "F1: \"Claude\" in body — quote prefix" \
+  'chore: some work
+
+Powered by "Claude" assistant' \
+  1
+
+# F2 adversarial: marker glued to digit (Senna finding F2 — exact pattern of b2b8944)
+run_case "F2: Sonnet4.6 in body — digit postfix" \
+  "chore: some work
+
+Written by Sonnet4.6 model" \
+  1
+
+run_case "F2: Opus4 in body — digit postfix" \
+  "chore: some work
+
+Using Opus4 here" \
+  1
+
+run_case "F2: Claude4 in body — digit postfix" \
+  "chore: some work
+
+Claude4 wrote this" \
+  1
+
 # --- Cases that must PASS (exit 0) ---
 
 run_case "Clean message with no trailer" \
