@@ -184,6 +184,55 @@ if [ "$INDEX_ONLY" -eq 1 ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Unified EXIT trap — registered here (before any mode short-circuit) so it
+# fires on both --decisions-only and full-run paths. Advisory lock is also
+# acquired here so concurrent --decisions-only invocations are serialised.
+# Refs: PR #64 review finding I4.
+# ---------------------------------------------------------------------------
+_NEW_CONTENT_FILE=""
+_MEMORY_MD_ABOVE=""
+
+_cleanup() {
+    [ -n "$_NEW_CONTENT_FILE" ] && rm -f "$_NEW_CONTENT_FILE"
+    [ -n "$_MEMORY_MD_ABOVE" ]  && rm -f "$_MEMORY_MD_ABOVE"
+    if [ "${_LOCK_PATH_NOCLOBBER:-}" = "1" ]; then
+        rm -f "${LOCK_FILE}"
+    fi
+}
+trap '_cleanup' EXIT INT TERM
+
+# Advisory lock — serialises all invocations including --decisions-only
+_LOCK_PATH_NOCLOBBER=0
+_lock_acquired=0
+
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${LOCK_FILE}"
+    if ! flock -n 9; then
+        echo "memory-consolidate: another consolidation is running (flock), exiting as no-op."
+        exit 0
+    fi
+    _lock_acquired=1
+else
+    if [ -f "${LOCK_FILE}" ]; then
+        existing_pid=$(cat "${LOCK_FILE}" 2>/dev/null || true)
+        if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+            echo "memory-consolidate: another consolidation is running (pid ${existing_pid}), exiting as no-op."
+            exit 0
+        else
+            echo "memory-consolidate: stale lock from pid ${existing_pid:-unknown} (process dead), reclaiming."
+            rm -f "${LOCK_FILE}"
+        fi
+    fi
+    if ( set -o noclobber; echo "$$" > "${LOCK_FILE}" ) 2>/dev/null; then
+        _LOCK_PATH_NOCLOBBER=1
+        _lock_acquired=1
+    else
+        echo "memory-consolidate: another consolidation is running (noclobber race), exiting as no-op."
+        exit 0
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # --decisions-only mode: fast path — decisions INDEX regen + preferences rollup
 # Runs decision pass only (no archive move, no sessions fold, no commit/push).
 # Ordering: runs after last-sessions/ pass (full run only); as a standalone mode
@@ -303,54 +352,6 @@ for f in "${LAST_SESSIONS_DIR}"/*.md; do
     TOTAL_LAST_SHARDS=$(( TOTAL_LAST_SHARDS + 1 ))
 done
 echo "memory-consolidate [${SECRETARY}]: pre-boot-validator: sentinel_count=${SENTINEL_COUNT} total_last_session_shards=${TOTAL_LAST_SHARDS}" >&2
-
-# ---------------------------------------------------------------------------
-# Unified EXIT trap — registered BEFORE lock acquisition so it always fires.
-# ---------------------------------------------------------------------------
-_NEW_CONTENT_FILE=""
-_MEMORY_MD_ABOVE=""
-
-_cleanup() {
-    [ -n "$_NEW_CONTENT_FILE" ] && rm -f "$_NEW_CONTENT_FILE"
-    [ -n "$_MEMORY_MD_ABOVE" ]  && rm -f "$_MEMORY_MD_ABOVE"
-    if [ "${_LOCK_PATH_NOCLOBBER:-}" = "1" ]; then
-        rm -f "${LOCK_FILE}"
-    fi
-}
-trap '_cleanup' EXIT INT TERM
-
-# ---------------------------------------------------------------------------
-# Advisory lock
-# ---------------------------------------------------------------------------
-_LOCK_PATH_NOCLOBBER=0
-_lock_acquired=0
-
-if command -v flock >/dev/null 2>&1; then
-    exec 9>"${LOCK_FILE}"
-    if ! flock -n 9; then
-        echo "memory-consolidate: another consolidation is running (flock), exiting as no-op."
-        exit 0
-    fi
-    _lock_acquired=1
-else
-    if [ -f "${LOCK_FILE}" ]; then
-        existing_pid=$(cat "${LOCK_FILE}" 2>/dev/null || true)
-        if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
-            echo "memory-consolidate: another consolidation is running (pid ${existing_pid}), exiting as no-op."
-            exit 0
-        else
-            echo "memory-consolidate: stale lock from pid ${existing_pid:-unknown} (process dead), reclaiming."
-            rm -f "${LOCK_FILE}"
-        fi
-    fi
-    if ( set -o noclobber; echo "$$" > "${LOCK_FILE}" ) 2>/dev/null; then
-        _LOCK_PATH_NOCLOBBER=1
-        _lock_acquired=1
-    else
-        echo "memory-consolidate: another consolidation is running (noclobber race), exiting as no-op."
-        exit 0
-    fi
-fi
 
 cd "${GIT_ROOT}"
 
