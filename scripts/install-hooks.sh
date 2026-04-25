@@ -127,3 +127,42 @@ fi
 
 echo "[install-hooks] Done. Hook dispatchers installed to: $HOOKS_DIR"
 echo "[install-hooks] Sub-hooks active: $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"
+
+# ---------------------------------------------------------------------------
+# Smoke test stanza — run hook test suites to confirm installation is sound.
+# Runs the resolved-identity test suites and the commit-msg no-AI-coauthor suite.
+# Failures are reported fail-loud but do not abort the installer (tests may be
+# incompatible with environments lacking git or bash).
+# ---------------------------------------------------------------------------
+echo ""
+echo "[install-hooks] Running hook smoke tests..."
+_smoke_fail=0
+
+run_smoke() {
+  _test_file="$1"
+  if [ ! -f "$_test_file" ]; then
+    printf '[install-hooks] SMOKE WARNING: test file not found: %s\n' "$_test_file" >&2
+    return
+  fi
+  _result=$(bash "$_test_file" 2>&1)
+  _rc=$?
+  if [ $_rc -eq 0 ]; then
+    # Extract the OK summary line
+    _summary=$(printf '%s' "$_result" | tail -1)
+    printf '[install-hooks] SMOKE OK: %s — %s\n' "$(basename "$_test_file")" "$_summary"
+  else
+    printf '[install-hooks] SMOKE FAIL: %s\n' "$(basename "$_test_file")" >&2
+    printf '%s\n' "$_result" | sed 's/^/  /' >&2
+    _smoke_fail=1
+  fi
+}
+
+run_smoke "$REPO_ROOT/tests/hooks/test_pre_commit_resolved_identity.sh"
+run_smoke "$REPO_ROOT/tests/hooks/test_pre_push_resolved_identity.sh"
+run_smoke "$REPO_ROOT/tests/hooks/test_commit_msg_no_ai_coauthor.sh"
+
+if [ "$_smoke_fail" -ne 0 ]; then
+  printf '[install-hooks] WARNING: one or more smoke tests failed — see above\n' >&2
+else
+  echo "[install-hooks] All smoke tests passed."
+fi
