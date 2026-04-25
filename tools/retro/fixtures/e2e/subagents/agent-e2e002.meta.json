@@ -1,0 +1,9 @@
+{
+  "agentId": "agent-e2e002",
+  "sessionId": "sess-e2e-sub002",
+  "parentSessionId": "sess-e2e-parent",
+  "agentType": "subagent",
+  "description": "Run T.P1.4 render.mjs authoring",
+  "startTs": "2026-04-24T09:00:00.000Z",
+  "endTs": "2026-04-24T09:01:00.000Z"
+}
