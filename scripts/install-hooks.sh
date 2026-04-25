@@ -5,13 +5,14 @@
 # Safe to re-run — existing non-managed hooks are preserved inside the dispatcher.
 #
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
-#   pre-commit-agent-shared-rules.sh    — agent identity + CLAUDE.md rule guards
-#   pre-commit-artifact-guard.sh        — blocks accidental artifact commits
-#   pre-commit-plan-lifecycle-guard.sh  — commit-phase guard: blocks non-Orianna plan-lifecycle moves (defence-in-depth)
-#   pre-commit-reviewer-anonymity.sh    — blocks agent-system identifiers in work-scope (missmp/) commit msgs
-#   pre-commit-secrets-guard.sh         — blocks secrets in committed files
-#   pre-commit-staged-scope-guard.sh    — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
-#   pre-commit-unit-tests.sh            — runs unit tests for changed packages
+#   pre-commit-agent-shared-rules.sh       — agent identity + CLAUDE.md rule guards
+#   pre-commit-artifact-guard.sh           — blocks accidental artifact commits
+#   pre-commit-plan-lifecycle-guard.sh     — commit-phase guard: blocks non-Orianna plan-lifecycle moves (defence-in-depth)
+#   pre-commit-resolved-identity.sh        — PRIMARY GATE: blocks persona-named author/committer via git var (resolved identity)
+#   pre-commit-reviewer-anonymity.sh       — blocks agent-system identifiers in work-scope (missmp/) commit msgs
+#   pre-commit-secrets-guard.sh            — blocks secrets in committed files
+#   pre-commit-staged-scope-guard.sh       — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
+#   pre-commit-unit-tests.sh               — runs unit tests for changed packages
 #
 # NOTE: pre-commit-plan-promote-guard.sh and commit-msg-plan-promote-guard.sh have been
 # archived to scripts/hooks/_archive/v2-commit-phase-plan-guards/ by
@@ -28,6 +29,7 @@
 # Execution order is alphabetical (ls | sort).
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
+#   pre-push-resolved-identity.sh       — BACKSTOP: blocks persona-named author/committer via git cat-file (closes commit-tree path)
 #   pre-push-tdd.sh                     — TDD gate enforcement
 #
 # Commit-msg hooks picked up automatically from scripts/hooks/commit-msg-*.sh:
@@ -125,3 +127,42 @@ fi
 
 echo "[install-hooks] Done. Hook dispatchers installed to: $HOOKS_DIR"
 echo "[install-hooks] Sub-hooks active: $(ls "$HOOKS_SRC"/*.sh 2>/dev/null | xargs -n1 basename | tr '\n' ' ')"
+
+# ---------------------------------------------------------------------------
+# Smoke test stanza — run hook test suites to confirm installation is sound.
+# Runs the resolved-identity test suites and the commit-msg no-AI-coauthor suite.
+# Failures are reported fail-loud but do not abort the installer (tests may be
+# incompatible with environments lacking git or bash).
+# ---------------------------------------------------------------------------
+echo ""
+echo "[install-hooks] Running hook smoke tests..."
+_smoke_fail=0
+
+run_smoke() {
+  _test_file="$1"
+  if [ ! -f "$_test_file" ]; then
+    printf '[install-hooks] SMOKE WARNING: test file not found: %s\n' "$_test_file" >&2
+    return
+  fi
+  _result=$(bash "$_test_file" 2>&1)
+  _rc=$?
+  if [ $_rc -eq 0 ]; then
+    # Extract the OK summary line
+    _summary=$(printf '%s' "$_result" | tail -1)
+    printf '[install-hooks] SMOKE OK: %s — %s\n' "$(basename "$_test_file")" "$_summary"
+  else
+    printf '[install-hooks] SMOKE FAIL: %s\n' "$(basename "$_test_file")" >&2
+    printf '%s\n' "$_result" | sed 's/^/  /' >&2
+    _smoke_fail=1
+  fi
+}
+
+run_smoke "$REPO_ROOT/tests/hooks/test_pre_commit_resolved_identity.sh"
+run_smoke "$REPO_ROOT/tests/hooks/test_pre_push_resolved_identity.sh"
+run_smoke "$REPO_ROOT/tests/hooks/test_commit_msg_no_ai_coauthor.sh"
+
+if [ "$_smoke_fail" -ne 0 ]; then
+  printf '[install-hooks] WARNING: one or more smoke tests failed — see above\n' >&2
+else
+  echo "[install-hooks] All smoke tests passed."
+fi
