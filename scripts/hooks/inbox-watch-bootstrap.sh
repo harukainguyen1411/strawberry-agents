@@ -7,10 +7,12 @@
 # Output (stdout): JSON with hookSpecificOutput.additionalContext, or nothing.
 #
 # Behaviour:
-#   - source not in {startup,resume,clear,compact} → exit 0 silently
+#   - source not in {startup} → exit 0 silently
+#     (resume/clear/compact inherit prior Monitor task — duplicate directive causes
+#      duplicate inbox-watch.sh processes; plan 2026-04-25-watcher-arm-directive-source-gate)
 #   - .no-inbox-watch exists → exit 0 silently (total opt-out)
 #   - coordinator identity unresolved → exit 0 silently
-#   - source in allowlist + identity resolved + no opt-out → emit bootstrap nudge JSON
+#   - source=startup + identity resolved + no opt-out → emit bootstrap nudge JSON
 #
 # Identity resolution (same three-tier chain as inbox-watch.sh):
 #   1. CLAUDE_AGENT_NAME env var
@@ -35,9 +37,12 @@ else
   source_val="$(printf '%s' "$payload" | grep -o '"source":"[^"]*"' | sed 's/"source":"//;s/"//' 2>/dev/null || true)"
 fi
 
-# Bootstrap on startup, resume, clear, or compact; silent on anything else.
+# Bootstrap on startup only; silent on resume/clear/compact (and anything else).
+# resume/clear/compact inherit the prior session's running Monitor task — re-emitting the
+# directive causes a duplicate inbox-watch.sh process (literal-vs-goal bug, plan
+# 2026-04-25-watcher-arm-directive-source-gate).
 case "$source_val" in
-  startup|resume|clear|compact) ;;
+  startup) ;;
   *) exit 0 ;;
 esac
 
