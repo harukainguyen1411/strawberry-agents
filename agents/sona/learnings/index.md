@@ -84,3 +84,4 @@ Chronological index of Sona's session learnings. Newest first.
 - [2026-04-10 Agent-team coordination](2026-04-10-agent-team-coordination.md)
 - [2026-04-10 initialPrompt startup](2026-04-10-initialPrompt-startup.md)
 - [2026-04-09 Demo agent system](2026-04-09-demo-agent-system.md)
+- 2026-04-25-verify-the-verify-and-post-compact-summary.md — "Verify the verify" reflex + post-compact summary is suspect when it drives state-mutating dispatches
