@@ -88,3 +88,5 @@
 - 2026-04-25-compact-watch-slip-pattern.md — At context plateaus, "clear next task" visibility suppresses compact-watch awareness. Run /pre-compact-save before dispatching any new agent when plateau signs appear. Behavioral fix until a structural compact-watch primitive is built. | last_used: 2026-04-25
 - 2026-04-25-test-discipline-rounds-are-orthogonal.md — Test-discipline failures (over-assertion, wrong code path, missing edge coverage) are a separate review dimension from functional correctness. Budget two CHANGES_REQUESTED rounds minimum for complex-lane impl PRs. Brief Viktor on test-discipline expectations, not just xfail structure, at dispatch time. | last_used: 2026-04-25
 - 2026-04-25-parallel-slice-predispatch-doctrine.md — Before dispatching any task >30 min, check for parallel streams. If parallel streams exist, slice first. Dispatch to a single agent only when runtime is genuinely short or streams are deeply interdependent. Doctrine shipped as PR #66. | last_used: 2026-04-25
+
+- 2026-04-25-orianna-parallel-git-index-race.md — Orianna parallel-dispatch git-index race; mitigation: explicit-pathspec on git commit
