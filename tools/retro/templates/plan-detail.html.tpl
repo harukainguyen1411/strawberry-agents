@@ -3,29 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Retrospection Dashboard</title>
+<title>Plan: {{PLAN_SLUG}}</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<h1>Retrospection Dashboard</h1>
-<p>Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md</p>
-<table id="plans-table">
+<p><a href="index.html">&larr; Back to Dashboard</a></p>
+<h1>Plan: {{PLAN_SLUG}}</h1>
+<table id="plan-detail-table">
 <thead>
 <tr>
-  <th>Plan</th>
-  <th>Stages</th>
-  <th>Total Tokens In</th>
+  <th>Stage</th>
+  <th>Agent</th>
+  <th>Tokens In</th>
+  <th>Tokens Out</th>
+  <th>Cache Read</th>
+  <th>Cache Creation</th>
   <th>Wall Active (min)</th>
+  <th>Turns</th>
+  <th>Tool Calls</th>
 </tr>
 </thead>
 <tbody>
-<tr><td><a href="plan-2026-04-21-agent-feedback-system.html">2026-04-21-agent-feedback-system</a></td><td>1</td><td>470</td><td>0.75</td></tr>
+{{STAGE_ROWS}}
 </tbody>
 </table>
 <script>
 (function() {
-  // Client-side filter/sort for the plans table
-  var table = document.getElementById('plans-table');
+  var table = document.getElementById('plan-detail-table');
   var headers = table.querySelectorAll('th');
   var sortDir = {};
   headers.forEach(function(th, idx) {
