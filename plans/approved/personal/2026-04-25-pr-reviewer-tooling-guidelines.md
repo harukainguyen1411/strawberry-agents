@@ -208,6 +208,57 @@ Manual audit cadence in the meantime: Duong runs a monthly spot-check on five ra
 - Dashboard v2 panel implementation — separate plan once dashboard v1 lands.
 - New reviewer agent roles — none added; Camille promoted to dispatch-conditional, not added as a third lane.
 
+## Tasks
+
+D1A inline breakdown (Aphelios, 2026-04-25). Wave W3 per synthesis §6. Default isolation: worktree (Rule 20). Tier hint: Sonnet builder for all edit tasks; Opus planner only on T1 (cross-deps audit).
+
+**Cross-plan dependency note.** This breakdown shares no file targets with `plans/approved/personal/2026-04-25-structured-qa-pipeline.md`. The QA-pipeline ADR amends Senna for the QA Stage 3 diagnose-on-FAIL role (separate section); this ADR amends Senna's `## Scope — What You Check` and adds `## Escalation`. No sed/awk path overlap. Reviewer-tooling tasks below MAY run in parallel with QA-pipeline implementation tasks (Kayn breakdown of QA-pipeline T2). Hard sequencing constraint: Senna agent-def edits in T3 here MUST NOT clobber the include-marker block where the future QA-pipeline edit lands — both edits append to disjoint sections (this ADR: replace `## Scope` + add `## Escalation`; QA-pipeline: amend a separate `## QA co-author` block per its D5/D9). If QA-pipeline lands first, T3/T4 here re-read the file fresh to avoid stale-merge clobber. If this ADR lands first, QA-pipeline's Senna edit has the same obligation.
+
+### Phase 0 — Pre-flight & cross-deps audit
+
+- [ ] **T1** — Cross-deps audit: confirm no file-line collision between this ADR's planned edits to `senna.md` / `lucian.md` / `camille.md` and any pending edits from `plans/approved/personal/2026-04-25-structured-qa-pipeline.md` (or its in-progress breakdown if Kayn has landed it). Produce a one-paragraph note in the implementation-PR body stating which sections each ADR touches. estimate_minutes: 20. Files: (read-only) `.claude/agents/senna.md`, `.claude/agents/lucian.md`, `.claude/agents/camille.md`, `plans/approved/personal/2026-04-25-structured-qa-pipeline.md`. DoD: PR body includes a `Cross-deps:` paragraph naming the disjoint section anchors per agent-def.
+
+### Phase 1 — Shared primitive (foundation)
+
+- [ ] **T2** — Create `.claude/agents/_shared/reviewer-discipline.md` codifying the seven D1 rules and the eight D7 anti-patterns verbatim from the ADR body, in the same heading shape as the existing `_shared/no-ai-attribution.md` primitive (top-level heading + bulleted rule list, no frontmatter). estimate_minutes: 30. Files: `.claude/agents/_shared/reviewer-discipline.md` (new). DoD: file exists with two sections (`## Universal reviewer rules` numbered 1–7 mirroring D1; `## Reviewer anti-patterns — forbidden` bulleted list of 8 named patterns from D7); rule wording matches the ADR text 1:1; passes `bash scripts/sync-shared-rules.sh --dry-run` (no errors).
+
+### Phase 2 — Agent-def amendments (parallel-safe within phase)
+
+T3 / T4 / T5 touch three different files and may run in parallel after T2 lands.
+
+- [ ] **T3** — Amend `.claude/agents/senna.md` per D9.1: (a) replace the existing `## Scope — What You Check` section with the five-axis checklist (Axes A–E from D2) — each axis as a sub-section with bullet failure modes; (b) add a new `## Escalation` section codifying E1 (Camille dispatch on novel security uncertainty) and E2 (`[escalate: azir]` on architectural-scope scalability concerns) per D5; (c) add `<!-- include: _shared/reviewer-discipline.md -->` immediately after the existing no-ai-attribution include at the file tail; (d) add to frontmatter `tools:` list: `coderabbit:code-review`, `pr-review-toolkit:review-pr`, `superpowers:code-reviewer`; (e) add a `## Tools — Security-axis Bash invocations` paragraph noting `semgrep --config=auto <changed-paths>` as a security-axis Bash invocation (not declared as an MCP tool, per D4c). estimate_minutes: 50. Files: `.claude/agents/senna.md`. DoD: all five edits present; `bash scripts/sync-shared-rules.sh` succeeds and no diff appears on the no-ai-attribution include block; frontmatter parses (yaml-loads cleanly); the file still has a single `model: opus` line.
+
+- [ ] **T4** — Amend `.claude/agents/lucian.md` per D9.2: (a) replace the existing `## Scope — What You Check` section with the five-axis checklist (Axes F–J from D3); (b) add a new `## Escalation` section codifying E3 (`[escalate: swain|azir]` on plan-itself-wrong) and E4 (BLOCKER + `[escalate: azir]` for ADR contract drift requiring amendment) per D5; (c) add `<!-- include: _shared/reviewer-discipline.md -->` immediately after the existing no-ai-attribution include; (d) add to frontmatter `tools:` list exactly one new entry: `superpowers:code-reviewer` (NOT coderabbit/pr-review-toolkit per D4a). estimate_minutes: 40. Files: `.claude/agents/lucian.md`. DoD: all four edits present; `bash scripts/sync-shared-rules.sh` succeeds; frontmatter parses; the file does NOT add coderabbit or pr-review-toolkit (asserted by `grep -c 'coderabbit\|pr-review-toolkit'` = 0).
+
+- [ ] **T5** — Amend `.claude/agents/camille.md` per D9.3: add a new `## When you are dispatched on a PR` section codifying D6b (the diff-scope detection list — auth code, IAM, deploy scripts, secret-handling, decrypt.sh family, branch-protection/CODEOWNERS, agent-identity boundaries) and the verdict shape `BLOCK / NEEDS-MITIGATION / OK`; explicitly state Camille's verdict on a PR is advisory to Senna (Senna remains verdict-of-record) per D6c. estimate_minutes: 30. Files: `.claude/agents/camille.md`. DoD: new `## When you are dispatched on a PR` section exists with: a sub-list of detection paths (≥7 entries from D6b), the three-verdict enum, and an advisory-not-parallel-reviewer paragraph that references Senna by name as verdict-of-record; frontmatter unchanged; existing sections preserved.
+
+### Phase 3 — Coordinator dispatch heuristic
+
+- [ ] **T6** — Update the standing PR-review dispatch heuristic so the coordinator (Evelynn/Sona) dispatches Camille in parallel with Senna+Lucian when the PR matches the security-blast-radius criteria from D6b. Implementation lives either in `agents/evelynn/CLAUDE.md` + `agents/sona/CLAUDE.md` (under the existing PR-dispatch routing block) OR as a new `_shared/pr-dispatch-heuristic.md` snippet included into both coordinator CLAUDE.md files — pick whichever matches the existing pattern (audit first via `grep -l "pr-review\|PR review" agents/evelynn/CLAUDE.md agents/sona/CLAUDE.md`). The heuristic must list: trigger labels (`security`, `auth`, `deploy`), trigger paths (matching D6b), and the dispatch shape (Camille parallel with Senna+Lucian, advisory verdict, Senna remains verdict-of-record). estimate_minutes: 45. Files: `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md` (and optionally `.claude/agents/_shared/pr-dispatch-heuristic.md` if the snippet pattern is chosen). DoD: both coordinator CLAUDE.md files contain (or include) the heuristic; on a synthetic PR touching `scripts/deploy/` the documented heuristic predicts Camille dispatch; on a synthetic PR touching `apps/web/components/Button.tsx` only, it predicts no Camille dispatch.
+
+### Phase 4 — Verification & follow-up scaffolding
+
+- [ ] **T7** — Run `bash scripts/sync-shared-rules.sh` end-to-end and verify (a) `senna.md` and `lucian.md` both have the inlined `_shared/reviewer-discipline.md` body verbatim, (b) running it twice is idempotent (no diff on second run), (c) the existing `_shared/no-ai-attribution.md` inline block is unchanged. estimate_minutes: 15. Files: (verification-only — no edits) `.claude/agents/senna.md`, `.claude/agents/lucian.md`. DoD: `git diff` after second sync run is empty; both files have a `## Universal reviewer rules` heading inlined.
+
+- [ ] **T8** — Spec the reviewer-quality dashboard v2 panel per D8 by appending a `## Reviewer-quality panel (spec)` section to `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md` (or the v2 successor if it exists) listing the four metrics: reviewer-found-vs-missed-bug ratio, severity calibration drift, lane-bleed rate, mean-time-to-review. Spec only — no implementation. estimate_minutes: 30. Files: `plans/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md` (or successor). DoD: section exists with four named metrics + one-line definition each + cross-reference back to this ADR's D8.
+
+- [ ] **T9** — Stub the first manual reviewer-audit deliverable: create the empty file template `assessments/personal/REVIEWER-AUDIT-TEMPLATE.md` (or place in `assessments/templates/` if that pattern exists) with the five-PR-spot-check shape from D8 — five PR-rows × (PR number, reviewer, verdict, post-merge bug found?, calibration note). Duong fills it monthly; this task only stages the template. estimate_minutes: 20. Files: `assessments/personal/REVIEWER-AUDIT-TEMPLATE.md` (path adjusted to whatever assessments structure exists — audit first via `ls assessments/`). DoD: template file exists with five-row table and a header naming the cadence (monthly, five random closed PRs from prior month) per D8.
+
+- [ ] **T10** — Verification PR + acceptance-criteria checklist: open the implementation PR with a body that walks AC #1–#9 from this ADR, ticking each. The PR description references all task IDs (T2–T9) by section. estimate_minutes: 30. Files: (PR body, no commit edits beyond what T2–T9 produced). DoD: PR body has a checked-off list mapping AC1→T2, AC2→T3, AC3→T4, AC4→T5, AC5→T6, AC6→T8, AC7→T9, AC8→T7, AC9→manual-followup-noted; PR has Senna+Lucian dispatched per the standing heuristic; per Rule 18, merged only after green checks + non-author approval.
+
+### Phase gates
+
+- **Gate G1 (after T2):** `_shared/reviewer-discipline.md` exists and `sync-shared-rules.sh --dry-run` is clean. Required before T3/T4/T5 begin.
+- **Gate G2 (after T3+T4+T5):** all three agent-def edits land on the same branch; `sync-shared-rules.sh` runs idempotent. Required before T6 (coordinator heuristic depends on the per-agent contract being final).
+- **Gate G3 (after T6):** coordinator dispatch heuristic emits Camille for at least one synthetic security-blast-radius PR. Required before T10 (PR open).
+- **Gate G4 (T10 merge):** AC #1–#8 checked off in PR body; AC #9 (no lane regression on next 10 PRs) tracked as a 14-day post-merge follow-up, not a merge-blocker.
+
+### Open questions
+
+- **OQ-1** — Where exactly does the coordinator PR-dispatch heuristic live today? (T6 first action is to audit; result drives whether the edit is to two CLAUDE.md files or a new `_shared/` snippet.)
+- **OQ-2** — Does `assessments/personal/` exist as a directory pattern, or does this concern's audit artifacts go under `assessments/` flat? T9 audits before writing.
+- **OQ-3** — Does the `superpowers:code-reviewer` plugin name match the canonical plugin id format used in the retired-agents archive verbatim? T3/T4 first sub-step is to grep `.claude/_retired-agents/*.md` for the exact string and use it as-is.
+
 ## Follow-ups
 
 1. Kayn breakdown into Aphelios-implementable tasks (shared primitive, three agent-def edits, coordinator heuristic, sync-script verification).
