@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- 2026-04-25 — [Cleaner-stitching false-positive in clean-jsonl.py](2026-04-25-cleaner-stitching-false-positive.md) — synthetic 20+ char `sk-` matches across stripped sections; needs cleaner debug-line flag and chain-disclosure on stderr.
+
 - [2026-04-24 Cross-coordinator memory routing — Evelynn owns duong.md edits; Sona routes proposals via inbox](2026-04-24-cross-coordinator-memory-routing.md) — agents/memory/duong.md is Evelynn's surface; Sona authors proposals and routes via /agent-ops send inbox; Evelynn executes; no self-edit even when Sona identifies the need | last_used: 2026-04-24
 - [2026-04-24 Verify tool interface before trusting ADR example blocks](2026-04-24-verify-tool-interface-before-trusting-adr-example.md) — Heimerdinger found ADR §4.2 stdout-capture template incompatible with tools/decrypt.sh --exec interface; generalizable: tool-code spot-check before breakdown dispatch; source wins over ADR example when they disagree; critical for security-adjacent tools | last_used: 2026-04-24
 - [2026-04-24 sys.path.append (not sys.path.insert) for sibling-package wiring](2026-04-24-sys-path-append-for-sibling-imports.md) — insert(0,...) shadows owning-package modules silently; tests pass but runtime AttributeError on transitive imports; importlib only works for leaf single-file modules; use append so owning-package wins on collisions | last_used: 2026-04-24
