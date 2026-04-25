@@ -63,6 +63,8 @@ Senna (code quality + security) and Lucian (plan/ADR fidelity) both review every
 
 Reviewer agents use `scripts/reviewer-auth.sh` (personal concern) or `scripts/post-reviewer-comment.sh` (work concern). Executor agents (`Jayce`, `Viktor`, `Ekko`, `Seraphine`, `Yuumi`, `Vi`, `Akali`, `Skarner`) MUST NOT source `reviewer-auth.sh` — they authenticate as `Duongntd` only.
 
+`Lissandra` is the pre-compact memory consolidator (coordinator close protocol); she is **not** a reviewer and does not participate in the PR review cycle.
+
 ## QA gate (Rule 16)
 
 Before opening a UI or user-flow PR, **Akali** (`.claude/agents/akali.md`) must run the full Playwright MCP flow (`mcp__plugin_playwright_playwright__*` tool family) with video + screenshots and diff against the Figma design.
@@ -75,6 +77,18 @@ Before opening a UI or user-flow PR, **Akali** (`.claude/agents/akali.md`) must 
 _User-flow_ definition: new routes, new forms, state-transition changes, auth flows, session lifecycle changes — even when there is no visual pixel delta.
 
 See `CLAUDE.md` Rule 16 (`#rule-qa-agent-pre-pr`) for the authoritative definition.
+
+## Pre-commit hooks (Rule 14)
+
+The pre-commit hook runs unit tests for changed packages; a commit is blocked on failure. Agents may not pass `--no-verify`.
+
+See `CLAUDE.md` Rule 14 (`#rule-pre-commit-unit-tests`).
+
+## Plan promotions (Rule 19)
+
+Plan moves out of `plans/proposed/` are gated by the Orianna agent. Only Orianna (and Duong's admin identities `harukainguyen1411` / `Duongntd`) may commit those moves. The guard is enforced via `scripts/hooks/pretooluse-plan-lifecycle-guard.sh`. Existing-file edits inside plan lifecycle directories are permitted for agents appending to in-progress plans.
+
+See `CLAUDE.md` Rule 19 (`#rule-orianna-callable-agent`).
 
 ## xfail-first (Rule 12) and regression tests (Rule 13)
 

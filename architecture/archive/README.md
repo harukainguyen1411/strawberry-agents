@@ -39,5 +39,5 @@ Both pointers are added in the same commit that performs the archive move.
 | Directory | Contents |
 |---|---|
 | `v1-orianna-gate/` | Pre-existing archive of the v1 Orianna gate regime (plan-lifecycle signing, key-scripts excerpt) |
-| `pre-network-v1/` | Retired roster docs and retired protocol descriptions (landing in Wave 3) `[placeholder — populated W3]` |
+| `pre-network-v1/` | Retired roster docs and retired protocol descriptions (landing in Wave 3) |
 | `billing-research/` | Billing comparison research artifacts (landing in Wave 3) `[placeholder — populated W3]` |

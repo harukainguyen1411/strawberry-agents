@@ -59,6 +59,27 @@ For acknowledged bulk ops (migrations, memory consolidation, `scripts/install-ho
 
 Never leave work uncommitted. If you create or modify a file, commit it before any git operation that changes the working tree (pull, merge, worktree add). Other agents share this directory — uncommitted work WILL be lost.
 
+### Worktree cleanup
+
+After a PR is merged, remove the worktree and its tracking branch:
+
+```bash
+git worktree remove /path/to/worktree
+git branch -d <branch-name>
+```
+
+Stale worktrees accumulate and can cause `git worktree list` noise. Run `git worktree prune` periodically to remove entries for worktrees whose directories no longer exist.
+
+### `core.hooksPath` edge case
+
+`core.hooksPath` is set repo-wide in `strawberry-agents`. However, worktrees created outside the repo root (e.g. in `/tmp/`) inherit the global git config, which may not include `core.hooksPath`. `scripts/worktree-add.sh` sets `core.hooksPath` in the worktree's local config explicitly to guard against this. If you create a worktree manually (bypassing the script), run:
+
+```bash
+git -C /path/to/worktree config core.hooksPath "$(git rev-parse --show-toplevel)/.git/hooks"
+```
+
+to ensure hooks fire correctly in that worktree.
+
 ---
 
 ## Branch strategy
