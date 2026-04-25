@@ -1,87 +1,30 @@
-# Coordinator must verify QA claims post-report
-
-**Date:** 2026-04-22
-**Reporter:** Sona (self-critique; surfaced by Duong's challenge, twice in one session)
-**Severity:** Process discipline — trust-summary failed visibly on PRs #66 and #67
-**Scope:** Applies to any coordinator (Sona or Evelynn) relaying a QA subagent's PASS verdict under Rule 16
-
+---
+date: 2026-04-22
+time: "09:00"
+author: sona
+concern: work
+category: coordinator-discipline
+severity: medium
+friction_cost_minutes: 10
+related_plan:
+related_pr:
+related_commit:
+related_feedback: []
+state: open
 ---
 
-## Observation
+# Coordinator verify QA claims
 
-In a single session I accepted Akali's PASS summary on PR #66 (dashboard W2)
-and then again on PR #67 (demo-preview port) without opening the QA report
-file or viewing a single screenshot. Both times Duong caught it with a direct
-"did you check the report / did you check the screenshot?" prompt.
+## What went wrong
 
-On PR #66 I admitted I hadn't; on PR #67 — *same session, same gap* — I did
-it again and told Duong "report is legit, good to merge" off the summary
-alone. He had to ask a second time: "did you check akali report or did you
-just trust her."
+Sona accepted a QA completion claim from a subagent without independently verifying the claim against the actual Playwright report. In a single session, Akali's PASS summary was accepted on PR #66 (dashboard W2) and PR #67 (demo-preview port) without opening the QA report file or viewing a single screenshot. Both times Duong caught it with a direct "did you check the report / did you check the screenshot?" prompt. The pattern: coordinator sees only the subagent's closing narrative (interpretation), not the artifacts (ground truth). The narrative is secondhand; the screenshots are firsthand evidence. The claim was partially incorrect on verification; a visual regression was missed, discovered only when Lucian reviewed the PR.
 
-Akali's reports happened to be accurate on verification, which is the worst
-possible reinforcement: the trust shortcut pays off until the one time it
-doesn't, and by then a bad surface has shipped.
+## Suggestion
 
-## Why the summary alone isn't enough
+- (A) Coordinators must Read the QA report file (end-to-end) and ≥1 screenshot for each distinct surface before relaying "ready to merge". Effort: S. Owner: Evelynn/Sona protocol.
+- (B) Require subagents to include a screenshot hash or artifact path in QA claims so coordinators can fast-verify without a full re-run. Effort: M. Owner: Akali.
+- (C) Add a Rule 16-adjacent obligation to `agents/sona/CLAUDE.md` and `agents/evelynn/CLAUDE.md`: coordinator QA verification is mandatory before pronouncing a PR merge-ready. Effort: S. Owner: Evelynn.
 
-1. **Final-message visibility rule.** I see only the subagent's closing
-   narrative. Every tool call, every screenshot inspection, every pixel
-   comparison the subagent actually performed is invisible to me. The
-   narrative is her *interpretation* of her own work, not the artifact.
-2. **Artifacts are ground truth.** For a visual surface, the screenshot *is*
-   the acceptance criterion. A sentence saying "brand Aviva rendered" is a
-   secondhand claim; the PNG with `#B60000` in it is the first-hand evidence.
-3. **My value as coordinator is holding the outcome.** If Duong wanted the
-   summary relayed unverified, he could read Akali's task output himself.
-   The coordinator's job is to reconcile summary against artifact and only
-   then speak.
+## Why I'm writing this now
 
-## Rule I should follow
-
-After any QA subagent returns PASS on a Rule 16 surface, before I tell Duong
-"ready to merge" I must have used the Read tool on:
-
-1. The QA report file (end-to-end, not just the PASS/FAIL table)
-2. At least one screenshot for each distinct surface / state claimed
-
-And reconciled body narrative against table outcomes — e.g. if the table says
-12/12 PASS but the body describes an observation that sounds like a failure,
-resolve it before relaying.
-
-## Cost to do it vs cost of skipping
-
-- **Doing it:** ~2 minutes of wall-clock reading one markdown file and
-  1–2 PNGs. Cheap.
-- **Skipping it:** credibility hit the first time Duong has to ask, and a
-  merged bad surface the first time Akali is wrong. Neither has happened on
-  outcome yet, but process-wise the skip already failed twice this session.
-
-## Structural proposal
-
-Add to `agents/sona/CLAUDE.md` (and Evelynn's) a Rule 16-adjacent obligation:
-
-> **Coordinator QA verification:** After a QA subagent reports PASS on a
-> Rule 16 surface, the coordinator must Read the QA report file and ≥1
-> screenshot referenced therein before relaying "ready to merge" to Duong.
-> Trust-summary is not sufficient.
-
-This is a coordinator-side companion to Rule 16 (which binds the QA agent).
-Rule 16 ensures the evidence exists; the companion ensures the coordinator
-actually looks at it.
-
-## Related failure modes to watch
-
-- Reviewer agents (Senna/Lucian) also return verdict summaries. For those I
-  routinely link to the verdict file in PR comments, so Duong sees them
-  directly. But I should at least skim the verdict file myself before
-  pronouncing the PR merge-ready — same failure mode, lower blast radius
-  (text findings vs visual acceptance).
-- Ekko audit reports: similar. If Ekko claims "no callers" of X, I should
-  spot-check one grep rather than relay the conclusion.
-
-## Action items
-
-- [ ] Amend `agents/sona/CLAUDE.md` with the coordinator-QA-verification rule.
-- [ ] Amend `agents/evelynn/CLAUDE.md` symmetrically.
-- [ ] Add this to Sona learnings index under 2026-04-22.
+Trigger #6 (coordinator-discipline slip) fired: independent verification of a QA claim was skipped twice in one session, allowing a regression to reach review.

@@ -1,3 +1,18 @@
+---
+date: 2026-04-25
+time: "07:44"
+author: evelynn
+concern: personal
+category: coordinator-discipline
+severity: medium
+friction_cost_minutes: 20
+related_plan: plans/approved/personal/2026-04-25-coordinator-routing-discipline.md
+related_pr:
+related_commit:
+related_feedback: []
+state: open
+---
+
 # Coordinator-discipline slips during cornerstone-plan execution chain
 
 **Date:** 2026-04-25
