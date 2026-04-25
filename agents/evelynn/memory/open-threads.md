@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-24 (Lissandra pre-compact consolidation 5, session 5e94cd09).
+Last updated: 2026-04-25 (Evelynn session close, session c1463e58).
 
 ---
 
@@ -24,21 +24,22 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 
 ---
 
-## Talon #82 — MCP consolidation + Slack Node 25 fix
+## MCP consolidation + Slack Node 25 fix — RESOLVED
 
-**Current status (2026-04-24):** In flight at compact boundary. Talon implementing MCP consolidation + Slack MCP Node 25 ESM fix carry-forward from Duongntd/strawberry (PR #187 closed unmerged — billing-blocked archive repo). Slack fix (Node 25 ESM loader can't resolve `retryPolicies` named export from `@slack/web-api@7.15.1` via tsx) is required before T2 of consolidation.
-**Next:** On resume, check Talon #82 output. Dispatch Senna + Lucian for dual review. Merge when approved. Then chain MCP consolidation Talon (T2 onwards).
-**Plans:** `plans/approved/personal/2026-04-24-slack-mcp-node25-cjs-fix.md`, `plans/approved/personal/2026-04-24-mcp-consolidation.md`
-**Shard:** 3bc945c0
+**Current status (2026-04-25):** PR #44 merged (`80b78802`). Both plans promoted to `plans/implemented/personal/`. Yuumi amended in-flight to drop stale Firebase-rotted `evelynn` MCP. Ekko diagnosed slack-MCP reconnect fail post-merge: `node_modules/` absent in new location; hardened start.sh with auto-install (commit `f81aaf26`). T5 (`rm -rf strawberry/`) explicitly NOT executed — gated on Duong confirmation. Strawberry archive repo still contains apps/, deploy/, agents/ — not minimal MCP host.
+**Next:** Surface T5 deletion decision to Duong post-stability-window.
+**Shard:** c1463e58
 
 ---
 
-## Talon #85 — subagent git-identity-as-Duong
+## PR #45 — subagent git-identity-as-Duong — STUCK (architectural pivot needed)
 
-**Current status (2026-04-24):** In flight at compact boundary. Sona FYI flagged live rule-violation: agent git-identity leaking into merged main via squash-merge Co-authored-by on every PR. Karma (#83) drafted plan; Orianna (#84) promoted to approved. Talon #85 implementing.
-**Next:** On resume, check Talon #85 output. Dispatch Senna + Lucian for dual review. Merge when approved.
-**Plan:** `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md`
-**Shard:** 3bc945c0
+**Current status (2026-04-25):** Four Talon rounds, four Senna CHANGES_REQUESTED. Lucian APPROVED in round 2. Round 4 used the structural shlex tokenizer pivot Senna recommended; she still found 9 NEW bypasses (NEW-BP-4 through NEW-BP-12, all live-reproducible persona-authored commits). Architectural verdict: PreToolUse string-scanning is structurally incomplete because shell expansion (backticks, `$()`, line continuations, `eval`, `sh -c`) resolves at exec time, not tokenization time.
+**Senna's recommendation (Option A):** move enforcement to pre-commit hook reading `git var GIT_AUTHOR_IDENT` (sees post-expansion identity) + pre-push `git cat-file commit` scan to close `commit-tree` plumbing escape. PreToolUse stays as defense-in-depth.
+**Decision presented to Duong:** (a) hand back to Karma/Azir for plan revision targeting pre-commit/pre-push layer, (b) merge PR #45 as-is with round-3 findings closed and ship pre-commit/pre-push as follow-up plan, (c) Talon round 5 inline. **Awaiting his pick.**
+**Branch:** `talon/subagent-git-identity-as-duong`. **PR:** #45 open. **Plan:** `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md`. Superseded plan `subagent-identity-leak-fix.md` should flow approved → archived once #45 lands.
+**Pattern lesson:** when one reviewer in a dual-pair keeps finding new critical issues across rounds, the spec is wrong, not the implementation.
+**Shard:** c1463e58
 
 ---
 
@@ -497,6 +498,56 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 **Current status (2026-04-23):** Phase-1 shipped via PR #34. Phase-2 (SubagentStop wrapper for subagent-internal denial capture) deferred pending accumulation of 20+ denial rows in the probe data.
 **Shards:** c4af884e.
 **Next:** Monitor denial data accumulation. Dispatch phase-2 once threshold met.
+
+---
+
+## SessionStart:compact auto-continue — SHIPPED, plan promotion pending
+
+**Current status (2026-04-25):** PR #46 merged (`3faa54da`). Karma quick-lane plan, Talon impl, Senna+Lucian dual approve. Replaces `Reply only:` stop directive on line 49 of `sessionstart-coordinator-identity.sh` with continue directive (scan TaskList, fall back to last-sessions/, honor pause). Fail-loud branch explicitly carves out auto-continue. Fixes the coordinator-idle-after-/compact UX bug Duong flagged.
+**Next:** Orianna sweep `plans/approved/personal/2026-04-24-sessionstart-compact-auto-continue.md` → `implemented/`.
+**Shard:** c1463e58
+
+---
+
+## Worktree hooks propagation gap — high priority
+
+**Current status (2026-04-25):** `scripts/install-hooks.sh` doesn't propagate hooks into git worktree directories (`.git/worktrees/<name>/hooks/`). Caused two live bypasses today: (1) Senna's closing commit `4f5d715e` pre-staged plan moves bypassing Rule 19 pre-commit guard from PR #43; (2) all of Talon's PR #45 commits authored as `orianna@strawberry.local` because universal identity hook not installed on his worktree. Same root cause, two failure modes.
+**Fix direction:** set `core.hooksPath` repo-wide so worktrees inherit, or iterate `.git/worktrees/*/hooks/` and symlink. Probably both.
+**Next:** Karma quick-lane plan once PR #45 architectural-pivot decision is made (related hygiene).
+**Backlog:** task #94. **Shard:** c1463e58
+
+---
+
+## Plan-lifecycle guard heredoc fail — high priority
+
+**Current status (2026-04-25):** `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` fails-closed on `git commit -m "$(cat <<EOF...EOF)"` pattern. Hit by Aphelios + Sona + Lucian (gh pr review --body) this session. Workaround: split commands or use `--body-file`. Existing learning at `agents/sona/learnings/2026-04-24-plan-lifecycle-guard-blocks-sona.md`.
+**Fix direction:** tighten bashlex AST walker to only flag plan-path tokens in file-modifying verbs (mv/rm/tee/cp), not in heredoc bodies or string contents.
+**Next:** Karma quick-lane plan when capacity allows. Sona has hit it multiple times.
+**Backlog:** task #98. **Shard:** c1463e58
+
+---
+
+## Universalise commit-time anonymity scan — pending PR #45
+
+**Current status (2026-04-25):** Senna PR #45 architectural finding: `pre-commit-reviewer-anonymity.sh` exists but is work-scope-only (`[:/]missmp/` gate). PreToolUse was universalised in PR #45 attempts; commit-time scan wasn't. Personal-scope is one-layer-deep. Plus: human-typed `git commit` bypasses PreToolUse entirely — only the work-scope-only commit-time hook would catch that.
+**Next:** Karma quick-lane plan after PR #45 settles. May fold into the pre-commit/pre-push architectural work (PR #45 Option A).
+**Shard:** c1463e58
+
+---
+
+## Slack section deleted from duong.md
+
+**Current status (2026-04-25):** Duong flagged the `## Slack` section as redundant with MCP tool descriptions + `.mcp.json` env vars. Verified tool schemas are self-describing (e.g. `notify_duong`: "Send a DM notification to Duong. Channel is hardcoded; no routing decision needed."). Yuumi deleted (commit `35b72641`).
+**Next:** None. RESOLVED.
+**Shard:** c1463e58
+
+---
+
+## Hands-off three-track + briefing verbosity rules added to duong.md
+
+**Current status (2026-04-25):** Two Sona-FYI driven duong.md updates landed via Yuumi: (1) hands-off split into default/fast/slow tracks (commit `c2f9572e`), (2) briefing/status-check verbosity rule mandating signal-not-log, 3-7 bullets, surface decisions hide bookkeeping (commit `eb4adc0f`). Both apply to Evelynn + Sona.
+**Next:** Internalize the verbosity rule on next session — caught violating it in this session before the rule landed.
+**Shard:** c1463e58
 
 ---
 
