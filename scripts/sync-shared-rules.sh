@@ -2,8 +2,9 @@
 # scripts/sync-shared-rules.sh
 #
 # Re-inlines shared rule content from .claude/agents/_shared/<role>.md into
-# each paired agent definition that carries a <!-- include: _shared/<role>.md -->
-# marker.
+# each paired agent definition that carries one or more
+#   <!-- include: _shared/<role>.md -->
+# markers.
 #
 # Usage:
 #   bash scripts/sync-shared-rules.sh [--agents-dir <path>]
@@ -14,17 +15,25 @@
 #
 # Behavior:
 #   1. Scans every *.md file in the agents directory (excluding _shared/).
-#   2. For files containing a <!-- include: _shared/<role>.md --> marker:
-#        a. Locates the canonical shared file.
-#        b. Emits error + exits non-zero if the shared file is missing.
-#        c. Preserves everything above+including the include marker line.
-#        d. Replaces everything below the marker with the shared file contents.
+#   2. For files containing one or more <!-- include: _shared/<role>.md --> markers:
+#        a. Locates the canonical shared file for each marker.
+#        b. Emits error + exits non-zero if any shared file is missing.
+#        c. For each marker: preserves everything above+including the marker line,
+#           then replaces the block below it (until the next marker or EOF)
+#           with the corresponding shared file contents.
+#        d. Multiple markers are processed in document order.
 #   3. Skips files with no include marker (emits a warning — not fatal).
 #   4. Idempotent: running twice produces identical output.
 #
 # Exit codes:
 #   0  all agents synced (or skipped with warning)
 #   1  one or more shared files missing (fatal)
+#
+# Invariant (S4):
+#   Any prose written between two adjacent <!-- include: --> markers will be
+#   silently discarded on the next sync run, because the script replaces
+#   everything from one marker's closing newline up to (but not including) the
+#   next marker. Do not write hand-authored content in those inter-marker gaps.
 
 set -euo pipefail
 
@@ -32,7 +41,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(git -C "$SCRIPT_DIR" rev-parse --show-toplevel 2>/dev/null || echo "")"
 
 if [ -z "$REPO_ROOT" ]; then
-  # Fallback: walk up from script dir to find repo root
   REPO_ROOT="$SCRIPT_DIR/.."
 fi
 
@@ -69,92 +77,147 @@ errors=0
 synced=0
 skipped=0
 
-# Scan every *.md in agents dir (non-recursive; _shared/ files are skipped by the path filter)
-for agent_file in "$AGENTS_DIR"/*.md; do
-  [ -f "$agent_file" ] || continue
-
-  # Determine the path of this file relative to AGENTS_DIR
+# sync_agent_file <path>
+# Rewrites the agent file with all include markers processed.
+# Returns 0 on success, 1 on error (missing shared file).
+sync_agent_file() {
+  local agent_file="$1"
+  local agent_basename
   agent_basename="$(basename "$agent_file")"
 
-  # --- Find include marker ---
-  # Pattern: <!-- include: _shared/<role>.md -->
-  include_line=""
-  include_role=""
+  # --- Collect all include markers in document order ---
+  # Each entry: "<line_number>:<role_name>"
+  local markers=()
+  local lineno=0
   while IFS= read -r line; do
+    lineno=$((lineno + 1))
     case "$line" in
       "<!-- include: _shared/"*)
-        include_line="$line"
-        # Extract role name: strip prefix and suffix
-        include_role="${line#<!-- include: _shared/}"
-        include_role="${include_role%.md -->}"
-        break
+        local role="${line#<!-- include: _shared/}"
+        role="${role%.md -->}"
+        markers+=("${lineno}:${role}")
         ;;
     esac
   done < "$agent_file"
 
-  if [ -z "$include_role" ]; then
+  if [ "${#markers[@]}" -eq 0 ]; then
     printf 'sync-shared-rules: WARN: %s — no include marker found, skipping\n' "$agent_basename" >&2
-    skipped=$((skipped + 1))
-    continue
+    return 2
   fi
 
-  shared_file="$SHARED_DIR/${include_role}.md"
-
-  if [ ! -f "$shared_file" ]; then
-    printf 'sync-shared-rules: ERROR: shared file not found for %s: %s\n' \
-      "$agent_basename" "$shared_file" >&2
-    printf '  Expected: _shared/%s.md\n' "$include_role" >&2
-    printf '  Create the shared file or remove the include marker from %s\n' "$agent_basename" >&2
-    errors=$((errors + 1))
-    continue
+  # --- Validate all shared files exist before modifying anything ---
+  local ok=1
+  for entry in "${markers[@]}"; do
+    local role="${entry#*:}"
+    local shared_file="$SHARED_DIR/${role}.md"
+    if [ ! -f "$shared_file" ]; then
+      printf 'sync-shared-rules: ERROR: shared file not found for %s: %s\n' \
+        "$agent_basename" "$shared_file" >&2
+      printf '  Expected: _shared/%s.md\n' "$role" >&2
+      ok=0
+    fi
+  done
+  if [ "$ok" -eq 0 ]; then
+    return 1
   fi
 
   # --- Build new file content ---
-  # Write everything up to and including the include marker, then append shared content.
+  # Strategy: stream through the file line by line.
+  # State machine:
+  #   mode=header  — emit lines as-is (before first marker)
+  #   mode=skip    — skip lines (inlined content between/after a marker, until next marker or EOF)
+  # When we hit a marker line: emit it, emit shared content, switch to skip mode.
+
+  local tmp_file
   tmp_file="$(mktemp)"
   # shellcheck disable=SC2064
   trap "rm -f '$tmp_file'" EXIT INT TERM HUP
 
-  marker_found=0
+  # Build a lookup of marker line numbers for O(1) check
+  # Format: line number as key stored in a space-separated string (portable, no assoc arrays)
+  local marker_lines=""
+  for entry in "${markers[@]}"; do
+    local mlineno="${entry%%:*}"
+    marker_lines="$marker_lines $mlineno "
+  done
+
+  local mode="header"
+  local cur_lineno=0
+
   while IFS= read -r line; do
-    printf '%s\n' "$line" >> "$tmp_file"
-    case "$line" in
-      "<!-- include: _shared/${include_role}.md -->")
-        marker_found=1
-        break
+    cur_lineno=$((cur_lineno + 1))
+
+    # Check if this line is a marker line
+    local is_marker=0
+    local marker_role=""
+    case " $marker_lines " in
+      *" $cur_lineno "*)
+        is_marker=1
+        # Extract role from the line itself
+        marker_role="${line#<!-- include: _shared/}"
+        marker_role="${marker_role%.md -->}"
         ;;
     esac
+
+    if [ "$is_marker" -eq 1 ]; then
+      # Always emit the marker line
+      printf '%s\n' "$line" >> "$tmp_file"
+      # Append shared content
+      cat "$SHARED_DIR/${marker_role}.md" >> "$tmp_file"
+      # Ensure newline after shared content
+      local last_char
+      last_char="$(tail -c1 "$tmp_file" | od -An -tx1 | tr -d ' \n')"
+      if [ "$last_char" != "0a" ]; then
+        printf '\n' >> "$tmp_file"
+      fi
+      # Switch to skip mode (discard old inlined content until next marker or EOF)
+      mode="skip"
+    elif [ "$mode" = "header" ]; then
+      printf '%s\n' "$line" >> "$tmp_file"
+    elif [ "$mode" = "skip" ]; then
+      # Check if we just hit another marker on the NEXT iteration —
+      # we need to detect if the next line is a marker.
+      # Since we're in skip mode, don't emit this line.
+      # (The marker line itself is handled by the is_marker branch above.)
+      :
+    fi
   done < "$agent_file"
 
-  if [ "$marker_found" -eq 0 ]; then
-    # Should not reach here since we already found the marker, but be safe
-    rm -f "$tmp_file"
-    printf 'sync-shared-rules: ERROR: unexpected: marker vanished in %s\n' "$agent_basename" >&2
-    errors=$((errors + 1))
-    continue
-  fi
-
-  # Append shared content (with a trailing newline for clean diffs)
-  cat "$shared_file" >> "$tmp_file"
   # Ensure file ends with exactly one newline
   if [ -s "$tmp_file" ]; then
+    local last_char
     last_char="$(tail -c1 "$tmp_file" | od -An -tx1 | tr -d ' \n')"
     if [ "$last_char" != "0a" ]; then
       printf '\n' >> "$tmp_file"
     fi
   fi
 
-  # Only overwrite if content changed (idempotency: avoid spurious mtime updates)
+  # Only overwrite if content changed
   if ! diff -q "$tmp_file" "$agent_file" >/dev/null 2>&1; then
     cp "$tmp_file" "$agent_file"
-    printf 'sync-shared-rules: synced %s <- _shared/%s.md\n' "$agent_basename" "$include_role"
-    synced=$((synced + 1))
+    printf 'sync-shared-rules: synced %s (%d include(s))\n' "$agent_basename" "${#markers[@]}"
+    rm -f "$tmp_file"
+    trap - EXIT INT TERM HUP
+    return 0
   else
     printf 'sync-shared-rules: up-to-date %s\n' "$agent_basename"
+    rm -f "$tmp_file"
+    trap - EXIT INT TERM HUP
+    return 0
   fi
+}
 
-  rm -f "$tmp_file"
-  trap - EXIT INT TERM HUP
+for agent_file in "$AGENTS_DIR"/*.md; do
+  [ -f "$agent_file" ] || continue
+
+  result=0
+  sync_agent_file "$agent_file" || result=$?
+
+  case "$result" in
+    0) synced=$((synced + 1)) ;;
+    1) errors=$((errors + 1)) ;;
+    2) skipped=$((skipped + 1)) ;;
+  esac
 done
 
 printf 'sync-shared-rules: done. synced=%d skipped=%d errors=%d\n' "$synced" "$skipped" "$errors"
