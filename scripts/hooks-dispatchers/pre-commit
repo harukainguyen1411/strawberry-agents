@@ -1,5 +1,6 @@
 #!/bin/sh
 # strawberry-managed dispatcher for pre-commit
+# Writes to scripts/hooks-dispatchers/pre-commit (tracked in-repo).
 # Re-run install-hooks.sh to regenerate.
 set -e
 REPO_ROOT="$(git rev-parse --show-toplevel)"
