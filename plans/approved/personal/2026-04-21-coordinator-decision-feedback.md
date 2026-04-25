@@ -506,7 +506,7 @@ Explicitly excluded from this plan; revisit criteria noted per item:
 - **A dashboard / web UI for decision browsing** — grep + `cat` is the query interface for v1. If Duong finds himself repeatedly running the same searches, surface a table in the next retrospection-dashboard iteration.
 - **Per-topic or per-project decision namespaces** — axes subsume topical grouping. A `deployment-cadence` axis captures all deployment-cadence decisions; no need for a separate namespace.
 
-## 12. Tasks
+## Tasks
 
 - [ ] **T1** — Write xfail tests for `scripts/_lib_decision_capture.sh` frontmatter validation + slug inference + match computation. estimate_minutes: 40. Files: `scripts/test-decision-capture-lib.sh` (new). DoD: fixture-driven assertions for valid/invalid frontmatter, collision-suffix slug generation, match truth-table; all failing xfail; committed before T2 (Rule 12). <!-- orianna: ok -->
 - [ ] **T2** — Build `scripts/_lib_decision_capture.sh` + `scripts/capture-decision.sh`. estimate_minutes: 50. Files: `scripts/_lib_decision_capture.sh` (new), `scripts/capture-decision.sh` (new). DoD: all T1 tests pass; `validate_decision_frontmatter`, `compute_match`, `infer_slug`, `render_index_row`, `regenerate_decisions_index`, `rollup_preferences_counts` implemented per §4.1–§4.4; POSIX bash; idempotent rollup verified on a 5-file fixture.
