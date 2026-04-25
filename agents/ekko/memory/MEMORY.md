@@ -161,6 +161,8 @@
 
 - 2026-04-24 (ekko — Sona dispatch): P1-T1 + T-new-B for Sona secretary MCP suite ADR. Created secrets/work/encrypted/.gitkeep + REVOCATION.md (§4.4 skeleton, one row per credential). Updated .gitignore to carve out secrets/work/ with appropriate exceptions. T-new-B: surveyed all 8 Phase-1 MCPs — Slack=SINGLE (xoxp- user token only, no bot token), gmail=SINGLE, all others (gdrive/gcalendar/fathom/postgres/wallet-studio/atlassian) MULTI. T-new-C gates 6/8 MCPs; Slack migration (P1-T2) unblocked. Commits: P1-T1=81edd095, T-new-B=b2469e98.
 
+- 2026-04-25 (ekko — Sona dispatch): T-new-D canonical start.sh for Slack MCP. Wrote xfail test (51843cd2) + impl commit (29dbd9a9) on branch chore/t-new-d-slack-canonical-start-sh. PR #48 open on harukainguyen1411/strawberry-agents. Secrets/work/runtime/ gitignore fixed (directory→contents pattern). Key: `it.fails` + `it.skip` combo for xfail commits when pre-commit runs full test suite; non-secret config vars export before exec; dep check must precede exec; safe-checkout.sh blocks on untracked files — use git worktree add directly; plan paths in commit messages trigger plan-lifecycle guard.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
