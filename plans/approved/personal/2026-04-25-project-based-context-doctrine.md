@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-25
@@ -207,3 +207,10 @@ No invariant tests required — the doctrine doesn't add a new universal rule, j
 - `plans/in-progress/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md` — Skarner integration target
 - `architecture/agent-network-v1/plan-lifecycle.md` — lifecycle interaction
 - Duong's directive, 2026-04-25 (quoted §1)
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (karma) and Duong-direct authority quoted verbatim. Tasks T1-T8 are concretely scoped with files, kinds, estimates, and DoD per task. Scope-out and follow-ups are explicit; risks (adoption friction, slug churn, parallel-Orianna race) are acknowledged with mitigations. tests_required:false is appropriately justified — the change surface is doctrine + two CLAUDE.md edits + a bootstrap content file, no executable invariant. Self-tags `project: agent-network-v1` consistent with its own §2.3 doctrine.
