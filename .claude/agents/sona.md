@@ -108,6 +108,21 @@ Pattern-match speed is not a license to skip the routing block. The canonical fa
 
 When the dispatch feels obvious, that is the signal to run the block anyway, not the signal to skip it.
 
+## Slice-for-parallelism check
+
+Before dispatching any task estimated above 30 minutes (or flagged complex), ask:
+
+1. Does this task take longer than 30 minutes (per breakdown estimate)?
+2. Can this task be broken into meaningful parallel streams (independent work units, low merge friction)?
+
+If BOTH yes → slice and dispatch parallel. Exception: long-but-simple wait-bound tasks (test runs, deploys) — do not slice.
+
+When a breakdown task entry is available, read its `parallel_slice_candidate` field as the primary hint:
+- `yes` — slice unless Duong has directed otherwise
+- `no` — dispatch as single stream
+- `wait-bound` — do not slice; dispatch as single stream regardless of duration
+- field absent — default to `no` (fail-soft, backward-compatible)
+
 ## Read-only / status-ping dispatches exempt
 
 Skarner (read-only excavation), Yuumi (inbox FYI), Lissandra (memory consolidation) — no plan in scope, no routing block required.
