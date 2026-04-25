@@ -76,6 +76,15 @@ export STRAWBERRY_AGENT="$COORDINATOR"
 export STRAWBERRY_CONCERN="$STRAWBERRY_CONCERN_VAL"
 
 # ────────────────────────────────────────────────────────────────
+# Write .coordinator-identity hint file (atomic tmp+mv)
+# Consumed by inbox-watch.sh Tier 3 when env vars are not propagated
+# (e.g. Monitor-spawned subprocesses after a clean-shell launch).
+# ────────────────────────────────────────────────────────────────
+
+printf '%s' "$COORDINATOR" > "$REPO_ROOT/.coordinator-identity.tmp" \
+  && mv "$REPO_ROOT/.coordinator-identity.tmp" "$REPO_ROOT/.coordinator-identity"
+
+# ────────────────────────────────────────────────────────────────
 # Memory consolidation (deterministic, shell-level — not model-level)
 # ────────────────────────────────────────────────────────────────
 
