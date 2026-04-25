@@ -19,7 +19,7 @@
 </tr>
 </thead>
 <tbody>
-<tr><td><a href="plan-2026-04-21-agent-feedback-system.html">2026-04-21-agent-feedback-system</a></td><td>1</td><td>470</td><td>0.75</td></tr>
+{{PLAN_ROWS}}
 </tbody>
 </table>
 <script>

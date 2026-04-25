@@ -1,3 +1,53 @@
-<!-- snapshot placeholder — populated on first render run with UPDATE_SNAPSHOTS=1 -->
-<!-- Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md -->
-<!-- This file will be overwritten by render-html.test.mjs on first passing impl run. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan: 2026-04-21-agent-feedback-system</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<p><a href="index.html">&larr; Back to Dashboard</a></p>
+<h1>Plan: 2026-04-21-agent-feedback-system</h1>
+<table id="plan-detail-table">
+<thead>
+<tr>
+  <th>Stage</th>
+  <th>Agent</th>
+  <th>Tokens In</th>
+  <th>Tokens Out</th>
+  <th>Cache Read</th>
+  <th>Cache Creation</th>
+  <th>Wall Active (min)</th>
+  <th>Turns</th>
+  <th>Tool Calls</th>
+</tr>
+</thead>
+<tbody>
+<tr><td>implemented</td><td></td><td>470</td><td>170</td><td>30</td><td>10</td><td>0.75</td><td>3</td><td>0</td></tr>
+</tbody>
+</table>
+<script>
+(function() {
+  var table = document.getElementById('plan-detail-table');
+  var headers = table.querySelectorAll('th');
+  var sortDir = {};
+  headers.forEach(function(th, idx) {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', function() {
+      var rows = Array.from(table.tBodies[0].rows);
+      sortDir[idx] = sortDir[idx] === 'asc' ? 'desc' : 'asc';
+      rows.sort(function(a, b) {
+        var av = a.cells[idx] ? a.cells[idx].textContent : '';
+        var bv = b.cells[idx] ? b.cells[idx].textContent : '';
+        var n = parseFloat(av) - parseFloat(bv);
+        var cmp = isNaN(n) ? av.localeCompare(bv) : n;
+        return sortDir[idx] === 'asc' ? cmp : -cmp;
+      });
+      rows.forEach(function(r) { table.tBodies[0].appendChild(r); });
+    });
+  });
+})();
+</script>
+</body>
+</html>
