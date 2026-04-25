@@ -1,0 +1,33 @@
+## Summary
+
+Adds a new memory-consolidation schedule to the agent runner. No UI files touched;
+changes are limited to scripts/memory-consolidate.sh and agents/evelynn/CLAUDE.md.
+
+## Author
+
+**Agent:** Viktor
+
+## Documentation Checklist
+
+- [ ] Architecture change? Updated relevant `architecture/` doc
+- [ ] New feature or removed feature? Updated relevant `README.md`
+- [ ] Changes agent communication or MCP tools? Updated `agent-network.md`
+- [x] N/A — no documentation updates needed
+
+## Testing
+
+| Field | Value |
+|-------|-------|
+| xfail test commit SHA | jkl3456 |
+| Regression test linked | tests/scripts/test-memory-consolidate-archive-policy.sh |
+| QA-Report | N/A — non-UI, non-user-flow PR |
+
+- [x] All pre-commit unit tests pass locally
+- [x] Pre-push TDD hook passed (xfail-first + regression-test checks)
+- [x] No `--no-verify` used
+
+## Review Notes
+
+No UI files touched. No Design-Spec, Accessibility-Check, or Visual-Diff markers.
+Changed files: scripts/memory-consolidate.sh, agents/evelynn/CLAUDE.md
+Expected: pr-frontend-markers job is EXEMPT (non-UI PR skips the check).
