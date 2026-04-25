@@ -10,7 +10,7 @@
 #   Check 2 — Pair-mate symmetry:
 #     For any agent with `pair_mate: <other>`, verify <other>'s definition
 #     carries `pair_mate: <this>` in reverse. Coordinators (agents with
-#     `concern:` frontmatter) are exempt.
+#     `concern:` frontmatter) are exempt from pair-mate symmetry only.
 #
 #   Check 3 — Model-frontmatter convention (§D1.1a):
 #     Sonnet agents MUST declare `model: sonnet`; Opus agents MUST omit `model:`.
@@ -176,9 +176,6 @@ while IFS= read -r agent_file; do
   agent_basename="$(basename "$agent_file")"
   role_slot="$(get_frontmatter_field "$agent_file" "role_slot")"
   concern="$(get_frontmatter_field "$agent_file" "concern")"
-
-  # Coordinators (have concern:) don't have shared files
-  [ -n "$concern" ] && continue
 
   # Find include marker
   include_role=""
