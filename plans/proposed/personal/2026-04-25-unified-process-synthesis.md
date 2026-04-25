@@ -312,6 +312,21 @@ Grouped by surface. Each has a recommended default; Duong can answer in compact 
 
 Recommended-default compact form (Duong's response shape): `A1a A2a A3a B1a B2a B3a C1a C2a C3a C4a C5a D1a D2a D3a D4a E1a E2a E3a E4a E5a` — 20 questions; defaults bias toward incremental/light-touch/conservative as the unified-process v1 baseline.
 
+## 7.5 Answers (Duong, hands-off Default track, 2026-04-25)
+
+**Compact-form answer (recommended-default accepted across the board):**
+
+`A1a A2a A3a B1a B2a B3a C1a C2a C3a C4a C5a D1a D2a D3a D4a E1a E2a E3a E4a E5a`
+
+**Authority:** Duong said "continue with all the plans normally" on 2026-04-25 post-compact while hands-off Default track was active. Per `agents/memory/duong.md` rule "if Duong skips a number, he concurs with your recommended pick", this stamps the recommended defaults as approved across all 20 OQs.
+
+**Effect:**
+- All 5 sub-ADRs (plan-of-plans, assessments-folder-structure, structured-qa-pipeline, pr-reviewer-tooling-guidelines, frontend-uiux-in-process) move to `approved/` with their text-as-written; no answer-driven amendments needed because they were authored with the recommended-default surface in mind.
+- Wave plan W0–W4 in §6 is the canonical implementation order.
+- Orianna gate v2 amendments in §10 are batched into ONE re-amendment plan (not five).
+
+**Recorded by:** Evelynn (coordinator), session ce6fec9a, hands-off Default track.
+
 ## 8. Speed-leverage points — canonical fast-path patterns
 
 Five named dispatch patterns that the unified-process doc should encode as the canonical "fast path." Each is a parallel-slice opportunity that buys time without sacrificing quality.
