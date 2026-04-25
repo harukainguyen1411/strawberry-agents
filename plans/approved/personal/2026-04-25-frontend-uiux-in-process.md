@@ -149,63 +149,90 @@ This is symmetric to Rule 12 (xfail test before impl) and Rule 16 (Akali QA befo
 
 ## Tasks
 
-This plan ships as a single PR after Orianna promotion. Reviewers: Senna (code/hook), Lucian (plan-fidelity), and Lulu+Neeko (design-process fidelity — they review their own role definitions). QA-Waiver acceptable: the plan touches no production UI; only agent-defs, hooks, CLAUDE.md, plan template, and a stub doc.
+> **Aphelios breakdown — 2026-04-25 (D1A inline).** Per Duong's parallel-slice doctrine and synthesis §6 Wave W3, this plan decomposes into **five independent slices (Streams A-E)** that may dispatch in parallel, plus one shared closeout (Stream F) that fans in once A-E land. Stream estimates assume one builder per stream. Per Rule 12 each implementation task (`*-impl`) is preceded on the same branch by an xfail test commit (`*-xfail`); per Rule 14 the pre-commit hook runs unit tests for changed packages. Per Rule 20 builders auto-isolate into worktrees. Reviewers (single PR per stream): Senna (code/hook/CI), Lucian (plan-fidelity), Lulu+Neeko (design-process fidelity for Stream D). QA-Waiver acceptable for all five streams: the plan touches no production UI; only agent-defs, hooks, CLAUDE.md, plan template, CI workflow, PR template, and a stub doc.
+>
+> **Parallel-slice map:**
+> - **Stream A — Rule 22 amendment to CLAUDE.md** (T-A1 → T-A2). Independent. Files: `CLAUDE.md`, `tests/invariants/`.
+> - **Stream B — Plan-template §UX Spec scaffolding + promote-time linter** (T-B1 → T-B4). Independent. Files: `architecture/agent-network-v1/taxonomy.md`, `scripts/plan-structure-lint.sh`, `tests/invariants/`.
+> - **Stream C — Rule 22 dispatch-gate hook** (T-C1 → T-C5). Independent of A/B/D/E. Files: `scripts/hooks/pretooluse-uxspec-gate.sh`, `.claude/settings.json`, `tests/hooks/`.
+> - **Stream D — Agent-def tuning (Lulu, Neeko, Seraphine, Soraka) + Lulu/Neeko routing wiring** (T-D1 → T-D6). Independent of A/B/C/E. Files: `.claude/agents/{lulu,neeko,seraphine,soraka}.md`, optional `_shared/frontend-{design,impl}.md`, `tests/invariants/`.
+> - **Stream E — PR-body markers + PR template + CI lint job** (T-E1 → T-E4). Independent of A/B/C/D. Files: `.github/workflows/pr-lint.yml`, `scripts/ci/pr-lint-frontend-markers.sh`, `.github/PULL_REQUEST_TEMPLATE.md`, `tests/ci/`.
+> - **Stream F — Closeout (design-system stub + coordinator-prompt updates)** (T-F1 → T-F4). `T-F1`/`T-F2` (design-system stub) only blocked by Stream A landing (so Rule 22 cross-ref resolves) and Stream D-Lulu landing (so Lulu's §Process can point at the doc). `T-F3`/`T-F4` (coordinator prompts) only blocked by Stream A landing.
+>
+> **Test-first discipline note (Rule 12).** Each `*-xfail` task adds a failing test referencing this plan path; each `*-impl` task makes that test pass. xfail and impl land as separate commits in that order on the same branch. CI (`tdd-gate.yml`) and the pre-push hook enforce this universally.
+>
+> **Open Questions resolution applied to breakdown.** OQ-1 (promote-time linter) is treated as IN-SCOPE per the plan's "Recommend: YES" — folded into Stream B as T-B3/T-B4. OQ-6 (`Visual-Diff:` vs `QA-Report:`) is treated as IN-SCOPE per "Recommend: keep distinct" — Stream E ships all three markers per D7.
 
-### T1 — Add Rule 22 to CLAUDE.md
+---
 
-- kind: docs
-- estimate_minutes: 15
-- files: `CLAUDE.md`
-- detail: Append Rule 22 verbatim from D9 to the universal-invariants list. Keep numbering consecutive. Do not renumber existing rules. Cross-reference D1's path-glob spec by citing this plan path. Do not edit Rule 16 — that amendment lands via the parallel QA two-stage v2 plan.
-- DoD: `grep -c '^22\. \*\*UI plans' CLAUDE.md` returns 1; existing 1-21 numbering intact.
+### Stream A — CLAUDE.md Rule 22 amendment
 
-### T2 — Plan template amendment: add §UX Spec to the canonical template
+- [ ] **T-A1** — xfail test for Rule 22 grep. estimate_minutes: 10. Files: `tests/invariants/rule-22-uxspec.sh`. DoD: shell test asserts `grep -c '^22\. \*\*UI plans' CLAUDE.md` returns exactly 1 AND existing rules 1-21 are intact (`grep -c '^[0-9]\+\. \*\*' CLAUDE.md` returns 22). Test currently fails (Rule 22 absent). Tagged `# xfail-for: plans/approved/personal/2026-04-25-frontend-uiux-in-process.md T-A2`.
+- [ ] **T-A2** — Append Rule 22 verbatim to CLAUDE.md. estimate_minutes: 15. Files: `CLAUDE.md`. blockedBy: T-A1. DoD: D9's Rule 22 paragraph appended after Rule 21 with consecutive numbering; no existing rule renumbered or edited (in particular Rule 16 untouched per D8 — its cross-ref amendment is owned by the parallel QA two-stage v2 plan); T-A1 now passes; pre-commit hook green.
 
-- kind: docs
-- estimate_minutes: 30
-- files: `architecture/agent-network-v1/taxonomy.md` (plan-template section), `scripts/plan-structure-lint.sh` (if it exists; otherwise note as follow-up)
-- detail: Add `## UX Spec` to the plan template after `## Decision` and before `## Tasks`. Include the six required subsection headers from D1 as a comment-block stub: `<!-- UX Spec required iff plan touches: apps/**/src/**/*.{vue,tsx,jsx,ts,js,css,scss}, apps/**/components/**, apps/**/pages/**, apps/**/routes/**. Bypass: UX-Waiver: <reason> in frontmatter. -->`. Plan-structure linter (if present) gains a check: when the plan's task `files:` glob matches the UI path-glob, the §UX Spec header must exist OR `UX-Waiver:` must be present in frontmatter.
-- DoD: a fresh plan generated from the template includes the §UX Spec scaffolding; the linter (or a manual grep) flags a UI-path-glob plan without §UX Spec.
+### Stream B — Plan template + promote-time linter
 
-### T3 — Implement the impl-dispatch gate hook (Rule 22 enforcement)
+- [ ] **T-B1** — xfail test for plan-template §UX Spec scaffolding. estimate_minutes: 10. Files: `tests/invariants/plan-template-uxspec.sh`. DoD: test asserts the canonical template under `architecture/agent-network-v1/taxonomy.md` (plan-template section) contains the literal header `## UX Spec` AND the path-glob comment block referencing the D1 globs. Currently fails.
+- [ ] **T-B2** — Add §UX Spec scaffolding to canonical plan template. estimate_minutes: 25. Files: `architecture/agent-network-v1/taxonomy.md`. blockedBy: T-B1. DoD: `## UX Spec` header inserted after `## Decision` and before `## Tasks`; six required subsection stubs from D1 (User flow, Component states, Responsive behavior, Accessibility, Figma link, Out of scope) included; comment block names the D1 path-glob and the `UX-Waiver:` bypass; T-B1 passes.
+- [ ] **T-B3** — xfail test for promote-time §UX Spec linter (OQ-1 IN-SCOPE). estimate_minutes: 20. Files: `tests/invariants/plan-structure-lint-uxspec.sh`. DoD: synthetic plan fixtures under `tests/fixtures/plan-lint/` cover four cases — (a) UI-path-glob plan without §UX Spec → linter exits non-zero; (b) UI-path-glob plan with §UX Spec → linter exits 0; (c) UI-path-glob plan with `UX-Waiver:` frontmatter → linter exits 0; (d) non-UI plan without §UX Spec → linter exits 0. Currently fails (linter rule absent).
+- [ ] **T-B4** — Implement §UX Spec check in plan-structure linter. estimate_minutes: 45. Files: `scripts/plan-structure-lint.sh` (create if absent; otherwise extend). blockedBy: T-B3. DoD: linter detects when a plan's §Tasks `files:` references match the D1 UI path-glob and requires `## UX Spec` header OR `UX-Waiver:` frontmatter; T-B3 four-case fixture passes; POSIX-portable bash; runnable on macOS + Git Bash; integrated into Orianna's promote-time gate (linter call added to `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` or sibling Orianna tooling — note as follow-up if Orianna gate wiring is non-trivial).
 
-- kind: hooks
-- estimate_minutes: 90
-- files: `scripts/hooks/pretooluse-uxspec-gate.sh` (new), `.claude/settings.json` (wire as PreToolUse on `Agent`)
-- detail: POSIX-portable bash. Triggered on PreToolUse when `tool_name == "Agent"` AND `subagent_type ∈ {seraphine, soraka}`. Reads the dispatch description, extracts referenced plan paths matching `plans/(proposed|approved|in-progress)/(work|personal)/.+\.md`. For each plan, reads it, checks: (a) any `files:` glob in §Tasks matches the UI path-glob from D1; (b) if so, the body contains the literal header `## UX Spec` OR the frontmatter contains `UX-Waiver:`. Block (exit 2 with stderr message naming Lulu or Neeko) if (a) is true and (b) is false. Block message includes the plan path, the offending task glob, and the routing hint per D6. xfail test under `tests/hooks/uxspec-gate-xfail.bats` (or equivalent harness) referencing this plan path.
-- DoD: hook fires on a synthetic Seraphine dispatch against a UI-touching plan with no §UX Spec; passes on the same plan after a §UX Spec is added; passes on a non-UI plan; passes with a `UX-Waiver:` frontmatter line.
+### Stream C — Rule 22 dispatch-gate hook
 
-### T4 — Tune `lulu.md`, `neeko.md`, `seraphine.md`, `soraka.md`
+- [ ] **T-C1** — xfail bats fixture: dispatch on UI-plan missing §UX Spec must block. estimate_minutes: 25. Files: `tests/hooks/uxspec-gate.bats`, `tests/fixtures/uxspec-gate/ui-no-spec.md`, `tests/fixtures/uxspec-gate/ui-with-spec.md`, `tests/fixtures/uxspec-gate/ui-waiver.md`, `tests/fixtures/uxspec-gate/non-ui.md`. DoD: four bats cases — (a) Seraphine dispatch on `ui-no-spec.md` → expect exit 2 with stderr naming Lulu/Neeko; (b) Seraphine dispatch on `ui-with-spec.md` → exit 0; (c) Seraphine dispatch on `ui-waiver.md` → exit 0; (d) Seraphine dispatch on `non-ui.md` → exit 0; plus a fifth case (e) Aphelios dispatch on `ui-no-spec.md` → exit 0 (hook scoped to Seraphine/Soraka only per D2). Currently fails (hook absent).
+- [ ] **T-C2** — Hook skeleton: PreToolUse `Agent` filter on Seraphine/Soraka. estimate_minutes: 30. Files: `scripts/hooks/pretooluse-uxspec-gate.sh` (new). blockedBy: T-C1. DoD: POSIX bash; reads JSON dispatch payload from stdin; early-exits 0 unless `tool_name == "Agent"` AND `subagent_type ∈ {seraphine, soraka}`; logs decision to `.claude/logs/uxspec-gate.log` (per OQ-5 false-positive observability). bats case (e) passes.
+- [ ] **T-C3** — Hook plan-path extraction + path-glob check. estimate_minutes: 45. Files: `scripts/hooks/pretooluse-uxspec-gate.sh`. blockedBy: T-C2. DoD: hook extracts plan paths matching `plans/(proposed|approved|in-progress)/(work|personal)/.+\.md` from the dispatch description; for each plan, parses §Tasks `files:` lines and matches against D1's UI path-glob (`apps/**/src/**/*.{vue,tsx,jsx,ts,js,css,scss}`, `apps/**/components/**`, `apps/**/pages/**`, `apps/**/routes/**`); shared glob constant defined once and re-used by Stream B linter and Stream E CI script (define in `scripts/lib/uxspec-globs.sh` or sibling — single source of truth).
+- [ ] **T-C4** — Hook §UX Spec / `UX-Waiver:` decision + block message. estimate_minutes: 35. Files: `scripts/hooks/pretooluse-uxspec-gate.sh`. blockedBy: T-C3. DoD: when path-glob matches AND no `## UX Spec` header AND no `UX-Waiver:` frontmatter line, exit 2 with stderr block message naming the plan path, the offending §Tasks glob match, and the D6 routing hint (Lulu vs Neeko by complexity tag); bats cases (a)-(d) all pass.
+- [ ] **T-C5** — Wire hook into `.claude/settings.json` PreToolUse Agent matcher. estimate_minutes: 15. Files: `.claude/settings.json`. blockedBy: T-C4. DoD: settings.json registers `pretooluse-uxspec-gate.sh` under PreToolUse → Agent matcher (alongside existing `agent-default-isolation.sh`); ordering preserves auto-isolation; T-C1 full bats suite passes end-to-end via the dispatch harness.
 
-- kind: docs
-- estimate_minutes: 60
-- files: `.claude/agents/lulu.md`, `.claude/agents/neeko.md`, `.claude/agents/seraphine.md`, `.claude/agents/soraka.md`
-- detail: (a) Lulu — add §Routing-to-Neeko (D6) and §Accessibility-floor-checklist (D5 six items) and §Stage-2-usability-pass (D4 single-question prompt). (b) Neeko — add §Routing-to-Lulu (D6 inverse) and §Accessibility-floor-checklist (D5). (c) Seraphine + Soraka — add §A11y-floor-refuse (D5 items 2-3-4-6 — refuse to ship violations) and a §Process step "before impl, confirm §UX Spec exists on the linked plan; if missing, fail-loud return to coordinator naming Lulu or Neeko per D6 routing".
-- DoD: a manual grep against each agent-def confirms the new sections; `_shared/frontend-design.md` and `_shared/frontend-impl.md` may absorb shared deltas if appropriate (sync via `scripts/sync-shared-rules.sh`).
+### Stream D — Agent-def tuning (Lulu, Neeko, Seraphine, Soraka)
 
-### T5 — PR-body marker enforcement (`Design-Spec:`, `Accessibility-Check:`, `Visual-Diff:`)
+- [ ] **T-D1** — xfail grep tests for all four agent-defs. estimate_minutes: 25. Files: `tests/invariants/lulu-routing.sh`, `tests/invariants/neeko-routing.sh`, `tests/invariants/seraphine-a11y-refuse.sh`, `tests/invariants/soraka-a11y-refuse.sh`. DoD: lulu test asserts presence of §Routing-to-Neeko, §Accessibility-floor-checklist (six items from D5), §Stage-2-usability-pass; neeko test asserts §Routing-to-Lulu, §Accessibility-floor-checklist; seraphine/soraka tests assert §A11y-floor-refuse (D5 items 2-3-4-6) and pre-impl §UX-Spec-required step. All four currently fail.
+- [ ] **T-D2** — Edit `.claude/agents/lulu.md` (normal-track design advisor). estimate_minutes: 30. Files: `.claude/agents/lulu.md`. blockedBy: T-D1. DoD: §Routing-to-Neeko added per D6 (five trigger criteria); §Accessibility-floor-checklist added with D5's six items verbatim; §Stage-2-usability-pass added with D4's single-question prompt and the four record-categories (friction, missing affordances, copy ambiguity, state-transition surprises); §Process points at `architecture/agent-network-v1/design-system.md` (created in Stream F). lulu test passes.
+- [ ] **T-D3** — Edit `.claude/agents/neeko.md` (complex-track designer). estimate_minutes: 25. Files: `.claude/agents/neeko.md`. blockedBy: T-D1. DoD: §Routing-to-Lulu added (inverse of D6 — when Neeko is wrong choice, redirect to Lulu); §Accessibility-floor-checklist added (same six items as Lulu — sync via `_shared/frontend-design.md` if it exists). neeko test passes.
+- [ ] **T-D4** — Edit `.claude/agents/seraphine.md` (complex frontend impl). estimate_minutes: 25. Files: `.claude/agents/seraphine.md`. blockedBy: T-D1. DoD: §A11y-floor-refuse added (refuse to ship PR violating D5 items 2-3-4-6 — keyboard nav, semantic HTML, ARIA-where-needed, screen-reader name+role); §Process step added before impl: confirm §UX Spec exists on linked plan; if missing, fail-loud return to coordinator naming Lulu (normal) or Neeko (complex) per D6. seraphine test passes.
+- [ ] **T-D5** — Edit `.claude/agents/soraka.md` (trivial frontend impl). estimate_minutes: 20. Files: `.claude/agents/soraka.md`. blockedBy: T-D1. DoD: same delta as T-D4 applied to Soraka (a11y-floor refuse + pre-impl §UX-Spec check). soraka test passes.
+- [ ] **T-D6** — Sync shared frontend rules + run `sync-shared-rules.sh`. estimate_minutes: 20. Files: `.claude/agents/_shared/frontend-design.md` (create or extend), `.claude/agents/_shared/frontend-impl.md` (create or extend). blockedBy: T-D2, T-D3, T-D4, T-D5. DoD: shared deltas (a11y floor checklist, §UX-Spec-required pre-impl check) factored into shared partials; `bash scripts/sync-shared-rules.sh` re-emits the four agent-defs idempotently (no diff on second run); all four invariant tests still pass.
 
-- kind: ci
-- estimate_minutes: 60
-- files: `.github/workflows/pr-lint.yml`, `scripts/ci/pr-lint-frontend-markers.sh` (new)
-- detail: New CI job `pr-frontend-markers`. Scopes via `dorny/paths-filter` or equivalent to PRs whose changed-file set matches the §UX Spec UI path-glob from D1. Greps PR body for the three required markers. Fails on missing marker. Accepts `UX-Waiver:` in lieu of `Design-Spec:`. Updates the PR template (`.github/PULL_REQUEST_TEMPLATE.md`) to include the three lines as scaffolding.
-- DoD: a synthetic UI PR opened without the three markers fails the new CI job; the same PR passes after markers added; a non-UI PR is exempt.
+### Stream E — PR-body markers + PR template + CI lint job
 
-### T6 — Design-system stub doc
+- [ ] **T-E1** — xfail integration fixture for `pr-frontend-markers` CI job. estimate_minutes: 30. Files: `tests/ci/pr-frontend-markers/fail-no-markers.txt`, `tests/ci/pr-frontend-markers/pass-all-markers.txt`, `tests/ci/pr-frontend-markers/pass-with-waiver.txt`, `tests/ci/pr-frontend-markers/exempt-non-ui.txt`, `tests/ci/pr-frontend-markers/run.sh`. DoD: four PR-body fixtures exercising the matrix from D7 — (a) UI-PR missing all three markers → fails; (b) UI-PR with `Design-Spec:` + `Accessibility-Check:` + `Visual-Diff:` → passes; (c) UI-PR with `UX-Waiver:` substituting `Design-Spec:` → passes; (d) non-UI PR with no markers → exempt (passes). Currently fails (script absent).
+- [ ] **T-E2** — Implement `scripts/ci/pr-lint-frontend-markers.sh`. estimate_minutes: 45. Files: `scripts/ci/pr-lint-frontend-markers.sh` (new). blockedBy: T-E1, T-C3 (shared glob constant). DoD: POSIX bash; takes PR body via stdin or `$1`, changed-file list via `$GITHUB_EVENT_PATH` or `$2`; uses shared glob constant from T-C3 to determine UI-scope; greps for the three required markers (`Design-Spec:`, `Accessibility-Check:`, `Visual-Diff:`) or `UX-Waiver:`; T-E1 fixtures all pass.
+- [ ] **T-E3** — Wire `pr-frontend-markers` job into `.github/workflows/pr-lint.yml`. estimate_minutes: 30. Files: `.github/workflows/pr-lint.yml`. blockedBy: T-E2. DoD: new job `pr-frontend-markers` runs on `pull_request` events; uses `dorny/paths-filter@v3` to scope on D1 globs; invokes `scripts/ci/pr-lint-frontend-markers.sh` with PR body and changed-file list; fails the job on non-zero exit; sibling to existing `pr-no-ai-attribution` job; documented in `.github/workflows/pr-lint.yml` header comment.
+- [ ] **T-E4** — PR template scaffolding. estimate_minutes: 15. Files: `.github/PULL_REQUEST_TEMPLATE.md`. blockedBy: T-E3. DoD: template gains a `### Frontend / UI markers` section with the three lines as scaffolding (`Design-Spec: <plan-path-or-figma-link>`, `Accessibility-Check: pass | deferred-<reason>`, `Visual-Diff: <Akali-report-path-or-link> | n/a-no-visual-change | waived-<reason>`) and a comment noting `UX-Waiver: <reason>` substitutes for `Design-Spec:` per D7.
 
-- kind: docs
-- estimate_minutes: 30
-- files: `architecture/agent-network-v1/design-system.md` (new)
-- detail: Stub structure per D3. Headings: `## Tokens` (subsections: color, type, spacing, radius, motion, elevation — empty lists), `## Components` (empty placeholder), `## Accessibility floor` (cross-link to CLAUDE.md Rule 22 + this plan's D5), `## Amendment authority` (Lulu owns; Neeko amends for novel patterns; cite W2 roster reference). Initial body deliberately minimal.
-- DoD: file exists; cross-references resolve; Lulu's agent-def points at it from her §Process.
+### Stream F — Closeout (design-system stub + coordinator prompts)
 
-### T7 — Coordinator-side prompt updates (Evelynn / Sona)
+- [ ] **T-F1** — xfail test for design-system stub. estimate_minutes: 10. Files: `tests/invariants/design-system-stub.sh`. DoD: test asserts `architecture/agent-network-v1/design-system.md` exists with `## Tokens` (with subsections color/type/spacing/radius/motion/elevation), `## Components`, `## Accessibility floor`, `## Amendment authority` headings. Currently fails.
+- [ ] **T-F2** — Create design-system stub doc. estimate_minutes: 25. Files: `architecture/agent-network-v1/design-system.md` (new). blockedBy: T-F1, T-A2 (so Rule 22 cross-ref in §Accessibility floor resolves), T-D2 (so Lulu's §Process pointer is consistent). DoD: stub structure per D3; `## Tokens` subsections empty per OQ-4 recommendation (no pre-cribbed values); `## Accessibility floor` cross-links to CLAUDE.md Rule 22 and this plan's D5; `## Amendment authority` names Lulu owner / Neeko amender citing W2 roster (`architecture/agent-network-v1/agents.md`); T-F1 passes.
+- [ ] **T-F3** — xfail test for coordinator-prompt updates. estimate_minutes: 10. Files: `tests/invariants/coordinator-uxspec-prompts.sh`. DoD: greps `agents/evelynn/CLAUDE.md` and `agents/sona/CLAUDE.md` for two new bullets each — (1) pre-impl §UX-Spec-or-Waiver check + Lulu/Neeko routing per D6; (2) post-impl Lulu stage-2 usability dispatch before Akali stage-3. Currently fails.
+- [ ] **T-F4** — Update Evelynn + Sona impl-dispatch checklists. estimate_minutes: 20. Files: `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`. blockedBy: T-F3, T-A2. DoD: both coordinator CLAUDE.md files include the two bullets verbatim from D4 + D6; T-F3 passes; bullets land in a stable section likely to survive `/end-session` memory refresh (insert under existing impl-dispatch checklist heading rather than free-floating).
 
-- kind: docs
-- estimate_minutes: 20
-- files: `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`
-- detail: Add to Evelynn's impl-dispatch checklist: "Before dispatching Seraphine or Soraka against a UI-touching plan, confirm §UX Spec exists or `UX-Waiver:` present. If missing, dispatch Lulu (normal) or Neeko (complex) per D6." Sona inherits the same — work-concern UI work flows through Sona dispatch and the Rule 22 gate fires identically. Add to both: "After impl agent reports interactive surface ready, dispatch Lulu for the stage-2 usability pass (D4) before requesting Akali for stage-3 visual-diff." This is prompt-layer; no hook.
-- DoD: both coordinator CLAUDE.md files contain the new bullets; they survive `/end-session` memory refresh without drift.
+---
+
+### Phase gates
+
+- **Gate G-A (after Stream A merges):** Rule 22 is canon. Streams F-2 / F-4 unblock.
+- **Gate G-BCDE (after Streams B, C, D, E merge — independent, may merge in any order):** all enforcement layers (linter, hook, agent-defs, CI) live. Stream F closeout completes.
+- **Gate G-F (after Stream F merges):** plan moves to `plans/implemented/` via Orianna.
+
+### Slice-to-PR mapping
+
+Five PRs (one per stream A-E) plus one closeout PR (Stream F). Each PR is reviewed independently per Rule 18 (one approving non-author review). PRs A/B/C/E are Senna-primary (code/hook/CI); PR D is Lulu+Neeko-primary (design-process fidelity, since they review their own role definitions) with Senna for shared-rules sync mechanics; PR F is Lucian-primary (plan-fidelity + cross-references). All PRs carry `QA-Waiver: yes — agent-process plan, no production UI surface` per Rule 16.
+
+### Per-task estimates summary
+
+| Stream | Tasks | Total estimate (min) |
+|---|---|---|
+| A | 2 | 25 |
+| B | 4 | 100 |
+| C | 5 | 150 |
+| D | 6 | 145 |
+| E | 4 | 120 |
+| F | 4 | 65 |
+| **Total** | **25** | **605** |
+
+All individual task estimates are ≤45 minutes (under the 60-minute breakdown cap). Streams may dispatch in parallel; the longest critical path is Stream C (150 min serial) gated only on its own xfail-first ordering.
 
 ## Test plan
 
