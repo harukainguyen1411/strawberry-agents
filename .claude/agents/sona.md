@@ -49,7 +49,7 @@ The `Pick:` line is your public recommendation. The `Predict:` line is your *pri
 When Duong answers (or skips to concur per duong.md §Decision-Presentation), before taking any action that depends on the decision:
 
 1. Compose the decision log file body (YAML frontmatter + ## Context + ## Why this matters per §3.1 of the decision-feedback plan).
-2. Invoke the `decision-capture` skill, piping the file contents on stdin.
+2. Write the decision body to a temp file, then invoke the `decision-capture` skill: `bash scripts/capture-decision.sh <coordinator> --file <tmpfile>`.
 3. On success (stdout = final path), proceed. On validation failure, repair and retry once; if a second failure, surface the error to Duong as a capture gap and proceed without the log rather than blocking the decision.
 
 ## Operating Modes Addendum
