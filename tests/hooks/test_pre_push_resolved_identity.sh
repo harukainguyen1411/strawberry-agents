@@ -215,6 +215,109 @@ run_push_case "NEW-BP-11: sh -c → persona commit object (Karma)" setup_bp11_sh
 run_push_case "NEW-BP-12: bash -c → persona commit object (Talon)" setup_bp12_bash_c
 
 # ---------------------------------------------------------------------------
+# T7 positive/boundary tests
+# ---------------------------------------------------------------------------
+
+# POS-1: neutral Duongntd commit passes pre-push
+setup_neutral_duongntd() {
+  local repo="$1"
+  # Config is already Duongntd from make_downstream
+  git -C "$repo" commit --allow-empty -q -m "neutral identity commit"
+  git -C "$repo" rev-parse HEAD
+}
+run_push_case_allow() {
+  local desc="$1"
+  local setup_fn="$2"
+
+  if [ ! -f "$HOOK" ]; then
+    printf 'XFAIL (hook absent): %s\n' "$desc"
+    skip=$((skip + 1))
+    return
+  fi
+
+  local upstream downstream sha
+  upstream="$(make_upstream)"
+  downstream="$(make_downstream "$upstream")"
+
+  sha="$("$setup_fn" "$downstream" "$upstream")"
+
+  if [ -z "$sha" ]; then
+    printf 'FAIL: %s (setup did not produce a sha)\n' "$desc" >&2
+    fail=$((fail + 1))
+    rm -rf "$upstream" "$downstream"
+    return
+  fi
+
+  local remote_sha
+  remote_sha="$(git -C "$downstream" ls-remote "$upstream" refs/heads/main 2>/dev/null | awk '{print $1}')"
+  [ -z "$remote_sha" ] && remote_sha="$ZERO_SHA"
+
+  local actual_exit=0
+  printf 'refs/heads/test-branch %s refs/heads/test-branch %s\n' "$sha" "$remote_sha" \
+    | GIT_DIR="$downstream/.git" bash "$HOOK" origin "$upstream" >/dev/null 2>&1 \
+    || actual_exit=$?
+
+  rm -rf "$upstream" "$downstream"
+
+  if [ "$actual_exit" -eq 0 ]; then
+    printf 'PASS: %s\n' "$desc"
+    pass=$((pass + 1))
+  else
+    printf 'FAIL: %s (hook blocked, expected allow)\n' "$desc" >&2
+    fail=$((fail + 1))
+  fi
+}
+
+run_push_case_allow "POS-1: neutral Duongntd commit passes pre-push" setup_neutral_duongntd
+
+# POS-2: STRAWBERRY_AGENT=orianna with persona-named commit — must FAIL pre-push (no carve-out)
+# This is the boundary test: Orianna carve-out applies at pre-commit only, not pre-push.
+setup_orianna_persona_commit() {
+  local repo="$1"
+  local tree sha
+  tree="$(git -C "$repo" rev-parse HEAD^{tree})"
+  sha="$(GIT_AUTHOR_NAME="Orianna" GIT_AUTHOR_EMAIL="orianna@strawberry.local" \
+    GIT_COMMITTER_NAME="Orianna" GIT_COMMITTER_EMAIL="orianna@strawberry.local" \
+    git -C "$repo" commit-tree "$tree" -m "orianna persona commit" -p HEAD)"
+  git -C "$repo" update-ref refs/heads/test-branch "$sha"
+  printf '%s' "$sha"
+}
+
+pos2_orianna_blocked_at_push() {
+  if [ ! -f "$HOOK" ]; then
+    printf 'XFAIL (hook absent): POS-2 Orianna persona commit blocked at pre-push\n'
+    skip=$((skip + 1))
+    return
+  fi
+
+  local upstream downstream sha
+  upstream="$(make_upstream)"
+  downstream="$(make_downstream "$upstream")"
+
+  sha="$(setup_orianna_persona_commit "$downstream" "$upstream")"
+
+  local remote_sha
+  remote_sha="$(git -C "$downstream" ls-remote "$upstream" refs/heads/main 2>/dev/null | awk '{print $1}')"
+  [ -z "$remote_sha" ] && remote_sha="$ZERO_SHA"
+
+  local actual_exit=0
+  printf 'refs/heads/test-branch %s refs/heads/test-branch %s\n' "$sha" "$remote_sha" \
+    | STRAWBERRY_AGENT=orianna GIT_DIR="$downstream/.git" bash "$HOOK" origin "$upstream" >/dev/null 2>&1 \
+    || actual_exit=$?
+
+  rm -rf "$upstream" "$downstream"
+
+  if [ "$actual_exit" -ne 0 ]; then
+    printf 'PASS: POS-2 Orianna persona commit correctly blocked at pre-push (no carve-out)\n'
+    pass=$((pass + 1))
+  else
+    printf 'FAIL: POS-2 Orianna persona commit was allowed through pre-push (carve-out should not apply)\n' >&2
+    fail=$((fail + 1))
+  fi
+}
+pos2_orianna_blocked_at_push
+
+# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 total=$((pass + fail + skip))
