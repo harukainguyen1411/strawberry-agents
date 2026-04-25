@@ -100,7 +100,7 @@ fi
 # Capitalise coordinator name for display (e.g. evelynn -> Evelynn)
 display_name="$(printf '%s' "$coord" | awk '{print toupper(substr($0,1,1)) tolower(substr($0,2))}')"
 
-context="FIRST ACTION REQUIRED: invoke the Monitor tool now with command: bash scripts/hooks/inbox-watch.sh — description: Watch ${display_name}'s inbox. This is your inbox watcher. Arm it before doing anything else. Events surface as INBOX: <file> lines; when one appears, run /check-inbox."
+context="FIRST ACTION REQUIRED: verify a watcher is armed for ${display_name} — check existing Monitor tasks and run ps aux | grep inbox-watch.sh matched against your CLAUDE_AGENT_NAME. If a watcher is already armed, no-op. If absent, invoke Monitor with command: bash scripts/hooks/inbox-watch.sh — description: Watch ${display_name}'s inbox. Events surface as INBOX: <file> lines; when one appears, run /check-inbox."
 
 # Emit valid JSON
 if command -v jq >/dev/null 2>&1; then
