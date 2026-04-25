@@ -234,18 +234,96 @@ The existing five-phase lifecycle table is unchanged.
 
 ## 6. Tasks
 
-Tasks are out of scope for this ADR — Kayn breakdown handles the implementation work after Orianna approval. The implementation work spans:
+Aphelios breakdown — D1A inline. Five phases (A foundations → B lint hooks → C backlog tooling → D coordinator integration → E gate/merge). TDD ordering: every lint/script implementation task is preceded by a test/fixture task on the same branch (Rule 12). Each task carries `parallel_slice_candidate` per the parallel-slice doctrine; coordinators read the field at dispatch time.
 
-1. `ideas/` directory creation + `.gitkeep` files for both concerns.
-2. `pre-commit-zz-plan-structure.sh` extension (priority + last_reviewed required for proposed plans).
-3. `pre-commit-zz-idea-structure.sh` new hook (forbidden-headers lint, frontmatter validation).
-4. `scripts/backlog-list.sh` + `/backlog` skill registration.
-5. `scripts/backlog-init-priority.sh` one-shot migration (existing proposed plans → `priority: P2`).
-6. Coordinator startup-chain amendment (Sona, Evelynn): surface backlog summary on session start.
-7. Architecture doc amendment (`plan-lifecycle.md` new section).
-8. `plans/_template.md` update (add `priority:`, `last_reviewed:` frontmatter).
+### Phase A — Foundations (scaffolding, template, architecture doc)
 
-Total estimate: deferred to Kayn. Rough order of magnitude: 3–4 hours of implementation across hooks, scripts, and doc updates.
+Phase A tasks are mutually independent (different files, no shared state). They form the largest parallelisable window in the plan.
+
+- [ ] **T1** — Create `ideas/personal/` and `ideas/work/` directories with `.gitkeep`. estimate_minutes: 10. Files: `ideas/personal/.gitkeep`, `ideas/work/.gitkeep`. DoD: both directories exist on `main` after merge; `git ls-tree main -- ideas/` shows both subdirs; PreToolUse plan-lifecycle guard does NOT fire on writes under `ideas/**` (manual probe: `Write` to `ideas/personal/test.md` succeeds). parallel_slice_candidate: no. blockedBy: none. blocks: T2-fixtures (idea fixture path), T7 (idea-structure lint).
+
+- [ ] **T2** — Extend `plans/_template.md` with `priority:` and `last_reviewed:` frontmatter fields, scoped with a comment that they apply only while in `proposed/`. estimate_minutes: 15. Files: `plans/_template.md`. DoD: template includes both fields with allowed-values comment (`# P0|P1|P2|P3` for priority, `# YYYY-MM-DD` for last_reviewed); no other template field changes. parallel_slice_candidate: no. blockedBy: none. blocks: T13 (migration script reads template), T6 (lint references template).
+
+- [ ] **T3** — Append "## Backlog and parking lot (ideas/)" section to `architecture/agent-network-v1/plan-lifecycle.md` summarising A1–A5 + D1 with backlinks to this ADR. estimate_minutes: 30. Files: `architecture/agent-network-v1/plan-lifecycle.md`. DoD: new section appended; the existing five-phase lifecycle table remains byte-identical (verify with `git diff` shows only additive lines below the table); section ends with link to `plans/approved/personal/2026-04-25-plan-of-plans-and-parking-lot.md`. parallel_slice_candidate: no. blockedBy: none. blocks: T19 (integration smoke verifies doc cross-ref).
+
+### Phase A gate
+
+A-G1: T1, T2, T3 merged on a single branch; pre-commit hooks pass; no functional behaviour change yet (no hooks updated, no scripts added). Phase B may begin.
+
+### Phase B — Lint hooks (TDD: fixtures and tests first, then implementation)
+
+Per Rule 12, B-test tasks land in a commit that precedes the matching B-impl commit on the same branch. Fixture tasks are slice-friendly (separate fixture files, no merge conflict).
+
+- [ ] **T4** — Author golden-file fixtures + xfail unit test for the `pre-commit-zz-plan-structure.sh` `priority:` + `last_reviewed:` extension. estimate_minutes: 45. Files: `tests/hooks/plan-structure/fixtures/proposed-missing-priority.md`, `tests/hooks/plan-structure/fixtures/proposed-bad-priority-value.md`, `tests/hooks/plan-structure/fixtures/proposed-stale-last-reviewed.md`, `tests/hooks/plan-structure/fixtures/proposed-valid.md`, `tests/hooks/plan-structure/test_plan_structure_priority.bats`. DoD: test runs and FAILS xfail with diagnostic referencing T6 task ID; one fixture per assertion case; commit message tagged `chore: xfail for T6`. parallel_slice_candidate: yes. blockedBy: T2. blocks: T6.
+
+- [ ] **T5** — Author golden-file fixtures + xfail unit test for the new `pre-commit-zz-idea-structure.sh` hook. estimate_minutes: 45. Files: `tests/hooks/idea-structure/fixtures/idea-with-tasks-header.md`, `tests/hooks/idea-structure/fixtures/idea-missing-frontmatter-field.md`, `tests/hooks/idea-structure/fixtures/idea-bad-concern-value.md`, `tests/hooks/idea-structure/fixtures/idea-valid.md`, `tests/hooks/idea-structure/test_idea_structure.bats`. DoD: test runs and FAILS xfail with diagnostic referencing T7; covers all forbidden headers from D1 (`## Tasks`, `## Test plan`, `## Design`, `## Decision`, `## Risks`, `## Rollback`, `## Open questions`); commit tagged `chore: xfail for T7`. parallel_slice_candidate: yes. blockedBy: T1. blocks: T7.
+
+- [ ] **T6** — Implement `pre-commit-zz-plan-structure.sh` extension: enforce `priority: P0|P1|P2|P3` and ISO-date `last_reviewed:` on every plan in `plans/proposed/**`. estimate_minutes: 50. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh`. DoD: T4 fixtures all pass (xfail flips to xpass / removed); hook rejects missing priority with message `"plans/proposed/**: priority: field required (P0|P1|P2|P3)"`; rejects bad priority value with message naming the offending value; rejects missing/non-ISO `last_reviewed`; POSIX-portable bash (Rule 10) — no GNU-only `date -d`, use `[0-9]{4}-[0-9]{2}-[0-9]{2}` regex. parallel_slice_candidate: no. blockedBy: T4. blocks: T13.
+
+- [ ] **T7** — Implement new hook `scripts/hooks/pre-commit-zz-idea-structure.sh`: validate `ideas/<concern>/**.md` frontmatter (5 required fields per A2) and reject forbidden headers in body. estimate_minutes: 55. Files: `scripts/hooks/pre-commit-zz-idea-structure.sh`. DoD: T5 fixtures all pass; hook validates `title`, `concern` (∈ `personal|work`), `created`, `last_reviewed` (ISO), `tags`; rejects body containing any forbidden header with the exact error message from §A2 ("this is a plan, not an idea — author it under plans/proposed/<concern>/ instead."); POSIX-portable bash; runs only on changed files in the staged set. parallel_slice_candidate: no. blockedBy: T5. blocks: T8.
+
+- [ ] **T8** — Wire `pre-commit-zz-idea-structure.sh` into the dispatcher (`scripts/hooks-dispatchers/pre-commit` or equivalent). estimate_minutes: 15. Files: `scripts/hooks-dispatchers/pre-commit`, `scripts/install-hooks.sh` (if explicit list). DoD: hook executes on `pre-commit` for staged files under `ideas/**`; smoke: `git commit` against a fixture idea with `## Tasks` header is rejected. parallel_slice_candidate: no. blockedBy: T7. blocks: T9.
+
+- [ ] **T9** — Set `pre-commit-zz-idea-structure.sh` to **warning-only** mode for the first two weeks (per §5 risk row 6). estimate_minutes: 15. Files: `scripts/hooks/pre-commit-zz-idea-structure.sh` (add `STRAWBERRY_IDEA_LINT_LEVEL` env var with default `warn` until `2026-05-09`, then `error`). DoD: warning prints diagnostic to stderr with `[warn]` prefix and exits 0 until sunset date; after sunset hook fails-closed; sunset date written into the script as a constant for easy audit. parallel_slice_candidate: no. blockedBy: T7. blocks: T18.
+
+### Phase B gate
+
+B-G1: T6, T7, T8, T9 merged; all hook tests green; manual probe — committing a proposed plan without `priority:` is rejected (T6 path); committing an idea with `## Tasks` produces a warning until 2026-05-09 (T9 path). Phase C may begin.
+
+### Phase C — Backlog tooling (`/backlog` skill + migration script)
+
+- [ ] **T10** — Author smoke-test fixture + xfail test for `scripts/backlog-list.sh`. estimate_minutes: 40. Files: `tests/scripts/backlog-list/fixtures/personal/proposed-p0-fresh.md`, `tests/scripts/backlog-list/fixtures/personal/proposed-p1-stale.md`, `tests/scripts/backlog-list/fixtures/personal/proposed-p2-fresh.md`, `tests/scripts/backlog-list/fixtures/personal/proposed-p3-stale.md`, `tests/scripts/backlog-list/test_backlog_list.bats`. DoD: test runs and fails xfail; assertions cover sort order (P0 → P3), stale-flag rendering for `last_reviewed > 30 days`, and concern-filter behaviour (`--concern personal` returns only personal). parallel_slice_candidate: yes. blockedBy: T2. blocks: T11.
+
+- [ ] **T11** — Implement `scripts/backlog-list.sh`: enumerate `plans/proposed/**`, read `priority` + `last_reviewed`, emit sorted Markdown table to stdout. estimate_minutes: 55. Files: `scripts/backlog-list.sh`. DoD: T10 tests green; output format matches the §A4 sketch (P-bucketed, count in each bucket, stale tag for >30d); supports `--concern <work|personal>` (default = home concern via `STRAWBERRY_HOME_CONCERN`), `--all`, `--ideas` (lists `ideas/<concern>/**` with 90d staleness threshold per §A5); POSIX-portable bash; no external deps beyond `git`/`awk`/`sed`/`grep`. parallel_slice_candidate: no. blockedBy: T10, T2. blocks: T12, T15, T16.
+
+- [ ] **T12** — Register `/backlog` skill that wraps `scripts/backlog-list.sh`. estimate_minutes: 25. Files: `.claude/skills/backlog.md` (or framework equivalent). DoD: invoking `/backlog` from a coordinator session prints the §A4 output; `--concern`, `--all`, `--ideas`, `--groom` flags all forwarded; skill description names Sona and Evelynn as primary callers. parallel_slice_candidate: no. blockedBy: T11. blocks: T15, T16, T19.
+
+- [ ] **T13** — Author smoke test + xfail for `scripts/backlog-init-priority.sh`. estimate_minutes: 30. Files: `tests/scripts/backlog-init/fixtures/before/`, `tests/scripts/backlog-init/fixtures/after/`, `tests/scripts/backlog-init/test_backlog_init_priority.bats`. DoD: xfail test fixtures show before-state proposed plans with NO `priority:` field, after-state with `priority: P2` injected and `last_reviewed: <today>`; test fails until T14 lands. parallel_slice_candidate: yes. blockedBy: T2, T6. blocks: T14.
+
+- [ ] **T14** — Implement `scripts/backlog-init-priority.sh`: one-shot migration that adds `priority: P2` and `last_reviewed: <today>` to every plan in `plans/proposed/**` lacking those fields. estimate_minutes: 45. Files: `scripts/backlog-init-priority.sh`. DoD: T13 fixtures pass; idempotent (re-run is a no-op); preserves frontmatter ordering and YAML formatting; emits a summary count of files touched; does NOT touch ideas, approved, in-progress, implemented, archived. parallel_slice_candidate: no. blockedBy: T13. blocks: T17.
+
+### Phase C gate
+
+C-G1: T11, T12, T14 merged; tests green; manual probe — running `/backlog` from a coordinator REPL prints a non-empty table (assuming T17 has run). Phase D may begin.
+
+### Phase D — Coordinator startup integration
+
+D-tasks must run serially per coordinator (Sona / Evelynn) — they edit the same startup files. Cross-coordinator they are independent.
+
+- [ ] **T15** — Amend Evelynn startup chain to surface backlog summary on session start. estimate_minutes: 30. Files: `agents/evelynn/CLAUDE.md`, `.claude/agents/evelynn.md` (startup sequence section if applicable). DoD: Evelynn boot reads `scripts/backlog-list.sh --concern personal` output before greeting; top-5 P0/P1 plans + stale-count printed to context; backward-compat — if `backlog-list.sh` exits non-zero (e.g., missing fixtures), boot continues with a warning, never fails-closed. parallel_slice_candidate: yes. blockedBy: T11, T12. blocks: T19.
+
+- [ ] **T16** — Amend Sona startup chain symmetrically for work concern. estimate_minutes: 30. Files: `agents/sona/CLAUDE.md`, `.claude/agents/sona.md`. DoD: same as T15 but `--concern work`; ensure both chains use the same wrapper helper to avoid drift. parallel_slice_candidate: yes. blockedBy: T11, T12. blocks: T19.
+
+### Phase D gate
+
+D-G1: T15, T16 merged; manual probe — fresh Evelynn / Sona session prints the backlog summary in the boot sequence. Phase E may begin.
+
+### Phase E — Migration, cutover, integration smoke
+
+- [ ] **T17** — Run `scripts/backlog-init-priority.sh` against `plans/proposed/personal/**` and `plans/proposed/work/**`; commit the resulting field additions on a single migration branch. estimate_minutes: 30. Files: every existing file in `plans/proposed/**` (read-modify-write of frontmatter only). DoD: every proposed plan has `priority: P2` (or whatever the coordinator hand-edits before commit) and `last_reviewed: <today>`; commit message format `chore: backlog-init priority migration (P2 default)`; no body changes. Coordinators may hand-tune priorities in a follow-up commit. parallel_slice_candidate: wait-bound. blockedBy: T14. blocks: T19.
+
+- [ ] **T18** — Sunset audit: verify the warning-only date constant in T9 (`2026-05-09`) is still the right cutover and the script's date-comparison logic resolves correctly. estimate_minutes: 15. Files: `scripts/hooks/pre-commit-zz-idea-structure.sh` (read-only check), `assessments/2026-05-09-idea-lint-cutover.md` (new short note). DoD: assessment file records (a) the date the warning-only mode flips off, (b) a probe command to verify the flip, (c) link back to this ADR §5. parallel_slice_candidate: yes. blockedBy: T9. blocks: E-G1.
+
+- [ ] **T19** — End-to-end integration smoke: author one idea under `ideas/personal/`, observe `/backlog --ideas` shows it, promote it to `plans/proposed/personal/` (manual coordinator dance per §A3), observe `/backlog` shows it, observe pre-commit lint accepts the new proposed plan, observe deletion of original idea via the promotion commit. estimate_minutes: 45. Files: a throwaway `ideas/personal/2026-04-26-aphelios-smoke.md` + the materialized proposed plan (cleaned up at end); `assessments/2026-04-26-plan-of-plans-smoke.md` (transcript). DoD: smoke transcript saved at the assessments path; transcript shows lint allowing the idea, `/backlog --ideas` listing it, `/backlog` not listing it, then post-promotion the inverse — `/backlog` lists it and `/backlog --ideas` does not. parallel_slice_candidate: wait-bound. blockedBy: T3, T15, T16, T17. blocks: E-G1.
+
+### Phase E gate
+
+E-G1: T17, T18, T19 merged; smoke transcript exists. Plan transitions `in-progress → implemented` (Orianna gate). Coordinators announce backlog grooming as live in next session.
+
+### Cross-cutting notes
+
+- **Hook ordering**: T6 (plan-structure extension) and T7 (new idea-structure hook) are in the `zz-` namespace deliberately — they run last in the pre-commit chain, after secret-scanning and commit-prefix. Maintain that ordering.
+- **No raw `git checkout`** — every implementation branch uses `scripts/safe-checkout.sh` or `scripts/worktree-add.sh` (Rule 3).
+- **Commit prefix**: every task in this breakdown is `chore:` (Rule 5; nothing under `apps/**`).
+- **Bundling concern (Orianna WARN)**: this breakdown ships all five mechanisms (priority, ideas/, /backlog, grooming, staleness). Phase B is the natural cut point if Duong wants to land v1 narrowly — Phases C/D/E (the `/backlog` skill, grooming surface, staleness flag) are structurally separable from priority + ideas/. Coordinators may pause between B-G1 and Phase C if calibration data is desired before shipping `/backlog`. See OQ-K2 below.
+
+### Open questions (Aphelios)
+
+- **OQ-K1** — Should the warning-only sunset date in T9 (`2026-05-09`) be hard-coded or read from a config knob (`config/lint-sunsets.yaml`)? Recommendation: hard-coded for v1; one cutover, no need for a knob.
+- **OQ-K2** — Bundling: per Orianna's WARN, would Duong prefer to ship Phase A + Phase B as v1 (priority field + ideas/ lint, no `/backlog` skill yet) and gate Phase C on observed backlog-decay data? Defaulting to no — caller said "breakdown should still proceed for the full ADR as written" — but flagging for explicit confirm.
+- **OQ-K3** — Coordinator startup-chain amendments (T15, T16) add ~1s of boot latency for the `backlog-list.sh` shellout. If this is unacceptable, fall back to lazy: print a hint ("`/backlog` to see the queue") and only run the script on demand. Recommendation: measure first, optimise only if >2s.
+- **OQ-K4** — Should T19 smoke transcript live under `assessments/` (where it goes for ADR audit) or under `agents/aphelios/` (where it traces back to the breakdown author)? Recommendation: `assessments/` — it's a system-level integration test, not an agent journal entry.
+- **OQ-K5** — Orianna signature invalidation: this Edit changes the body bytes of an approved ADR. The plan does not appear to carry a body-hash signature today (only the cosmetic `## Orianna approval` block from the proposed→approved transition). If a body-hash signature is later attached at the `approved → in-progress` step, this Edit will invalidate it; coordinator (Evelynn) should run the demote → re-sign dance per shared rules. Flagging for awareness.
 
 ## Test plan
 
