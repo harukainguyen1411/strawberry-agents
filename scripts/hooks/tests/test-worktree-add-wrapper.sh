@@ -56,7 +56,7 @@ echo "--- INV-3a: Wrapper refuses when core.hooksPath unset ---"
   rm -rf "$wt_target"  # wrapper will try to create it
 
   rc=0
-  output="$("$WRAPPER" "$wt_target" -b "test-branch-inv3a-$$" 2>&1)" || rc=$?
+  output="$(cd "$clone" && bash "$WRAPPER" "$wt_target" -b "test-branch-inv3a-$$" 2>&1)" || rc=$?
 
   if [ "$rc" -ne 0 ]; then
     if echo "$output" | grep -qi "install-hooks"; then
