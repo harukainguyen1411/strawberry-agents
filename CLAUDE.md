@@ -37,7 +37,7 @@ See `agents/memory/agent-network.md` for the full roster.
 2. **Never write secrets into committed files** — use `secrets/` (gitignored) or env vars.
 
 <!-- #rule-git-worktree -->
-3. **Use `git worktree` for branches** — never raw `git checkout`. Use `scripts/safe-checkout.sh`.
+3. **Use `git worktree` for branches** — never raw `git checkout`. Use `scripts/safe-checkout.sh` for branch switches and `scripts/worktree-add.sh` for new worktrees. `core.hooksPath` ensures hooks fire in all worktrees.
 
 <!-- #rule-plans-direct-to-main -->
 4. **Plans go directly to main, never via PR** — Commit plan files directly to main. Only implementation work goes through a PR.
