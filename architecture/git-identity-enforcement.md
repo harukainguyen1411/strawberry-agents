@@ -61,10 +61,18 @@ Duongntd <103487096+Duongntd@users.noreply.github.com>
 
 ### Orianna carve-out
 
-Orianna is the sole deliberate exception. Her plan-promotion commits are authored as `orianna@strawberry.local` on the strawberry-agents repo. The carve-out is scoped to **pre-commit only**:
+Orianna is the sole deliberate exception. The carve-out is scoped to **pre-commit only**:
 
 - `pre-commit-resolved-identity.sh`: honors `STRAWBERRY_AGENT=orianna` or `CLAUDE_AGENT_NAME=orianna` — exits 0 without checking.
-- `pre-push-resolved-identity.sh`: **no carve-out**. Orianna pushes neutral identity at push time; her plan-promotion commits stay local.
+- `pre-push-resolved-identity.sh`: **no carve-out**. Orianna pushes neutral identity at push time.
+
+**Update (2026-04-25) — `plans/approved/personal/2026-04-25-orianna-identity-protocol-alignment.md`:**
+`agents/orianna/memory/git-identity.sh` now sets the neutral `Duongntd` identity directly
+(replacing the former `orianna@strawberry.local` / `Orianna` persona identity). Orianna's
+persona signal is now carried exclusively in the `Promoted-By: Orianna` commit body trailer.
+This eliminates the amend-shuffle previously required on every plan promotion. The Layer 2
+`STRAWBERRY_AGENT=orianna` carve-out is **retained as defense-in-depth** but is no longer
+load-bearing — a clean Duongntd commit short-circuits before the carve-out check matters.
 
 ## Bypasses closed by this design
 
