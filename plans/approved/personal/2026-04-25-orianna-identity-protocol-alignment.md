@@ -3,7 +3,7 @@ title: Align Orianna's git-identity protocol with three-layer enforcement
 slug: orianna-identity-protocol-alignment
 date: 2026-04-25
 concern: personal
-status: proposed
+status: approved
 owner: karma
 complexity: quick
 orianna_gate_version: 2
@@ -68,3 +68,10 @@ Per Rule 12: T1 lands as a separate xfail commit before T2's implementation comm
 3. The retrospection-dashboard cornerstone plan's canonical-v1-lock will gate edits to `.claude/_script-only-agents/` and hook scripts — does it also gate `.claude/agents/orianna.md` and `agents/orianna/memory/git-identity.sh`? If yes, T2/T3 must land before lock activation.
 
 > **Duong: yes — must land pre-lock.** Per dashboard plan §Q6 the canonical-v1 manifest covers all `.claude/agents/*.md` SHAs (so `orianna.md` is locked) and the persona's behavior-defining script `agents/orianna/memory/git-identity.sh` is explicitly added to the lock manifest at lock-tag time. Promote and execute this plan before Phase 2 of the retrospection-dashboard ships, since Phase 2 ship triggers the lock.
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Owner is Karma, all three open questions resolved inline by Duong on 2026-04-25, and tasks T1–T4 are concrete with explicit DoD. Test discipline honored: T1 lands an xfail bats test referencing this plan before T2's implementation commit, satisfying Rule 12. The fix scope is minimal — one script body change, two doc updates — and aligns the Orianna protocol with the canonical resting state already documented in `architecture/git-identity-enforcement.md` (neutral git identity + `Promoted-By: Orianna` trailer as audit signal). Time-sensitive: must execute before retrospection-dashboard Phase 2 ship triggers canonical-v1 lock.
