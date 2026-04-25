@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-25 (session 84b7ba50; seventh consolidation — shard 84b7ba50).
+Last updated: 2026-04-25 (session c1463e58; eighth consolidation — shard f993d23d).
 
 ---
 
@@ -123,18 +123,18 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 - **Blocker (task #102):** Senna flag on #2109 — route `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` not registered in `core/tse/api/v3/api.go`. T3 Viktor handler impl MUST include this registration. Tests currently 404-not-panic; xfail still satisfied pre-T3.
 - T11 Seraphine: audit schema committed `6d60964e` — DONE.
 - T13 Jayce PR #32 (mcps): Senna advisory-LGTM (dormant) + Lucian drift-non-blocking — awaiting Duong merge.
-**Next action:** (1) Duong approve+merge #2108 then #2109. (2) T3 Viktor dispatch MUST include route registration (task #102). (3) Dispatch remaining tasks T4/T5/T6/T15/T16/T17 per breakdown. (4) Duong merge T13 PR #32 (mcps).
-**2026-04-24/25 update:** Duong asked "is the api existing already?" — I checked: existing `POST /v3/orgs/:orgId/invites` is mounted under the `org` group with `CheckPermissionForOrg` middleware whose rego (`has_role = role { role = input.user.org_roles[org_id] }`) keys per-org. No global-SuperAdmin bypass. New `/v3/superadmin/*` route is structurally needed. **Swain #108 dispatched (paused before fire) to dig deeper for any pre-existing flow OR an existing flow that grants SuperAdmin role to others — resume next session.** Also: T15 target is tse deploy config (standalone `missmp/tse` repo), not wallet-studio — ADR §T1 path was Azir's guess, Seraphine corrected at impl.
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
+**Next action:** (1) Duong approve+merge #2108 then #2109 from `harukainguyen1411`. (2) After merge: resume Swain #108 (existing-flow/SuperAdmin-grant dig) + dispatch Viktor T3 (MUST include `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` route registration in `core/tse/api/v3/api.go`). (3) Parallel: T4/T5/T6/T15. (4) Duong merge T13 PR #32 (mcps).
+**2026-04-24/25 update:** Skarner dig confirmed: SuperAdmin primary path, scaffolded-DRY fallback (no env, no secrets). Critical path T0→T1→T13→T14(Duong)→T15→T16. Swain #108 paused before fire — open question to fold in on resume: "does an existing flow grant SuperAdmin role to others?" Existing `POST /v3/orgs/:orgId/invites` keyed per-org; no global SuperAdmin bypass; new `/v3/superadmin/*` route structurally needed. Also: T15 target is tse deploy config (standalone `missmp/tse` repo).
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
 
 ---
 
 ## Wave D unblocker — company-os PR #32 (2026-04-24, open)
 
-**Status:** Viktor fix-up commit 6d3c15b: sys.path.insert→sys.path.append (Senna correctness landmine), `_mem_store` autouse reset fixture in inner conftest.py, `create_session` required-kwargs restored. T.P1.12 tests 4/4 green. Senna #103 LGTM + Lucian #104 APPROVE both landed (post-compact). Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
-**Blocker:** `mergeable: CONFLICTING` against main. Viktor must rebase/merge-from-main before merge can fire (no rebase per Rule 11 — use merge-from-main).
-**Next action:** Dispatch Viktor for conflict resolution → re-confirm CI green → surface to Duong → merge → Wave D unblocked.
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
+**Status (2026-04-25, shard f993d23d):** Viktor resolved merge conflict locally (`dd8f164` on `feat/demo-studio-v3`). Pre-push hook caught 6 pre-existing TDD failures from commits `64eb362` + `6d3c15b` — NOT from the merge itself. Viktor re-dispatched to: (1) xfail (P1_XFAIL strict) the 3 in-progress projectId tests, (2) update 2 contract-change guards, (3) investigate 1 smoke-auth regression. Still in flight at compact boundary. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
+**Blocker:** Viktor in flight — awaiting clean push with 6 pre-existing failures addressed.
+**Next action:** Await Viktor return. Verify push on `origin/feat/demo-studio-v3`. Surface to Duong for Wave D unblock → T.P1.14 Ekko deploy → Akali QA → PR #32 merge.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
 
 ---
 
@@ -144,8 +144,9 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **OQ-P1-4 resolved:** Heimerdinger confirmed `tools/decrypt.sh` already implements `--exec` mode. ADR §4.2 template was wrong. Canonical pattern: ciphertext via stdin, `--target` runtime env-file, `--exec --`. Multi-secret MCPs (Slack) need `decrypt.sh` extension before migration (Syndra job gated by threat-model review).
 **Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 ADR §4.2 rewrite committed (`18f90d7e`).
 **2026-04-24/25 progress:** T-new-A DONE (ADR rewrite). T-new-B DONE (`b2469e98`, Ekko inventory): **6 of 8 MCPs are multi-secret** — gdrive, gcalendar, fathom (3 secrets), postgres (6 connection strings), wallet-studio (3), atlassian (2). Slack and gmail single-secret. **T-new-C is now load-bearing, not conditional.** P1-T1 secrets dir scaffold DONE (`81edd095`, Ekko). T-new-E DONE (PR #47, Syndra) — positive `decrypt.sh --exec` test using in-memory age-keygen approach.
-**Next action:** Review + merge PR #47 (Senna #109 + Lucian #110 created but not dispatched). Then Ekko T-new-D (canonical Slack start.sh). Then Syndra+Heimerdinger T-new-C (multi-var decrypt.sh extension w/ threat-model review). Then T2 (Slack migration, single-secret, doesn't wait on T-new-C). Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
-**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50.
+**Progress this session:** PR #47 (T-new-E) MERGED at `5081069` — Senna formal APPROVE (`strawberry-reviewers-2`) + Lucian APPROVE (`strawberry-reviewers`). Note: Senna's commit `d7d6793e` authored as `Orianna <orianna@strawberry.local>` — known worktree-identity leak class, Evelynn-side structural fix open. T-new-D (PR #48, canonical Slack start.sh) opened by Ekko: xfail-first `51843cd2` + impl `29dbd9a9`. Lucian APPROVED. Senna returned REQUEST_CHANGES: C1 blocker — Ekko authored against `mcps/slack/` (personal-repo TS MCP requiring both SLACK_BOT_TOKEN + SLACK_USER_TOKEN) instead of work-repo path. D2 drift: server.ts may not consume SLACK_BOT_TOKEN — Senna's lane to verify.
+**Next action:** Resolve PR #48 Senna C1 blocker (re-impl targeting correct work-repo Slack start.sh path, or scope correction). Then fire T-new-C (Syndra+Heimerdinger, multi-var decrypt.sh extension w/ threat-model review) + T2 Slack migration in parallel. Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
 
 ---
 
@@ -355,6 +356,14 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **Status:** Duong directive relayed via Evelynn: rewrite the "never execute code" absolute as a principle-based throughput rule. Committed as `5919c02` on strawberry-agents main. Also corrected stale `disable-model-invocation: true` doc refs in repo-root CLAUDE.md rule 8 and agents/sona/CLAUDE.md session-close section (skill file is already `false`) — commits `de328b4` + `9a014b2`. Thread closed.
 **Shard pointers:** 2026-04-23-536df25c.
 **Next action:** None.
+
+---
+
+## Inbox-watch startup-chain gap (2026-04-25, open)
+
+**Status:** Canonical inbox-watch is `CLAUDE_AGENT_NAME=sona bash scripts/hooks/inbox-watch.sh`. The `inbox-watch-bootstrap.sh` SessionStart hook is supposed to nudge Sona to arm it as first act. This session I bypassed both with a hand-rolled poller — incorrect. Root cause of auto-fire gap: `inbox-watch-bootstrap.sh` silently no-ops when `CLAUDE_AGENT_NAME` env var is not set in the launcher environment. Bootstrap nudge fires the right message but the watch itself doesn't auto-arm without the env identity.
+**Next action:** Karma quick-lane work for Evelynn — fix launcher to export `CLAUDE_AGENT_NAME` before calling the bootstrap hook, or have the bootstrap hook infer identity from session context.
+**Shard pointers:** 2026-04-25-f993d23d.
 
 ---
 

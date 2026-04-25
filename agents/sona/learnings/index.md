@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- 2026-04-25 — [Worktree identity leak on personal-concern reviewer path — direct push variant](2026-04-25-worktree-identity-leak-on-reviewer-path.md) — per-worktree .git/config leaks prior agent identity into reviewer commits even on direct push to main; fix: per-process GIT_AUTHOR binding at dispatch time (Evelynn lane).
+- 2026-04-25 — [Inbox-watch canonical method and bootstrap startup-chain gap](2026-04-25-inbox-watch-canonical-method-and-bootstrap-gap.md) — canonical is `CLAUDE_AGENT_NAME=sona bash scripts/hooks/inbox-watch.sh`; bootstrap nudge silently no-ops when env var missing in launcher; never hand-roll a poller.
 - 2026-04-25 — [Cleaner-stitching false-positive in clean-jsonl.py](2026-04-25-cleaner-stitching-false-positive.md) — synthetic 20+ char `sk-` matches across stripped sections; needs cleaner debug-line flag and chain-disclosure on stderr.
 
 - [2026-04-24 Cross-coordinator memory routing — Evelynn owns duong.md edits; Sona routes proposals via inbox](2026-04-24-cross-coordinator-memory-routing.md) — agents/memory/duong.md is Evelynn's surface; Sona authors proposals and routes via /agent-ops send inbox; Evelynn executes; no self-edit even when Sona identifies the need | last_used: 2026-04-24
