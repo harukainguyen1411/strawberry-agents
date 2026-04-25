@@ -297,13 +297,74 @@ Phase 1 implementation may begin immediately under the worktree-isolation discip
 
 ## Test plan
 
-`tests_required: true`.
+`tests_required: true`. Authored by Xayah 2026-04-25 — Phase-1-only expansion against the T.P1.1–T.P1.6 breakdown. Phase 2 / 3 test plans deferred until those phases are broken down.
 
-- Ingest scanner: fixture-pinned vitest suite — one fixture per source (parent jsonl, subagent jsonl, sentinel, git-log mock); one xfail-first test per discriminator rule.
-- DuckDB queries: each `.sql` file has a paired `.expected.json` against a known-answer fixture event log; test runs the query and diffs.
-- Static HTML smoke: render against the known-answer fixture; assert each plan-detail page contains the expected stage × agent × token cells.
-- Coordinator discriminator (Q8): unit test on a synthetic JSONL pair (parent + child) to confirm path-based attribution.
-- Lock bypass discipline: pre-commit hook lint that any commit touching files under `architecture/canonical-v1-locked-paths.txt` carries the `Lock-Bypass:` trailer during a lock-active period (gated by the existence of `architecture/canonical-v1-active.flag`).
+### Framework recommendation
+
+**Recommendation: `node:test` (built-in) for the JS/.mjs suites, `bats` for shell-level smoke, no vitest.**
+
+- Vitest is not currently wired in this repo (no `vitest` in any `package.json`; no `vitest.config.*`; no `__tests__` consumer infra). Adding it imports a transitive dep tree (esbuild + vite + happy-dom) for what amounts to deep-equal + snapshot needs. Reject for v1.
+- `node:test` ships with Node >=18 and covers all Phase-1 needs: the scanner suite, DuckDB query diff, and HTML render-snapshot tests are pure deep-equal / string-equal. Snapshots can be plain `*.snap.html` text files compared via `assert.strictEqual` + a `--update-snapshots` env flag (vanilla, ~30 LOC helper).
+- `bats` is already entrenched (`scripts/__tests__/*.xfail.bats`, `scripts/tests/*.bats`) and is the right hammer for the `npm run retro:ingest && npm run retro:render` end-to-end smoke in T.P1.6.
+- POSIX-portable: both `node:test` and `bats` run identically on macOS and Git Bash on Windows. No platform-specific affordances required.
+- T.P1.1's task line currently says "vitest (or node:test)" in §266. Aphelios's note is satisfied by node:test; no breakdown amendment needed.
+
+### Per-task test specs (T.P1.1–T.P1.6)
+
+Every xfail test task lands as its own commit on the same branch BEFORE the implementation task it pairs with, per Rule 12. Test commit prefix `chore:`. xfail test-task titles include the literal word **xfail**.
+
+#### Level 1 — Unit / fixture-level
+
+- [ ] **TP1.T1** — xfail unit suite for events.jsonl scanner per source. estimate_minutes: 50. Files: `tools/retro/__tests__/ingest-sources.test.mjs`, `tools/retro/fixtures/parent-session.jsonl`, `tools/retro/fixtures/subagents/agent-fixt001.jsonl`, `tools/retro/fixtures/subagents/agent-fixt001.meta.json`, `tools/retro/fixtures/subagent-sentinels/agent-fixt001`, `tools/retro/fixtures/git-log-plans.json`. DoD: (a) one `node:test` `describe` block per upstream source from §Q1 — parent jsonl, subagent jsonl, sentinel, git-log mock — each asserts the scanner emits the exact event records expected for that source in isolation; (b) parent-jsonl test asserts every `assistant` row with absent `isSidechain` is tagged `kind: turn, role: coordinator-inline`; (c) subagent-jsonl test asserts `isSidechain: true` rows are tagged `role: delegated` and carry the parent `sessionId` from `meta.json`; (d) sentinel test asserts the zero-byte file's mtime becomes the `dispatch_end_ts` for its `agent-<id>`; (e) git-log-mock test asserts `Promoted-By: Orianna` trailer commits emit `kind: plan-stage` events with the correct `(plan_slug, stage)` tuple; (f) suite is xfail (skip via `{ skip: !existsSync(ingestPath) }`) with a `Plan-Ref:` trailer citing this ADR. Guards: T.P1.1 / T.P1.2. Committed before T.P1.2 per Rule 12.
+
+- [ ] **TP1.T2** — xfail invariant test: token cost byte-deterministic rollup. estimate_minutes: 25. Files: `tools/retro/__tests__/invariant-token-cost.test.mjs`, `tools/retro/fixtures/known-token-counts.jsonl`. DoD: (a) fixture is a hand-curated JSONL with three assistant turns whose `usage` blocks declare `input_tokens=100, output_tokens=200, cache_read=50, cache_creation=25` (one turn each, summing to known totals); (b) test runs `ingest.mjs` then runs `plan-rollup.sql` via DuckDB; (c) asserts the rollup row's four token columns equal the hand-summed totals **exactly** (no float math, integer compare); (d) asserts running the same fixture twice produces byte-identical `events.jsonl` (deterministic emission order); (e) xfail until T.P1.2 + T.P1.4 land. Guards: T.P1.2 + T.P1.4 (cross-task invariant). Committed before T.P1.2 per Rule 12.
+
+- [ ] **TP1.T3** — xfail invariant test: wall-active-minutes strips gaps >90s. estimate_minutes: 20. Files: `tools/retro/__tests__/invariant-wall-active.test.mjs`, `tools/retro/fixtures/idle-gap-session.jsonl`. DoD: (a) fixture has 5 assistant turns with deltas `{30s, 120s, 45s, 91s, 60s}` between consecutive turns — gaps `120s` and `91s` are above the 90s threshold from §3; (b) test asserts `wall_active_minutes` for the session = `(30+45+60)/60 = 2.25` minutes (the >90s gaps stripped, only intra-active intervals summed); (c) edge-case rows: gap of exactly `90s` IS counted (boundary inclusive per §3 wording "<=90s"); test asserts a fixture with one `90s` gap is NOT stripped; (d) xfail until T.P1.2 lands. Guards: T.P1.2. Committed before T.P1.2 per Rule 12.
+
+- [ ] **TP1.T4** — xfail invariant test: plan-stage three-signal layered detection. estimate_minutes: 35. Files: `tools/retro/__tests__/invariant-plan-stage.test.mjs`, `tools/retro/fixtures/plan-stage-signals/`. DoD: (a) three sub-fixtures: (i) trailer-only — git log carries `Promoted-By: Orianna` for slug X with no frontmatter mtime change; assert `plan-stage` event emitted with `signal: trailer`; (ii) frontmatter-only — `status:` line mutation in `plans/**.md` git history but no Orianna trailer; assert event emitted with `signal: frontmatter-mtime`; (iii) dispatch-prompt-only — neither trailer nor frontmatter, but a subagent dispatch prompt cites `plans/in-progress/personal/<slug>.md`; assert event emitted with `signal: dispatch-prompt-slug-match`; (b) precedence test: when ALL THREE signals exist concurrently for the same `(slug, stage)`, assert the emitted event's `signal` field = `trailer` (canonical wins) and the other two are recorded as corroborating in `signal_corroborators: [...]`; (c) **R3 rank-tie xfail probe** — when a `Promoted-By: Orianna` trailer for slug X says `proposed->approved` but the SAME plan's `status:` frontmatter mtime in git history shows `approved->in-progress` 30 seconds LATER (i.e. trailer and mtime disagree on which stage the plan currently sits in), assert behavior is documented; this sub-test stays xfail UNTIL Swain answers OQ-R3 (see below). Guards: T.P1.2. Committed before T.P1.2 per Rule 12.
+
+- [ ] **TP1.T5** — xfail unit suite for paired DuckDB query `.expected.json` golden files. estimate_minutes: 35. Files: `tools/retro/__tests__/queries.test.mjs`, `tools/retro/queries/plan-rollup.expected.json`, `tools/retro/queries/coordinator-weekly-skeleton.expected.json`. DoD: (a) test loads `tools/retro/fixtures/expected-events.jsonl`, runs each `.sql` in `tools/retro/queries/` via DuckDB CLI as a subprocess (no DuckDB-node dep wrangling at the test level — same binary T.P1.4 will use); (b) deep-equal diff (key-sorted JSON) against the paired `.expected.json`; (c) failure message prints unified diff via `node:util.styleText` for fast triage; (d) `coordinator-weekly-skeleton.expected.json` MUST NOT contain feedback-bound or decision-bound columns (Phase 2 boundary check — fails build if a Phase-2 column leaks early); (e) xfail until T.P1.4 lands. Guards: T.P1.3 + T.P1.4. Committed before T.P1.4 per Rule 12.
+
+- [ ] **TP1.T6** — xfail static-HTML render snapshot suite. estimate_minutes: 30. Files: `tools/retro/__tests__/render-html.test.mjs`, `tools/retro/__tests__/__snapshots__/index.html.snap`, `tools/retro/__tests__/__snapshots__/plan-detail-<historical-slug>.html.snap`, `tools/retro/__tests__/lib/snapshot.mjs` (~30-LOC vanilla snapshot helper). DoD: (a) snapshot helper compares emitted HTML to `*.snap` text files; `UPDATE_SNAPSHOTS=1` env flag rewrites; (b) `index.html` snapshot asserts the historical implemented plan from T.P1.1 fixtures appears in the listing with its expected `(stage_count, total_tokens, wall_active_minutes)` cells; (c) `plan-<slug>.html` snapshot asserts every `(stage, agent, tokens_input, tokens_output, wall_active_minutes)` row from `plan-rollup.expected.json` is present in a `<table>` with stable column order; (d) **R2 snapshot-determinism guard**: re-run the render twice in the same test invocation, assert both runs produce byte-identical HTML; assert NO `Date.now()`, `new Date()`, `Math.random()`, or `process.pid` substring leaks into the snapshot (regex scan); (e) HTML-shape lint inside the snapshot: assert presence of `<link rel="stylesheet" href="app.css">`, no `<script src="vue` / `pinia` / `vue-router` (§Q4 SPA-rejection guard), exactly one inline `<script>` block; (f) xfail until T.P1.6 lands. Guards: T.P1.5 + T.P1.6. Committed before T.P1.6 per Rule 12.
+
+#### Level 2 — Integration
+
+- [ ] **TP1.T7** — xfail end-to-end pipeline integration test (bats). estimate_minutes: 40. Files: `tools/retro/__tests__/e2e-pipeline.bats`, `tools/retro/fixtures/e2e/` (fixture-pinned superset of T.P1.1's source fixtures + a second historical plan slug for multi-row coverage). DoD: (a) `setup()` points `HOME` and `STRAWBERRY_USAGE_CACHE` at a temp dir seeded from the fixture tree; (b) test runs `npm run retro:ingest` then `npm run retro:render`; (c) asserts `events.jsonl` exists, line count matches expected, last line's JSON parses; (d) asserts `tools/retro/dist/data/plan-rollup.json` deep-equals `plan-rollup.expected.json`; (e) asserts `tools/retro/dist/index.html` exists and contains every fixture plan's slug as an anchor `href="plan-<slug>.html"`; (f) asserts at least one `plan-<slug>.html` exists and contains the expected stage x agent x token cells; (g) end-to-end wall time on fixture corpus <5s (asserted via `time` capture) per §3 budget; (h) `teardown()` cleans temp dir; (i) xfail (skipped via bats `skip` if `tools/retro/render.mjs` missing) until T.P1.6 lands. Guards: T.P1.6 acceptance gate (§4 "Duong can click a plan and see stage x agent x token cost rendered correctly"). Committed before T.P1.6 per Rule 12.
+
+#### Level 3 — Cross-cutting / pre-existing (carried forward)
+
+- Coordinator discriminator (§Q8): subsumed by TP1.T1 sub-cases (b) and (c) — path-based attribution is asserted there; no separate task.
+- Lock bypass discipline: deferred to Phase 3 breakdown (the `canonical-v1-active.flag` and `Lock-Bypass:` trailer hook live in T.COORD.3 / Phase 3 scope). Not a Phase-1 test.
+
+### Coverage matrix (test -> task it guards)
+
+| Test task | Guards impl task(s) | Rule 12 commit-before |
+|---|---|---|
+| TP1.T1 | T.P1.1, T.P1.2 | T.P1.2 |
+| TP1.T2 | T.P1.2, T.P1.4 | T.P1.2 |
+| TP1.T3 | T.P1.2 | T.P1.2 |
+| TP1.T4 | T.P1.2 (R3 sub-test stays xfail) | T.P1.2 |
+| TP1.T5 | T.P1.3, T.P1.4 | T.P1.4 |
+| TP1.T6 | T.P1.5, T.P1.6 (R2 guard) | T.P1.6 |
+| TP1.T7 | T.P1.6 (acceptance gate) | T.P1.6 |
+
+Total: **7 test tasks, 235 minutes.** All <=60 min. All committed xfail-first per Rule 12.
+
+### Determinism and POSIX guarantees
+
+- Every fixture is hand-curated text — no generated timestamps, no UUIDs from runtime.
+- `node:test` and `bats` both run on macOS + Git Bash on Windows. Suites avoid `find -printf`, GNU-only `sed -i ''` quirks, and `readarray`.
+- The R2 snapshot-determinism guard (TP1.T6 DoD-d) is the canonical defense against `Date.now()` injection in `render.mjs`; it fires on every CI run, not just on snapshot update.
+
+### Open question for Swain — R3 rank-tie rule
+
+**OQ-R3 (NEW, raised by Xayah 2026-04-25 during Phase 1 test-plan authoring):** §Q2's three-signal table declares `Orianna trailer` "canonical" and `status:` frontmatter mtime "strong corroboration matching the Orianna commit" — but it does NOT specify behavior when the two **disagree on current stage** (e.g. trailer says `approved`, frontmatter mtime indicates the plan moved to `in-progress` 30s later via a hand-edit or a non-Orianna commit). Three candidate rules:
+
+1. **Trailer wins, log warning** — frontmatter discrepancy emits `events.jsonl` annotation `signal_conflict: frontmatter-newer-than-trailer` for retro inspection. Simplest. Trailer-canonical aligns with Rule 19.
+2. **Newest-timestamp wins** — whichever signal is timestamp-latest determines current stage. Risks legitimizing hand-edits as state transitions.
+3. **Hard-fail ingest** — the scanner aborts with non-zero exit and a diagnostic; Duong reconciles before rebuild. Safest correctness, worst ergonomics.
+
+Xayah recommendation: **(1) trailer wins, log warning** — Rule 19 already establishes Orianna as the canonical promoter; frontmatter discrepancies are recoverable observations, not fatal. TP1.T4 sub-test (c) stays xfail with `Plan-Ref:` annotation `BLOCKED-ON-OQ-R3` until Swain rules. On Swain ruling: the xfail flips to assert the chosen rule and lands as part of T.P1.2 commit (or a follow-up commit if T.P1.2 has already shipped).
 
 ## Rollback
 
