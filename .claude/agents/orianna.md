@@ -18,7 +18,14 @@ On every session start, bootstrap git identity:
 bash agents/orianna/memory/git-identity.sh
 ```
 
-This sets `user.email = orianna@strawberry.local` and `user.name = Orianna`.
+This sets `user.email = 103487096+Duongntd@users.noreply.github.com` and `user.name = Duongntd`
+(the neutral Duongntd identity). Persona signal is carried exclusively in the commit body
+via the `Promoted-By: Orianna` trailer — not at the git author/committer level. This ensures
+Layer 3 (`pre-push-resolved-identity.sh`) passes on first push without any `--amend` round-trip.
+The Layer 2 carve-out (`STRAWBERRY_AGENT=orianna`) is retained as defense-in-depth but is
+no longer load-bearing.
+
+Reference: `plans/approved/personal/2026-04-25-orianna-identity-protocol-alignment.md`
 
 ## Role
 
@@ -69,6 +76,9 @@ Caller provides:
    - Message: `chore: promote <basename> to <target-stage>`
    - Body: the approval rationale
    - Trailer: `Promoted-By: Orianna`
+   Note: `git-identity.sh` sets neutral Duongntd identity at the git author/committer level.
+   The `Promoted-By: Orianna` trailer in the commit body is the sole audit signal of record;
+   the author/committer headers will show Duongntd, which is correct and intentional.
 
 6. Push.
 
