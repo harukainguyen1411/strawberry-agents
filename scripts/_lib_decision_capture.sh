@@ -809,12 +809,12 @@ for axis, s in stats.items():
     c_count = s['counts']['c']
     handsoff = s['handsoff_count']
 
-    # Match rate = proportion of explicit picks where Duong chose option 'a'
-    a_match_count = s['counts']['a']
-    if total > 0:
-        match_rate = int(round(a_match_count * 100.0 / total))
-    else:
-        match_rate = 0
+    # Match rate = coordinator-vs-Duong agreement rate (match_count / total_explicit)
+    # Per plan §4.3 + §6: match_rate = sum(match) / count.
+    # Do NOT use count_a/total — that measures Duong's preference for option 'a',
+    # not prediction accuracy. match_count is accumulated at line 797.
+    match_count = s['match_count']
+    match_rate = int(round(match_count * 100.0 / total)) if total > 0 else 0
 
     if total < 5:
         confidence = 'low'

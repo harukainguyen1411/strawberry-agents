@@ -110,11 +110,12 @@ fi
 INDEX_FILE="$COORD_DIR/decisions/INDEX.md"
 PREF_FILE="$COORD_DIR/decisions/preferences.md"
 
-# T3-index-row-count: INDEX.md has exactly 12 data rows (one per log file)
+# T3-index-row-count: INDEX.md has exactly 13 data rows (one per log file)
+# Fixture has 13 files: svd-1..7 (7) + evi-1..4 (4) + hcva-1..2 (2) = 13
 if [ -f "$INDEX_FILE" ]; then
   # Count non-header, non-separator table rows
   row_count=$(grep -c "^| 2026" "$INDEX_FILE" 2>/dev/null || echo 0)
-  if [ "$row_count" -eq 12 ]; then
+  if [ "$row_count" -eq 13 ]; then
     xfail_assert "T3-index-row-count" "ok"
   else
     xfail_assert "T3-index-row-count" "fail"
@@ -137,9 +138,9 @@ else
 fi
 
 # T3-samples-scope-vs-debt: preferences.md Samples: line for scope-vs-debt
-# matches expected: "Samples: 6 (a: 4, b: 1, c: 1)"
+# matches expected: "Samples: 7 (a: 4, b: 1, c: 2)" — svd-7 (c/c/true) added
 if [ -f "$PREF_FILE" ]; then
-  if grep -q "Samples: 6 (a: 4, b: 1, c: 1)" "$PREF_FILE"; then
+  if grep -q "Samples: 7 (a: 4, b: 1, c: 2)" "$PREF_FILE"; then
     xfail_assert "T3-samples-scope-vs-debt" "ok"
   else
     xfail_assert "T3-samples-scope-vs-debt" "fail"

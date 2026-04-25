@@ -1,9 +1,9 @@
 # Preferences — evelynn (personal)
 
-Last calibrated: PLACEHOLDER · Total decisions: 12 · Axes tracked: 3
+Last calibrated: PLACEHOLDER · Total decisions: 13 · Axes tracked: 3
 
 ## Axis: scope-vs-debt
-  Samples: 6 (a: 4, b: 1, c: 1) · Match rate: 67% · Confidence: medium
+  Samples: 7 (a: 4, b: 1, c: 2) · Match rate: 86% · Confidence: medium
   Summary: Duong consistently picks cleanness (a) when the debt is structural
   or cross-cutting. Picks b only when a tight turnaround is explicit. This
   _curated_ prose is hand-maintained and must survive idempotent rollup intact.
