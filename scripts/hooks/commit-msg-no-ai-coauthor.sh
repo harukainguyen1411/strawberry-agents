@@ -1,22 +1,30 @@
 #!/usr/bin/env bash
 # scripts/hooks/commit-msg-no-ai-coauthor.sh
-# commit-msg hook: rejects commits whose message contains AI co-author trailers.
+# commit-msg hook: rejects commits whose message contains AI attribution or
+# Co-Authored-By trailers of any kind.
 #
 # Installed via: scripts/install-hooks.sh (commit-msg dispatcher)
-# Plan: plans/in-progress/personal/2026-04-21-commit-msg-no-ai-coauthor-hook.md
+# Plans:
+#   plans/in-progress/personal/2026-04-21-commit-msg-no-ai-coauthor-hook.md
+#   plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md
 #
-# Rule: "Never include AI authoring references in commits" (global CLAUDE.md)
+# Rules:
+#   "Never include AI authoring references in commits" (global CLAUDE.md)
+#   "Never write any Co-Authored-By: trailer" (_shared/no-ai-attribution.md)
 #
-# Rejection patterns (case-insensitive POSIX ERE, §3 of plan):
-#   ^Co-Authored-By:.*\b(claude|anthropic|ai|bot|assistant)\b
-#   ^Co-Authored-By:.*@(anthropic\.com|claude\.com|noreply\.anthropic\.com)
+# Rejection patterns:
+#   PATTERN_A: ANY Co-Authored-By: trailer (universal block)
+#   PATTERN_B: AI email domains (belt-and-suspenders)
+#   PATTERN_C: AI markers in body — Claude, Anthropic, model names (Sonnet/Opus/Haiku),
+#              robot emoji, "Generated with", "AI-generated", claude.com
+#              Anchored to avoid false positives (e.g. "maintain" contains "ai").
 #
 # Escape hatch: add  Human-Verified: yes  (exact case, exact value) anywhere in
-# the commit message to suppress the check for that commit only.
+# the commit message to suppress all checks for that commit.
 #
 # Exit codes:
 #   0 — message is clean (or escape hatch active)
-#   1 — AI co-author trailer detected; message printed to stderr
+#   1 — violation detected; message printed to stderr
 
 set -uo pipefail
 
@@ -37,34 +45,83 @@ if grep -qF 'Human-Verified: yes' "$COMMIT_MSG_FILE"; then
   exit 0
 fi
 
-# Scan for AI co-author trailers.
-# Pattern A: keyword in the name/display portion (word-boundary to avoid false matches
-#             like "Kai" matching "ai").
-# Pattern B: AI-associated email domain.
-PATTERN_A='^Co-Authored-By:.*[[:space:](](claude|anthropic|ai|bot|assistant)[[:space:])>]'
-PATTERN_B='^Co-Authored-By:.*@(anthropic\.com|claude\.com|noreply\.anthropic\.com)'
+offending=""
 
-# Collect all offending lines (both patterns, deduplicated).
-offending="$(grep -iE "$PATTERN_A|$PATTERN_B" "$COMMIT_MSG_FILE" 2>/dev/null || true)"
+# --- Pattern A: ANY Co-Authored-By: trailer (universal block) ---
+coauthor_lines="$(grep -iE '^Co-Authored-By:' "$COMMIT_MSG_FILE" 2>/dev/null || true)"
+if [ -n "$coauthor_lines" ]; then
+  offending="$offending
+$coauthor_lines"
+fi
+
+# --- Pattern B: AI-associated email domain (belt-and-suspenders) ---
+domain_lines="$(grep -iE '@(anthropic\.com|claude\.com|noreply\.anthropic\.com)' "$COMMIT_MSG_FILE" 2>/dev/null || true)"
+if [ -n "$domain_lines" ]; then
+  offending="$offending
+$domain_lines"
+fi
+
+# --- Pattern C: AI markers in message body ---
+# Markers (non-exhaustive per plan): Claude, Anthropic, Sonnet, Opus, Haiku,
+# AI-generated, Generated with [Claude Code], robot emoji (🤖), claude.com.
+#
+# Anchoring: marker must be preceded by start-of-line, whitespace, (, [, backtick, :
+# AND followed by end-of-line, whitespace, ), ], backtick, comma, period, >, /.
+# This prevents matching substrings inside unrelated words (e.g. "maintain").
+#
+# Note: The robot emoji 🤖 and "Generated with" are caught verbatim without
+# word-boundary anchoring (they are unambiguous markers).
+
+# Anchoring uses two-pass approach: first grep for marker keywords with broad
+# pattern, then validate surrounding context to avoid false positives.
+# BSD grep (macOS) ERE does not support complex nested character classes reliably,
+# so we use a simple word-boundary simulation: require a non-alphanumeric char or
+# start-of-line before the marker, and a non-alpha char (space, punct, digit) or
+# end-of-line after. Using [[:punct:][:space:]] as prefix covers (, [, `, :, ", /, etc.
+# Postfix includes [0-9] so "Sonnet4.6" and "Opus4" are caught (F2 fix).
+# The "maintain" false-positive is avoided because "ai" alone is not in the marker
+# list — only full tokens are; "Sonnets" is avoided because 's' is alpha (not caught).
+BODY_MARKERS='(^|[[:punct:][:space:]])(claude|anthropic|sonnet|opus|haiku|AI-generated)([[:space:]]|[[:punct:]]|[0-9]|$)'
+body_marker_lines="$(grep -iE "$BODY_MARKERS" "$COMMIT_MSG_FILE" 2>/dev/null || true)"
+if [ -n "$body_marker_lines" ]; then
+  offending="$offending
+$body_marker_lines"
+fi
+
+# Additional verbatim markers (no anchoring needed — unambiguous)
+verbatim_lines="$(grep -iE '🤖|Generated with \[Claude Code\]|claude\.com' "$COMMIT_MSG_FILE" 2>/dev/null || true)"
+if [ -n "$verbatim_lines" ]; then
+  offending="$offending
+$verbatim_lines"
+fi
+
+# Deduplicate and strip leading blank line from concatenation
+offending="$(printf '%s\n' "$offending" | grep -v '^[[:space:]]*$' | sort -u || true)"
 
 if [ -z "$offending" ]; then
   exit 0
 fi
 
-# Print rejection message to stderr.
-printf '\n\342\234\230 AI co-author trailer detected in commit message:\n' >&2
+printf '\n\342\234\230 AI attribution or Co-Authored-By trailer detected in commit message:\n' >&2
 while IFS= read -r line; do
-  printf '    %s\n' "$line" >&2
+  [ -n "$line" ] && printf '    %s\n' "$line" >&2
 done <<EOF
 $offending
 EOF
 
 cat >&2 <<'REJECTION'
 
-Per global CLAUDE.md: "Never include AI authoring references in commits."
+Per global CLAUDE.md and _shared/no-ai-attribution.md:
+  - Never write any Co-Authored-By: trailer (universal block).
+  - Never write AI markers in commit messages: Claude, Anthropic, Sonnet, Opus,
+    Haiku, AI-generated, 🤖, "Generated with [Claude Code]", claude.com, etc.
+    (Non-exhaustive — when in doubt, omit attribution.)
 
-Remove the trailer and retry. If a human collaborator's name legitimately
-contains a blocked keyword, add a `Human-Verified: yes` trailer to override.
+Remove the offending content and retry.
+
+If a human collaborator legitimately needs attribution, add:
+  Human-Verified: yes
+trailer to the commit message to override this check for that commit only.
 REJECTION
 
 exit 1

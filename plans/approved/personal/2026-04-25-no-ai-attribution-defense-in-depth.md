@@ -160,6 +160,15 @@ These are recorded here as the contract; Sona dispatches her own implementer. No
 - `scripts/hooks/commit-msg-no-ai-coauthor.sh` — current hook
 - `.github/workflows/pr-lint.yml` — current PR lint workflow (Rule 16)
 
+## Post-approval clarifications
+
+**S2 (doc accuracy):** Several references in this plan to `.claude/_script-only-agents/`
+are inaccurate — that directory does not exist. Orianna lives at `.claude/agents/orianna.md`
+(confirmed by `find .claude -name orianna.md` and Lucian's T1 include-test, which passed
+30/30 files including orianna.md). The `_script-only-agents/` path was a planning-time
+assumption; the implementation landed in the standard agents directory. All test assertions
+and sync-script invocations operate on `.claude/agents/*.md` and are correct as-is.
+
 ## Orianna approval
 
 - **Date:** 2026-04-25
