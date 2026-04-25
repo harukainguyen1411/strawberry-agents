@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: azir
 created: 2026-04-25
@@ -214,3 +214,10 @@ Manual audit cadence in the meantime: Duong runs a monthly spot-check on five ra
 2. Dashboard v2 panel for reviewer-quality metrics (separate plan, after dashboard v1).
 3. First manual reviewer-audit assessment (Duong, within 30 days post-approval).
 4. Cross-coherence review with the QA two-stage ADR — confirm Senna's role-extension to QA-diagnose-on-FAIL (in the QA ADR) does not conflict with Senna's PR-reviewer five-axis load here. (Likely fine; both jobs use the same tool surface and disposition. Worth a Lucian fidelity pass once both ADRs are in `approved/`.)
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Transition:** proposed → approved
+- **Rationale:** Plan has a clear owner (azir), concrete decisions D1–D10 with named primitives, files, and tool entries, explicit nine-item acceptance criteria, well-bounded out-of-scope list, and a tradeoffs section that addresses the obvious objections (checklist-recital risk, plugin dispatch latency, Camille on critical path). The synthesis ADR §7.5 Answers (commit `c4be153b`) stamps recommended-default approval across Group D for this ADR on the Hands-off Default track. No unresolved TBD/TODO/Decision-pending in gating sections; tasks are described concretely enough for the Kayn breakdown follow-up to land.
+- **Agent:** Orianna
