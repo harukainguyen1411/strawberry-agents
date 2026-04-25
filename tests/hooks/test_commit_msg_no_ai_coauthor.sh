@@ -5,12 +5,6 @@
 #
 # Plan: plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md T3
 #
-# XFAIL: T4 (tightened hook) not yet implemented.
-echo "XFAIL: T4 (tightened commit-msg hook) not yet implemented — plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md"
-exit 0
-
-# --- Implementation (active after xfail sentinel removed) ---
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
