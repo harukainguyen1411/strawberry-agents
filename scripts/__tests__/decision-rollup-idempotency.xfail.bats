@@ -45,14 +45,19 @@ teardown() {
 
 # ── (a) scope-vs-debt counts after rollup ────────────────────────────────────
 
-@test "TT2-rollup: scope-vs-debt Samples line is 6 (a:4, b:1, c:1) Match rate 67% Confidence medium" {
-  # xfail: requires rollup_preferences_counts (T2)
+@test "TT2-rollup: scope-vs-debt Samples line is 7 (a:4, b:1, c:2) Match rate 86% Confidence medium" {
+  # xfail: requires rollup_preferences_counts (T2) with corrected match_rate formula.
+  # Fixture now has 7 scope-vs-debt files: svd-1..7.
+  # match_count=6 (svd-5 is the only miss); wrong formula (count_a/total = 4/7 = 57%)
+  # must be replaced by match_count/total = 6/7 = 86%.
+  # svd-4 (coordinator_pick:b, duong_pick:b, match:true) and
+  # svd-7 (coordinator_pick:c, duong_pick:c, match:true) are the discriminating cases.
   [ -f "$LIB" ]
   run rollup_preferences_counts "$TMPDIR_TEST" "$COORD_DECISIONS/preferences.md"
   [ "$status" -eq 0 ]
-  run grep "Samples: 6 (a: 4, b: 1, c: 1)" "$COORD_DECISIONS/preferences.md"
+  run grep "Samples: 7 (a: 4, b: 1, c: 2)" "$COORD_DECISIONS/preferences.md"
   [ "$status" -eq 0 ]
-  run grep "Match rate: 67%" "$COORD_DECISIONS/preferences.md"
+  run grep "Match rate: 86%" "$COORD_DECISIONS/preferences.md"
   [ "$status" -eq 0 ]
   run grep "Confidence: medium" "$COORD_DECISIONS/preferences.md"
   [ "$status" -eq 0 ]

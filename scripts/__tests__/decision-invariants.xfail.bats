@@ -314,6 +314,47 @@ YAML
   [ "$status" -ne 0 ]
 }
 
+# ── Invariant: Decision-id-traversal ─────────────────────────────────────────
+
+@test "TT-INV | guards Invariant: Decision-id-traversal — malicious decision_id rejected by lib" {
+  # guards Invariant: Decision-id-traversal
+  # decision_id values containing '/', '..', or characters outside
+  # ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$ must be rejected by
+  # validate_decision_frontmatter with a [lib-decision] BLOCK: message.
+  # Refs: PR #64 review finding I2.
+  [ -f "$LIB" ]
+  TMPDIR_TEST="$(mktemp -d)"
+  local traversal_ids
+  traversal_ids="../../../etc/passwd 2026-04-25-../evil 2026-04-25-a/b"
+  for bad_id in $traversal_ids; do
+    f="$TMPDIR_TEST/traversal-test.md"
+    cat > "$f" <<YAML
+---
+decision_id: ${bad_id}
+date: 2026-04-25
+session_short_uuid: inv00008
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Traversal test?"
+options:
+  - letter: a
+    description: "Option a"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-inv00008
+---
+YAML
+    run validate_decision_frontmatter "$f"
+    [ "$status" -ne 0 ]
+  done
+  rm -rf "$TMPDIR_TEST"
+}
+
 # ── Invariant: Capture-ritual-shape ──────────────────────────────────────────
 
 @test "TT-INV | guards Invariant: Capture-ritual-shape — evelynn.md has Predict: and Confidence: in Decision Capture Protocol" {

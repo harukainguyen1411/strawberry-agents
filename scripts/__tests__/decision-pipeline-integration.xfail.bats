@@ -289,6 +289,58 @@ YAML
   rm -f "$LOG1" "$LOG2"
 }
 
+# ── I4: --decisions-only concurrent lock safety ──────────────────────────────
+
+@test "TT-INT: two concurrent --decisions-only invocations do not corrupt INDEX.md" {
+  # guards Invariant: advisory lock covers --decisions-only short-circuit
+  # Refs: PR #64 review finding I4.
+  # Spawns two parallel --decisions-only runs on the same coordinator dir and
+  # asserts INDEX.md is not corrupted (non-empty, valid header row present).
+  [ -f "$CONSOLIDATE_SCRIPT" ]
+  grep -q "decisions-only" "$CONSOLIDATE_SCRIPT"
+  # Seed one decision so INDEX.md will have content
+  LOG_FIXTURE="$(mktemp)"
+  cat > "$LOG_FIXTURE" <<'YAML'
+---
+decision_id: 2026-04-25-lock-race-test
+date: 2026-04-25
+session_short_uuid: int00005
+coordinator: evelynn
+axes: [scope-vs-debt]
+question: "Lock race test?"
+options:
+  - letter: a
+    description: "Clean"
+coordinator_pick: a
+coordinator_confidence: medium
+coordinator_rationale: "Test."
+duong_pick: a
+duong_concurred_silently: false
+coordinator_autodecided: false
+match: true
+decision_source: /end-session-shard-int00005
+---
+## Context
+Lock race test.
+## Why this matters
+Verifies concurrent --decisions-only does not corrupt INDEX.md.
+YAML
+  bash "$CAPTURE_SCRIPT" evelynn --file "$LOG_FIXTURE" >/dev/null
+  rm -f "$LOG_FIXTURE"
+  # Run two --decisions-only invocations concurrently
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null 2>&1 &
+  pid1=$!
+  bash "$CONSOLIDATE_SCRIPT" evelynn --decisions-only >/dev/null 2>&1 &
+  pid2=$!
+  wait "$pid1" || true
+  wait "$pid2" || true
+  INDEX_FILE="$TMPDIR_INT/agents/evelynn/memory/decisions/INDEX.md"
+  # INDEX.md must exist and contain the decision row (not be truncated/empty)
+  [ -f "$INDEX_FILE" ]
+  run grep "lock-race-test" "$INDEX_FILE"
+  [ "$status" -eq 0 ]
+}
+
 # ── Step 6: /end-session Step 6c shape grep ──────────────────────────────────
 
 @test "TT-INT: end-session/SKILL.md Step 6c shape confirms regen before commit" {
