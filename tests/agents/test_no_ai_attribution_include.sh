@@ -7,12 +7,6 @@
 #
 # Plan: plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md T1
 #
-# XFAIL: implementation (T2) not yet landed.
-echo "XFAIL: T2 (shared include + sync) not yet implemented — plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md"
-exit 0
-
-# --- Implementation (active after xfail sentinel removed) ---
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -42,8 +36,17 @@ for agent_file in "$AGENTS_DIR"/*.md; do
     continue
   fi
 
-  # Extract block after the marker line
-  inlined="$(awk "/$MARKER/{found=1; next} found{print}" "$agent_file")"
+  # Extract block after the last occurrence of the marker line
+  # Use grep -n with fixed string to get line number, then tail from there.
+  marker_lineno="$(grep -nF "$MARKER" "$agent_file" | tail -1 | cut -d: -f1)"
+  total_lines="$(wc -l < "$agent_file")"
+  if [ "$marker_lineno" -ge "$total_lines" ]; then
+    inlined=""
+  else
+    inlined="$(tail -n +"$((marker_lineno + 1))" "$agent_file")"
+    # Strip trailing newline to match SHARED_CONTENT (cat strips trailing newline from subshell)
+    inlined="${inlined%$'\n'}"
+  fi
 
   if [ "$inlined" != "$SHARED_CONTENT" ]; then
     printf 'FAIL: %s inlined block does not match canonical shared file\n' "$basename_f" >&2
