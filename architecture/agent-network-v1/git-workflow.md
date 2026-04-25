@@ -137,7 +137,7 @@ Lock-Bypass: taxonomy.md reflects Lux being added to the network per plan 2026-0
 Every Lock-Bypass commit MUST also create or append a log entry at:
 
 ```
-agents/<coordinator>/audit/lock-bypass-<YYYY-MM-DD>.md
+architecture/canonical-v1-bypasses.md
 ```
 
 Log entry format (one entry per bypass, append-only):
@@ -157,7 +157,7 @@ The lock covers files recursively under `architecture/agent-network-v1/`. It doe
 
 ### Ban on `--no-verify` during measurement-week
 
-Agents MUST NOT pass `--no-verify` to bypass pre-commit hooks on commits touching canonical-v1-locked files during measurement-week. Lock-Bypass is the only legitimate override path. Violations are treated as Rule 14 violations (Rule 14: pre-commit hook runs unit tests; commit blocked on failure — agents may not pass `--no-verify`).
+Per Rule 14, `--no-verify` is prohibited on commit hooks. During canonical-v1 measurement-week, attempting `--no-verify` against locked files is treated as a Lock-Bypass event requiring the `Lock-Bypass:` trailer and a log entry in `architecture/canonical-v1-bypasses.md`. Hook-side enforcement of this specific measurement-week rule is a follow-up deliverable (W3).
 
 ---
 
