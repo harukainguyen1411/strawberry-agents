@@ -52,7 +52,15 @@ Why quick lane: single domain (agent-infra hooks + reviewer pipeline), no schema
 
 ## 4. Tasks
 
-### T1. PreToolUse work-scope identity hook
+### T1. PreToolUse work-scope identity hook [SUPERSEDED by universal fix]
+
+> **Superseded-by:** `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md` T2.
+> That plan universalises this hook to all worktrees (personal-concern + work-scope), renames the hook
+> to `scripts/hooks/pretooluse-subagent-identity.sh`, and drops the `[:/]missmp/` origin gate.
+> The implementation delivered by `talon/subagent-git-identity-as-duong` replaces this T1.
+> T2–T4 of this plan remain intact (author-scan, reviewer-comment wrapper, verdict templates).
+
+### T1. PreToolUse work-scope identity hook (original — superseded, see above)
 - kind: script
 - estimate_minutes: 25
 - files: `scripts/hooks/pretooluse-work-scope-identity.sh` (new), `.claude/settings.json`. <!-- orianna: ok -->
