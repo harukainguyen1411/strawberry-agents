@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: karma
 created: 2026-04-25
@@ -90,3 +90,10 @@ Per Rule 12, T1 commits the xfail suite first. T2 and T3 each flip their respect
 - Identity-default helper: `scripts/hooks/agent-identity-default.sh`
 - Hook installer: `scripts/install-hooks.sh`
 - Plan lifecycle: `architecture/plan-lifecycle.md`
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan is concrete and well-owned (karma), with nine tasks each carrying file paths, estimates, and DoDs. Rule 12 is honored: T1 commits eighteen xfail reproducers (Lucian's NEW-BP-4..12 across both hooks) before T2/T3 flip them green. The three-layer model (PreToolUse advisory, pre-commit primary via `git var GIT_AUTHOR_IDENT`, pre-push backstop via `git cat-file commit`) is structurally motivated — each layer closes a specific bypass class, not speculative generality. Allowlist, Orianna carve-out scope (pre-commit only), and PR-#45 closure path are all explicit. Out-of-scope deferrals (server-side pre-receive, CLAUDE.md invariant lift) are appropriately bounded.
