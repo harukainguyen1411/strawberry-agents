@@ -188,13 +188,35 @@ case "$_tool_name" in
 
     # Walk the bash AST and check each extracted path.
     # B6: capture scanner output and exit code separately.
-    # Non-zero scanner exit (e.g. parse error → exit 3) is treated as fail-closed.
-    _scanner_out="$(printf '%s' "$_cmd" | "$_py" "$_path_scanner" 2>/dev/null)"
+    # Two-stage parse strategy (T2 — plan: 2026-04-25-plan-lifecycle-guard-heredoc-fp.md):
+    #   Stage 1: bashlex AST scanner (accurate, handles all quoting variants).
+    #   Stage 2: if bashlex exits 3 (parse error — e.g. quoted-delimiter heredoc FP),
+    #            fall back to conservative substring scan (--mode=conservative).
+    #            Any other non-zero exit remains fail-closed.
+    _scanner_stderr_file="$(mktemp /tmp/plan-lifecycle-guard-scanner.XXXXXX)"
+    _scanner_out="$(printf '%s' "$_cmd" | "$_py" "$_path_scanner" 2>"$_scanner_stderr_file")"
     _scanner_rc=$?
     if [ "$_scanner_rc" -ne 0 ]; then
-      printf '%s bash AST scanner exited %s — denied (fail-closed)\n' \
-        "$REJECT_MSG_PREFIX" "$_scanner_rc" >&2
-      exit 2
+      if [ "$_scanner_rc" -eq 3 ]; then
+        # Parse error (exit 3) — emit debug line and fall back to conservative scan.
+        printf '[plan-lifecycle-guard:debug] bashlex parse error: %s\n' \
+          "$(cat "$_scanner_stderr_file")" >&2
+        rm -f "$_scanner_stderr_file"
+        _scanner_out="$(printf '%s' "$_cmd" | "$_py" "$_path_scanner" --mode=conservative 2>/dev/null)"
+        _scanner_rc=$?
+        if [ "$_scanner_rc" -ne 0 ]; then
+          printf '%s conservative scanner exited %s — denied (fail-closed)\n' \
+            "$REJECT_MSG_PREFIX" "$_scanner_rc" >&2
+          exit 2
+        fi
+      else
+        rm -f "$_scanner_stderr_file"
+        printf '%s bash AST scanner exited %s — denied (fail-closed)\n' \
+          "$REJECT_MSG_PREFIX" "$_scanner_rc" >&2
+        exit 2
+      fi
+    else
+      rm -f "$_scanner_stderr_file"
     fi
     while IFS= read -r _resolved; do
       if is_protected_path "$_resolved"; then

@@ -299,13 +299,139 @@ def scan(command: str) -> list[str]:
     return out
 
 
+# ---------------------------------------------------------------------------
+# Conservative (no-bashlex) scanner — T1 implementation
+# Plan: plans/approved/personal/2026-04-25-plan-lifecycle-guard-heredoc-fp.md
+#
+# Used as a fallback when bashlex fails to parse (exit 3 — heredoc FP scenario).
+# Does NOT import bashlex; operates purely on text splitting.
+#
+# Strategy per plan §3 T1:
+#   Split on shell metacharacters into pseudo-statements, then for each:
+#     (a) tokenize on whitespace;
+#     (b) if tokens[0] is a mutating verb (or tokens[0..1] == git mv/rm),
+#         emit all subsequent tokens containing "/" after stripping quotes;
+#     (c) scan for redirect operators (> >>) and emit the immediately-following token.
+# ---------------------------------------------------------------------------
+
+# All verbs that trigger path-argument collection in conservative mode.
+_CONSERVATIVE_MUTATING_VERBS: frozenset[str] = frozenset({
+    "mv", "cp", "rm", "touch", "tee", "install", "ln", "rsync",
+    "truncate", "mkdir", "rmdir",
+})
+
+# Shell metacharacters used to split into pseudo-statements.
+# We replace each with a newline then split on lines.
+_SHELL_META_RE = re.compile(r'[;&|]|\n')
+
+# Redirect operators (we need the token immediately following these).
+_REDIRECT_RE = re.compile(r'^(>>|>)$')
+
+# Strip common quoting from a token for path extraction.
+def _strip_quotes(tok: str) -> str:
+    """Strip surrounding single or double quotes from a token."""
+    if len(tok) >= 2:
+        if (tok[0] == "'" and tok[-1] == "'") or (tok[0] == '"' and tok[-1] == '"'):
+            return tok[1:-1]
+    return tok
+
+
+def scan_conservative(command: str) -> list[str]:
+    """Conservative path scanner — no bashlex dependency.
+
+    Splits the command on shell metacharacters and scans each pseudo-statement
+    for mutating verbs followed by path-like tokens, plus redirect targets.
+    Returns list of normalized paths.
+    """
+    out: list[str] = []
+
+    # Split into pseudo-statements on ; && || | newline
+    statements = _SHELL_META_RE.split(command)
+
+    for stmt in statements:
+        stmt = stmt.strip()
+        if not stmt:
+            continue
+
+        # Tokenize on whitespace
+        tokens = stmt.split()
+        if not tokens:
+            continue
+
+        verb = tokens[0].lower().lstrip("#")
+
+        # Determine if this statement starts with a mutating verb or git mv/rm
+        is_mutating = False
+        path_start_idx = 1  # index of first path argument
+
+        if verb in _CONSERVATIVE_MUTATING_VERBS:
+            is_mutating = True
+        elif verb == "git" and len(tokens) >= 2:
+            subverb = tokens[1].lower()
+            if subverb in _MUTATING_GIT_SUBVERBS:
+                is_mutating = True
+                path_start_idx = 2  # skip "git mv" or "git rm"
+        elif verb == "sed":
+            # sed -i is mutating
+            for tok in tokens[1:]:
+                if tok == "-i" or tok.startswith("-i") or tok == "--in-place":
+                    is_mutating = True
+                    break
+
+        if is_mutating:
+            for tok in tokens[path_start_idx:]:
+                clean = _strip_quotes(tok)
+                # Skip flags
+                if clean.startswith("-"):
+                    continue
+                # Emit if it looks like a path (contains /)
+                if "/" in clean:
+                    normed = normalize_path(clean)
+                    if normed:
+                        out.append(normed)
+
+        # Always scan for redirect targets (> >>) regardless of verb
+        for i, tok in enumerate(tokens):
+            if _REDIRECT_RE.match(tok) and i + 1 < len(tokens):
+                next_tok = _strip_quotes(tokens[i + 1])
+                if "/" in next_tok:
+                    normed = normalize_path(next_tok)
+                    if normed:
+                        out.append(normed)
+            # Handle no-space redirect like ">plans/approved/foo.md"
+            elif (tok.startswith(">") or tok.startswith(">>")) and len(tok) > 2:
+                path_part = tok.lstrip(">")
+                clean = _strip_quotes(path_part)
+                if "/" in clean:
+                    normed = normalize_path(clean)
+                    if normed:
+                        out.append(normed)
+
+    return out
+
+
 def main() -> None:
-    if len(sys.argv) > 1:
-        command = sys.argv[1]
+    mode = "bashlex"
+    args = sys.argv[1:]
+
+    # Parse --mode=conservative or --mode=bashlex flag
+    positional: list[str] = []
+    for arg in args:
+        if arg.startswith("--mode="):
+            mode = arg.split("=", 1)[1].lower()
+        else:
+            positional.append(arg)
+
+    if positional:
+        command = positional[0]
     else:
         command = sys.stdin.read()
 
-    paths = scan(command)
+    if mode == "conservative":
+        paths = scan_conservative(command)
+    else:
+        paths = scan(command)
+
     for p in paths:
         print(p)
 
