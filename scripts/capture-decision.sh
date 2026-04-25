@@ -125,6 +125,14 @@ if [ -z "$DECISION_DATE" ] || [ -z "$DECISION_ID" ]; then
   exit 1
 fi
 
+# Belt-and-suspenders path-traversal guard (I2): validate decision_id format here
+# even though validate_decision_frontmatter already checks it. The lib may be called
+# with DECISION_TEST_MODE or bypassed in future, so enforce at entrypoint too.
+if ! printf '%s' "$DECISION_ID" | grep -qE "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$"; then
+  printf '[capture-decision] BLOCK: decision_id (%s) is not a valid slug — must match YYYY-MM-DD-[a-z0-9-]+\n' "$DECISION_ID" >&2
+  exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # Compute destination path (collision-safe using decision_id as filename stem)
 # ---------------------------------------------------------------------------

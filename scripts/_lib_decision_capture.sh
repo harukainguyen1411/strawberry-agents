@@ -205,11 +205,19 @@ validate_decision_frontmatter() {
     local stem id_val
     stem="$(basename "$file" .md)"
     id_val="$(printf '%s' "$frontmatter" | grep -E "^decision_id:" | head -1 | sed 's/^decision_id: *//')"
-    # Only enforce when stem looks like a date-prefixed decision (YYYY-MM-DD-something)
-    if printf '%s' "$stem" | grep -qE "^[0-9]{4}-[0-9]{2}-[0-9]{2}-"; then
-      if [ "$id_val" != "$stem" ]; then
-        printf '[lib-decision] BLOCK: decision_id (%s) does not match filename stem (%s)\n' "$id_val" "$stem" >&2
-        errors=$((errors + 1))
+    # Path-traversal guard (I2): decision_id must match ^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$
+    # Coordinators use mktemp so the date-prefix gate is skipped on real calls; validate
+    # the id value unconditionally instead. Rejects '/', '..', spaces, and other unsafe chars.
+    if ! printf '%s' "$id_val" | grep -qE "^[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+$"; then
+      printf '[lib-decision] BLOCK: decision_id (%s) is not a valid slug — must match YYYY-MM-DD-[a-z0-9-]+\n' "$id_val" >&2
+      errors=$((errors + 1))
+    else
+      # Only enforce filename-stem match when stem looks like a date-prefixed decision
+      if printf '%s' "$stem" | grep -qE "^[0-9]{4}-[0-9]{2}-[0-9]{2}-"; then
+        if [ "$id_val" != "$stem" ]; then
+          printf '[lib-decision] BLOCK: decision_id (%s) does not match filename stem (%s)\n' "$id_val" "$stem" >&2
+          errors=$((errors + 1))
+        fi
       fi
     fi
   fi
