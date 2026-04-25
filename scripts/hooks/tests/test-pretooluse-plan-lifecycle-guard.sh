@@ -375,6 +375,153 @@ ${PAYLOAD_A2}
 JSON
 "
 
+# --- Heredoc FP corpus (xfail until two-stage parse lands) ---
+# Plan: plans/approved/personal/2026-04-25-plan-lifecycle-guard-heredoc-fp.md §4.1
+# Each FP case must exit 0 (allowed). Before the fix, quoted-delimiter heredocs
+# cause bashlex to exit 3 and the guard fails closed (exit 2) — these are xfail.
+
+# FP-1: quoted-delimiter heredoc in gh pr review --body $(...) -> exit 0
+PAYLOAD_FP1='{"tool_name":"Bash","tool_input":{"command":"gh pr review 47 --body \"$(cat <<'"'"'EOF'"'"'\naddresses plans/approved/personal/foo.md\nEOF\n)\""}}'
+assert_exit "FP-1: quoted-heredoc in gh pr review body -> exit 0 (must allow)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=lucian bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP1}
+JSON
+"
+
+# FP-2: bare-delimiter heredoc in gh pr review -> exit 0
+PAYLOAD_FP2='{"tool_name":"Bash","tool_input":{"command":"gh pr review 47 --body \"$(cat <<EOF\naddresses plans/in-progress/personal/foo.md\nEOF\n)\""}}'
+assert_exit "FP-2: bare-heredoc in gh pr review body -> exit 0 (must allow)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=lucian bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP2}
+JSON
+"
+
+# FP-3: inline string body with plan path -> exit 0
+PAYLOAD_FP3='{"tool_name":"Bash","tool_input":{"command":"gh pr comment 47 --body \"Per plans/approved/personal/foo.md, approved\""}}'
+assert_exit "FP-3: gh pr comment inline body with plan path -> exit 0" 0 \
+  bash -c "CLAUDE_AGENT_NAME=senna bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP3}
+JSON
+"
+
+# FP-4: git commit -m with quoted-delimiter heredoc referencing plan path -> exit 0
+PAYLOAD_FP4='{"tool_name":"Bash","tool_input":{"command":"git commit -m \"$(cat <<'"'"'EOF'"'"'\nrefers to plans/implemented/personal/foo.md\nEOF\n)\""}}'
+assert_exit "FP-4: git commit -m quoted-heredoc with plan path -> exit 0" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP4}
+JSON
+"
+
+# FP-5: git commit -m inline with plan path -> exit 0
+PAYLOAD_FP5='{"tool_name":"Bash","tool_input":{"command":"git commit -m \"fix per plans/approved/personal/foo.md\""}}'
+assert_exit "FP-5: git commit -m inline body with plan path -> exit 0" 0 \
+  bash -c "CLAUDE_AGENT_NAME=talon bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP5}
+JSON
+"
+
+# FP-6: cat read-only access -> exit 0
+PAYLOAD_FP6='{"tool_name":"Bash","tool_input":{"command":"cat plans/approved/personal/foo.md"}}'
+assert_exit "FP-6: cat plans/approved/personal/foo.md -> exit 0 (read-only)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=karma bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP6}
+JSON
+"
+
+# FP-7: grep recursive read -> exit 0
+PAYLOAD_FP7='{"tool_name":"Bash","tool_input":{"command":"grep -r \"TBD\" plans/approved/"}}'
+assert_exit "FP-7: grep -r TBD plans/approved/ -> exit 0 (read-only)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=karma bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP7}
+JSON
+"
+
+# FP-8: ls directory listing -> exit 0
+PAYLOAD_FP8='{"tool_name":"Bash","tool_input":{"command":"ls plans/in-progress/personal/"}}'
+assert_exit "FP-8: ls plans/in-progress/personal/ -> exit 0 (read-only)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=karma bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP8}
+JSON
+"
+
+# FP-9: printf with format string containing plan path -> exit 0
+PAYLOAD_FP9='{"tool_name":"Bash","tool_input":{"command":"printf '"'"'%s\\n'"'"' \"see plans/archived/personal/foo.md\""}}'
+assert_exit "FP-9: printf with plan path in format arg -> exit 0 (read-only)" 0 \
+  bash -c "CLAUDE_AGENT_NAME=karma bash \"$GUARD\" <<'JSON'
+${PAYLOAD_FP9}
+JSON
+"
+
+# --- Must-still-block corpus after heredoc FP fix (§4.2) ---
+# Plan: plans/approved/personal/2026-04-25-plan-lifecycle-guard-heredoc-fp.md §4.2
+# Each violation must remain exit 2 (blocked), even after the conservative fallback.
+
+# B-1: direct mv -> exit 2 (already passing, regression guard)
+PAYLOAD_B1='{"tool_name":"Bash","tool_input":{"command":"mv plans/approved/personal/foo.md plans/in-progress/personal/foo.md"}}'
+assert_exit "B-1: direct mv plans/approved -> plans/in-progress -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B1}
+JSON
+"
+
+# B-2: cp -> exit 2
+PAYLOAD_B2='{"tool_name":"Bash","tool_input":{"command":"cp plans/approved/personal/foo.md plans/archived/personal/foo.md"}}'
+assert_exit "B-2: cp plans/approved -> plans/archived -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B2}
+JSON
+"
+
+# B-3: rm plans path -> exit 2
+PAYLOAD_B3='{"tool_name":"Bash","tool_input":{"command":"rm plans/in-progress/personal/foo.md"}}'
+assert_exit "B-3: rm plans/in-progress/personal/foo.md -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B3}
+JSON
+"
+
+# B-4: git mv -> exit 2
+PAYLOAD_B4='{"tool_name":"Bash","tool_input":{"command":"git mv plans/approved/personal/foo.md plans/in-progress/personal/foo.md"}}'
+assert_exit "B-4: git mv plans/approved -> plans/in-progress -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B4}
+JSON
+"
+
+# B-5: redirect creating new file -> exit 2
+PAYLOAD_B5='{"tool_name":"Bash","tool_input":{"command":"echo x > plans/approved/personal/new.md"}}'
+assert_exit "B-5: echo x > plans/approved/personal/new.md -> exit 2 (redirect)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B5}
+JSON
+"
+
+# B-6: tee write -> exit 2
+PAYLOAD_B6='{"tool_name":"Bash","tool_input":{"command":"tee plans/approved/personal/new.md <<<x"}}'
+assert_exit "B-6: tee plans/approved/personal/new.md -> exit 2 (tee write)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B6}
+JSON
+"
+
+# B-7: touch -> exit 2
+PAYLOAD_B7='{"tool_name":"Bash","tool_input":{"command":"touch plans/in-progress/personal/new.md"}}'
+assert_exit "B-7: touch plans/in-progress/personal/new.md -> exit 2 (mutation)" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B7}
+JSON
+"
+
+# B-8: conservative fallback must block mv inside heredoc-wrapped (unparseable) script -> exit 2
+# The outer heredoc prefix makes bashlex fail with exit 3; conservative scan must still
+# detect the mv and block.
+PAYLOAD_B8='{"tool_name":"Bash","tool_input":{"command":"bash <<'"'"'SCRIPT'"'"'\nmv plans/approved/personal/foo.md plans/archived/personal/foo.md\nSCRIPT"}}'
+assert_exit "B-8: mv inside heredoc script (bashlex exits 3), conservative fallback blocks -> exit 2" 2 \
+  bash -c "CLAUDE_AGENT_NAME=ekko bash \"$GUARD\" <<'JSON'
+${PAYLOAD_B8}
+JSON
+"
+
 echo ""
 printf 'Results: %s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
