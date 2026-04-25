@@ -18,34 +18,34 @@ TMPDIR_WORK="$(mktemp -d)"
 cleanup() { rm -rf "$TMPDIR_WORK"; }
 trap cleanup EXIT
 
-# Patch the launcher: replace 'exec claude ...' with 'true' so we don't launch claude.
+# Build a fixture repo dir structure so the launcher's REPO_DIR resolves correctly.
+# Launcher uses: REPO_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+# So we place the launcher at: $TMPDIR_WORK/scripts/mac/launch-evelynn-test.sh
+# Which makes REPO_DIR resolve to: $TMPDIR_WORK
+FIXTURE_SCRIPTS_MAC="$TMPDIR_WORK/scripts/mac"
+mkdir -p "$FIXTURE_SCRIPTS_MAC"
+
 LAUNCHER_SRC="$REPO/scripts/mac/launch-evelynn.sh"
-LAUNCHER_TEST="$TMPDIR_WORK/launch-evelynn-test.sh"
+LAUNCHER_TEST="$FIXTURE_SCRIPTS_MAC/launch-evelynn-test.sh"
+
+# Patch: replace 'exec claude ...' with 'true' so we don't actually launch claude.
 sed 's/exec claude .*/true/' "$LAUNCHER_SRC" > "$LAUNCHER_TEST"
 chmod +x "$LAUNCHER_TEST"
 
-# Test: source the launcher in a subshell context and check what leaks to parent.
-# We run this in a child bash process that sources the script, then emits its own env.
-# The child exits — the question is whether the PARENT (this script) sees the vars.
-
 unset STRAWBERRY_AGENT CLAUDE_AGENT_NAME 2>/dev/null || true
 
-# Source inside a child bash process and emit env values back to us.
-# This simulates: a user opens terminal, types `. launch-evelynn.sh`, exits claude.
-# After exit the shell still has STRAWBERRY_AGENT set — next claude launch inherits it.
-#
-# With the fix (subshell wrapping), sourcing sets vars only inside the subshell,
-# so the outer shell (here: the child bash -c process) never sees them.
+# ── Part A: env-leak check via dot-sourcing ──────────────────────────────────
+# Source the launcher in a child bash process and verify the outer shell doesn't
+# inherit STRAWBERRY_AGENT / CLAUDE_AGENT_NAME (subshell wrapping fix).
+# Note: when sourced, $0 is 'bash' so REPO_DIR resolves incorrectly (expected;
+# users would normally execute not source). We still verify no env leak occurs.
 child_output="$(bash -c "
   unset STRAWBERRY_AGENT CLAUDE_AGENT_NAME 2>/dev/null
-  # Source the launcher (simulating '. launch-evelynn.sh' in interactive shell)
   . '$LAUNCHER_TEST' 2>/dev/null || true
   echo \"STRAWBERRY_AGENT=\${STRAWBERRY_AGENT:-EMPTY}\"
   echo \"CLAUDE_AGENT_NAME=\${CLAUDE_AGENT_NAME:-EMPTY}\"
 ")"
 
-# With subshell wrapping in the launcher, sourcing it should NOT export vars
-# into the sourcing shell's environment (vars stay confined in the inner subshell).
 strawberry_after="$(printf '%s\n' "$child_output" | grep 'STRAWBERRY_AGENT=' | sed 's/STRAWBERRY_AGENT=//')"
 agent_after="$(printf '%s\n' "$child_output" | grep 'CLAUDE_AGENT_NAME=' | sed 's/CLAUDE_AGENT_NAME=//')"
 
@@ -61,20 +61,24 @@ if [ "$agent_after" != "EMPTY" ]; then
   exit 1
 fi
 
-# Sanity: verify the .coordinator-identity file was written by the launcher.
-# After the fix, the launcher writes .coordinator-identity before exec claude.
-IDENTITY_FILE="$REPO/.coordinator-identity"
+printf 'PASS: no env leak from sourced launcher to outer shell\n'
+
+# ── Part B: .coordinator-identity written on direct execution ─────────────────
+# When executed directly (not sourced), REPO_DIR resolves via dirname($0).
+# Run the patched launcher directly and verify the identity file is written.
+bash "$LAUNCHER_TEST" 2>/dev/null || true
+
+IDENTITY_FILE="$TMPDIR_WORK/.coordinator-identity"
 if [ -f "$IDENTITY_FILE" ]; then
   identity_content="$(cat "$IDENTITY_FILE")"
   if [ "$identity_content" != "Evelynn" ]; then
     printf 'FAIL: .coordinator-identity contains "%s", expected "Evelynn"\n' "$identity_content" >&2
     exit 1
   fi
-  printf 'PASS: .coordinator-identity written correctly\n'
+  printf 'PASS: .coordinator-identity written correctly on direct execute\n'
 else
-  printf 'FAIL: .coordinator-identity not written by launcher\n' >&2
+  printf 'FAIL: .coordinator-identity not written by launcher on direct execute\n' >&2
   exit 1
 fi
 
-printf 'PASS: no env leak from sourced launcher to outer shell\n'
 exit 0

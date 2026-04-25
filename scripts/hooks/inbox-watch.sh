@@ -12,9 +12,8 @@
 # Identity resolution (in order):
 #   1. CLAUDE_AGENT_NAME env var
 #   2. STRAWBERRY_AGENT env var
-#   3. No further fallback — fail-loud on stderr, exit 0 with empty stdout (INV-6).
-#      The old .claude/settings.json .agent fallback has been intentionally removed.
-#      Every launcher must export identity before spawning claude (INV-4).
+#   3. .coordinator-identity file at repo root (written atomically by launchers)
+#   If all three miss: fail-loud on stderr, exit 0 with empty stdout (INV-6).
 #
 # Opt-out: touch .no-inbox-watch at repo root → exit 0 silently (total).
 #
@@ -50,16 +49,27 @@ fi
 
 coord=""
 
+# Tier 1: CLAUDE_AGENT_NAME env var
 if [ -n "${CLAUDE_AGENT_NAME:-}" ]; then
   coord="$(printf '%s' "$CLAUDE_AGENT_NAME" | tr '[:upper:]' '[:lower:]')"
-elif [ -n "${STRAWBERRY_AGENT:-}" ]; then
+fi
+
+# Tier 2: STRAWBERRY_AGENT env var
+if [ -z "$coord" ] && [ -n "${STRAWBERRY_AGENT:-}" ]; then
   coord="$(printf '%s' "$STRAWBERRY_AGENT" | tr '[:upper:]' '[:lower:]')"
 fi
 
+# Tier 3: .coordinator-identity hint file (defence-in-depth; written atomically by launchers)
+if [ -z "$coord" ] && [ -f "$REPO/.coordinator-identity" ]; then
+  _hint="$(tr '[:upper:]' '[:lower:]' < "$REPO/.coordinator-identity" | tr -d '[:space:]')"
+  case "$_hint" in
+    evelynn|sona) coord="$_hint" ;;
+  esac
+fi
+
 # No identity resolved — fail-loud (INV-6); stdout EMPTY so Monitor sees nothing.
-# The .claude/settings.json .agent fallback is intentionally not used here.
 if [ -z "$coord" ]; then
-  printf 'inbox-watch: no CLAUDE_AGENT_NAME or STRAWBERRY_AGENT set; refusing to default\n' >&2
+  printf 'inbox-watch: no CLAUDE_AGENT_NAME, STRAWBERRY_AGENT, or .coordinator-identity; refusing to default\n' >&2
   exit 0
 fi
 
