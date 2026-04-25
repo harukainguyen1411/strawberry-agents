@@ -4,6 +4,8 @@ Chronological index of Sona's session learnings. Newest first.
 
 ## 2026-04
 
+- 2026-04-25 — [Remote-control mode means Slack ping is MORE appropriate, not less](2026-04-25-remote-control-slack-ping-inversion.md) — `/remote-control` means user is NOT at CLI keyboard; Slack ping is the notification mechanism for the away state; correct sequence: Slack ping → pre-compact-save → /compact.
+- 2026-04-25 — [SuperAdmin config list is not a rego override — bootstrap-from-zero requires direct DB write](2026-04-25-superadmin-config-list-not-rego-override.md) — `Config.SuperAdmin` argocd email list is never injected into OPA input; rego consults only `input.user.org_roles[org_id]`; bootstrap-from-zero (no existing SuperAdmin in target org) requires direct `users_orgs` DB write under no-tse-change constraint.
 - 2026-04-25 — [Worktree identity leak on personal-concern reviewer path — direct push variant](2026-04-25-worktree-identity-leak-on-reviewer-path.md) — per-worktree .git/config leaks prior agent identity into reviewer commits even on direct push to main; fix: per-process GIT_AUTHOR binding at dispatch time (Evelynn lane).
 - 2026-04-25 — [Inbox-watch canonical method and bootstrap startup-chain gap](2026-04-25-inbox-watch-canonical-method-and-bootstrap-gap.md) — canonical is `CLAUDE_AGENT_NAME=sona bash scripts/hooks/inbox-watch.sh`; bootstrap nudge silently no-ops when env var missing in launcher; never hand-roll a poller.
 - 2026-04-25 — [Cleaner-stitching false-positive in clean-jsonl.py](2026-04-25-cleaner-stitching-false-positive.md) — synthetic 20+ char `sk-` matches across stripped sections; needs cleaner debug-line flag and chain-disclosure on stderr.

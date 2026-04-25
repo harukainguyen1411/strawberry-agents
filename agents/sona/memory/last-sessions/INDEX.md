@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-25 · 2026-04-25-a3c891b2 · Session ID: c1463e58-16f0-4a89-b958-ffc669430619; Continuation of: 2026-04-25-f993d23d.md
 - 2026-04-25 · 2026-04-25-f993d23d · Session ID: c1463e58-16f0-4a89-b958-ffc669430619
 - 2026-04-25 · 2026-04-24-4df78d45 · **Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22; **Date:** 2026-04-24 (compact boundary — third consolidation this session); **Consolidated by Lissandra (pre-compact)**
 - 2026-04-25 · 2026-04-24-84b7ba50 · **Date:** 2026-04-24 → 2026-04-25 (crossed UTC midnight); **Mode:** hands-off slow-track; **Coordinator:** Sona
