@@ -1,6 +1,6 @@
 # Sona — Open Threads
 
-Last updated: 2026-04-25 (session c1463e58; ninth consolidation — shard a3c891b2).
+Last updated: 2026-04-25 (session c1463e58; tenth consolidation — shard c1463e58 end-session).
 
 ---
 
@@ -37,8 +37,8 @@ The goal: user opens studio → chats → brand flips via `set_config` → click
 **Wave D — the ship (prod-touching, needs Duong explicit confirm):**
 - **Gate:** PRs #114, #115, #116, #117 all need Senna verdict comments + Duong manual approve from `harukainguyen1411`. Slack-ping Duong once all 4 have comments + green checks.
 - [T.P1.14 Ekko] — **DONE (2026-04-25).** Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. All five Cloud Run revisions green: demo-factory-00012-9mg, demo-studio-00029-8bk, demo-config-mgmt-00014-2bn, demo-studio-verification-00005-756, demo-preview-00010-ff4. No rollbacks fired.
-- [T.P1.16 Akali] — **FAIL (2026-04-25).** QA returned two blockers: F1 (factory_bridge wired to v1 scaffold — `tool_dispatch.py:127` imports wrong module + v1 "approved" guard has no UI route + v1 has unimplemented `factory_client.start_build` TODO) + F2 (.env.local baked into prod Docker image hardcoding `__s5Base = http://localhost:8090`). **Blocked: F1 design call (Duong) + F1+F2 fix dispatch → Ekko redeploy → Akali re-QA.** Note: PR #32's own scope (config-mgmt + dashboard) does NOT touch the broken code — this is a merge-gate-only block. QA findings pending write to `assessments/qa-reports/` via Yuumi.
-- Merge PR #32 (the demo-studio-v3 god PR into main). **Re-blocked pending F1+F2.**
+- [T.P1.16 Akali] — **FAIL (2026-04-25), F1+F2 fix shipped pending merge.** Akali findings VERIFIED CORRECT (after a self-inflicted false-confabulation detour: I read the wrong worktree on first verify pass and falsely declared her wrong; corrected and apologized via Evelynn inbox `20260425-0749-103350.md`). Karma quick-lane plan `plans/approved/work/2026-04-25-pr32-runway-blockers-f1-f2.md` (Orianna `88a6135e`) → Talon shipped PR #119 (`fix/pr32-runway-f1-f2`, `608a860`) → Senna LGTM + Lucian APPROVE. **Next:** merge #119 into `feat/demo-studio-v3` → Ekko redeploy demo-studio-v3 prod → Akali re-RUNWAY (with new "must write artifact" expectation, NOT chat-only) → if green, signal Duong manual #32 merge.
+- Merge PR #32 (the demo-studio-v3 god PR into main). **Unblock pending #119 merge + redeploy + Akali green.**
 
 ### Testable checkpoints after each wave
 
