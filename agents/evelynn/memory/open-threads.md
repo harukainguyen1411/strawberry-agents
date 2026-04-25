@@ -1,30 +1,30 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard 56777883).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard 2b638235).
 
 ---
 
-## Dashboard Phase 1 — Viktor impl pending
+## Dashboard Phase 1 — SHIPPED
 
-**Current status (2026-04-25):** Breakdown complete (6 tasks, `26db3ffe`), test plan complete (7 tests, `93328148`). Rakan xfail commits landed on branch `viktor-rakan/dashboard-phase-1` (PR #59 draft, 7 commits `8a9a6a0d` through `c93e93ce`). Viktor impl dispatch held for post-compact.
-**Next:** Dispatch Viktor onto branch `viktor-rakan/dashboard-phase-1`. Honor `RETRO_GIT_LOG_MOCK` env var contract (see Rakan's PR #59 body). Confirm OQ-R3 answer (trailer wins + log warning) before dispatching.
-**Shard:** 56777883
-
----
-
-## Cornerstone Plan A (agent-feedback-system) — slicing decision pending
-
-**Current status (2026-04-25):** Breakdown complete (16 tasks, ~620 min, Aphelios). Test plan complete (11 test tasks, `9a3a9257`). Promoted to approved (`c70084a9`). Implementation NOT started.
-**Next:** Duong decides: 3 sliced PRs by group vs 1 mega-PR. Viktor cannot start until decision is made.
-**Shard:** 56777883
+**Current status (2026-04-25):** PR #59 MERGED at 13:34:52Z (`0ff7d031`). Four review cycles (Senna CHANGES_REQUESTED x2, Senna APPROVE, Lucian APPROVE). Today's stated sole mission accomplished.
+**Next:** Phase 2 = canonical-v1 manifest + retro skill + prompt-quality v1.5. Gate: architecture-consolidation must complete first.
+**Shard:** 2b638235
 
 ---
 
-## Cornerstone Plan B (coordinator-decision-feedback) — impl blocked on Plan A
+## Cornerstone Plan A (agent-feedback-system) — G1 impl in flight
 
-**Current status (2026-04-25):** Breakdown complete (12 tasks, `b2485dcb`). Test plan complete (11 tests, `9da29f40`). Promoted to approved (`25b4879b`). Implementation NOT started.
-**Next:** Dispatch Rakan + Viktor (complex lane) or Vi + Jayce (normal lane) after Plan A is at least in-progress.
-**Shard:** 56777883
+**Current status (2026-04-25):** Viktor and Rakan dispatched onto `viktor-rakan/feedback-system-g1`. Rakan xfail commits `c656cb3c`, `3ed12228`, `2949f448`, `ae1dcb83` landed (59 tests). Viktor running T1–T3. PR will surface when Viktor returns.
+**Next:** Await Viktor return. Senna+Lucian dual review. Merge. Then sequence Plan B.
+**Shard:** 2b638235
+
+---
+
+## Cornerstone Plan B (coordinator-decision-feedback) — impl in flight
+
+**Current status (2026-04-25):** Viktor and Rakan dispatched onto `viktor-rakan/coordinator-decision-feedback`. Rakan 8 xfail commits `fd94e420`..`76e55688` landed (~120 assertions). Viktor running T1–T6. PR will surface when Viktor returns.
+**Next:** Await Viktor return. Senna+Lucian dual review. Sequence after Plan A merges.
+**Shard:** 2b638235
 
 ---
 
@@ -41,6 +41,22 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 **Current status (2026-04-25):** Lock activates at dashboard Phase 2 ship. All `.claude/agents/*.md` and hook edits must land pre-lock.
 **Next:** Track any outstanding infra changes before Phase 2 ships.
 **Shard:** 56777883
+
+---
+
+## Architecture-consolidation — Waves 2/3/4 in queue
+
+**Current status (2026-04-25):** Wave 0 (PR #61, `853dedf0`) and Wave 1 (PR #62, `553a6bcb`) shipped today. Swain ADR + Aphelios breakdown (49 tasks, 5 waves) landed. Wave 2 = 6 rewrites (~1 commit each). Wave 3 = whole-file archives. Wave 4 = cross-ref sweep (must address CLAUDE.md:11/118/133 stale paths flagged by Jayce in W1 PR body). Senna+Lucian flagged Lock-Bypass clause underspecified in Wave 0 README — full §Q6 contract (trailer + log + no-no-verify) to fold into Wave 2 `git-workflow.md` / `canonical-v1.md`.
+**Next:** Dispatch Aphelios Wave 2 impl when Viktor/Plan A+B PRs settle. Must complete before canonical-v1 lock at Phase 2 ship.
+**Shard:** 2b638235
+
+---
+
+## clean-jsonl --since-last-compact — SHIPPED
+
+**Current status (2026-04-25):** PR #60 merged (`c1463b56`). `scripts/clean-jsonl.py` now supports `--since-last-compact`. Transcript-excerpt gap closed. Future Lissandra runs can produce compact-excerpt files.
+**Next:** None. RESOLVED.
+**Shard:** 2b638235
 
 ---
 
