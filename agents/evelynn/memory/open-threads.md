@@ -1,6 +1,30 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard e7221955).
+Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard bc09be92).
+
+---
+
+## Akali QA fix-stack — synthesis pending
+
+**Current status (2026-04-25):** Sona escalated Akali QA-discipline as high priority. Sona retracted "Akali fabricates" framing mid-flight (verified against wrong worktree). Karma v1 plan authored (`plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md`, `9511f4e3`): fix-1 structured OBSERVE-only report format, fix-2a drop effort from medium to low, fix-2b add `_shared/qa-discipline.md` shard. Lux advisory returned: tool-scope narrowing + structured report sections. Swain ADR at `plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md` (committed `1e385870`): two agents one role (Akali observe → Senna diagnose), citation-tagging contract (`cite_kind: verified|inferred`). Six OQs from Swain surfaced.
+**Next:** Synthesis pass after Duong answers Lux OQs. Dashboard-events and Akali reminder hooks may share same PostToolUse surface — plan together. Then promote and dispatch.
+**Shard:** bc09be92
+
+---
+
+## Lux monitoring research — awaiting Duong OQ answers
+
+**Current status (2026-04-25):** Lux dispatched per Duong's Anthropic docs URL hint. Returned with OTel + Langfuse self-hosted + ccusage + DuckDB build-vs-buy recommendation; build thin glue only (plan-lifecycle-events.sh, plan-cost-rollup.sh, off-track-signals.sh). Dashboard = join + skin, not a UI. Six OQs for Duong: telemetry privacy gate, scope, UI tolerance, backfill, sampling validation, complexity-tier source.
+**Next:** Duong reviews and answers OQs. Swain dashboard authoring HELD until answers received.
+**Shard:** bc09be92
+
+---
+
+## Cornerstone plans — implementation pending Duong direction
+
+**Current status (2026-04-25):** `agent-feedback-system` promoted to approved (`c70084a9`). `coordinator-decision-feedback` promoted to approved (`25b4879b`). Duong framed both as "cornerstones for self-improving and self-sustaining system" with hands-on then "use all the Swain lane" direction.
+**Next:** Duong gives next instruction. No implementation agents commissioned yet.
+**Shard:** bc09be92
 
 ---
 
@@ -36,11 +60,11 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Cross-agent learning drift sweep — queued
+## Cross-agent learning drift sweep — RESOLVED
 
-**Current status (2026-04-25):** Yuumi flagged ~30 untracked learnings from Lucian, Senna, Sona, Syndra sessions. Not yet committed.
-**Next:** Dispatch Yuumi for a bulk sweep commit when queue is at stable hold-state.
-**Shard:** e7221955
+**Current status (2026-04-25):** ~30 untracked learnings from Lucian, Senna, Sona, Syndra sessions committed as `9bd022e5`. Gitignore hygiene added for `.no-precompact-save`, `scheduled_tasks.lock`, QA artifacts.
+**Next:** None. RESOLVED.
+**Shard:** bc09be92
 
 ---
 
@@ -72,14 +96,12 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 
 ---
 
-## PR #45 — subagent git-identity-as-Duong — STUCK (architectural pivot needed)
+## PR #56 — resolved-identity-enforcement (successor to PR #45) — Senna review in flight
 
-**Current status (2026-04-25):** Four Talon rounds, four Senna CHANGES_REQUESTED. Lucian APPROVED in round 2. Round 4 used the structural shlex tokenizer pivot Senna recommended; she still found 9 NEW bypasses (NEW-BP-4 through NEW-BP-12, all live-reproducible persona-authored commits). Architectural verdict: PreToolUse string-scanning is structurally incomplete because shell expansion (backticks, `$()`, line continuations, `eval`, `sh -c`) resolves at exec time, not tokenization time.
-**Senna's recommendation (Option A):** move enforcement to pre-commit hook reading `git var GIT_AUTHOR_IDENT` (sees post-expansion identity) + pre-push `git cat-file commit` scan to close `commit-tree` plumbing escape. PreToolUse stays as defense-in-depth.
-**Decision presented to Duong:** (a) hand back to Karma/Azir for plan revision targeting pre-commit/pre-push layer, (b) merge PR #45 as-is with round-3 findings closed and ship pre-commit/pre-push as follow-up plan, (c) Talon round 5 inline. **Awaiting his pick.**
-**Branch:** `talon/subagent-git-identity-as-duong`. **PR:** #45 open. **Plan:** `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md`. Superseded plan `subagent-identity-leak-fix.md` should flow approved → archived once #45 lands.
-**Pattern lesson:** when one reviewer in a dual-pair keeps finding new critical issues across rounds, the spec is wrong, not the implementation.
-**Shard:** c1463e58
+**Current status (2026-04-25):** Architectural pivot from PR #45 (PreToolUse string-scanning) to pre-commit/pre-push post-expansion identity check. Karma authored `plans/proposed/personal/2026-04-25-resolved-identity-enforcement.md` (`ac804288`), Orianna promoted (`2bcd8255`), Talon implemented PR #56 (8 commits). In-flight `orianna@strawberry.local` author drift fixed via `git filter-branch`. Lucian APPROVED with 3 non-blocking drift notes (DN-1 smoke fail-closed gap, DN-2 test-name oversell, DN-3 regex domain gap). Senna review in flight at compact time.
+**Next:** Await Senna verdict. On APPROVE + green checks, merge. Promote plan to implemented/. Archive original `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md` after PR #56 merges.
+**Branch:** `talon/resolved-identity-enforcement`. **PR:** #56 open.
+**Shard:** bc09be92
 
 ---
 
