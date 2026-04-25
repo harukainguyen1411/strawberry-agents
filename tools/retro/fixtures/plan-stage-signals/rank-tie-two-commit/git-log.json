@@ -1,0 +1,24 @@
+[
+  {
+    "commit": "twocommit001trailer",
+    "subject": "chore: promote 2026-04-22-two-commit-plan to approved",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-22T13:00:00.000Z",
+    "planSlug": "2026-04-22-two-commit-plan",
+    "fromStage": "proposed",
+    "toStage": "approved"
+  },
+  {
+    "commit": "twocommit002frontmatter",
+    "subject": "chore: update plan status to in-progress",
+    "trailers": {},
+    "timestamp": "2026-04-22T13:30:00.000Z",
+    "planSlug": "2026-04-22-two-commit-plan",
+    "frontmatterStatusChange": {
+      "from": "approved",
+      "to": "in-progress"
+    }
+  }
+]

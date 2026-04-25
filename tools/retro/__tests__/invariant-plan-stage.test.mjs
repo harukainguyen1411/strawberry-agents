@@ -162,14 +162,14 @@ describe('TP1.T4-D: precedence — all three signals present, trailer wins', { s
 });
 
 // ---------------------------------------------------------------------------
-// Sub-test (R3 rank-tie) — BLOCKED-ON-OQ-R3 — stays xfail permanently until Swain rules
+// Sub-test (R3 rank-tie) — OQ-R3 RESOLVED by Swain 2026-04-25: trailer wins + signal_conflict
 //
 // OQ-R3: Orianna trailer says "approved" but frontmatter mtime says "in-progress" 30s LATER.
-// Xayah recommendation: trailer wins + emit signal_conflict annotation.
-// This test documents the expected behavior once OQ-R3 is resolved.
+// Ruling: trailer wins and signal_conflict: 'frontmatter-newer-than-trailer' is logged.
+// Both single-commit (T4-E) and two-commit (T4-F) shapes must emit signal_conflict.
 // ---------------------------------------------------------------------------
-describe('TP1.T4-E [BLOCKED-ON-OQ-R3]: rank-tie — trailer vs frontmatter disagree on stage', {
-  skip: 'xfail BLOCKED-ON-OQ-R3: Swain must rule on plan-stage rank-tie rule before this test can pass',
+describe('TP1.T4-E [OQ-R3 RESOLVED]: rank-tie — single-commit: trailer vs frontmatter disagree on stage', {
+  skip: !IMPL_EXISTS ? SKIP_REASON : false,
 }, () => {
   let events;
 
@@ -181,7 +181,7 @@ describe('TP1.T4-E [BLOCKED-ON-OQ-R3]: rank-tie — trailer vs frontmatter disag
     const ps = events.find(e => e.kind === 'plan-stage' && e.planSlug === '2026-04-22-rank-tie-plan');
     assert.ok(ps, 'expected a plan-stage event for rank-tie-plan');
     assert.equal(ps.signal, 'trailer',
-      'trailer must win over a later frontmatter mutation per Xayah recommendation (option 1)');
+      'trailer must win over a later frontmatter mutation per OQ-R3 ruling');
   });
 
   it('emits a signal_conflict annotation when frontmatter is newer than the trailer', () => {
@@ -189,5 +189,60 @@ describe('TP1.T4-E [BLOCKED-ON-OQ-R3]: rank-tie — trailer vs frontmatter disag
     assert.ok(ps, 'plan-stage event must exist');
     assert.equal(ps.signal_conflict, 'frontmatter-newer-than-trailer',
       'signal_conflict must be set to frontmatter-newer-than-trailer when mtime disagrees');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Sub-test (R3 rank-tie two-commit) — xfail I1: cross-commit disagreement must emit signal_conflict
+//
+// I1 finding from PR #59 dual-review: the current rollup only fires signal_conflict when
+// trailer+frontmatter live in a single git log entry. When they are separate commits
+// (trailer commit + later frontmatter mutation commit = two independent entries), the
+// rollup emits two independent events with no warning, silently violating OQ-R3.
+//
+// Fix required: parsePlanStageFromGitLog must accumulate per-slug events and detect
+// cross-commit disagreement on (slug, stage), emitting signal_conflict on the trailer event.
+//
+// xfail: skipped until plan-stage-detect.mjs accumulates cross-commit conflicts (I1 fix).
+// ---------------------------------------------------------------------------
+describe('TP1.T4-F [xfail I1]: rank-tie two-commit — cross-commit trailer vs frontmatter emits signal_conflict', {
+  skip: 'xfail I1: parsePlanStageFromGitLog does not yet detect cross-commit (slug, stage) disagreement. Fix: accumulate per-slug events and emit signal_conflict when a later frontmatter entry disagrees with a trailer entry for the same slug.',
+}, () => {
+  let events;
+
+  before(() => {
+    events = runIngestWithSignalFixture('rank-tie-two-commit');
+  });
+
+  it('emits a plan-stage event for 2026-04-22-two-commit-plan with signal:trailer (trailer wins)', () => {
+    const ps = events.find(
+      e => e.kind === 'plan-stage' && e.planSlug === '2026-04-22-two-commit-plan' && e.signal === 'trailer'
+    );
+    assert.ok(ps, 'expected a trailer plan-stage event for two-commit-plan');
+    assert.equal(ps.stage, 'approved',
+      'trailer event must have stage=approved (from the first commit)');
+  });
+
+  it('emits signal_conflict on the trailer event when a later frontmatter commit disagrees on stage', () => {
+    const trailerPs = events.find(
+      e => e.kind === 'plan-stage' && e.planSlug === '2026-04-22-two-commit-plan' && e.signal === 'trailer'
+    );
+    assert.ok(trailerPs, 'trailer plan-stage event must exist');
+    assert.equal(
+      trailerPs.signal_conflict,
+      'frontmatter-newer-than-trailer',
+      'cross-commit disagreement must set signal_conflict on the trailer event'
+    );
+  });
+
+  it('does not emit a separate standalone frontmatter plan-stage event for the same slug', () => {
+    // When a trailer event exists, the frontmatter mutation from a later commit must NOT
+    // produce a second independent plan-stage event — it must be folded into signal_conflict.
+    const allPs = events.filter(
+      e => e.kind === 'plan-stage' && e.planSlug === '2026-04-22-two-commit-plan'
+    );
+    // There should be exactly one plan-stage event (the trailer one, with signal_conflict set)
+    assert.equal(allPs.length, 1,
+      'cross-commit rank-tie must produce exactly one plan-stage event (trailer wins, frontmatter folded as signal_conflict)');
   });
 });
