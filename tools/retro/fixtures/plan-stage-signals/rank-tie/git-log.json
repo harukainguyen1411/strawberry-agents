@@ -1,0 +1,24 @@
+[
+  {
+    "commit": "ranktie001abc",
+    "subject": "chore: promote 2026-04-22-rank-tie-plan to approved",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-22T13:00:00.000Z",
+    "planSlug": "2026-04-22-rank-tie-plan",
+    "fromStage": "proposed",
+    "toStage": "approved"
+  },
+  {
+    "commit": "ranktie002xyz",
+    "subject": "chore: update plan status to in-progress",
+    "trailers": {},
+    "timestamp": "2026-04-22T13:00:30.000Z",
+    "planSlug": "2026-04-22-rank-tie-plan",
+    "frontmatterStatusChange": {
+      "from": "approved",
+      "to": "in-progress"
+    }
+  }
+]
