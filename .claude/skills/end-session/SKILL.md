@@ -105,7 +105,7 @@ If the `remember` plugin is not installed or the skill is unavailable, fall back
 
 ## Step 6b — Update open-threads.md + regenerate INDEX.md (coordinators only)
 
-**Ordering invariant:** Step 6 (write shard) MUST complete before Step 6b because the shard is the source for both open-threads.md and INDEX.md updates. Step 6b MUST complete before Step 9 (commit + push) so all three artifacts land atomically in one commit.
+**Ordering invariant:** Step 6 (write shard) MUST complete before Step 6b because the shard is the source for both open-threads.md and INDEX.md updates. Step 6b MUST complete before the commit step so all artifacts land atomically in one commit.
 
 **If agent is a coordinator (evelynn OR sona):** Run the following after Step 6 completes.
 
@@ -130,9 +130,29 @@ If the `remember` plugin is not installed or the skill is unavailable, fall back
    git add agents/<agent>/memory/last-sessions/INDEX.md
    ```
 
-If Step 6b fails partway (e.g., `--index-only` errors), the shard written in Step 6 is already staged and recoverable. Do NOT abort the session close — log the failure and proceed to Step 9 with only the shard staged. Recovery path: run `bash scripts/memory-consolidate.sh <agent> --index-only`, stage `INDEX.md`, and amend the next commit manually.
+If Step 6b fails partway (e.g., `--index-only` errors), the shard written in Step 6 is already staged and recoverable. Do NOT abort the session close — log the failure and proceed with only the shard staged. Recovery path: run `bash scripts/memory-consolidate.sh <agent> --index-only`, stage `INDEX.md`, and amend the next commit manually.
 
 **If agent is NOT a coordinator (non-coordinator agents — Sonnet subagents, Lissandra standalone, etc.):** Step 6b is a no-op. Skip entirely and proceed to Step 7.
+
+## Step 6c — Decisions rollup (coordinators only)
+
+**Ordering invariant:** Step 6c MUST run after Step 6b (INDEX.md already staged) and before the commit step. All four artifacts — shard, last-sessions/INDEX.md, decisions/INDEX.md, and decisions/preferences.md — land atomically in one commit.
+
+**If agent is a coordinator (evelynn OR sona):** Run the following after Step 6b completes.
+
+1. Regenerate decisions INDEX and roll up preferences.md counts:
+   ```
+   bash scripts/memory-consolidate.sh <agent> --decisions-only
+   ```
+
+2. Stage:
+   ```
+   git add agents/<agent>/memory/decisions/INDEX.md agents/<agent>/memory/decisions/preferences.md
+   ```
+
+If Step 6c fails (e.g., no decisions/ directory yet, or `--decisions-only` errors), do NOT abort the session close — log the failure and proceed to the commit step. The decisions rollup is not blocking for the session commit.
+
+**If agent is NOT a coordinator:** Step 6c is a no-op. Skip entirely and proceed to Step 7.
 
 ## Step 7 — Memory refresh
 

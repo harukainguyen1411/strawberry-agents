@@ -201,6 +201,23 @@ Coordinators (Evelynn, Sona) use a two-layer memory shape. Subagents MUST NOT ea
 
 **Full design:** `architecture/coordinator-memory.md`.
 
+### Decision-tier memory (coordinators only)
+
+Per plan §6.5 (`plans/approved/personal/2026-04-21-coordinator-decision-feedback.md`):
+
+**Eager (boot-loaded alongside `open-threads.md` and `INDEX.md`):**
+- `agents/<coordinator>/memory/decisions/preferences.md` — axis-digest with sample counts and match rates (≤ 150 lines). This is the primary retrieval surface for Predict/Confidence at decision-presentation time.
+- `agents/<coordinator>/memory/decisions/axes.md` — axis definitions, append-only; loaded after `preferences.md` so axis names + usage stats are in context together.
+
+**Lazy (on-demand only):**
+- `agents/<coordinator>/memory/decisions/INDEX.md` — row-per-decision summary table; pull only when auditing the full decision history.
+- `agents/<coordinator>/memory/decisions/log/*.md` — individual decision log files; never bulk-loaded. Pull via Skarner delegation for axis/keyword search.
+
+**Rules:**
+- Full decision log corpus is NEVER eager-loaded. The eager surface is capped at `preferences.md` (≤ 150 lines). Historical detail is always lazy.
+- To search decisions by axis or keyword: delegate to Skarner; Skarner greps `log/` and returns file paths + excerpts.
+- Subagents MUST NOT eagerly load another coordinator's `decisions/` tree.
+
 ### Final-message rule (applies to all background subagents)
 
 Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.

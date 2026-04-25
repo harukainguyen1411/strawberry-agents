@@ -52,12 +52,16 @@ set -euo pipefail
 # Parse arguments
 # ---------------------------------------------------------------------------
 INDEX_ONLY=0
+DECISIONS_ONLY=0
 SECRETARY=""
 
 for arg in "$@"; do
     case "$arg" in
         --index-only)
             INDEX_ONLY=1
+            ;;
+        --decisions-only)
+            DECISIONS_ONLY=1
             ;;
         -*)
             echo "memory-consolidate: unknown flag '${arg}'" >&2
@@ -67,7 +71,7 @@ for arg in "$@"; do
             if [ -z "$SECRETARY" ]; then
                 SECRETARY="$arg"
             else
-                echo "usage: memory-consolidate.sh <secretary> [--index-only]" >&2
+                echo "usage: memory-consolidate.sh <secretary> [--index-only] [--decisions-only]" >&2
                 exit 1
             fi
             ;;
@@ -75,7 +79,7 @@ for arg in "$@"; do
 done
 
 if [ -z "$SECRETARY" ]; then
-    echo "usage: memory-consolidate.sh <secretary> [--index-only]" >&2
+    echo "usage: memory-consolidate.sh <secretary> [--index-only] [--decisions-only]" >&2
     exit 1
 fi
 
@@ -152,6 +156,20 @@ else
 fi
 
 # ---------------------------------------------------------------------------
+# Source the decision capture library (for --decisions-only pass)
+# ---------------------------------------------------------------------------
+LIB_DECISION="${SCRIPT_DIR}/_lib_decision_capture.sh"
+if [ -f "$LIB_DECISION" ]; then
+    # shellcheck source=scripts/_lib_decision_capture.sh
+    . "$LIB_DECISION"
+else
+    if [ "$DECISIONS_ONLY" -eq 1 ]; then
+        echo "memory-consolidate: ERROR — decision library not found: ${LIB_DECISION}" >&2
+        exit 1
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # --index-only mode: fast path
 # ---------------------------------------------------------------------------
 if [ "$INDEX_ONLY" -eq 1 ]; then
@@ -162,6 +180,116 @@ if [ "$INDEX_ONLY" -eq 1 ]; then
     INDEX_FILE="${LAST_SESSIONS_DIR}/INDEX.md"
     regenerate_index "$LAST_SESSIONS_DIR" "$INDEX_FILE"
     echo "memory-consolidate [${SECRETARY}]: --index-only complete, wrote ${INDEX_FILE}" >&2
+    exit 0
+fi
+
+# ---------------------------------------------------------------------------
+# Unified EXIT trap — registered here (before any mode short-circuit) so it
+# fires on both --decisions-only and full-run paths. Advisory lock is also
+# acquired here so concurrent --decisions-only invocations are serialised.
+# Refs: PR #64 review finding I4.
+# ---------------------------------------------------------------------------
+_NEW_CONTENT_FILE=""
+_MEMORY_MD_ABOVE=""
+
+_cleanup() {
+    [ -n "$_NEW_CONTENT_FILE" ] && rm -f "$_NEW_CONTENT_FILE"
+    [ -n "$_MEMORY_MD_ABOVE" ]  && rm -f "$_MEMORY_MD_ABOVE"
+    if [ "${_LOCK_PATH_NOCLOBBER:-}" = "1" ]; then
+        rm -f "${LOCK_FILE}"
+    fi
+    # Belt-and-suspenders: clean up any decision-lib tmpfiles from the current PID
+    # (lib already rm -f's at every return path; this guards against abnormal exits)
+    rm -f "${TMPDIR:-/tmp}/decisions_"*"_$$" 2>/dev/null || true
+}
+trap '_cleanup' EXIT INT TERM
+
+# Advisory lock — serialises all invocations including --decisions-only
+_LOCK_PATH_NOCLOBBER=0
+_lock_acquired=0
+
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${LOCK_FILE}"
+    if ! flock -n 9; then
+        echo "memory-consolidate: another consolidation is running (flock), exiting as no-op."
+        exit 0
+    fi
+    _lock_acquired=1
+else
+    if [ -f "${LOCK_FILE}" ]; then
+        existing_pid=$(cat "${LOCK_FILE}" 2>/dev/null || true)
+        if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+            echo "memory-consolidate: another consolidation is running (pid ${existing_pid}), exiting as no-op."
+            exit 0
+        else
+            echo "memory-consolidate: stale lock from pid ${existing_pid:-unknown} (process dead), reclaiming."
+            rm -f "${LOCK_FILE}"
+        fi
+    fi
+    if ( set -o noclobber; echo "$$" > "${LOCK_FILE}" ) 2>/dev/null; then
+        _LOCK_PATH_NOCLOBBER=1
+        _lock_acquired=1
+    else
+        echo "memory-consolidate: another consolidation is running (noclobber race), exiting as no-op."
+        exit 0
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# --decisions-only mode: fast path — decisions INDEX regen + preferences rollup
+# Runs decision pass only (no archive move, no sessions fold, no commit/push).
+# Ordering: runs after last-sessions/ pass (full run only); as a standalone mode
+# it only touches decisions/ artifacts.
+#
+# Reads STRAWBERRY_MEMORY_ROOT shim (T4 requirement).
+# ---------------------------------------------------------------------------
+if [ "$DECISIONS_ONLY" -eq 1 ]; then
+    if [ -z "${LIB_DECISION:-}" ] && [ ! -f "$LIB_DECISION" ]; then
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decision library required for --decisions-only" >&2
+        exit 1
+    fi
+
+    # Resolve coordinator dir for decisions (MEMORY_BASE already set above)
+    if [ -n "${STRAWBERRY_MEMORY_ROOT:-}" ]; then
+        COORD_MEMORY_BASE="${STRAWBERRY_MEMORY_ROOT}/agents/${SECRETARY}/memory"
+    else
+        COORD_MEMORY_BASE="${REPO_ROOT}/agents/${SECRETARY}/memory"
+    fi
+
+    DECISIONS_DIR="${COORD_MEMORY_BASE}/decisions"
+    DECISIONS_LOG_DIR="${DECISIONS_DIR}/log"
+    DECISIONS_INDEX_FILE="${DECISIONS_DIR}/INDEX.md"
+    DECISIONS_PREFS_FILE="${DECISIONS_DIR}/preferences.md"
+    DECISIONS_AXES_FILE="${DECISIONS_DIR}/axes.md"
+
+    if [ ! -d "$DECISIONS_LOG_DIR" ]; then
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decisions/log/ not found at ${DECISIONS_LOG_DIR}" >&2
+        exit 1
+    fi
+
+    if [ ! -f "$DECISIONS_PREFS_FILE" ]; then
+        echo "memory-consolidate [${SECRETARY}]: WARNING — preferences.md not found; skipping rollup" >&2
+    fi
+
+    # Step 1: Regenerate decisions/INDEX.md
+    if regenerate_decisions_index "${COORD_MEMORY_BASE}" "${DECISIONS_INDEX_FILE}"; then
+        echo "memory-consolidate [${SECRETARY}]: decisions INDEX.md regenerated" >&2
+    else
+        echo "memory-consolidate [${SECRETARY}]: ERROR — decisions INDEX regen failed" >&2
+        exit 1
+    fi
+
+    # Step 2: Rollup preferences.md counts (if it exists)
+    if [ -f "$DECISIONS_PREFS_FILE" ]; then
+        if rollup_preferences_counts "${COORD_MEMORY_BASE}" "${DECISIONS_PREFS_FILE}"; then
+            echo "memory-consolidate [${SECRETARY}]: preferences.md rolled up" >&2
+        else
+            echo "memory-consolidate [${SECRETARY}]: ERROR — preferences rollup failed" >&2
+            exit 1
+        fi
+    fi
+
+    echo "memory-consolidate [${SECRETARY}]: --decisions-only complete" >&2
     exit 0
 fi
 
@@ -227,54 +355,6 @@ for f in "${LAST_SESSIONS_DIR}"/*.md; do
     TOTAL_LAST_SHARDS=$(( TOTAL_LAST_SHARDS + 1 ))
 done
 echo "memory-consolidate [${SECRETARY}]: pre-boot-validator: sentinel_count=${SENTINEL_COUNT} total_last_session_shards=${TOTAL_LAST_SHARDS}" >&2
-
-# ---------------------------------------------------------------------------
-# Unified EXIT trap — registered BEFORE lock acquisition so it always fires.
-# ---------------------------------------------------------------------------
-_NEW_CONTENT_FILE=""
-_MEMORY_MD_ABOVE=""
-
-_cleanup() {
-    [ -n "$_NEW_CONTENT_FILE" ] && rm -f "$_NEW_CONTENT_FILE"
-    [ -n "$_MEMORY_MD_ABOVE" ]  && rm -f "$_MEMORY_MD_ABOVE"
-    if [ "${_LOCK_PATH_NOCLOBBER:-}" = "1" ]; then
-        rm -f "${LOCK_FILE}"
-    fi
-}
-trap '_cleanup' EXIT INT TERM
-
-# ---------------------------------------------------------------------------
-# Advisory lock
-# ---------------------------------------------------------------------------
-_LOCK_PATH_NOCLOBBER=0
-_lock_acquired=0
-
-if command -v flock >/dev/null 2>&1; then
-    exec 9>"${LOCK_FILE}"
-    if ! flock -n 9; then
-        echo "memory-consolidate: another consolidation is running (flock), exiting as no-op."
-        exit 0
-    fi
-    _lock_acquired=1
-else
-    if [ -f "${LOCK_FILE}" ]; then
-        existing_pid=$(cat "${LOCK_FILE}" 2>/dev/null || true)
-        if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
-            echo "memory-consolidate: another consolidation is running (pid ${existing_pid}), exiting as no-op."
-            exit 0
-        else
-            echo "memory-consolidate: stale lock from pid ${existing_pid:-unknown} (process dead), reclaiming."
-            rm -f "${LOCK_FILE}"
-        fi
-    fi
-    if ( set -o noclobber; echo "$$" > "${LOCK_FILE}" ) 2>/dev/null; then
-        _LOCK_PATH_NOCLOBBER=1
-        _lock_acquired=1
-    else
-        echo "memory-consolidate: another consolidation is running (noclobber race), exiting as no-op."
-        exit 0
-    fi
-fi
 
 cd "${GIT_ROOT}"
 
