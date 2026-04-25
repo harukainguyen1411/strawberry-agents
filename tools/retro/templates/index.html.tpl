@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Retrospection Dashboard</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<h1>Retrospection Dashboard</h1>
+<p>Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md</p>
+<table id="plans-table">
+<thead>
+<tr>
+  <th>Plan</th>
+  <th>Stages</th>
+  <th>Total Tokens In</th>
+  <th>Wall Active (min)</th>
+</tr>
+</thead>
+<tbody>
+{{PLAN_ROWS}}
+</tbody>
+</table>
+<script>
+(function() {
+  // Client-side filter/sort for the plans table
+  var table = document.getElementById('plans-table');
+  var headers = table.querySelectorAll('th');
+  var sortDir = {};
+  headers.forEach(function(th, idx) {
+    th.style.cursor = 'pointer';
+    th.addEventListener('click', function() {
+      var rows = Array.from(table.tBodies[0].rows);
+      sortDir[idx] = sortDir[idx] === 'asc' ? 'desc' : 'asc';
+      rows.sort(function(a, b) {
+        var av = a.cells[idx] ? a.cells[idx].textContent : '';
+        var bv = b.cells[idx] ? b.cells[idx].textContent : '';
+        var n = parseFloat(av) - parseFloat(bv);
+        var cmp = isNaN(n) ? av.localeCompare(bv) : n;
+        return sortDir[idx] === 'asc' ? cmp : -cmp;
+      });
+      rows.forEach(function(r) { table.tBodies[0].appendChild(r); });
+    });
+  });
+})();
+</script>
+</body>
+</html>

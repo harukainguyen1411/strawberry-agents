@@ -1,0 +1,17 @@
+[
+  {
+    "commit": "allthree001abc",
+    "subject": "chore: promote 2026-04-22-all-three-plan to approved",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-22T12:00:00.000Z",
+    "planSlug": "2026-04-22-all-three-plan",
+    "fromStage": "proposed",
+    "toStage": "approved",
+    "frontmatterStatusChange": {
+      "from": "proposed",
+      "to": "approved"
+    }
+  }
+]

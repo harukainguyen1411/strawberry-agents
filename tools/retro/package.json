@@ -1,0 +1,14 @@
+{
+  "name": "retro",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Retrospection dashboard — ingest + render pipeline",
+  "scripts": {
+    "retro:ingest": "node ingest.mjs",
+    "retro:render": "node render.mjs --events ~/.claude/strawberry-usage-cache/events.jsonl --queries-dir queries --out-dir dist"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
