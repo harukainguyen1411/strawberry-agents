@@ -11,9 +11,9 @@ agent system routes dispatches, manages memory, or enforces invariants should lo
 
 | File | Covers |
 |---|---|
-| `deployment.md` | Firebase deploy flow for `strawberry-app` `[placeholder — lands W1]` |
-| `firebase-storage-cors.md` | Firebase Storage CORS configuration `[placeholder — lands W1]` |
-| `infrastructure.md` | VPS (Hetzner CX22), PM2 processes, SSH setup `[placeholder — lands W2]` |
+| `deployment.md` | Firebase deploy flow for `strawberry-app` |
+| `firebase-storage-cors.md` | Firebase Storage CORS configuration |
+| `infrastructure.md` | VPS (Hetzner CX22), PM2 processes, SSH setup |
 
 ## Drift tolerance
 

@@ -6,34 +6,32 @@ Drift from operational reality is a bug; file an issue or fix it.
 
 Edits to files in this folder during measurement-week (while `architecture/canonical-v1.md`
 is active) require a `Lock-Bypass: <reason>` trailer in the commit message.
+See `git-workflow.md` §Lock-Bypass contract for the full protocol.
 
 ## Canonical files
 
-The files below are the v1 source of truth. Files marked `[placeholder]` will land in W1/W2
-of the architecture-consolidation plan (`plans/approved/personal/2026-04-25-architecture-consolidation-v1.md`).
-
 | File | Covers |
 |---|---|
-| `overview.md` | System overview — current roster pointer, high-level agent flow `[placeholder — lands W2]` |
-| `agents.md` | 30-line roster + role table; defers depth to `taxonomy.md` `[placeholder — lands W2]` |
-| `taxonomy.md` | Agent-pair taxonomy — full pair-mapping matrix `[placeholder — lands W1]` |
-| `routing.md` | Routing lookup table — which agent handles which dispatch `[placeholder — lands W1]` |
-| `communication.md` | Agent communication protocols and contracts; live roster at `agents/memory/agent-network.md` `[placeholder — lands W2]` |
-| `coordinator-boot.md` | Coordinator boot sequence and session identity `[placeholder — lands W1]` |
-| `coordinator-memory.md` | Coordinator memory model and consolidation flow `[placeholder — lands W1]` |
-| `compact-workflow.md` | `/compact` and `/pre-compact-save` mechanics `[placeholder — lands W1]` |
-| `plan-lifecycle.md` | Plan lifecycle — proposed → approved → in-progress → implemented → archived `[placeholder — lands W1]` |
-| `plan-frontmatter.md` | Plan YAML frontmatter fields (v2 fields only — v1 Orianna-gate fields archived) `[placeholder — lands W2]` |
-| `git-workflow.md` | Commit-prefix policy (Rule 5), worktree discipline, branch protection `[placeholder — lands W2]` |
-| `git-identity.md` | Git identity enforcement — three-layer model `[placeholder — lands W1]` |
-| `pr-rules.md` | PR rules — review accounts, QA gate (Rule 16), work-scope anonymity `[placeholder — lands W2]` |
-| `cross-repo.md` | Cross-repo workflow — strawberry-agents ↔ strawberry-app ↔ mmp `[placeholder — lands W1]` |
-| `key-scripts.md` | Key scripts index — what each script does and when to use it `[placeholder — lands W1]` |
-| `platform-parity.md` | Platform parity contract — Mac/Windows/GCE equivalence `[placeholder — lands W1]` |
-| `platform-split.md` | Platform-split policy — what lives in `scripts/mac/` vs `scripts/windows/` `[placeholder — lands W1]` |
-| `plugins.md` | Plugin list — current active Claude Code plugins `[placeholder — lands W1]` |
-| `testing.md` | TDD enforcement — Rule 12–15, xfail discipline, test gate mechanics `[placeholder — lands W1]` |
-| `security-debt.md` | Outstanding security debt — current known gaps `[placeholder — lands W1]` |
+| `overview.md` | System overview — current roster pointer, two-repo structure, design principles |
+| `agents.md` | 30-line roster + role table; defers depth to `taxonomy.md` |
+| `taxonomy.md` | Agent-pair taxonomy — full track model and role-slot matrix |
+| `routing.md` | Routing lookup table — which agent handles which dispatch |
+| `communication.md` | Agent communication protocols and contracts; live roster at `agents/memory/agent-network.md` |
+| `coordinator-boot.md` | Coordinator boot sequence and session identity |
+| `coordinator-memory.md` | Coordinator memory model and consolidation flow |
+| `compact-workflow.md` | `/compact` and `/pre-compact-save` mechanics |
+| `plan-lifecycle.md` | Plan lifecycle — proposed → approved → in-progress → implemented → archived |
+| `plan-frontmatter.md` | Plan YAML frontmatter fields (v2 fields only — v1 Orianna-gate fields archived) |
+| `git-workflow.md` | Commit-prefix policy (Rule 5), worktree discipline, branch protection, Lock-Bypass contract |
+| `git-identity.md` | Git identity enforcement — three-layer model |
+| `pr-rules.md` | PR rules — review accounts, QA gate (Rule 16), work-scope anonymity, Rules 12/13/15/17/18/21 |
+| `cross-repo.md` | Cross-repo workflow — strawberry-agents ↔ strawberry-app ↔ mmp |
+| `key-scripts.md` | Key scripts index — what each script does and when to use it |
+| `platform-parity.md` | Platform parity contract — Mac/Windows/GCE equivalence |
+| `platform-split.md` | Platform-split policy — what lives in `scripts/mac/` vs `scripts/windows/` |
+| `plugins.md` | Plugin list — current active Claude Code plugins |
+| `testing.md` | TDD enforcement — Rule 12–15, xfail discipline, test gate mechanics |
+| `security-debt.md` | Outstanding security debt — current known gaps |
 
 ## §7.2 Author discipline (scoped to this folder)
 

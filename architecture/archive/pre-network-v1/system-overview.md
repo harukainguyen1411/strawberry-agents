@@ -1,3 +1,5 @@
+<!-- Archived: superseded by architecture/agent-network-v1/overview.md on 2026-04-25 -->
+
 # System Overview
 
 Strawberry is Duong's personal agent system — a network of Claude-powered agents that handle life admin, side projects, health, finance, social, and learning tasks. Work tasks go through a separate system at `~/Documents/Work/mmp/workspace/agents/`.
