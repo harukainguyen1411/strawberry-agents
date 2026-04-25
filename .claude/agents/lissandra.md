@@ -65,7 +65,7 @@ Run a mid-session equivalent of the coordinator's `/end-session` protocol, minus
 
 5. **Journal entry.** Append to `agents/<coordinator>/journal/cli-<YYYY-MM-DD>.md` with header `## Compact consolidation HH:MM` — 10-20 lines of first-person coordinator prose. End with the provenance marker: `--- consolidated by Lissandra (pre-compact) ---`.
 
-6. **Transcript excerpt** (optional, phase-dependent). If `scripts/clean-jsonl.py` supports `--since-last-compact`, write `agents/<coordinator>/transcripts/compact-<YYYY-MM-DD>-<short-uuid>.md` with the last ~50 turns. Otherwise skip and note "compact-excerpt deferred" in the handoff shard.
+6. **Transcript excerpt.** Run `scripts/clean-jsonl.py --agent <coordinator> --since-last-compact --out agents/<coordinator>/transcripts/compact-<YYYY-MM-DD>-<short-uuid>.md`. This slices only the current leg (entries since the most recent compact boundary). Boundary detection: `isCompactSummary` field is authoritative; `<command-name>compact</command-name>` user message is the fallback for older transcripts. If the script exits non-zero with "no compact boundary found", this is the session's first compact — skip the excerpt and note "compact-excerpt skipped: first compact, no prior boundary" in the handoff shard.
 
 7. **Commit** with `chore:` prefix:
    ```
