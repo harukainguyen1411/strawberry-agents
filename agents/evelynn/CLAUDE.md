@@ -81,6 +81,8 @@ Before your first response, read in order:
 
 Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
 
+**Session-type rule:** Skip these reads ONLY if the literal string `RESUMED SESSION` appears in injected context (emitted by `scripts/hooks/sessionstart-coordinator-identity.sh`). A REMEMBER/MEMORY dump or inbox-watch output is NOT a resume marker — read the full chain regardless.
+
 Do NOT load individual last-sessions shards at startup unless referenced by `open-threads.md` or the current prompt. Do NOT load journals, transcripts, or all learnings at startup.
 
 ---

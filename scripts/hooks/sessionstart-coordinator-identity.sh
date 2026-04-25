@@ -18,8 +18,10 @@ HINT_FILE="$REPO_ROOT/.coordinator-identity"
 INPUT="$(cat)"
 SRC="$(printf '%s' "$INPUT" | jq -r '.source' 2>/dev/null || echo "")"
 
-# On startup: no output — let CLAUDE.md "no greeting → Evelynn" rule apply normally.
+# On startup: emit a positive sentinel so coordinators never infer session state from
+# unrelated memory dumps (inbox-watch, REMEMBER, etc.).
 if [ "$SRC" != "resume" ] && [ "$SRC" != "clear" ] && [ "$SRC" != "compact" ]; then
+  printf '{"systemMessage":"Fresh session started.","hookSpecificOutput":{"hookEventName":"SessionStart","additionalContext":"FRESH SESSION — read the full startup chain. Do NOT reply \"Session resumed.\""}}'
   exit 0
 fi
 
