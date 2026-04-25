@@ -5,7 +5,7 @@
 #   bash scripts/coordinator-boot.sh Evelynn
 #   bash scripts/coordinator-boot.sh Sona
 #
-# Identity vars passed to claude via `env` (NOT exported into the parent shell):
+# Exports (before exec claude):
 #   CLAUDE_AGENT_NAME      canonical case: Evelynn | Sona
 #   STRAWBERRY_AGENT       mirror, for older hooks
 #   STRAWBERRY_CONCERN     personal | work
@@ -68,6 +68,14 @@ REPO_ROOT="$(dirname "$REPO_ROOT")"
 cd "$REPO_ROOT"
 
 # ────────────────────────────────────────────────────────────────
+# Export identity env vars
+# ────────────────────────────────────────────────────────────────
+
+export CLAUDE_AGENT_NAME="$COORDINATOR"
+export STRAWBERRY_AGENT="$COORDINATOR"
+export STRAWBERRY_CONCERN="$STRAWBERRY_CONCERN_VAL"
+
+# ────────────────────────────────────────────────────────────────
 # Memory consolidation (deterministic, shell-level — not model-level)
 # ────────────────────────────────────────────────────────────────
 
@@ -81,16 +89,6 @@ fi
 
 # ────────────────────────────────────────────────────────────────
 # Launch coordinator
-#
-# Identity vars are scoped to the exec'd process via `env`, NOT
-# exported into the parent shell.  This prevents STRAWBERRY_AGENT
-# from leaking back to the calling terminal when coordinator-boot.sh
-# is invoked as a subprocess (e.g. via the shell aliases in
-# scripts/mac/aliases.sh) or — in an edge case — sourced.
 # ────────────────────────────────────────────────────────────────
 
-exec env \
-  CLAUDE_AGENT_NAME="$COORDINATOR" \
-  STRAWBERRY_AGENT="$COORDINATOR" \
-  STRAWBERRY_CONCERN="$STRAWBERRY_CONCERN_VAL" \
-  claude --agent "$COORDINATOR"
+exec claude --agent "$COORDINATOR"
