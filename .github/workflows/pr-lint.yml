@@ -1,10 +1,42 @@
-name: PR Lint (Rule 16 — Akali / Playwright MCP gate)
+name: PR Lint (Rule 16 + no-AI-attribution)
 
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
+  issue_comment:
+    types: [created, edited]
 
 jobs:
+  pr-no-ai-attribution:
+    name: No AI attribution (Layer 3)
+    runs-on: ubuntu-latest
+    # For issue_comment events: only run on PR comments (not issue comments)
+    if: github.event_name == 'pull_request' || github.event.issue.pull_request
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Checkout repo (for helper script)
+        uses: actions/checkout@v4
+
+      - name: Scan PR body for AI attribution markers
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""')
+          printf '%s' "$PR_BODY" | bash scripts/ci/pr-lint-no-ai-attribution.sh
+
+      - name: Scan PR comment for AI attribution markers
+        if: github.event_name == 'issue_comment'
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        run: |
+          printf '%s' "$COMMENT_BODY" | bash scripts/ci/pr-lint-no-ai-attribution.sh
+
+
   pr-lint:
     name: QA gate check (Rule 16)
     runs-on: ubuntu-latest
