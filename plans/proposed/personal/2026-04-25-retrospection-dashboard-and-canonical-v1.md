@@ -227,13 +227,19 @@ See §Q6 above for the full spec. Summary:
 - Weekend retro: Evelynn dispatches Swain + Lux + Karma every Saturday 09:00; Swain authors `canonical-v2-rationale.md`; Orianna gates promotion.
 - The dashboard surfaces the bypass log directly on its home page so drift is visible.
 
-## 7. Open questions for Duong
+## 7. Open questions for Duong — RESOLVED 2026-04-25
 
 **OQ1 — OTel toggle scope.** Enable `CLAUDE_CODE_ENABLE_TELEMETRY=1` and `OTEL_LOG_TOOL_DETAILS=1` for personal-concern only? OTel gives us `query_source` (subagent identity at the OTel layer, Anthropic-blessed) and `git_commit_id` in tool params. Lux flagged this as her OQ1; I concur it's the v1 telemetry-privacy gate question. Recommend: yes for personal, defer work to Sona.
 
+> **Duong: yes to both personal and work.** Sona inherits the same toggle posture; cross-coordinator side-by-side comparison (§Q8 cross-coordinator pane) gets a real corpus from day one. Sona will be FYI'd via inbox once this plan is in-progress so she can mirror the env wiring in her concern.
+
 **OQ2 — Backfill scope.** Replay 1669 historical sentinels + their `subagents/agent-<id>.jsonl` transcripts into `events.jsonl`? Cheap (<10 min one-time). Recommend: yes — gives us a real corpus for the first dashboard render. Reject only if Duong wants a clean cutover.
 
+> **Duong: yes.** Backfill the full historical corpus into `events.jsonl` on first ingest. First dashboard render exercises real plan-stage attribution rather than waiting weeks for a forward-only corpus to accumulate.
+
 **OQ3 — v1-lock start date.** When does the measurement week begin? My recommendation: start it the Monday after Phase 2 ships. Earlier means we're measuring an unstable system; later means more dashboard delay. Hard limit: must include at least one full Saturday retro within the first lock-week.
+
+> **Duong: concur.** Lock-tag drops on the Monday following Phase 2 ship-day; first weekend retro fires on the Saturday of that lock-week.
 
 ## 8. Risks + tradeoffs
 
