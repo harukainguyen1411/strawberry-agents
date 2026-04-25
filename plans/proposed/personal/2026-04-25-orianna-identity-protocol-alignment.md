@@ -55,8 +55,16 @@ Invariants protected:
 
 Per Rule 12: T1 lands as a separate xfail commit before T2's implementation commit on the same branch.
 
-## Open questions
+## Open questions — RESOLVED 2026-04-25
 
 1. Should Layer 2's `STRAWBERRY_AGENT=orianna` carve-out be removed entirely once T2 ships, or kept as defense-in-depth? (Plan currently keeps it; could be follow-up cleanup after one week of bake.)
+
+> **Duong: keep as defense-in-depth.** Cheap; catches future drift if anyone reintroduces persona-identity at git level. No follow-up cleanup ticket needed.
+
 2. Are there any historical Orianna-authored commits (persona identity at git level) on remote branches that need a retroactive sweep, or does the existing `architecture/git-identity-enforcement.md` §"Out of scope: retroactive sweep" deferral cover this?
+
+> **Duong: accept historical noise.** No `git filter-branch` sweep — rewriting shared history is risky and the audit trail (Promoted-By trailer) survives in body regardless. Existing "out of scope: retroactive sweep" deferral covers it.
+
 3. The retrospection-dashboard cornerstone plan's canonical-v1-lock will gate edits to `.claude/_script-only-agents/` and hook scripts — does it also gate `.claude/agents/orianna.md` and `agents/orianna/memory/git-identity.sh`? If yes, T2/T3 must land before lock activation.
+
+> **Duong: yes — must land pre-lock.** Per dashboard plan §Q6 the canonical-v1 manifest covers all `.claude/agents/*.md` SHAs (so `orianna.md` is locked) and the persona's behavior-defining script `agents/orianna/memory/git-identity.sh` is explicitly added to the lock manifest at lock-tag time. Promote and execute this plan before Phase 2 of the retrospection-dashboard ships, since Phase 2 ship triggers the lock.

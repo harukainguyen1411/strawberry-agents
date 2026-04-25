@@ -620,6 +620,21 @@ What this ADR **is** doing to the sync mechanism:
 
 **Scoping rule for future shared-rule amendments emerging from feedback:** an amendment that applies to all roles goes into a new standalone `_shared/<topic>.md` (never overloads an existing role file). An amendment that applies to one role (e.g. only architects) edits that one `_shared/<role>.md` directly. This rule is codified here rather than in `architecture/` so the feedback-to-rule pipeline has an explicit convention without needing a separate architectural doc. <!-- orianna: ok -->
 
+### D12. Dashboard schema-bind points — `feedback/INDEX.md` read contract
+
+Per `plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md` §Q7, the retrospection dashboard's home-page "system health" tile reads `feedback/INDEX.md` as its sole feedback surface. This section narrows §D8's loose column list into an explicit read contract. (Note: the dashboard plan §Q7 nominates this as "§D11"; the actual section number is §D12 because §D11 was already used for the sync-shared-rules boundary.)
+
+**Bind-points the dashboard depends on** (the only fields it reads — additive table changes are non-breaking, mutating these IS breaking):
+
+| Field | Source | Type | Contract |
+|-------|--------|------|----------|
+| `Severity` | row column 1 | enum: `high` \| `medium` \| `low` | The four dashboard counters (`count_open_high`, `count_open_medium`, plus totals) GROUP BY this column. |
+| `Date` | row column 2 | ISO date `YYYY-MM-DD` | Used for `oldest_open_entry_days` computation. |
+| Footer line `Open: N \| High: N \| Medium: N \| Low: N` | trailing summary line | three `<key>: <int>` pairs, pipe-delimited | Fast-path read for the home tile when the dashboard does not want to parse the full table. |
+| Footer line `Graduated (this week): N` | trailing summary line | `<key>: <int>` | Drives `count_graduated_last_7d`. |
+
+**Invariant:** any future schema change that renames, removes, or retypes the four bind-points above is a breaking change against the dashboard. The change MUST land paired with a dashboard-side compatibility update in the same PR (or behind a schema-version bump that the dashboard reads first and dispatches on). Adding columns or new footer lines is non-breaking and requires no dashboard work. The columns NOT listed here (`Author`, `Category`, `Slug`, `Cost (min)`) remain stable per §D3 but are NOT part of this bind contract — the dashboard does not read them today; if it starts to, this section is the place to extend.
+
 ## Invariants
 
 Properties the system must preserve at all times (checked by tests in §Test plan and by hook logic in §D6):
