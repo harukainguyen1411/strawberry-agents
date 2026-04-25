@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: azir
 created: 2026-04-21
@@ -555,3 +555,10 @@ Unique rollback wrinkle: if T4 extension is already live and `log/*.md` files ha
   **Pick:** Resolved — memory-consolidation is now `implemented` (cleared as of 2026-04-23 triage). Serial ordering condition is satisfied; this plan may proceed to promotion.
 - **OQ6** — Overlap with `plans/in-progress/personal/2026-04-23-memory-flow-simplification.md`: that plan renames the live-ledger and collapses the session-snapshot tree. <!-- orianna: ok -- rename discussion; see 9.1 --> Should this plan (a) pin to current names and file a follow-up rename, (b) rewrite to use the new names pre-emptively, or (c) scope the boundary and let implementation-time lookups resolve? Recommendation: **(c) — scope the boundary, no content duplication**. See §9.1. Decision-tier artifacts are under the prospective `decisions/` subtree (§3) and are orthogonal to the flow-simplification rename. Coupling is limited to boot-chain adjacency (sibling-by-name) and `/end-session` step ordering (step-after-ledger-pass, whatever the pass is called). Kayn/Aphelios check then-current names at T6/T9/T10 authoring time.
   **Pick:** Scope the boundary (§9.1). This plan does not re-specify the rename; whichever plan merges first wins the naming, and this plan's implementation tracks it.
+
+## Orianna approval
+
+- **Date:** 2026-04-25
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (Azir), all six open questions carry explicit Pick: lines, and the v1/v2 split (auto-decide deliberately deferred until corpus calibrates per §10.5) shows disciplined scope control. Tasks T1-T12 are xfail-first per Rule 12 with concrete DoDs, idempotency invariants are spelled out, and integration boundaries with sibling plans (memory-consolidation implemented, memory-flow-simplification in-progress) are explicitly scoped in §9.1. The three-file shape (log/preferences/INDEX) maps cleanly onto the eager/lazy memory pattern already established.
