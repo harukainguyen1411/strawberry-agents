@@ -1,0 +1,24 @@
+[
+  {
+    "commit": "e2eabc123def",
+    "subject": "chore: promote 2026-04-21-agent-feedback-system to implemented",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-21T14:00:00.000Z",
+    "planSlug": "2026-04-21-agent-feedback-system",
+    "fromStage": "in-progress",
+    "toStage": "implemented"
+  },
+  {
+    "commit": "e2edef456abc",
+    "subject": "chore: promote 2026-04-24-coordinator-decision-feedback to in-progress",
+    "trailers": {
+      "Promoted-By": "Orianna"
+    },
+    "timestamp": "2026-04-24T08:00:00.000Z",
+    "planSlug": "2026-04-24-coordinator-decision-feedback",
+    "fromStage": "approved",
+    "toStage": "in-progress"
+  }
+]
