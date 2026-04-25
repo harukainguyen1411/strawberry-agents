@@ -23,6 +23,7 @@ import { assertSnapshot } from './lib/snapshot.mjs';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RETRO_ROOT = join(__dirname, '..');
 const RENDER_PATH = join(RETRO_ROOT, 'render.mjs');
+const SOURCES_PATH = join(RETRO_ROOT, 'lib', 'sources.mjs');
 const FIXTURES_DIR = join(RETRO_ROOT, 'fixtures');
 const QUERIES_DIR = join(RETRO_ROOT, 'queries');
 const EXPECTED_EVENTS = join(FIXTURES_DIR, 'expected-events.jsonl');
@@ -33,12 +34,20 @@ const SKIP_REASON = 'xfail: render.mjs HTML generator not yet implemented (TODO 
 // Phase-1 fixture plan slug from git-log-plans.json
 const FIXTURE_PLAN_SLUG = '2026-04-21-agent-feedback-system';
 
-// Non-deterministic patterns that must not appear in render.mjs source
+// Non-deterministic patterns that must not appear in render.mjs OR lib/sources.mjs source.
+// sources.mjs is included because it contains the git-log parser and timestamp fallback —
+// any non-deterministic clock call there breaks the R2 byte-identical-output invariant.
 const NON_DETERMINISTIC_PATTERNS = [
   /Date\.now\(\)/,
   /new Date\(\)/,
   /Math\.random\(\)/,
   /process\.pid/,
+];
+
+// Sources to scan for non-deterministic patterns (I3 extension)
+const DETERMINISM_SCAN_SOURCES = [
+  { label: 'render.mjs', path: RENDER_PATH },
+  { label: 'lib/sources.mjs', path: SOURCES_PATH },
 ];
 
 function runRenderToDir(eventsPath, distDir) {
@@ -94,12 +103,18 @@ describe('TP1.T6: static-HTML render snapshot + determinism guard', { skip: !IMP
   // R2 source-code scan for non-deterministic runtime calls
   // This fires on EVERY CI run — not just on snapshot update
   // -------------------------------------------------------------------------
-  it('[R2] render.mjs source must not contain Date.now(), new Date(), Math.random(), or process.pid', () => {
-    const source = readFileSync(RENDER_PATH, 'utf8');
-    for (const pattern of NON_DETERMINISTIC_PATTERNS) {
-      assert.ok(!pattern.test(source),
-        `render.mjs must not contain non-deterministic expression matching ${pattern}. ` +
-        `Found in source. Pass timestamps explicitly from fixtures instead.`);
+  it('[R2] render.mjs and lib/sources.mjs must not contain Date.now(), new Date(), Math.random(), or process.pid', () => {
+    // I3: extend scan to lib/sources.mjs — it contains the git-log timestamp fallback.
+    // A non-deterministic clock call in sources.mjs breaks the R2 byte-identical invariant
+    // for events.jsonl, which render.mjs consumes.
+    for (const { label, path: srcPath } of DETERMINISM_SCAN_SOURCES) {
+      if (!existsSync(srcPath)) continue; // skip if not yet implemented
+      const source = readFileSync(srcPath, 'utf8');
+      for (const pattern of NON_DETERMINISTIC_PATTERNS) {
+        assert.ok(!pattern.test(source),
+          `${label} must not contain non-deterministic expression matching ${pattern}. ` +
+          `Found in source. Pass timestamps explicitly from fixtures instead.`);
+      }
     }
   });
 

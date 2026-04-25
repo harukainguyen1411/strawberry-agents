@@ -51,9 +51,22 @@ export function extractPlanSlugFromText(text) {
  * @returns {Array<Object>} plan-stage events
  */
 export function parsePlanStageFromGitLog(gitLogEntries) {
+  // First pass: collect per-slug trailer events and frontmatter events separately.
+  // This allows cross-commit conflict detection (I1 fix): when trailer commit A and
+  // frontmatter mutation commit B are separate entries for the same slug, we detect
+  // the disagreement and annotate signal_conflict on the trailer event.
+
+  // Map from planSlug to the trailer event already emitted (if any)
+  const trailerEventBySlug = new Map();
   const events = [];
 
-  for (const entry of gitLogEntries) {
+  // Sort entries by timestamp ascending so we always process the trailer before
+  // any later frontmatter mutation for the same slug.
+  const sorted = [...gitLogEntries].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
+
+  for (const entry of sorted) {
     const hasTrailer = entry.trailers && entry.trailers['Promoted-By'] === 'Orianna';
     const hasFrontmatter = Boolean(entry.frontmatterStatusChange);
 
@@ -68,6 +81,7 @@ export function parsePlanStageFromGitLog(gitLogEntries) {
       signal = 'trailer';
       stage = entry.toStage;
       if (hasFrontmatter) {
+        // Single-commit: trailer + frontmatter in the same entry
         const fmStage = entry.frontmatterStatusChange.to;
         if (fmStage !== stage) {
           // OQ-R3: trailer wins, log conflict
@@ -76,28 +90,56 @@ export function parsePlanStageFromGitLog(gitLogEntries) {
           corroborators.push('frontmatter-mtime');
         }
       }
+
+      const event = {
+        kind: 'plan-stage',
+        planSlug: entry.planSlug,
+        stage,
+        signal,
+        ts: entry.timestamp,
+        commit: entry.commit || null,
+      };
+      if (corroborators.length > 0) event.signal_corroborators = corroborators;
+      if (signalConflict) event.signal_conflict = signalConflict;
+
+      events.push(event);
+      trailerEventBySlug.set(entry.planSlug, event);
     } else if (hasFrontmatter) {
-      signal = 'frontmatter-mtime';
-      stage = entry.frontmatterStatusChange.to;
-    }
+      // Frontmatter-only entry: check for a prior trailer event for the same slug.
+      const priorTrailerEvent = trailerEventBySlug.get(entry.planSlug);
+      if (priorTrailerEvent) {
+        // Cross-commit conflict (I1): trailer commit earlier, frontmatter mutation later.
+        // OQ-R3 ruling: trailer wins. Annotate signal_conflict on the trailer event
+        // and do NOT emit a separate frontmatter plan-stage event.
+        const fmStage = entry.frontmatterStatusChange.to;
+        if (fmStage !== priorTrailerEvent.stage) {
+          priorTrailerEvent.signal_conflict = 'frontmatter-newer-than-trailer';
+        } else {
+          // Frontmatter agrees with trailer — record as corroborator
+          if (!priorTrailerEvent.signal_corroborators) {
+            priorTrailerEvent.signal_corroborators = [];
+          }
+          if (!priorTrailerEvent.signal_corroborators.includes('frontmatter-mtime')) {
+            priorTrailerEvent.signal_corroborators.push('frontmatter-mtime');
+          }
+        }
+        // Do NOT push a separate frontmatter event — it's folded into the trailer event
+      } else {
+        // No prior trailer: emit standalone frontmatter event
+        signal = 'frontmatter-mtime';
+        stage = entry.frontmatterStatusChange.to;
 
-    const event = {
-      kind: 'plan-stage',
-      planSlug: entry.planSlug,
-      stage,
-      signal,
-      ts: entry.timestamp,
-      commit: entry.commit || null,
-    };
-
-    if (corroborators.length > 0) {
-      event.signal_corroborators = corroborators;
+        const event = {
+          kind: 'plan-stage',
+          planSlug: entry.planSlug,
+          stage,
+          signal,
+          ts: entry.timestamp,
+          commit: entry.commit || null,
+        };
+        events.push(event);
+      }
     }
-    if (signalConflict) {
-      event.signal_conflict = signalConflict;
-    }
-
-    events.push(event);
   }
 
   // Sort by timestamp ascending for stable output

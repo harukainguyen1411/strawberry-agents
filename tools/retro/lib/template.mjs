@@ -22,31 +22,3 @@ export function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-/**
- * Simple {{token}} string interpolation.
- * Tokens referencing nested paths (e.g. {{foo.bar}}) are NOT supported.
- * All values are HTML-escaped before substitution.
- *
- * @param {string} template — template string with {{TOKEN}} placeholders
- * @param {Record<string, unknown>} data — substitution map
- * @returns {string}
- */
-export function render(template, data) {
-  return template.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
-    const trimmed = key.trim();
-    return Object.prototype.hasOwnProperty.call(data, trimmed)
-      ? escapeHtml(data[trimmed])
-      : '';
-  });
-}
-
-/**
- * Render a block template for each item in an array, concatenating results.
- *
- * @param {string} template — template string with {{TOKEN}} placeholders
- * @param {Array<Record<string, unknown>>} items
- * @returns {string}
- */
-export function renderEach(template, items) {
-  return items.map(item => render(template, item)).join('');
-}

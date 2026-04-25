@@ -44,6 +44,27 @@ tools/retro/
       .gitkeep
 ```
 
+## Prerequisites
+
+- **Node.js >= 18** (standard stdlib only; no npm install required)
+- **DuckDB CLI** — `duckdb` must be on `PATH`. Install via:
+  - macOS: `brew install duckdb`
+  - Linux: download from https://duckdb.org/docs/installation (CLI binary)
+  - The DuckDB CLI is used by `lib/duckdb-runner.mjs` to run `.sql` queries against
+    `events.jsonl` via `read_ndjson_auto`. It is NOT included as an npm dependency —
+    the tool intentionally avoids managed database infrastructure.
+- **git** — required by `ingest.mjs` when reading live git log (not needed for test fixtures)
+- **bats** — optional, only required to run the e2e suite in `__tests__/e2e-pipeline.bats`
+
+## events.jsonl output location
+
+`ingest.mjs` writes `events.jsonl` to:
+- `<--cache-dir>/events.jsonl` when `--cache-dir` is supplied (test isolation)
+- `~/.claude/strawberry-usage-cache/events.jsonl` by default (production)
+
+This file is the canonical event log consumed by `render.mjs`. It is a full rebuild on every run
+(no incremental append in Phase 1).
+
 ## Running locally
 
 ```sh
