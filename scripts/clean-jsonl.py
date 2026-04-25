@@ -7,6 +7,21 @@ blocks, and extended thinking. Only user prompts and assistant prose remain.
 See plans/in-progress/2026-04-08-end-session-skill-phase-1.md Section 2 for the
 full spec this script implements.
 
+Flags
+-----
+--agent       (required) Agent name used for output path and speaker label.
+--session     Session UUID or "auto" (default) for most-recent session.
+--out         Override output path. Default: agents/<agent>/transcripts/<date>-<uuid>.md
+--project-dir Override Claude project dir (default: auto-detected via git).
+--since-last-compact
+              Slice output to only entries strictly after the most recent compact
+              boundary. Boundary detection (priority order):
+                1. Any record with ``isCompactSummary: true`` field.
+                2. User message containing ``<command-name>compact</command-name>``.
+              On multiple matches, the last one wins (most recent leg).
+              Exits non-zero if no boundary is found — use without the flag for
+              un-compacted sessions.
+
 Python stdlib only. No pip installs.
 """
 
@@ -559,6 +574,120 @@ def build_output(
 
 
 # ---------------------------------------------------------------------------
+# Compact-boundary detection (--since-last-compact)
+# ---------------------------------------------------------------------------
+
+_RE_SLASH_COMPACT = re.compile(r"<command-name>compact</command-name>")
+
+
+def _record_text_content(rec: dict) -> str:
+    """Extract raw text from a record's message content without stripping."""
+    msg = rec.get("message") or {}
+    content = msg.get("content")
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "text":
+                parts.append(block.get("text", ""))
+        return "\n".join(parts)
+    return ""
+
+
+def find_last_compact_index(chain: list):
+    """Scan all records in the chain and return the index of the last compact boundary.
+
+    A compact boundary is identified by (priority order):
+      1. Any record with ``isCompactSummary`` field set to True.
+      2. A user-role record whose message content contains the literal
+         substring ``<command-name>compact</command-name>``.
+
+    Both passes are collected; the highest index across both wins (last-wins
+    on multiple matches). Returns the integer index within the flat record
+    sequence, or None if no boundary is found.
+    """
+    last_is_compact_summary = None
+    last_slash_compact = None
+    idx = 0
+
+    for path in chain:
+        for rec, _lineno in iter_records(path):
+            if not isinstance(rec, dict):
+                idx += 1
+                continue
+            if rec.get("isCompactSummary") is True:
+                last_is_compact_summary = idx
+            elif rec.get("type") == "user":
+                text = _record_text_content(rec)
+                if _RE_SLASH_COMPACT.search(text):
+                    last_slash_compact = idx
+            idx += 1
+
+    # Priority: isCompactSummary wins if present; otherwise fallback.
+    if last_is_compact_summary is not None:
+        return last_is_compact_summary
+    return last_slash_compact
+
+
+def slice_since_last_compact(chain: list):
+    """Yield (role, ts, text) sections only for records after the last compact boundary.
+
+    Raises SystemExit(1) if no boundary is found.
+    """
+    boundary_idx = find_last_compact_index(chain)
+    if boundary_idx is None:
+        die(
+            1,
+            "CLEANER: no compact boundary found — session has not been compacted;"
+            " rerun without --since-last-compact",
+        )
+
+    # Walk records again, yielding cleaned sections only for those strictly
+    # after boundary_idx.
+    seen_uuids: set = set()
+    seen_hashes_per_role = {"user": None, "assistant": None}
+    flat_idx = 0
+
+    for path in chain:
+        for rec, _lineno in iter_records(path):
+            current_idx = flat_idx
+            flat_idx += 1
+
+            if current_idx <= boundary_idx:
+                continue
+            if not isinstance(rec, dict):
+                continue
+            if rec.get("isSidechain") is True:
+                continue
+            rtype = rec.get("type")
+            if rtype not in ("user", "assistant"):
+                continue
+            msg = rec.get("message") or {}
+            if rtype == "user":
+                text = extract_user_content(msg)
+            else:
+                text = extract_assistant_content(msg)
+            if not text:
+                continue
+            uid = rec.get("uuid")
+            if uid and uid in seen_uuids:
+                continue
+            h = content_hash(text)
+            if seen_hashes_per_role[rtype] == h:
+                continue
+            if uid:
+                seen_uuids.add(uid)
+            seen_hashes_per_role[rtype] = h
+            other = "assistant" if rtype == "user" else "user"
+            seen_hashes_per_role[other] = None
+            ts = iso_timestamp(rec.get("timestamp"))
+            yield rtype, ts, text
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
@@ -569,6 +698,16 @@ def main() -> int:
     parser.add_argument("--session", default="auto")
     parser.add_argument("--out", default=None)
     parser.add_argument("--project-dir", default=str(_default_project_dir()))
+    parser.add_argument(
+        "--since-last-compact",
+        action="store_true",
+        help=(
+            "Slice output to entries strictly after the most recent compact boundary. "
+            "Boundary detection priority: (1) isCompactSummary field on any record; "
+            "(2) user message containing <command-name>compact</command-name>. "
+            "Exits non-zero if the flag is set and no boundary is found."
+        ),
+    )
     args = parser.parse_args()
 
     agent = args.agent.strip().lower()
@@ -585,7 +724,10 @@ def main() -> int:
         if p.stat().st_size == 0:
             die(1, f"CLEANER: session {p.stem} is empty")
 
-    sections = list(clean_chain(chain))
+    if args.since_last_compact:
+        sections = list(slice_since_last_compact(chain))
+    else:
+        sections = list(clean_chain(chain))
 
     out_lines, first_date, short_uuid, counts = build_output(
         agent=agent,

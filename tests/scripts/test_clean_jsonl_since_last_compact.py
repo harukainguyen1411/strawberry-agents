@@ -13,7 +13,6 @@ All marked xfail pending T2 implementation.
 import json
 import subprocess
 import sys
-import textwrap
 
 import pytest
 
@@ -93,7 +92,6 @@ def run_script(tmp_path, jsonl_content, extra_args=None):
 # Tests
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(reason="impl pending T2", strict=True)
 def test_a_no_marker_fail_loud(tmp_path):
     """Case a: flag set, no compact boundary -> non-zero exit + error message."""
     jsonl = "\n".join([
@@ -105,7 +103,6 @@ def test_a_no_marker_fail_loud(tmp_path):
     assert "CLEANER: no compact boundary found" in result.stderr
 
 
-@pytest.mark.xfail(reason="impl pending T2", strict=True)
 def test_b_single_is_compact_summary(tmp_path):
     """Case b: one isCompactSummary marker mid-stream -> only post-marker entries in output."""
     jsonl = "\n".join([
@@ -123,7 +120,6 @@ def test_b_single_is_compact_summary(tmp_path):
     assert "After response" in output
 
 
-@pytest.mark.xfail(reason="impl pending T2", strict=True)
 def test_c_two_compact_markers_last_wins(tmp_path):
     """Case c: two isCompactSummary markers -> slice at the LAST one."""
     jsonl = "\n".join([
@@ -142,7 +138,6 @@ def test_c_two_compact_markers_last_wins(tmp_path):
     assert "Final answer" in output
 
 
-@pytest.mark.xfail(reason="impl pending T2", strict=True)
 def test_d_slash_command_fallback(tmp_path):
     """Case d: no isCompactSummary but slash-command user message -> fallback detection."""
     jsonl = "\n".join([
@@ -160,9 +155,25 @@ def test_d_slash_command_fallback(tmp_path):
     assert "New response" in output
 
 
-@pytest.mark.xfail(reason="impl pending T2", strict=False)
+def _strip_volatile_header(text: str) -> str:
+    """Remove lines that vary between runs (timestamps, output paths)."""
+    lines = text.splitlines()
+    stable = [
+        ln for ln in lines
+        if not ln.startswith("> Cleaned at:")
+        and not ln.startswith("> - /")
+        and not ln.startswith("> - C:")
+    ]
+    return "\n".join(stable)
+
+
 def test_e_flag_absent_byte_stable(tmp_path):
-    """Case e: without --since-last-compact, output is byte-equal to a baseline run."""
+    """Case e: without --since-last-compact the same conversation turns appear.
+
+    We strip volatile header lines (timestamp, source paths) before comparing
+    so the test is stable across runs.  The key invariant: adding --since-last-compact
+    does NOT change the flag-absent path (no conversation entries are dropped).
+    """
     jsonl = "\n".join([
         make_user_record("Hello", uuid="u1", timestamp="2024-01-01T00:00:00.000Z"),
         make_compact_summary_record(uuid="compact1", timestamp="2024-01-01T00:01:00.000Z"),
@@ -170,11 +181,10 @@ def test_e_flag_absent_byte_stable(tmp_path):
         make_assistant_record("Done", uuid="a2", timestamp="2024-01-01T00:03:00.000Z"),
     ])
 
-    # Run once without flag to get baseline.
     session_file = tmp_path / "aaaabbbbccccdddd.jsonl"
     session_file.write_text(jsonl, encoding="utf-8")
 
-    def run_no_flag(out_name):
+    def run_cmd(out_name, extra_args=None):
         out = tmp_path / out_name
         cmd = [
             sys.executable, SCRIPT,
@@ -183,28 +193,21 @@ def test_e_flag_absent_byte_stable(tmp_path):
             "--project-dir", str(tmp_path),
             "--out", str(out),
         ]
-        subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return out.read_text(encoding="utf-8")
+        if extra_args:
+            cmd.extend(extra_args)
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result, out.read_text(encoding="utf-8") if out.exists() else ""
 
-    baseline = run_no_flag("baseline.md")
+    # Baseline: no flag.
+    _, baseline = run_cmd("baseline.md")
 
-    # Delete and re-run (identical invocation).
-    (tmp_path / "baseline.md").unlink()
-    run2 = run_no_flag("run2.md")
+    # Verify flag-absent contains both pre- and post-compact entries.
+    assert "Hello" in baseline, "flag-absent should include pre-compact entries"
+    assert "World" in baseline, "flag-absent should include post-compact entries"
+    assert "Done" in baseline, "flag-absent should include post-compact entries"
 
-    assert baseline == run2, "baseline runs should be byte-identical (sanity check)"
-
-    # Now verify no --since-last-compact doesn't change a thing compared to baseline.
-    # (Re-run once more using the existing session file.)
-    out3 = tmp_path / "run3.md"
-    cmd_no_flag = [
-        sys.executable, SCRIPT,
-        "--agent", "testbot",
-        "--session", "aaaabbbbccccdddd",
-        "--project-dir", str(tmp_path),
-        "--out", str(out3),
-    ]
-    subprocess.run(cmd_no_flag, capture_output=True, text=True, check=True)
-    run3 = out3.read_text(encoding="utf-8")
-
-    assert run3 == baseline, "flag-absent run should be byte-identical to baseline"
+    # Run again without flag; stable content should match.
+    _, run2 = run_cmd("run2.md")
+    assert _strip_volatile_header(baseline) == _strip_volatile_header(run2), (
+        "flag-absent runs should produce the same stable content"
+    )
