@@ -401,6 +401,43 @@ test_bootstrap_silent_on_compact() {
   [ -z "$out" ]
 }
 
+# ────────────────────────────────────────────────────────────────
+# Verify-then-arm prompt-shape tests (plan: 2026-04-25-watcher-arm-directive-source-gate)
+# T1 xfail floor: these fail until T3 rewrites the context= string.
+# ────────────────────────────────────────────────────────────────
+
+test_bootstrap_directive_uses_verify_then_arm_shape() {
+  bootstrap_exists || return 1
+  local ctx
+  ctx="$(printf '{"source":"startup"}' | CLAUDE_AGENT_NAME=evelynn bash "$BOOTSTRAP" 2>/dev/null \
+    | jq -r '.hookSpecificOutput.additionalContext')"
+  # Must contain "verify" (goal-explicit form)
+  printf '%s' "$ctx" | grep -qi 'verify' || return 1
+  # Must contain "no-op" or "already armed" (idempotence statement)
+  printf '%s' "$ctx" | grep -qiE 'no-op|already armed' || return 1
+  # Must still reference Monitor + inbox-watch.sh
+  printf '%s' "$ctx" | grep -q 'Monitor' || return 1
+  printf '%s' "$ctx" | grep -q 'inbox-watch.sh' || return 1
+}
+
+test_bootstrap_directive_does_not_say_before_anything_else() {
+  bootstrap_exists || return 1
+  local ctx
+  ctx="$(printf '{"source":"startup"}' | CLAUDE_AGENT_NAME=evelynn bash "$BOOTSTRAP" 2>/dev/null \
+    | jq -r '.hookSpecificOutput.additionalContext')"
+  # Regression floor: old literal form must be absent
+  ! printf '%s' "$ctx" | grep -q 'before doing anything else'
+}
+
+test_bootstrap_directive_references_ps_check() {
+  bootstrap_exists || return 1
+  local ctx
+  ctx="$(printf '{"source":"startup"}' | CLAUDE_AGENT_NAME=evelynn bash "$BOOTSTRAP" 2>/dev/null \
+    | jq -r '.hookSpecificOutput.additionalContext')"
+  # Operational verify step must mention ps or Monitor tasks
+  printf '%s' "$ctx" | grep -qE 'ps |Monitor tasks' || return 1
+}
+
 test_bootstrap_opt_out_honored() {
   bootstrap_exists || return 1
   local tmpdir
@@ -477,6 +514,9 @@ run_xfail test_bootstrap_silent_on_clear
 run_xfail test_bootstrap_silent_on_compact
 run_xfail test_bootstrap_opt_out_honored
 run_xfail test_settings_json_has_bootstrap_entry
+run_xfail test_bootstrap_directive_uses_verify_then_arm_shape
+run_xfail test_bootstrap_directive_does_not_say_before_anything_else
+run_xfail test_bootstrap_directive_references_ps_check
 
 # Real regression tests (always green)
 run_real test_regression_no_channels_artifacts
