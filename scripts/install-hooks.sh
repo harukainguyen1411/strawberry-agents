@@ -7,6 +7,7 @@
 # Pre-commit hooks picked up automatically from scripts/hooks/pre-commit-*.sh:
 #   pre-commit-agent-shared-rules.sh       — agent identity + CLAUDE.md rule guards
 #   pre-commit-artifact-guard.sh           — blocks accidental artifact commits
+#   pre-commit-feedback-index.sh           — regenerates feedback/INDEX.md when feedback files change (§D6)
 #   pre-commit-plan-lifecycle-guard.sh     — commit-phase guard: blocks non-Orianna plan-lifecycle moves (defence-in-depth)
 #   pre-commit-resolved-identity.sh        — PRIMARY GATE: blocks persona-named author/committer via git var (resolved identity)
 #   pre-commit-reviewer-anonymity.sh       — blocks agent-system identifiers in work-scope (missmp/) commit msgs
@@ -36,7 +37,18 @@
 #   commit-msg-no-ai-coauthor.sh        — blocks AI co-author trailers (Claude, Anthropic, etc.)
 set -e
 
-REPO_ROOT="$(git rev-parse --show-toplevel)"
+# Derive REPO_ROOT from the script's own location (scripts/install-hooks.sh is two levels below root).
+# This ensures the script works correctly when invoked from a different working directory
+# (e.g. bats test harnesses that run install-hooks.sh in a clean temp repo).
+_SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+_SCRIPT_PARENT="$(cd "$_SCRIPT_DIR/.." && pwd)"
+# Validate: the script is expected to live at <root>/scripts/install-hooks.sh
+# Use the parent of scripts/ as REPO_ROOT; fall back to git rev-parse for safety.
+if [ "$(basename "$_SCRIPT_DIR")" = "scripts" ]; then
+  REPO_ROOT="$_SCRIPT_PARENT"
+else
+  REPO_ROOT="$(git rev-parse --show-toplevel)"
+fi
 HOOKS_SRC="$REPO_ROOT/scripts/hooks"
 
 # Default: write dispatchers into the tracked in-repo directory so all worktrees
@@ -115,6 +127,52 @@ LOOP
 install_dispatcher "pre-commit"
 install_dispatcher "pre-push"
 install_dispatcher "commit-msg"
+
+# Also write a .git/hooks/pre-commit shim for backward-compatibility with tools
+# that check .git/hooks/ directly (e.g. test harnesses and IDEs that pre-date
+# core.hooksPath). The shim delegates to scripts/hooks-dispatchers/pre-commit.
+# pre-commit-feedback-index is automatically picked up by the dispatcher above.
+_git_hooks_dir="$REPO_ROOT/.git/hooks"
+if [ -d "$_git_hooks_dir" ]; then
+  _git_pre_commit="$_git_hooks_dir/pre-commit"
+  _tmp_shim=$(mktemp)
+  cat > "$_tmp_shim" <<'SHIM'
+#!/bin/sh
+# strawberry compatibility shim — delegates to scripts/hooks-dispatchers/pre-commit
+# Wired by scripts/install-hooks.sh alongside pre-commit-feedback-index and other hooks.
+#
+# Recursion guard: when core.hooksPath=scripts/hooks-dispatchers git already invoked
+# the dispatcher directly via that path.  The shim must not re-invoke it — that would
+# compose shim→dispatcher→shim→... infinitely.  Detect this by checking core.hooksPath.
+_root="$(git rev-parse --show-toplevel 2>/dev/null)" || exit 0
+_hooks_path="$(git config --get core.hooksPath 2>/dev/null || echo '')"
+# Resolve to absolute for comparison (core.hooksPath may be relative)
+case "$_hooks_path" in
+  /*) _abs_hooks_path="$_hooks_path" ;;
+  "")  _abs_hooks_path="" ;;
+  *)   _abs_hooks_path="$_root/$_hooks_path" ;;
+esac
+_dispatcher_dir="$_root/scripts/hooks-dispatchers"
+if [ "$_abs_hooks_path" = "$_dispatcher_dir" ]; then
+  # Dispatcher was already invoked by git via core.hooksPath — exit cleanly.
+  exit 0
+fi
+_dispatcher="$_dispatcher_dir/pre-commit"
+if [ -x "$_dispatcher" ]; then
+  exec "$_dispatcher" "$@"
+fi
+# Fallback: dispatcher not yet built — run sub-hooks directly
+_src="$_root/scripts/hooks"
+_rc=0
+for _sub in $(ls "$_src"/pre-commit-*.sh 2>/dev/null | sort); do
+  "$_sub" "$@" || _rc=$?
+done
+exit $_rc
+SHIM
+  mv "$_tmp_shim" "$_git_pre_commit"
+  chmod +x "$_git_pre_commit"
+  echo "[install-hooks] Installed .git/hooks/pre-commit compatibility shim"
+fi
 
 # Install Python dependencies for the PreToolUse guard (bashlex AST walker).
 # Best-effort: warn on failure but do not abort hook installation.
