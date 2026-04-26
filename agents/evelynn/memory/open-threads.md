@@ -4,11 +4,11 @@ Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 48ac7433).
 
 ---
 
-## PR #93 (T.P2.3 decision-rollup fidelity) — CHANGES_REQUESTED, Viktor round-2 needed
+## PR #93 (T.P2.3 decision-rollup fidelity) — awaiting Senna r3
 
-**Current status (2026-04-26):** Senna found production-fatal B1: JSDoc comment at `tools/retro/lib/sources.mjs:9` terminated by `*/` inside a path-glob string (`agents/*/memory/...`), causing `ReferenceError: memory is not defined` at module load. CI was green only because static-fixture tests never imported sources.mjs. Also: B2 (regression test red), F1 (typed-parser bypass via `--raw`), F2 (R8 enshrines silent-skip), H1 (kind taxonomy mismatch). Lucian confirmed F1+H1 independently.
-**Next:** Dispatch Viktor via standard Agent tool (NOT team mode — React Ink startup crash pattern unresolved for longer-prompt agents). Viktor brief: fix JSDoc line 9, ensure module imports cleanly, regression test green, address F1/F2/H1.
-**Shard:** 48ac7433
+**Current status (2026-04-27 ~00:20):** Viktor r3 landed at `74ed130a` on `dashboard-T.P2.3`. All 3 B1 JSDoc-terminator sites in `tools/retro/ingest.mjs` (lines 11, 35, 173) fixed by replacing globs with prose form. Module-load sweep clean across all 8 mjs files. `regression-pr88-fixes.test.mjs` 10/10 green (C1/C2/I4/I5 all pass — none were pre-existing). R5/R6 describe blocks added (decision-ingest 16/16). Lucian r2 already APPROVED (review `4177157280`). Senna r2 caught the missed sites (review `4177163413`).
+**Next:** Dispatch Senna r3 only (no Lucian re-review needed — r3 doesn't touch plan surface). On Senna APPROVE → merge PR #93. Then T.P2.5 + Phase 3 chain.
+**Shard:** 48ac7433 (handoff continuation; Senna+Lucian r2 reviews + Viktor r3 fix landed post-shard)
 
 ---
 
