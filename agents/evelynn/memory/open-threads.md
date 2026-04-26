@@ -49,11 +49,35 @@ Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 71c24fd3).
 
 ---
 
-## 5 open PRs — review strategy pending Duong confirmation
+## PR #69 — merge-commit plan-lifecycle-guard block
 
-**Current status (2026-04-26):** PRs #67 (Talon parked, project-context-doctrine), #68 (Frontend-UX Stream E PR markers + CI), #69 (Frontend-UX Stream B UX Spec template + linter), #70 (assessments Phase C index-gen), #71 (QA-pipeline T6b/T7b qa_plan linter), #72 (Frontend-UX Stream C Rule 22 §UX Spec gate) all in flight. Coordinator picked option **b**: read Talon's parked-note on #67 first, then fan out parallel Senna+Lucian review on remaining. Duong not yet confirmed.
-**Next:** Resume point — read #67 parked-note, confirm strategy with Duong, dispatch reviews.
-**Shard:** 71c24fd3
+**Current status (2026-04-26):** PR #69 (Frontend-UX Stream B UX Spec template + linter) is stuck. Plan-lifecycle guard fires on its merge commit because the branch name contains a plan-path token. No merge-commit exemption exists. Three options: (a) Duong-side commit avoiding the token, (b) Orianna spoof authorization for the merge, (c) drop the PR. Duong decision required.
+**Next:** Surface three options to Duong and await pick. Also file Karma quick-lane plan for the merge-commit exemption gap in the guard.
+**Shard:** 7d8667a0
+
+---
+
+## PR #73 — monitor-arming-gate-bugfixes (Senna re-review pending)
+
+**Current status (2026-04-26):** Three bugs fixed in `pretooluse-monitor-arming-gate.sh`: `CLAUDE_AGENT_NAME` env leak to subagents, `CLAUDE_SESSION_ID` unset bypass, post-compact sentinel orphaning. Karma plan at `2026-04-26-monitor-arming-gate-bugfixes.md` approved (`5557451f`). Talon round-2 pushed (`9ccae483` xfail + `3ad6aced` impl) addressing C1 (tty pipe-exit-code fallback dead-code), I1, I2, I4. Senna re-review not yet completed.
+**Next:** Check PR #73 status. If Senna has not re-reviewed, dispatch. Merge once dual-approved.
+**Shard:** 7d8667a0
+
+---
+
+## Statusline implementation route — undecided
+
+**Current status (2026-04-26):** Lux research complete. Native path exists: `rate_limits.{five_hour,seven_day}.used_percentage` in Claude Code statusline stdin JSON on Pro/Max accounts. Spec at `assessments/research/2026-04-26-claude-usage-statusline.md`. Dispatch route not decided: (a) polling hook, (b) extend pre-compact-save skill, (c) standalone shell alias.
+**Next:** Present a/b/c options to Duong and await pick. Then dispatch implementation.
+**Shard:** 7d8667a0
+
+---
+
+## Plan-lifecycle-guard merge-commit exemption — gap not yet filed
+
+**Current status (2026-04-26):** Guard fires on merge commits containing plan-path tokens in commit message. Merge commits are structurally read-only re: plan dirs. No exemption logic exists. Discovered via PR #69 block.
+**Next:** File Karma quick-lane plan when capacity allows.
+**Shard:** 7d8667a0
 
 ---
 
