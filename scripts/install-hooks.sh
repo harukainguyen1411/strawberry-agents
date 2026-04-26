@@ -28,6 +28,14 @@
 # applies substance-over-format discipline and deliberately does not block on
 # format-only concerns such as bare-filename path references or forward self-refs.
 #
+# NOTE: Two new zz-namespace hooks were added by plan-of-plans Phase B (2026-04-26):
+#   pre-commit-zz-plan-structure.sh  — NEW (narrower scope): enforces priority: (P0|P1|P2|P3)
+#                                      and last_reviewed: (ISO date) on plans/proposed/**.
+#                                      Does NOT replicate the archived broader structural linter.
+#   pre-commit-zz-idea-structure.sh  — NEW: validates ideas/**.md frontmatter (5 required fields)
+#                                      and rejects forbidden structural headers in idea body.
+#                                      Warning-only until 2026-05-09 (STRAWBERRY_IDEA_LINT_LEVEL).
+#
 # Execution order is alphabetical (ls | sort).
 #
 # Pre-push hooks picked up automatically from scripts/hooks/pre-push-*.sh:
