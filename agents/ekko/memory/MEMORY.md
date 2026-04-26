@@ -26,6 +26,10 @@
 - Identity Toolkit REST calls need `-H "x-goog-user-project: mmpt-233505"` with user credentials to avoid 403 quota-project error.
 - Firebase Auth authorized domains for demo-studio: `demo-studio-4nvufhmjiq-ew.a.run.app` (not the `266692422014.europe-west1.run.app` format).
 
+- `claude --agent <name>` CLI flag does not exist. Agent dispatches must go through the harness Agent tool. Bash subprocess invocations of `claude` get no stdin by default — pipe with `< /dev/null` or use heredoc input.
+- `pre-commit-feedback-index.sh` validates ALL feedback/*.md files (not just staged ones) on every commit. Fix schema errors in all existing files before committing a new feedback file.
+- Feedback schema required fields: `date`, `time`, `author`, `concern`, `category`, `severity`, `friction_cost_minutes`, `state`. Required body sections: `## What went wrong`, `## Suggestion`, `## Why I'm writing this now`. Author must be lowercase canonical agent name (not `Evelynn (relayed from...)` format).
+
 ## Sessions
 
 - 2026-04-20 (ekko s-audit): CLAUDE.md cleanup — Lux audit items 1-5. rule5 decision tree `98f33b7`, end-session skill DMI fix `0904844`, rule19 anchor `4d4e732`, plan-fetch.sh+google-oauth-bootstrap.sh deleted (concurrent session cf2b5f2), end-session refuse-empty-arg `cd6a2ab`. All pushed.
