@@ -91,3 +91,5 @@ The hook bans `hours`, `days`, `weeks` (word boundaries) and the patterns `Nh)` 
 ## Closeout
 
 Default clean exit per `.claude/skills/end-subagent-session/SKILL.md`. Write learnings only when a quick-lane pattern emerged that's worth reusing.
+
+<!-- include: _shared/feedback-trigger.md -->

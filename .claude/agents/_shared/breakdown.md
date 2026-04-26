@@ -69,3 +69,5 @@ Each task line must follow this exact shape:
 ## Closeout
 
 Default clean exit. Write learnings only if the breakdown surfaced a reusable pattern.
+
+<!-- include: _shared/feedback-trigger.md -->
