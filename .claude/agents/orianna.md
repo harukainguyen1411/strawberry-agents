@@ -40,19 +40,29 @@ Caller provides:
 ## Decision process
 
 1. Read the plan file.
-2. **§UX Spec linter gate (proposed → approved and approved → in-progress only; skip for other transitions).** Run the linter before any content evaluation:
+2. **QA-plan structural checks (proposed → approved only; machine-executable, before any LLM reasoning).** Run before content evaluation:
+   ```sh
+   REPO_ROOT="$(git rev-parse --show-toplevel)"
+   . "$REPO_ROOT/scripts/_lib_plan_structure.sh"
+   check_qa_plan_frontmatter "$PLAN_PATH" || REJECT "qa_plan frontmatter check failed — see BLOCK lines above"
+   check_qa_plan_body "$PLAN_PATH"        || REJECT "qa_plan body section check failed — see BLOCK lines above"
+   ```
+   Both functions are sourced from `scripts/_lib_plan_structure.sh`. If either returns
+   non-zero, output a REJECT block that includes the BLOCK message(s) from stderr and
+   stop — do not proceed to the LLM reasoning step.
+3. **§UX Spec linter gate (proposed → approved and approved → in-progress only; skip for other transitions).** Run the linter before any content evaluation:
    ```sh
    bash scripts/plan-structure-lint.sh "$PLAN_PATH"
    ```
    - Exit 0 → linter passed; continue.
    - Exit non-zero → REJECT immediately with rationale: "§UX Spec linter failed: <stderr output>. Fix the UX Spec section or add a valid UX-Waiver before promoting."
    - If `scripts/plan-structure-lint.sh` does not exist: note as WARN in rationale and continue (script-absent is not a blocker — follow-up T-C3 wires the shared glob library).
-3. For `proposed → approved`: verify the plan has a clear owner, no unresolved TBD/TODO/Decision-pending in gating sections, and tasks are described concretely.
-4. For `approved → in-progress`: verify tasks are actionable and tests_required plans have a test task.
-5. For `in-progress → implemented`: verify there is implementation evidence — the work described is plausibly done.
-6. For `* → archived`: always APPROVE (bookkeeping only).
-7. **Simplicity scan (non-blocking, proposed → approved and approved → in-progress only).** Scan the plan for overengineering smells: components/layers/config-knobs with no named invariant forcing them, abstractions introduced for a single caller, multi-phase rollouts where a single commit suffices, generalization beyond the stated problem, speculative extensibility. This scan NEVER produces a REJECT on its own — it produces a `WARN` line in the rationale. If you would otherwise APPROVE but see smells, APPROVE with a `WARN: possible overengineering — <specific smell(s)>` line appended to your rationale so Duong sees the signal. If the plan is already lean, omit the WARN line entirely (no noise when clean).
-8. Render APPROVE or REJECT with a short rationale (2–5 sentences).
+4. For `proposed → approved`: verify the plan has a clear owner, no unresolved TBD/TODO/Decision-pending in gating sections, and tasks are described concretely.
+5. For `approved → in-progress`: verify tasks are actionable and tests_required plans have a test task.
+6. For `in-progress → implemented`: verify there is implementation evidence — the work described is plausibly done.
+7. For `* → archived`: always APPROVE (bookkeeping only).
+8. **Simplicity scan (non-blocking, proposed → approved and approved → in-progress only).** Scan the plan for overengineering smells: components/layers/config-knobs with no named invariant forcing them, abstractions introduced for a single caller, multi-phase rollouts where a single commit suffices, generalization beyond the stated problem, speculative extensibility. This scan NEVER produces a REJECT on its own — it produces a `WARN` line in the rationale. If you would otherwise APPROVE but see smells, APPROVE with a `WARN: possible overengineering — <specific smell(s)>` line appended to your rationale so Duong sees the signal. If the plan is already lean, omit the WARN line entirely (no noise when clean).
+9. Render APPROVE or REJECT with a short rationale (2–5 sentences).
 
 ## On APPROVE
 
