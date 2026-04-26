@@ -67,7 +67,7 @@ chmod +x "$SHIM_DIR/pgrep"
 OUT_C3="$(printf '%s' "$PAYLOAD" | \
   CLAUDE_AGENT_NAME=Evelynn \
   CLAUDE_SESSION_ID="$SESSION_C3" \
-  TALON_TEST_TTY_KEY="$TTY_KEY_C3" \
+  TALON_TEST_MODE=1 TALON_TEST_TTY_KEY="$TTY_KEY_C3" \
   PATH="$SHIM_DIR:$PATH" \
   bash "$GATE" 2>/dev/null || true)"
 
@@ -133,7 +133,7 @@ chmod +x "$SHIM_DIR_I2/pgrep"
 OUT_I2="$(printf '%s' "$PAYLOAD" | \
   CLAUDE_AGENT_NAME=Evelynn \
   CLAUDE_SESSION_ID="$SESSION_I2" \
-  TALON_TEST_TTY_KEY="$TTY_KEY_I2_COORD" \
+  TALON_TEST_MODE=1 TALON_TEST_TTY_KEY="$TTY_KEY_I2_COORD" \
   PATH="$SHIM_DIR_I2:$PATH" \
   bash "$GATE" 2>/dev/null || true)"
 

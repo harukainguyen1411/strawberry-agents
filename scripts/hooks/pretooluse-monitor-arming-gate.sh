@@ -24,7 +24,9 @@
 #   /tmp/claude-monitor-armed-<session_id>    — written by posttooluse-monitor-arm-sentinel.sh
 #   /tmp/claude-monitor-armed-tty-<tty_key>  — written by posttooluse-monitor-arm-sentinel.sh
 #
-# TALON_TEST_TTY_KEY env var overrides tty detection in tests.
+# TALON_TEST_TTY_KEY env var overrides tty detection in tests (only when
+# TALON_TEST_MODE=1 is also set — I4 fix). Value is sanitized to [a-zA-Z0-9_-]
+# to prevent path traversal in /tmp sentinel paths (I1 fix).
 #
 # POSIX-portable bash (Rule 10).
 set -eu
@@ -47,11 +49,24 @@ esac
 # Compute tty_key (stable to the controlling terminal)
 # ────────────────────────────────────────────────────────────────
 
-if [ -n "${TALON_TEST_TTY_KEY:-}" ]; then
-  # Test override — allows unit tests to inject a synthetic tty key
-  tty_key="$TALON_TEST_TTY_KEY"
+if [ -n "${TALON_TEST_MODE:-}" ] && [ -n "${TALON_TEST_TTY_KEY:-}" ]; then
+  # Test override — allowed only when TALON_TEST_MODE=1 (I1+I4 fix)
+  # Sanitize to prevent path traversal in /tmp sentinel paths
+  case "$TALON_TEST_TTY_KEY" in
+    *[!a-zA-Z0-9_-]*) tty_key="no-tty-$$" ;;  # reject unsafe chars
+    *) tty_key="$TALON_TEST_TTY_KEY" ;;
+  esac
 else
-  tty_key="$(tty 2>/dev/null | tr '/' '_' | tr -d '\n' || echo "no-tty-$$")"
+  # C1 fix: capture tty output with explicit exit-code propagation.
+  # The old pattern `tty 2>/dev/null | tr ... || echo fallback` bound ||
+  # to tr (which always exits 0), so the fallback was dead code and
+  # non-tty callers all got the literal string "not a tty" as tty_key,
+  # causing every non-tty process to share one sentinel.
+  if tty_out=$(tty 2>/dev/null); then
+    tty_key=$(printf '%s' "$tty_out" | tr '/' '_' | tr -d '\n')
+  else
+    tty_key="no-tty-$$"
+  fi
 fi
 
 # ────────────────────────────────────────────────────────────────
@@ -92,8 +107,10 @@ fi
 # Consume stdin now (before the pgrep scan) to avoid broken pipe
 cat >/dev/null 2>&1 || true
 
-# Check for a live inbox-watch.sh process. Use pgrep if available,
-# fall back to ps -A for portability (Git Bash / macOS both support ps -A).
+# Check for ANY live inbox-watch.sh process (no tty filter — rescue is
+# intentionally cross-tty; any running watcher means this coordinator
+# session is covered). Use pgrep if available, fall back to ps -A for
+# portability (Git Bash / macOS both support ps -A).
 watcher_found=0
 
 if command -v pgrep >/dev/null 2>&1; then

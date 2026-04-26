@@ -74,7 +74,7 @@ for agent in Evelynn Sona; do
   OUT="$(printf '%s' "$PAYLOAD" | \
     CLAUDE_AGENT_NAME="$agent" \
     CLAUDE_SESSION_ID="$SESSION_ID" \
-    TALON_TEST_TTY_KEY="$TTY_KEY_COORD" \
+    TALON_TEST_MODE=1 TALON_TEST_TTY_KEY="$TTY_KEY_COORD" \
     PATH="$SHIM_DIR_NOOP:$PATH" \
     bash "$GATE" 2>/dev/null || true)"
 
