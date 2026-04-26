@@ -8,8 +8,6 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SUBJECT="$SCRIPT_DIR/../claude-usage.sh"
-SAMPLE="$SCRIPT_DIR/../sample-payload.json"
-
 pass=0
 fail=0
 
@@ -17,10 +15,10 @@ assert_contains() {
   local label="$1" haystack="$2" needle="$3"
   if printf '%s' "$haystack" | grep -qF "$needle"; then
     printf '[PASS] %s\n' "$label"
-    ((pass++))
+    pass=$((pass+1))
   else
     printf '[FAIL] %s — expected substring: %s\n  got: %s\n' "$label" "$needle" "$haystack"
-    ((fail++))
+    fail=$((fail+1))
   fi
 }
 
@@ -28,10 +26,10 @@ assert_not_contains() {
   local label="$1" haystack="$2" needle="$3"
   if printf '%s' "$haystack" | grep -qF "$needle"; then
     printf '[FAIL] %s — unexpected substring present: %s\n  got: %s\n' "$label" "$needle" "$haystack"
-    ((fail++))
+    fail=$((fail+1))
   else
     printf '[PASS] %s\n' "$label"
-    ((pass++))
+    pass=$((pass+1))
   fi
 }
 
@@ -69,12 +67,12 @@ EXIT_CODE=0
 OUT_E=$(printf 'not json at all' | bash "$SUBJECT") || EXIT_CODE=$?
 if [ "$EXIT_CODE" -eq 0 ]; then
   printf '[PASS] e: exit 0 on malformed JSON\n'
-  ((pass++))
+  pass=$((pass+1))
 else
   printf '[FAIL] e: expected exit 0, got %d\n' "$EXIT_CODE"
-  ((fail++))
+  fail=$((fail+1))
 fi
-assert_contains "e: degraded line present" "$OUT_E" "--"
+assert_contains "e: degraded line present" "$OUT_E" "5h --%"
 
 # ---- Summary -----------------------------------------------------------------
 printf '\nTests: %d passed, %d failed\n' "$pass" "$fail"
