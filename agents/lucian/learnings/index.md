@@ -1,5 +1,6 @@
 # Lucian learnings index
 
+- 2026-04-26-pr88-tp22-feedback-rollup-sidecar-fidelity.md — sidecar `feedback-events.jsonl` vs plan's "extends events.jsonl" framing; precedent-setting deviation in first PR of parallel-track triple → flag as coordinator follow-up; DuckDB schema-inference + empty-JSONL footguns are real engineering trade-offs | last_used: 2026-04-26
 - 2026-04-26-pr79-retro-dashboard-xfail-bundle.md — xfail-bundle PR review: diff vs merge-base (not local main) on stale-base PRs; OQ-K3 task-ID-split discipline (3 splits → 15 files arithmetic); skip-gated suites = unreachable defects are drift not block | last_used: 2026-04-26
 
 - 2026-04-24-pr35-identity-leak-fix-fidelity.md — plan-lifecycle-guard AST scan rejects `gh pr review --body "$(cat <<EOF…)"` when body quotes `plans/approved/` paths; workaround is `--body-file /tmp/verdict.md` (guard scans command text, not file content) | last_used: 2026-04-24 | **SUPERSEDED** by plan `plans/implemented/personal/2026-04-25-plan-lifecycle-guard-heredoc-fp.md` — two-stage parse fix landed; `--body-file` workaround no longer required for heredoc-body reviewer commands.
