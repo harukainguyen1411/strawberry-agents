@@ -3,7 +3,7 @@ slug: monitor-arming-gate-bugfixes
 date: 2026-04-26
 owner: karma
 concern: personal
-status: approved
+status: archived
 tier: quick
 complexity: normal
 parallel_slice_candidate: no
@@ -52,6 +52,23 @@ T1 implements (a) with the sentinel keyed by the **controlling tty** (`tty` comm
 
 Combined: gate logic becomes (1) identity match on env-var name AND coordinator-shell sentinel; (2) sentinel hit on session-keyed OR tty-keyed; (3) pid-scan rescue creating a fresh sentinel; (4) otherwise emit warning.
 
+### Round-2 amendment (2026-04-26) — C2 + C3 from Senna PR #73 review
+
+PR #73 round-2 review surfaced two follow-on defects on the C1 (non-tty pipe-`||`) fix that landed in T1-T3:
+
+- **C2 — asymmetric C1 fix.** The `if tty_out=$(tty 2>/dev/null); then ...; else tty_key="..."; fi` block was applied only to the read path (`pretooluse-monitor-arming-gate.sh`). The two writer scripts — `inbox-watch-bootstrap.sh` and `posttooluse-monitor-arm-sentinel.sh` — still use the broken `tty 2>/dev/null | tr ... | tr ... || echo "no-tty-$$"` idiom where `||` binds to the trailing `tr` (always exits 0) and the echo fallback is dead code. On a non-tty coordinator the writers get the literal string `not a tty` while the reader gets `no-tty-$$`, so they never agree. **Worse**: the gate then misses the coordinator-shell sentinel and silently treats the real coordinator as a subagent — net regression vs. round-1.
+
+- **C3 — `$$` is per-process.** Even after porting the `if tty_out=$(...)` block to the writers, the three hooks run as separate `bash` subprocesses with distinct `$$` values. Three sentinels at `no-tty-1234`, `no-tty-5678`, `no-tty-9012` — never a match. The non-tty fallback is structurally non-functional for cross-hook coordination as designed.
+
+**Decision — Option α (PPID-based fallback) over Option β (session-key file).** Rationale:
+
+1. `PPID` of each hook process is the parent shell (Claude Code's tool runner), which IS stable across all hook invocations within a single coordinator session. Bootstrap, gate, and posttooluse all inherit the same parent — same `PPID` — same `tty_key`. This is exactly the cross-process stability C3 demands.
+2. Option β (write `/tmp/claude-coord-id-<something>` at SessionStart, all hooks read it) introduces another sentinel-style file with the same lifecycle/GC issues already noted under Senna I7/S2 (no cleanup of `claude-coordinator-shell-*` on session end). We do not want to add surface area to a problem class we already owe a follow-up on.
+3. Option α dovetails with Senna's S1 suggestion: extract `tty_key` computation into a shared `scripts/hooks/_tty-key.sh` helper sourced by all three callers. Single source of truth eliminates the asymmetry class entirely AND fixes C3 in the same patch.
+4. Mechanical change — replace `no-tty-$$` with `no-tty-${PPID}` inside the helper — vs. β's net-new file + writer + cleanup hook.
+
+Caveat: PPID assumes hooks are invoked synchronously by the same Claude-Code tool-runner shell. This holds for PreToolUse / PostToolUse / SessionStart per current settings.json wiring; if a future hook is invoked via a daemonized intermediary the assumption breaks. Acceptable for this plan; revisit if Claude Code changes hook invocation model.
+
 ## Tasks
 
 ### T1 — Add coordinator-shell sentinel; gate consults it for identity
@@ -96,6 +113,31 @@ Combined: gate logic becomes (1) identity match on env-var name AND coordinator-
 - DoD:
   - All three new tests committed in their xfail-red state in a commit prior to any T1-T3 implementation commit on the same branch.
   - tdd-gate.yml CI shows the xfail commit ahead of the impl commit.
+  - **Round-2 addition (cross-script asymmetry):** add a regression test (extend `test-monitor-arming-gate-nontty.sh` or add `test-tty-key-symmetry.sh` <!-- orianna: ok -->) that asserts the `tty_key` computed by the gate, by `inbox-watch-bootstrap.sh`, and by `posttooluse-monitor-arm-sentinel.sh` are byte-equal under the non-tty branch. Implementation: source the shared `_tty-key.sh` helper (see T6) in three subshells with no controlling tty (`setsid` or `< /dev/null` redirection) and diff the resulting `tty_key` values; also assert no result equals the literal string `not a tty`. Protects against C2 recurrence regardless of which writer drifts.
+
+### T5 — Port C1 fix (explicit tty_out branch) to writer scripts
+
+- kind: impl
+- estimate_minutes: 10
+- files: `scripts/hooks/inbox-watch-bootstrap.sh`, `scripts/hooks/posttooluse-monitor-arm-sentinel.sh`
+- detail: In both writers, replace the broken `tty_key="$(tty 2>/dev/null | tr '/' '_' | tr -d '\n' || echo "no-tty-$$")"` idiom with the same `if tty_out=$(tty 2>/dev/null); then tty_key=$(printf '%s' "$tty_out" | tr '/' '_' | tr -d '\n'); else tty_key="no-tty-${PPID}"; fi` block already used by the fixed gate (note: PPID, not `$$` — see T6). After T6 lands the shared helper, both writers should source it instead of inlining the block; T5 is the immediate mechanical port and T6 is the structural consolidation. Land them in the same PR; T5 first as a strictly mechanical / intermediate state if reviewer prefers a small diff per commit.
+- DoD:
+  - Both writer scripts use the explicit `if tty_out=$(...)` branch (or source `_tty-key.sh` once T6 lands).
+  - Manual: on a non-tty coordinator, all three hooks compute the same `tty_key` (verify with `STRAWBERRY_DEBUG_GATE=1` trace or one-off `bash -c 'source _tty-key.sh; echo $tty_key'`).
+  - Cross-script symmetry test from T4 turns green.
+
+### T6 — Replace `$$` with `PPID` in non-tty fallback; extract shared `_tty-key.sh` helper
+
+- kind: impl
+- estimate_minutes: 20
+- files: `scripts/hooks/_tty-key.sh` (new) <!-- orianna: ok -->, `scripts/hooks/pretooluse-monitor-arming-gate.sh`, `scripts/hooks/inbox-watch-bootstrap.sh`, `scripts/hooks/posttooluse-monitor-arm-sentinel.sh`
+- detail: Create `scripts/hooks/_tty-key.sh` exporting a single function `compute_tty_key()` (or sourced top-level block setting `tty_key`) that implements: `if tty_out=$(tty 2>/dev/null); then tty_key=$(printf '%s' "$tty_out" | tr '/' '_' | tr -d '\n'); else tty_key="no-tty-${PPID}"; fi`. Honor the existing `TALON_TEST_MODE=1` + `TALON_TEST_TTY_KEY` override (sanitised via the same `case` pattern from I1 fix) at the top of the helper. Source the helper from all three hooks; remove the inlined block from each. The PPID-based fallback ensures all three hooks (gate, bootstrap, posttooluse) — invoked by the same Claude-Code tool-runner parent shell — compute the same fallback key.
+- DoD:
+  - `_tty-key.sh` exists and is sourced by all three call sites.
+  - `no-tty-${PPID}` replaces `no-tty-$$` everywhere in the hook tree (grep verifies zero remaining `no-tty-\$\$` occurrences).
+  - Cross-script symmetry test (T4 round-2 addition) is green.
+  - Existing tests (Tests 1-5 stateless, coordinator-scoped, rescue, nontty) all still pass after the refactor — the override path through `TALON_TEST_MODE` + `TALON_TEST_TTY_KEY` continues to work.
+  - Manual: on a non-tty coordinator, observe `/tmp/claude-coordinator-shell-no-tty-<N>` and `/tmp/claude-monitor-armed-tty-no-tty-<N>` written by bootstrap and posttooluse with the SAME `<N>` (the parent shell PID), and the gate silently matches.
 
 ## Test plan
 
@@ -130,6 +172,14 @@ Pre-existing tests (Tests 1-5 in `test-monitor-arming-gate-stateless.sh`, scope 
 - [ ] In a live Evelynn session: spawning a Senna or Lucian subagent does NOT cause the subagent to receive the `INBOX WATCHER NOT ARMED` directive (manual smoke).
 - [ ] In a live Evelynn session post-`/compact`: gate is silent within the first three tool calls when the pre-compact `inbox-watch.sh` is still running (manual smoke).
 - [ ] Senna + Lucian dual review approve; PR is green; no `--admin` merge (Rule 18).
+- [ ] **Round-2 addition:** T5 lands — both writer scripts use the explicit `if tty_out=$(...)` branch (no remaining `|| echo` idiom in `inbox-watch-bootstrap.sh` or `posttooluse-monitor-arm-sentinel.sh`).
+- [ ] **Round-2 addition:** T6 lands — `scripts/hooks/_tty-key.sh` is sourced by all three callers; `grep -RnE 'no-tty-\$\$' scripts/hooks` returns zero hits; cross-script symmetry test green.
+
+## Residual / non-blocking (round-2)
+
+- **Lucian plan-text update suggestion (T3 cross-tty rescue intent).** Lucian round-2 noted that the T3 detail block in this plan still reads as if the rescue filters by tty match, while the implementation deliberately runs as cross-tty ("any-watcher" semantics — the coordinator-shell sentinel gates upstream identity). The plan text was not updated to match. Non-blocking; fold into the next plan amendment or a follow-up commit. The implementation comment was already updated per Senna I2.
+- **Senna I7 / S2 carryovers.** No GC of `claude-coordinator-shell-*` sentinels; pgrep argv false-positive risk; round-1 S1-S4 follow-ups. Track in a follow-up plan after this PR merges.
+- **Senna S3.** `STRAWBERRY_DEBUG_GATE=1` stderr trace for early-exit branches — debuggability improvement, not a defect. Fold into the same follow-up.
 
 ## References
 
@@ -149,3 +199,10 @@ Pre-existing tests (Tests 1-5 in `test-monitor-arming-gate-stateless.sh`, scope 
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Plan has clear owner (Karma), concrete bug descriptions with live evidence for all three defects, and a decision section that justifies the chosen design (tty-keyed sentinel + pid-scan rescue) over the riskier env-clearing alternative. Tasks T1-T4 are actionable with files, estimates, and DoD. Test plan satisfies Rule 12 (xfail-first) with one regression test per bug, and pre-existing tests are explicitly preserved. Done-when includes manual smoke checks for the cross-process semantics that unit tests cannot fully cover.
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** approved → archived
+- **Rationale:** Plan was bugfix work for the monitor-arming gate hook. Hook removed entirely at commit cd20732b. Plan moot — supersedes round-2 + round-3 fix attempts (Senna REQUEST_CHANGES, Talon T5/T6 attempts). PR #73 closed without merge. See feedback/2026-04-26-convenience-promoted-to-forcing-function.md.
