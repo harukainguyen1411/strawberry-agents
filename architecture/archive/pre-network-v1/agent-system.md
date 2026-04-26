@@ -1,3 +1,5 @@
+> **Archived:** superseded by `architecture/agent-network-v1/agents.md` (roster) and `architecture/archive/v1-orianna-gate/` (Plan-Lifecycle-Signing-Role) on 2026-04-26.
+
 # Agent System
 
 ## Roster

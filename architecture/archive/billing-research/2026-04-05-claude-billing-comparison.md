@@ -1,3 +1,5 @@
+> **Archived:** market-research record from 2026-04-05; decision (team plan via Claude Code OAuth) is in effect. No canonical replacement.
+
 # Claude Billing: Subscription vs API for Agent System
 
 ## Context
