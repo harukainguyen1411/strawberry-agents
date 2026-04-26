@@ -25,6 +25,8 @@ import {
   extractPlanSlugFromText,
   maybePlanStageFromDispatch,
 } from './plan-stage-detect.mjs';
+// T.P2.4: prompt-stats emitter — wired into the subagent-jsonl source below
+import { computePromptStats } from './prompt-stats.mjs';
 
 // ---------------------------------------------------------------------------
 // Wall-active-delta computation (§3 idle-gap stripping)
@@ -184,11 +186,14 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
 /**
  * Parse a subagent JSONL file and its paired meta.json.
  *
+ * T.P2.4: also computes a dispatch-prompt-stats event (§Q9 three deterministic signals)
+ * from the subagent's first user message + total output-token count.
+ *
  * @param {string} jsonlPath — absolute path to agent-<id>.jsonl
  * @param {string} metaPath — absolute path to agent-<id>.meta.json
  * @param {string} agentId — extracted from filename
  * @param {Array<Object>} planStageEvents — plan-stage events (trailer wins per §Q2 + OQ-R3)
- * @returns {{ turns: Array<Object>, dispatch: Object | null }}
+ * @returns {{ turns: Array<Object>, dispatch: Object | null, promptStats: Object | null }}
  */
 export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEvents) {
   let lines;
@@ -287,7 +292,30 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
     };
   }
 
-  return { turns, dispatch };
+  // T.P2.4: emit one dispatch-prompt-stats event per subagent (§Q9 three signals).
+  // Uses the already-extracted firstUserText (dispatch prompt) and sums output_tokens
+  // from all assistant turns in this subagent session.
+  const subagentTotalOutputTokens = assistantRows.reduce(
+    (sum, row) => sum + (row.usage.output_tokens || 0), 0
+  );
+  // dispatch_prompt_tokens: approximate from input_tokens of the first assistant turn
+  // (the first assistant turn's input_tokens includes the full dispatch prompt context).
+  const dispatchPromptTokens = assistantRows.length > 0
+    ? (assistantRows[0].usage.input_tokens || 0)
+    : 0;
+
+  const promptStats = computePromptStats({
+    dispatch_prompt_text: firstUserText,
+    dispatch_prompt_tokens: dispatchPromptTokens,
+    subagent_total_output_tokens: subagentTotalOutputTokens,
+    // coordinator field: derived from meta if available; null otherwise
+    coordinator: meta ? (meta.coordinator || null) : null,
+    sessionId: parentSessionId,
+    agentId,
+    ts: dispatch ? (dispatch.dispatch_start_ts || null) : null,
+  });
+
+  return { turns, dispatch, promptStats };
 }
 
 // ---------------------------------------------------------------------------
@@ -496,7 +524,7 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
             const agentId = jsonlFile.replace(/\.jsonl$/, '');
             const jsonlPath = join(subagentsDir, jsonlFile);
             const metaPath = join(subagentsDir, `${agentId}.meta.json`);
-            const { turns, dispatch } = parseSubagentSession(
+            const { turns, dispatch, promptStats } = parseSubagentSession(
               jsonlPath, metaPath, agentId, planStageEvents
             );
             events.push(...turns);
@@ -506,6 +534,10 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
                 dispatch.dispatch_end_ts = sentinelEndTimes[agentId];
               }
               events.push(dispatch);
+            }
+            // T.P2.4: emit prompt-stats event if the subagent had content to measure
+            if (promptStats) {
+              events.push(promptStats);
             }
           }
         }

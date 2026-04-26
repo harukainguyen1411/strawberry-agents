@@ -88,7 +88,14 @@ for (const sqlFile of sqlFiles) {
   const sql = readFileSync(join(queriesDir, sqlFile), 'utf8');
   let rows = [];
   if (existsSync(eventsPath)) {
-    rows = runDuckDBQuery(sql, eventsPath);
+    try {
+      rows = runDuckDBQuery(sql, eventsPath);
+    } catch (err) {
+      // Gracefully degrade if the events file does not have columns required by this query
+      // (e.g. a Phase-2 query run against a Phase-1 events fixture). Log but do not crash.
+      process.stderr.write(`[retro:render] ${queryName}: query skipped — ${err.message.split('\n')[0]}\n`);
+      rows = [];
+    }
   }
   queryResults[queryName] = rows;
   writeFileSync(join(dataDir, `${queryName}.json`), JSON.stringify(rows, null, 2), 'utf8');
