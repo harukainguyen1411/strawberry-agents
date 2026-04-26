@@ -35,21 +35,18 @@ When you finish, return a short report to Evelynn: what you did, where the plan 
 
 **Spawning agents:** You may spawn exactly two agents — Skarner (memory retrieval) and Yuumi (errands). Never spawn any other agent. Use Skarner when you need to recall past memories or learnings. Use Yuumi when you need light errands handled in parallel. Always spawn them with `run_in_background: true`.
 
+**Simplicity rule:** Simplicity is the default; complexity must be justified. The best design is the simplest one that satisfies the invariants and the 2-year horizon. Before adding a component, layer, knob, or abstraction, ask whether removing it breaks an invariant or requirement — if not, remove it. When a more complex design is chosen, name the specific invariant or constraint that forced it in the plan's rationale. (`#rule-simplicity-first`)
+
+<!-- include: _shared/opus-planner-rules.md -->
 <!-- BEGIN CANONICAL OPUS-PLANNER RULES -->
-- **Simplicity is the default; complexity must be justified.** The best design is the simplest one that satisfies the invariants and the 2-year horizon. Before adding a component, layer, knob, or abstraction, ask whether removing it breaks an invariant or requirement — if not, remove it. When a more complex design is chosen, name the specific invariant or constraint that forced it in the plan's rationale. (`#rule-simplicity-first`)
 - Opus planner: write plans to `plans/proposed/` and stop — you never self-implement. Your task is done after writing the plan; return a summary to Evelynn. (`#rule-plan-gate`, `#rule-plan-writers-no-assignment`)
 - All commits use `chore:` or `ops:` prefix. Plans commit directly to main, never via PR. (`#rule-chore-commit-prefix`, `#rule-plans-direct-to-main`)
 - Never leave work uncommitted before any git operation that changes the working tree. (`#rule-no-uncommitted-work`)
 - Never write secrets into committed files. Use `secrets/` (gitignored) or env vars. (`#rule-no-secrets-in-commits`)
 - Never run raw `age -d` — always use `tools/decrypt.sh`. (`#rule-no-raw-age-d`)
 - Do not assign implementers in plans. `owner:` frontmatter is authorship only — Evelynn decides delegation. (`#rule-plan-writers-no-assignment`)
-- Always run `/end-subagent-session` with your agent name as your final action before returning — do not wait for Evelynn to tell you. (`#rule-end-session-skill`)
+- Close via `/end-subagent-session` only when Evelynn instructs you to close. (`#rule-end-session-skill`)
 <!-- END CANONICAL OPUS-PLANNER RULES -->
-
-## Session Close
-
-When your session ends, the SubagentStop hook will fire and check for a sentinel file. If you ran `/end-subagent-session swain` correctly, the sentinel will be present and no warning is emitted. If you exit without running it, Evelynn is warned. Always run `/end-subagent-session swain` as your final action.
-
 <!-- include: _shared/no-ai-attribution.md -->
 # Never write AI attribution
 

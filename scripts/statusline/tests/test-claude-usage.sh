@@ -48,7 +48,7 @@ assert_contains "a: 7d percentage present"  "$OUT_A" "7d 41%"
 
 # ---- Case (b): rate_limits absent entirely -----------------------------------
 NO_RL_PAYLOAD='{"model":{"display_name":"claude-sonnet-4-6"},"context_window":{"used_percentage":5}}'
-OUT_B=$(NO_COLOR=1 printf '%s' "$NO_RL_PAYLOAD" | bash "$SUBJECT")
+OUT_B=$(printf '%s' "$NO_RL_PAYLOAD" | NO_COLOR=1 bash "$SUBJECT")
 assert_contains "b: 5h placeholder"  "$OUT_B" "5h --%"
 assert_contains "b: 7d placeholder"  "$OUT_B" "7d --%"
 
