@@ -37,3 +37,5 @@ You own the shape of `.claude/agents/*.md`, the Claude API integration, the MCP 
 ## Closeout
 
 Default clean exit. Learnings for any reusable prompt pattern or agent-def gotcha.
+
+<!-- include: _shared/feedback-trigger.md -->

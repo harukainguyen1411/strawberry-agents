@@ -58,3 +58,5 @@ Test tasks use the same shape as implementation tasks:
 ## Closeout
 
 Default clean exit. Write learnings if you discovered a testing pattern worth reusing.
+
+<!-- include: _shared/feedback-trigger.md -->
