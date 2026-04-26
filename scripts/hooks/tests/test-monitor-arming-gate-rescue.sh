@@ -87,6 +87,66 @@ fi
 rm -rf "$SHIM_DIR"
 rm -f "$COORD_SENTINEL_C3" "$SESSION_SENTINEL_C3" "$TTY_SENTINEL_C3"
 
+# ── Test I2 — cross-tty rescue: pgrep has no tty filter ───────────────────────
+# Plan: 2026-04-26-monitor-arming-gate-bugfixes (Senna I2 review)
+#
+# The T3 rescue comment claims "tty-match" but pgrep has no tty filter — it
+# rescues ANY live inbox-watch.sh, not just one on the same tty. This test
+# asserts the ACTUAL behaviour (any-process rescue) so that if a tty filter
+# is added later, this test will catch the behaviour change.
+#
+# XFAIL annotation: this test documents current behaviour. It passes after
+# the comment is fixed to say "any live inbox-watch.sh" rather than "tty-match".
+# There is no code change for I2 (comment-only fix) — the test asserts the
+# observable rescue behaviour is cross-tty (i.e. rescue fires even when tty keys
+# differ between the shim process and the gate's tty key).
+
+TTY_KEY_I2_COORD="fake_tty_i2_coord_$$"
+TTY_KEY_I2_WATCHER="fake_tty_i2_watcher_$$"  # different tty from coordinator
+SESSION_I2="test-i2-$$"
+COORD_SENTINEL_I2="/tmp/claude-coordinator-shell-${TTY_KEY_I2_COORD}"
+TTY_SENTINEL_I2="/tmp/claude-monitor-armed-tty-${TTY_KEY_I2_COORD}"
+SESSION_SENTINEL_I2="/tmp/claude-monitor-armed-${SESSION_I2}"
+
+rm -f "$COORD_SENTINEL_I2" "$TTY_SENTINEL_I2" "$SESSION_SENTINEL_I2"
+trap 'rm -f "$COORD_SENTINEL_I2" "$TTY_SENTINEL_I2" "$SESSION_SENTINEL_I2"; rm -rf "${SHIM_DIR_I2:-/tmp/shim-i2-nonexistent}"' EXIT INT TERM
+
+touch "$COORD_SENTINEL_I2"
+
+# pgrep shim: returns a pid regardless of tty context (simulating cross-tty watcher)
+SHIM_DIR_I2="$(mktemp -d /tmp/shim-i2-XXXXXX)"
+cat > "$SHIM_DIR_I2/pgrep" <<'SHIM'
+#!/usr/bin/env bash
+args="$*"
+case "$args" in
+  *inbox-watch*)
+    echo "88888"
+    exit 0
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+SHIM
+chmod +x "$SHIM_DIR_I2/pgrep"
+
+OUT_I2="$(printf '%s' "$PAYLOAD" | \
+  CLAUDE_AGENT_NAME=Evelynn \
+  CLAUDE_SESSION_ID="$SESSION_I2" \
+  TALON_TEST_TTY_KEY="$TTY_KEY_I2_COORD" \
+  PATH="$SHIM_DIR_I2:$PATH" \
+  bash "$GATE" 2>/dev/null || true)"
+
+# Rescue fires for ANY inbox-watch.sh regardless of tty — gate must be silent
+if [ -z "$OUT_I2" ]; then
+  pass "I2: cross-tty rescue fires for any live inbox-watch.sh (no tty filter in pgrep)"
+else
+  fail "I2 [XFAIL]: gate should self-heal via cross-tty rescue; currently emits: $OUT_I2"
+fi
+
+rm -rf "$SHIM_DIR_I2"
+rm -f "$COORD_SENTINEL_I2" "$TTY_SENTINEL_I2" "$SESSION_SENTINEL_I2"
+
 if [ "$FAIL_COUNT" -eq 0 ]; then
   printf '\n[ALL PASS] monitor-arming gate rescue assertions passed.\n'
   exit 0
