@@ -432,19 +432,29 @@ function parseFrontmatter(content) {
  *   graduated     → closed
  *   stale         → closed
  *
- * Unknown values fall back to 'open' (safe default — prefer over-counting open entries
- * to silently dropping entries).
+ * I5 fix: unknown state values now emit a loud stderr warning rather than silently
+ * defaulting to 'open'. Silently defaulting inflated open counts on typo'd `state:`
+ * values — the user would see phantom open entries with no indication of the problem.
+ * The entry is still emitted (as 'open') to avoid silently dropping data, but the
+ * warning makes the anomaly visible so the typo can be corrected.
  *
  * @param {string|undefined} state
+ * @param {string} [sourceHint] — optional filename or context for the warning message
  * @returns {string}
  */
-function stateToStatus(state) {
+function stateToStatus(state, sourceHint) {
   switch (state) {
     case 'open':          return 'open';
     case 'acknowledged':  return 'triaged';
     case 'graduated':     return 'closed';
     case 'stale':         return 'closed';
-    default:              return 'open';
+    default: {
+      const hint = sourceHint ? ` (in ${sourceHint})` : '';
+      process.stderr.write(
+        `[retro:ingest] warn: unknown feedback state "${state}"${hint} — defaulting to open; fix the state: field to suppress this warning\n`
+      );
+      return 'open';
+    }
   }
 }
 
@@ -502,7 +512,20 @@ export function parseFeedbackIndex(feedbackDir) {
     // §D1 required fields: category, severity, state, date
     const category = fm.category || null;
     const severity = fm.severity || null;
-    const status = stateToStatus(fm.state);
+    const status = stateToStatus(fm.state, name);
+
+    // C2 fix: strict ISO-8601 date validation at ingest time.
+    // A non-ISO date value (e.g. "April 20, 2026") causes DuckDB to infer the
+    // `created` column as VARCHAR, making CAST(... AS TIMESTAMP) produce NULLs and
+    // silently changing the format of MAX(created) in feedback-rollup.sql.
+    // Reject non-ISO dates here so malformed entries never reach DuckDB.
+    const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (fm.date && !ISO_DATE_RE.test(fm.date)) {
+      process.stderr.write(
+        `[retro:ingest] warn: skipping ${name} — date "${fm.date}" is not ISO-8601 (YYYY-MM-DD)\n`
+      );
+      continue;
+    }
     const created = fm.date ? `${fm.date}T00:00:00.000Z` : null;
     const author = fm.author || null;
 

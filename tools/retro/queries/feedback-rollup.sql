@@ -25,8 +25,8 @@ SELECT
     category,
     severity,
     status,
-    CASE WHEN status = 'open' THEN COUNT(*)::BIGINT ELSE 0::BIGINT END AS open_count,
-    MAX(created)::VARCHAR                                               AS latest_entry_ts
+    CASE WHEN status = 'open' THEN COUNT(*)::BIGINT ELSE 0::BIGINT END        AS open_count,
+    strftime(MAX(CAST(created AS TIMESTAMP)), '%Y-%m-%d %H:%M:%S')            AS latest_entry_ts
 FROM file
 WHERE kind = 'feedback-entry'
 GROUP BY category, severity, status

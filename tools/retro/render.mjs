@@ -25,7 +25,7 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
-import { join, dirname, basename, resolve } from 'node:path';
+import { join, dirname, basename, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { runDuckDBQuery, runDuckDBQueryWithFileDb } from './lib/duckdb-runner.mjs';
 import { generateHtml } from './lib/html-generator.mjs';
@@ -93,6 +93,24 @@ function resolveQueryEventsSource(sql, defaultEventsPath) {
   const m = sql.match(/--\s*events-source:\s*(\S+)/);
   if (!m) return { queryEventsPath: defaultEventsPath, useFileDb: false };
   const altName = m[1];
+
+  // I3 fix: path-traversal guard.
+  // The annotation value must be a plain filename with no directory component.
+  // Reject any value that contains '/', '\', or '..', or does not equal its own basename.
+  // This prevents `-- events-source: ../../etc/passwd` from escaping the cache dir.
+  const altBasename = basename(altName);
+  if (
+    altName !== altBasename ||
+    altName.includes('/') ||
+    altName.includes(sep) ||
+    altName.includes('..')
+  ) {
+    process.stderr.write(
+      `[retro:render] warn: events-source annotation "${altName}" contains a path component — skipping (path-traversal guard)\n`
+    );
+    return { queryEventsPath: null, useFileDb: false };
+  }
+
   const altPath = join(dirname(defaultEventsPath), altName);
   if (!existsSync(altPath)) {
     // Dedicated source not yet ingested — emit empty result rather than failing
