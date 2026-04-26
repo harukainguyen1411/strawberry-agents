@@ -31,7 +31,7 @@ disable-model-invocation: false
      - Otherwise coordinator = `evelynn` (repo default per CLAUDE.md Caller Routing)
    - Cross-check `[concern: work]` vs `[concern: personal]` tags on subagent prompts. Contradiction → refuse with a diagnostic.
 
-2. **Spawn Lissandra** via the Agent tool with `subagent_type: "Lissandra"`. Note: Lissandra updates `open-threads.md` and regenerates `INDEX.md` as part of the coordinator shard write, same as `/end-session` Step 6b. Prompt shape:
+2. **Spawn Lissandra** via the Agent tool with `subagent_type: "Lissandra"`. Note: Lissandra runs Step 6b (open-threads.md + INDEX.md regen) and Step 6c (decision INDEX + preferences rollup) as part of the coordinator shard write, same as `/end-session` Steps 6b and 6c. Prompt shape:
 
    ```
    [concern: <personal|work>]
