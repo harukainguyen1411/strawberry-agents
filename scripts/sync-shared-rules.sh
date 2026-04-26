@@ -22,12 +22,16 @@
 #           then replaces the block below it (until the next marker or EOF)
 #           with the corresponding shared file contents.
 #        d. Multiple markers are processed in document order.
+#        e. Depth-2 pass: any <!-- include: --> markers found inside the inlined
+#           shared file content are themselves resolved (one level deep).
 #   3. Skips files with no include marker (emits a warning — not fatal).
 #   4. Idempotent: running twice produces identical output.
+#   5. Depth limit: depth-3 (an include inside an include's include) is an error.
+#      See §OQ2 of plans/approved/personal/2026-04-21-agent-feedback-system.md.
 #
 # Exit codes:
 #   0  all agents synced (or skipped with warning)
-#   1  one or more shared files missing (fatal)
+#   1  one or more shared files missing (fatal) or depth limit exceeded (§OQ2)
 #
 # Invariant (S4):
 #   Any prose written between two adjacent <!-- include: --> markers will be
@@ -77,9 +81,57 @@ errors=0
 synced=0
 skipped=0
 
+# resolve_shared_content <shared_file> <context_name>
+# Reads a shared file and resolves any depth-2 include markers within it.
+# Depth-2 markers are NOT emitted into the output — only their resolved content
+# is written. This keeps the agent file free of nested markers (idempotency).
+# Errors if depth-3 markers are found (§OQ2).
+# Writes resolved content to stdout.
+resolve_shared_content() {
+  local shared_file="$1"
+  local context_name="$2"
+
+  while IFS= read -r line; do
+    case "$line" in
+      "<!-- include: _shared/"*)
+        # This is a depth-2 include marker inside a shared file.
+        local nested_role="${line#<!-- include: _shared/}"
+        nested_role="${nested_role%.md -->}"
+        local nested_file="$SHARED_DIR/${nested_role}.md"
+
+        if [ ! -f "$nested_file" ]; then
+          printf 'sync-shared-rules: ERROR: nested shared file not found for %s: %s\n' \
+            "$context_name" "$nested_file" >&2
+          return 1
+        fi
+
+        # Check for depth-3: if the nested file itself has include markers, error out (§OQ2)
+        if grep -q '<!-- include: _shared/' "$nested_file"; then
+          printf 'sync-shared-rules: ERROR: depth-3 nested include detected in %s (via %s). Max depth is 2. See §OQ2 of plans/approved/personal/2026-04-21-agent-feedback-system.md.\n' \
+            "$nested_file" "$context_name" >&2
+          return 1
+        fi
+
+        # Inline the depth-2 content (do NOT emit the marker line into the agent file).
+        # This keeps the agent def free of nested markers, preserving idempotency.
+        cat "$nested_file"
+        # Ensure newline after nested content
+        local last_char
+        last_char="$(tail -c1 "$nested_file" | od -An -tx1 | tr -d ' \n')"
+        if [ "$last_char" != "0a" ]; then
+          printf '\n'
+        fi
+        ;;
+      *)
+        printf '%s\n' "$line"
+        ;;
+    esac
+  done < "$shared_file"
+}
+
 # sync_agent_file <path>
 # Rewrites the agent file with all include markers processed.
-# Returns 0 on success, 1 on error (missing shared file).
+# Returns 0 on success, 1 on error (missing shared file or depth limit).
 sync_agent_file() {
   local agent_file="$1"
   local agent_basename
@@ -126,12 +178,14 @@ sync_agent_file() {
   # State machine:
   #   mode=header  — emit lines as-is (before first marker)
   #   mode=skip    — skip lines (inlined content between/after a marker, until next marker or EOF)
-  # When we hit a marker line: emit it, emit shared content, switch to skip mode.
+  # When we hit a marker line: emit it, emit shared content (with depth-2 resolved), switch to skip mode.
 
   local tmp_file
   tmp_file="$(mktemp)"
+  local resolved_tmp
+  resolved_tmp="$(mktemp)"
   # shellcheck disable=SC2064
-  trap "rm -f '$tmp_file'" EXIT INT TERM HUP
+  trap "rm -f '$tmp_file' '$resolved_tmp'" EXIT INT TERM HUP
 
   # Build a lookup of marker line numbers for O(1) check
   # Format: line number as key stored in a space-separated string (portable, no assoc arrays)
@@ -162,8 +216,14 @@ sync_agent_file() {
     if [ "$is_marker" -eq 1 ]; then
       # Always emit the marker line
       printf '%s\n' "$line" >> "$tmp_file"
-      # Append shared content
-      cat "$SHARED_DIR/${marker_role}.md" >> "$tmp_file"
+
+      # Resolve shared content with depth-2 pass
+      if ! resolve_shared_content "$SHARED_DIR/${marker_role}.md" "$agent_basename" >> "$tmp_file"; then
+        rm -f "$tmp_file" "$resolved_tmp"
+        trap - EXIT INT TERM HUP
+        return 1
+      fi
+
       # Ensure newline after shared content
       local last_char
       last_char="$(tail -c1 "$tmp_file" | od -An -tx1 | tr -d ' \n')"
@@ -196,12 +256,12 @@ sync_agent_file() {
   if ! diff -q "$tmp_file" "$agent_file" >/dev/null 2>&1; then
     cp "$tmp_file" "$agent_file"
     printf 'sync-shared-rules: synced %s (%d include(s))\n' "$agent_basename" "${#markers[@]}"
-    rm -f "$tmp_file"
+    rm -f "$tmp_file" "$resolved_tmp"
     trap - EXIT INT TERM HUP
     return 0
   else
     printf 'sync-shared-rules: up-to-date %s\n' "$agent_basename"
-    rm -f "$tmp_file"
+    rm -f "$tmp_file" "$resolved_tmp"
     trap - EXIT INT TERM HUP
     return 0
   fi
