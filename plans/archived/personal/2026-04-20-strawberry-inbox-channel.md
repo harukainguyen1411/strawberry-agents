@@ -1,6 +1,6 @@
 ---
 title: Strawberry inbox watcher — Monitor-based autonomous coordinator inbox delivery
-status: implemented
+status: archived
 concern: personal
 owner: azir
 created: 2026-04-20
@@ -1663,3 +1663,10 @@ No architecture/ files modified. The inbox watcher ships as Monitor-driven scrip
 
 - PR #18 merged: https://github.com/harukainguyen1411/strawberry-agents/pull/18
 - All required checks green at merge.
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** implemented → archived
+- **Rationale:** Bookkeeping move. This plan was the seed of the forcing-function escalation chain documented in `feedback/2026-04-26-convenience-promoted-to-forcing-function.md`. The watcher itself was a benign convenience; downstream plan 2026-04-24-coordinator-boot-unification added a PreToolUse arming gate that became a forcing function and was removed at cd20732b. Archiving the parent feature alongside the gate plan keeps the lineage together as a single retrievable record.
