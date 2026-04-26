@@ -2,23 +2,26 @@
 /**
  * ingest.mjs — events.jsonl scanner for the retrospection dashboard.
  *
- * Scans five upstream sources:
+ * Scans six upstream sources:
  *   1. ~/.claude/projects/<slug>/<session-id>.jsonl  (coordinator-inline turns)
  *   2. subagents/agent-<id>.{jsonl,meta.json}        (delegated turns + dispatch events)
  *   3. subagent-sentinels/<agent-id>                 (sentinel mtime → dispatch_end_ts)
  *   4. git log over plans/**                         (plan-stage events)
- *   5. feedback/*.md                                 (feedback-entry events, T.P2.2)
+ *   5. feedback/*.md                                 (feedback-entry events, T.P2.2 — sidecar)
+ *   6. agents/*/memory/decisions/log/*.md            (decision events, T.P2.3 — shared-stream)
  *
  * Honors RETRO_GIT_LOG_MOCK env var: if set, reads git-log data from the JSON
  * file at that path instead of running actual git log. Used by test fixtures.
  *
  * Usage:
- *   node tools/retro/ingest.mjs [--cache-dir <dir>] [--feedback-dir <dir>]
+ *   node tools/retro/ingest.mjs [--cache-dir <dir>] [--feedback-dir <dir>] [--repo-root <dir>]
  *
  * Options:
  *   --cache-dir <dir>     Root of the output/scan area. events.jsonl is written here.
  *                         Defaults to ~/.claude/strawberry-usage-cache (production).
  *   --feedback-dir <dir>  Path to the feedback/ directory. Defaults to <repoRoot>/feedback/.
+ *   --repo-root <dir>     Root of the agents-repo for decision log scanning.
+ *                         Defaults to process.cwd() (i.e. the repo root when run via npm).
  *
  * Directory resolution strategy (for test isolation):
  *   - events.jsonl output: always <cacheDir>/events.jsonl
@@ -29,15 +32,16 @@
  *               The bats e2e test sets HOME to a temp dir with .claude/projects/ seeded.
  *               The node unit tests put projects/ directly under --cache-dir.
  *   - feedback: --feedback-dir if given, else <repoRoot>/feedback/
+ *   - decisions: agents/*/memory/decisions/log/*.md under --repo-root (or cwd)
  *
  * Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
- * Implements T.P1.2; extended by T.P2.2 (feedback-index source).
+ * Implements T.P1.2; extended by T.P2.2 (feedback-index source), T.P2.3 (decision-log source).
  */
 
 import { writeFileSync, existsSync, mkdirSync, statSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
-import { scanAllSources, parseFeedbackIndex } from './lib/sources.mjs';
+import { scanAllSources, parseFeedbackIndex, scanDecisionLogs } from './lib/sources.mjs';
 import { loadMtimeCache, saveMtimeCache } from './lib/mtime-cache.mjs';
 
 // ---------------------------------------------------------------------------
@@ -47,12 +51,16 @@ import { loadMtimeCache, saveMtimeCache } from './lib/mtime-cache.mjs';
 const args = process.argv.slice(2);
 let cacheDirArg = null;
 let feedbackDirArg = null;
+let repoRootArg = null;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--cache-dir' && args[i + 1]) {
     cacheDirArg = args[i + 1];
     i++;
   } else if (args[i] === '--feedback-dir' && args[i + 1]) {
     feedbackDirArg = args[i + 1];
+    i++;
+  } else if (args[i] === '--repo-root' && args[i + 1]) {
+    repoRootArg = args[i + 1];
     i++;
   }
 }
@@ -94,6 +102,11 @@ const sentinelDirs = [
 //   - --feedback-dir if given (test isolation, mtime tests)
 //   - else <repoRoot>/feedback/ (production — repoRoot = cwd when running via npm run retro:ingest)
 const feedbackDir = feedbackDirArg || join(process.cwd(), 'feedback');
+
+// Repo root (for decision log scanning):
+//   - --repo-root if given (test isolation)
+//   - else process.cwd() (production: cwd = agents-repo root when run via npm run retro:ingest)
+const repoRoot = repoRootArg || process.cwd();
 
 // ---------------------------------------------------------------------------
 // Main
@@ -150,17 +163,77 @@ const feedbackMtimeKey = computeFeedbackMtimeKey(feedbackDir);
 const feedbackEvents = parseFeedbackIndex(feedbackDir);
 
 // ---------------------------------------------------------------------------
-// Scan all four original sources
+// Source 6: decision-log reader (T.P2.3)
+// Shared-stream: decision events are merged into events.jsonl (not a sidecar).
+// Cache key: sum of all agents/*/memory/decisions/log/*.md mtimes — analogous to
+// the feedback-index mtime key (I4 pattern from T.P2.2).
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a cache key for all decision log files under agents/*/memory/decisions/log/*.md.
+ *
+ * Returns a stable numeric representation: sum of all log file mtimes (ms).
+ * A zero-entry tree returns 0. Collision-resistant for incremental cache trigger purposes.
+ *
+ * @param {string} root — absolute path to the agents-repo root
+ * @returns {number}
+ */
+function computeDecisionLogMtimeKey(root) {
+  const agentsDir = join(root, 'agents');
+  if (!existsSync(agentsDir)) return 0;
+  let coordinators;
+  try {
+    coordinators = readdirSync(agentsDir);
+  } catch {
+    return 0;
+  }
+  let key = 0;
+  for (const coordinator of coordinators) {
+    const logDir = join(agentsDir, coordinator, 'memory', 'decisions', 'log');
+    if (!existsSync(logDir)) continue;
+    let files;
+    try {
+      files = readdirSync(logDir);
+    } catch {
+      continue;
+    }
+    for (const name of files) {
+      if (!name.endsWith('.md')) continue;
+      try {
+        key += statSync(join(logDir, name)).mtimeMs;
+      } catch {
+        // skip unreadable files
+      }
+    }
+  }
+  return key;
+}
+
+const decisionLogMtimeKey = computeDecisionLogMtimeKey(repoRoot);
+const decisionEvents = scanDecisionLogs(repoRoot);
+
+// ---------------------------------------------------------------------------
+// Scan all four original sources + merge decision events into shared stream
 // ---------------------------------------------------------------------------
 const events = scanAllSources({
   cacheDir,
   sentinelDirs,
   projectsDir,
-  repoRoot: process.cwd(),
+  repoRoot,
 });
 
-// Write events.jsonl — main stream (turn/dispatch/plan-stage); full rebuild for determinism.
-const lines = events.map(e => JSON.stringify(e)).join('\n') + (events.length > 0 ? '\n' : '');
+// Merge decision events into the shared stream (shared-stream policy per T.P2.3 dispatch).
+// Decision events carry `kind: 'decision'` and are sorted by ts into the event stream.
+// This differs from feedback-entry events which go to a dedicated sidecar (T.P2.2).
+const allEvents = [...events, ...decisionEvents];
+allEvents.sort((a, b) => {
+  const tsA = new Date(a.ts || a.dispatch_start_ts || 0).getTime();
+  const tsB = new Date(b.ts || b.dispatch_start_ts || 0).getTime();
+  return tsA - tsB;
+});
+
+// Write events.jsonl — full rebuild for determinism.
+const lines = allEvents.map(e => JSON.stringify(e)).join('\n') + (allEvents.length > 0 ? '\n' : '');
 writeFileSync(eventsPath, lines, 'utf8');
 
 // Write feedback-events.jsonl — dedicated feedback source for feedback-rollup.sql.
@@ -193,14 +266,18 @@ if (feedbackEvents.length > 0) {
   }
 }
 
-// Update mtime cache with all five source keys (T.P2.2 adds 'feedback-index').
-// I4 fix: 'feedback-index' key is now a sum of all feedback/*.md mtimes (excluding INDEX.md)
-// rather than just INDEX.md mtime — individual file changes now trigger a cache miss.
-// Key 'decision-log' (T.P2.3) will be added by that task.
+// Update mtime cache with all six source keys.
+// T.P2.2 added 'feedback-index'; T.P2.3 adds 'decision-log'.
+// I4 pattern: each key is a sum of individual file mtimes (not just a single INDEX mtime)
+// so individual file changes trigger a cache miss correctly.
 const newMtimeCache = {
   ...mtimeCache,
   'feedback-index': feedbackMtimeKey,
+  'decision-log': decisionLogMtimeKey,
 };
 saveMtimeCache(mtimeCachePath, newMtimeCache);
 
-process.stdout.write(`[retro:ingest] wrote ${events.length} main + ${feedbackEvents.length} feedback events\n`);
+process.stdout.write(
+  `[retro:ingest] wrote ${allEvents.length} total events ` +
+  `(${events.length} main + ${feedbackEvents.length} feedback + ${decisionEvents.length} decision)\n`
+);

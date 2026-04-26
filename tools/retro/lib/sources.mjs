@@ -1,10 +1,12 @@
 /**
- * sources.mjs — per-source readers for the four upstream event sources.
+ * sources.mjs — per-source readers for upstream event sources.
  *
  * Source 1: parent JSONL (~/.claude/projects/<slug>/<session-id>.jsonl)
  * Source 2: subagent JSONL + meta.json (subagents/agent-<id>.{jsonl,meta.json})
  * Source 3: subagent sentinels (strawberry-usage-cache/subagent-sentinels/<agent-id>)
  * Source 4: git log (via RETRO_GIT_LOG_MOCK env or actual git log)
+ * Source 5: feedback/*.md (T.P2.2 — feedback-entry events, sidecar write)
+ * Source 6: agents/*/memory/decisions/log/*.md (T.P2.3 — decision events, shared-stream)
  *
  * Event field naming convention (matching Claude JSONL conventions):
  *   - camelCase for identifiers: sessionId, parentSessionId, agentId, planSlug
@@ -12,7 +14,7 @@
  *   - snake_case for custom fields: kind, role, ts, wall_active_delta_s, stage, signal, etc.
  *
  * Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
- * Implements T.P1.2 DoD (a)-(d).
+ * Implements T.P1.2 DoD (a)-(d); extended by T.P2.2 (feedback-index), T.P2.3 (decision-log).
  */
 
 import {
@@ -547,6 +549,168 @@ export function parseFeedbackIndex(feedbackDir) {
     if (!a.created) return 1;
     if (!b.created) return -1;
     return a.created.localeCompare(b.created);
+  });
+
+  return events;
+}
+
+// ---------------------------------------------------------------------------
+// Source 6: Decision log reader (T.P2.3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse axes from a YAML-list value.
+ *
+ * The YAML front matter parser above (parseFrontmatter) only handles scalar key: value pairs.
+ * Decision-log axes are stored as YAML inline lists: `axes: [routing-track, scope-vs-debt]`.
+ * This function handles that bracket-list form as well as single-value scalars.
+ *
+ * @param {string|undefined} raw — raw string from parseFrontmatter (e.g. "[routing-track, foo]")
+ * @returns {string[]} — array of trimmed axis slugs, or empty array if missing/empty
+ */
+function parseAxesList(raw) {
+  if (!raw || typeof raw !== 'string') return [];
+  const s = raw.trim();
+  // Inline YAML list: [a, b, c]
+  if (s.startsWith('[') && s.endsWith(']')) {
+    const inner = s.slice(1, -1);
+    return inner.split(',').map(x => x.trim()).filter(Boolean);
+  }
+  // Single value or comma-separated without brackets
+  return s.split(',').map(x => x.trim()).filter(Boolean);
+}
+
+/**
+ * Scan `agents/*/memory/decisions/log/*.md` for decision-log files and emit
+ * one `kind: 'decision'` event per file.
+ *
+ * Source surface: decision logs per plan B §3.5 bind-points.
+ * Shared-stream: events are emitted into events.jsonl, not a sidecar.
+ *
+ * Event shape emitted (§3.5 bind-points + T.P2.3 dispatch spec):
+ *   {
+ *     kind:                   'decision',
+ *     coordinator:            string,
+ *     ts:                     ISO-8601 string (date field or file mtime fallback),
+ *     decision_id:            string,
+ *     question:               string | null,
+ *     options:                string | null,
+ *     duong_pick:             string | null,
+ *     coordinator_pick:       string | null,
+ *     coordinator_predict:    string | null,  -- from `predict:` frontmatter field
+ *     coordinator_confidence: string | null,
+ *     axes:                   string[],       -- per-decision, expanded at SQL layer
+ *     match:                  boolean,        -- duong_concurred_silently:true → true
+ *     coordinator_autodecided: boolean,       -- true if coordinator_autodecided frontmatter
+ *     mode:                   string | null,
+ *   }
+ *
+ * @param {string} repoRoot — root of the agents-repo (for glob scanning)
+ * @returns {Array<Object>} decision events, sorted by ts ascending
+ */
+export function scanDecisionLogs(repoRoot) {
+  const agentsDir = join(repoRoot, 'agents');
+  if (!existsSync(agentsDir)) return [];
+
+  const events = [];
+
+  let coordinators;
+  try {
+    coordinators = readdirSync(agentsDir);
+  } catch {
+    return [];
+  }
+
+  for (const coordinator of coordinators) {
+    const logDir = join(agentsDir, coordinator, 'memory', 'decisions', 'log');
+    if (!existsSync(logDir)) continue;
+
+    let logFiles;
+    try {
+      logFiles = readdirSync(logDir);
+    } catch {
+      continue;
+    }
+
+    for (const name of logFiles) {
+      if (!name.endsWith('.md')) continue;
+
+      const filePath = join(logDir, name);
+      let stat;
+      try {
+        stat = statSync(filePath);
+      } catch {
+        continue;
+      }
+      if (!stat.isFile()) continue;
+
+      let content;
+      try {
+        content = readFileSync(filePath, 'utf8');
+      } catch {
+        continue;
+      }
+
+      const fm = parseFrontmatter(content);
+      if (!fm) continue;
+
+      // Extract axes — handle inline YAML list form
+      const axesRaw = fm.axes || '';
+      const axes = parseAxesList(axesRaw);
+
+      // Skip files with no axes — decision is not useful without axis categorization
+      if (axes.length === 0) continue;
+
+      // Validate coordinator_confidence before emitting — skip malformed entries
+      // (silently, since this is an ingest scanner not a validator)
+      const knownConfidences = new Set(['low', 'medium', 'high']);
+      const coordinator_confidence = fm.coordinator_confidence || null;
+
+      // Derive match — duong_concurred_silently: true forces match: true (plan B §3.1 line 136)
+      const duong_concurred_silently = fm.duong_concurred_silently === 'true';
+      const matchRaw = fm.match;
+      const match = duong_concurred_silently ? true : (matchRaw === 'true');
+
+      // coordinator_autodecided — present in hands-off mode (plan B §6.3)
+      const coordinator_autodecided = fm.coordinator_autodecided === 'true';
+
+      // Timestamp: prefer `date:` frontmatter field (ISO YYYY-MM-DD), fallback to file mtime
+      const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+      let ts;
+      if (fm.date && ISO_DATE_RE.test(fm.date)) {
+        ts = `${fm.date}T00:00:00.000Z`;
+      } else {
+        // mtime fallback — deterministic for a given file state
+        ts = stat.mtime.toISOString();
+      }
+
+      const decision_id = fm.decision_id || name.replace(/\.md$/, '');
+
+      events.push({
+        kind: 'decision',
+        coordinator: fm.coordinator || coordinator,
+        ts,
+        decision_id,
+        question: fm.question || null,
+        options: fm.options || null,
+        duong_pick: fm.duong_pick || null,
+        coordinator_pick: fm.coordinator_pick || null,
+        coordinator_predict: fm.predict || null,
+        coordinator_confidence,
+        axes,
+        match,
+        coordinator_autodecided,
+        mode: fm.mode || null,
+      });
+    }
+  }
+
+  // Sort by ts ascending (deterministic emission order)
+  events.sort((a, b) => {
+    if (!a.ts && !b.ts) return 0;
+    if (!a.ts) return 1;
+    if (!b.ts) return -1;
+    return a.ts.localeCompare(b.ts);
   });
 
   return events;
