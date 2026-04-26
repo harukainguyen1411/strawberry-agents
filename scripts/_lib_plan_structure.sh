@@ -125,8 +125,8 @@ check_qa_plan_frontmatter() {
   # Extract frontmatter block (between first two --- lines)
   _cqpf_fm="$(awk '/^---/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm{print}' "$_cqpf_plan")"
 
-  # Extract qa_plan value
-  _cqpf_val="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_plan:/{sub(/^qa_plan:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); print; exit}')"
+  # Extract qa_plan value — strip surrounding YAML quotes (I2)
+  _cqpf_val="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_plan:/{sub(/^qa_plan:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); gsub(/^["'"'"']|["'"'"']$/,""); print; exit}')"
 
   # Field must be present
   if [ -z "$_cqpf_val" ]; then
@@ -145,20 +145,33 @@ check_qa_plan_frontmatter() {
 
   _cqpf_fail=0
 
-  # When qa_plan: required — qa_co_author must also be present
+  # When qa_plan: required — qa_co_author must be present and must be lulu or senna (I2, I4)
   if [ "$_cqpf_val" = "required" ]; then
-    _cqpf_coauthor="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_co_author:/{sub(/^qa_co_author:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); print; exit}')"
+    _cqpf_coauthor="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_co_author:/{sub(/^qa_co_author:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); gsub(/^["'"'"']|["'"'"']$/,""); print; exit}')"
     if [ -z "$_cqpf_coauthor" ]; then
       printf '[lib-plan-structure] BLOCK: qa_plan: required but qa_co_author field is missing — set qa_co_author: lulu (UI) or qa_co_author: senna (backend)\n' >&2
       _cqpf_fail=1
+    else
+      # I4: whitelist — only lulu and senna are valid co-authors
+      case "$_cqpf_coauthor" in
+        lulu|senna) ;;
+        *)
+          printf '[lib-plan-structure] BLOCK: invalid qa_co_author value "%s" — must be one of: lulu, senna\n' "$_cqpf_coauthor" >&2
+          _cqpf_fail=1
+          ;;
+      esac
     fi
   fi
 
-  # When qa_plan: none — qa_plan_none_justification must be present
+  # When qa_plan: none — qa_plan_none_justification must be present and non-trivial (I2, I3)
   if [ "$_cqpf_val" = "none" ]; then
-    _cqpf_just="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_plan_none_justification:/{sub(/^qa_plan_none_justification:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); print; exit}')"
+    _cqpf_just="$(printf '%s\n' "$_cqpf_fm" | awk '/^qa_plan_none_justification:/{sub(/^qa_plan_none_justification:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); gsub(/^["'"'"']|["'"'"']$/,""); print; exit}')"
     if [ -z "$_cqpf_just" ]; then
       printf '[lib-plan-structure] BLOCK: qa_plan: none requires qa_plan_none_justification field — add a one-line justification explaining why there is no QA surface\n' >&2
+      _cqpf_fail=1
+    elif [ "${#_cqpf_just}" -lt 10 ]; then
+      # I3: minimum length — single-character or trivially short justifications are not meaningful
+      printf '[lib-plan-structure] BLOCK: qa_plan_none_justification is too short (minimum 10 characters) — provide a meaningful one-line justification\n' >&2
       _cqpf_fail=1
     fi
   fi
@@ -185,20 +198,22 @@ check_qa_plan_body() {
   [ -n "$_cqpb_plan" ] || { printf '[lib-plan-structure] ERROR: no plan file argument\n' >&2; return 2; }
   [ -f "$_cqpb_plan" ] || { printf '[lib-plan-structure] ERROR: plan file not found: %s\n' "$_cqpb_plan" >&2; return 2; }
 
-  # Extract qa_plan value from frontmatter
+  # Extract qa_plan value from frontmatter — strip surrounding YAML quotes (I2)
   _cqpb_fm="$(awk '/^---/{n++; if(n==1){in_fm=1; next} if(n==2){exit}} in_fm{print}' "$_cqpb_plan")"
-  _cqpb_val="$(printf '%s\n' "$_cqpb_fm" | awk '/^qa_plan:/{sub(/^qa_plan:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); print; exit}')"
+  _cqpb_val="$(printf '%s\n' "$_cqpb_fm" | awk '/^qa_plan:/{sub(/^qa_plan:[[:space:]]*/,""); gsub(/^[[:space:]]+|[[:space:]]+$/,""); gsub(/^["'"'"']|["'"'"']$/,""); print; exit}')"
 
   # qa_plan: none — no body section required
   if [ "$_cqpb_val" = "none" ]; then
     return 0
   fi
 
-  # For required and inline: ## QA Plan section must be present and have content
-  # Extract the body of the ## QA Plan section (text between "## QA Plan" and next "## " heading or EOF)
+  # For required and inline: ## QA Plan section must be present and have content.
+  # C1: track fenced code blocks so that ## QA Plan inside a ``` example is not
+  # mistaken for the real section heading.
   _cqpb_section="$(awk '
-    /^## QA Plan[[:space:]]*$/ { in_section=1; next }
-    in_section && /^## / { exit }
+    /^```/ { fence = !fence; next }
+    !fence && /^## QA Plan[[:space:]]*$/ { in_section=1; next }
+    !fence && in_section && /^## / { exit }
     in_section { print }
   ' "$_cqpb_plan")"
 
@@ -215,27 +230,29 @@ check_qa_plan_body() {
     return 0
   fi
 
-  # qa_plan: required — verify all four required sub-headings are present
+  # qa_plan: required — verify all four required sub-headings are present.
+  # C2+C3: use here-doc instead of printf|while to avoid subshell state loss and
+  # eliminate the PID-named tempfile that caused spurious REJECT on PID reuse.
+  # I1: normalize each line of the extracted section (strip trailing CR/spaces) before
+  # comparing with grep -xF (fixed-string exact match) — avoids regex metachar issues
+  # with headings like "### Failure modes (what could break)" while still tolerating
+  # trailing whitespace and Windows CRLF line endings from editors.
+  _cqpb_section_norm="$(printf '%s\n' "$_cqpb_section" | sed 's/[[:space:]]*$//')"
   _cqpb_fail=0
-
-  printf '%s\n' "$_QA_PLAN_REQUIRED_SUBHEADINGS" | while IFS= read -r _heading; do
-    # Exact line match: the heading must appear as a complete line (anchored)
-    if ! printf '%s\n' "$_cqpb_section" | grep -qxF "$_heading"; then
-      # Extract the meaningful part after "### " for the error message
+  while IFS= read -r _heading; do
+    # Normalize _heading: strip any trailing CR/spaces so the fixed-string match is clean
+    _heading="$(printf '%s' "$_heading" | sed 's/[[:space:]]*$//')"
+    # I1: fixed-string exact-line match against the whitespace-normalized section
+    if ! printf '%s\n' "$_cqpb_section_norm" | grep -qxF "$_heading"; then
       _heading_name="${_heading#\#\#\# }"
       printf '[lib-plan-structure] BLOCK: ## QA Plan section is missing required sub-heading: %s\n' "$_heading_name" >&2
-      # Signal failure via a temp file since subshell cannot propagate to outer variable
-      printf '1' > "${TMPDIR:-/tmp}/_lib_plan_structure_fail_$$"
+      _cqpb_fail=1
     fi
-  done
+  done <<EOF
+$_QA_PLAN_REQUIRED_SUBHEADINGS
+EOF
 
-  # Check if the subshell loop wrote a failure signal
-  if [ -f "${TMPDIR:-/tmp}/_lib_plan_structure_fail_$$" ]; then
-    rm -f "${TMPDIR:-/tmp}/_lib_plan_structure_fail_$$"
-    return 1
-  fi
-
-  return 0
+  return "$_cqpb_fail"
 }
 
 # check_plan_structure <plan_file>

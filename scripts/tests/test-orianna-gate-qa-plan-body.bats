@@ -346,3 +346,75 @@ Some content.
   [ "$status" -ne 0 ]
   [[ "$output" == *"QA Plan"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# T7a-8 — C1 regression: ## QA Plan inside a fenced code block is NOT the real section
+# ---------------------------------------------------------------------------
+
+@test "T7a-8: ## QA Plan inside fenced code block is ignored — real section absent → BLOCK (C1 regression)" {
+  # xfail: check_qa_plan_body not implemented yet (T7b)
+  # Covers C1: awk fence-state tracking prevents false-PASS from a fenced example.
+  [ "$IMPL_PRESENT" -eq 1 ] || skip "xfail — T7b implementation not yet present"
+
+  PLAN="$TMP_DIR/fenced-qa-plan-example.md"
+  # The plan has a fenced block containing ## QA Plan (as a documentation example)
+  # but NO real ## QA Plan section outside the fence. The linter must NOT be fooled.
+  make_plan_required "$PLAN" '# Meta-plan: QA contract documentation
+
+Here is an example of what the QA Plan section looks like:
+
+```markdown
+## QA Plan
+
+### Acceptance criteria
+- Example criterion.
+
+### Happy path (user flow)
+1. Example step.
+
+### Failure modes (what could break)
+- Example failure.
+
+### QA artifacts expected
+- Example artifact.
+```
+
+The real QA Plan section is intentionally absent to test C1.
+'
+
+  run check_qa_plan_body "$PLAN" 2>&1
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"QA Plan"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# T7a-9 — I2 regression: qa_plan: "required" with quoted YAML value must be accepted
+# ---------------------------------------------------------------------------
+
+@test "T7a-9: qa_plan: \"required\" (quoted YAML value) + full section → passes (I2 regression)" {
+  # xfail: check_qa_plan_body not implemented yet (T7b)
+  # Covers I2: YAML quoted values like "required" must be accepted, not rejected as unknown.
+  [ "$IMPL_PRESENT" -eq 1 ] || skip "xfail — T7b implementation not yet present"
+
+  PLAN="$TMP_DIR/quoted-required-value.md"
+  # Write frontmatter manually to embed quoted YAML value
+  cat > "$PLAN" <<'PLAN_EOF'
+---
+status: proposed
+concern: personal
+owner: test-author
+created: 2026-04-25
+tests_required: true
+qa_plan: "required"
+qa_co_author: senna
+---
+
+# Quoted Value Test
+
+PLAN_EOF
+  # Append the full QA section
+  full_qa_section >> "$PLAN"
+
+  run check_qa_plan_body "$PLAN"
+  [ "$status" -eq 0 ]
+}

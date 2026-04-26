@@ -239,3 +239,79 @@ ${QA_PLAN_BODY_FULL}"
   [ "$status" -ne 0 ]
   [[ "$output" == *"qa_co_author"* ]]
 }
+
+# ---------------------------------------------------------------------------
+# T6a-8 — I2 regression: quoted YAML value "required" must be accepted
+# ---------------------------------------------------------------------------
+
+@test "T6a-8: qa_plan: \"required\" (quoted YAML value) + qa_co_author: senna → passes (I2 regression)" {
+  # xfail: check_qa_plan_frontmatter not implemented yet (T6b)
+  # Covers I2: YAML allows quoted values; the linter must strip quotes before matching.
+  [ "$IMPL_PRESENT" -eq 1 ] || skip "xfail — T6b implementation not yet present"
+
+  PLAN="$TMP_DIR/quoted-required.md"
+  # Write frontmatter manually to embed a quoted qa_plan value
+  cat > "$PLAN" <<'PLAN_EOF'
+---
+status: proposed
+concern: personal
+owner: test-author
+created: 2026-04-25
+tests_required: true
+qa_plan: "required"
+qa_co_author: senna
+---
+
+# Quoted Value Frontmatter Test
+
+Some body content.
+PLAN_EOF
+
+  run check_qa_plan_frontmatter "$PLAN"
+  [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# T6a-9 — I4 regression: invalid qa_co_author value is rejected
+# ---------------------------------------------------------------------------
+
+@test "T6a-9: qa_plan: required + qa_co_author: nobody → BLOCK naming invalid co-author (I4 regression)" {
+  # xfail: check_qa_plan_frontmatter not implemented yet (T6b)
+  # Covers I4: qa_co_author whitelist enforcement — only lulu and senna are valid.
+  [ "$IMPL_PRESENT" -eq 1 ] || skip "xfail — T6b implementation not yet present"
+
+  PLAN="$TMP_DIR/invalid-coauthor.md"
+  make_plan_file "$PLAN" \
+    "qa_plan: required
+qa_co_author: nobody" \
+    "# Invalid Co-author Test
+
+${QA_PLAN_BODY_FULL}"
+
+  run check_qa_plan_frontmatter "$PLAN" 2>&1
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"qa_co_author"* ]]
+}
+
+# ---------------------------------------------------------------------------
+# T6a-10 — I3 regression: trivially short justification is rejected
+# ---------------------------------------------------------------------------
+
+@test "T6a-10: qa_plan: none + single-char justification → BLOCK (I3 regression)" {
+  # xfail: check_qa_plan_frontmatter not implemented yet (T6b)
+  # Covers I3: minimum 10-character justification requirement.
+  [ "$IMPL_PRESENT" -eq 1 ] || skip "xfail — T6b implementation not yet present"
+
+  PLAN="$TMP_DIR/trivial-justification.md"
+  make_plan_file "$PLAN" \
+    "qa_plan: none
+qa_plan_none_justification: ." \
+    "# Trivial Justification Test
+
+Some body content.
+"
+
+  run check_qa_plan_frontmatter "$PLAN" 2>&1
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"qa_plan_none_justification"* ]] || [[ "$output" == *"justification"* ]]
+}
