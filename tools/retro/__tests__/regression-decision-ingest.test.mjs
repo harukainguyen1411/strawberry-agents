@@ -231,6 +231,72 @@ describe('R4: scanDecisionLogs — multi-axis decision emits one event (SQL hand
 });
 
 // ---------------------------------------------------------------------------
+// R5 — coordinator field derived from directory structure when frontmatter coordinator absent
+// ---------------------------------------------------------------------------
+describe('R5: scanDecisionLogs — coordinator derived from directory when frontmatter absent', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'retro-decision-r5-'));
+    const logDir = join(tmpDir, 'agents', 'sona', 'memory', 'decisions', 'log');
+    mkdirSync(logDir, { recursive: true });
+    // No coordinator field in frontmatter — must be inferred from path
+    writeDecisionLog(logDir, '2026-04-24-no-coord.md', {
+      decision_id: '2026-04-24-no-coord',
+      date: '2026-04-24',
+      axes: ['routing-track'],
+      coordinator_confidence: 'medium',
+      match: 'true',
+      // coordinator intentionally omitted
+    });
+  });
+
+  after(() => {
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  it('coordinator field falls back to directory name when frontmatter coordinator absent', () => {
+    const events = scanDecisionLogs(tmpDir);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(events[0].coordinator, 'sona',
+      'coordinator must be derived from agents/<name>/memory/... directory structure when frontmatter omits it');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// R6 — confidence mapping emitted as string in event payload
+// ---------------------------------------------------------------------------
+describe('R6: scanDecisionLogs — coordinator_confidence emitted as string', () => {
+  let tmpDir;
+
+  before(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'retro-decision-r6-'));
+    const logDir = join(tmpDir, 'agents', 'evelynn', 'memory', 'decisions', 'log');
+    mkdirSync(logDir, { recursive: true });
+    writeDecisionLog(logDir, '2026-04-24-high-confidence.md', {
+      decision_id: '2026-04-24-high-confidence',
+      date: '2026-04-24',
+      coordinator: 'evelynn',
+      axes: ['routing-track'],
+      coordinator_confidence: 'high',
+      match: 'true',
+    });
+  });
+
+  after(() => {
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+  });
+
+  it('coordinator_confidence in emitted event is a string (score mapping stays in parser)', () => {
+    const events = scanDecisionLogs(tmpDir);
+    assert.strictEqual(events.length, 1);
+    assert.strictEqual(typeof events[0].coordinator_confidence, 'string',
+      'coordinator_confidence must be emitted as a string in the event payload');
+    assert.strictEqual(events[0].coordinator_confidence, 'high');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // R7 — event sort order: older ts first
 // ---------------------------------------------------------------------------
 describe('R7: scanDecisionLogs — events sorted by ts ascending', () => {

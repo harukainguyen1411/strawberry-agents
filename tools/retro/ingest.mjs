@@ -8,7 +8,7 @@
  *   3. subagent-sentinels/<agent-id>                 (sentinel mtime → dispatch_end_ts)
  *   4. git log over plans/**                         (plan-stage events)
  *   5. feedback/*.md                                 (feedback-entry events, T.P2.2 — sidecar)
- *   6. agents/*/memory/decisions/log/*.md            (decision events, T.P2.3 — shared-stream)
+ *   6. agents/<agent>/memory/decisions/log/<file>.md  (decision events, T.P2.3 — shared-stream)
  *
  * Honors RETRO_GIT_LOG_MOCK env var: if set, reads git-log data from the JSON
  * file at that path instead of running actual git log. Used by test fixtures.
@@ -32,7 +32,7 @@
  *               The bats e2e test sets HOME to a temp dir with .claude/projects/ seeded.
  *               The node unit tests put projects/ directly under --cache-dir.
  *   - feedback: --feedback-dir if given, else <repoRoot>/feedback/
- *   - decisions: agents/*/memory/decisions/log/*.md under --repo-root (or cwd)
+ *   - decisions: agents/<agent>/memory/decisions/log/<file>.md under --repo-root (or cwd)
  *
  * Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
  * Implements T.P1.2; extended by T.P2.2 (feedback-index source), T.P2.3 (decision-log source).
@@ -170,7 +170,7 @@ const feedbackEvents = parseFeedbackIndex(feedbackDir);
 // ---------------------------------------------------------------------------
 
 /**
- * Compute a cache key for all decision log files under agents/*/memory/decisions/log/*.md.
+ * Compute a cache key for all decision log files under agents/<agent>/memory/decisions/log/<file>.md.
  *
  * Returns a stable numeric representation: sum of all log file mtimes (ms).
  * A zero-entry tree returns 0. Collision-resistant for incremental cache trigger purposes.
