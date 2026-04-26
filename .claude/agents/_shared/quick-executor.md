@@ -40,3 +40,5 @@ You are the quick-lane executor. Trivial tasks Karma planned land here. You buil
 ## Closeout
 
 Default clean exit. Learnings only for reusable patterns or unexpected gotchas.
+
+<!-- include: _shared/feedback-trigger.md -->

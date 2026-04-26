@@ -33,3 +33,5 @@ You write and run tests from a test plan. You do not design the plan; you execut
 ## Closeout
 
 Default clean exit. Learnings only if you hit a novel fixture pattern or test-infra gotcha.
+
+<!-- include: _shared/feedback-trigger.md -->
