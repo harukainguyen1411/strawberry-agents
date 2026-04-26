@@ -5,6 +5,7 @@ owner: swain
 created: 2026-04-25
 tests_required: true
 complexity: standard
+qa_plan: none
 orianna_gate_version: 2
 tags: [architecture, qa, akali, two-stage, rule-16, agent-pairing, advisory]
 related:
@@ -188,3 +189,21 @@ Out of scope: the v1 plan's §Test plan (already covers v1 invariants); coordina
 - `agents/sona/memory/open-threads.md` lines 303-307 (Sona's prior 2026-04-23 escalation — historical context)
 - `agents/sona/memory/open-threads.md` line 40 (PR #32 ghost-citation incident — proximate trigger)
 - `assessments/qa-reports/2026-04-22-akali-*.md` (prior Akali QA reports — likely contain source-citations that the post-D2 rule would forbid; OQ-7 confirms no retroactive edits)
+
+## QA Plan
+
+`qa_plan: none`. This is an advisory architectural ADR — its test surface lives in the downstream v1 (`akali-qa-discipline-hooks`) and v2 implementation plans, not in this ADR itself. The plan's existing §Test plan section explicitly notes: "This plan is advisory — its test surface is the v1 + v2 implementation plans." No QA report or test artifact is required for promotion of the ADR itself.
+
+## Decision-Outcome (Duong, 2026-04-26)
+
+Three blocking decisions resolved in coordinator dispatch (Evelynn session 9c8170e8). Decision log: `agents/evelynn/memory/decisions/log/2026-04-26-qa-two-stage-three-blockers.md`.
+
+- **D2 (citation-tagging contract)**: ACCEPT as prompt-rule only. The `cite_kind: verified | inferred` field becomes part of akali.md output discipline. NO PR-lint CI gate — agent discipline is sufficient. (Option B)
+
+- **D3 (inferred-FAIL coordinator re-dispatch)**: ACCEPT but narrow trigger. Re-dispatch only when `requires_diagnosis: true` AND verdict=FAIL AND `cite_kind: inferred`. Broader trigger (every inferred-FAIL) rejected as over-eager. (Option B)
+
+- **D4 (Rule 16 wording)**: Rule 16 in CLAUDE.md stays as-is. Contract details (citation-tagging field, narrow re-dispatch trigger) land in `.claude/agents/akali.md` + `architecture/agent-network-v1/qa-pipeline.md`. Rule 16 gets a one-line reference to qa-pipeline.md. CLAUDE.md is universal-rules surface; domain contracts belong in domain docs. (Option B)
+
+- **D6f (`head_sha:` mandatory frontmatter)**: already de-facto approved via synthesis ADR §7.5 Group B B3a. No further decision needed.
+
+Karma v1 (`plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md`) promoted independently — it does not depend on D2/D3/D4.
