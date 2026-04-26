@@ -35,6 +35,10 @@ FIXTURES="$REPO_ROOT/tests/hooks/idea-structure/fixtures"
 # Canonical error message from ADR §A2 — must appear verbatim in hook output.
 CANONICAL_ERROR="this is a plan, not an idea"
 
+# Force error mode in tests regardless of sunset date.
+# Tests verify validation logic; sunset behavior is separately verified in T9/T18.
+export STRAWBERRY_IDEA_LINT_LEVEL=error
+
 # ---------------------------------------------------------------------------
 # Guard: skip all tests with an XFAIL message when hook is absent.
 # ---------------------------------------------------------------------------
