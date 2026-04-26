@@ -4,7 +4,7 @@ date: 2026-04-26
 owner: karma
 concern: personal
 complexity: quick
-status: proposed
+status: approved
 orianna_gate_version: 2
 tier: quick
 tests_required: true
@@ -57,3 +57,11 @@ T1 covers all four invariants as discrete cases under `scripts/statusline/tests/
 - Schema gist (AKCodez): https://gist.github.com/AKCodez/ffb420ba6a7662b5c3dda2edce7783de
 - Closest reference impl: https://github.com/benabraham/claude-code-status-line
 - Prior empty-commit incident: `85c39168` (session 9c8170e8 — file write lost to subagent bash-denial regression; this plan is the re-author)
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** QA-plan structural checks (frontmatter + body) pass. Owner is karma, concern personal, tier quick. Tasks T1–T4 are concrete with files, estimates, and DoD; T1 is the xfail test task satisfying tests_required. The plan is appropriately scoped — single in-repo script + sample payload + short architecture doc; secondary/tertiary paths from Lux's research are explicitly deferred. Prior REJECT (qa_plan tag + section heading) addressed at 57006c7c.
+
