@@ -1,8 +1,13 @@
 ---
-title: Coordinator routing discipline — structural fix for plan-author/pair-mate/Rule-12 dispatch errors
-author: lux
 date: 2026-04-25
+author: lux
+category: research
 concern: personal
+target: Coordinator routing discipline — structural fix for plan-author/pair-mate/Rule-12 dispatch errors
+state: complete
+owner: lux
+session: research-only
+title: Coordinator routing discipline — structural fix for plan-author/pair-mate/Rule-12 dispatch errors
 tags: [agents, routing, coordinator, hooks, taxonomy, evelynn, sona]
 status: research
 related:
