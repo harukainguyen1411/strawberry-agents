@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-26 (Yuumi reconciliation, project-mode).
+Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 71c24fd3).
 
 ---
 
@@ -46,6 +46,22 @@ Last updated: 2026-04-26 (Yuumi reconciliation, project-mode).
 **Current status (2026-04-25):** Lock activates at dashboard Phase 2 ship. All `.claude/agents/*.md` and hook edits must land pre-lock.
 **Next:** Track any outstanding infra changes before Phase 2 ships.
 **Shard:** 56777883
+
+---
+
+## 5 open PRs — review strategy pending Duong confirmation
+
+**Current status (2026-04-26):** PRs #67 (Talon parked, project-context-doctrine), #68 (Frontend-UX Stream E PR markers + CI), #69 (Frontend-UX Stream B UX Spec template + linter), #70 (assessments Phase C index-gen), #71 (QA-pipeline T6b/T7b qa_plan linter), #72 (Frontend-UX Stream C Rule 22 §UX Spec gate) all in flight. Coordinator picked option **b**: read Talon's parked-note on #67 first, then fan out parallel Senna+Lucian review on remaining. Duong not yet confirmed.
+**Next:** Resume point — read #67 parked-note, confirm strategy with Duong, dispatch reviews.
+**Shard:** 71c24fd3
+
+---
+
+## Inbox watcher hook false-positive — follow-up needed
+
+**Current status (2026-04-26):** PreToolUse INBOX WATCHER NOT ARMED hook fires on every tool call despite Monitor task being armed and emitting events correctly. Hook ps-grep probe doesn't match the Monitor process shape. Same defect shape as Sona's post-/compact duplicate-spawn report. Both point to hook-detection-too-narrow.
+**Next:** File Karma quick-lane plan when capacity allows.
+**Shard:** 71c24fd3
 
 ---
 
@@ -97,11 +113,11 @@ Last updated: 2026-04-26 (Yuumi reconciliation, project-mode).
 
 ---
 
-## Lux monitoring research — awaiting Duong OQ answers
+## Lux monitoring research — RESOLVED for v1
 
-**Current status (2026-04-26):** Lux dispatched per Duong's Anthropic docs URL hint. Returned with OTel + Langfuse self-hosted + ccusage + DuckDB build-vs-buy recommendation; build thin glue only (plan-lifecycle-events.sh, plan-cost-rollup.sh, off-track-signals.sh). Dashboard = join + skin, not a UI. Six OQs for Duong: telemetry privacy gate, scope, UI tolerance, backfill, sampling validation, complexity-tier source. Actively in front of Duong as of 2026-04-26 session — OQs not yet answered.
-**Next:** Duong answers OQs. Swain dashboard authoring HELD until answers received.
-**Shard:** bc09be92
+**Current status (2026-04-26):** Six OQs closed in retrospection-dashboard plan §7 ("RESOLVED 2026-04-25"). Langfuse rejected for v1. Dashboard authoring unblocked per artifact state. Thread closed.
+**Next:** None. RESOLVED.
+**Shard:** 71c24fd3
 
 ---
 
