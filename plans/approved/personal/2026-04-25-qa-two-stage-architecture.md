@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: approved
 concern: personal
 owner: swain
 created: 2026-04-25
@@ -208,3 +208,11 @@ Three blocking decisions resolved in coordinator dispatch (Evelynn session 9c817
 - **D6f (`head_sha:` mandatory frontmatter)**: already de-facto approved via synthesis ADR §7.5 Group B B3a. No further decision needed.
 
 Karma v1 (`plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md`) promoted independently — it does not depend on D2/D3/D4.
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** QA-plan structural checks pass (frontmatter `qa_plan: none` with required `qa_plan_none_justification`; body `## QA Plan` section present and consistent). Plan has clear owner (swain), advisory ADR shape is appropriate, decisions D1–D6 are concrete and well-reasoned, and a Decision-Outcome section captures Duong's resolutions on the three blocking questions (D2/D3/D4) plus D6f. Tasks are coordination-shaped with downstream test surface explicitly delegated to v1/v2 implementation plans, matching `qa_plan: none` framing. No unresolved TBD/TODO in gating sections.
+
