@@ -1,3 +1,14 @@
+---
+date: 2026-04-23
+author: ekko
+category: research
+concern: personal
+target: Claude Code Routines availability and behavior — research spike
+state: complete
+owner: ekko
+session: research-only
+---
+
 # Research spike — Claude Code Routines availability and behavior
 
 **Date:** 2026-04-23

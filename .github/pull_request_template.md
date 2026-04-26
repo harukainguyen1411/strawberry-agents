@@ -27,6 +27,23 @@
 - [ ] Pre-push TDD hook passed (xfail-first + regression-test checks)
 - [ ] No `--no-verify` used
 
+<!--
+### Frontend / UI markers  (Rule 22 — required for UI/user-flow PRs only)
+
+If this PR touches UI file paths (apps/**/src/*.{vue,tsx,jsx,ts,js,css,scss},
+apps/**/components/**, apps/**/pages/**, apps/**/routes/**) include at least ONE
+non-empty marker below. Remove this section entirely for non-UI PRs.
+
+Design-Spec: <plan-path-or-figma-link>
+Accessibility-Check: pass | deferred-<reason>
+Visual-Diff: <Akali-report-path-or-link> | n/a-no-visual-change | waived-<reason>
+
+UX-Waiver: <reason>  ← substitutes for Design-Spec: for pure refactors, child plans
+                        of an already-approved parent spec, or explicit Duong waiver.
+
+See plans/approved/personal/2026-04-25-frontend-uiux-in-process.md D7.
+-->
+
 ## Review Notes
 
 <!-- Anything reviewers should focus on? -->

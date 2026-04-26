@@ -122,11 +122,15 @@ See `agents/memory/agent-network.md` for the full roster.
 
 21. **No AI attribution — three-layer defense.** (a) Prompt: every agent def includes `.claude/agents/_shared/no-ai-attribution.md` (canonical marker list, non-exhaustive) via the `<!-- include: -->` mechanism — synced by `scripts/sync-shared-rules.sh`. (b) Hook: `scripts/hooks/commit-msg-no-ai-coauthor.sh` blocks any `Co-Authored-By:` trailer (universal) and AI markers in the commit body (`Claude`, `Anthropic`, `Sonnet`, `Opus`, `Haiku`, `🤖`, `AI-generated`, `claude.com`, etc.). (c) CI: `.github/workflows/pr-lint.yml` job `pr-no-ai-attribution` scans PR body and PR comments via `scripts/ci/pr-lint-no-ai-attribution.sh`; fails on match. Override for all three layers: `Human-Verified: yes` trailer in the commit message or PR body.
 
+<!-- #rule-uxspec-gate -->
+22. **UI plans require a §UX Spec authored by Lulu or Neeko BEFORE impl dispatch.** Plans whose §Tasks touch UI surface (per the path-glob in `plans/approved/personal/2026-04-25-frontend-uiux-in-process.md` D1) MUST contain a `## UX Spec` section covering user-flow, component states, responsive behavior, accessibility (per the floor in D5), and a Figma link or local wireframe. Authored by Lulu (normal-track) or Neeko (complex-track) per the routing in D6. Enforced at impl dispatch by the PreToolUse `Agent` hook `scripts/hooks/pretooluse-uxspec-gate.sh` (blocks Seraphine/Soraka dispatch on UI-touching plans missing §UX Spec) and at plan promotion by the plan-structure linter. Bypass: `UX-Waiver: <reason>` in plan frontmatter for refactors with no visible delta, child plans of an already-approved parent spec, or explicit Duong waiver. PR-body markers `Design-Spec:`, `Accessibility-Check:`, `Visual-Diff:` are required on UI/user-flow PRs (per D7); enforced by `.github/workflows/pr-lint.yml`.
+
 ## File Structure
 
 | Path | Purpose |
 |------|---------|
 | `architecture/` | System docs — source of truth for how the system works |
+| `projects/<concern>/{proposed,active,completed,archived}/<slug>.md` | Top-level intent docs (Duong-authored). Goal, DoD, deadline, budget. No Orianna gate. See `architecture/agent-network-v1/projects.md`. |
 | `plans/` | Execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter). Subdirs: `proposed/`, `approved/`, `in-progress/`, `implemented/`, `archived/` |
 | `assessments/` | Analyses, recommendations, evaluations |
 | `agents/` | Profiles, memory, journals, learnings per agent |
