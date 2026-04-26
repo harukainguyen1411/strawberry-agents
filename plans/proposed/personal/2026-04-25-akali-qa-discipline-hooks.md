@@ -6,6 +6,7 @@ created: 2026-04-25
 tests_required: true
 complexity: quick
 qa_plan: none
+qa_plan_none_justification: "Karma quick-lane plan — agent-def + hook scripts only, no app surface. Test surface is the hook scripts themselves which are exercised by their own bats files in scripts/__tests__/."
 orianna_gate_version: 2
 tags: [hooks, posttooluse, agent-dispatch, akali, lucian, qa-discipline]
 related:

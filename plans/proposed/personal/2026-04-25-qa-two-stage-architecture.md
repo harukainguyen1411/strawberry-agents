@@ -6,6 +6,7 @@ created: 2026-04-25
 tests_required: true
 complexity: standard
 qa_plan: none
+qa_plan_none_justification: "advisory architectural ADR — test surface lives in downstream v1 (akali-qa-discipline-hooks) and v2 implementation plans, not in this ADR itself"
 orianna_gate_version: 2
 tags: [architecture, qa, akali, two-stage, rule-16, agent-pairing, advisory]
 related:
