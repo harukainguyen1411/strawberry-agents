@@ -90,3 +90,4 @@
 - 2026-04-25-parallel-slice-predispatch-doctrine.md — Before dispatching any task >30 min, check for parallel streams. If parallel streams exist, slice first. Dispatch to a single agent only when runtime is genuinely short or streams are deeply interdependent. Doctrine shipped as PR #66. | last_used: 2026-04-25
 
 - 2026-04-25-orianna-parallel-git-index-race.md — Orianna parallel-dispatch git-index race; mitigation: explicit-pathspec on git commit
+- 2026-04-26-bookkeeping-not-source-of-truth.md — open-threads.md / memory shards drift fast under heavy parallel impl; verify artifact layer (plan files, PR state, git log) before surfacing any OQ as blocking; bookkeeping is downstream of artifacts, not upstream | last_used: 2026-04-26

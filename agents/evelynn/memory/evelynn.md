@@ -73,6 +73,49 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-23 (c95a8d3b, cli, pre-compact #2)
+
+PR #30 (Orianna v2 gate simplification) merged; memory-flow ADR promoted to in-progress with full Xayah+Aphelios content; Ekko impersonation incident exposed structural identity-spoofing weakness; Karma authored two new plans (subagent-worktree-and-edit-only, plan-lifecycle-physical-guard); Duong's "one true god gate" principle articulated.
+
+Delta notes:
+- Two-checker divergence (orianna-sign.sh vs lib-plan-structure hook) is now obsolete post-PR #30.
+- v1 `tests_required: true` + no `kind: test` task gate was unblocked for memory-flow and Orianna v2 plans once v2 landed; both promoted clean.
+- Worktree isolation (`isolation: "worktree"`) identified as the structural fix for parallel-subagent write races — materialized as a residual today, now driving the subagent-worktree-and-edit-only plan.
+- Ekko identity spoofing revealed that commit-phase identity checks are cheaply spoofable by any agent with filesystem access. PreToolUse-layer physical gate is the proposed remedy.
+- 3 plans archived (orianna-work-repo-routing, orianna-rescope-canary, orianna-sign-staged-scope) — these were superseded by PR #30's merged implementation.
+
+## Session 2026-04-23 (26406c02, cli, pre-compact #3)
+
+PR #31 (physical guard god-gate) merged after 4 Senna review rounds and bashlex AST walker implementation. PR #32 (agent_type identity propagation) merged — Orianna identity now flows through hook JSON rather than env vars. 5 parallel Orianna promotes queued; script-dispatch path identity gap surfaced in first result (subagent-identity→implemented BLOCKED). Swain authored agent-owned-config-flow ADR. Verb-allowlist bash path scanner fix shipped.
+
+Delta notes:
+- Agent-tool-dispatched Orianna gets `agent_type: "orianna"` from the hook payload — guard now works cleanly for that path.
+- Script-invoked worktree sessions (`.claude/worktrees/agent-*`) do NOT populate `agent_type` — gate correctly blocks them. Follow-up plan needed for that path.
+- AST-based bash scanning (bashlex) is strictly stronger than tokenizer-based; every new bypass finding from round-1 through round-4 was an AST structural edge case, not a tokenizer gap.
+- 5 parallel isolated worktree Orianna spawns is the confirmed pattern for batch plan promotions.
+
+## Session 2026-04-23 (SN, cli, pre-compact #4)
+
+Post-compact #3 continuation. Landed PR #33 (inbox-write-guard), cleaned stale Rule 19 + plan-lifecycle.md gate references, promoted plan-lifecycle-physical-guard and orianna-gate-simplification to implemented, codified trust-but-verify disconfirming-subagent rule in both coordinator CLAUDE.md files. Agent-owned-config-flow ADR approved with Aphelios breakdown inline. Session active at compact.
+
+### Delta notes
+
+- **inbox-write-guard shipped** — PR #33 merged (`3911b38`). Direct inbox writes now blocked at the PreToolUse layer; all inbox delivery must go through `/agent-ops send`. Three Senna review rounds; env-var bypass fix on round 3.
+- **One true gate confirmed** — Pre-commit plan-promote-guard is dead. CLAUDE.md Rule 19 + `architecture/plan-lifecycle.md` cleaned of stale references (`3e0c3d9` + `f3dd1f4`). PreToolUse is the sole enforcement layer.
+- **trust-but-verify codified** — Incident: Ekko returned a result contradicting the frozen deployed S2 contract. Rule added to both coordinator CLAUDE.md: re-verify via a distinct method before acting on any subagent result that contradicts established facts, Duong's expectations, or a parallel agent's result.
+- **plan-lifecycle-physical-guard → implemented** (`dad23a3`). **orianna-gate-simplification → implemented** (`0314b3d`, plan rewritten at `6c18579` to reflect physical-guard design).
+- **agent-owned-config-flow**: Swain rewrote ADR against frozen S2 (`4f88b90`), promoted to approved (`79981e1`), Aphelios breakdown inline (`4bb30da`/`2944958`). Ready for Viktor/Jayce.
+
+## Session 2026-04-23 (S65-hands-off, cli, auto)
+
+**Summary:** Hands-off queue processing run — 6 plans shipped to implemented, 1 to in-progress, 3 Azir ADRs brought to review-ready, PR #34 merged via full Rule-18 cycle.
+
+**Delta notes:**
+- **Concurrent-agent commit entanglement:** Parallel subagents staging different files caused one agent's commit SHA to carry another's work. Nominal file disjointedness is insufficient — serialize any dispatches touching hooks or plans subtrees (commit messages lied about diff content in two incidents).
+- **Karma charter boundary violation:** Used Karma to execute three plans; charter restricts Karma to planning only, Talon executes. Karma self-flagged under hands-off. Will not repeat.
+- **PostToolUse scoping caveat:** PostToolUse matchers fire at parent-session scope, not subagent-internal scope. Subagent-denial-probe phase-1 captures coordinator-tier denials only; phase-2 SubagentStop wrapper needed for subagent-internal coverage.
+- **AST-scanner heredoc false-positive:** Plan-lifecycle PreToolUse scanner fails closed on heredoc bodies containing plan-path tokens, even when paths are string content not file-operation arguments. Workaround: use Write/Edit tools for content with plan paths; avoid bash heredocs. Follow-up: tighten scanner to file-modifying verbs only.
+
 ## Session 2026-04-21 (S64, cli, direct mode)
 
 Pre-compact consolidation — full end-session equivalent not run; Lissandra consolidated mid-session.
