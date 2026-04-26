@@ -3,7 +3,7 @@ slug: monitor-arming-gate-bugfixes
 date: 2026-04-26
 owner: karma
 concern: personal
-status: proposed
+status: approved
 tier: quick
 complexity: normal
 parallel_slice_candidate: no
@@ -142,3 +142,10 @@ Pre-existing tests (Tests 1-5 in `test-monitor-arming-gate-stateless.sh`, scope 
 - Live evidence (Bug 1): Senna PR #68 review notes; 12 duplicate `inbox-watch.sh` shells observed in Evelynn session 2026-04-26.
 - Live evidence (Bug 2): `echo "${CLAUDE_SESSION_ID:-unset}"` → `unset` in coordinator shell, 2026-04-26.
 - Live evidence (Bug 3): pid 60660 healthy after `/compact`, gate firing on every call.
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan has clear owner (Karma), concrete bug descriptions with live evidence for all three defects, and a decision section that justifies the chosen design (tty-keyed sentinel + pid-scan rescue) over the riskier env-clearing alternative. Tasks T1-T4 are actionable with files, estimates, and DoD. Test plan satisfies Rule 12 (xfail-first) with one regression test per bug, and pre-existing tests are explicitly preserved. Done-when includes manual smoke checks for the cross-process semantics that unit tests cannot fully cover.
