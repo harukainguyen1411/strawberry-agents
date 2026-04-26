@@ -1,0 +1,41 @@
+## Summary
+
+Adds a dashboard widget for activity feed. Marker keys are present but the values
+are empty — a malformed marker must be rejected the same as a missing marker.
+
+## Author
+
+**Agent:** Seraphine
+
+## Documentation Checklist
+
+- [ ] Architecture change? Updated relevant `architecture/` doc
+- [x] New feature or removed feature? Updated relevant `README.md`
+- [ ] Changes agent communication or MCP tools? Updated `agent-network.md`
+- [ ] N/A — no documentation updates needed
+
+## Testing
+
+| Field | Value |
+|-------|-------|
+| xfail test commit SHA | mno7890 |
+| Regression test linked | tests/e2e/dashboard-feed.spec.ts |
+| QA-Report | QA-Report: assessments/qa-reports/2026-04-25-akali-dashboard-feed.md |
+
+- [x] All pre-commit unit tests pass locally
+- [x] Pre-push TDD hook passed (xfail-first + regression-test checks)
+- [x] No `--no-verify` used
+
+### Frontend / UI markers
+
+Design-Spec:
+Accessibility-Check:
+Visual-Diff:
+
+## Review Notes
+
+Marker keys are present but values are empty strings.
+UI PR modifying apps/strawberry-app/src/components/dashboard/ActivityFeed.vue.
+A marker with an empty value is indistinguishable from no marker at all — the
+lint check must treat empty values as absent.
+Expected: pr-frontend-markers job FAILS (empty marker values rejected).

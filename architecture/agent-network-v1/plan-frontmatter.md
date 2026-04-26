@@ -115,6 +115,29 @@ Enforcing gate: `in-progress → implemented`.
 
 ## Optional fields
 
+### `project`
+
+| Attribute | Value |
+|---|---|
+| Type | string |
+| Allowed values | a valid project slug; must reference an existing `projects/<concern>/{proposed,active}/<slug>.md` |
+| Enforcement | warn (first two weeks post-doctrine); reject after retroactive sweep lands |
+| Default | absent |
+
+Links this plan to a project. When set, Orianna verifies that
+`projects/<concern>/active/<slug>.md` OR `projects/<concern>/proposed/<slug>.md` exists; missing
+project file causes a reject. When absent, Orianna emits a warning for plans authored after
+2026-04-25 (the doctrine's promotion date) — some plans are genuinely project-less infrastructure,
+so the gate is warn-not-reject until the retroactive sweep promotes it.
+
+See `architecture/agent-network-v1/projects.md` for the full project doctrine.
+
+```yaml
+project: agent-network-v1
+```
+
+---
+
 ### `complexity`
 
 | Attribute | Value |
@@ -157,6 +180,7 @@ Paths to related plans, architecture docs, or assessments. Example: `[plans/in-p
 | `tests_required` | boolean | no (default `true`) | `approved → in-progress`, `in-progress → implemented` |
 | `architecture_changes` | string list | conditional | `in-progress → implemented` |
 | `architecture_impact` | string | conditional | `in-progress → implemented` |
+| `project` | string | no (warn if absent post-doctrine) | `proposed → approved` (warn/reject) |
 | `complexity` | string | no | advisory |
 | `tags` | string list | no | none |
 | `related` | string list | no | none |

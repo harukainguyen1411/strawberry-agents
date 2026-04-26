@@ -1,4 +1,4 @@
-name: PR Lint (Rule 16 + no-AI-attribution)
+name: PR Lint (Rule 16 + Rule 22 + no-AI-attribution)
 
 on:
   pull_request:
@@ -113,3 +113,47 @@ jobs:
           echo "" >&2
           echo "See CLAUDE.md Rule 16 and .claude/agents/akali.md for details." >&2
           exit 1
+
+  pr-frontend-markers:
+    # Rule 22 / D7 — Frontend / UI marker gate.
+    # Runs on PRs to main that touch UI file paths (D1 glob).
+    # Requires at least one non-empty marker from:
+    #   Design-Spec:, Accessibility-Check:, Visual-Diff:
+    # or a UX-Waiver: line in the PR body.
+    #
+    # Plan: plans/approved/personal/2026-04-25-frontend-uiux-in-process.md T-E3
+    name: Frontend / UI markers (Rule 22)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Checkout repo (for lint script)
+        uses: actions/checkout@v4
+
+      - name: Extract changed files
+        id: changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Use the multiline delimiter protocol to avoid space/= encoding issues.
+          # Each filename is on its own line; the lint script iterates word-by-word
+          # so newline-separated is safe (IFS splits both spaces and newlines).
+          {
+            printf 'files<<EOF\n'
+            gh pr diff --name-only "$PR_NUMBER" --repo "$REPO"
+            printf 'EOF\n'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run frontend-markers lint
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
+        run: |
+          PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""')
+          printf '%s' "$PR_BODY" | bash scripts/ci/pr-lint-frontend-markers.sh - "$CHANGED_FILES"
