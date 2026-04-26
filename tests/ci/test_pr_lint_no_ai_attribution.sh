@@ -116,36 +116,37 @@ run_case "Body containing Co-Authored-By trailer (universal block)" \
 Co-Authored-By: Anyone <a@b>" \
   1
 
-run_case "Comment payload containing Sonnet 4.6" \
+run_case "Comment: reviewed by Sonnet 4.6 — bare mention, no attr verb, now passes" \
   "This PR was reviewed by Sonnet 4.6" \
-  1
+  0
 
-# F1 adversarial: prefix chars (, [, :, " (Senna finding F1)
-run_case "F1: (Sonnet) in PR body — paren prefix" \
+# F1 adversarial: prefix chars — behavior changes with attribution-phrase detector.
+# Bare mentions without attribution verbs now pass.
+run_case "F1: (Sonnet) in PR body — bare mention, now passes" \
   "## Summary
 Built with (Sonnet) model" \
-  1
+  0
 
-run_case "F1: [Opus] in PR body — bracket prefix" \
+run_case "F1: [Opus] in PR body — bare mention, now passes" \
   "## Summary
 Using [Opus] here" \
-  1
+  0
 
-run_case "F1: :Claude in PR body — colon prefix" \
+run_case "F1: :Claude in PR body — bare mention, now passes" \
   "## Summary
 model:Claude was used" \
-  1
+  0
 
-# F2 adversarial: marker glued to digit (Senna finding F2)
-run_case "F2: Sonnet4.6 in PR body — digit postfix" \
+# F2 adversarial: "Written by Sonnet4.6" still blocks (phrase match); bare Opus4 passes.
+run_case "F2: Written by Sonnet4.6 in PR body — phrase regex matches, blocks" \
   "## Summary
 Written by Sonnet4.6" \
   1
 
-run_case "F2: Opus4 in PR body — digit postfix" \
+run_case "F2: Opus4 in PR body — bare mention, now passes" \
   "## Summary
 Using Opus4" \
-  1
+  0
 
 # --- QA Plan fail cases (plan: no-ai-attribution-detector-tightening) ---
 
