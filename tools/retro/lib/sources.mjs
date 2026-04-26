@@ -397,6 +397,162 @@ function parseRealGitLog(raw) {
 }
 
 // ---------------------------------------------------------------------------
+// Source 5: Feedback index reader (T.P2.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse YAML-like frontmatter from a markdown file.
+ * Returns an object with the frontmatter fields, or null if none found.
+ *
+ * Supports simple key: value pairs (no nested/list types beyond plain scalars).
+ *
+ * @param {string} content — file contents
+ * @returns {Record<string, string> | null}
+ */
+function parseFrontmatter(content) {
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!match) return null;
+  const block = match[1];
+  const result = {};
+  for (const line of block.split('\n')) {
+    const m = line.match(/^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)/);
+    if (m) {
+      result[m[1]] = m[2].trim().replace(/^["']|["']$/g, '');
+    }
+  }
+  return result;
+}
+
+/**
+ * Map a feedback entry's `state:` frontmatter value to a normalized `status` string.
+ *
+ * state → status mapping (per §D1 lifecycle + §D12 bind-contract):
+ *   open          → open
+ *   acknowledged  → triaged
+ *   graduated     → closed
+ *   stale         → closed
+ *
+ * I5 fix: unknown state values now emit a loud stderr warning rather than silently
+ * defaulting to 'open'. Silently defaulting inflated open counts on typo'd `state:`
+ * values — the user would see phantom open entries with no indication of the problem.
+ * The entry is still emitted (as 'open') to avoid silently dropping data, but the
+ * warning makes the anomaly visible so the typo can be corrected.
+ *
+ * @param {string|undefined} state
+ * @param {string} [sourceHint] — optional filename or context for the warning message
+ * @returns {string}
+ */
+function stateToStatus(state, sourceHint) {
+  switch (state) {
+    case 'open':          return 'open';
+    case 'acknowledged':  return 'triaged';
+    case 'graduated':     return 'closed';
+    case 'stale':         return 'closed';
+    default: {
+      const hint = sourceHint ? ` (in ${sourceHint})` : '';
+      process.stderr.write(
+        `[retro:ingest] warn: unknown feedback state "${state}"${hint} — defaulting to open; fix the state: field to suppress this warning\n`
+      );
+      return 'open';
+    }
+  }
+}
+
+/**
+ * Scan `feedback/` directory for individual entry files and produce `kind: feedback-entry` events.
+ *
+ * Read contract: plan A §D12 (plans/approved/personal/2026-04-21-agent-feedback-system.md §D12)
+ *   Bind-points consumed: Severity, Date — mapped to `severity` and `created` in the event.
+ *   Additional fields from individual file frontmatter: `category`, `state` → `status`.
+ *
+ * The `feedback/INDEX.md` file is used as the mtime trigger — when it changes, re-scan occurs.
+ * Individual files in `feedback/*.md` (excluding INDEX.md and archived/) supply the event data.
+ *
+ * Event shape emitted (keyed on §D12 column shape):
+ *   { kind: 'feedback-entry', category, severity, status, created, author }
+ *
+ * @param {string} feedbackDir — absolute path to the `feedback/` directory
+ * @returns {Array<Object>} feedback-entry events, sorted by created ascending
+ */
+export function parseFeedbackIndex(feedbackDir) {
+  if (!existsSync(feedbackDir)) return [];
+
+  const events = [];
+  let entries;
+  try {
+    entries = readdirSync(feedbackDir);
+  } catch {
+    return [];
+  }
+
+  for (const name of entries) {
+    // Skip non-markdown, INDEX.md itself, and archived/ subdirectory
+    if (!name.endsWith('.md')) continue;
+    if (name === 'INDEX.md') continue;
+
+    const filePath = join(feedbackDir, name);
+    let stat;
+    try {
+      stat = statSync(filePath);
+    } catch {
+      continue;
+    }
+    if (!stat.isFile()) continue;
+
+    let content;
+    try {
+      content = readFileSync(filePath, 'utf8');
+    } catch {
+      continue;
+    }
+
+    const fm = parseFrontmatter(content);
+    if (!fm) continue;
+
+    // §D1 required fields: category, severity, state, date
+    const category = fm.category || null;
+    const severity = fm.severity || null;
+    const status = stateToStatus(fm.state, name);
+
+    // C2 fix: strict ISO-8601 date validation at ingest time.
+    // A non-ISO date value (e.g. "April 20, 2026") causes DuckDB to infer the
+    // `created` column as VARCHAR, making CAST(... AS TIMESTAMP) produce NULLs and
+    // silently changing the format of MAX(created) in feedback-rollup.sql.
+    // Reject non-ISO dates here so malformed entries never reach DuckDB.
+    const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    if (fm.date && !ISO_DATE_RE.test(fm.date)) {
+      process.stderr.write(
+        `[retro:ingest] warn: skipping ${name} — date "${fm.date}" is not ISO-8601 (YYYY-MM-DD)\n`
+      );
+      continue;
+    }
+    const created = fm.date ? `${fm.date}T00:00:00.000Z` : null;
+    const author = fm.author || null;
+
+    if (!category || !severity) continue; // skip malformed entries
+
+    events.push({
+      kind: 'feedback-entry',
+      category,
+      severity,
+      status,
+      created,
+      author,
+    });
+  }
+
+  // Sort by created ascending (deterministic emission order)
+  events.sort((a, b) => {
+    if (!a.created && !b.created) return 0;
+    if (!a.created) return 1;
+    if (!b.created) return -1;
+    return a.created.localeCompare(b.created);
+  });
+
+  return events;
+}
+
+// ---------------------------------------------------------------------------
 // Main scanner
 // ---------------------------------------------------------------------------
 
