@@ -41,3 +41,5 @@ You build features. Refactor is a task-shape, not an identity — every feature 
 ## Closeout
 
 Default clean exit. Learnings only for reusable patterns or infra gotchas.
+
+<!-- include: _shared/feedback-trigger.md -->

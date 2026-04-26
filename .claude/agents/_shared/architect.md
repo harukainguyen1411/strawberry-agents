@@ -47,3 +47,5 @@ If you're unsure which concern, check the `[concern: <work|personal>]` tag on th
 ## Closeout
 
 Session-end is governed by `.claude/skills/end-subagent-session/SKILL.md`. Default path is a clean exit with no writes. Write memory/learnings only if the session produced a durable fact, generalizable lesson, or plan decision.
+
+<!-- include: _shared/feedback-trigger.md -->
