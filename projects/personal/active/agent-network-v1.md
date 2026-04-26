@@ -2,9 +2,21 @@
 slug: agent-network-v1
 status: active
 concern: personal
+scope: [personal, work]
 owner: duong
-deadline: 2026-04-26 EOD Sunday
 created: 2026-04-25
+deadline: "EOD Sunday"
+claude_budget: resourceful
+tools_budget: limited
+risk: minimal
+user: duong-only
+focus_on:
+  - simple yet structured
+  - well designed and documented
+  - data transparency and accuracy
+less_focus_on:
+  - frontend / UI / UX (v1)
+related_plans: []
 ---
 
 # Project: agent-network-v1

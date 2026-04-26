@@ -7,7 +7,28 @@ related_project: agent-network-v1
 status: parked
 ---
 
-# Idea: deterministic A/B test framework for system improvement
+# Idea: deterministic eval harness with A/A validation + A/B comparison for system improvement
+
+## Terminology note (added 2026-04-25 after Duong follow-up)
+
+Duong's instinct on "A/B testing" was partly right; the proper vocabulary has two phases:
+
+- **A/A test** = the control-group / harness self-validation step. Run the baseline system N× on the same fixed input, expect identical results. If results vary, the harness itself is non-deterministic and can't be trusted yet. This is what "10/10 same setup, same result" actually names.
+- **A/B test** = the actual baseline-vs-target comparison on the same fixed input. Compare distributions or deltas.
+
+**Best single phrase for the whole pattern:**
+
+> **Deterministic eval harness with A/A validation** (self-test) **then A/B comparison** (system-vs-system measurement).
+
+**Field-specific synonyms** the v2 plan author should be aware of:
+
+- **Eval harness** — LLM/AI world (Anthropic internal, OpenAI evals, MMLU, HumanEval all use this)
+- **Regression benchmark suite** — performance engineering
+- **Golden test** / **snapshot test** — when comparing exact output bytes
+- **Differential testing** — comparing two implementations on the same inputs
+- **Controlled experiment** — formal scientific term
+
+The original verbatim directive is preserved below. Filename + frontmatter slug retained as `deterministic-system-ab-test` for citation continuity (the v1 reference shape Duong used) — internal terminology in the v2 plan should use the more precise A/A+A/B phrasing.
 
 ## Captured directive (Duong, 2026-04-25, verbatim)
 

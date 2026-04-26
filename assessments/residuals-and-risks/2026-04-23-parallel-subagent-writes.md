@@ -1,4 +1,12 @@
 ---
+date: 2026-04-23
+author: evelynn
+category: residuals-and-risks
+concern: personal
+target: Parallel subagent writes on shared working tree — agent-orchestration risks
+state: deferred
+owner: evelynn
+session: 2026-04-23-evelynn-cli
 title: Parallel subagent writes on shared working tree
 area: agent-orchestration
 surfaced_at: 2026-04-23

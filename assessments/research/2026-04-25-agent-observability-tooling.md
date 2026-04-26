@@ -1,6 +1,12 @@
 ---
-author: lux (extracted from transcript by skarner)
 date: 2026-04-25
+author: lux (extracted from transcript by skarner)
+category: research
+concern: personal
+target: Build-vs-buy research for the retrospection dashboard cornerstone plan
+state: complete
+owner: lux
+session: db2e8cdf-06d6-4cc9-98f6-885e346b857d
 source-session: db2e8cdf-06d6-4cc9-98f6-885e346b857d
 purpose: Build-vs-buy research for the retrospection dashboard cornerstone plan
 ---
