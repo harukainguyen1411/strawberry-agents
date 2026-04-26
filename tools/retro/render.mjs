@@ -27,7 +27,7 @@
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname, basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runDuckDBQuery } from './lib/duckdb-runner.mjs';
+import { runDuckDBQuery, runDuckDBQueryWithFileDb } from './lib/duckdb-runner.mjs';
 import { generateHtml } from './lib/html-generator.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -83,12 +83,33 @@ if (!existsSync(eventsPath)) {
 const sqlFiles = readdirSync(queriesDir).filter(f => f.endsWith('.sql')).sort();
 const queryResults = {};
 
+// Per-query events file resolution.
+// Queries annotated with `-- events-source: <filename>` use a dedicated JSONL file
+// (e.g. feedback-rollup.sql reads feedback-events.jsonl via `FROM file`).
+// The dedicated file lives alongside events.jsonl (same directory).
+// Returns { eventsPath, useFileDb } — useFileDb=true means call runDuckDBQueryWithFileDb.
+// Returns { eventsPath: null, useFileDb: false } when the dedicated source file is absent.
+function resolveQueryEventsSource(sql, defaultEventsPath) {
+  const m = sql.match(/--\s*events-source:\s*(\S+)/);
+  if (!m) return { queryEventsPath: defaultEventsPath, useFileDb: false };
+  const altName = m[1];
+  const altPath = join(dirname(defaultEventsPath), altName);
+  if (!existsSync(altPath)) {
+    // Dedicated source not yet ingested — emit empty result rather than failing
+    return { queryEventsPath: null, useFileDb: false };
+  }
+  return { queryEventsPath: altPath, useFileDb: true };
+}
+
 for (const sqlFile of sqlFiles) {
   const queryName = sqlFile.replace(/\.sql$/, '');
   const sql = readFileSync(join(queriesDir, sqlFile), 'utf8');
+  const { queryEventsPath, useFileDb } = resolveQueryEventsSource(sql, eventsPath);
   let rows = [];
-  if (existsSync(eventsPath)) {
-    rows = runDuckDBQuery(sql, eventsPath);
+  if (queryEventsPath !== null && existsSync(queryEventsPath)) {
+    rows = useFileDb
+      ? runDuckDBQueryWithFileDb(sql, queryEventsPath)
+      : runDuckDBQuery(sql, queryEventsPath);
   }
   queryResults[queryName] = rows;
   writeFileSync(join(dataDir, `${queryName}.json`), JSON.stringify(rows, null, 2), 'utf8');
