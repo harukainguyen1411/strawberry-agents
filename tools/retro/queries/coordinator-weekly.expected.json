@@ -1,0 +1,18 @@
+[
+  {
+    "coordinator": "evelynn",
+    "iso_week": "2026-W17",
+    "inline_tool_calls": 4,
+    "delegated_tool_calls": 12,
+    "delegate_ratio": "0.7500",
+    "dispatch_count": 3,
+    "prompt_chars_p50": 1200,
+    "prompt_chars_p95": 3500,
+    "header_count_avg": 2.0,
+    "concern_tag_present_pct": 66.6667,
+    "plan_citation_present_pct": 66.6667,
+    "compression_ratio_p50": 2.0,
+    "compression_ratio_p95": 2.5,
+    "delegate_health_flag": "healthy"
+  }
+]
