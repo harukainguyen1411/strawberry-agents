@@ -30,6 +30,8 @@
 - `pre-commit-feedback-index.sh` validates ALL feedback/*.md files (not just staged ones) on every commit. Fix schema errors in all existing files before committing a new feedback file.
 - Feedback schema required fields: `date`, `time`, `author`, `concern`, `category`, `severity`, `friction_cost_minutes`, `state`. Required body sections: `## What went wrong`, `## Suggestion`, `## Why I'm writing this now`. Author must be lowercase canonical agent name (not `Evelynn (relayed from...)` format).
 
+- architecture/agent-network-v1/ has 22 canonical files; architecture/apps/ has 6 files (deployment, firebase-storage-cors, infrastructure, discord-relay, telegram-relay + README); architecture/ root has only README.md. The W4 cross-ref sweep (grep for stale paths across agents/, plans/, .claude/) is deferred — not done yet.
+
 ## Sessions
 
 - 2026-04-20 (ekko s-audit): CLAUDE.md cleanup — Lux audit items 1-5. rule5 decision tree `98f33b7`, end-session skill DMI fix `0904844`, rule19 anchor `4d4e732`, plan-fetch.sh+google-oauth-bootstrap.sh deleted (concurrent session cf2b5f2), end-session refuse-empty-arg `cd6a2ab`. All pushed.
