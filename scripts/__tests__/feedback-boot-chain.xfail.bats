@@ -37,35 +37,35 @@ xfail_if_missing() {
 
 # ---------------------------------------------------------------------------
 # TT4-C: High-severity surfacing instruction present in Evelynn boot text
-# (DoD: when count_open_high > 0, surface top-3 high entries to Duong)
+# (DoD: when High > 0 on the INDEX summary line, surface top-3 high entries to Duong)
+# Pattern matches the actual INDEX.md summary line shape: "Open: N | High: H | ..."
 # ---------------------------------------------------------------------------
-@test "TT4-C: evelynn CLAUDE.md boot text mentions count_open_high or high-severity surfacing" {
-  xfail_if_missing "$EVELYNN_CLAUDE" "count_open_high"
-  grep -q "count_open_high" "$EVELYNN_CLAUDE"
+@test "TT4-C: evelynn CLAUDE.md boot text mentions high-severity surfacing" {
+  xfail_if_missing "$EVELYNN_CLAUDE" "severity: high"
+  grep -qE "severity: high|High > 0|High: H" "$EVELYNN_CLAUDE"
 }
 
 # ---------------------------------------------------------------------------
 # TT4-D: High-severity surfacing instruction present in Sona boot text
 # ---------------------------------------------------------------------------
-@test "TT4-D: sona CLAUDE.md boot text mentions count_open_high or high-severity surfacing" {
-  xfail_if_missing "$SONA_CLAUDE" "count_open_high"
-  grep -q "count_open_high" "$SONA_CLAUDE"
+@test "TT4-D: sona CLAUDE.md boot text mentions high-severity surfacing" {
+  xfail_if_missing "$SONA_CLAUDE" "severity: high"
+  grep -qE "severity: high|High > 0|High: H" "$SONA_CLAUDE"
 }
 
 # ---------------------------------------------------------------------------
 # TT4-E: Missing-INDEX path does not contain abort/exit/fatal tied to INDEX read
 # (DoD: missing-INDEX emits a single warning and does not abort startup)
-# Negative grep: no "exit" or "abort" or "fatal" immediately following INDEX.md line
+# Uses POSIX-portable [[:space:]] anchors instead of \b (Rule 10).
+# Plain bash failure with `return 1` instead of bats-assert `fail` (no load needed).
 # ---------------------------------------------------------------------------
 @test "TT4-E: evelynn CLAUDE.md INDEX read line does not contain abort/exit/fatal directive" {
   xfail_if_missing "$EVELYNN_CLAUDE" "feedback/INDEX.md"
-  # Extract the line(s) referencing feedback/INDEX.md and assert no abort keyword on same line
   local line
   line=$(grep "feedback/INDEX.md" "$EVELYNN_CLAUDE")
-  # Should not contain abort/exit/fatal on the INDEX read line itself
-  refute_match() { echo "$line" | grep -qiE "abort|fatal|exit [^0]"; }
-  if echo "$line" | grep -qiE '\bexit [^0]\b|\babort\b|\bfatal\b'; then
-    fail "INDEX read line contains abort/exit/fatal directive: $line"
+  if printf '%s' "$line" | grep -qiE '(^|[[:space:]])(exit [^0]|abort|fatal)([[:space:]]|$)'; then
+    printf 'INDEX read line contains abort/exit/fatal directive: %s\n' "$line" >&2
+    return 1
   fi
 }
 
@@ -73,7 +73,8 @@ xfail_if_missing() {
   xfail_if_missing "$SONA_CLAUDE" "feedback/INDEX.md"
   local line
   line=$(grep "feedback/INDEX.md" "$SONA_CLAUDE")
-  if echo "$line" | grep -qiE '\bexit [^0]\b|\babort\b|\bfatal\b'; then
-    fail "INDEX read line contains abort/exit/fatal directive: $line"
+  if printf '%s' "$line" | grep -qiE '(^|[[:space:]])(exit [^0]|abort|fatal)([[:space:]]|$)'; then
+    printf 'INDEX read line contains abort/exit/fatal directive: %s\n' "$line" >&2
+    return 1
   fi
 }

@@ -142,7 +142,7 @@ Before your first response, read in order:
 5. `agents/memory/agent-network.md` — coordination rules and agent roster
 6. `agents/sona/learnings/index.md` — available learnings (if it exists)
 7. `agents/sona/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
-7a. `feedback/INDEX.md` — first 20 lines. If `count_open_high > 0`, surface top-3 high entries to Duong at first opportunity. If file is missing, emit `[boot] feedback/INDEX.md not found — skipping` and continue; do not abort startup. <!-- orianna: ok -->
+7a. `feedback/INDEX.md` — first 20 lines. The INDEX summary line has the shape `Open: N | High: H | Medium: M | Low: L`. If `H > 0` on that line, surface the top-3 entries with `severity: high` to Duong at first opportunity. If file is missing, emit `[boot] feedback/INDEX.md not found — skipping` and continue; do not abort startup. <!-- orianna: ok -->
 8. `agents/sona/memory/decisions/preferences.md` — axis-digest with sample counts and match rates (eager). <!-- orianna: ok -->
 9. `agents/sona/memory/decisions/axes.md` — axis definitions, append-only (eager). <!-- orianna: ok -->
 10. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->

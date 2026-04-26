@@ -18,7 +18,9 @@ disable-model-invocation: false
 
 ## Invariant 7 (enforced)
 
-This skill writes ONLY to `assessments/feedback-digests/**`. It NEVER mutates `feedback/*.md` bodies. Permitted frontmatter mutation: `state:` field only (set to `graduated`, `stale`, or `keep-open`) and `graduated_to:` field (set when a graduated entry produces a plan stub). All other feedback file fields are read-only to this skill.
+This skill writes ONLY to `assessments/feedback-digests/**`. It NEVER mutates `feedback/*.md` bodies. Permitted frontmatter mutation: `state:` field only (set to `graduated`, `stale`, or `open` — the latter for Lux's "keep-open" verdict) and `graduated_to:` field (set when a graduated entry produces a plan stub). All other feedback file fields are read-only to this skill.
+
+The `state:` enum is `open|acknowledged|graduated|stale` (per `scripts/feedback-index.sh` validator). Lux's three-verdict labels (graduate / keep-open / stale) map to the state field as: graduate → `graduated`, keep-open → `open` (still open after triage), stale → `stale`.
 
 ## Arguments
 
@@ -142,7 +144,7 @@ entries_marked_stale: <N>
 For each entry in the collected set:
 - Set `state: graduated` if Lux verdict = graduate. Also set `graduated_to: assessments/feedback-digests/<date>.md#graduated`.
 - Set `state: stale` if Lux verdict = stale. Move the file to `feedback/archived/<slug>.md` via `git mv`.
-- Set `state: keep-open` if Lux verdict = keep-open.
+- Set `state: open` if Lux verdict = keep-open (verdict label "keep-open" maps to state value `open` per the §Invariant 7 enum).
 
 Stage all mutated files:
 ```
