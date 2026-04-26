@@ -74,7 +74,7 @@ OPUS_REF='- Opus planner: write plans to `plans/proposed/` and stop — you neve
 
 HAIKU_AGENTS="skarner"
 # evelynn is excluded — she has no .claude/agents/evelynn.md (she is the top-level session, not a subagent)
-OPUS_AGENTS="azir kayn aphelios caitlyn lulu neeko heimerdinger camille lux"
+OPUS_AGENTS="azir kayn aphelios caitlyn lulu neeko heimerdinger camille lux swain"
 # All other agents in .claude/agents/ are assumed sonnet executors.
 
 # ---------------------------------------------------------------------------
