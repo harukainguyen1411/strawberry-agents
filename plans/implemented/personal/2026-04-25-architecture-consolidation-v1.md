@@ -1,5 +1,5 @@
 ---
-status: approved
+status: implemented
 concern: personal
 owner: swain
 created: 2026-04-25
@@ -508,3 +508,10 @@ OQ-A3. **Wave order: W2 vs W3.** Current order is W0 → W1 (renames) → W2 (re
 - **Transition:** proposed → approved
 - **Rationale:** Plan has a clear owner (swain), concrete decision, full survey of all 30 architecture files with per-file classification, named sequencing constraint (must precede cornerstone canonical-v1 lock activation), and explicit migration discipline. All four blocking OQs (OQ-1/3/4/5) resolved by Duong on 2026-04-25; remaining OQs (OQ-2/6/7) are non-blocking refinements that Aphelios's breakdown can absorb. Risks are enumerated with concrete mitigations. Tasks are actionable with named wave groupings.
 - **Simplicity:** WARN: possible overengineering — 6-wave migration for ~30 file moves is at the edge of ceremony; rationale (per-wave revert, clean git log --follow, conflict-avoidance with concurrent Viktor branches) is named and defensible, but Aphelios should consider collapsing Waves 0+1 or Waves 3+5 into single commits if review burden is dominating.
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** approved → implemented
+- **Rationale:** Leg 1 closure verified — `architecture/` top-level reduced to README.md plus subdirs; canonical `agent-network-v1/` populated with the full 21-file canonical set; `apps/` and `archive/` subtrees populated per §6 map; stragglers archived (billing-research, pre-network-v1, flag-resolved retirements present). README.md rewritten. canonical-v1.md lock manifest and W4 cross-ref sweep explicitly deferred to a final leg per Duong directive 2026-04-26 — this is a scoped-leg-1 closure, not a full-scope completion, and the deferred work is tracked separately. Implementation evidence is plausible and present on disk.
