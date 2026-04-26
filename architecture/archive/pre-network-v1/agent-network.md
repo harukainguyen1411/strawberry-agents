@@ -1,3 +1,5 @@
+> **Archived:** superseded by `architecture/agent-network-v1/communication.md` on 2026-04-26.
+
 # Agent Network — Communication Protocols
 
 ## Tools

@@ -1,3 +1,5 @@
+> **Archived:** evelynn MCP retired (OQ-1, 2026-04-26); stub content is obsolete. No canonical replacement.
+
 # MCP Servers
 
 One active MCP server, Python (FastMCP), configured in `.mcp.json`. The `agent-manager` MCP server is archived as of Phase 1 of the MCP restructure — see `mcps/agent-manager/README.md`.

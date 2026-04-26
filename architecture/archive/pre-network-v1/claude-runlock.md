@@ -1,3 +1,5 @@
+> **Archived:** cross-plan contract for retired approach — no live participants (OQ-5, 2026-04-26); no canonical replacement.
+
 # Claude Runlock Contract
 
 > Cross-plan contract for serial `claude` CLI invocation on Duong's always-on Windows computer. Owned by the Bee plan (`plans/proposed/2026-04-09-sister-research-agent-karma.md`) as of 2026-04-08. Previously scaffolded by the Discord CLI integration plan; ownership transferred when the Discord bot migrated to Gemini and stopped invoking `claude`.
