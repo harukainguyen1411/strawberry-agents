@@ -1,6 +1,14 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 15249699).
+Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 48ac7433).
+
+---
+
+## PR #93 (T.P2.3 decision-rollup fidelity) — CHANGES_REQUESTED, Viktor round-2 needed
+
+**Current status (2026-04-26):** Senna found production-fatal B1: JSDoc comment at `tools/retro/lib/sources.mjs:9` terminated by `*/` inside a path-glob string (`agents/*/memory/...`), causing `ReferenceError: memory is not defined` at module load. CI was green only because static-fixture tests never imported sources.mjs. Also: B2 (regression test red), F1 (typed-parser bypass via `--raw`), F2 (R8 enshrines silent-skip), H1 (kind taxonomy mismatch). Lucian confirmed F1+H1 independently.
+**Next:** Dispatch Viktor via standard Agent tool (NOT team mode — React Ink startup crash pattern unresolved for longer-prompt agents). Viktor brief: fix JSDoc line 9, ensure module imports cleanly, regression test green, address F1/F2/H1.
+**Shard:** 48ac7433
 
 ---
 
