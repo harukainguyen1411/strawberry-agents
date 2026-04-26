@@ -1,6 +1,6 @@
 # Evelynn — Open Threads
 
-Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf, shard f6b6dc2e).
+Last updated: 2026-04-26 (Yuumi reconciliation, project-mode).
 
 ---
 
@@ -12,10 +12,10 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Cornerstone Plan A (agent-feedback-system) — PR #63 in active Senna review
+## Cornerstone Plan A (agent-feedback-system) — RESOLVED
 
-**Current status (2026-04-25):** PR #63 open. Viktor applied fixes for Senna B1 fork-bomb + B2 idempotency + I1 pipe-injection + I2 INDEX-stage-overwrite. 63/63 tests passing. Senna re-review in flight (comment thread #135).
-**Next:** Await Senna verdict on #135. On APPROVE + green checks: merge, then sequence Plan B (PR #64).
+**Current status (2026-04-26):** PR #63 MERGED 2026-04-25T16:04:48Z (APPROVED). RESOLVED.
+**Next:** None.
 **Shard:** f6b6dc2e
 
 ---
@@ -51,32 +51,32 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ## Architecture-consolidation — Waves 3/4 remaining
 
-**Current status (2026-04-25):** Wave 0 (PR #61, `853dedf0`), Wave 1 (PR #62, `553a6bcb`), and Wave 2 (PR #65, `48b229fb`) all shipped. Lock-Bypass §Q6 contract folded into Wave 2. Wave 3 = whole-file archives. Wave 4 = cross-ref sweep (must address CLAUDE.md:11/118/133 stale paths flagged by Jayce in W1 PR body). All waves must complete before canonical-v1 lock activates (at Phase 2 dashboard ship).
-**Next:** Dispatch Wave 3 after Plan A/B PRs clear. Wave 4 follows. Canonical-v1 lock target: Saturday post-Phase-2-dashboard.
+**Current status (2026-04-26):** Wave 0 (PR #61 MERGED 2026-04-25T13:19:32Z), Wave 1 (PR #62 MERGED 2026-04-25T13:41:28Z), Wave 2 (PR #65 MERGED 2026-04-25T15:29:12Z) all confirmed merged. Lock-Bypass §Q6 contract folded into Wave 2. Wave 3 = whole-file archives. Wave 4 = cross-ref sweep (must address CLAUDE.md:11/118/133 stale paths flagged by Jayce in W1 PR body). All waves must complete before canonical-v1 lock activates (at Phase 2 dashboard ship).
+**Next:** Dispatch Wave 3. Wave 4 follows. Canonical-v1 lock target: post-Phase-2-dashboard.
 **Shard:** f6b6dc2e
 
 ---
 
-## Swain synthesis 20-OQ decision — CRITICAL, gating W0-W4
+## Swain synthesis 20-OQ decision — RESOLVED
 
-**Current status (2026-04-25):** Swain ADR `12e16ed0` produced 7-conflict-resolved unified process synthesis with 20 open questions across 5 decision areas (A-E). Recommended defaults: `A1a A2a A3a B1a B2a B3a C1a C2a C3a C4a C5a D1a D2a D3a D4a E1a E2a E3a E4a E5a`. Present compact form to Duong on resume — his answers gate W0-W4 wave-plan implementation.
-**Next:** Present recommended defaults to Duong. Await confirmation or adjustments. On approval: queue Orianna sweep for all 6 ADRs, then dispatch Wave plan implementation.
+**Current status (2026-04-26):** Duong skip-to-concurred all 20 OQs with recommended-`a` defaults on 2026-04-25 (confirmed in `plans/approved/personal/2026-04-25-unified-process-synthesis.md` §7.5). All 6 ADRs promoted. RESOLVED.
+**Next:** None.
 **Shard:** f6b6dc2e
 
 ---
 
-## 6 ADRs in proposed — promotion gated on Swain synthesis approval
+## 6 ADRs in proposed — promoted; W0–W4 implementation pending
 
-**Current status (2026-04-25):** Five parallel architects produced 6 ADRs: plan-of-plans + parking lot (`cd237f93`, Azir), frontend/UX process + assessments folder structure (`b1003cc0`, Azir+Lux), structured QA pipeline (`8df81d67`, Azir), PR reviewer tooling + guidelines (`4bf46ba2`, Azir), unified process synthesis (`12e16ed0`, Swain). None can be promoted until Duong answers Swain's 20 OQs.
-**Next:** After Duong confirms synthesis defaults, sweep all 6 through Orianna for promotion. Then dispatch W0-W4 implementation.
+**Current status (2026-04-26):** All 6 ADRs now in `plans/approved/personal/` (plan-of-plans, parking-lot, frontend-uiux, assessments-folder-structure, structured-qa-pipeline, pr-reviewer-tooling, unified-process-synthesis). Duong skip-to-concurred all 20 Swain OQs with recommended-`a` defaults on 2026-04-25. W0–W4 wave-plan implementation is the next action.
+**Next:** Dispatch W0–W4 implementation per wave plan in unified-process-synthesis §6.
 **Shard:** f6b6dc2e
 
 ---
 
-## PR #66 (parallel-slice doctrine) — CI re-run pending, ready to merge
+## PR #66 (parallel-slice doctrine) — RESOLVED
 
-**Current status (2026-04-25):** Both Senna and Lucian APPROVED. Layer 3 CI fail on `.claude/` substring resolved via `Human-Verified: yes` trailer. Awaiting CI re-run to confirm green.
-**Next:** Confirm CI green then merge.
+**Current status (2026-04-26):** PR #66 MERGED 2026-04-25T15:56:31Z. RESOLVED.
+**Next:** None.
 **Shard:** f6b6dc2e
 
 ---
@@ -89,18 +89,18 @@ Last updated: 2026-04-25 (Lissandra pre-compact consolidation, session db2e8cdf,
 
 ---
 
-## Akali QA fix-stack — synthesis pending
+## Akali QA fix-stack — DEFERRED
 
-**Current status (2026-04-25):** Sona escalated Akali QA-discipline as high priority. Sona retracted "Akali fabricates" framing mid-flight (verified against wrong worktree). Karma v1 plan authored (`plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md`, `9511f4e3`): fix-1 structured OBSERVE-only report format, fix-2a drop effort from medium to low, fix-2b add `_shared/qa-discipline.md` shard. Lux advisory returned: tool-scope narrowing + structured report sections. Swain ADR at `plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md` (committed `1e385870`): two agents one role (Akali observe → Senna diagnose), citation-tagging contract (`cite_kind: verified|inferred`). Six OQs from Swain surfaced.
-**Next:** Synthesis pass after Duong answers Lux OQs. Dashboard-events and Akali reminder hooks may share same PostToolUse surface — plan together. Then promote and dispatch.
+**Current status (2026-04-26):** Duong dismissed as stale 2026-04-26. Plans in `plans/proposed/personal/` (akali-qa-discipline-hooks.md, qa-two-stage-architecture.md) remain unactioned.
+**Next:** No action unless Duong reopens.
 **Shard:** bc09be92
 
 ---
 
 ## Lux monitoring research — awaiting Duong OQ answers
 
-**Current status (2026-04-25):** Lux dispatched per Duong's Anthropic docs URL hint. Returned with OTel + Langfuse self-hosted + ccusage + DuckDB build-vs-buy recommendation; build thin glue only (plan-lifecycle-events.sh, plan-cost-rollup.sh, off-track-signals.sh). Dashboard = join + skin, not a UI. Six OQs for Duong: telemetry privacy gate, scope, UI tolerance, backfill, sampling validation, complexity-tier source.
-**Next:** Duong reviews and answers OQs. Swain dashboard authoring HELD until answers received.
+**Current status (2026-04-26):** Lux dispatched per Duong's Anthropic docs URL hint. Returned with OTel + Langfuse self-hosted + ccusage + DuckDB build-vs-buy recommendation; build thin glue only (plan-lifecycle-events.sh, plan-cost-rollup.sh, off-track-signals.sh). Dashboard = join + skin, not a UI. Six OQs for Duong: telemetry privacy gate, scope, UI tolerance, backfill, sampling validation, complexity-tier source. Actively in front of Duong as of 2026-04-26 session — OQs not yet answered.
+**Next:** Duong answers OQs. Swain dashboard authoring HELD until answers received.
 **Shard:** bc09be92
 
 ---
@@ -181,11 +181,10 @@ All three backlog items resolved. Finish-in-flight directive fully executed.
 
 ---
 
-## PR #56 — resolved-identity-enforcement (successor to PR #45) — Senna review in flight
+## PR #56 — resolved-identity-enforcement — RESOLVED
 
-**Current status (2026-04-25):** Architectural pivot from PR #45 (PreToolUse string-scanning) to pre-commit/pre-push post-expansion identity check. Karma authored `plans/proposed/personal/2026-04-25-resolved-identity-enforcement.md` (`ac804288`), Orianna promoted (`2bcd8255`), Talon implemented PR #56 (8 commits). In-flight `orianna@strawberry.local` author drift fixed via `git filter-branch`. Lucian APPROVED with 3 non-blocking drift notes (DN-1 smoke fail-closed gap, DN-2 test-name oversell, DN-3 regex domain gap). Senna review in flight at compact time.
-**Next:** Await Senna verdict. On APPROVE + green checks, merge. Promote plan to implemented/. Archive original `plans/approved/personal/2026-04-24-subagent-git-identity-as-duong.md` after PR #56 merges.
-**Branch:** `talon/resolved-identity-enforcement`. **PR:** #56 open.
+**Current status (2026-04-26):** PR #56 MERGED 2026-04-25T08:21:31Z (APPROVED). RESOLVED.
+**Next:** None.
 **Shard:** bc09be92
 
 ---
