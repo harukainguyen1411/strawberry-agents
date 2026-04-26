@@ -258,7 +258,7 @@ describe('TP3.T2-F: lock-bypass-rollup.sql — counts and reconciled boolean',
     });
     if (!existsSync(eventsPath)) return;
     const actual = JSON.parse(execSync(
-      `duckdb -json -c "$(cat '${ROLLUP_SQL}')" '${eventsPath}'`,
+      `duckdb -json '${eventsPath}' < '${ROLLUP_SQL}'`,
       { cwd: RETRO_ROOT, encoding: 'utf8' }
     ));
     const expected = JSON.parse(readFileSync(ROLLUP_EXPECTED, 'utf8'));

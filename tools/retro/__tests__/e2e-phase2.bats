@@ -189,7 +189,7 @@ teardown() {
   if [ -f "$p1_baseline" ]; then
     diff -q "$p1_actual" "$p1_baseline" || {
       echo "Phase-1 plan HTML changed after Phase-2 render (regression)"
-      exit 1
+      return 1
     }
   fi
 }

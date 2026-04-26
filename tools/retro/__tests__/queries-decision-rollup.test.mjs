@@ -35,7 +35,7 @@ const SKIP_REASON = 'xfail: decision-rollup.sql not yet implemented (TODO T.P2.3
 
 function runDecisionRollupQuery(eventsPath) {
   const result = execSync(
-    `duckdb -json -c "$(cat '${SQL_PATH}')" '${eventsPath}'`,
+    `duckdb -json '${eventsPath}' < '${SQL_PATH}'`,
     { cwd: RETRO_ROOT, encoding: 'utf8' }
   );
   return JSON.parse(result);

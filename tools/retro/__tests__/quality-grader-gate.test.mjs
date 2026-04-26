@@ -72,14 +72,15 @@ describe('TP3.T4-A: quality-grader gate-off — non-"1" values produce zero even
         : { RETRO_QUALITY_GRADE: val };
 
       // Run ingest or grader with the specific env value
-      if (qualityGrader?.gradeDispatchEvents) {
-        const result = qualityGrader.gradeDispatchEvents(eventsPath, { env });
-        const gradeEvents = Array.isArray(result)
-          ? result.filter(e => e.kind === 'quality-grade')
-          : [];
-        assert.deepEqual(gradeEvents, [],
-          `expected zero quality-grade events with RETRO_QUALITY_GRADE=${JSON.stringify(val)}`);
+      if (!qualityGrader?.gradeDispatchEvents) {
+        assert.fail('xfail: qualityGrader.gradeDispatchEvents not exported — impl must wire this (TODO T.P3.3)');
       }
+      const result = qualityGrader.gradeDispatchEvents(eventsPath, { env });
+      const gradeEvents = Array.isArray(result)
+        ? result.filter(e => e.kind === 'quality-grade')
+        : [];
+      assert.deepEqual(gradeEvents, [],
+        `expected zero quality-grade events with RETRO_QUALITY_GRADE=${JSON.stringify(val)}`);
     });
   }
 });
@@ -93,8 +94,7 @@ describe('TP3.T4-B: quality-grader gate-on — dry-run token-count precedes API 
 
   it('dry-run estimates cost without making any Anthropic API call', () => {
     if (!qualityGrader?.estimateWeeklyGradingCost) {
-      // Skip if function not exported — Viktor will wire it
-      return;
+      assert.fail('xfail: qualityGrader.estimateWeeklyGradingCost not exported — impl must wire this (TODO T.P3.3)');
     }
     // Small fixture: 10 dispatches at ~300 tokens each
     const smallFixtureEvents = Array.from({ length: 10 }, (_, i) => ({
@@ -127,7 +127,9 @@ describe('TP3.T4-C: quality-grader gate-on — record-replay fixture, no live AP
       // Fixture not yet created; skip gracefully
       return;
     }
-    if (!qualityGrader?.gradeDispatchEvents) return;
+    if (!qualityGrader?.gradeDispatchEvents) {
+      assert.fail('xfail: qualityGrader.gradeDispatchEvents not exported — impl must wire this (TODO T.P3.3)');
+    }
 
     // Track whether any real API call was attempted
     let apiCallAttempted = false;
@@ -186,7 +188,7 @@ describe('TP3.T4-D: quality-grade-rollup.expected.json under gate-off is empty [
     // Write only non-quality-grade events
     writeFileSync(eventsPath, '{"kind":"turn","ts":"2026-01-01T00:00:00.000Z"}\n');
     const result = JSON.parse(execSync(
-      `duckdb -json -c "$(cat '${ROLLUP_SQL}')" '${eventsPath}'`,
+      `duckdb -json '${eventsPath}' < '${ROLLUP_SQL}'`,
       { cwd: RETRO_ROOT, encoding: 'utf8' }
     ));
     assert.deepEqual(result, [], 'rollup must return empty array when no quality-grade events');
