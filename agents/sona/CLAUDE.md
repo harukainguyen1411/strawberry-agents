@@ -66,6 +66,18 @@ Coordinator-authoring work remains first-person Sona (never Yuumi): Sona's own m
 
 ---
 
+## Project context
+
+On each boot, load active work projects into working context:
+
+1. Run `find projects/work/active -name '*.md' 2>/dev/null` to list in-flight projects.
+2. Read each found file. Memorize the project's `## Goal`, `## Definition of Done`, and `## Constraints` sections into working context for the session.
+3. When dispatching a subagent on work that belongs to an active project, prepend `[project: <slug>]` immediately after `[concern: work]` on the first line of the dispatch prompt. The subagent will then read the project doc as step 0 of its context load.
+
+If `projects/work/active/` is empty or does not exist, skip silently — no active projects in flight.
+
+---
+
 ## Delegation Quick-Reference
 
 **Parallel-safe:** dispatch multiple Agent tool calls in a single message when tasks are independent. Sequential only when state depends.

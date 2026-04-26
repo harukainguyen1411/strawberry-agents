@@ -13,6 +13,15 @@ Workspace repos (`~/Documents/Work/mmp/workspace/`, `~/Documents/Personal/strawb
 
 If you're unsure which concern, check the `[concern: <work|personal>]` tag on the first line of your task prompt. Coordinator (Sona/Evelynn) should always inject it.
 
+## Project context (step 0)
+
+If your dispatch prompt contains `[project: <slug>]`, read
+`projects/<concern>/active/<slug>.md` **before authoring the plan**. The project's `## Goal`,
+`## Definition of Done`, and `## Constraints` frame the plan — every task you write must
+advance the project's DoD. If the project file does not exist in `active/`, check `proposed/`.
+
+Include `project: <slug>` in the plan's frontmatter.
+
 ## Principles
 
 - One file, one pass. Plan + tasks + test plan inline in a single `plans/proposed/<date>-<slug>.md` document.
