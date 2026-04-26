@@ -98,6 +98,65 @@ else
   fail "sentinel absent + Kayn: expected empty output (not a coordinator), got: $OUT5"
 fi
 
+# ── Test C1 — Bug 1 (env-leak): subagent with CLAUDE_AGENT_NAME=Evelynn but different tty ──
+# Plan: 2026-04-26-monitor-arming-gate-bugfixes (T4/C1)
+# XFAIL on HEAD: gate trusts CLAUDE_AGENT_NAME alone, no tty sentinel check yet.
+# After T1: gate requires /tmp/claude-coordinator-shell-<tty_key>; absent here → silent exit.
+
+TTY_KEY_C1="fake_tty_coordinator_$$"
+TTY_KEY_SUBAGENT_C1="fake_tty_subagent_$$"
+COORD_SENTINEL_C1="/tmp/claude-coordinator-shell-${TTY_KEY_C1}"
+SUBAGENT_SESSION_C1="test-c1-$$"
+SENTINEL_C1="/tmp/claude-monitor-armed-${SUBAGENT_SESSION_C1}"
+rm -f "$COORD_SENTINEL_C1" "$SENTINEL_C1"
+trap 'rm -f "$COORD_SENTINEL_C1" "$SENTINEL_C1"' EXIT INT TERM
+
+# Write coordinator-shell sentinel for COORDINATOR tty only
+touch "$COORD_SENTINEL_C1"
+
+# Invoke gate with Evelynn name but SUBAGENT tty key (simulating env-leak to subagent)
+OUT_C1="$(printf '%s' "$PAYLOAD" | \
+  CLAUDE_AGENT_NAME=Evelynn \
+  CLAUDE_SESSION_ID="$SUBAGENT_SESSION_C1" \
+  TALON_TEST_TTY_KEY="$TTY_KEY_SUBAGENT_C1" \
+  bash "$GATE" 2>/dev/null || true)"
+
+if [ -z "$OUT_C1" ]; then
+  pass "C1: subagent with inherited Evelynn name but different tty: silent (correct)"
+else
+  fail "C1 [XFAIL]: subagent with inherited Evelynn name should be silent after T1; currently emits: $OUT_C1"
+fi
+
+rm -f "$COORD_SENTINEL_C1" "$SENTINEL_C1"
+
+# ── Test C2 — Bug 2 (unset session id): tty-keyed sentinel must silence the gate ──
+# Plan: 2026-04-26-monitor-arming-gate-bugfixes (T4/C2)
+# XFAIL on HEAD: gate skips sentinel branch when CLAUDE_SESSION_ID empty → always fires.
+# After T2: gate falls back to tty-keyed sentinel → silent.
+
+TTY_KEY_C2="fake_tty_c2_$$"
+COORD_SENTINEL_C2="/tmp/claude-coordinator-shell-${TTY_KEY_C2}"
+TTY_ARMED_C2="/tmp/claude-monitor-armed-tty-${TTY_KEY_C2}"
+rm -f "$COORD_SENTINEL_C2" "$TTY_ARMED_C2"
+trap 'rm -f "$COORD_SENTINEL_C2" "$TTY_ARMED_C2"' EXIT INT TERM
+
+touch "$COORD_SENTINEL_C2"
+touch "$TTY_ARMED_C2"
+
+OUT_C2="$(printf '%s' "$PAYLOAD" | \
+  CLAUDE_AGENT_NAME=Evelynn \
+  CLAUDE_SESSION_ID="" \
+  TALON_TEST_TTY_KEY="$TTY_KEY_C2" \
+  bash "$GATE" 2>/dev/null || true)"
+
+if [ -z "$OUT_C2" ]; then
+  pass "C2: CLAUDE_SESSION_ID unset + tty-keyed sentinel present: silent (correct)"
+else
+  fail "C2 [XFAIL]: gate should be silent via tty-keyed sentinel after T2; currently emits: $OUT_C2"
+fi
+
+rm -f "$COORD_SENTINEL_C2" "$TTY_ARMED_C2"
+
 if [ "$FAIL_COUNT" -eq 0 ]; then
   printf '\n[ALL PASS] monitor-arming gate stateless assertions passed.\n'
   exit 0
