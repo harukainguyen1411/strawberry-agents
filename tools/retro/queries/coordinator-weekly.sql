@@ -15,9 +15,12 @@
 --     concern_tag_present_pct, plan_citation_present_pct,
 --     compression_ratio_p50, compression_ratio_p95
 --   Health flag (DoD-(c)):
---     delegate_health_flag   healthy (>0.7) / drift (0.5-0.7) / executor-mode (<0.5)
+--     delegate_health_flag   healthy (>0.7) / drift [0.5, 0.7] inclusive / no-data (NULL ratio) / executor-mode (<0.5)
 --
--- §Q8 discriminator: role='coordinator-inline' tool_calls = inline; role='delegated' = delegated.
+-- §Q8 discriminator: role='coordinator-inline' turns = inline; role='delegated' turns = delegated.
+--   kind='turn' — ingest (parseParentSession / parseSubagentSession in lib/sources.mjs) emits
+--   kind:'turn' for every assistant-row event; there is no kind:'tool_call' in production data.
+--
 -- §Q9 plan-citation regex pinned to:
 --   plans/(proposed|approved|in-progress|implemented|archived)/(personal|work)/.+\.md  (DoD-(f))
 --   (regex evaluated in prompt-stats.mjs at ingest time; SQL reads pre-computed boolean field)
@@ -26,26 +29,69 @@
 -- duckdb-runner.mjs substitutes 'events.jsonl' with the absolute path before execution.
 -- In the xfail test, duckdb is invoked without a DB argument; the SQL path placeholder
 -- is substituted by the test helper (same duckdb-runner substitution pattern).
+--
+-- Schema pinned to prevent read_ndjson_auto inference failures when a week's events.jsonl
+-- lacks certain kind values (e.g. no dispatch-prompt-stats rows). Without a pinned schema,
+-- DuckDB infers column types from a sample and throws a cast error when it later encounters
+-- a row with a different type for that column. Pinning ensures all rows parse consistently.
+--
+-- Boundary note for delegate_health_flag thresholds (I3):
+--   healthy    : delegate_ratio > 0.7  (exclusive lower bound)
+--   drift      : 0.5 <= delegate_ratio <= 0.7  (inclusive on both ends)
+--   no-data    : delegate_ratio IS NULL (denominator was 0 or no turn events in this week)
+--   executor-mode : delegate_ratio < 0.5 (exclusive upper bound)
 
 WITH
--- Aggregate tool_call counts per coordinator session and week
+-- Aggregate turn counts per coordinator session and week.
+-- C2 fix: ingest emits kind:'turn' (see parseParentSession + parseSubagentSession in
+-- lib/sources.mjs). The SQL now matches that semantic — kind='turn' not kind='tool_call'.
+-- Schema pinned (C3 fix): prevents read_ndjson_auto inference failures on sparse files.
+turns_raw AS (
+    SELECT *
+    FROM read_ndjson_auto('events.jsonl',
+        columns={
+            kind:       'VARCHAR',
+            role:       'VARCHAR',
+            coordinator:'VARCHAR',
+            ts:         'VARCHAR',
+            agentId:    'VARCHAR',
+            sessionId:  'VARCHAR',
+            parentSessionId: 'VARCHAR',
+            input_tokens:  'BIGINT',
+            output_tokens: 'BIGINT',
+            cache_read_input_tokens:    'BIGINT',
+            cache_creation_input_tokens:'BIGINT',
+            dispatch_start_ts: 'VARCHAR',
+            dispatch_end_ts:   'VARCHAR',
+            prompt_chars:      'BIGINT',
+            dispatch_prompt_tokens: 'BIGINT',
+            header_count:      'BIGINT',
+            concern_tag_present:    'BOOLEAN',
+            plan_citation_present:  'BOOLEAN',
+            compression_ratio:      'DOUBLE'
+        }
+    )
+),
+
 tool_counts AS (
     SELECT
         coordinator,
+        -- Compute iso_week once per CTE row (I3: eliminates double STRFTIME in main SELECT)
         STRFTIME(CAST(ts AS TIMESTAMP), '%Y-W%V')                           AS iso_week,
-        COUNT(CASE WHEN kind = 'tool_call' AND role = 'coordinator-inline' THEN 1 END)::BIGINT
+        COUNT(CASE WHEN kind = 'turn' AND role = 'coordinator-inline' THEN 1 END)::BIGINT
                                                                              AS inline_tool_calls,
-        COUNT(CASE WHEN kind = 'tool_call' AND role = 'delegated'          THEN 1 END)::BIGINT
+        COUNT(CASE WHEN kind = 'turn' AND role = 'delegated'          THEN 1 END)::BIGINT
                                                                              AS delegated_tool_calls,
-        COUNT(CASE WHEN kind = 'dispatch'                                   THEN 1 END)::BIGINT
+        COUNT(CASE WHEN kind = 'dispatch'                              THEN 1 END)::BIGINT
                                                                              AS dispatch_count
-    FROM read_ndjson_auto('events.jsonl')
-    WHERE kind IN ('tool_call', 'dispatch')
+    FROM turns_raw
+    WHERE kind IN ('turn', 'dispatch')
       AND coordinator IS NOT NULL
     GROUP BY coordinator, STRFTIME(CAST(ts AS TIMESTAMP), '%Y-W%V')
 ),
 
 -- Aggregate prompt-stat signals from dispatch-prompt-stats events
+-- Schema also pinned via turns_raw above.
 prompt_agg AS (
     SELECT
         coordinator,
@@ -57,7 +103,7 @@ prompt_agg AS (
         AVG(CASE WHEN plan_citation_present = true THEN 100.0 ELSE 0.0 END) AS plan_citation_present_pct,
         PERCENTILE_DISC(0.50) WITHIN GROUP (ORDER BY compression_ratio)     AS compression_ratio_p50,
         PERCENTILE_DISC(0.95) WITHIN GROUP (ORDER BY compression_ratio)     AS compression_ratio_p95
-    FROM read_ndjson_auto('events.jsonl')
+    FROM turns_raw
     WHERE kind = 'dispatch-prompt-stats'
       AND coordinator IS NOT NULL
     GROUP BY coordinator, STRFTIME(CAST(ts AS TIMESTAMP), '%Y-W%V')
@@ -82,7 +128,11 @@ SELECT
     ROUND(pa.plan_citation_present_pct, 4)                                  AS plan_citation_present_pct,
     pa.compression_ratio_p50,
     pa.compression_ratio_p95,
-    -- Health flag (DoD-(c)) thresholds: healthy >0.7, drift 0.5-0.7, executor-mode <0.5
+    -- Health flag (DoD-(c)):
+    --   healthy       : delegate_ratio > 0.7  (strictly above drift ceiling)
+    --   drift         : 0.5 <= delegate_ratio <= 0.7  (inclusive on both ends)
+    --   no-data (I2)  : ratio IS NULL — denominator 0 or no turn events this week
+    --   executor-mode : delegate_ratio < 0.5 (strictly below drift floor)
     CASE
         WHEN tc.delegated_tool_calls::DOUBLE
              / NULLIF(tc.inline_tool_calls + tc.delegated_tool_calls, 0) > 0.7
@@ -90,6 +140,9 @@ SELECT
         WHEN tc.delegated_tool_calls::DOUBLE
              / NULLIF(tc.inline_tool_calls + tc.delegated_tool_calls, 0) >= 0.5
             THEN 'drift'
+        WHEN tc.delegated_tool_calls::DOUBLE
+             / NULLIF(tc.inline_tool_calls + tc.delegated_tool_calls, 0) IS NULL
+            THEN 'no-data'
         ELSE 'executor-mode'
     END                                                                     AS delegate_health_flag
 FROM tool_counts tc

@@ -21,19 +21,15 @@
 
 /**
  * Plan-citation regex: covers all live plan-tree stage × concern combinations.
+ * Anchored at plans/ start to avoid matching embedded substrings unintentionally.
  * Pinned pattern: plans/(proposed|approved|in-progress|implemented|archived)/(personal|work)/.+\.md
  */
-const PLAN_CITATION_RE = /plans\/(proposed|approved|in-progress|implemented|archived)\/(personal|work)\/.+\.md/;
+const PLAN_CITATION_RE = /\bplans\/(proposed|approved|in-progress|implemented|archived)\/(personal|work)\/.+\.md/;
 
 /**
  * Concern-tag regex: [concern: personal] or [concern: work]
  */
 const CONCERN_TAG_RE = /\[concern:\s*(personal|work)\]/;
-
-/**
- * Header-count regex: lines starting with ## (ATX-style h2 header)
- */
-const HEADER_LINE_RE = /^##\s/m;
 
 // ---------------------------------------------------------------------------
 // extractPromptSignals — per-dispatch structural signal extraction

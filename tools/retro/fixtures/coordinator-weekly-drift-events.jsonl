@@ -1,22 +1,22 @@
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:00:10.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:00:20.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:00:30.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:00:40.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:00:50.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:01:00.000Z"}
-{"kind":"tool_call","role":"coordinator-inline","sessionId":"sess-drift-001","coordinator":"evelynn","ts":"2026-04-21T08:01:10.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:00.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:05.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:10.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:15.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:20.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:25.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:30.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:35.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:40.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:45.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:50.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:02:55.000Z"}
-{"kind":"tool_call","role":"delegated","sessionId":"sess-drift-001","coordinator":"evelynn","agentId":"agent-drift001","ts":"2026-04-21T08:03:00.000Z"}
-{"kind":"dispatch","agentId":"agent-drift001","sessionId":"sess-drift-001","coordinator":"evelynn","dispatch_start_ts":"2026-04-21T08:01:30.000Z","dispatch_end_ts":"2026-04-21T08:03:10.000Z","ts":"2026-04-21T08:01:30.000Z"}
-{"kind":"dispatch-prompt-stats","coordinator":"evelynn","sessionId":"sess-drift-001","agentId":"agent-drift001","ts":"2026-04-21T08:01:30.000Z","prompt_chars":600,"dispatch_prompt_tokens":150,"header_count":2,"concern_tag_present":true,"plan_citation_present":true,"compression_ratio":2.0}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:10.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:20.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:30.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:40.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:50.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:01:00.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-drift-001", "coordinator": "evelynn", "ts": "2026-04-21T08:01:10.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:00.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:05.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:10.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:15.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:20.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:25.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:30.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:35.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:40.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:45.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:50.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:02:55.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-drift-001", "coordinator": "evelynn", "agentId": "agent-drift001", "ts": "2026-04-21T08:03:00.000Z"}
+{"kind": "dispatch", "agentId": "agent-drift001", "sessionId": "sess-drift-001", "coordinator": "evelynn", "dispatch_start_ts": "2026-04-21T08:01:30.000Z", "dispatch_end_ts": "2026-04-21T08:03:10.000Z", "ts": "2026-04-21T08:01:30.000Z"}
+{"kind": "dispatch-prompt-stats", "coordinator": "evelynn", "sessionId": "sess-drift-001", "agentId": "agent-drift001", "ts": "2026-04-21T08:01:30.000Z", "prompt_chars": 600, "dispatch_prompt_tokens": 150, "header_count": 2, "concern_tag_present": true, "plan_citation_present": true, "compression_ratio": 2.0}

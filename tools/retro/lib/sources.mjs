@@ -279,6 +279,10 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
   }
 
   // Dispatch event from meta.json
+  // C1 fix: include coordinator + ts so SQL's coordinator IS NOT NULL filter matches,
+  // and dispatch_count aggregation (which groups on coordinator) works against real data.
+  // coordinator: from meta.coordinator (coordinator field written by end-subagent-session skill)
+  // ts: from meta.startTs (dispatch_start_ts is the event's canonical timestamp)
   let dispatch = null;
   if (meta) {
     dispatch = {
@@ -287,6 +291,8 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
       parentSessionId,
       // sessionId for dispatch = parentSessionId (dispatch attributed to coordinator session)
       sessionId: parentSessionId,
+      coordinator: meta.coordinator || null,
+      ts: meta.startTs || null,
       dispatch_start_ts: meta.startTs || null,
       dispatch_end_ts: meta.endTs || null,
     };
@@ -298,8 +304,15 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
   const subagentTotalOutputTokens = assistantRows.reduce(
     (sum, row) => sum + (row.usage.output_tokens || 0), 0
   );
-  // dispatch_prompt_tokens: approximate from input_tokens of the first assistant turn
-  // (the first assistant turn's input_tokens includes the full dispatch prompt context).
+  // I1: dispatch_prompt_tokens denominator — using first-turn input_tokens as an approximation.
+  // Known systematic bias: the first assistant turn's input_tokens includes the full API context
+  // (system prompt + tools + prior conversation history + the dispatch prompt), not just the
+  // dispatch prompt text. This overstates the denominator, making compression_ratio smaller than
+  // the true value. A more precise denominator would require the API to expose per-segment token
+  // counts (not available in Claude JSONL format). Accepted trade-off: the ratio is still
+  // directionally correct and consistent across dispatches (bias is proportional to overhead size
+  // which is roughly stable across coordinator sessions). If a more accurate denominator becomes
+  // available (e.g. a dispatch_prompt_tokens field in the meta.json), prefer that.
   const dispatchPromptTokens = assistantRows.length > 0
     ? (assistantRows[0].usage.input_tokens || 0)
     : 0;
