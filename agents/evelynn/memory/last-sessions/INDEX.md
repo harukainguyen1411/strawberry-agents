@@ -5,6 +5,8 @@
 
 ## Active shards (newest first)
 
+- 2026-04-26 · 48ac7433 · **Date:** 2026-04-26; **Session:** 9c8170e8-221a-4350-97cb-aad8c9907db1 (Leg 6, pre-compact #4 of this session; prior shards: 71c24fd3, db2e8cdf, 7d8667a0, 15249699); **Mode:** cli / personal concern / auto mode
+- 2026-04-26 · 9c8170e8 · This shard supersedes leg-4. Manual handoff per Duong directive — pre-compact note only, no `/end-session`. Five subagents in flight at write time + one team newly created.
 - 2026-04-26 · 15249699 · **Date:** 2026-04-26; **Session:** 92718db2-4608-4d17-8448-45abafa2c971 (resumed post-compact, pre-compact #3 of this session); **Mode:** cli / personal concern
 - 2026-04-26 · 7d8667a0 · **Date:** 2026-04-26; **Session:** 9c8170e8-221a-4350-97cb-aad8c9907db1 (resumed, pre-compact #2 of this session); **Mode:** cli / personal concern
 - 2026-04-26 · 71c24fd3 · (no summary extractable)
