@@ -43,7 +43,9 @@ describe('TP3.T4-F: quality-grader cost-ceiling kill-switch — aborts above $5'
   { skip: !IMPL_EXISTS ? SKIP_REASON : false }, () => {
 
   it('aborts with non-zero exit when estimated weekly spend exceeds $5', () => {
-    if (!qualityGrader?.gradeDispatchEvents) return;
+    if (!qualityGrader?.gradeDispatchEvents) {
+      assert.fail('xfail: qualityGrader.gradeDispatchEvents not exported — impl must wire this (TODO T.P3.3)');
+    }
 
     // Create an overspend events fixture: 10000 dispatches at ~300 tokens each
     // At ~$3/MTok input (Claude Sonnet), 10000 * 300 = 3M tokens → ~$9 (above $5 ceiling)
@@ -107,7 +109,9 @@ describe('TP3.T4-G: quality-grader gate-on rollup — 4 grade buckets under reco
   { skip: !IMPL_EXISTS ? SKIP_REASON : false }, () => {
 
   it('grade buckets are exactly: clear, acceptable, wandering, under-spec\'d', () => {
-    if (!qualityGrader?.gradeDispatchEvents) return;
+    if (!qualityGrader?.gradeDispatchEvents) {
+      assert.fail('xfail: qualityGrader.gradeDispatchEvents not exported — impl must wire this (TODO T.P3.3)');
+    }
     const fixturePath = join(FIXTURES_DIR, 'anthropic-graded.json');
     if (!existsSync(fixturePath)) return; // fixture not yet created
 

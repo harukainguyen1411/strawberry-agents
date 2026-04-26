@@ -49,9 +49,10 @@ function compareSnapshot(name, actual) {
     return; // always pass on update
   }
   if (!existsSync(snapPath)) {
-    // First-time: write and pass
-    writeFileSync(snapPath, actual, 'utf8');
-    return;
+    assert.fail(
+      `Snapshot missing: ${snapPath}\n` +
+      `Run with UPDATE_SNAPSHOTS=1 to create the golden file.`
+    );
   }
   const expected = readFileSync(snapPath, 'utf8');
   assert.strictEqual(actual, expected,

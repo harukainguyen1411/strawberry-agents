@@ -34,7 +34,7 @@ const SKIP_REASON = 'xfail: coordinator-weekly.sql not yet implemented (TODO T.P
 
 function runCoordWeeklyQuery(eventsPath) {
   const result = execSync(
-    `duckdb -json -c "$(cat '${SQL_PATH}')" '${eventsPath}'`,
+    `duckdb -json '${eventsPath}' < '${SQL_PATH}'`,
     { cwd: RETRO_ROOT, encoding: 'utf8' }
   );
   return JSON.parse(result);
@@ -84,6 +84,16 @@ describe('TP2.T3-A: coordinator-weekly.sql — golden deep-equal against expecte
       const keys = new Set(Object.keys(row));
       // Check for Phase-1 skeleton leak (Phase-2 must not have old skeleton columns)
       assert.ok(!keys.has('skeleton_only'), 'must not carry deprecated skeleton-only column');
+      // Assert every column present is within the contracted set
+      for (const key of keys) {
+        assert.ok(ALLOWED.has(key),
+          `unexpected column "${key}" in coordinator-weekly row — not in contracted 12-column set`);
+      }
+      // Assert every contracted column is present
+      for (const col of ALLOWED) {
+        assert.ok(keys.has(col),
+          `contracted column "${col}" missing from coordinator-weekly row`);
+      }
     }
   });
 });

@@ -53,7 +53,11 @@ const UPDATE_SNAPSHOTS = process.env.UPDATE_SNAPSHOTS === '1';
 function compareSnapshot(name, actual) {
   const snapPath = join(SNAPSHOTS_DIR, name);
   if (UPDATE_SNAPSHOTS) { writeFileSync(snapPath, actual, 'utf8'); return; }
-  if (!existsSync(snapPath)) { writeFileSync(snapPath, actual, 'utf8'); return; }
+  if (!existsSync(snapPath)) {
+    assert.fail(
+      `Snapshot missing: ${snapPath}\nRun with UPDATE_SNAPSHOTS=1 to create the golden file.`
+    );
+  }
   const expected = readFileSync(snapPath, 'utf8');
   assert.strictEqual(actual, expected,
     `Snapshot mismatch for ${name}. Run with UPDATE_SNAPSHOTS=1 to update.`);
@@ -104,8 +108,6 @@ function renderWithLockState({ retroFixturePath, bypassLogPath, lockTagDate, now
   const indexPath = join(distDir, 'index.html');
   return existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : '';
 }
-
-function dirname(p) { return require('path').dirname(p); }
 
 // ---------------------------------------------------------------------------
 // TP3.T3-A: fresh-state snapshot — 3-day-old retro, 2 bypasses → no stale banner

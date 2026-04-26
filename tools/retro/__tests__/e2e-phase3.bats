@@ -148,15 +148,14 @@ teardown() {
   node "$INGEST_PATH" --cache-dir "$STRAWBERRY_USAGE_CACHE"
   node "$RENDER_PATH" --events "$EVENTS_PATH" --queries-dir "$QUERIES_DIR" --out-dir "$DIST_DIR"
   SNAP="$SNAPSHOTS_DIR/index-phase3-acceptance.html.snap"
-  if [ -f "$SNAP" ]; then
-    diff -q "$DIST_DIR/index.html" "$SNAP" || {
-      echo "Phase-3 acceptance snapshot mismatch"
-      exit 1
-    }
-  else
-    # First run: write snapshot
-    cp "$DIST_DIR/index.html" "$SNAP"
+  if [ ! -f "$SNAP" ]; then
+    echo "Snapshot missing: $SNAP — set UPDATE_SNAPSHOTS=1 and run once to create the golden file."
+    return 1
   fi
+  diff -q "$DIST_DIR/index.html" "$SNAP" || {
+    echo "Phase-3 acceptance snapshot mismatch"
+    return 1
+  }
 }
 
 # ---------------------------------------------------------------------------
@@ -193,7 +192,7 @@ teardown() {
   if [ -f "$p1_baseline" ]; then
     diff -q "$p1_actual" "$p1_baseline" || {
       echo "Phase-1 plan HTML changed after Phase-3 render (regression)"
-      exit 1
+      return 1
     }
   fi
 }
@@ -207,7 +206,7 @@ teardown() {
   if [ -n "$p2_actual" ] && [ -n "$p2_baseline" ]; then
     diff -q "$p2_actual" "$p2_baseline" || {
       echo "Phase-2 coordinator HTML changed after Phase-3 render (regression)"
-      exit 1
+      return 1
     }
   fi
 }
