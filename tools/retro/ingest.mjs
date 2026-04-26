@@ -34,7 +34,7 @@
  * Implements T.P1.2; extended by T.P2.2 (feedback-index source).
  */
 
-import { writeFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, statSync, unlinkSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { scanAllSources, parseFeedbackIndex } from './lib/sources.mjs';
@@ -109,17 +109,44 @@ const mtimeCache = loadMtimeCache(mtimeCachePath);
 
 // ---------------------------------------------------------------------------
 // Source 5: feedback-index reader (T.P2.2)
-// Read feedback/INDEX.md mtime as the cache trigger; scan feedback/*.md for events.
+// Cache key: hash of all feedback/*.md mtimes (excluding INDEX.md) — I4 fix.
+// Using only INDEX.md mtime missed changes to individual entry files.
 // ---------------------------------------------------------------------------
-const feedbackIndexPath = join(feedbackDir, 'INDEX.md');
-let feedbackIndexMtime = 0;
-if (existsSync(feedbackIndexPath)) {
+
+/**
+ * Compute a cache key for the feedback directory that reflects the mtimes of
+ * all individual feedback entry files (excluding INDEX.md).
+ *
+ * Returns a stable numeric representation: sum of all entry mtimes (ms).
+ * A zero-entry dir returns 0. This is collision-resistant enough for a
+ * one-way incremental cache trigger (false negatives impossible; false positives
+ * astronomically unlikely for realistic mtime distributions).
+ *
+ * @param {string} dir — absolute path to the feedback/ directory
+ * @returns {number}
+ */
+function computeFeedbackMtimeKey(dir) {
+  if (!existsSync(dir)) return 0;
+  let entries;
   try {
-    feedbackIndexMtime = statSync(feedbackIndexPath).mtimeMs;
+    entries = readdirSync(dir);
   } catch {
-    feedbackIndexMtime = 0;
+    return 0;
   }
+  let key = 0;
+  for (const name of entries) {
+    if (!name.endsWith('.md')) continue;
+    if (name === 'INDEX.md') continue;
+    try {
+      key += statSync(join(feedbackDir, name)).mtimeMs;
+    } catch {
+      // skip unreadable files
+    }
+  }
+  return key;
 }
+
+const feedbackMtimeKey = computeFeedbackMtimeKey(feedbackDir);
 const feedbackEvents = parseFeedbackIndex(feedbackDir);
 
 // ---------------------------------------------------------------------------
@@ -140,20 +167,39 @@ writeFileSync(eventsPath, lines, 'utf8');
 // Kept separate from events.jsonl so DuckDB schema inference works cleanly:
 // feedback-entry events have a disjoint field set (category, severity, status, created)
 // that confuses DuckDB auto-inference when mixed with turn/dispatch events.
-// Only written when events exist: DuckDB opening an empty JSONL as a database argument
-// creates a `file` table with only a `json` column, causing column-not-found errors for
-// any named-column query (e.g. FROM file WHERE kind = 'feedback-entry').
+//
+// C1 fix: always rewrite or delete this file on every run, regardless of event count.
+// Prior code only wrote when events > 0, leaving a stale file from a prior run to be
+// silently consumed by render.mjs, producing phantom dashboard rows.
+//
+// Empty-JSONL note: DuckDB opening an empty JSONL as a database argument creates a `file`
+// table with only a `json` column, causing column-not-found errors. We therefore:
+//   - write the file with real content when events > 0
+//   - delete (unlink) the file when events === 0 so render.mjs's existsSync guard
+//     returns false and produces empty rows cleanly, rather than running DuckDB on empty input.
+const feedbackEventsPath = join(cacheDir, 'feedback-events.jsonl');
 if (feedbackEvents.length > 0) {
-  const feedbackEventsPath = join(cacheDir, 'feedback-events.jsonl');
   const feedbackLines = feedbackEvents.map(e => JSON.stringify(e)).join('\n') + '\n';
   writeFileSync(feedbackEventsPath, feedbackLines, 'utf8');
+} else {
+  // No events: remove stale file so render.mjs sees no dedicated source.
+  if (existsSync(feedbackEventsPath)) {
+    try {
+      unlinkSync(feedbackEventsPath);
+    } catch {
+      // If unlink fails (permissions), truncate to empty so the stale content is gone.
+      writeFileSync(feedbackEventsPath, '', 'utf8');
+    }
+  }
 }
 
 // Update mtime cache with all five source keys (T.P2.2 adds 'feedback-index').
+// I4 fix: 'feedback-index' key is now a sum of all feedback/*.md mtimes (excluding INDEX.md)
+// rather than just INDEX.md mtime — individual file changes now trigger a cache miss.
 // Key 'decision-log' (T.P2.3) will be added by that task.
 const newMtimeCache = {
   ...mtimeCache,
-  'feedback-index': feedbackIndexMtime,
+  'feedback-index': feedbackMtimeKey,
 };
 saveMtimeCache(mtimeCachePath, newMtimeCache);
 
