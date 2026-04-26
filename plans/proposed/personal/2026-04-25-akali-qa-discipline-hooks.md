@@ -5,6 +5,7 @@ owner: karma
 created: 2026-04-25
 tests_required: true
 complexity: quick
+qa_plan: none
 orianna_gate_version: 2
 tags: [hooks, posttooluse, agent-dispatch, akali, lucian, qa-discipline]
 related:
@@ -97,6 +98,10 @@ Tests cover three invariants this plan ships:
 3. **Akali agent-def carries the chat-only-findings hard refusal.** Protected by four grep assertions in `akali-agent-def-reporting-discipline.test.sh` — section heading present, plus the three keyword anchors (`assessments/qa-reports`, `MUST surface`, `do not paraphrase`). If a future copy-edit removes the rule or weakens the wording, tests fire.
 
 Out of scope: Lucian agent-def changes (his behaviour is unchanged — only the reminder fires when the framework dispatches him); the existing TaskCreate inline reminder hook (preserved untouched); PR-label-based UI detection (description-substring chosen for cheapness — see §Decision); Sona/Evelynn coordinator-side prompt rules (this plan is hook + Akali-def only; coordinator-discipline lives in the coordinator def files and is a separate plan if Sona escalates).
+
+## QA Plan
+
+`qa_plan: none`. This plan governs Akali's QA-discipline hooks themselves — there is no UI surface, no user flow, and no Playwright/Figma-diff target produced by this plan's tasks. The §Context section already notes `QA-Waiver acceptable` posture. No QA report or test artifact required for promotion or merge.
 
 ## References
 
