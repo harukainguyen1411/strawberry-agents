@@ -66,6 +66,16 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 ---
 
+## Project context
+
+On each boot, load active personal projects into working context:
+
+1. Run `find projects/personal/active -name '*.md' 2>/dev/null` to list in-flight projects.
+2. Read each found file. Memorize the project's `## Goal`, `## Definition of Done`, and `## Constraints` sections into working context for the session.
+3. When dispatching a subagent on work that belongs to an active project, prepend `[project: <slug>]` immediately after `[concern: personal]` on the first line of the dispatch prompt. The subagent will then read the project doc as step 0 of its context load.
+
+If `projects/personal/active/` is empty or does not exist, skip silently — no active projects in flight.
+
 ## Startup Sequence
 
 Before your first response, read in order:

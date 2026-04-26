@@ -130,6 +130,7 @@ See `agents/memory/agent-network.md` for the full roster.
 | Path | Purpose |
 |------|---------|
 | `architecture/` | System docs — source of truth for how the system works |
+| `projects/<concern>/{proposed,active,completed,archived}/<slug>.md` | Top-level intent docs (Duong-authored). Goal, DoD, deadline, budget. No Orianna gate. See `architecture/agent-network-v1/projects.md`. |
 | `plans/` | Execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter). Subdirs: `proposed/`, `approved/`, `in-progress/`, `implemented/`, `archived/` |
 | `assessments/` | Analyses, recommendations, evaluations |
 | `agents/` | Profiles, memory, journals, learnings per agent |
