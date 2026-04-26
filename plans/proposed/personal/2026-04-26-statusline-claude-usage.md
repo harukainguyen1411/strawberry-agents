@@ -8,7 +8,7 @@ status: proposed
 orianna_gate_version: 2
 tier: quick
 tests_required: true
-qa_plan: shell-unit
+qa_plan: inline
 ---
 
 # Claude Code statusline — 5h + 7d usage display
@@ -39,7 +39,7 @@ The script lives in-repo under `scripts/statusline/claude-usage.sh` so it is ver
 
 - **T4** — kind: code. estimate_minutes: 5. Files: `scripts/statusline/sample-payload.json` (new). <!-- orianna: ok --> parallel_slice_candidate: true. Detail: commit a sample stdin payload (matching the schema in Lux's research note §1a) for use by T1 tests and for manual `cat sample-payload.json | scripts/statusline/claude-usage.sh` smoke runs. Include `rate_limits` populated with realistic percentages (e.g. `23.5` and `41.2`) and a future `resets_at` epoch. DoD: file is valid JSON (`jq . sample-payload.json`).
 
-## Test plan
+## QA Plan
 
 Invariants protected:
 
