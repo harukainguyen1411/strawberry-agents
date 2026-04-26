@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # scripts/assessments/index-gen.sh
 #
 # Generates per-category INDEX.md files by scanning YAML frontmatter of
@@ -126,11 +126,12 @@ gen_category_index() {
   # Validate all files first — exit non-zero on first bad file
   local validation_ok=1
   if [ -n "$files" ]; then
-    for f in $files; do
+    while IFS= read -r f; do
+      [ -z "$f" ] && continue
       if ! validate_frontmatter "$f"; then
         validation_ok=0
       fi
-    done
+    done <<< "$files"
   fi
   if [ "$validation_ok" -eq 0 ]; then
     return 1
@@ -161,7 +162,8 @@ gen_category_index() {
   # Separate files into buckets by state
   local active_recent="" active_older="" living=""
   if [ -n "$files" ]; then
-    for f in $files; do
+    while IFS= read -r f; do
+      [ -z "$f" ] && continue
       local state date author target rel_path
       state="$(get_field "$f" "state")"
       date="$(get_field "$f" "date")"
@@ -180,7 +182,7 @@ gen_category_index() {
           ;;
         *)
           # active or superseded or anything else
-          if [ -n "$date" ] && [ "$date" \> "$cutoff" ]; then
+          if [ -n "$date" ] && [[ "$date" > "$cutoff" ]]; then
             active_recent="${active_recent}| ${rel_path} | ${target} | ${owner_val} | ${date} | ${state} |
 "
           else
@@ -189,7 +191,7 @@ gen_category_index() {
           fi
           ;;
       esac
-    done
+    done <<< "$files"
   fi
 
   # Emit the INDEX.md
@@ -259,7 +261,8 @@ gen_top_index() {
         local md_files
         md_files="$(find "$cat_dir" -name '*.md' ! -name 'README.md' ! -name 'INDEX.md' 2>/dev/null || true)"
         if [ -n "$md_files" ]; then
-          for f in $md_files; do
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
             local st
             st="$(get_field "$f" "state")"
             case "$st" in
@@ -267,7 +270,7 @@ gen_top_index() {
               archived) ;;
               *) active_count=$((active_count + 1)) ;;
             esac
-          done
+          done <<< "$md_files"
         fi
       fi
       printf '| %s | %d | %d | [INDEX](./%s/INDEX.md) |\n' \

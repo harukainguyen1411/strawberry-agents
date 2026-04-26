@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # scripts/assessments/migration-link-fix.sh
 #
 # Rewrites cross-references to assessment files that moved during migration,
@@ -144,12 +144,16 @@ rewrite_file() {
     if grep -qF "$old_path" "$file" 2>/dev/null; then
       found_count=$((found_count + 1))
       if [ "$apply" -eq 1 ]; then
-        # Escape special sed characters in the paths
+        # Escape special sed characters in the paths.
+        # Anchor with a trailing boundary: match old_path only when followed by
+        # a non-path character (not alphanumeric, dot, underscore, or hyphen)
+        # OR end-of-line, to prevent rewriting longer sibling paths that share
+        # old_path as a prefix (e.g. old_path.bak or old_path.archived).
         old_esc="$(printf '%s' "$old_path" | sed 's|[/&]|\\&|g')"
         new_esc="$(printf '%s' "$new_path" | sed 's|[/&]|\\&|g')"
-        sed_script="${sed_script}s|${old_esc}|${new_esc}|g;"
+        sed_script="${sed_script}s|${old_esc}\([^a-zA-Z0-9._-]\)|${new_esc}\1|g;s|${old_esc}$|${new_esc}|g;"
       else
-        printf '  [dry-run] %s: "%s" -> "%s"\n' "$file" "$old_path" "$new_path"
+        printf '  [dry-run] %s: "%s" -> "%s"\n' "$file" "$old_path" "$new_path" >&2
       fi
     fi
   done < "$PAIRS_FILE"

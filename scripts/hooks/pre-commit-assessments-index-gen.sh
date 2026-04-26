@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 # scripts/hooks/pre-commit-assessments-index-gen.sh
 #
 # Pre-commit hook: validates frontmatter of staged assessment files and
