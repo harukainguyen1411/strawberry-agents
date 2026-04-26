@@ -1,0 +1,38 @@
+## Summary
+
+Updates button styling across the settings panel. Markers are individually opt-in
+for the frontend gate — having Design-Spec: alone is sufficient to pass the check.
+
+## Author
+
+**Agent:** Soraka
+
+## Documentation Checklist
+
+- [ ] Architecture change? Updated relevant `architecture/` doc
+- [ ] New feature or removed feature? Updated relevant `README.md`
+- [ ] Changes agent communication or MCP tools? Updated `agent-network.md`
+- [x] N/A — no documentation updates needed
+
+## Testing
+
+| Field | Value |
+|-------|-------|
+| xfail test commit SHA | def5678 |
+| Regression test linked | N/A |
+| QA-Report | QA-Waiver: trivial token-swap, no structural visual change |
+
+- [x] All pre-commit unit tests pass locally
+- [x] Pre-push TDD hook passed (xfail-first + regression-test checks)
+- [x] No `--no-verify` used
+
+### Frontend / UI markers
+
+Design-Spec: plans/approved/personal/2026-04-25-frontend-uiux-in-process.md#ux-spec
+
+## Review Notes
+
+Only Design-Spec: is present; Accessibility-Check and Visual-Diff are absent.
+Per D7 markers are individually opt-in — one marker is sufficient.
+UI PR modifying apps/strawberry-app/src/components/settings/Button.vue.
+Expected: pr-frontend-markers job PASSES.

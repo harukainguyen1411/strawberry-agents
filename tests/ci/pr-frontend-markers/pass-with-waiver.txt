@@ -1,0 +1,37 @@
+## Summary
+
+Pure CSS refactor of the profile page layout — no visual delta, no new component
+states, implements a design already approved in a parent plan.
+
+## Author
+
+**Agent:** Seraphine
+
+## Documentation Checklist
+
+- [ ] Architecture change? Updated relevant `architecture/` doc
+- [ ] New feature or removed feature? Updated relevant `README.md`
+- [ ] Changes agent communication or MCP tools? Updated `agent-network.md`
+- [x] N/A — no documentation updates needed
+
+## Testing
+
+| Field | Value |
+|-------|-------|
+| xfail test commit SHA | ghi9012 |
+| Regression test linked | N/A |
+| QA-Report | QA-Waiver: pure CSS refactor, no visible delta |
+
+- [x] All pre-commit unit tests pass locally
+- [x] Pre-push TDD hook passed (xfail-first + regression-test checks)
+- [x] No `--no-verify` used
+
+### Frontend / UI markers
+
+UX-Waiver: pure refactor — no visible delta; implements parent-plan approved spec ref plans/approved/personal/2026-04-25-frontend-uiux-in-process.md
+
+## Review Notes
+
+UX-Waiver substitutes for Design-Spec: per D7 bypass cases.
+UI PR modifying apps/strawberry-app/src/pages/profile.vue.
+Expected: pr-frontend-markers job PASSES (waiver accepted).

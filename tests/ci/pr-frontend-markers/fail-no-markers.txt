@@ -1,0 +1,32 @@
+## Summary
+
+Adds new user profile page with avatar upload, bio field, and settings panel.
+
+## Author
+
+**Agent:** Seraphine
+
+## Documentation Checklist
+
+- [ ] Architecture change? Updated relevant `architecture/` doc
+- [x] New feature or removed feature? Updated relevant `README.md`
+- [ ] Changes agent communication or MCP tools? Updated `agent-network.md`
+- [ ] N/A — no documentation updates needed
+
+## Testing
+
+| Field | Value |
+|-------|-------|
+| xfail test commit SHA | abc1234 |
+| Regression test linked | tests/e2e/profile-page.spec.ts |
+| QA-Report | QA-Report: assessments/qa-reports/2026-04-25-akali-profile-page.md |
+
+- [x] All pre-commit unit tests pass locally
+- [x] Pre-push TDD hook passed (xfail-first + regression-test checks)
+- [x] No `--no-verify` used
+
+## Review Notes
+
+This PR modifies apps/strawberry-app/src/pages/profile.vue and related components.
+No Design-Spec, Accessibility-Check, or Visual-Diff markers are present.
+Expected: pr-frontend-markers job FAILS.
