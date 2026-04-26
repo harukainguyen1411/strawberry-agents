@@ -22,3 +22,9 @@ Risks surfaced during Senna's review of PR #22 (flock-based coordinator lock, me
 Risks surfaced during the 2026-04-23 Evelynn CLI session (memory-flow ADR breakdown). Plan context: `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md`.
 
 - [`2026-04-23-parallel-subagent-writes.md`](2026-04-23-parallel-subagent-writes.md) — F1: No subagent-level git serialization (medium / moderate) · F2: Breakdown/test-plan agents create sibling files instead of editing ADR inline (medium / moderate)
+
+### plan-lifecycle-guard
+
+Risk surfaced during PR #69 wave merge (2026-04-26 Evelynn CLI session). Watch-list only per Duong directive — no plan authored, action threshold ≥2 more occurrences.
+
+- [`2026-04-26-plan-lifecycle-guard-merge-blindness.md`](2026-04-26-plan-lifecycle-guard-merge-blindness.md) — R1: Guard fires on local merges that bring forward Orianna-promoted plan adds; lineage not inspected (low / medium-friction)
