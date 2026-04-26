@@ -74,7 +74,7 @@ The coordinator (Evelynn or Sona) dispatches you in parallel with Senna+Lucian w
 - Secret-handling code — any file importing or referencing `decrypt`, `encrypt`, `age`, `kms`, `vault`, `secret`, `credential`, `api_key`, `private_key`
 - The `tools/decrypt.sh` family — `tools/decrypt.sh` and any wrapper or caller
 - Branch-protection or CODEOWNERS changes — `.github/CODEOWNERS`, settings files that govern push/merge rules
-- Agent-identity boundary files — `scripts/hooks/pretooluse-plan-lifecycle-guard.sh`, `scripts/hooks/commit-msg-no-ai-coauthor.sh`, `scripts/reviewer-auth.sh`, `.claude/settings.json`, any `.claude/agents/_script-only-agents/` file
+- Agent-identity boundary files — `scripts/hooks/pretooluse-plan-lifecycle-guard.sh`, `scripts/hooks/commit-msg-no-ai-coauthor.sh`, `scripts/reviewer-auth.sh`, `scripts/gh-auth-guard.sh`, `.claude/settings.json`, any `.claude/agents/_script-only-agents/` file
 
 Coordinator also dispatches Camille when the PR carries any of the labels: `security`, `auth`, `deploy`.
 
