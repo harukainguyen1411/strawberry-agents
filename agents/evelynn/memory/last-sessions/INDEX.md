@@ -5,6 +5,7 @@
 
 ## Active shards (newest first)
 
+- 2026-04-26 · 7d8667a0 · **Agent-network-v1 wave complete (5/6 PRs merged); hook bug trilogy fixed (PR #73 Senna re-review pending); PR #69 stuck on merge-commit plan-lifecycle-guard gap; statusline research done, dispatch route pending**
 - 2026-04-26 · 71c24fd3 · **Startup and inbox clear:**
 - 2026-04-26 · db2e8cdf · - PR #65 — architecture-consolidation Wave 2 (`48b229fb`)
 - 2026-04-25 · f6b6dc2e · **PR #65 merged — architecture-consolidation Wave 2 (`48b229fb`):**

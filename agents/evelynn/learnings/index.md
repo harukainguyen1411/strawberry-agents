@@ -91,3 +91,5 @@
 
 - 2026-04-25-orianna-parallel-git-index-race.md — Orianna parallel-dispatch git-index race; mitigation: explicit-pathspec on git commit
 - 2026-04-26-bookkeeping-not-source-of-truth.md — open-threads.md / memory shards drift fast under heavy parallel impl; verify artifact layer (plan files, PR state, git log) before surfacing any OQ as blocking; bookkeeping is downstream of artifacts, not upstream | last_used: 2026-04-26
+- 2026-04-26-tty-pipe-exit-code-fallback-trap.md — PreToolUse hooks always run non-tty (pipe-coupled); tty-detection fallback paths are universally active in hook context; never make correctness depend on tty detection in hook scripts | last_used: 2026-04-26
+- 2026-04-26-merge-commit-not-exempt-from-plan-lifecycle-guard.md — plan-lifecycle guard fires on merge commit messages containing plan-path tokens; merge commits are structurally read-only re: plan dirs; guard must detect and exempt merge commits before path-token scan | last_used: 2026-04-26
