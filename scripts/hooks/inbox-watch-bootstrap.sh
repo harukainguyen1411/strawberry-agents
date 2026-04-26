@@ -94,6 +94,16 @@ if [ -z "$coord" ]; then
 fi
 
 # ────────────────────────────────────────────────────────────────
+# T1 — Write coordinator-shell sentinel keyed by controlling tty
+# This sentinel is checked by pretooluse-monitor-arming-gate.sh to
+# distinguish the real coordinator shell from subagents that inherit
+# CLAUDE_AGENT_NAME via env-var leak.
+# ────────────────────────────────────────────────────────────────
+
+tty_key="$(tty 2>/dev/null | tr '/' '_' | tr -d '\n' || echo "no-tty-$$")"
+touch "/tmp/claude-coordinator-shell-${tty_key}"
+
+# ────────────────────────────────────────────────────────────────
 # Emit bootstrap nudge as JSON
 # ────────────────────────────────────────────────────────────────
 

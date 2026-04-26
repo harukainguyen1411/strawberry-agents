@@ -26,7 +26,25 @@ fi
 
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"ls"}}'
 
-# Subagents that MUST NOT trigger the warning (sentinel absent in all cases)
+# Shared tty key for coordinator tests — T1 fix requires coordinator-shell sentinel.
+TTY_KEY_COORD="fake_tty_coord_scope_$$"
+COORD_SHELL_SENTINEL="/tmp/claude-coordinator-shell-${TTY_KEY_COORD}"
+touch "$COORD_SHELL_SENTINEL"
+
+# Noop pgrep shim — prevents T3 rescue from silencing tests that expect the warning.
+# Live inbox-watch.sh processes may exist on the host; shim ensures they don't interfere.
+SHIM_DIR_NOOP="$(mktemp -d /tmp/shim-scope-XXXXXX)"
+cat > "$SHIM_DIR_NOOP/pgrep" <<'SHIM'
+#!/usr/bin/env bash
+exit 1
+SHIM
+chmod +x "$SHIM_DIR_NOOP/pgrep"
+
+trap 'rm -f "$COORD_SHELL_SENTINEL"; rm -rf "$SHIM_DIR_NOOP"' EXIT INT TERM
+
+# Subagents that MUST NOT trigger the warning (sentinel absent in all cases).
+# These exit at the agent-name check before the tty check, so no coordinator
+# sentinel needed here.
 for agent in Kayn Jayce Vi Rakan Senna Lucian Akali Lissandra Orianna; do
   SESSION_ID="test-scope-$$-${agent}"
   SENTINEL="/tmp/claude-monitor-armed-${SESSION_ID}"
@@ -44,14 +62,21 @@ for agent in Kayn Jayce Vi Rakan Senna Lucian Akali Lissandra Orianna; do
   rm -f "$SENTINEL"
 done
 
-# Coordinators that MUST trigger the warning (sentinel absent)
+# Coordinators that MUST trigger the warning (arming sentinel absent).
+# T1 fix: coordinator-shell sentinel must be present for the gate to proceed
+# past the tty check, so we inject TTY_KEY_COORD + the matching sentinel above.
 for agent in Evelynn Sona; do
   SESSION_ID="test-scope-$$-${agent}"
   SENTINEL="/tmp/claude-monitor-armed-${SESSION_ID}"
   rm -f "$SENTINEL"
   trap 'rm -f "$SENTINEL"' EXIT INT TERM
 
-  OUT="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME="$agent" CLAUDE_SESSION_ID="$SESSION_ID" bash "$GATE" 2>/dev/null || true)"
+  OUT="$(printf '%s' "$PAYLOAD" | \
+    CLAUDE_AGENT_NAME="$agent" \
+    CLAUDE_SESSION_ID="$SESSION_ID" \
+    TALON_TEST_TTY_KEY="$TTY_KEY_COORD" \
+    PATH="$SHIM_DIR_NOOP:$PATH" \
+    bash "$GATE" 2>/dev/null || true)"
 
   if printf '%s' "$OUT" | grep -q 'INBOX WATCHER NOT ARMED'; then
     pass "$agent (coordinator): warning emitted (correct)"
@@ -61,6 +86,8 @@ for agent in Evelynn Sona; do
 
   rm -f "$SENTINEL"
 done
+
+rm -f "$COORD_SHELL_SENTINEL"
 
 if [ "$FAIL_COUNT" -eq 0 ]; then
   printf '\n[ALL PASS] monitor-gate coordinator-scoped assertions passed.\n'

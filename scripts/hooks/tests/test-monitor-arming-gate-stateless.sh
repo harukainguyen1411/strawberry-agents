@@ -33,16 +33,32 @@ fi
 SESSION_ID="test-monitor-gate-$$"
 SENTINEL="/tmp/claude-monitor-armed-${SESSION_ID}"
 
-# Ensure sentinel is absent at start
+# Shared tty key for tests 1-5 (simulates coordinator shell)
+# T1 fix: gate now also checks /tmp/claude-coordinator-shell-<tty_key>; tests
+# that simulate coordinator invocations must have that file present.
+TTY_KEY_SHARED="fake_tty_shared_$$"
+COORD_SENTINEL_SHARED="/tmp/claude-coordinator-shell-${TTY_KEY_SHARED}"
+touch "$COORD_SENTINEL_SHARED"
+
+# Shim dir: pgrep returns nothing — prevents the T3 rescue path from firing
+# in tests that expect the warning (live inbox-watch.sh processes may exist).
+SHIM_DIR_NOOP="$(mktemp -d /tmp/shim-noop-XXXXXX)"
+cat > "$SHIM_DIR_NOOP/pgrep" <<'SHIM'
+#!/usr/bin/env bash
+exit 1
+SHIM
+chmod +x "$SHIM_DIR_NOOP/pgrep"
+
+# Ensure sentinels are absent at start
 rm -f "$SENTINEL"
-trap 'rm -f "$SENTINEL"' EXIT INT TERM
+trap 'rm -f "$SENTINEL" "$COORD_SENTINEL_SHARED"; rm -rf "$SHIM_DIR_NOOP"' EXIT INT TERM
 
 # Minimal PreToolUse JSON payload
 PAYLOAD='{"tool_name":"Bash","tool_input":{"command":"echo hello"}}'
 
 # ── Test 1: sentinel absent + Evelynn → MUST emit warning ────────────────────
 
-OUT1="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" bash "$GATE" 2>/dev/null || true)"
+OUT1="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" TALON_TEST_TTY_KEY="$TTY_KEY_SHARED" PATH="$SHIM_DIR_NOOP:$PATH" bash "$GATE" 2>/dev/null || true)"
 
 if printf '%s' "$OUT1" | grep -q 'INBOX WATCHER NOT ARMED'; then
   pass "sentinel absent + Evelynn: warning emitted"
@@ -52,7 +68,7 @@ fi
 
 # ── Test 2: repeat without sentinel → MUST still emit (stateless: every call) ─
 
-OUT2="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" bash "$GATE" 2>/dev/null || true)"
+OUT2="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" TALON_TEST_TTY_KEY="$TTY_KEY_SHARED" PATH="$SHIM_DIR_NOOP:$PATH" bash "$GATE" 2>/dev/null || true)"
 
 if printf '%s' "$OUT2" | grep -q 'INBOX WATCHER NOT ARMED'; then
   pass "sentinel absent + Evelynn (second call): warning emitted again (stateless)"
@@ -63,7 +79,7 @@ fi
 # ── Test 3: create sentinel → gate must be silent ────────────────────────────
 
 touch "$SENTINEL"
-OUT3="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" bash "$GATE" 2>/dev/null || true)"
+OUT3="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Evelynn CLAUDE_SESSION_ID="$SESSION_ID" TALON_TEST_TTY_KEY="$TTY_KEY_SHARED" bash "$GATE" 2>/dev/null || true)"
 
 if [ -z "$OUT3" ]; then
   pass "sentinel present + Evelynn: silent no-op"
@@ -79,7 +95,7 @@ SENTINEL_SONA="/tmp/claude-monitor-armed-${SONA_SESSION_ID}"
 rm -f "$SENTINEL_SONA"
 trap 'rm -f "$SENTINEL" "$SENTINEL_SONA"' EXIT INT TERM
 
-OUT4="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Sona CLAUDE_SESSION_ID="$SONA_SESSION_ID" bash "$GATE" 2>/dev/null || true)"
+OUT4="$(printf '%s' "$PAYLOAD" | CLAUDE_AGENT_NAME=Sona CLAUDE_SESSION_ID="$SONA_SESSION_ID" TALON_TEST_TTY_KEY="$TTY_KEY_SHARED" PATH="$SHIM_DIR_NOOP:$PATH" bash "$GATE" 2>/dev/null || true)"
 
 if printf '%s' "$OUT4" | grep -q 'INBOX WATCHER NOT ARMED'; then
   pass "sentinel absent + Sona: warning emitted"

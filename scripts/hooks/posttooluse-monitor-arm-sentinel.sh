@@ -11,7 +11,9 @@
 #   3. If command contains "inbox-watch.sh": touch sentinel and exit 0.
 #   4. Otherwise: exit 0 (different Monitor invocation, not the watcher).
 #
-# Sentinel path: /tmp/claude-monitor-armed-${CLAUDE_SESSION_ID}
+# Sentinel paths:
+#   /tmp/claude-monitor-armed-${CLAUDE_SESSION_ID}      (when session id set)
+#   /tmp/claude-monitor-armed-tty-${tty_key}            (always — T2 fix)
 #
 # Input (stdin): PostToolUse JSON payload.
 # Output (stdout): nothing (this hook is informational only).
@@ -46,12 +48,23 @@ fi
 # Only arm if this Monitor invocation targets inbox-watch.sh
 case "$cmd" in
   *inbox-watch.sh*)
+    # T2 fix: write both session-keyed and tty-keyed sentinels so the gate
+    # remains silent even when session id is unset or changes after /compact.
     session_id="${CLAUDE_SESSION_ID:-}"
-    if [ -n "$session_id" ]; then
-      sentinel="/tmp/claude-monitor-armed-${session_id}"
-      touch "$sentinel"
-      # No stdout — hook is silent on success
+    if [ -n "${TALON_TEST_TTY_KEY:-}" ]; then
+      tty_key="$TALON_TEST_TTY_KEY"
+    else
+      tty_key="$(tty 2>/dev/null | tr '/' '_' | tr -d '\n' || echo "no-tty-$$")"
     fi
+
+    # Session-keyed sentinel (when session id available)
+    if [ -n "$session_id" ]; then
+      touch "/tmp/claude-monitor-armed-${session_id}"
+    fi
+
+    # Tty-keyed sentinel (always — durable across compact and unset session id)
+    touch "/tmp/claude-monitor-armed-tty-${tty_key}"
+    # No stdout — hook is silent on success
     ;;
 esac
 
