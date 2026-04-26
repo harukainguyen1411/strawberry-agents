@@ -14,6 +14,7 @@
 #   pre-commit-secrets-guard.sh            — blocks secrets in committed files
 #   pre-commit-staged-scope-guard.sh       — rejects commits that sweep out-of-scope paths (STAGED_SCOPE contract)
 #   pre-commit-unit-tests.sh               — runs unit tests for changed packages
+#   pre-commit-assessments-index-gen.sh    — validates assessment frontmatter + regenerates category INDEX.md on assessment commits (Phase C T16)
 #
 # NOTE: pre-commit-plan-promote-guard.sh and commit-msg-plan-promote-guard.sh have been
 # archived to scripts/hooks/_archive/v2-commit-phase-plan-guards/ by

@@ -40,7 +40,21 @@ Caller provides:
 ## Decision process
 
 1. Read the plan file.
-2. For `proposed → approved`: verify the plan has a clear owner, no unresolved TBD/TODO/Decision-pending in gating sections, and tasks are described concretely.
+2. For `proposed → approved`: run the QA-plan structural checks first (machine-executable,
+   before any LLM reasoning), then verify the plan has a clear owner, no unresolved
+   TBD/TODO/Decision-pending in gating sections, and tasks are described concretely.
+
+   **QA-plan checks (proposed → approved):**
+   ```sh
+   REPO_ROOT="$(git rev-parse --show-toplevel)"
+   . "$REPO_ROOT/scripts/_lib_plan_structure.sh"
+   check_qa_plan_frontmatter "$PLAN_PATH" || REJECT "qa_plan frontmatter check failed — see BLOCK lines above"
+   check_qa_plan_body "$PLAN_PATH"        || REJECT "qa_plan body section check failed — see BLOCK lines above"
+   ```
+   Both functions are sourced from `scripts/_lib_plan_structure.sh`. If either returns
+   non-zero, output a REJECT block that includes the BLOCK message(s) from stderr and
+   stop — do not proceed to the LLM reasoning step.
+
 3. For `approved → in-progress`: verify tasks are actionable and tests_required plans have a test task.
 4. For `in-progress → implemented`: verify there is implementation evidence — the work described is plausibly done.
 5. For `* → archived`: always APPROVE (bookkeeping only).
