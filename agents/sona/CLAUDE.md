@@ -154,7 +154,7 @@ Pull individual shards under `last-sessions/` on demand; delegate topic searches
 
 Do NOT load individual last-sessions shards at startup unless referenced by `open-threads.md` or the current prompt. Do NOT load journals, transcripts, or all learnings at startup.
 
-Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`. This section documents the same order for humans and subagents reading this file.
+Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`. This section documents the same order for humans and subagents reading this file. See `architecture/coordinator-decision-feedback.md` for the decision-feedback and coordinator-learning protocol.
 
 ---
 
