@@ -114,6 +114,23 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
     return [];
   }
 
+  // C2 round-trip fix: derive coordinator from sibling <sessionId>.meta.json if present.
+  // Parent JSONL files carry no coordinator field natively — the meta sidecar is the only
+  // structured source. Without coordinator, turns are excluded by the SQL WHERE
+  // coordinator IS NOT NULL predicate, leaving inline_tool_calls always 0 against real data.
+  // Invariant: coordinator null for sessions without a sidecar (old data, non-strawberry
+  // projects) — those rows are simply absent from coordinator-weekly; no fabrication.
+  const metaSiblingPath = filePath.replace(/\.jsonl$/, '.meta.json');
+  let parentMeta = null;
+  if (existsSync(metaSiblingPath)) {
+    try {
+      parentMeta = JSON.parse(readFileSync(metaSiblingPath, 'utf8'));
+    } catch {
+      // ignore malformed meta sidecar
+    }
+  }
+  const coordinator = parentMeta ? (parentMeta.coordinator || null) : null;
+
   // Extract plan slug from first user message
   const firstUserMsg = lines.find(l => l.type === 'user' || l.role === 'user');
   const firstUserText = firstUserMsg && Array.isArray(firstUserMsg.content)
@@ -163,6 +180,7 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
       kind: 'turn',
       role: 'coordinator-inline',
       sessionId,
+      coordinator,
       ts: row.ts,
       input_tokens: row.usage.input_tokens || 0,
       output_tokens: row.usage.output_tokens || 0,
@@ -266,6 +284,10 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
       sessionId,
       parentSessionId,
       agentId,
+      // C2 round-trip fix: plumb coordinator from meta.json so SQL WHERE coordinator IS NOT NULL
+      // matches real production turns. Pre-fix: turn events lacked coordinator → filtered out →
+      // delegated_tool_calls always 0, delegate_ratio always NULL for every coordinator week.
+      coordinator: meta ? (meta.coordinator || null) : null,
       ts: row.ts,
       input_tokens: row.usage.input_tokens || 0,
       output_tokens: row.usage.output_tokens || 0,
@@ -561,6 +583,11 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
   // --- Sentinel-only dispatch events ---
   // For sentinels without a corresponding subagent JSONL+meta (test isolation case),
   // emit a minimal dispatch event so the sentinel mtime is captured.
+  // TODO (C2 round-trip, 2026-04-26): orphan-sentinel events are emitted without coordinator or ts.
+  //   The SQL WHERE coordinator IS NOT NULL predicate therefore excludes these from dispatch_count.
+  //   Resolution: these sentinels arise when no meta.json is present (test isolation case only;
+  //   production always has meta.json). If coordinator becomes available here in future (e.g. via
+  //   a sentinel manifest file), add coordinator + ts to the emitted event and update the SQL test.
   const emittedAgentIds = new Set(events.filter(e => e.kind === 'dispatch').map(e => e.agentId));
   for (const [agentId, endTs] of Object.entries(sentinelEndTimes)) {
     if (!emittedAgentIds.has(agentId)) {
@@ -569,6 +596,8 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
         agentId,
         parentSessionId: null,
         sessionId: null,
+        coordinator: null,
+        ts: null,
         dispatch_start_ts: null,
         dispatch_end_ts: endTs,
       });

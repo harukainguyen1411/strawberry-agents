@@ -275,3 +275,187 @@ describe('Regression C2: SQL counts kind:turn events for inline/delegated (not k
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Round-trip regression — real runIngest() path, not pre-baked synthetic events
+//
+// C2 architectural root cause: parseParentSession and parseSubagentSession emitted
+// kind:'turn' events WITHOUT a coordinator field. After C3's schema pin, DuckDB
+// renders missing coordinator as NULL. The SQL WHERE coordinator IS NOT NULL then
+// filters all real-production turns → inline_tool_calls = 0, delegated_tool_calls = 0,
+// delegate_ratio = NULL, delegate_health_flag = 'no-data' for every coordinator week.
+//
+// This test exercises the REAL ingest path (runIngest → events.jsonl) then runs the
+// SQL, confirming both turn types carry coordinator end-to-end.
+// ---------------------------------------------------------------------------
+describe('Regression C2 round-trip: real ingest path → SQL produces non-zero inline + delegated counts',
+  { skip: !IMPL_EXISTS ? SKIP_REASON : false }, () => {
+
+  let sqlRows;
+
+  before(() => {
+    // Build a tmpdir with a complete source-shape fixture:
+    //   projects/evelynn-session/sess-rt-001/sess-rt-001.jsonl       (parent JSONL)
+    //   projects/evelynn-session/sess-rt-001/sess-rt-001.meta.json   (parent meta — coordinator)
+    //   projects/evelynn-session/sess-rt-001/subagents/agent-rt-001.jsonl
+    //   projects/evelynn-session/sess-rt-001/subagents/agent-rt-001.meta.json
+    // This mimics real production layout (§Q1 sources 1+2).
+    const tmp = mkdtempSync(join(tmpdir(), 'retro-c2-roundtrip-'));
+    const sessDir = join(tmp, 'projects', 'evelynn-session', 'sess-rt-001');
+    const subDir = join(sessDir, 'subagents');
+    mkdirSync(subDir, { recursive: true });
+
+    // Parent session JSONL: two coordinator-inline assistant turns (no isSidechain flag).
+    const parentJsonl = [
+      JSON.stringify({
+        type: 'user', role: 'user',
+        content: [{ type: 'text', text: '[concern: personal] Run the weekly retro.' }],
+        sessionId: 'sess-rt-001',
+        timestamp: '2026-04-21T09:00:00.000Z',
+      }),
+      JSON.stringify({
+        type: 'assistant', role: 'assistant',
+        content: [{ type: 'text', text: 'Starting scan.' }],
+        usage: { input_tokens: 100, output_tokens: 40, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        sessionId: 'sess-rt-001',
+        timestamp: '2026-04-21T09:00:10.000Z',
+        model: 'claude-sonnet-4-6',
+      }),
+      JSON.stringify({
+        type: 'assistant', role: 'assistant',
+        content: [{ type: 'text', text: 'Scan complete.' }],
+        usage: { input_tokens: 80, output_tokens: 20, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        sessionId: 'sess-rt-001',
+        timestamp: '2026-04-21T09:00:30.000Z',
+        model: 'claude-sonnet-4-6',
+      }),
+    ].join('\n') + '\n';
+
+    // Parent session meta.json: supplies coordinator so parseParentSession emits coordinator
+    // on inline turn events (C2 round-trip fix: meta sidecar read by parseParentSession).
+    const parentMeta = JSON.stringify({
+      sessionId: 'sess-rt-001',
+      coordinator: 'evelynn',
+      startTs: '2026-04-21T09:00:00.000Z',
+    });
+
+    // Subagent JSONL: two isSidechain:true assistant turns.
+    const subagentJsonl = [
+      JSON.stringify({
+        type: 'user', role: 'user',
+        content: [{ type: 'text', text: '[concern: personal] Execute the task.' }],
+        sessionId: 'sess-rt-sub-001', parentSessionId: 'sess-rt-001',
+        isSidechain: true, timestamp: '2026-04-21T09:00:15.000Z',
+      }),
+      JSON.stringify({
+        type: 'assistant', role: 'assistant',
+        content: [{ type: 'text', text: 'Step 1 done.' }],
+        usage: { input_tokens: 200, output_tokens: 80, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        sessionId: 'sess-rt-sub-001', parentSessionId: 'sess-rt-001',
+        isSidechain: true, timestamp: '2026-04-21T09:00:20.000Z',
+        model: 'claude-sonnet-4-6',
+      }),
+      JSON.stringify({
+        type: 'assistant', role: 'assistant',
+        content: [{ type: 'text', text: 'All done.' }],
+        usage: { input_tokens: 150, output_tokens: 50, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+        sessionId: 'sess-rt-sub-001', parentSessionId: 'sess-rt-001',
+        isSidechain: true, timestamp: '2026-04-21T09:00:25.000Z',
+        model: 'claude-sonnet-4-6',
+      }),
+    ].join('\n') + '\n';
+
+    // Subagent meta.json: coordinator field is the source of truth for delegated turns.
+    const subagentMeta = JSON.stringify({
+      agentId: 'agent-rt-001',
+      sessionId: 'sess-rt-sub-001',
+      parentSessionId: 'sess-rt-001',
+      coordinator: 'evelynn',
+      startTs: '2026-04-21T09:00:12.000Z',
+      endTs: '2026-04-21T09:00:28.000Z',
+    });
+
+    writeFileSync(join(sessDir, 'sess-rt-001.jsonl'), parentJsonl);
+    writeFileSync(join(sessDir, 'sess-rt-001.meta.json'), parentMeta);
+    writeFileSync(join(subDir, 'agent-rt-001.jsonl'), subagentJsonl);
+    writeFileSync(join(subDir, 'agent-rt-001.meta.json'), subagentMeta);
+
+    // Run real ingest — produces events.jsonl with both parent inline turns and
+    // subagent delegated turns, each carrying coordinator from their respective meta.
+    execSync(`node ${INGEST_PATH} --cache-dir ${tmp}`, { cwd: RETRO_ROOT, stdio: 'pipe' });
+
+    // Confirm turn events emitted by real ingest carry coordinator (pre-assertion).
+    const eventsPath = join(tmp, 'events.jsonl');
+    const events = existsSync(eventsPath)
+      ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l))
+      : [];
+
+    const inlineTurns = events.filter(e => e.kind === 'turn' && e.role === 'coordinator-inline');
+    const delegatedTurns = events.filter(e => e.kind === 'turn' && e.role === 'delegated');
+    assert.ok(inlineTurns.length > 0, 'expected inline turns from parent session ingest');
+    assert.ok(delegatedTurns.length > 0, 'expected delegated turns from subagent ingest');
+    for (const t of inlineTurns) {
+      assert.strictEqual(t.coordinator, 'evelynn',
+        `inline turn at ts=${t.ts} must carry coordinator=evelynn from parent meta.json. ` +
+        'Pre-fix: parseParentSession never read meta sidecar → coordinator missing → SQL filtered out all inline turns.'
+      );
+    }
+    for (const t of delegatedTurns) {
+      assert.strictEqual(t.coordinator, 'evelynn',
+        `delegated turn at ts=${t.ts} must carry coordinator=evelynn from subagent meta.json. ` +
+        'Pre-fix: parseSubagentSession did not propagate meta.coordinator to turn events.'
+      );
+    }
+
+    // Run coordinator-weekly SQL against the ingest-produced events.jsonl.
+    const sql = readFileSync(SQL_PATH, 'utf8');
+    const escapedPath = eventsPath.replace(/'/g, "''");
+    const resolvedSql = sql.replace(/'events\.jsonl'/g, `'${escapedPath}'`);
+    const cleanSql = resolvedSql.replace(/;\s*$/, '') + ';';
+    const result = execSync('duckdb -json', { input: cleanSql, cwd: RETRO_ROOT, encoding: 'utf8', stdio: 'pipe' });
+    sqlRows = result.trim() ? JSON.parse(result.trim()) : [];
+  });
+
+  it('SQL produces at least one row for coordinator=evelynn', () => {
+    const row = sqlRows.find(r => r.coordinator === 'evelynn');
+    assert.ok(row, 'expected a row for coordinator=evelynn after real ingest → SQL round-trip');
+  });
+
+  it('inline_tool_calls > 0 from real ingest (not pre-baked events)', () => {
+    const row = sqlRows.find(r => r.coordinator === 'evelynn');
+    assert.ok(row, 'expected a row for evelynn');
+    assert.ok(Number(row.inline_tool_calls) > 0,
+      `inline_tool_calls must be > 0 when parent session meta.json supplies coordinator. ` +
+      `Got ${row.inline_tool_calls}. Pre-fix: parseParentSession never read meta sidecar → ` +
+      `coordinator=null on all inline turns → SQL filtered them → inline_tool_calls=0.`
+    );
+  });
+
+  it('delegated_tool_calls > 0 from real ingest (not pre-baked events)', () => {
+    const row = sqlRows.find(r => r.coordinator === 'evelynn');
+    assert.ok(row, 'expected a row for evelynn');
+    assert.ok(Number(row.delegated_tool_calls) > 0,
+      `delegated_tool_calls must be > 0 when subagent meta.json supplies coordinator. ` +
+      `Got ${row.delegated_tool_calls}. Pre-fix: parseSubagentSession did not propagate ` +
+      `meta.coordinator to turn events → coordinator=null → SQL filtered them → delegated_tool_calls=0.`
+    );
+  });
+
+  it('delegate_ratio IS NOT NULL (non-degenerate end-to-end)', () => {
+    const row = sqlRows.find(r => r.coordinator === 'evelynn');
+    assert.ok(row, 'expected a row for evelynn');
+    assert.notStrictEqual(row.delegate_ratio, null,
+      `delegate_ratio must not be null after real ingest round-trip. ` +
+      `Pre-fix: all turn counts were 0 → NULLIF denominator → ratio=NULL → health flag="no-data" for every week.`
+    );
+  });
+
+  it('delegate_health_flag is not "no-data" (ratio computable)', () => {
+    const row = sqlRows.find(r => r.coordinator === 'evelynn');
+    assert.ok(row, 'expected a row for evelynn');
+    assert.notStrictEqual(row.delegate_health_flag, 'no-data',
+      `delegate_health_flag must not be "no-data". ` +
+      `Pre-fix: NULL ratio always fell through to "no-data" against real production data.`
+    );
+  });
+});
