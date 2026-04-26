@@ -7,6 +7,10 @@ tests_required: <true|false>
 tags: [<tag1>, <tag2>]
 related:
   - plans/<path-to-related-plan>.md
+# The following two fields are required while the plan is in plans/proposed/**.
+# They are ignored (and need not be present) once the plan moves to approved/ or beyond.
+priority: <P0|P1|P2|P3>     # P0=ship-blocker, P1=important, P2=wanted, P3=nice-to-have
+last_reviewed: <YYYY-MM-DD> # ISO date; bump on every grooming pass
 ---
 
 # <Plan title>
