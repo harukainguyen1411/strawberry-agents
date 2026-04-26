@@ -5,7 +5,7 @@
  * Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
  *
  * This test asserts the ingest correctly parses decision/log/*.md fixtures and emits
- * the expected `kind: 'decision'` event shape (per task dispatch + plan B §3.5 bind-points).
+ * the expected `kind: 'decision-log'` event shape (per task dispatch + plan B §3.5 bind-points).
  *
  * Coverage:
  *   R1 — basic fixture parse: reads a valid decision log and emits correct event fields
@@ -15,7 +15,7 @@
  *   R5 — coordinator field derived from directory structure when frontmatter coordinator absent
  *   R6 — confidence mapping emitted as string in event payload (score mapped in parser separately)
  *   R7 — event sort order: older ts first (deterministic emission order)
- *   R8 — files with missing axes are skipped (no event emitted)
+ *   R8 — files with missing axes emit a warning AND are skipped (no event emitted)
  */
 
 import { describe, it, before, after } from 'node:test';
@@ -97,9 +97,9 @@ describe('R1: scanDecisionLogs — basic fixture parse emits correct event shape
     assert.strictEqual(events.length, 1, 'expected 1 decision event');
   });
 
-  it('event kind is "decision"', () => {
+  it('event kind is "decision-log"', () => {
     const events = scanDecisionLogs(tmpDir);
-    assert.strictEqual(events[0].kind, 'decision');
+    assert.strictEqual(events[0].kind, 'decision-log');
   });
 
   it('event coordinator matches frontmatter', () => {
@@ -276,9 +276,10 @@ describe('R7: scanDecisionLogs — events sorted by ts ascending', () => {
 });
 
 // ---------------------------------------------------------------------------
-// R8 — files with missing/empty axes are skipped
+// R8 — files with missing/empty axes emit a warning and are skipped
+// F2 fix: R8 must assert/warn on malformation, not silently skip.
 // ---------------------------------------------------------------------------
-describe('R8: scanDecisionLogs — files with empty axes are skipped', () => {
+describe('R8: scanDecisionLogs — files with empty axes emit a warning and are skipped', () => {
   let tmpDir;
 
   before(() => {
@@ -294,7 +295,7 @@ describe('R8: scanDecisionLogs — files with empty axes are skipped', () => {
       coordinator_confidence: 'medium',
       match: 'true',
     });
-    // Decision with empty axes — should be skipped
+    // Decision with empty axes — should be skipped WITH a warning
     writeDecisionLog(logDir, '2026-04-21-no-axes.md', {
       decision_id: '2026-04-21-no-axes',
       date: '2026-04-21',
@@ -313,5 +314,30 @@ describe('R8: scanDecisionLogs — files with empty axes are skipped', () => {
     const events = scanDecisionLogs(tmpDir);
     assert.strictEqual(events.length, 1, 'expected only 1 event (empty-axes file skipped)');
     assert.strictEqual(events[0].decision_id, '2026-04-20-valid');
+  });
+
+  it('emits a warning to stderr when axes are missing (F2: R8 must warn, not silently skip)', () => {
+    // Capture stderr output during scanDecisionLogs call.
+    // F2 fix: malformed decision logs must emit a visible warning, not silently skip.
+    const stderrChunks = [];
+    const origWrite = process.stderr.write.bind(process.stderr);
+    process.stderr.write = (chunk, ...args) => {
+      stderrChunks.push(typeof chunk === 'string' ? chunk : chunk.toString());
+      return origWrite(chunk, ...args);
+    };
+    try {
+      scanDecisionLogs(tmpDir);
+    } finally {
+      process.stderr.write = origWrite;
+    }
+    const combined = stderrChunks.join('');
+    assert.ok(
+      combined.includes('warn') || combined.includes('malformed') || combined.includes('skip'),
+      `Expected a warning about the empty-axes file on stderr, got: ${combined}`
+    );
+    assert.ok(
+      combined.includes('2026-04-21-no-axes.md'),
+      `Expected the warning to name the problematic file, got: ${combined}`
+    );
   });
 });

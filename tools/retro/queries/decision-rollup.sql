@@ -2,7 +2,7 @@
 -- Guards: T.P2.3 DoD (a)-(d), TP2.T2-A through TP2.T2-D
 -- Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md §T.P2.3
 -- Read contract: plans/approved/personal/2026-04-21-coordinator-decision-feedback.md §3.5
--- events-source: events.jsonl (shared-stream — decisions are kind:'decision' rows)
+-- events-source: events.jsonl (shared-stream — decisions are kind:'decision-log' rows)
 --
 -- Returns one row per (coordinator, axis) with:
 --   decisions_total          — total decisions in this (coordinator, axis) slice
@@ -30,13 +30,13 @@
 -- Schema note (C3 lesson from PR #89): render.mjs uses runDuckDBQueryWithFileDb which passes
 -- events.jsonl as the DuckDB database argument, creating a `file` table. This approach
 -- avoids read_ndjson_auto inference failures on mixed-kind sparse files: the file table
--- is typed from all rows at open time, and `WHERE kind = 'decision'` filters cleanly.
+-- is typed from all rows at open time, and `WHERE kind = 'decision-log'` filters cleanly.
 -- Tests also use `duckdb -json <eventsPath>` (FROM file pattern) matching this approach.
 
 WITH
 -- Load all decision events from the shared-stream file table.
 -- `file` is the DuckDB auto-loaded table when events.jsonl is passed as the DB argument.
--- Filter by kind='decision' to isolate decision-log events from other kinds (turn, dispatch, etc).
+-- Filter by kind='decision-log' to isolate decision-log events from other kinds (turn, dispatch, etc).
 decisions_raw AS (
     SELECT
         coordinator,
@@ -45,7 +45,7 @@ decisions_raw AS (
         coordinator_confidence,
         axes
     FROM file
-    WHERE kind = 'decision'
+    WHERE kind = 'decision-log'
       AND coordinator IS NOT NULL
 ),
 

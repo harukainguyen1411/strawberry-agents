@@ -223,7 +223,7 @@ const events = scanAllSources({
 });
 
 // Merge decision events into the shared stream (shared-stream policy per T.P2.3 dispatch).
-// Decision events carry `kind: 'decision'` and are sorted by ts into the event stream.
+// Decision events carry `kind: 'decision-log'` and are sorted by ts into the event stream.
 // This differs from feedback-entry events which go to a dedicated sidecar (T.P2.2).
 const allEvents = [...events, ...decisionEvents];
 allEvents.sort((a, b) => {

@@ -6,7 +6,7 @@
  * Source 3: subagent sentinels (strawberry-usage-cache/subagent-sentinels/<agent-id>)
  * Source 4: git log (via RETRO_GIT_LOG_MOCK env or actual git log)
  * Source 5: feedback/*.md (T.P2.2 — feedback-entry events, sidecar write)
- * Source 6: agents/*/memory/decisions/log/*.md (T.P2.3 — decision events, shared-stream)
+ * Source 6: agents/<agent>/memory/decisions/log/*.md (T.P2.3 — decision events, shared-stream)
  *
  * Event field naming convention (matching Claude JSONL conventions):
  *   - camelCase for identifiers: sessionId, parentSessionId, agentId, planSlug
@@ -27,6 +27,7 @@ import {
   extractPlanSlugFromText,
   maybePlanStageFromDispatch,
 } from './plan-stage-detect.mjs';
+import { parseDecisionFrontmatter } from './decision-axes.mjs';
 
 // ---------------------------------------------------------------------------
 // Wall-active-delta computation (§3 idle-gap stripping)
@@ -581,15 +582,15 @@ function parseAxesList(raw) {
 }
 
 /**
- * Scan `agents/*/memory/decisions/log/*.md` for decision-log files and emit
- * one `kind: 'decision'` event per file.
+ * Scan `agents/<agent>/memory/decisions/log/*.md` for decision-log files and emit
+ * one `kind: 'decision-log'` event per file.
  *
  * Source surface: decision logs per plan B §3.5 bind-points.
  * Shared-stream: events are emitted into events.jsonl, not a sidecar.
  *
  * Event shape emitted (§3.5 bind-points + T.P2.3 dispatch spec):
  *   {
- *     kind:                   'decision',
+ *     kind:                   'decision-log',
  *     coordinator:            string,
  *     ts:                     ISO-8601 string (date field or file mtime fallback),
  *     decision_id:            string,
@@ -652,24 +653,46 @@ export function scanDecisionLogs(repoRoot) {
       }
 
       const fm = parseFrontmatter(content);
-      if (!fm) continue;
+      if (!fm) {
+        process.stderr.write(
+          `[retro:ingest] warn: skipping ${name} — no YAML frontmatter found; add --- frontmatter --- to fix\n`
+        );
+        continue;
+      }
 
       // Extract axes — handle inline YAML list form
       const axesRaw = fm.axes || '';
       const axes = parseAxesList(axesRaw);
 
-      // Skip files with no axes — decision is not useful without axis categorization
-      if (axes.length === 0) continue;
+      // Route through the typed parser (F1 fix — single validated ingest path).
+      // parseDecisionFrontmatter validates: axes non-empty array, confidence enum,
+      // and derives match from duong_concurred_silently per plan B §3.1 line 136.
+      // Invariant preserved: all decision-log ingestion goes through one typed path.
+      const decision_id_raw = fm.decision_id || name.replace(/\.md$/, '');
+      // Build the typed frontmatter object that parseDecisionFrontmatter expects.
+      // Axes are pre-parsed (inline YAML list form) so we pass the array directly.
+      // The match and duong_concurred_silently fields must be booleans (not strings)
+      // because parseDecisionFrontmatter uses strict boolean equality.
+      const typedFm = {
+        axes,
+        coordinator_confidence: fm.coordinator_confidence || null,
+        match: fm.match === 'true',
+        duong_concurred_silently: fm.duong_concurred_silently === 'true',
+        decision_id: decision_id_raw,
+      };
 
-      // Validate coordinator_confidence before emitting — skip malformed entries
-      // (silently, since this is an ingest scanner not a validator)
-      const knownConfidences = new Set(['low', 'medium', 'high']);
-      const coordinator_confidence = fm.coordinator_confidence || null;
-
-      // Derive match — duong_concurred_silently: true forces match: true (plan B §3.1 line 136)
-      const duong_concurred_silently = fm.duong_concurred_silently === 'true';
-      const matchRaw = fm.match;
-      const match = duong_concurred_silently ? true : (matchRaw === 'true');
+      let parsed;
+      try {
+        parsed = parseDecisionFrontmatter(typedFm);
+      } catch (err) {
+        // F2 fix: R8 must warn on malformation, not silently skip.
+        // Invariant preserved: no decision-log event is emitted without passing
+        // the typed-parser validation gate; malformed entries emit a visible warning.
+        process.stderr.write(
+          `[retro:ingest] warn: skipping ${name} — decision frontmatter malformed: ${err.message}\n`
+        );
+        continue;
+      }
 
       // coordinator_autodecided — present in hands-off mode (plan B §6.3)
       const coordinator_autodecided = fm.coordinator_autodecided === 'true';
@@ -684,21 +707,19 @@ export function scanDecisionLogs(repoRoot) {
         ts = stat.mtime.toISOString();
       }
 
-      const decision_id = fm.decision_id || name.replace(/\.md$/, '');
-
       events.push({
-        kind: 'decision',
+        kind: 'decision-log',
         coordinator: fm.coordinator || coordinator,
         ts,
-        decision_id,
+        decision_id: parsed.decision_id,
         question: fm.question || null,
         options: fm.options || null,
         duong_pick: fm.duong_pick || null,
         coordinator_pick: fm.coordinator_pick || null,
         coordinator_predict: fm.predict || null,
-        coordinator_confidence,
-        axes,
-        match,
+        coordinator_confidence: parsed.coordinator_confidence,
+        axes: parsed.axes,
+        match: parsed.match,
         coordinator_autodecided,
         mode: fm.mode || null,
       });
