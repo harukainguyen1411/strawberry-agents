@@ -187,6 +187,78 @@ For full rationale and the original 131-plan migration, see
 
 ---
 
+## Backlog and parking lot (ideas/)
+
+Two structural concepts extend the plan lifecycle without adding new phases:
+
+### Priority surface (A1)
+
+Every plan in `plans/proposed/**` carries two required frontmatter fields:
+
+```yaml
+priority: <P0|P1|P2|P3>     # P0=ship-blocker, P1=important, P2=wanted, P3=nice-to-have
+last_reviewed: <YYYY-MM-DD> # ISO date; coordinator bumps on every grooming pass
+```
+
+Coordinators (Evelynn, Sona) surface the top-5 P0/P1 plans at session start and on
+demand via the `/backlog` skill (a thin wrapper over `scripts/backlog-list.sh`). A plan
+missing `priority:` is rejected by the pre-commit plan-structure lint
+(`pre-commit-zz-plan-structure.sh` extension, T6 of the ADR breakdown) and surfaced to
+coordinators as "ungroomed." `last_reviewed:` dates older than 30 days trigger a stale
+flag in `/backlog` output. Once a plan moves past `proposed/`, `priority:` is ignored;
+`last_reviewed:` is preserved for audit.
+
+**Grooming cadence (A4).** Once per coordinator session — at boot, coordinators see the
+top-5 P0/P1 plans and any stale (`last_reviewed > 14 days`) items. Coordinators bump
+`last_reviewed:` on every plan they considered, not just the one promoted.
+
+### Parking lot — `ideas/<concern>/` (A2)
+
+Raw, unbroken-down ideas live under `ideas/personal/` and `ideas/work/`. They are
+explicitly *not plans*: no Orianna gate, no Aphelios breakdown, no test plan, no task
+list. The `ideas/**` path is freely writable by any agent.
+
+**Idea frontmatter (5 required fields):**
+
+```yaml
+---
+title: <short title, sentence-case>
+concern: <personal|work>
+created: <YYYY-MM-DD>
+last_reviewed: <YYYY-MM-DD>
+tags: [<tag1>, <tag2>]
+---
+```
+
+**Body:** 1–2 paragraphs of free-form prose. Forbidden section headers: `## Tasks`,
+`## Test plan`, `## Design`, `## Decision`, `## Risks`, `## Rollback`, `## Open questions`.
+Any of these triggers the idea-structure lint (`pre-commit-zz-idea-structure.sh`) with the
+message *"this is a plan, not an idea — author it under plans/proposed/<concern>/ instead."*
+
+**Staleness (A5).** Ideas with `last_reviewed` older than 90 days are flagged in
+`/backlog --ideas`. At 90 days a coordinator must either promote the idea to a proposed
+plan or delete it. The 180-day threshold is a hard auto-archive candidate (manual
+confirmation required; auto-move is out of scope for this ADR).
+
+### Promotion path: idea → proposed plan (A3)
+
+Promotion is a coordinator decision. The coordinator (or a dispatched planner such as
+Azir/Swain) authors a new `plans/proposed/<concern>/<slug>.md` with full plan structure
+and `priority:` already assigned. The original `ideas/<concern>/<file>.md` is deleted in
+the same commit that creates the proposed plan. The commit message records lineage:
+`chore: promote idea/personal/YYYY-MM-DD-<slug>.md to proposed plan`.
+
+An idea cannot be implemented from the parking-lot state — it must first enter the
+five-phase plan lifecycle via this promotion step.
+
+---
+
+Full rationale, design decisions (A1–A5), directory/contract spec (D1), and task
+breakdown live in:
+`plans/approved/personal/2026-04-25-plan-of-plans-and-parking-lot.md`
+
+---
+
 ## Related
 
 | Item | Purpose |
