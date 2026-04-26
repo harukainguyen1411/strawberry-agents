@@ -1,9 +1,12 @@
 ---
 date: 2026-04-26
 author: lux
+category: research
 concern: personal
-topic: Claude Code statusline — display 5h + 7d usage windows
-status: research
+target: Claude Code statusline — display 5h + 7d usage windows
+state: active
+owner: lux
+session: none
 ---
 
 # Claude usage in the Claude Code statusline — research note

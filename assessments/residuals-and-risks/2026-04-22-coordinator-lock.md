@@ -1,4 +1,12 @@
 ---
+date: 2026-04-22
+author: senna
+category: residuals-and-risks
+concern: personal
+target: concurrent-coordinator-lock — PR #22 review residuals
+state: deferred
+owner: senna
+session: pr22-review
 area: concurrent-coordinator-lock
 source_pr: 22
 source_commit: 94c65ca

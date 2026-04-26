@@ -1,4 +1,12 @@
 ---
+date: 2026-04-26
+author: evelynn
+category: residuals-and-risks
+concern: personal
+target: plan-lifecycle-guard fires on local merges bringing forward Orianna-promoted plan adds
+state: deferred
+owner: evelynn
+session: 9c8170e8
 area: plan-lifecycle-guard
 source_pr: 69
 source_commit: pending
