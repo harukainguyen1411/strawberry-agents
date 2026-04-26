@@ -281,3 +281,112 @@ This is informational, not enforced. The matrix in §1.1 is a budget document as
 - **DevOps split** — Heimerdinger → Ekko works as single-lane (rejected).
 - **Akali split** — task shape doesn't partition by complexity (rejected).
 - **Auto-routing scripts** — could grep frontmatter to resolve "complex-track architect" → Swain at delegation time. Possible but not required today.
+
+---
+
+## 10. Canonical plan template
+
+Every plan file under `plans/` follows this structure. Sections are listed in canonical order. Required sections are marked; conditional sections are marked with their gate.
+
+```markdown
+---
+status: proposed
+concern: personal | work
+owner: <agent-name>
+created: YYYY-MM-DD
+tests_required: true | false
+complexity: trivial | simple | moderate | complex
+tags: [...]
+# UX-Waiver: <reason>   # optional — bypasses §UX Spec requirement for refactors
+#                         # with no visible delta, child plans of an approved parent
+#                         # spec, or explicit Duong waiver (see D2 of
+#                         # plans/approved/personal/2026-04-25-frontend-uiux-in-process.md)
+---
+
+# <Plan title>
+
+## Context
+
+<Background, current state, motivation.>
+
+## Decision
+
+<What is being decided and why. Enumerate sub-decisions D1, D2, ... if complex.>
+
+## UX Spec
+
+<!-- path-glob (mandatory when): plan §Tasks touch any of:
+     apps/**/src/**/*.{vue,tsx,jsx,ts,js,css,scss}
+     apps/**/components/**
+     apps/**/pages/**
+     apps/**/routes/**
+     Authored by Lulu (normal-track) or Neeko (complex-track) per D6 of
+     plans/approved/personal/2026-04-25-frontend-uiux-in-process.md.
+     Bypass: add UX-Waiver: <reason> to plan frontmatter (see D2 of the same plan).
+-->
+
+### User flow
+
+<!-- Bullet sequence of user actions and resulting screens. Cite entry route(s). -->
+
+### Component states
+
+<!-- For every interactive component touched: default, hover, focus, active,
+     disabled, loading, error, empty. Each state names its visual delta and
+     any copy change. Optional: success, partial-data. -->
+
+### Responsive behavior
+
+<!-- Breakpoint table (mobile / tablet / desktop minimum) describing layout
+     changes. If desktop-only or mobile-only, declare that explicitly. -->
+
+### Accessibility
+
+<!-- Keyboard navigation order, screen-reader semantics (ARIA roles,
+     landmarks, labels), color-contrast token pairs, focus-visible behavior,
+     motion-reduce behavior. See D5 a11y floor in the frontend-uiux plan. -->
+
+### Figma link
+
+<!-- Direct Figma frame URL, or: Figma: none — text-spec only
+     (if no Figma frame, a screenshot/wireframe under
+     assessments/design/<slug>/ must be linked here instead.) -->
+
+### Out of scope
+
+<!-- Explicit list of states/screens/flows NOT covered by this plan. -->
+
+## Tasks
+
+- [ ] **T1** — <task title>. estimate_minutes: <1–60>. Files: `<path>`.
+
+## Test plan
+
+<How the implementation will be verified. May include xfail test paths.>
+```
+
+### 10.1 When §UX Spec is required
+
+The `## UX Spec` section is **mandatory** on any plan whose `## Tasks` reference files
+matching the path-glob below. It is **optional** (and may be omitted) on plans that
+touch zero UI surface.
+
+**Mandatory path-glob (D1 of `plans/approved/personal/2026-04-25-frontend-uiux-in-process.md`):**
+
+```
+apps/**/src/**/*.{vue,tsx,jsx,ts,js,css,scss}
+apps/**/components/**
+apps/**/pages/**
+apps/**/routes/**
+```
+
+**Bypass:** Add `UX-Waiver: <reason>` to the plan frontmatter when the change is a pure
+refactor with no visible delta, a child plan of an already-approved parent spec, or has
+an explicit Duong waiver. See D2 of the frontend-uiux plan for the full bypass criteria.
+
+**Enforcement:**
+
+- At **promote-time** (Orianna gate): `scripts/plan-structure-lint.sh` checks §UX Spec
+  presence for UI-touching plans before approving transitions out of `proposed/`.
+- At **dispatch-time** (Rule 22 hook): `scripts/hooks/pretooluse-uxspec-gate.sh` blocks
+  Seraphine/Soraka dispatch when the plan is UI-touching and §UX Spec is absent.
