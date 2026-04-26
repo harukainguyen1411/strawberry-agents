@@ -48,10 +48,13 @@ fi
 
 # ---------------------------------------------------------------------------
 # UI path-glob patterns (single source of truth — matches D1 globs)
-# POSIX extended regex form (for grep -E)
+# POSIX extended regex form (for grep -E).
+#
+# NOTE: Must use ERE syntax — no BRE escapes (\( \| \)).
+# BSD grep (macOS, Rule 10) does not support \b; use ([^[:alnum:]]|$) anchor.
 # ---------------------------------------------------------------------------
 
-UI_GLOBS_RE='apps/[^[:space:]]*/src/[^[:space:]].*\.\(vue\|tsx\|jsx\|ts\|js\|css\|scss\)\b|apps/[^[:space:]]*/components/|apps/[^[:space:]]*/pages/|apps/[^[:space:]]*/routes/'
+UI_GLOBS_RE='apps/[^[:space:]]*/src/[^[:space:]]*\.(vue|tsx|jsx|ts|js|css|scss)([^[:alnum:]]|$)|apps/[^[:space:]]*/components/|apps/[^[:space:]]*/pages/|apps/[^[:space:]]*/routes/'
 
 # ---------------------------------------------------------------------------
 # Extract frontmatter block (content between first two --- delimiters)
@@ -110,17 +113,56 @@ _has_ux_waiver() {
 }
 
 # ---------------------------------------------------------------------------
+# Extract complexity value from frontmatter.
+# Returns the raw value string (e.g. "complex", "standard", "trivial").
+# ---------------------------------------------------------------------------
+
+_get_complexity() {
+  local fm
+  fm="$(_extract_frontmatter "$1")"
+  printf '%s\n' "$fm" | grep '^complexity:' | head -1 | sed 's/^complexity:[[:space:]]*//' | tr -d '[:space:]'
+}
+
+# ---------------------------------------------------------------------------
+# OQ-2: UX-Waiver is not permitted for complexity: complex plans.
+# Returns 0 (violation found) if plan is complex AND has a waiver.
+# ---------------------------------------------------------------------------
+
+_waiver_complexity_violation() {
+  local complexity
+  complexity="$(_get_complexity "$1")"
+  case "$complexity" in
+    complex)
+      # Waiver not allowed on complex plans (OQ-2)
+      if _has_ux_waiver "$1"; then
+        return 0
+      fi
+      ;;
+  esac
+  return 1
+}
+
+# ---------------------------------------------------------------------------
 # Check if the plan body (non-frontmatter) references UI path-glob files.
-# Scans all text lines (not just Tasks) for safety.
-# Returns 0 if a UI path-glob match is found.
+#
+# Scans ONLY the "## Tasks" section for "Files:" lines. Scanning the entire
+# body risks false-positives when a non-UI plan pastes the canonical template
+# verbatim — the <!-- path-glob ... --> comment block inside §UX Spec contains
+# the same glob patterns and would trip a whole-body scan.
+#
+# Returns 0 if a UI path-glob match is found in Tasks Files: lines.
 # ---------------------------------------------------------------------------
 
 _is_ui_plan() {
-  # Skip the frontmatter block, then grep remaining body for UI paths
+  # Extract post-frontmatter body, then narrow to ## Tasks section Files: lines.
   awk '
     /^---/ { count++; next }
     count >= 2 { print }
-  ' "$1" | grep -qE "$UI_GLOBS_RE" 2>/dev/null
+  ' "$1" | awk '
+    /^## Tasks/ { in_tasks=1; next }
+    /^## /      { in_tasks=0 }
+    in_tasks && /[Ff]iles:/ { print }
+  ' | grep -qE "$UI_GLOBS_RE" 2>/dev/null
 }
 
 # ---------------------------------------------------------------------------
@@ -141,30 +183,73 @@ _has_uxspec_with_body() {
   fi
 
   # Extract the body of the §UX Spec section: lines between "## UX Spec"
-  # and the next "## " heading (or end of file). Check that at least one
-  # non-empty, non-comment line exists in that range.
+  # and the next "## " heading (or end of file). Count as "body" only lines
+  # that are:
+  #   - non-blank
+  #   - not an HTML comment opener (<!-- ...) or closer (...-->)
+  #   - not a markdown heading (### ... or ## ...)
+  # This ensures a section containing only subheadings + comment scaffolding
+  # is treated as heading-only (no narrative body).
   local in_section=0
+  local in_html_comment=0
   local found_body=0
 
   while IFS= read -r line; do
-    if printf '%s\n' "$line" | grep -q '^## UX Spec'; then
-      in_section=1
-      continue
-    fi
+    # Detect start of §UX Spec
+    case "$line" in
+      '## UX Spec'*)
+        in_section=1
+        continue
+        ;;
+    esac
 
     if [ "$in_section" -eq 1 ]; then
-      # A new level-2 heading ends the section
-      if printf '%s\n' "$line" | grep -q '^## '; then
-        break
+      # A new level-2 heading ends the section (must check BEFORE comment/blank skip)
+      case "$line" in
+        '## '*)
+          break
+          ;;
+      esac
+
+      # Track multi-line HTML comments: a line containing <!-- starts a block;
+      # a line containing --> closes it. Single-line <!-- ... --> handled too.
+      case "$line" in
+        *'<!--'*)
+          in_html_comment=1
+          # Check if comment also closes on the same line
+          case "$line" in *'-->'*) in_html_comment=0 ;; esac
+          continue
+          ;;
+        *'-->'*)
+          in_html_comment=0
+          continue
+          ;;
+      esac
+
+      # Skip lines inside a multi-line HTML comment
+      if [ "$in_html_comment" -eq 1 ]; then
+        continue
       fi
 
-      # Ignore blank lines and HTML/markdown comments
-      if printf '%s\n' "$line" | grep -qv '^[[:space:]]*$' 2>/dev/null; then
-        if ! printf '%s\n' "$line" | grep -q '^<!--' 2>/dev/null; then
-          found_body=1
-          break
-        fi
+      # Skip blank lines — handle truly empty string first, then whitespace-only
+      if [ -z "$line" ]; then
+        continue
       fi
+      if printf '%s' "$line" | grep -qE '^[[:space:]]+$' 2>/dev/null; then
+        continue
+      fi
+
+      # Skip markdown headings of any level (###, ####, etc.) — subheadings
+      # within §UX Spec are scaffolding, not narrative body
+      case "$line" in
+        '#'*)
+          continue
+          ;;
+      esac
+
+      # Non-blank, non-comment, non-heading — counts as narrative body
+      found_body=1
+      break
     fi
   done <<EOF
 $(printf '%s\n' "$plan_body")
@@ -185,19 +270,29 @@ if ! _frontmatter_is_valid "$PLAN_FILE"; then
   exit 1
 fi
 
-# Step 2: Check for UX-Waiver bypass
+# Step 2: OQ-2 — reject UX-Waiver on complexity: complex plans
+if _waiver_complexity_violation "$PLAN_FILE"; then
+  printf 'plan-structure-lint: FAIL: %s\n' "$PLAN_FILE" >&2
+  printf '  UX-Waiver is not permitted on plans with complexity: complex (OQ-2).\n' >&2
+  printf '  Complex UI plans must include a full §UX Spec section.\n' >&2
+  printf '  To resolve: remove UX-Waiver from frontmatter and author §UX Spec,\n' >&2
+  printf '  or downgrade complexity to standard/trivial if the scope warrants it.\n' >&2
+  exit 1
+fi
+
+# Step 3: Check for UX-Waiver bypass (standard/trivial only after OQ-2 gate)
 if _has_ux_waiver "$PLAN_FILE"; then
   # Waiver present — exempt from §UX Spec requirement
   exit 0
 fi
 
-# Step 3: Determine if this is a UI-touching plan
+# Step 4: Determine if this is a UI-touching plan
 if ! _is_ui_plan "$PLAN_FILE"; then
   # Non-UI plan — exempt from §UX Spec requirement
   exit 0
 fi
 
-# Step 4: UI plan — require §UX Spec with non-empty body
+# Step 5: UI plan — require §UX Spec with non-empty body
 if _has_uxspec_with_body "$PLAN_FILE"; then
   exit 0
 fi
