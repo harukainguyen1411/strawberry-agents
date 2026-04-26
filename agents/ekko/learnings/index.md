@@ -1,5 +1,6 @@
 # Ekko Learnings Index
 
+- 2026-04-26-stale-branch-housekeeping.md — branch audit undercount: chore/ rakan/ talon/ in git status are worktree parent dirs not individual branches; full sweep deleted 21 local + 32 remote merged branches; worktree-agent locked branch cannot be deleted while worktree is active | last_used: 2026-04-26
 - 2026-04-23-orianna-gate-simplification-block-pattern.md — meta-plan gate block: every prospective path occurrence needs its own suppressor marker; glob patterns need rewrite or marker; 16 blocks on orianna-gate-simplification plan | last_used: 2026-04-23
 
 
