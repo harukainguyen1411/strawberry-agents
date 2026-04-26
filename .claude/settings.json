@@ -97,6 +97,10 @@
           },
           {
             "type": "command",
+            "command": "bash scripts/hooks/pretooluse-uxspec-gate.sh"
+          },
+          {
+            "type": "command",
             "command": "bash scripts/hooks/agent-default-isolation.sh"
           },
           {
