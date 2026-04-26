@@ -139,8 +139,14 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           REPO: ${{ github.repository }}
         run: |
-          CHANGED_FILES=$(gh pr diff --name-only "$PR_NUMBER" --repo "$REPO" | tr '\n' ' ')
-          echo "files=$CHANGED_FILES" >> "$GITHUB_OUTPUT"
+          # Use the multiline delimiter protocol to avoid space/= encoding issues.
+          # Each filename is on its own line; the lint script iterates word-by-word
+          # so newline-separated is safe (IFS splits both spaces and newlines).
+          {
+            printf 'files<<EOF\n'
+            gh pr diff --name-only "$PR_NUMBER" --repo "$REPO"
+            printf 'EOF\n'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Run frontend-markers lint
         env:

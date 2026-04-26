@@ -40,20 +40,38 @@
 set -uo pipefail
 
 # ---------------------------------------------------------------------------
-# 1. Read PR body
+# 1. Read PR body — then strip HTML comment blocks before scanning.
+#
+# HTML comments (<!-- ... -->) must be removed before grepping for markers.
+# Without this, template scaffold lines inside comments (e.g. the default
+# pull_request_template.md which ships uncommented placeholder values inside
+# an HTML comment block) would be matched, silently satisfying the gate for
+# every PR that never edits the template.
+#
+# Strategy: use awk to delete everything between <!-- and --> (multiline-safe,
+# POSIX awk, no GNU extensions needed).
 # ---------------------------------------------------------------------------
+rawfile="$(mktemp)"
 tmpfile="$(mktemp)"
-trap 'rm -f "$tmpfile"' EXIT INT TERM HUP
+trap 'rm -f "$rawfile" "$tmpfile"' EXIT INT TERM HUP
 
 if [ "${1:--}" = "-" ]; then
-  cat > "$tmpfile"
+  cat > "$rawfile"
 else
   if [ ! -f "$1" ]; then
     printf 'error: PR body file not found: %s\n' "$1" >&2
     exit 1
   fi
-  cat "$1" > "$tmpfile"
+  cat "$1" > "$rawfile"
 fi
+
+# Strip <!-- ... --> blocks (multiline). awk accumulates lines inside a
+# comment block and discards them; lines outside are passed through.
+awk '
+  /<!--/ { in_comment = 1 }
+  !in_comment { print }
+  /-->/ { in_comment = 0 }
+' "$rawfile" > "$tmpfile"
 
 # ---------------------------------------------------------------------------
 # 2. Classify changed files — UI vs non-UI
@@ -64,14 +82,21 @@ changed_files="${2:-}"
 is_ui=0
 for filepath in $changed_files; do
   case "$filepath" in
-    # D1 primary globs
+    # D1 primary globs — bash `case` `*` already matches `/`, so only the
+    # deepest wildcard form is needed (no redundant `apps/*/src/*.vue` +
+    # `apps/*/src/**/*.vue` pairs — `apps/*/src/*.vue` already matches any
+    # depth under src/).  Added in v2: composables/, layouts/, stores/,
+    # views/, app/ (Nuxt/Next routers and state layers).
     apps/*/src/*.vue|apps/*/src/*.tsx|apps/*/src/*.jsx|\
     apps/*/src/*.ts|apps/*/src/*.js|apps/*/src/*.css|apps/*/src/*.scss|\
-    apps/*/src/**/*.vue|apps/*/src/**/*.tsx|apps/*/src/**/*.jsx|\
-    apps/*/src/**/*.ts|apps/*/src/**/*.js|apps/*/src/**/*.css|apps/*/src/**/*.scss|\
-    apps/*/components/*|apps/*/components/**|\
-    apps/*/pages/*|apps/*/pages/**|\
-    apps/*/routes/*|apps/*/routes/**|\
+    apps/*/components/*|\
+    apps/*/composables/*|\
+    apps/*/layouts/*|\
+    apps/*/pages/*|\
+    apps/*/routes/*|\
+    apps/*/stores/*|\
+    apps/*/views/*|\
+    apps/*/app/*|\
     apps/**/*.vue|apps/**/*.tsx|apps/**/*.jsx|apps/**/*.css|apps/**/*.scss)
       is_ui=1
       break

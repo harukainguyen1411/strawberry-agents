@@ -10,12 +10,13 @@
 # scripts/ci/pr-lint-frontend-markers.sh (Viktor's T-E2 impl target).
 #
 # Case matrix:
-#   (a) fail-no-markers.txt        — UI PR, no markers     → FAIL (exit 1)
-#   (b) pass-all-markers.txt       — UI PR, all markers    → PASS (exit 0)
-#   (c) pass-design-spec-only.txt  — UI PR, one marker     → PASS (exit 0)
-#   (d) pass-with-waiver.txt       — UI PR, UX-Waiver      → PASS (exit 0)
-#   (e) exempt-non-ui.txt          — non-UI PR, no markers → PASS/exempt (exit 0)
-#   (f) fail-empty-marker.txt      — UI PR, empty values   → FAIL (exit 1)
+#   (a) fail-no-markers.txt             — UI PR, no markers             → FAIL (exit 1)
+#   (b) pass-all-markers.txt            — UI PR, all markers            → PASS (exit 0)
+#   (c) pass-design-spec-only.txt       — UI PR, one marker             → PASS (exit 0)
+#   (d) pass-with-waiver.txt            — UI PR, UX-Waiver              → PASS (exit 0)
+#   (e) exempt-non-ui.txt               — non-UI PR, no markers         → PASS/exempt (exit 0)
+#   (f) fail-empty-marker.txt           — UI PR, empty values           → FAIL (exit 1)
+#   (g) fail-template-scaffold-only.txt — markers inside <!-- --> only  → FAIL (exit 1)
 #
 # The harness passes changed-file lists via the $2 positional argument
 # (space-separated filenames) so the impl script can classify UI vs non-UI
@@ -45,6 +46,7 @@ if [ ! -f "$IMPL" ]; then
   printf 'XFAIL CASE_D: pass-with-waiver — UI PR with UX-Waiver substituting Design-Spec\n'
   printf 'XFAIL CASE_E: exempt-non-ui — non-UI PR skips check\n'
   printf 'XFAIL CASE_F: fail-empty-marker — UI PR with empty marker values\n'
+  printf 'XFAIL CASE_G: fail-template-scaffold-only — markers inside HTML comment block only\n'
   exit 0
 fi
 
@@ -134,6 +136,17 @@ run_case \
   "CASE_F: UI PR with empty marker values treated as absent (fails)" \
   "fail-empty-marker.txt" \
   "$UI_FILES" \
+  1
+
+# ---------------------------------------------------------------------------
+# Case (g): UI PR where markers only appear inside <!-- --> comment blocks —
+# must FAIL. Regression for Senna critical finding: template-scaffold bypass.
+# ---------------------------------------------------------------------------
+# Use a composables path to also exercise the new composables/ glob (Finding 2).
+run_case \
+  "CASE_G: markers inside HTML comment block are not counted (template-scaffold bypass)" \
+  "fail-template-scaffold-only.txt" \
+  "apps/strawberry-app/composables/usePreferences.ts" \
   1
 
 # ---------------------------------------------------------------------------
