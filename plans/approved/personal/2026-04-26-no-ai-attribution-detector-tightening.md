@@ -2,7 +2,7 @@
 title: No-AI-attribution detector tightening + Human-Verified override removal
 slug: no-ai-attribution-detector-tightening
 date: 2026-04-26
-status: proposed
+status: approved
 concern: personal
 tier: quick
 complexity: quick
@@ -214,3 +214,10 @@ None. Decision pre-recorded by Duong.
 - `agents/evelynn/memory/decisions/log/2026-04-26-no-ai-attr-override-removal.md`
 - `plans/approved/personal/2026-04-25-no-ai-attribution-defense-in-depth.md`
 - CLAUDE.md Rule 21 (current three-layer defense statement)
+
+## Orianna approval
+
+- **Date:** 2026-04-26
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Frontmatter and §QA Plan heading now satisfy structural gates (prior REJECTs resolved in 5921a9de and cc755b4d). Plan has clear owner (karma) and impl agent (talon), concrete file-scoped tasks with DoD, explicit ERE regexes for the new attribution-phrase detector, and a thorough QA matrix covering pass cases, fail cases, and the critical override-no-op regression assertions. Scope is tight — four behavioral files plus auto-propagated shared-include — with no speculative extensibility.
