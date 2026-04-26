@@ -37,3 +37,18 @@ Talon's Leg-3 docs PR for feedback-system T4/T5/T6/T13a + decision-feedback T7/T
 - No AI-attribution scan hits in commit messages or diff. Rule 21 (a)+(b)+(c) clean.
 - Review verdict landed as CHANGES_REQUESTED at submit time.
 - I scoped strictly to code-quality / security / tests / edge-cases per Senna's lane. Did not judge ADR fidelity or whether T7/T8 should have ridden along — that's Lucian's lane.
+
+## Re-review (2026-04-26, commit 8394de0e) — APPROVED
+
+Talon addressed all four findings cleanly in one commit:
+
+- **C1 fixed:** `state: keep-open` → `state: open` (verdict→state mapping clarified, validator enum cited verbatim).
+- **C2 fixed:** Step 6c moved from `2c` (after handoff shard) to `3b` (after session shard write); rationale rewritten to correctly cite Step 3's session-shard short-uuid as the `decision_source` ref target. Lissandra protocol now internally consistent with the architecture doc's own ordering claim.
+- **I1 fixed:** boot-chain instruction in both Evelynn + Sona CLAUDE.md now references the actual INDEX summary-line shape (`Open: N | High: H | Medium: M | Low: L`) instead of the nonexistent `count_open_high` field. LLM has a concrete derivation path.
+- **I2 fixed:** `fail` → `printf >&2; return 1`; `refute_match()` dead code dropped; `\b` → POSIX `[[:space:]]` anchors. Mirrored in TT4-F.
+
+Bonus: TT4-C/D test names tightened from `count_open_high` to the actually-present content (`severity: high|High > 0|High: H`).
+
+All 7 required CI checks SUCCESS. Rule 12 TDD ordering preserved. Rule 21 clean. APPROVE posted at 08:36:32Z superseding the prior CHANGES_REQUESTED.
+
+Re-review meta-learning: when a fix commit updates both the impl and the xfail tests that gated it, double-check the test still asserts a meaningful property and didn't get loosened just to pass. In this case Talon actually tightened the assertions (now checks for the real summary-line tokens), which is the correct direction.
