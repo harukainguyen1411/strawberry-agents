@@ -2,13 +2,16 @@
 # lint-subagent-rules.sh
 # Diff the canonical inline rule block from each .claude/agents/*.md against
 # reference blocks for Sonnet-executor and Opus-planner agents.
+# Also checks _shared/*.md files for duplicate <!-- include: --> markers (§D4.2).
 #
-# Usage: bash scripts/lint-subagent-rules.sh [--fix]
+# Usage: bash scripts/lint-subagent-rules.sh [--agents-dir <path>] [--fix]
+#   --agents-dir <path>  Override the agent definitions directory.
+#                        Defaults to <repo-root>/.claude/agents/
 #   --fix  (not implemented) would auto-update the canonical blocks
 #
 # Exit codes:
-#   0 — all agents clean
-#   1 — one or more agents have drift (blocks missing or content differs)
+#   0 — all agents clean, no duplicate markers in shared files
+#   1 — one or more agents have drift or shared files have duplicate markers
 #   2 — usage error
 #
 # POSIX-portable bash. Runs on macOS and Git Bash on Windows.
@@ -17,6 +20,26 @@ set -euo pipefail
 
 REPO_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 AGENTS_DIR="$REPO_ROOT/.claude/agents"
+
+# --- Argument parsing ---
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --agents-dir)
+      shift
+      AGENTS_DIR="$1"
+      shift
+      ;;
+    --fix)
+      shift
+      # Not implemented
+      ;;
+    *)
+      printf 'lint-subagent-rules: unknown argument: %s\n' "$1" >&2
+      printf 'Usage: bash lint-subagent-rules.sh [--agents-dir <path>] [--fix]\n' >&2
+      exit 2
+      ;;
+  esac
+done
 
 # ---------------------------------------------------------------------------
 # Reference blocks — update these when canonical rules change.
@@ -103,6 +126,43 @@ drift_check() {
     return 0
 }
 
+# check_shared_marker_duplicates <shared_dir>
+# Checks every *.md file in <shared_dir> for duplicate <!-- include: --> markers
+# referencing the same target (§D4.2 single-marker invariant).
+# Prints violations and returns 1 if any found, 0 otherwise.
+check_shared_marker_duplicates() {
+    local shared_dir="$1"
+    local found_dup=0
+
+    if [ ! -d "$shared_dir" ]; then
+        return 0
+    fi
+
+    for shared_file in "$shared_dir"/*.md; do
+        [ -f "$shared_file" ] || continue
+        local shared_name
+        shared_name="$(basename "$shared_file")"
+
+        # Extract all include targets and check for duplicates
+        # Use sort | uniq -d to find targets appearing more than once
+        local targets
+        targets="$(grep -o '<!-- include: _shared/[^>]*\.md -->' "$shared_file" 2>/dev/null || true)"
+        if [ -z "$targets" ]; then
+            continue
+        fi
+
+        local dups
+        dups="$(printf '%s\n' "$targets" | sort | uniq -d)"
+        if [ -n "$dups" ]; then
+            echo "DUPLICATE_MARKER  $shared_name"
+            printf '%s\n' "$dups" | sed 's/^/  dup: /'
+            found_dup=1
+        fi
+    done
+
+    return "$found_dup"
+}
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -112,10 +172,13 @@ if [ ! -d "$AGENTS_DIR" ]; then
     exit 2
 fi
 
+SHARED_DIR="$AGENTS_DIR/_shared"
+
 drift=0
 ok=0
 skipped=0
 
+# --- Phase 1: canonical block drift check on agent defs ---
 for agent_file in "$AGENTS_DIR"/*.md; do
     [ -f "$agent_file" ] || continue
     agent_name="$(basename "$agent_file" .md)"
@@ -148,12 +211,25 @@ for agent_file in "$AGENTS_DIR"/*.md; do
     fi
 done
 
+# --- Phase 2: duplicate include marker check in _shared/*.md (§D4.2) ---
+marker_errors=0
+if ! check_shared_marker_duplicates "$SHARED_DIR"; then
+    marker_errors=1
+fi
+
 echo ""
 echo "Results: $ok OK, $drift drift, $skipped skipped"
 
 if [ "$drift" -gt 0 ]; then
     echo "FAIL: $drift agent(s) have rule drift. Update the canonical block in each file listed above."
     echo "Reference blocks are defined in scripts/lint-subagent-rules.sh (SONNET_REF / OPUS_REF)."
+fi
+
+if [ "$marker_errors" -gt 0 ]; then
+    echo "FAIL: duplicate <!-- include: --> markers found in _shared/ files (§D4.2 single-marker invariant)."
+fi
+
+if [ "$drift" -gt 0 ] || [ "$marker_errors" -gt 0 ]; then
     exit 1
 fi
 
