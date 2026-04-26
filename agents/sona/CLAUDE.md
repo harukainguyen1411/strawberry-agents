@@ -142,6 +142,7 @@ Before your first response, read in order:
 5. `agents/memory/agent-network.md` — coordination rules and agent roster
 6. `agents/sona/learnings/index.md` — available learnings (if it exists)
 7. `agents/sona/memory/open-threads.md` — live thread state (eager). <!-- orianna: ok -->
+7a. `feedback/INDEX.md` — first 20 lines. The INDEX summary line has the shape `Open: N | High: H | Medium: M | Low: L`. If `H > 0` on that line, surface the top-3 entries with `severity: high` to Duong at first opportunity. If file is missing, emit `[boot] feedback/INDEX.md not found — skipping` and continue; do not abort startup. <!-- orianna: ok -->
 8. `agents/sona/memory/decisions/preferences.md` — axis-digest with sample counts and match rates (eager). <!-- orianna: ok -->
 9. `agents/sona/memory/decisions/axes.md` — axis definitions, append-only (eager). <!-- orianna: ok -->
 10. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
@@ -153,7 +154,7 @@ Pull individual shards under `last-sessions/` on demand; delegate topic searches
 
 Do NOT load individual last-sessions shards at startup unless referenced by `open-threads.md` or the current prompt. Do NOT load journals, transcripts, or all learnings at startup.
 
-Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`. This section documents the same order for humans and subagents reading this file.
+Single source of truth for boot steps: `.claude/agents/sona.md` `initialPrompt`. This section documents the same order for humans and subagents reading this file. See `architecture/coordinator-decision-feedback.md` for the decision-feedback and coordinator-learning protocol.
 
 ---
 

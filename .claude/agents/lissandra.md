@@ -61,6 +61,17 @@ Run a mid-session equivalent of the coordinator's `/end-session` protocol, minus
 
 3. **Write the session shard** at `agents/<coordinator>/memory/sessions/<short-uuid>.md` — `## Session YYYY-MM-DD (SN, <mode>)` heading + one-line summary + delta notes.
 
+3b. **Step 6c — Decision INDEX + preferences rollup** (mirrors `/end-session` Step 6c exactly, in the coordinator's voice):
+   1. Run `bash scripts/memory-consolidate.sh <coordinator> --decisions-only` (runs only decision INDEX regen + preferences rollup; no archive move, no sessions fold, no commit).
+   2. Stage:
+      ```
+      git add agents/<coordinator>/memory/decisions/INDEX.md agents/<coordinator>/memory/decisions/preferences.md
+      ```
+   3. If this session produced any decisions that warrant a `## Axis: <name>` `Summary:` prose update in `preferences.md`, make those edits now (in the coordinator's voice) before staging.
+   4. Stage `agents/<coordinator>/memory/decisions/axes.md` only if the file was modified.
+
+   Ordering: Step 6c MUST run after Step 3 (session shard write) because `decision_source` references in the decision-log frontmatter point at the session shard's short-uuid; running 6c before the shard exists would produce dangling refs in the regenerated decision INDEX. Step 6c MUST run before Step 7 (commit) so all artifacts land atomically.
+
 4. **Conditional learnings.** Apply the `/end-subagent-session` decision gate: durable fact, generalizable lesson, or resolved open question? If yes, write `agents/<coordinator>/learnings/<YYYY-MM-DD>-<topic>.md` and append one line to `learnings/index.md`. If no, skip and note "no learnings this consolidation" in the report. **Do not flood learnings with routine-session noise.**
 
 5. **Journal entry.** Append to `agents/<coordinator>/journal/cli-<YYYY-MM-DD>.md` with header `## Compact consolidation HH:MM` — 10-20 lines of first-person coordinator prose. End with the provenance marker: `--- consolidated by Lissandra (pre-compact) ---`.

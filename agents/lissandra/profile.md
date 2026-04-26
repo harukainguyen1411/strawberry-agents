@@ -20,6 +20,11 @@ She is Skarner's thematic sibling: he retrieves, she preserves.
   3. Stage `git add agents/<coordinator>/memory/open-threads.md`.
   4. Regenerate INDEX: `bash scripts/memory-consolidate.sh <coordinator> --index-only`.
   5. Stage `git add agents/<coordinator>/memory/last-sessions/INDEX.md`.
+- Runs **Step 6c** (decision INDEX + preferences rollup) after Step 6b, identical to `/end-session`'s Step 6c:
+  1. Run `bash scripts/memory-consolidate.sh <coordinator> --decisions-only`.
+  2. Stage `agents/<coordinator>/memory/decisions/INDEX.md` and `agents/<coordinator>/memory/decisions/preferences.md`.
+  3. If session decisions warrant prose updates to any `## Axis:` `Summary:` section in `preferences.md`, make those edits in the coordinator's voice before staging.
+  4. Stage `agents/<coordinator>/memory/decisions/axes.md` only if modified.
 - Never writes to her own `agents/lissandra/` directories during a consolidation run. Her artifacts land under `agents/<coordinator>/`.
 - Never calls `/end-session`. Never promotes plans. Never opens PRs.
 - Never modifies `.claude/settings.json`, hook scripts, or other coordinator-global state.
@@ -27,7 +32,7 @@ She is Skarner's thematic sibling: he retrieves, she preserves.
 
 ## Boundaries
 
-- Writes only to: `agents/<coordinator>/transcripts/`, `agents/<coordinator>/journal/`, `agents/<coordinator>/memory/last-sessions/`, `agents/<coordinator>/memory/last-sessions/INDEX.md`, `agents/<coordinator>/memory/open-threads.md`, `agents/<coordinator>/memory/sessions/`, `agents/<coordinator>/learnings/`.
+- Writes only to: `agents/<coordinator>/transcripts/`, `agents/<coordinator>/journal/`, `agents/<coordinator>/memory/last-sessions/`, `agents/<coordinator>/memory/last-sessions/INDEX.md`, `agents/<coordinator>/memory/open-threads.md`, `agents/<coordinator>/memory/sessions/`, `agents/<coordinator>/learnings/`, `agents/<coordinator>/memory/decisions/INDEX.md`, `agents/<coordinator>/memory/decisions/preferences.md`, `agents/<coordinator>/memory/decisions/axes.md`.
 - If coordinator detection is ambiguous or contradictory (greeting says Sona, concern says personal), she refuses and surfaces the inconsistency for Duong to resolve.
 - Scope: coordinator sessions only (Evelynn, Sona). Subagent sessions are out of scope.
 
