@@ -32,6 +32,8 @@
  *
  * Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
  * Implements T.P1.2; extended by T.P2.2 (feedback-index source).
+ * T.P2.4: prompt-stats emitter wired into subagent-jsonl source via lib/sources.mjs
+ *         (parseSubagentSession now returns promptStats; scanAllSources pushes them).
  */
 
 import { writeFileSync, existsSync, mkdirSync, statSync, unlinkSync, readdirSync } from 'node:fs';

@@ -3,6 +3,7 @@
   "sessionId": "sess-subagent-001",
   "parentSessionId": "sess-parent-001",
   "agentType": "subagent",
+  "coordinator": "evelynn",
   "description": "Run plan-rollup for dashboard fixture",
   "startTs": "2026-04-20T08:00:30.000Z",
   "endTs": "2026-04-20T08:01:05.000Z"
