@@ -16,7 +16,7 @@
 
 import { describe, it, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs'; // readFileSync used in runCoordWeeklyQuery
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -33,9 +33,16 @@ const IMPL_EXISTS = existsSync(SQL_PATH);
 const SKIP_REASON = 'xfail: coordinator-weekly.sql not yet implemented (TODO T.P2.4)';
 
 function runCoordWeeklyQuery(eventsPath) {
+  // Use the same read_ndjson_auto substitution pattern as duckdb-runner.mjs:
+  // substitute 'events.jsonl' in the SQL with the actual absolute path,
+  // then pipe via stdin (no DB-file argument).
+  const sql = readFileSync(SQL_PATH, 'utf8');
+  const escapedPath = eventsPath.replace(/'/g, "''");
+  const resolvedSql = sql.replace(/'events\.jsonl'/g, `'${escapedPath}'`);
+  const cleanSql = resolvedSql.replace(/;\s*$/, '') + ';';
   const result = execSync(
-    `duckdb -json '${eventsPath}' < '${SQL_PATH}'`,
-    { cwd: RETRO_ROOT, encoding: 'utf8' }
+    'duckdb -json',
+    { cwd: RETRO_ROOT, encoding: 'utf8', input: cleanSql }
   );
   return JSON.parse(result);
 }
@@ -70,7 +77,7 @@ describe('TP2.T3-A: coordinator-weekly.sql — golden deep-equal against expecte
       `coordinator-weekly output does not match golden.\nExpected: ${JSON.stringify(sortedExpected)}\nActual: ${JSON.stringify(sortedActual)}`);
   });
 
-  it('each row has the 12 contracted columns', () => {
+  it('each row has the contracted columns', () => {
     const ALLOWED = new Set([
       // Phase-1 skeleton columns
       'coordinator', 'iso_week', 'inline_tool_calls', 'delegated_tool_calls',
@@ -78,7 +85,9 @@ describe('TP2.T3-A: coordinator-weekly.sql — golden deep-equal against expecte
       // Phase-2 prompt-stat columns
       'prompt_chars_p50', 'prompt_chars_p95', 'header_count_avg',
       'concern_tag_present_pct', 'plan_citation_present_pct',
-      'compression_ratio_p50', 'compression_ratio_p95'
+      'compression_ratio_p50', 'compression_ratio_p95',
+      // Health-flag column (DoD-(c): healthy / drift / executor-mode)
+      'delegate_health_flag',
     ]);
     for (const row of actual) {
       const keys = new Set(Object.keys(row));
