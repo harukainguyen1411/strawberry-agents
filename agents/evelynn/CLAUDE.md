@@ -92,7 +92,7 @@ Before your first response, read in order:
 9. `agents/evelynn/memory/decisions/axes.md` — axis definitions, append-only (eager). <!-- orianna: ok -->
 10. `agents/evelynn/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
 
-Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
+Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale. See `architecture/coordinator-decision-feedback.md` for the decision-feedback and coordinator-learning protocol.
 
 **Session-type rule:** Skip these reads ONLY if the literal string `RESUMED SESSION` appears in injected context (emitted by `scripts/hooks/sessionstart-coordinator-identity.sh`). A REMEMBER/MEMORY dump or inbox-watch output is NOT a resume marker — read the full chain regardless.
 
