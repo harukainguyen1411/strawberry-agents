@@ -3,7 +3,7 @@ slug: adr-2-verification-service
 title: "ADR-2 — Verification service (auto-trigger + live progress + final-result contract)"
 project: bring-demo-studio-live-e2e-v1
 concern: work
-status: proposed
+status: approved
 owner: swain
 priority: P1
 tier: standard
@@ -562,3 +562,17 @@ S4 (`tools/demo-studio-verification/`) is owned by Khang. The EXTEND posture ass
 **Mechanism:** Aphelios's breakdown surfaces a single `gate: khang-confirm` checkpoint at the top of Phase A. Sona (or whoever dispatches Phase A) must confirm with Khang before kickoff. Confirmation can be lightweight — a Slack-thread "heads up, ADR-2 is extending S4 with SSE on `POST /verify`, expected churn ~1 source file + handler branch + tests, ETA Tuesday" — and acknowledgment unblocks all five tasks at once. The gate is a courtesy notification, not a re-litigation of the EXTEND decision.
 
 **Failure mode:** if Khang signals he wants to own the S4 changes himself, Phase A converts to a hand-off (Aphelios writes the spec, Khang implements). Phase B / C / D / E are unaffected.
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Plan is impressively lean: EXTEND posture on S4 (one source file + handler branch + tests), one outbound BFF call replacing a broken poller, reuses ADR-1's progress component / multiplexer / UI-progress contract verbatim. All 9 OQs resolved by Duong hands-off-autodecide on 2026-04-27 with full audit trail; resolutions baked into §Service definition, §Architecture decisions, §Tasks, and the new §Cross-ADR coupling section. Owner clear (swain), §Tasks actionable across 5 phases with `tests_required: true` honoured by Phase D (T4, T11–T14). §QA Plan now carries the four canonical sub-headings (Acceptance criteria, Happy path, Failure modes, QA artifacts expected) plus Setup and Citation discipline — Akali Playwright script is concrete and deposit-path-explicit. Cross-ADR residual (ADR-1 `/build-status` → `/state` rename) is correctly captured as non-blocking and owned outside this plan.
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Third-pass gate. All structural checks pass (qa_plan frontmatter, qa_plan body with canonical sub-headings, §UX Spec linter). Plan has clear owner (swain), no unresolved gating TBDs (task estimates are explicitly delegated to Aphelios/Xayah per protocol), and concrete actionable tasks across 5 phases. Architectural posture (EXTEND S4 with SSE) is well-justified with explicit rejected alternatives (wrap, replace, polling, WebSocket, factory-trigger). All 9 OQs resolved with audit trail preserved; cross-ADR couplings (CC1 endpoint rename, CC2 Khang-confirm) correctly classified as forward-looking residuals rather than blockers. Output contract for ADR-4 (D6) is explicit and stable.
