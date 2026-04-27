@@ -34,6 +34,14 @@ On failure: stderr emits `[capture-decision] BLOCK: <reason>`. Exit non-zero.
 Per §6.2: on validation failure, repair the frontmatter and retry once. If a second failure, surface
 to Duong as a capture gap and proceed without the log — never block the decision.
 
+## DB write — decisions table projection
+
+After the markdown shard is written and git-added, `capture-decision.sh` inserts a row into the `decisions` table. Default DB path: `~/.strawberry-state/state.db`; override via `STRAWBERRY_STATE_DB` env var (ADR §D2).
+
+The write is non-fatal: if the DB is unreachable or `_lib_db.sh` is absent, a warning is emitted to stderr and the skill continues. Markdown shard is source of truth.
+
+Idempotent: `INSERT OR IGNORE` on `UNIQUE(coordinator, slug, decided_at)` — re-running the skill on the same `decision_id` and date does not produce a constraint failure.
+
 ## STRAWBERRY_MEMORY_ROOT shim
 
 When `STRAWBERRY_MEMORY_ROOT` is set, coordinator memory is resolved under that root instead of the

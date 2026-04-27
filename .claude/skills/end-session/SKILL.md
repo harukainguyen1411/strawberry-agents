@@ -103,6 +103,20 @@ git add .remember/remember.md
 
 If the `remember` plugin is not installed or the skill is unavailable, fall back to writing `agents/<agent>/memory/last-session.md` manually with a 5–10 line terse handoff (date, what happened, open threads, dangling commits or PRs, blockers). Stage with `git add -f agents/<agent>/memory/last-session.md`. Note "remember step skipped — plugin not available, used last-session.md fallback" in the final report.
 
+## Step 6d — DB write for session row (coordinators only)
+
+**After Step 6 shard write completes**, if `STRAWBERRY_STATE_DB` is set (or the default path `~/.strawberry-state/state.db` exists), write a sessions row:
+
+```bash
+bash scripts/state/db-write-session.sh \
+  "${STRAWBERRY_STATE_DB:-$HOME/.strawberry-state/state.db}" \
+  "<short-uuid>" "<agent>" "<started_at>" "<ended_at>" \
+  "agents/<agent>/memory/last-sessions/<short-uuid>.md" \
+  "<tldr-3-lines>" "<branch-at-close>"
+```
+
+Non-fatal: if the script fails or the DB is unreachable, log the warning and continue. Markdown shard is source of truth.
+
 ## Step 6b — Update open-threads.md + regenerate INDEX.md (coordinators only)
 
 **Ordering invariant:** Step 6 (write shard) MUST complete before Step 6b because the shard is the source for both open-threads.md and INDEX.md updates. Step 6b MUST complete before the commit step so all artifacts land atomically in one commit.
