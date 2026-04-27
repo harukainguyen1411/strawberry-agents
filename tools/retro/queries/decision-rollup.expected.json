@@ -1,0 +1,10 @@
+[
+  {
+    "coordinator": "evelynn",
+    "axis": "routing-track",
+    "decisions_total": 3,
+    "decisions_matched": 2,
+    "match_rate": "0.6667",
+    "avg_confidence_at_time": 2.0
+  }
+]
