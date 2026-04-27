@@ -10,6 +10,7 @@ tier: standard
 created: 2026-04-27
 last_reviewed: 2026-04-27
 qa_plan: required
+qa_co_author: lulu
 tests_required: true
 architecture_impact: minor
 ---
