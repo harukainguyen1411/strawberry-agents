@@ -179,6 +179,8 @@
 - 2026-04-27 (ekko — Sona dispatch): REDEPLOY of demo-studio-v3 from feat/demo-studio-v3 HEAD 24b1e22 — prior deploy (demo-studio-00052-tow) had stale container (/__build_info reported 6f8ea1b not 24b1e22). Fix: clean tree confirmed, fresh source deploy, then explicit traffic switch. New revision: demo-studio-00040-kgk, 100% traffic. /__build_info verified: {"revision":"24b1e22fd114","builtAt":"2026-04-27T15:04:42Z"}. Rollback target: demo-studio-00052-tow. Note: deploy.sh with pinned traffic sets new revision to 0% — always follow with explicit --to-revisions=<newrev>=100.
 - 2026-04-27 (ekko — Sona dispatch): Redeployed demo-config-mgmt (S2) to pick up PR #117 --min-instances=1. New revision: demo-config-mgmt-00015-c7b, minScale=1, 100% traffic. Smoke: 401 (service live, --no-allow-unauthenticated). Rollback target: demo-config-mgmt-00014-2bn. deploy.sh run from tools/demo-config-mgmt/; working tree must be clean.
 
+- 2026-04-27 (ekko — Sona dispatch): ADR-3 TQ1 deploy check. feat/demo-studio-v3 HEAD 24b1e22fd114 was already live as demo-studio-00040-kgk (100% traffic), confirmed via /__build_info. No redeploy triggered — idempotency constraint met. Stopped and reported: Cloud Run service name is `demo-studio` not `demo-studio-v3`.
+
 - 2026-04-27 (ekko — Evelynn dispatch): Secret scrub via git-filter-repo. 5 secrets scrubbed from full history. Main rewritten: before=8ca4eadd, after=2b1d0a7f. Main force-pushed. PR branches vi/coord-memory-v1-T4a, T7a, viktor/T6b, jayce/T4b NOT pushed — blocked by pre-push-resolved-identity hook on Orianna-authored commits. Duong-manual push needed for 4 PR branches. Stale branches rakan/T3a, talon/T2b, viktor/T3b, vi/T2a absent from origin.
 
 ## Archive Note
