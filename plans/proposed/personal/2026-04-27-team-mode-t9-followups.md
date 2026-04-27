@@ -115,27 +115,52 @@ Inline (quick-lane). Two-reviewer policy applies: Lucian (functional) + Senna (s
 on the impl PR. Self-merge by Karma's pair-mate (Talon) once both reviews APPROVE and
 required checks are green; no `--admin` bypass.
 
-**Invariants the new tests protect:**
+### Acceptance criteria
 
 1. The idle hook makes a per-turn judgement, not a per-session one. A teammate that was
    conformant earlier in the session can be flagged non-conformant on the current turn.
 2. The transcript-JSONL parsing path actually executes in CI (no more env-override-only
    coverage); a fixture regression will fail the suite.
+3. All existing test cases in `test_teammate_idle_marker_hook.sh` and
+   `test_teammate_idle_marker_hook_real_payload.sh` continue to pass.
+4. Pre-existing T1/T3 xfails flip to PASS once their impl commits land; no new xfails
+   introduced.
 
-**Test commands:**
+### Happy path (user flow)
 
-```
-bash tests/hooks/test_teammate_idle_marker_hook.sh
-bash tests/hooks/test_teammate_idle_marker_hook_real_payload.sh
-```
+1. Teammate emits `task_done` for task A → hook reads current-turn slice of transcript →
+   sees marker → stays silent (conformant).
+2. Team-lead assigns task B to the same teammate session → teammate works → goes idle
+   without emitting a marker for task B → hook reads current-turn slice → sees no marker
+   in the new turn (the historical task A marker is correctly excluded) → emits the
+   missing-marker warning.
+3. Hook on a fresh session with no prior turns reads transcript_path JSONL via the real
+   parser (no `HOOK_SENDMESSAGE_FILE` override), correctly identifies SendMessage
+   tool_use entries, and renders the right verdict from the fixture.
 
-Both must exit 0 with all cases (including the new T1/T3-derived ones, post-flip)
-reporting PASS.
+### Failure modes (what could break)
 
-**Manual verification (post-merge, optional):** spin a real teammate session, send two
-sequential tasks, observe that a `task_done` on task A does not mask a missing marker on
-task B. Capture in `assessments/personal/` if anomalies appear; otherwise no artifact
-required.
+- Transcript JSONL shape drift: Claude Code may evolve the JSONL field names or nesting
+  for SendMessage tool_use entries. The fixture must mirror real production shape; a
+  schema-version comment at the top of the fixture file documents the captured-on date.
+- Missing turn delineator: if the chosen delineator (likely `UserPromptSubmit` event or
+  the previous `task_done` marker, whichever is more reliable) is absent in some teammate
+  session shape, the slice falls back to whole-transcript and silently degrades again.
+  T1 xfail must explicitly cover the delineator-missing case.
+- Real-path test that duplicates env-override behavior rather than exercising the parser
+  — guard against this by asserting the python parser's intermediate output (e.g. count
+  of parsed SendMessage entries) rather than just the hook's exit code.
+
+### QA artifacts expected
+
+- `tests/hooks/fixtures/teammate-idle-real-transcript.jsonl` (new) — captured-shape
+  fixture with at least 3 SendMessage tool_use entries spanning ≥2 turns.
+- Test output from `bash tests/hooks/test_teammate_idle_marker_hook*.sh` showing all
+  cases PASS (no XFAIL, no FAIL) in the impl PR description.
+- **Manual verification (post-merge, optional):** spin a real teammate session, send two
+  sequential tasks, observe that a `task_done` on task A does not mask a missing marker
+  on task B. Capture in `assessments/personal/` if anomalies appear; otherwise no
+  artifact required.
 
 ## TDD Discipline
 
