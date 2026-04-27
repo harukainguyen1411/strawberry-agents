@@ -101,6 +101,43 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 
 <!-- sessions:auto-below -->
 
+# Session 2026-04-24 → 2026-04-25 (84b7ba50, hands-off slow-track)
+
+One-line summary: post-compact runway with PR #32 cleared, P2 Phase-1 inventory landed, P1 paused on Duong's question about existing-API alternatives.
+
+## Delta notes for next consolidation
+
+- **Hands-off slow-track is right for waiting-on-human runways.** When P1 is structurally blocked on a manual merge, P2 can absorb full coordinator attention without overdraft. Don't fire same-tier dispatches against the blocked tier just to look busy.
+- **Verify before pivoting on a Duong-flagged premise.** Duong's "if the api exists" pivot would have invalidated PR #2108/#2109 if true; checking the rego policy first (5 min) prevented dropping correct work.
+- **Cross-coordinator memory edits cost a turn each.** Sona's briefing-verbosity rule had to route through Evelynn's inbox; Sona attempting the edit directly was rejected. Document the cross-coordinator edit pattern so we don't repeat the rejection-and-route loop.
+- **Cleaner chain_len > 1 trap.** Always disclose both jsonl files when /end-session reads from a chain. I pointed Duong at only the post-compact file and burned a round-trip.
+
+# Session 2026-04-24 (SN3, cli)
+
+**Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22
+**Shard UUID:** 4df78d45
+**Prior shard this session:** 2026-04-24-4eb1eb78 (second consolidation)
+**Prior full session close:** 2026-04-23-536df25c
+**Concern:** work
+
+## Summary
+
+Third compact boundary of session `576ce828`. Post-compact resume mis-routed as Evelynn (PR #37 merged under wrong identity before catch); re-armed as Sona; apology note to Evelynn. `duong.md` GitHub account scoping corrected (`duongntd99` = WORK). PR #109 merged by Duong (`cb667fed`). Two stale-checkbox discoveries (T.P1.13b already done via PR #83; T1/T3/T4 preview tasks done via PR #67). SECURITY INCIDENT closed per Duong directive. Preview verified FIXED at code level (prod not yet redeployed). Akali Playwright QA dispatched on local uvicorn, still in flight. Wave C plan (peer deploy.sh hardening) drafted by Karma, Orianna gated proposed→approved (`0b0d15bf`), approved→in-progress Orianna call (task #48) in flight. Runway section written into open-threads (`8f9b9bac`).
+
+## Delta notes
+
+- PR #109 — MERGED by Duong at `cb667fed`; T.P1.12 xfail cleanup complete
+- T.P1.13b — confirmed DONE via PR #83 (2026-04-23); stale checkbox closed
+- Preview T1/T3/T4 — confirmed DONE via PR #67 (`ccd7a32`); Rakan verified all 4 invariants pass locally
+- SECURITY INCIDENT — CLOSED per Duong: "No rotation needed, don't remind me about this anymore"
+- Preview verify — Explore FIXED verdict; `server.py:99` calls S2 via urllib; prod Cloud Run not yet redeployed
+- Akali QA — dispatched on local uvicorn `http://127.0.0.1:8080`; in flight at consolidation
+- Wave C plan — Karma authored `plans/in-progress/work/2026-04-25-peer-deploy-sh-hardening-sweep.md`; Orianna proposed→approved (`0b0d15bf`); approved→in-progress task #48 running
+- Runway section — `open-threads.md` top-of-file waves A–D section committed `8f9b9bac`
+- `duong.md` account scoping — `duongntd99` = WORK (canonical Sona/missmp); `Duongntd` = AGENT personal; `harukainguyen1411` = human-only admin; committed `7a4fd3ba`
+- Coordinator identity drift — mis-routed as Evelynn at resume; re-armed; apology note `agents/evelynn/inbox/20260424-0647-013277.md`
+- CLAUDE.md discrepancy — Sona addendum references non-existent `scripts/plan-promote.sh`; all plan promotions via Orianna Agent dispatch
+
 ## Session 2026-04-22 (eleventh leg, cli, direct mode)
 
 One-line summary: Direct-mode execution under Duong's standing cron directive — chat bubble rendering + SSE deadlock shipped on `feat/demo-studio-v3`, Playwright-verified live on two fresh sessions. Coordinator-identity misroute at close caught by Duong; postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`.
