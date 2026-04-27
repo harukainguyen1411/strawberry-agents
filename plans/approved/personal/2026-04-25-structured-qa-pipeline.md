@@ -13,13 +13,13 @@ related:
   - .claude/agents/lulu.md
   - .claude/agents/senna.md
   - .claude/agents/orianna.md
-  - architecture/plan-frontmatter.md
-  - architecture/plan-lifecycle.md
+  - architecture/agent-network-v1/plan-frontmatter.md
+  - architecture/agent-network-v1/plan-lifecycle.md
   - plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md
   - plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md
 architecture_changes:
   - architecture/agent-network-v1/qa-pipeline.md
-  - architecture/plan-frontmatter.md
+  - architecture/agent-network-v1/plan-frontmatter.md
 ---
 
 # Structured QA pipeline — QA-as-plan-artifact, QA-during-build, QA-as-merge-gate, QA-as-prod-watch
@@ -181,7 +181,7 @@ Plans authored before this ADR lands fall into three classes:
 - **In-progress plans (`plans/in-progress/`)** — grandfather with a soft note. Orianna will not block the `in-progress → implemented` transition for a missing `qa_plan` frontmatter on a plan that was approved before this ADR's promotion date. The §Test results section at implementation time captures whatever ad-hoc QA was done.
 - **Approved-but-not-started plans (`plans/approved/`)** — sweep. A follow-up Karma task (out of scope for this ADR; tracked as T3) audits the approved-personal subtree, identifies plans with UI or user-flow surface, and either (a) adds a §QA Plan section + frontmatter via an Orianna re-sign-at-approved cycle, or (b) tags the plan as grandfathered with a one-line justification. Orianna's `approved → in-progress` gate enforces `qa_plan` presence going forward.
 
-**Cutover date** is the commit SHA of this ADR's promotion to `plans/approved/personal/`. Plans created on or after that date MUST have `qa_plan` declared. Orianna's `proposed → approved` gate enforces this for plans with `orianna_gate_version: 2` (the field is already mandatory on new plans per `architecture/plan-frontmatter.md`).
+**Cutover date** is the commit SHA of this ADR's promotion to `plans/approved/personal/`. Plans created on or after that date MUST have `qa_plan` declared. Orianna's `proposed → approved` gate enforces this for plans with `orianna_gate_version: 2` (the field is already mandatory on new plans per `architecture/agent-network-v1/plan-frontmatter.md`).
 
 ### D8 — Akali mid-build dispatch entry point
 
@@ -224,7 +224,7 @@ This plan is architectural. Tasks are coordination + handoff, not self-implement
 - kind: ops
 - estimate_minutes: 20
 - files: (no commits — Evelynn-side dispatch)
-- detail: Once approved, Evelynn dispatches Kayn (in worktree per Rule 20) to break the implementation into ordered tasks. Implementation surface: (a) Orianna gate v2 amendment to require `qa_plan` frontmatter + `## QA Plan` section verification at `proposed → approved`; (b) `architecture/plan-frontmatter.md` update documenting the new field; (c) `architecture/agent-network-v1/qa-pipeline.md` new doc per D6; (d) Akali agent-def amendment for `mode=smoke` per D8; (e) Lulu and Senna agent-def amendments for `## QA co-author` responsibility per D5; (f) GitHub Actions workflow `qa-draft-reminder.yml` per D8 trigger; (g) pr-lint extension for advisory `QA-Draft:` warning per D3; (h) sweep script for approved-personal plans per D7. Kayn returns ordered task list inline (no `-tasks.md` sibling per Rule 20). Evelynn assigns implementers (Kayn does NOT — that is Evelynn's call per architect role rules).
+- detail: Once approved, Evelynn dispatches Kayn (in worktree per Rule 20) to break the implementation into ordered tasks. Implementation surface: (a) Orianna gate v2 amendment to require `qa_plan` frontmatter + `## QA Plan` section verification at `proposed → approved`; (b) `architecture/agent-network-v1/plan-frontmatter.md` update documenting the new field; (c) `architecture/agent-network-v1/qa-pipeline.md` new doc per D6; (d) Akali agent-def amendment for `mode=smoke` per D8; (e) Lulu and Senna agent-def amendments for `## QA co-author` responsibility per D5; (f) GitHub Actions workflow `qa-draft-reminder.yml` per D8 trigger; (g) pr-lint extension for advisory `QA-Draft:` warning per D3; (h) sweep script for approved-personal plans per D7. Kayn returns ordered task list inline (no `-tasks.md` sibling per Rule 20). Evelynn assigns implementers (Kayn does NOT — that is Evelynn's call per architect role rules).
 - DoD: Inline task breakdown returned by Kayn; Evelynn has assigned implementers per task.
 
 ### T3 — Sweep approved-personal plans for §QA Plan
@@ -261,7 +261,7 @@ Estimates are per task; any task >60 min is split.
 - [ ] **T7b** — Extend the same gate code path to walk the body and verify the four sub-headings under `## QA Plan` when `qa_plan: required`. estimate_minutes: 40. Files: `scripts/hooks/pre-commit-zz-plan-structure.sh` (or the helper module Orianna invokes). DoD: T7a flips to passing; the four-sub-heading list lives in a single named constant for reuse by T8. Executor: Sonnet builder. blockedBy: T7a, T6b.
 - [ ] **T7c** — xfail test: Orianna grandfather behavior — `approved → in-progress` PASS with WARN line on a pre-cutover plan missing `qa_plan`. estimate_minutes: 20. Files: `scripts/tests/test-orianna-gate-qa-plan-grandfather.bats` (xfail, references Test 3). DoD: bats test exists, xfail, asserts WARN line emitted and transition succeeds. Executor: test author.
 - [ ] **T7d** — Implement the grandfather branch (compare commit date of the plan against the cutover SHA recorded in T6b commit; if older, emit WARN not REJECT). estimate_minutes: 30. Files: same gate helper module. DoD: T7c flips to passing; cutover SHA is recorded as a constant referenced from both code and `architecture/agent-network-v1/qa-pipeline.md`. Executor: Sonnet builder. blockedBy: T7c, T7b.
-- [ ] **T8** — Update `architecture/agent-network-v1/plan-frontmatter.md` (NOTE: actual canonical path; T2 detail (b) cited the legacy `architecture/plan-frontmatter.md` location) — add `### qa_plan` and `### qa_co_author` field sections matching D2 (three allowed values + co-authorship matrix from D5). estimate_minutes: 30. Files: `architecture/agent-network-v1/plan-frontmatter.md`. DoD: Test 5 passes (the doc grep finds `### qa_plan` with three allowed values listed); cross-link to `qa-pipeline.md` Stage 1 section. Executor: Sonnet builder. blockedBy: T4.
+- [ ] **T8** — Update `architecture/agent-network-v1/plan-frontmatter.md` (NOTE: actual canonical path; T2 detail (b) cited the legacy `architecture/agent-network-v1/plan-frontmatter.md` location) — add `### qa_plan` and `### qa_co_author` field sections matching D2 (three allowed values + co-authorship matrix from D5). estimate_minutes: 30. Files: `architecture/agent-network-v1/plan-frontmatter.md`. DoD: Test 5 passes (the doc grep finds `### qa_plan` with three allowed values listed); cross-link to `qa-pipeline.md` Stage 1 section. Executor: Sonnet builder. blockedBy: T4.
 - [ ] **T9** — Akali agent-def: add `## Modes` section documenting `smoke` and `full`; smoke mode short-circuits to single-screenshot-per-acceptance-criterion with the wall-clock + token caps from OQ-6 recommended default (≤ 2 min, ≤ 30k input tokens). estimate_minutes: 35. Files: `.claude/agents/akali.md`. DoD: agent-def parses with frontmatter intact; smoke mode entry includes the `mode=smoke` invocation contract from D8; cross-link to `qa-pipeline.md` Stage 2 section. Executor: Sonnet builder. blockedBy: T4.
 - [ ] **T10** — Lulu and Senna agent-def: add `## QA co-author` responsibility section per D5 (Lulu owns acceptance criteria + happy path + Figma reference; Senna reviews failure-mode list for testability + edge classes). estimate_minutes: 30. Files: `.claude/agents/lulu.md`, `.claude/agents/senna.md`. DoD: both agent-defs gain the section; for Senna, the section appends AFTER the five-axis checklist block landed by the parallel PR-reviewer-tooling ADR. blockedBy: PR-reviewer-tooling ADR W2 Senna edits (or coordinate via merge order — Evelynn schedules). Executor: Sonnet builder. **Cross-ADR coupling: confirm with Evelynn before dispatch that reviewer-tooling W2 has merged.**
 
@@ -284,7 +284,7 @@ Estimates are per task; any task >60 min is split.
 
 **Open questions surfaced by breakdown.**
 
-- OQ-K1: T2 detail (b) cites `architecture/plan-frontmatter.md`; the actual canonical path is `architecture/agent-network-v1/plan-frontmatter.md`. Resolution baked into T8. No ADR amendment needed; flag for Lucian's plan-fidelity check at PR time.
+- OQ-K1: T2 detail (b) cites `architecture/agent-network-v1/plan-frontmatter.md`; the actual canonical path is `architecture/agent-network-v1/plan-frontmatter.md`. Resolution baked into T8. No ADR amendment needed; flag for Lucian's plan-fidelity check at PR time.
 - OQ-K2: T10 cross-ADR ordering — confirm with Evelynn that the PR-reviewer-tooling ADR's Senna agent-def edits land before T10 dispatches, OR explicitly merge-train the two changes. Recommendation: Evelynn schedules them in sequence; both land in the same W2 wave but the reviewer-tooling commit precedes T10 by ≥1 commit.
 - OQ-K3: Test 4 assertion ("doc contains all four stage headings") is added to T4's DoD as an inline check rather than a separate bats test — single-line `grep -c '^### Stage' architecture/agent-network-v1/qa-pipeline.md` in the test plan harness. No new test file needed.
 
@@ -296,7 +296,7 @@ Implementation-level tests (xfail per Rule 12) are the responsibility of the dow
 - **Test 2 (Body section verification).** Create a synthetic plan with `qa_plan: required` but no `## QA Plan` body section, dispatch Orianna. Expected: REJECT with message naming the missing heading. Pass: Orianna outputs the documented error string.
 - **Test 3 (Grandfather behavior).** Locate a `plans/approved/personal/` plan from before this ADR's cutover date with no `qa_plan` field, dispatch Orianna for `approved → in-progress`. Expected: PASS with grandfather warning. Pass: Orianna outputs the warning, transition succeeds.
 - **Test 4 (Pipeline doc presence).** `test -f architecture/agent-network-v1/qa-pipeline.md` returns 0. Doc contains all four stage headings.
-- **Test 5 (Plan-frontmatter doc updated).** `architecture/plan-frontmatter.md` contains a `### qa_plan` section with the three allowed values documented.
+- **Test 5 (Plan-frontmatter doc updated).** `architecture/agent-network-v1/plan-frontmatter.md` contains a `### qa_plan` section with the three allowed values documented.
 - **Test 6 (Stage 2 reminder workflow).** Open a synthetic draft PR on a branch implementing a `qa_plan: required` plan; the GitHub Actions `qa-draft-reminder.yml` posts the expected comment within 60s.
 - **Test 7 (pr-lint advisory).** PR body without `QA-Draft:` block on a `qa_plan: required` plan after 24h triggers pr-lint warning (not failure).
 
@@ -304,7 +304,7 @@ These tests live in the implementation plans authored from T2 — they are liste
 
 ## Architecture impact
 
-This plan modifies two architecture docs: a new file `architecture/agent-network-v1/qa-pipeline.md` (the canonical pipeline doc per D6), and an update to `architecture/plan-frontmatter.md` (adding the `qa_plan` and `qa_co_author` field reference per D2). Both changes are listed in `architecture_changes` frontmatter and will be touched by the implementation plan(s) downstream of T2 — Orianna's `in-progress → implemented` gate verifies the listed paths were actually modified per existing gate v2 conventions.
+This plan modifies two architecture docs: a new file `architecture/agent-network-v1/qa-pipeline.md` (the canonical pipeline doc per D6), and an update to `architecture/agent-network-v1/plan-frontmatter.md` (adding the `qa_plan` and `qa_co_author` field reference per D2). Both changes are listed in `architecture_changes` frontmatter and will be touched by the implementation plan(s) downstream of T2 — Orianna's `in-progress → implemented` gate verifies the listed paths were actually modified per existing gate v2 conventions.
 
 ## Open Questions
 
@@ -321,8 +321,8 @@ This plan modifies two architecture docs: a new file `architecture/agent-network
 - `CLAUDE.md` lines 92-101 (Rule 16 — pre-merge QA, current text, unchanged by this ADR)
 - `CLAUDE.md` lines 103-106 (Rule 17 — post-deploy smoke, unchanged by this ADR)
 - `CLAUDE.md` lines 117-118 (Rule 19 — Orianna gate; this ADR adds the `qa_plan` check at `proposed → approved`)
-- `architecture/plan-frontmatter.md` (existing field reference; this ADR adds `qa_plan` and `qa_co_author`)
-- `architecture/plan-lifecycle.md` (existing lifecycle doc; QA stages map onto plan stages — Stage 1 at `proposed → approved`, Stages 2-3 during `in-progress`, Stage 4 post-`implemented`)
+- `architecture/agent-network-v1/plan-frontmatter.md` (existing field reference; this ADR adds `qa_plan` and `qa_co_author`)
+- `architecture/agent-network-v1/plan-lifecycle.md` (existing lifecycle doc; QA stages map onto plan stages — Stage 1 at `proposed → approved`, Stages 2-3 during `in-progress`, Stage 4 post-`implemented`)
 - `plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md` (Swain — Akali OBSERVES + Senna DIAGNOSES; layered under Stage 3 of this pipeline)
 - `plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md` (Karma v1 — reporting-discipline hooks; layered under Stage 3 of this pipeline)
 - `plans/in-progress/2026-04-20-orianna-gated-plan-lifecycle.md` (Orianna gate v2 ADR — the gate this plan extends with the `qa_plan` check)

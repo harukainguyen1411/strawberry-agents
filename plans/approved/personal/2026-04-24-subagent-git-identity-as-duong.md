@@ -72,9 +72,9 @@ Why quick lane: one domain (PreToolUse hook library + one Python env-merge line)
 ### T4. Document universal identity discipline + close the approved-plan loop
 - kind: doc-edit
 - estimate_minutes: 15
-- files: `architecture/agent-system.md`, `plans/approved/personal/2026-04-24-subagent-identity-leak-fix.md`.
-- detail: In `architecture/agent-system.md`, add a "Git identity discipline" subsection (under the existing agent-infrastructure section, or create it): explain that all subagent commits author as `Duongntd <103487096+Duongntd@users.noreply.github.com>` across both concerns, Orianna is the sole carve-out, and persona attribution lives in inbox/learnings/memory/plan-frontmatter — never in git metadata. Reference the hook path and this plan. In `plans/approved/personal/2026-04-24-subagent-identity-leak-fix.md`, append a "Superseded-by" line at the top of §4 T1 pointing to this plan (the broader universal fix replaces the work-scope-only T1); leave T2/T3/T4 of that plan intact — they cover the commit-msg author-scan, reviewer-comment wrapper, and verdict template, which are orthogonal.
-- DoD: architecture doc updated; prior plan T1 annotated; `grep -n 'strawberry.local' architecture/agent-system.md` returns no hits (other than inside code-fenced illustrative counter-examples explicitly labelled as the failure mode).
+- files: `architecture/archive/pre-network-v1/agent-system.md`, `plans/approved/personal/2026-04-24-subagent-identity-leak-fix.md`.
+- detail: In `architecture/archive/pre-network-v1/agent-system.md`, add a "Git identity discipline" subsection (under the existing agent-infrastructure section, or create it): explain that all subagent commits author as `Duongntd <103487096+Duongntd@users.noreply.github.com>` across both concerns, Orianna is the sole carve-out, and persona attribution lives in inbox/learnings/memory/plan-frontmatter — never in git metadata. Reference the hook path and this plan. In `plans/approved/personal/2026-04-24-subagent-identity-leak-fix.md`, append a "Superseded-by" line at the top of §4 T1 pointing to this plan (the broader universal fix replaces the work-scope-only T1); leave T2/T3/T4 of that plan intact — they cover the commit-msg author-scan, reviewer-comment wrapper, and verdict template, which are orthogonal.
+- DoD: architecture doc updated; prior plan T1 annotated; `grep -n 'strawberry.local' architecture/archive/pre-network-v1/agent-system.md` returns no hits (other than inside code-fenced illustrative counter-examples explicitly labelled as the failure mode).
 
 ## 5. Test plan
 

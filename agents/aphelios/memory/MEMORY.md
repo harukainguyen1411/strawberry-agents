@@ -28,7 +28,7 @@ Gate-numbering convention that keeps sibling plans clean: Kayn uses `P<phase>-G<
 
 Key coordination notes carried forward:
 - `scripts/hooks/pre-commit-secrets-guard.sh` — strawberry-agents is source of truth; strawberry-app copies on hook refresh.
-- `architecture/cross-repo-workflow.md` — canonical copy in strawberry-agents (three-repo version); may supersede a two-repo draft Kayn's P5.3 puts on strawberry first.
+- `architecture/agent-network-v1/cross-repo.md` — canonical copy in strawberry-agents (three-repo version); may supersede a two-repo draft Kayn's P5.3 puts on strawberry first.
 - Orphan-sentinel (A7) depends on Kayn's P6.1 purge landing first; realistic clock is cutover + 7-14 days.
 
 Preferred cwd path (post-migration): agents run from `~/Documents/Personal/strawberry-agents/` once Phase A4 lands.

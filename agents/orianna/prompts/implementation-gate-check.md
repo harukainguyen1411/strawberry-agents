@@ -183,7 +183,7 @@ Body (include all applicable sections):
 
 <!-- Each entry: step + description | failure reason | severity -->
 1. **Step A — Claim:** `scripts/foo.sh` not found on current tree | **Severity:** block
-2. **Step B — Architecture:** `architecture/agent-system.md` not modified since approval | **Severity:** block
+2. **Step B — Architecture:** `architecture/archive/pre-network-v1/agent-system.md` not modified since approval | **Severity:** block
 3. **Step C — Test results:** missing `## Test results` section | **Severity:** block
 4. **Step D — Approved sig:** `orianna_signature_approved` invalid | **Severity:** block
 5. **Step E — In-progress sig:** `orianna_signature_in_progress` missing | **Severity:** block

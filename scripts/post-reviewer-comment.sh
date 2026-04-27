@@ -125,7 +125,7 @@ if ! anonymity_scan_text < "$TMPFILE"; then
 identifiers that must not appear in MMP-visible surfaces.
 
 Remove the flagged tokens and retry. Use "-- reviewer" instead of an agent name.
-Reference: architecture/pr-rules.md #work-scope-anonymity
+Reference: architecture/agent-network-v1/pr-rules.md #work-scope-anonymity
 REJECT
   exit 3
 fi

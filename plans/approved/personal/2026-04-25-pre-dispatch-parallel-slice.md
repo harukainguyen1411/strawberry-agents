@@ -12,7 +12,7 @@ orianna_gate_version: 2
 related:
   - feedback/2026-04-25-pre-dispatch-parallel-slice-check.md
   - .claude/agents/_shared/coordinator-routing-check.md
-  - architecture/agent-routing.md
+  - architecture/agent-network-v1/routing.md
 ---
 
 # Pre-dispatch parallel-slice check
@@ -58,7 +58,7 @@ No xfail-first required: these are doc/prompt edits, not code changes in a TDD-e
 
 - Source feedback: `feedback/2026-04-25-pre-dispatch-parallel-slice-check.md`
 - Routing primitive: `.claude/agents/_shared/coordinator-routing-check.md`
-- Agent routing matrix: `architecture/agent-routing.md`
+- Agent routing matrix: `architecture/agent-network-v1/routing.md`
 
 ## Orianna approval
 

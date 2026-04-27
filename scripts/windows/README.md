@@ -84,5 +84,5 @@ Don't run this in a borrowed environment that has access to anything you don't w
 ## See also
 
 - `plans/in-progress/2026-04-08-windows-mode.md` — the plan that introduced this mode
-- `architecture/agent-system.md` — the full Strawberry agent system design (Mac-centric)
+- `architecture/archive/pre-network-v1/agent-system.md` — the full Strawberry agent system design (Mac-centric)
 - `CLAUDE.md` — project rules (apply to both modes)

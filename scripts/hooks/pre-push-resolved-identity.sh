@@ -102,7 +102,7 @@ EOF
       printf '  %s\n' "$offending_line" >&2
       printf '\n  Commits must use the neutral identity:\n' >&2
       printf '    Duongntd <103487096+Duongntd@users.noreply.github.com>\n' >&2
-      printf '\n  Reference: architecture/git-identity-enforcement.md\n' >&2
+      printf '\n  Reference: architecture/agent-network-v1/git-identity.md\n' >&2
       rc=1
     fi
   done

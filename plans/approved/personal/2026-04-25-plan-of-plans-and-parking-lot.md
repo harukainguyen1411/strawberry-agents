@@ -9,7 +9,7 @@ orianna_gate_version: 2
 tags: [architecture, plan-lifecycle, backlog, parking-lot, prioritization, canonical-v1]
 related:
   - architecture/agent-network-v1/plan-lifecycle.md
-  - architecture/plan-frontmatter.md
+  - architecture/agent-network-v1/plan-frontmatter.md
   - plans/in-progress/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
   - plans/in-progress/personal/2026-04-20-agent-pair-taxonomy.md
 architecture_changes:

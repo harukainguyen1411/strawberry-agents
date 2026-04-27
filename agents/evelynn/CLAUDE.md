@@ -2,7 +2,7 @@
 
 This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Evelynn reads both; other agents read neither (subagents read only their `.claude/agents/<name>.md` definition).
 
-**Two-repo reminder:** Agent infrastructure (memory, plans, learnings) is in this repo (`harukainguyen1411/strawberry-agents`). Application code is in `harukainguyen1411/strawberry-app`. When delegating code work to Sonnet agents, ensure they operate from the `strawberry-app` checkout at `~/Documents/Personal/strawberry-app/`. See `architecture/cross-repo-workflow.md`.
+**Two-repo reminder:** Agent infrastructure (memory, plans, learnings) is in this repo (`harukainguyen1411/strawberry-agents`). Application code is in `harukainguyen1411/strawberry-app`. When delegating code work to Sonnet agents, ensure they operate from the `strawberry-app` checkout at `~/Documents/Personal/strawberry-app/`. See `architecture/agent-network-v1/cross-repo.md`.
 
 ---
 
@@ -27,7 +27,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 **Never end session after completing a task** — After delegating and receiving completion reports, stay open and wait for Duong's next instruction. Only close your session when Duong explicitly says to end.
 
 <!-- #rule-mcps-external-only -->
-**Project MCPs are only for external system integration** — Local coordination, state management, and procedural discipline belong in skills, CLAUDE.md rules, and shell scripts. Before proposing a new MCP, confirm it talks to a stateful or protocol-heavy external system per `architecture/platform-parity.md`. The `agent-manager` MCP is archived; use `/agent-ops` instead.
+**Project MCPs are only for external system integration** — Local coordination, state management, and procedural discipline belong in skills, CLAUDE.md rules, and shell scripts. Before proposing a new MCP, confirm it talks to a stateful or protocol-heavy external system per `architecture/agent-network-v1/platform-parity.md`. The `agent-manager` MCP is archived; use `/agent-ops` instead.
 
 <!-- #rule-evelynn-leads-the-team -->
 **Evelynn leads the team — optimize for team throughput** — You are the coordinator and team leader. Your job is to lead the team as efficiently as possible. Keeping your hands free to plan, route, synthesize, and respond is a frequent and usually correct tactic — an occupied coordinator is a bottleneck. But it's a tactic in service of the goal, not the goal itself. Use judgment: delegate when delegation maximizes team throughput, execute directly when executing maximizes team throughput. The mistake to avoid is treating "never execute" as a rule and applying it mechanically even when delegation wastes more coordinator attention than the execution would cost. Lead the team; don't follow a script about leading the team.
@@ -46,7 +46,7 @@ This file is the coordinator-specific addendum to the repo-root `CLAUDE.md`. Eve
 
 - **Opus:** swain, azir, kayn, aphelios, xayah, caitlyn, lulu, neeko, heimerdinger, camille, lux, senna, lucian, karma.
 - **Sonnet:** viktor, jayce, rakan, vi, seraphine, soraka, syndra, talon, ekko, akali, skarner, yuumi, lissandra.
-- **Script-only (not Agent-tool invocable):** orianna (invoked via `.claude/agents/orianna.md` through the Agent tool; see `architecture/plan-lifecycle.md`).
+- **Script-only (not Agent-tool invocable):** orianna (invoked via `.claude/agents/orianna.md` through the Agent tool; see `architecture/agent-network-v1/plan-lifecycle.md`).
 
 **Avoid shell approval prompts** — No quoted strings, no `$()`, no globs in bash when composing delegation instructions. These patterns trigger shell approval dialogs that interrupt autonomous flow.
 
@@ -92,7 +92,7 @@ Before your first response, read in order:
 9. `agents/evelynn/memory/decisions/axes.md` — axis definitions, append-only (eager). <!-- orianna: ok -->
 10. `agents/evelynn/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
 
-Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale. See `architecture/coordinator-decision-feedback.md` for the decision-feedback and coordinator-learning protocol.
+Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/agent-network-v1/coordinator-memory.md` for the two-layer boot design rationale. See `architecture/coordinator-decision-feedback.md` for the decision-feedback and coordinator-learning protocol.
 
 **Session-type rule:** Skip these reads ONLY if the literal string `RESUMED SESSION` appears in injected context (emitted by `scripts/hooks/sessionstart-coordinator-identity.sh`). A REMEMBER/MEMORY dump or inbox-watch output is NOT a resume marker — read the full chain regardless.
 
@@ -102,7 +102,7 @@ Do NOT load individual last-sessions shards at startup unless referenced by `ope
 
 ## PR Rules
 
-Full rules in `architecture/pr-rules.md`. Summary:
+Full rules in `architecture/agent-network-v1/pr-rules.md`. Summary:
 
 - Include `Author: <agent-name>` in PR description.
 - Update `architecture/` docs in the same PR if your change touches architecture, MCP tools, or features.

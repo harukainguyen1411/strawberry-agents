@@ -154,7 +154,7 @@ and must not be extended to do so.
 | Item | Purpose |
 |------|---------|
 | `architecture/agent-network-v1/plan-lifecycle.md` | Plan lifecycle — Orianna gate interactions |
-| `architecture/plan-frontmatter.md` | Plan YAML frontmatter spec — `project:` field definition |
+| `architecture/agent-network-v1/plan-frontmatter.md` | Plan YAML frontmatter spec — `project:` field definition |
 | `agents/evelynn/CLAUDE.md` | Evelynn boot step — reads `projects/personal/active/*.md` |
 | `agents/sona/CLAUDE.md` | Sona boot step — reads `projects/work/active/*.md` |
 | `projects/personal/active/agent-network-v1.md` | First bootstrapped project |

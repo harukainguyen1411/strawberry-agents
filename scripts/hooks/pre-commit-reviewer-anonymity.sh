@@ -64,7 +64,7 @@ Remove the flagged tokens and retry. Generic alternatives:
   - Remove "Co-Authored-By: Claude" trailers entirely
   - Replace internal handles with a generic author attribution
 
-Reference: architecture/pr-rules.md #work-scope-anonymity
+Reference: architecture/agent-network-v1/pr-rules.md #work-scope-anonymity
 REJECT
   exit 1
 fi
@@ -77,7 +77,7 @@ identifiers. Set user.name/user.email to the neutral work identity before commit
   git config --local user.name "Duongntd"
   git config --local user.email "103487096+Duongntd@users.noreply.github.com"
 
-Reference: architecture/pr-rules.md #work-scope-anonymity
+Reference: architecture/agent-network-v1/pr-rules.md #work-scope-anonymity
 REJECT
   exit 1
 fi

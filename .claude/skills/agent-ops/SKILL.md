@@ -85,7 +85,7 @@ This skill runs identically on macOS and Windows (Git Bash). All subcommands use
 
 ## Cross-references
 
-- `architecture/platform-parity.md` — full platform support matrix
+- `architecture/agent-network-v1/platform-parity.md` — full platform support matrix
 - `plans/proposed/2026-04-08-mcp-restructure.md` — rough plan (governs Phases 2–3)
 - `plans/implemented/2026-04-09-mcp-restructure-phase-1-detailed.md` — this Phase 1 spec (once promoted)
 

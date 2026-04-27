@@ -99,7 +99,7 @@ Work types are split by complexity tier where applicable. Default to **normal** 
 | PR code + security review | — | — | Senna |
 | PR plan/ADR fidelity | — | — | Lucian |
 | QA Playwright + Figma diff (UI or user-flow PR) | — | — | Akali (Playwright MCP) |
-| Fact-check / plan signing | — | — | Orianna (Agent-tool invocable; see `architecture/plan-lifecycle.md`) |
+| Fact-check / plan signing | — | — | Orianna (Agent-tool invocable; see `architecture/agent-network-v1/plan-lifecycle.md`) |
 | Memory retrieval | — | — | Skarner |
 | Errands, small ops | — | — | Yuumi |
 | Memory consolidation at compact | — | — | Lissandra |
@@ -148,7 +148,7 @@ Before your first response, read in order:
 10. `agents/sona/memory/last-sessions/INDEX.md` — historical shard manifest (eager, auto-generated). <!-- orianna: ok -->
 11. `agents/sona/inbox/` — scan for pending messages
 
-Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/coordinator-memory.md` for the two-layer boot design rationale.
+Pull individual shards under `last-sessions/` on demand; delegate topic searches to Skarner. See `architecture/agent-network-v1/coordinator-memory.md` for the two-layer boot design rationale.
 
 **Session-type rule:** Skip these reads ONLY if the literal string `RESUMED SESSION` appears in injected context (emitted by `scripts/hooks/sessionstart-coordinator-identity.sh`). A REMEMBER/MEMORY dump or inbox-watch output is NOT a resume marker — read the full chain regardless.
 

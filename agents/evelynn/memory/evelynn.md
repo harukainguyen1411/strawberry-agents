@@ -197,7 +197,7 @@ Post-compact #3 continuation. Landed PR #33 (inbox-write-guard), cleaned stale R
 ### Delta notes
 
 - **inbox-write-guard shipped** — PR #33 merged (`3911b38`). Direct inbox writes now blocked at the PreToolUse layer; all inbox delivery must go through `/agent-ops send`. Three Senna review rounds; env-var bypass fix on round 3.
-- **One true gate confirmed** — Pre-commit plan-promote-guard is dead. CLAUDE.md Rule 19 + `architecture/plan-lifecycle.md` cleaned of stale references (`3e0c3d9` + `f3dd1f4`). PreToolUse is the sole enforcement layer.
+- **One true gate confirmed** — Pre-commit plan-promote-guard is dead. CLAUDE.md Rule 19 + `architecture/agent-network-v1/plan-lifecycle.md` cleaned of stale references (`3e0c3d9` + `f3dd1f4`). PreToolUse is the sole enforcement layer.
 - **trust-but-verify codified** — Incident: Ekko returned a result contradicting the frozen deployed S2 contract. Rule added to both coordinator CLAUDE.md: re-verify via a distinct method before acting on any subagent result that contradicts established facts, Duong's expectations, or a parallel agent's result.
 - **plan-lifecycle-physical-guard → implemented** (`dad23a3`). **orianna-gate-simplification → implemented** (`0314b3d`, plan rewritten at `6c18579` to reflect physical-guard design).
 - **agent-owned-config-flow**: Swain rewrote ADR against frozen S2 (`4f88b90`), promoted to approved (`79981e1`), Aphelios breakdown inline (`4bb30da`/`2944958`). Ready for Viktor/Jayce.
@@ -454,7 +454,7 @@ CI hygiene + identity-gap solved. Killed auto-rebase cascade (PR #51). Closed 16
 
 - Add to Infrastructure: `strawberry-reviewers` is the reviewer-bot GitHub account. PAT age-encrypted at `secrets/encrypted/reviewer-github-token.age`. Reviewers MUST authenticate via `scripts/reviewer-auth.sh` — never raw `gh pr review` which auths as `Duongntd` and hits self-review rejection. 90-day PAT expiry; day-80 rotation reminder ~2026-07-18. Write on both repos (intended Read on strawberry-agents but UI downgrade failed; non-critical since it's reviewer-only token scoped to strawberry-app).
 - Add to Infrastructure: `.firebaserc` now at repo root with `default: myapps-b31ea`. Fixes firebase CLI "no active project" errors on preview workflows that run from repo root.
-- Remove from Infrastructure / Open Threads: auto-rebase workflow (deleted PR #51). Stale-branch pattern now documented in `architecture/git-workflow.md` as on-demand `gh pr update-branch`.
+- Remove from Infrastructure / Open Threads: auto-rebase workflow (deleted PR #51). Stale-branch pattern now documented in `architecture/agent-network-v1/git-workflow.md` as on-demand `gh pr update-branch`.
 - Add to Protocols: reviewer agents (Senna, Lucian) MUST invoke reviews via `scripts/reviewer-auth.sh gh pr review ...`. Sign body with `— Senna` / `— Lucian` for persona attribution. Executors still auth as `Duongntd` for all other ops.
 - Add to Sessions list (line ~80): 2026-04-19 (S56, cli, direct mode, evening): CI hygiene + identity-gap solved. Killed auto-rebase cascade (PR #51), closed 16 Dependabot PRs, merged P1.2 (#25) + P1.4 (#26) + e2e-scope (#48) + email-guard (#20) + firebaserc fix (#52). Built `strawberry-reviewers` bot identity end-to-end with age-encrypted PAT + `scripts/reviewer-auth.sh` + updated Senna/Lucian defs. Smoke test PASS. Rule 18 structurally satisfiable by agent-only flows now.
 
