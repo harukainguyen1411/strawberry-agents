@@ -101,9 +101,53 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 
 <!-- sessions:auto-below -->
 
-# Session 2026-04-24 → 2026-04-25 (84b7ba50, hands-off slow-track)
+## Session 2026-04-25 (f993d23d, hands-off normal track)
 
-One-line summary: post-compact runway with PR #32 cleared, P2 Phase-1 inventory landed, P1 paused on Duong's question about existing-API alternatives.
+One-line summary: PR #47 (T-new-E decrypt-exec test) merged; PR #48 (T-new-D Slack start.sh) opened + Lucian APPROVED but Senna REQUEST_CHANGES (C1 path blocker); PR #32 conflict resolved locally but push blocked by 6 pre-existing TDD failures (Viktor in flight); self-invite ADR Skarner dig confirmed SuperAdmin path + Swain #108 paused; inbox-watch canonical method documented + gap flagged; cleaner-stitching false-positive forwarded to Evelynn.
+
+### Delta notes
+
+- **PR #47 MERGED** at `5081069` (T-new-E secretary ADR). Both reviewer paths green: Senna (`strawberry-reviewers-2`) + Lucian (`strawberry-reviewers`) formal APPROVEs. Worktree identity leak: Senna commit `d7d6793e` authored as `Orianna` — known class, Evelynn-side fix.
+- **PR #48 opened** (T-new-D): Ekko xfail `51843cd2` + impl `29dbd9a9`. Lucian APPROVE clean. Senna C1 blocker: wrong path (personal-repo `mcps/slack/` TS MCP) — work-repo canonical start.sh needed. D2 drift: server.ts may not consume `SLACK_BOT_TOKEN`.
+- **Viktor PR #32 conflict**: merge commit `dd8f164` LOCAL only. Pre-push blocked by 6 pre-existing failures from earlier commits. Viktor re-dispatched for xfail/fix/investigate.
+- **Self-invite ADR**: Skarner confirmed SuperAdmin primary path + scaffolded-DRY fallback. Critical path T0→T1→T13→T14→T15→T16. Swain #108 paused on open question re existing SuperAdmin-grant flow.
+- **Inbox-watch**: canonical `CLAUDE_AGENT_NAME=sona bash scripts/hooks/inbox-watch.sh` documented. Bootstrap no-op gap flagged as Karma work for Evelynn.
+- **Mode drift**: started as slow-track, corrected by Duong mid-session to normal track ("find the balance").
+- **New open thread**: inbox-watch startup-chain gap added to open-threads.md.
+
+## Session 2026-04-25 (a3c891b2, hands-off normal track, second post-compact leg)
+
+One-line summary: T.P1.14 Ekko deploy landed clean (5 Cloud Run revisions green); T-new-D canonical Slack wrapper shipped via PR #54 (third attempt, merged); Akali QA on PR #32 FAIL (F1 factory_bridge v1 wiring + F2 .env.local baked into Docker image); self-invite ADR archived + SuperAdmin bootstrap-from-zero correction from Swain; secretary ADR promoted in-progress with universal scope rule.
+
+### Delta notes
+
+- **T.P1.14 Ekko deploy COMPLETE** — demo-factory-00012-9mg (FACTORY_REAL_BUILD=1), demo-studio-00029-8bk, demo-config-mgmt-00014-2bn, demo-studio-verification-00005-756, demo-preview-00010-ff4. No rollbacks.
+- **PR #54 (T-new-D) MERGED** — canonical work-repo Slack start.sh wrapper. Senna + Lucian formal-APPROVE. Three polish residuals folded as future-work. T-new-D is done.
+- **Akali QA FAIL on company-os PR #32** — F1: `tool_dispatch.py:127` imports v1 module; v1 approved-guard has no UI route; v1 has unimplemented `factory_client.start_build`. F2: `.env.local` baked into Docker image hardcodes `http://localhost:8090`. PR #32 merge gate unmet. Design call on F1 pending Duong.
+- **Self-invite ADR archived** — `plans/archived/work/2026-04-24-self-invite-to-walletstudio-org.md` via Orianna `3b69faf1`. Runbook at `assessments/work/2026-04-25-superadmin-self-invite-runbook.md`.
+- **SuperAdmin path correction** — `Config.SuperAdmin` is not a rego override; OPA never injects it. Bootstrap-from-zero requires direct `users_orgs` DB write. Runbook needs supplement.
+- **Secretary ADR in-progress** — `baf56941` with universal scope rule §0. PR #54 completes T-new-D.
+- **Slack-ping protocol corrected** — fired `mcp__slack__notify_duong` before compact (ts `1777101622.324479`). Prior inversion corrected: remote-control → user NOT at CLI → Slack ping MORE appropriate.
+- **Yuumi QA-report dispatch queued** — write Akali findings to `assessments/qa-reports/` (Akali hard-rule blocked self-write).
+
+# Session 2026-04-25 c1463e58 — post-compact second leg, end-session
+
+**Mode:** hands-off normal track
+**Closed:** 08:15 UTC
+
+**One-line summary:** Verified PR #32 RUNWAY F1+F2 (after a self-inflicted wrong-worktree detour falsely accused Akali of fabricating findings); shipped fix via PR #119 with Senna LGTM + Lucian APPROVE; clean window.
+
+## Working-pattern deltas to fold at next consolidation
+
+- **"Verify the verify" reflex**: when an agent's findings drive a state-mutating dispatch, the verify step is mandatory at the coordinator hop, AND the verify itself must include a sanity check that I'm reading the right tree/branch/commit. Today's failure: I verified against `feat/p1-t13b-demo-ready-panel` HEAD instead of PR #32's actual head `ab51372` on `feat/demo-studio-v3`, and built a wrong "Akali confabulated" narrative on that bad foundation. Fix: always confirm `<branch> @ <sha>` matches the PR head before declaring an agent's findings false.
+- **Post-/compact summary is not source of truth**: my own post-compact summary baked Akali's chat-text findings into "verified facts" and the deliberation primitive doesn't fire on "internalizing your own summary." The dispatch I made off that summary was the natural downstream consequence. Treat any inherited-context fact that drives a dispatch as still-suspect until verified this session.
+- **Sister-fix asymmetry tracking**: when I send Evelynn three structural fixes and one ships, I should re-raise the unshipped two when their failure mode recurs — not assume "in queue" means "tracked." Today the Akali post-use verify discipline I asked for on 2026-04-23 was still un-shipped; recurrence today is a foreseeable consequence.
+
+## Cross-references
+
+- Transcript: `agents/sona/transcripts/2026-04-25-c1463e58.md`
+- Handoff shard: `agents/sona/memory/last-sessions/2026-04-25-c1463e58.md`
+- Prior leg: `agents/sona/memory/sessions/2026-04-25-a3c891b2.md` (Lissandra)
 
 ## Delta notes for next consolidation
 
