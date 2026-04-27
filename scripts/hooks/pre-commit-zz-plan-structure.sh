@@ -382,12 +382,16 @@ validate_qa_plan() {
 }
 
 # ---------------------------------------------------------------------------
-# validate_plan_content <content> <staged-path>
+# validate_plan_content <content> <staged-path> [is_new_file]
 # Returns 0 if valid, 1 if any validation fails.
+# is_new_file: "1" = file is newly added (A in diff-filter); "0" or omitted = modified.
+# The §QA Plan check is forward-only: applied only to newly added files (OQ#7(b)).
+# Modifications to pre-existing approved plans are grandfathered.
 # ---------------------------------------------------------------------------
 validate_plan_content() {
   local content="$1"
   local staged_path="$2"
+  local is_new_file="${3:-0}"
   local rc=0
 
   # priority + last_reviewed only apply to proposed plans
@@ -402,8 +406,11 @@ validate_plan_content() {
     validate_last_reviewed "$last_reviewed" "$staged_path" || rc=1
   fi
 
-  # §QA Plan check applies to proposed and approved plans
-  if is_proposed_or_approved_path "$staged_path"; then
+  # §QA Plan check applies to proposed and approved plans, but only for newly
+  # added files (forward-only enforcement per ADR §OQ#7(b)).
+  # Orianna's git mv shows as an A+D pair, so the destination is "added" — new
+  # promotions are correctly gated. Modifications to existing plans are exempt.
+  if [ "$is_new_file" = "1" ] && is_proposed_or_approved_path "$staged_path"; then
     validate_qa_plan "$content" "$staged_path" || rc=1
   fi
 
@@ -414,13 +421,19 @@ validate_plan_content() {
 # Main — two modes
 # ---------------------------------------------------------------------------
 
-# Test-fixture mode: --fixture-path <file> --staged-path <path>
+# Test-fixture mode: --fixture-path <file> --staged-path <path> [--is-new]
 if [ "${1:-}" = "--fixture-path" ]; then
   fixture_file="${2:-}"
   staged_path="${4:-}"  # --staged-path is arg 3, value is arg 4
+  fixture_is_new="1"   # default: treat fixture as a new file (tests the full gate)
+
+  # Allow --is-new 0 to simulate a status-M modification (grandfathered file)
+  if [ "${5:-}" = "--is-new" ]; then
+    fixture_is_new="${6:-1}"
+  fi
 
   if [ -z "$fixture_file" ] || [ -z "$staged_path" ]; then
-    printf '%s usage: --fixture-path <file> --staged-path <path>\n' "$REJECT_PREFIX" >&2
+    printf '%s usage: --fixture-path <file> --staged-path <path> [--is-new 0|1]\n' "$REJECT_PREFIX" >&2
     exit 1
   fi
 
@@ -430,7 +443,7 @@ if [ "${1:-}" = "--fixture-path" ]; then
   fi
 
   content="$(cat "$fixture_file")"
-  validate_plan_content "$content" "$staged_path"
+  validate_plan_content "$content" "$staged_path" "$fixture_is_new"
   exit $?
 fi
 
@@ -440,6 +453,20 @@ _staged="$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null)" || true
 if [ -z "$_staged" ]; then
   exit 0
 fi
+
+# Build the set of newly-added files (A only) for forward-only §QA Plan gating.
+_added="$(git diff --cached --name-only --diff-filter=A 2>/dev/null)" || true
+
+_is_added() {
+  local _f="$1"
+  local _line
+  while IFS= read -r _line; do
+    [ "$_line" = "$_f" ] && return 0
+  done <<ADDED_EOF
+$_added
+ADDED_EOF
+  return 1
+}
 
 _rc=0
 while IFS= read -r staged_file; do
@@ -456,7 +483,10 @@ while IFS= read -r staged_file; do
     continue
   }
 
-  validate_plan_content "$content" "$staged_file" || _rc=1
+  _new=0
+  _is_added "$staged_file" && _new=1
+
+  validate_plan_content "$content" "$staged_file" "$_new" || _rc=1
 done <<EOF
 $_staged
 EOF
