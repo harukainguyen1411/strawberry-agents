@@ -254,14 +254,27 @@ The project DoD targets the happy path; failure UX is out of scope. The followin
 
 ### Component states (extends ADR-1's table)
 
-| State | Bar | Label | Visible? |
-|---|---|---|---|
-| build `complete` (handoff) | 100% briefly | "Build complete" | visible 1.5 s, then resets |
-| verify (no events yet) | indeterminate | "Verifying demo…" | visible |
-| verify (category N) | determinate, value = (N-1)/8 → N/8 | "{D4 label table copy}" | visible |
-| verify `pass` | 100% green | "Verification passed" | visible until dismissed or new build |
-| verify `fail` | 100% amber | "Verification completed with issues — {N} failed" | visible until dismissed |
-| verify `error` | last value, red | "Verification could not run — {reason}" | visible until dismissed |
+| State | Bar | Label | Visible? | `verificationStatus` (D6) |
+|---|---|---|---|---|
+| build `complete` (handoff) | 100% briefly | "Build complete" | visible 1.5 s, then resets | n/a (build phase) |
+| verify (no events yet) | indeterminate | "Verifying demo…" | visible | `in_progress` |
+| verify (category N) | determinate, value = (N-1)/8 → N/8 | "{D4 label table copy}" | visible | `in_progress` |
+| verify (no events for >30 s, watchdog not yet fired) | last value held, **subtle pulse** on the bar | "Still verifying — this can take up to a minute…" | visible | `in_progress` |
+| verify `pass` (`verify_complete`, `report.status === "pass"`) | 100% green | "Verification passed" | visible until dismissed or new build | `pass` |
+| verify `fail` (`verify_complete`, `report.status === "fail"`) | 100% amber | "Verification completed with issues — {N} failed" | visible until dismissed | `fail` |
+| verify `error` (`verify_error` event from S4) | last value, red | "Verification could not run — {reason}" | visible until dismissed | `failed` |
+| verify `stalled` (BFF watchdog fired, no S4 event) | last value, red | "Verification timed out — please retry" | visible until dismissed | `failed` (`reason: stream_stalled`) |
+
+**Status-enum mapping note:** rows 5–6 are the **service-emitted terminal** states (`pass` / `fail` from `verify_complete.report.status`). Rows 7–8 are both **wrapper-side `failed`** in `verificationStatus` (D6 three-value enum: `pass` / `fail` / `failed`) — distinguished in UI by `reason`: row 7 = S4 `verify_error` event payload reason; row 8 = BFF watchdog `reason: stream_stalled`. UI must NOT render the raw enum string — copy is human-readable per row.
+
+### Reverify interaction (D7 idempotency)
+
+Per D7: `start_s4_verify_stream` is server-side idempotent — duplicate calls are server-side noops. The reverify trigger (button or programmatic) must reflect this client-side too:
+
+- **While `verificationStatus === 'in_progress'`** (or the SSE stream is open without a terminal event): any reverify trigger MUST be `disabled` with `aria-disabled="true"` and tooltip "Verification already in progress".
+- **On terminal states** (`pass` / `fail` / `failed`): reverify trigger is enabled. Click → optimistic UI (bar resets to indeterminate "Verifying demo…") + POST.
+- **Race protection:** if the user double-clicks reverify within ~250 ms, the button enters a transient disabled state until the first POST resolves (server-side idempotency catches the rest, but the UI should not appear stuck-clickable).
+- v1 has no reverify-without-rebuild path (per D6 forward-looking note); the trigger today only exists as a debug/ops affordance. T8/T9 may render it behind a feature flag if not in scope for the live flow.
 
 ### Responsive behavior
 
@@ -269,10 +282,12 @@ Inherited from ADR-1 §UX Spec (single-line desktop, label-wrap mobile, full con
 
 ### Accessibility (per process.md floor)
 
+- Bar element MUST carry `role="progressbar"` with `aria-valuenow` (0–100), `aria-valuemin="0"`, `aria-valuemax="100"`. During the indeterminate phase (no events yet), omit `aria-valuenow` and set `aria-busy="true"` instead.
 - `aria-valuetext` updates per category transition: `"Verifying demo, step 3 of 8, Checking demo journey"`.
-- Terminal status announce via `aria-live="polite"`: `"Verification passed"` / `"Verification completed with 2 issues"` / `"Verification could not run"`.
+- Terminal status announce via `aria-live="polite"`: `"Verification passed"` / `"Verification completed with 2 issues"` / `"Verification could not run"` / `"Verification timed out"`.
 - Color is not the sole carrier of pass/fail — label text is explicit.
-- Keyboard-dismissible in terminal states (Escape).
+- Keyboard-dismissible in terminal states (Escape). Tab order must not trap inside the progress region — focus stays managed by the host page; the component itself is non-interactive except for the dismiss control and the (terminal-state-only) reverify button.
+- Reverify button when disabled: `aria-disabled="true"` + accessible name "Reverify (in progress)" so screen-reader users hear the reason for the disabled state.
 
 ### Wireframe reference
 
