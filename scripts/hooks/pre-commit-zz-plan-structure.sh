@@ -31,9 +31,29 @@ set -u
 HOOK_NAME="pre-commit-zz-plan-structure"
 REJECT_PREFIX="[$HOOK_NAME]"
 
+# Derive repo root (needed for downstream_plan path validation).
+# In normal pre-commit mode this is the git repo root.
+# In fixture mode REPO_ROOT is overridable via env.
+if [ -z "${REPO_ROOT:-}" ]; then
+  REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)" || REPO_ROOT=""
+fi
+
 # ---------------------------------------------------------------------------
 # Validation helpers
 # ---------------------------------------------------------------------------
+
+# is_proposed_or_approved_path <staged-path>
+# Returns 0 if the path falls under plans/proposed/** or plans/approved/**, else 1.
+# Used to gate §QA Plan checks (D5 Surface 1 applies to proposed and approved).
+is_proposed_or_approved_path() {
+  local p="${1#./}"
+  case "$p" in
+    plans/proposed/*|plans/approved/*)
+      return 0
+      ;;
+  esac
+  return 1
+}
 
 # is_proposed_path <staged-path>
 # Returns 0 if the path falls under plans/proposed/**, else 1.
@@ -143,23 +163,319 @@ validate_last_reviewed() {
   return 1
 }
 
-# ---------------------------------------------------------------------------
-# validate_plan_content <content> <staged-path>
-# Returns 0 if valid, 1 if any validation fails.
-# ---------------------------------------------------------------------------
-validate_plan_content() {
+# _fence_open_len <line>
+# Prints the fence length (number of leading ` or ~ chars) if the line is a
+# fence opener/closer, else prints 0.  A fence is 3+ of the same character
+# (` or ~) optionally followed by an info string.
+_fence_open_len() {
+  local line="$1"
+  local char len
+  # Check backtick fence
+  char='`'
+  len=0
+  case "$line" in
+    '```'*)
+      len="$(printf '%s' "$line" | sed 's/[^`].*//' | awk '{print length}')"
+      ;;
+    '~~~'*)
+      char='~'
+      len="$(printf '%s' "$line" | sed 's/[^~].*//' | awk '{print length}')"
+      ;;
+  esac
+  if [ "$len" -ge 3 ]; then
+    printf '%s %s' "$char" "$len"
+  else
+    printf '0 0'
+  fi
+}
+
+# has_qa_plan_heading <content>
+# Returns 0 if content contains a "## QA Plan" heading line outside a fenced
+# code block (``` or ~~~ delimiters, matched by type and minimum length), else 1.
+has_qa_plan_heading() {
+  local content="$1"
+  local fence_char="" fence_len=0
+  while IFS= read -r line; do
+    if [ "$fence_len" -eq 0 ]; then
+      # Not inside a fence — check if this line opens one
+      local _fc _fl
+      read -r _fc _fl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+      if [ "$_fl" -ge 3 ]; then
+        fence_char="$_fc"
+        fence_len="$_fl"
+        continue
+      fi
+      case "$line" in
+        "## QA Plan"|"## QA Plan "*) return 0 ;;
+      esac
+    else
+      # Inside a fence — check if this line closes it (same char, same or longer)
+      local _cc _cl
+      read -r _cc _cl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+      if [ "$_cc" = "$fence_char" ] && [ "$_cl" -ge "$fence_len" ]; then
+        fence_char=""
+        fence_len=0
+      fi
+      continue
+    fi
+  done <<EOF
+$content
+EOF
+  return 1
+}
+
+# get_qa_plan_body <content>
+# Prints the body text between the first "## QA Plan" heading (outside a fenced
+# code block) and the next "## " heading (or EOF).
+# Uses the same fence-matching logic as has_qa_plan_heading (type + length).
+get_qa_plan_body() {
+  local content="$1"
+  local in_section=0
+  local fence_char="" fence_len=0
+  local body=""
+  while IFS= read -r line; do
+    if [ "$in_section" -eq 0 ]; then
+      # Before the §QA Plan heading — track fences to skip fenced heading look-alikes
+      if [ "$fence_len" -eq 0 ]; then
+        local _fc _fl
+        read -r _fc _fl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+        if [ "$_fl" -ge 3 ]; then
+          fence_char="$_fc"
+          fence_len="$_fl"
+          continue
+        fi
+        case "$line" in
+          "## QA Plan"|"## QA Plan "*) in_section=1 ;;
+        esac
+      else
+        local _cc _cl
+        read -r _cc _cl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+        if [ "$_cc" = "$fence_char" ] && [ "$_cl" -ge "$fence_len" ]; then
+          fence_char=""
+          fence_len=0
+        fi
+      fi
+      continue
+    fi
+    # Inside the section — stop at next ## heading.
+    # We collect everything including inner fences as body content.
+    case "$line" in
+      "## "*)
+        break
+        ;;
+    esac
+    body="${body}${line}
+"
+  done <<EOF
+$content
+EOF
+  printf '%s' "$body"
+}
+
+# is_qa_plan_body_nonempty <body>
+# Returns 0 if body contains at least one non-whitespace character, else 1.
+is_qa_plan_body_nonempty() {
+  local body="$1"
+  # Strip all whitespace; if anything remains, it's non-empty.
+  local stripped
+  stripped="$(printf '%s' "$body" | tr -d '[:space:]')"
+  [ -n "$stripped" ]
+}
+
+# get_ui_involvement <body>
+# Prints the value after "**UI involvement:**" (yes/no or other).
+# Returns 1 if the line is absent.
+# The literal prefix contains ** which are shell globs — use awk for safe extraction.
+get_ui_involvement() {
+  local body="$1"
+  local found=0
+  local val=""
+  while IFS= read -r line; do
+    # Use grep -F for literal string detection
+    if printf '%s' "$line" | grep -qF '**UI involvement:**'; then
+      # awk extracts the portion after the literal prefix (character count approach)
+      # prefix is 18 chars: **UI involvement:**
+      val="$(printf '%s' "$line" | awk '{ idx=index($0, "**UI involvement:**"); if (idx>0) print substr($0, idx+19) }')"
+      # Strip leading whitespace
+      val="${val#"${val%%[![:space:]]*}"}"
+      # Strip trailing whitespace
+      val="${val%"${val##*[![:space:]]}"}"
+      printf '%s' "$val"
+      return 0
+    fi
+  done <<EOF
+$body
+EOF
+  return 1
+}
+
+# validate_qa_plan <content> <staged-path>
+# Returns 0 if the §QA Plan section is valid, 1 otherwise.
+# Checks:
+#   1. qa_plan frontmatter is present (required or none).
+#   2. If qa_plan: required — ## QA Plan heading with non-empty body and valid **UI involvement:** yes|no.
+#   3. If qa_plan: none — qa_plan_none_justification: present AND downstream_plan: path present
+#      that resolves to proposed/, approved/, or in-progress/.
+validate_qa_plan() {
   local content="$1"
   local staged_path="$2"
   local rc=0
 
-  local priority
-  priority="$(extract_frontmatter_field "$content" "priority")" || true
+  local qa_plan_val
+  qa_plan_val="$(extract_frontmatter_field "$content" "qa_plan")" || true
 
-  local last_reviewed
-  last_reviewed="$(extract_frontmatter_field "$content" "last_reviewed")" || true
+  # Strip inline YAML comments and whitespace
+  qa_plan_val="${qa_plan_val%%#*}"
+  qa_plan_val="${qa_plan_val%"${qa_plan_val##*[![:space:]]}"}"
+  qa_plan_val="${qa_plan_val#"${qa_plan_val%%[![:space:]]*}"}"
 
-  validate_priority "$priority" "$staged_path" || rc=1
-  validate_last_reviewed "$last_reviewed" "$staged_path" || rc=1
+  if [ -z "$qa_plan_val" ]; then
+    printf '%s %s: qa_plan: frontmatter field required (required|none). See ADR D2/D5.\n' \
+      "$REJECT_PREFIX" "$staged_path" >&2
+    return 1
+  fi
+
+  case "$qa_plan_val" in
+    required)
+      # Must have ## QA Plan heading with non-empty body and **UI involvement:** yes|no
+      if ! has_qa_plan_heading "$content"; then
+        printf '%s %s: ## QA Plan section missing. qa_plan: required demands a populated ## QA Plan section. See ADR D2/D5.\n' \
+          "$REJECT_PREFIX" "$staged_path" >&2
+        return 1
+      fi
+
+      local qa_body
+      qa_body="$(get_qa_plan_body "$content")"
+
+      if ! is_qa_plan_body_nonempty "$qa_body"; then
+        printf '%s %s: ## QA Plan section is empty (whitespace-only). Populate the section per ADR D2. See ADR D2/D5.\n' \
+          "$REJECT_PREFIX" "$staged_path" >&2
+        return 1
+      fi
+
+      local ui_val
+      ui_val="$(get_ui_involvement "$qa_body")" || true
+
+      if [ -z "$ui_val" ]; then
+        printf '%s %s: ## QA Plan missing "**UI involvement:** yes|no" line. This line is required to route to the correct QA branch. See ADR D2/D5.\n' \
+          "$REJECT_PREFIX" "$staged_path" >&2
+        return 1
+      fi
+
+      # Normalize to lowercase for comparison
+      local ui_lower
+      ui_lower="$(printf '%s' "$ui_val" | tr '[:upper:]' '[:lower:]')"
+      case "$ui_lower" in
+        yes|no) ;;
+        *)
+          printf '%s %s: ## QA Plan "**UI involvement:** %s" is invalid — only "yes" or "no" are accepted. See ADR D2/D5.\n' \
+            "$REJECT_PREFIX" "$staged_path" "$ui_val" >&2
+          return 1
+          ;;
+      esac
+      ;;
+
+    none)
+      # Must have qa_plan_none_justification: field
+      local justification
+      justification="$(extract_frontmatter_field "$content" "qa_plan_none_justification")" || true
+      justification="${justification#"${justification%%[![:space:]]*}"}"
+      justification="${justification%"${justification##*[![:space:]]}"}"
+      # Strip surrounding quotes if present
+      case "$justification" in
+        '"'*'"') justification="${justification#\"}" ; justification="${justification%\"}" ;;
+        "'"*"'") justification="${justification#\'}" ; justification="${justification%\'}" ;;
+      esac
+
+      if [ -z "$justification" ]; then
+        printf '%s %s: qa_plan: none requires companion field qa_plan_none_justification:. See ADR D2/D5 OQ#4.\n' \
+          "$REJECT_PREFIX" "$staged_path" >&2
+        return 1
+      fi
+
+      # Must also have downstream_plan: frontmatter field
+      local downstream
+      downstream="$(extract_frontmatter_field "$content" "downstream_plan")" || true
+      downstream="${downstream#"${downstream%%[![:space:]]*}"}"
+      downstream="${downstream%"${downstream##*[![:space:]]}"}"
+      downstream="${downstream%%#*}"
+      downstream="${downstream%"${downstream##*[![:space:]]}"}"
+
+      if [ -z "$downstream" ]; then
+        printf '%s %s: qa_plan: none requires downstream_plan: <path> frontmatter field pointing at a plan in proposed/, approved/, or in-progress/. See ADR D2/D5 OQ#4a.\n' \
+          "$REJECT_PREFIX" "$staged_path" >&2
+        return 1
+      fi
+
+      # Validate the downstream plan path resolves to a valid lifecycle stage
+      case "$downstream" in
+        plans/proposed/*|plans/approved/*|plans/in-progress/*)
+          ;;
+        *)
+          printf '%s %s: downstream_plan: "%s" must point at a plan under plans/proposed/, plans/approved/, or plans/in-progress/. See ADR D5 OQ#4a.\n' \
+            "$REJECT_PREFIX" "$staged_path" "$downstream" >&2
+          return 1
+          ;;
+      esac
+
+      # Verify the downstream plan actually exists on disk (if we have a repo root)
+      if [ -n "$REPO_ROOT" ] && [ ! -f "$REPO_ROOT/$downstream" ]; then
+        printf '%s %s: downstream_plan: "%s" does not exist on disk. Path must resolve to an existing plan file. See ADR D5 OQ#4a.\n' \
+          "$REJECT_PREFIX" "$staged_path" "$downstream" >&2
+        return 1
+      fi
+      ;;
+
+    *)
+      printf '%s %s: qa_plan: value "%s" is not valid (must be "required" or "none"). See ADR D2/D5.\n' \
+        "$REJECT_PREFIX" "$staged_path" "$qa_plan_val" >&2
+      return 1
+      ;;
+  esac
+
+  return $rc
+}
+
+# ---------------------------------------------------------------------------
+# validate_plan_content <content> <staged-path> [is_new_file]
+# Returns 0 if valid, 1 if any validation fails.
+# is_new_file: "1" = file is newly added (A in diff-filter); "0" or omitted = modified.
+# The §QA Plan check is forward-only: applied only to newly added files (OQ#7(b)).
+# Modifications to pre-existing approved plans are grandfathered.
+# ---------------------------------------------------------------------------
+validate_plan_content() {
+  local content="$1"
+  local staged_path="$2"
+  local is_new_file="${3:-0}"
+  local rc=0
+
+  # priority + last_reviewed only apply to proposed plans
+  if is_proposed_path "$staged_path"; then
+    local priority
+    priority="$(extract_frontmatter_field "$content" "priority")" || true
+
+    local last_reviewed
+    last_reviewed="$(extract_frontmatter_field "$content" "last_reviewed")" || true
+
+    validate_priority "$priority" "$staged_path" || rc=1
+    validate_last_reviewed "$last_reviewed" "$staged_path" || rc=1
+  fi
+
+  # §QA Plan check applies to proposed and approved plans, but only for newly
+  # added files (forward-only enforcement per ADR §OQ#7(b)).
+  # Orianna's git mv shows as an A+D pair, so the destination is "added" — new
+  # promotions are correctly gated. Modifications to existing plans are exempt.
+  if [ "$is_new_file" = "1" ] && is_proposed_or_approved_path "$staged_path"; then
+    validate_qa_plan "$content" "$staged_path" || rc=1
+  fi
 
   return $rc
 }
@@ -168,23 +484,29 @@ validate_plan_content() {
 # Main — two modes
 # ---------------------------------------------------------------------------
 
-# Test-fixture mode: --fixture-path <file> --staged-path <path>
+# Test-fixture mode: --fixture-path <file> --staged-path <path> [--is-new]
 if [ "${1:-}" = "--fixture-path" ]; then
   fixture_file="${2:-}"
   staged_path="${4:-}"  # --staged-path is arg 3, value is arg 4
+  fixture_is_new="1"   # default: treat fixture as a new file (tests the full gate)
+
+  # Allow --is-new 0 to simulate a status-M modification (grandfathered file)
+  if [ "${5:-}" = "--is-new" ]; then
+    fixture_is_new="${6:-1}"
+  fi
 
   if [ -z "$fixture_file" ] || [ -z "$staged_path" ]; then
-    printf '%s usage: --fixture-path <file> --staged-path <path>\n' "$REJECT_PREFIX" >&2
+    printf '%s usage: --fixture-path <file> --staged-path <path> [--is-new 0|1]\n' "$REJECT_PREFIX" >&2
     exit 1
   fi
 
-  if ! is_proposed_path "$staged_path"; then
-    # Not a proposed path — skip validation.
+  if ! is_proposed_or_approved_path "$staged_path"; then
+    # Not a proposed/approved path — skip validation.
     exit 0
   fi
 
   content="$(cat "$fixture_file")"
-  validate_plan_content "$content" "$staged_path"
+  validate_plan_content "$content" "$staged_path" "$fixture_is_new"
   exit $?
 fi
 
@@ -195,11 +517,25 @@ if [ -z "$_staged" ]; then
   exit 0
 fi
 
+# Build the set of newly-added files (A only) for forward-only §QA Plan gating.
+_added="$(git diff --cached --name-only --diff-filter=A 2>/dev/null)" || true
+
+_is_added() {
+  local _f="$1"
+  local _line
+  while IFS= read -r _line; do
+    [ "$_line" = "$_f" ] && return 0
+  done <<ADDED_EOF
+$_added
+ADDED_EOF
+  return 1
+}
+
 _rc=0
 while IFS= read -r staged_file; do
   [ -z "$staged_file" ] && continue
 
-  if ! is_proposed_path "$staged_file"; then
+  if ! is_proposed_or_approved_path "$staged_file"; then
     continue
   fi
 
@@ -210,7 +546,10 @@ while IFS= read -r staged_file; do
     continue
   }
 
-  validate_plan_content "$content" "$staged_file" || _rc=1
+  _new=0
+  _is_added "$staged_file" && _new=1
+
+  validate_plan_content "$content" "$staged_file" "$_new" || _rc=1
 done <<EOF
 $_staged
 EOF
