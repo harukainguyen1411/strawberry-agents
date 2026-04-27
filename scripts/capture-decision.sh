@@ -178,12 +178,14 @@ if [ -f "$DB_LIB" ] && { [ -f "$_DB_WRITE_PATH" ] || [ -d "$(dirname "$_DB_WRITE
   . "$DB_LIB"
   # slug = decision_id with the leading YYYY-MM-DD- prefix stripped
   SLUG="$(printf '%s' "$DECISION_ID" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')"
+  # Escape single quotes in all interpolated values (SQL injection prevention).
+  _cdesc() { printf '%s' "${1//\'/\'\'}"; }
   SQL="INSERT OR IGNORE INTO decisions (coordinator, decided_at, slug, shard_path, summary)
        VALUES (
-         '${COORDINATOR}',
-         '${DECISION_DATE}',
-         '${SLUG}',
-         '${DEST}',
+         '$(_cdesc "$COORDINATOR")',
+         '$(_cdesc "$DECISION_DATE")',
+         '$(_cdesc "$SLUG")',
+         '$(_cdesc "$DEST")',
          'captured via decision-capture skill'
        );"
   db_open "$_DB_WRITE_PATH" 2>/dev/null || true
