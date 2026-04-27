@@ -153,6 +153,15 @@ Reviewer (Senna) confirms via code-check + Akali confirms via Playwright:
 - `create_new_session_ui` returns 5xx on seed failure with rollback or `creation_failed` marker on the Firestore doc (T2).
 - Preview iframe loads the seeded Allianz config visibly (S5 returns content, not 404) on the standard happy path within 4 s of redirect.
 
+### Happy path (user flow)
+
+The QA-side happy-path observation script (cross-references §UX Spec → User flow):
+
+1. User signs in with Google (`missmp.eu` test account) and lands in the Studio shell.
+2. User clicks "New session". `POST /session/new` returns 201; browser navigates to `/session/{sid}`.
+3. Within ~4 s of redirect, the preview iframe renders Allianz/DE branded content (Allianz blue `#003781` visible, `configVersion: v1` in the toolbar).
+4. No empty placeholder, no 404 error in the iframe, no spinner stuck > 4 s.
+
 ### Akali Playwright RUNWAY scope
 
 Per the project doc §ADR-sequencing block (the 2026-04-27 RUNWAY scope-gap learning), this ADR's QA scope **mandates** sign-in via Google as part of the test path. No nonce-URL bypass.
@@ -168,7 +177,7 @@ QA report path: `assessments/qa-reports/2026-04-27-adr-3-default-config-greenfie
 
 Figma-Ref: not required. Visual-Diff: not required.
 
-### Failure modes (regression guards)
+### Failure modes (what could break)
 
 - **S2 redeploy mid-session wipes config.** Accepted operational risk per D2. No code mitigation in v1; addressed long-term by Karma's Firestore-migration plan.
 - **Pre-existing sessions break.** No data migration; sessions created before this ADR are unaffected (their seed already happened or didn't, and TX1/TX2 only cover new sessions).
