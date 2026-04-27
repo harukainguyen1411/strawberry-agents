@@ -1,5 +1,6 @@
 # Ekko Learnings Index
 
+- 2026-04-27-stacked-xfail-impl-conflict-pattern.md — stacked xfail stub PR merges into base before impl PR → DIRTY conflict; resolve with git checkout --ours for stub-vs-real; additive conflicts (deploy.sh env vars) need manual combine; PreToolUse hook blocks git merge in worktrees without explicit authorization | last_used: 2026-04-27
 - 2026-04-27-filter-repo-secret-scrub.md — filter-repo strips remotes; use --force-with-lease=ref:sha for force-push without remote-tracking refs; pre-push-resolved-identity blocks rewritten branches containing Orianna commits (old SHA unreachable → walks full history) — Duong-manual push required | last_used: 2026-04-27
 - 2026-04-27-sync-verify-symmetric-expansion.md — sync→verify hooks must use symmetric depth-2 expansion; raw cat of a _shared/*.md file that ends with a depth-2 include marker produces apples-to-oranges comparison; use resolve_canonical() mirroring sync-shared-rules.sh logic | last_used: 2026-04-27
 - 2026-04-26-stale-branch-housekeeping.md — branch audit undercount: chore/ rakan/ talon/ in git status are worktree parent dirs not individual branches; full sweep deleted 21 local + 32 remote merged branches; worktree-agent locked branch cannot be deleted while worktree is active | last_used: 2026-04-26
