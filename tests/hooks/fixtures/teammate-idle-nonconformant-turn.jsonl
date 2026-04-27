@@ -1,0 +1,4 @@
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Start task T-prior"}]},"uuid":"turn-1-user","timestamp":"2026-04-27T10:00:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tu1","name":"SendMessage","input":{"type":"task_done","ref":"T-prior","summary":"T-prior complete"}}]},"uuid":"turn-1-asst","timestamp":"2026-04-27T10:01:00Z"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"Now start task T-current"}]},"uuid":"turn-2-user","timestamp":"2026-04-27T10:02:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tu2","name":"SendMessage","input":{"type":"status","message":"working on T-current — no completion marker yet"}}]},"uuid":"turn-2-asst","timestamp":"2026-04-27T10:03:00Z"}

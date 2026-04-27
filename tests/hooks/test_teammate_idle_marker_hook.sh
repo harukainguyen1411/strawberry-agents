@@ -89,6 +89,17 @@ CASE_D_SENDMSG='[{"type":"blocked","reason":"waiting for user input"}]'
 run_case "Case D: TeammateIdle with blocked marker stays silent" "silent" \
   "$CASE_D_EVENT" "$CASE_D_SENDMSG"
 
+# Case 5 (T2 impl — xfail flipped to pass): turn-scope regression.
+# HOOK_SENDMESSAGE_FILE represents the CURRENT TURN only (per-turn array convention).
+# Current turn has only a plain status update — no completion marker. Hook must warn.
+# Prior task_done from T-prior is excluded because the JSONL parser now scopes to
+# the current turn only; the per-turn override array must mirror that contract.
+# Ref: plans/approved/personal/2026-04-27-team-mode-t9-followups.md T2
+CASE_5_EVENT='{"hook_event_name":"TeammateIdle","session_id":"xyz789","transcript_path":"/tmp/nonexistent.jsonl","cwd":"/repo","permission_mode":"default"}'
+CASE_5_SENDMSG='[{"type":"status","message":"working on T-current"}]'
+run_case "Case 5: TeammateIdle with no marker on current turn warns (turn-scope regression)" "warn" \
+  "$CASE_5_EVENT" "$CASE_5_SENDMSG"
+
 # Summary
 total=$((pass + fail))
 printf '\n--- T8/T9-repair hook test summary ---\n'
