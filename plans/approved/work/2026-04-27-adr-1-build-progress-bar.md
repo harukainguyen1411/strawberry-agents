@@ -71,7 +71,7 @@ Frontend opens an `EventSource('/session/{sessionId}/logs')` whenever the sessio
 
 ### D2 — Define a thin **UI-progress contract** that wraps the raw factory event stream. Frontend never depends on factory wire-shape directly.
 
-Introduce a small frontend translator (`buildProgress.js` or a function block in `studio.js`) that consumes raw `event: build` chunks from `/logs` and produces a UI-progress object:
+Introduce a small frontend translator (`buildProgress.js` or a function block in `studio.js`) that consumes **pre-parsed** factory event objects (shape: `{type, step?, totalSteps?, name?, error?}`) and produces a UI-progress object. The frontend `EventSource` layer parses raw SSE chunks; the translator transforms parsed objects only — clean separation of parse-from-translate (resolved 2026-04-27 hands-off-autodecide for X1, decision log `2026-04-27-adr-1-breakdown-oqs.md`).
 
 ```ts
 type BuildProgress = {
@@ -129,6 +129,7 @@ Add a small read-only BFF endpoint `GET /session/{sessionId}/build-status`:
 - Returns `{buildId, status, step, totalSteps, stepName, projectUrl?, demoUrl?, error?}`.
 - For `status == "building"`: makes a single upstream `GET /build/{buildId}` call to factory, parses the latest step from response (factory documents this in `openapi.yaml`), returns it.
 - For terminal states: returns directly from session-doc fields (`status`, `projectUrl`, `demoUrl`, `error.reason`).
+- **No caching.** Two reloads in 5 seconds = two upstream factory calls. Single-user happy-path v1 doesn't justify defensive caching; revisit in v2 if real traffic shows hot-spotting (resolved 2026-04-27 hands-off-autodecide for X2, decision log `2026-04-27-adr-1-breakdown-oqs.md`).
 
 Frontend startup sequence on page-load with `status == "building"`: (1) call `/build-status` once → seed the bar; (2) open `EventSource('/session/{sessionId}/logs')` → fan in subsequent steps.
 
@@ -227,7 +228,7 @@ xfail-first test: reload page mid-build, assert `/build-status` is called once, 
 `kind: test`
 `estimate_minutes: TBD by Xayah`
 
-Pure-function tests of `applyEvent` against canned SSE chunk fixtures: `step_start`, `step_complete`, `step_error`, `build_complete`, `build_error`, malformed/unknown event names (must no-op without crash).
+Pure-function tests of `applyEvent` against canned **pre-parsed event objects** (per D2-X1 resolution): `step_start`, `step_complete`, `step_error`, `build_complete`, `build_error`, malformed/unknown event names (must no-op without crash). Rakan reads both this section and §Test plan (Xayah's TX-* tests) and unifies fixture names + mock-factory shape inline during xfail authoring — no upfront contract document needed (resolved 2026-04-27 hands-off-autodecide for K1, decision log `2026-04-27-adr-1-breakdown-oqs.md`).
 
 ### T8 — Component visual smoke (Lulu / Caitlyn)
 
@@ -242,6 +243,8 @@ Visual review of the rendered component on `feat/demo-studio-v3` deployment agai
 `estimate_minutes: TBD by Aphelios`
 
 Implement the 1.5s dwell + 200ms color-shift hard-swap mechanism on `build_complete`. ADR-1 ships the dwell timer and the color-shift CSS class; the `verify` mode of the same component is wired up later in ADR-2. Until ADR-2 lands, the post-hand-off slot shows a placeholder bar in `verify-green` with label "Verifying…" indeterminate. This is the documented seam between ADR-1 and ADR-2 — both ADRs amend the same component.
+
+**Implementation mechanism (X3 resolution 2026-04-27 hands-off-autodecide, decision log `2026-04-27-adr-1-breakdown-oqs.md`):** Use `element.classList.replace('progress--build', 'progress--verify')` on the same DOM node — DO NOT use `replaceChild` or any node-swap. The QA Plan FAIL guard explicitly forbids node-swap (TX-seam-2 hard-asserts DOM-node identity across the transition). Color values defined in CSS variables `--progress-build-color` / `--progress-verify-color`; the 200ms transition is a CSS `transition: background-color 200ms ease-out` on the bar element.
 
 ## Task breakdown (Aphelios)
 
