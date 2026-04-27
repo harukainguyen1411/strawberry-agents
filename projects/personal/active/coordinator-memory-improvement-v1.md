@@ -1,6 +1,6 @@
 ---
 slug: coordinator-memory-improvement-v1
-status: proposed
+status: active
 concern: personal
 scope: [personal, work]
 owner: duong
