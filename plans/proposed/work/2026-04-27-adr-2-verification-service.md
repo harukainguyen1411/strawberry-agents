@@ -414,7 +414,7 @@ xfail-first. Mid-verify reload: `/state` returns indeterminate seed; SSE re-open
 
 Visual review of verify states (in-progress / pass / fail / error) on `feat/demo-studio-v3` deployment.
 
-## Verification
+## Test plan
 
 - All Phase D unit + integration tests green in CI.
 - Akali QA Plan executes against `feat/demo-studio-v3` deployment with all checkpoints green.
