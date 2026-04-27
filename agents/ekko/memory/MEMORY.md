@@ -185,6 +185,8 @@
 
 - 2026-04-27 (ekko — Evelynn dispatch): Secret scrub via git-filter-repo. 5 secrets scrubbed from full history. Main rewritten: before=8ca4eadd, after=2b1d0a7f. Main force-pushed. PR branches vi/coord-memory-v1-T4a, T7a, viktor/T6b, jayce/T4b NOT pushed — blocked by pre-push-resolved-identity hook on Orianna-authored commits. Duong-manual push needed for 4 PR branches. Stale branches rakan/T3a, talon/T2b, viktor/T3b, vi/T2a absent from origin.
 
+- 2026-04-28 (ekko — Sona dispatch): Deployed demo-config-mgmt from feat/demo-studio-v3 HEAD e52c94c8 (PRs #130 schema-wire + #133 .gcloudignore fix). New revision: demo-config-mgmt-00017-f5n, 100% traffic. All 7 stg+prod smoke gates pass. /v1/schema returns 200, Content-Type: text/yaml, 19377 bytes, all canonical fields present (card, params, ipadDemo, journey, tokenUi), MOCK_SCHEMA_YAML absent. Rollback target: demo-config-mgmt-00015-c7b. Auth: static bearer token from DS_CONFIG_MGMT_TOKEN (NOT identity token — those return 401). No /__build_info endpoint on demo-config-mgmt; use git-sha Cloud Run label for SHA verification.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).

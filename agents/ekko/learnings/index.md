@@ -53,3 +53,4 @@
 - 2026-04-20-plan-promote-proposed-only.md — plan-promote.sh refuses non-proposed sources; approved → in-progress requires manual git mv + frontmatter rewrite | last_used: 2026-04-20
 - 2026-04-20-orianna-concern-subdir-fix.md — orianna-sign.sh path check was exact-match only; plan-promote.sh already had concern-subdir logic from prior session; smoke test was pre-existing 5/11 not 11/11 | last_used: 2026-04-20
 - 2026-04-20-agent-folder-cleanup.md — git rm only works on tracked files; untracked dirs need /bin/rm; git ls-files | xargs git rm -f for bulk removal; reksai has no learnings/ dir | last_used: 2026-04-20
+- 2026-04-28-demo-config-mgmt-schema-deploy.md — demo-config-mgmt uses static bearer token (DS_CONFIG_MGMT_TOKEN) not identity tokens; no /__build_info endpoint — use git-sha label; worktree-from-dirty-main pattern for clean deploys | last_used: 2026-04-28
