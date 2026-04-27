@@ -25,7 +25,6 @@ else
     PLAN_FILES=$(find "$SCAN_DIR" -name "*.md" 2>/dev/null | sort)
 fi
 
-refreshed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
 rows_in=0
 rows_out=0
 
@@ -70,7 +69,7 @@ for md_file in $PLAN_FILES; do
 
     db_write_tx "$DB_PATH" \
         "INSERT INTO plans_index (path,status,concern,owner,project,created,refreshed_at)
-         VALUES ('$rel_path_esc','$status_esc','$concern_esc','$owner_esc','$project_esc','$created_esc','$refreshed_at')
+         VALUES ('$rel_path_esc','$status_esc','$concern_esc','$owner_esc','$project_esc','$created_esc',strftime('%Y-%m-%d %H:%M:%f','now'))
          ON CONFLICT(path) DO UPDATE SET
            status=excluded.status, concern=excluded.concern,
            owner=excluded.owner, project=excluded.project,
@@ -83,9 +82,9 @@ duration_ms=$(( (t_end - t_start) * 1000 ))
 
 db_write_tx "$DB_PATH" \
     "INSERT INTO refresh_log (projection,last_refreshed_at,duration_ms,rows_in,rows_out)
-     VALUES ('plans_index','$refreshed_at',$duration_ms,$rows_in,$rows_out)
+     VALUES ('plans_index',strftime('%Y-%m-%d %H:%M:%f','now'),$duration_ms,$rows_in,$rows_out)
      ON CONFLICT(projection) DO UPDATE SET
-       last_refreshed_at=excluded.last_refreshed_at,
+       last_refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now'),
        duration_ms=excluded.duration_ms,
        rows_in=excluded.rows_in,
        rows_out=excluded.rows_out;"

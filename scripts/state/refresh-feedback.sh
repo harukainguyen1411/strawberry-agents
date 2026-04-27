@@ -22,7 +22,6 @@ else
     FEEDBACK_FILES=$(find "$REPO_ROOT/feedback" -name "*.md" 2>/dev/null | sort)
 fi
 
-refreshed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
 rows_in=0
 rows_out=0
 
@@ -59,7 +58,7 @@ for md_file in $FEEDBACK_FILES; do
 
     db_write_tx "$DB_PATH" \
         "INSERT INTO feedback_index (path,category,severity,status,refreshed_at)
-         VALUES ('$rel_path_esc','$category_esc','$severity_esc','$status_esc','$refreshed_at')
+         VALUES ('$rel_path_esc','$category_esc','$severity_esc','$status_esc',strftime('%Y-%m-%d %H:%M:%f','now'))
          ON CONFLICT(path) DO UPDATE SET
            category=excluded.category, severity=excluded.severity,
            status=excluded.status, refreshed_at=excluded.refreshed_at;"
@@ -71,9 +70,9 @@ duration_ms=$(( (t_end - t_start) * 1000 ))
 
 db_write_tx "$DB_PATH" \
     "INSERT INTO refresh_log (projection,last_refreshed_at,duration_ms,rows_in,rows_out)
-     VALUES ('feedback_index','$refreshed_at',$duration_ms,$rows_in,$rows_out)
+     VALUES ('feedback_index',strftime('%Y-%m-%d %H:%M:%f','now'),$duration_ms,$rows_in,$rows_out)
      ON CONFLICT(projection) DO UPDATE SET
-       last_refreshed_at=excluded.last_refreshed_at,
+       last_refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now'),
        duration_ms=excluded.duration_ms,
        rows_in=excluded.rows_in,
        rows_out=excluded.rows_out;"

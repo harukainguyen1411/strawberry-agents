@@ -56,7 +56,6 @@ for pr in data:
     print(f"{number}\t{repo}\t{title}\t{state}\t{author}\t{base_ref}\t{head_ref}\t{updated}")
 PYEOF
 
-refreshed_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "")
 rows_in=0
 rows_out=0
 
@@ -65,11 +64,11 @@ while IFS="	" read -r number repo title state author base_ref head_ref updated; 
     rows_in=$((rows_in + 1))
     db_write_tx "$DB_PATH" \
         "INSERT INTO prs_index (number,repo,title,state,author,base_ref,head_ref,updated_at,refreshed_at)
-         VALUES ($number,'$repo','$title','$state','$author','$base_ref','$head_ref','$updated','$refreshed_at')
+         VALUES ($number,'$repo','$title','$state','$author','$base_ref','$head_ref','$updated',strftime('%Y-%m-%d %H:%M:%f','now'))
          ON CONFLICT(number) DO UPDATE SET
            repo=excluded.repo, title=excluded.title, state=excluded.state,
            author=excluded.author, base_ref=excluded.base_ref, head_ref=excluded.head_ref,
-           updated_at=excluded.updated_at, refreshed_at=excluded.refreshed_at;"
+           updated_at=excluded.updated_at, refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now');"
     rows_out=$((rows_out + 1))
 done < "$TSV_FILE"
 rm -f "$TSV_FILE"
@@ -79,9 +78,9 @@ duration_ms=$(( (t_end - t_start) * 1000 ))
 
 db_write_tx "$DB_PATH" \
     "INSERT INTO refresh_log (projection,last_refreshed_at,duration_ms,rows_in,rows_out)
-     VALUES ('prs_index','$refreshed_at',$duration_ms,$rows_in,$rows_out)
+     VALUES ('prs_index',strftime('%Y-%m-%d %H:%M:%f','now'),$duration_ms,$rows_in,$rows_out)
      ON CONFLICT(projection) DO UPDATE SET
-       last_refreshed_at=excluded.last_refreshed_at,
+       last_refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now'),
        duration_ms=excluded.duration_ms,
        rows_in=excluded.rows_in,
        rows_out=excluded.rows_out;"
