@@ -73,6 +73,102 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-24 → 2026-04-25 (cli, hands-off + auto + course-corrected)
+
+UUID: c1463e58.
+
+### Summary
+Long session covering three intersecting workstreams: PR #44 (MCP consolidation + Slack Node 25 carry — MERGED), PR #45 (universal subagent git-identity-as-Duong — STUCK in round 4 architectural pivot), PR #46 (SessionStart:compact auto-continue — MERGED). Plus three Sona-FYI driven duong.md updates via Yuumi (hands-off three-track, briefing verbosity, Slack section deletion). Two backlog items surfaced from production failures: worktree-hooks propagation gap (#94), plan-lifecycle guard heredoc fail (#98).
+
+### Delta notes for next consolidation
+
+- **Working pattern (new):** when one reviewer in a dual-pair finds new critical issues across multiple rounds, the spec is wrong — escalate to a planner instead of dispatching another executor round. Senna 4 rounds on PR #45 was the trigger.
+- **Working pattern (new):** PreToolUse string-scanning is structurally weaker than pre-commit `git var GIT_AUTHOR_IDENT` for identity enforcement — shell expansion (`$()`, backticks, `eval`, `sh -c`) defeats lexical-only tokenization. Post-expansion is the only complete defense.
+- **Working pattern (new):** verbosity rule active — briefing/status-check responses default to high-level, 3-7 bullets, surface decisions, hide bookkeeping (task IDs, agent IDs, SHAs). Codified in duong.md.
+- **Known issue:** worktree-local hooks gap. `scripts/install-hooks.sh` doesn't propagate to `.git/worktrees/*/hooks/`. Causes Rule 19 + identity bypasses in production.
+- **Sessions list:** 2026-04-24/25 cli c1463e58 — 2 PRs merged, 1 stuck (#45 architectural decision pending Duong).
+
+## Session 2026-04-24 (S66, direct mode)
+
+**Session-id:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
+**Shard:** 4f8b78fd
+**Consolidated by:** Lissandra (pre-compact)
+
+Drove two ADR/plan cycles to `approved` (identity-leak via Karma, universal worktree-isolation via Azir), retired three vestigial artifacts (two pre-commit lints, Skarner write-mode), ran Syndra retired-rule sweep, cleaned orphan PR #104 artifacts, and recovered from Ekko 529 overload. Talon (identity-leak impl) and Kayn (worktree-isolation breakdown) both in-flight at compact boundary.
+
+**Delta notes:**
+- Coordinator-as-messenger anti-pattern self-caught and corrected mid-session.
+- STAGED_SCOPE encoding confirmed: NEWLINE-separated.
+- Sona inbox-monitor root cause identified; fix queued as Task #3.
+
+## Session 2026-04-24 (S66-P2, pre-compact 2)
+
+Second pre-compact consolidation of the 2026-04-24 session (session 5e94cd09). First pre-compact was bd910f2.
+
+**One-line summary:** PR #35 identity-leak fix merged; Slack MCP impl dispatched to Jayce (in flight); coordinator-boot-unification and universal worktree isolation plans landed and queued; Orianna simplicity WARN gate shipped.
+
+**Delta notes:**
+- PR #35 merged (`90c830012d`) — identity-leak fix, dual approval, fail-closed hardening live.
+- Slack MCP: Lux spec (11 tools) → Orianna approved (no WARN) → Orianna in-progress → Kayn 27-task breakdown → Jayce dispatched. In flight at compact boundary.
+- Coordinator-boot-unification: Azir ADR → Orianna promoted twice → Kayn 26-task breakdown. Queued after Slack MCP.
+- Universal worktree isolation: Kayn breakdown committed. Queued after Slack MCP (Duong explicit ordering).
+- Simplicity WARN gate: Syndra + Orianna step 6. Committed `f8e0288`.
+- New open item: personal-scope subagent identity mis-attribution (Kayn commits landed as `Orianna <orianna@strawberry.local>`).
+- Kayn worktree stale pid 31856 — cosmetic, deferred.
+- Sona inbox-monitor asymmetry subsumed into coordinator-boot-unification plan.
+
+## Session 2026-04-24 (S66 continued, direct mode — pre-compact 3)
+
+**Session ID:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
+**Consolidation UUID:** 683a3ab7
+**Prior shards this session:** 4f8b78fd, bd9bb7cc
+
+**Summary:** Four PRs shipped in a single session continuation: #36 (custom Slack MCP, dual-token → purposed-tool), #37 (universal worktree isolation opt-out flip + ADR to implemented), #38 (merge-back.sh polish), #39 (coordinator-boot-unification, Signal B retired). Agent-triggered /compact research closed without a plan (Remote Control built-in resolves the need). Sona flagged resume-identity drift; Karma drafting plan. Ekko running polish PR for PR #39 non-blocking findings.
+
+**Delta notes:**
+- Universal worktree isolation is now the system default (not opt-in). All dispatches auto-isolate unless explicitly opted out.
+- coordinator-boot.sh is live; Monitor-arming is stateless; Signal B heuristic is removed.
+- Resume-identity drift is the new open concern surfaced this segment.
+- Both background agents (Ekko, Karma) were in flight at consolidation time.
+
+## Session 2026-04-24 (S66 pre-compact 4, direct mode)
+
+**Session ID:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
+**Shard UUID:** 8df9ce09
+**Prior shards this session:** 4f8b78fd, bd9bb7cc, 683a3ab7
+
+One-line summary: Merged boot-unification polish (PR #40) and resume-identity fix (PR #41); codified cross-concern FYI pattern; commissioned and in-flighted reviewer-auth concern-split (Talon #59).
+
+Delta notes:
+- PR #40 merged (efd8be8b) — Ekko boot-unification polish after Senna REQUEST_CHANGES re-fix cycle.
+- PR #41 merged (360edeb9) — Karma/Talon quick-lane for resume-session coordinator-identity drift. Plan implemented at 3c1c4cde.
+- agent-network.md updated (5f894715) with mandatory cross-concern FYI rule.
+- Learning filed: 2026-04-24-sona-unprompted-cross-concern-fyi.md (pre-existing, this session practiced reciprocally).
+- Reviewer-auth concern-split commissioned (Karma → Orianna approve 4cefd75f → Talon #59 in-flight).
+- Slack-ping escalation protocol noted: Duong in hands-off mode.
+- Lucian Rule 12 drift note logged for future plan.
+
+## Session 2026-04-24 (S66 pre-compact 5, direct mode)
+
+**Session ID:** 5e94cd09-8304-4620-8351-5de0fd1cf5d1
+**Shard UUID:** 3bc945c0
+**Prior shards this session:** 4f8b78fd, bd9bb7cc, 683a3ab7, 8df9ce09
+
+One-line summary: Closed Rule 19 guard-hole (PR #43) and reviewer-auth concern-split (PR #42); scrubbed phantom plan-promote.sh refs; pruned 16 stale worktrees/clones; surfaced Slack MCP Node 25 ESM issue and MCP consolidation plan; Talon #82 + #85 in flight at compact.
+
+Delta notes:
+- PR #42 merged — reviewer-auth concern-split. Plan implemented at 22ec765a/063b8901.
+- PR #43 merged — Rule 19 pre-commit guard-hole closure. Plan implemented at e05b59be.
+- Ekko #71 pruned 16 stale directories (467dc48b cleanup cascade).
+- Yuumi #67 scrubbed 30 phantom plan-promote.sh references across 17 files (467dc48b, 465c5b9b).
+- Skarner #65 resolved checkbox-drift backlog item via existing Sona learning.
+- Karma #69 → Slack MCP Node 25 fix plan; Orianna approved.
+- Karma #70 → MCP consolidation plan; Orianna approved (a56cf300).
+- PR #187 (Duongntd/strawberry) closed unmerged — billing-blocked archive repo.
+- Karma #83 → subagent git-identity-as-Duong plan; Orianna #84 promoted to approved.
+- Talon #82 (MCP consolidation + Slack fix carry) and Talon #85 (git-identity) in flight at compact.
+- AST scanner false-positive on plan-path substrings in gh body args — workaround noted (--body-file).
+
 ## Session 2026-04-23 (c95a8d3b, cli, pre-compact #2)
 
 PR #30 (Orianna v2 gate simplification) merged; memory-flow ADR promoted to in-progress with full Xayah+Aphelios content; Ekko impersonation incident exposed structural identity-spoofing weakness; Karma authored two new plans (subagent-worktree-and-edit-only, plan-lifecycle-physical-guard); Duong's "one true god gate" principle articulated.
