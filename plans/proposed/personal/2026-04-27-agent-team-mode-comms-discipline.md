@@ -12,6 +12,7 @@ tier: quick
 complexity: quick
 orianna_gate_version: 2
 tests_required: true
+qa_plan: inline
 risk: moderate
 related_decisions:
   - 2026-04-27-team-mode-sendmessage-contract
