@@ -45,7 +45,7 @@ SQL="INSERT OR IGNORE INTO learnings (agent, coordinator, learned_at, slug, path
        '${LEARNED_AT}',
        '${SLUG}',
        '${LEARNING_PATH}',
-       $([ -n "$TOPIC" ] && printf "'%s'" "$TOPIC" || printf 'NULL')
+       nullif('${TOPIC}', '')
      );"
 
 db_open "$DB_PATH"

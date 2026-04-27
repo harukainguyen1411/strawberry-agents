@@ -169,26 +169,26 @@ fi
 
 # ---------------------------------------------------------------------------
 # DB write — projection into decisions table (non-fatal if DB unavailable)
+# ADR §D2: canonical default is ~/.strawberry-state/state.db; env var overrides.
 # ---------------------------------------------------------------------------
-if [ -n "${STRAWBERRY_STATE_DB:-}" ]; then
-  DB_LIB="${SCRIPT_DIR}/state/_lib_db.sh"
-  if [ -f "$DB_LIB" ]; then
-    # shellcheck source=/dev/null
-    . "$DB_LIB"
-    # slug = decision_id with the leading YYYY-MM-DD- prefix stripped
-    SLUG="$(printf '%s' "$DECISION_ID" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')"
-    SQL="INSERT OR IGNORE INTO decisions (coordinator, decided_at, slug, shard_path, summary)
-         VALUES (
-           '${COORDINATOR}',
-           '${DECISION_DATE}',
-           '${SLUG}',
-           '${DEST}',
-           'captured via decision-capture skill'
-         );"
-    db_open "$STRAWBERRY_STATE_DB" 2>/dev/null || true
-    db_write_tx "$STRAWBERRY_STATE_DB" "$SQL" 2>/dev/null || \
-      printf '[capture-decision] WARNING: DB write failed — markdown shard is source of truth\n' >&2
-  fi
+_DB_WRITE_PATH="${STRAWBERRY_STATE_DB:-${HOME}/.strawberry-state/state.db}"
+DB_LIB="${SCRIPT_DIR}/state/_lib_db.sh"
+if [ -f "$DB_LIB" ] && { [ -f "$_DB_WRITE_PATH" ] || [ -d "$(dirname "$_DB_WRITE_PATH")" ]; }; then
+  # shellcheck source=/dev/null
+  . "$DB_LIB"
+  # slug = decision_id with the leading YYYY-MM-DD- prefix stripped
+  SLUG="$(printf '%s' "$DECISION_ID" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')"
+  SQL="INSERT OR IGNORE INTO decisions (coordinator, decided_at, slug, shard_path, summary)
+       VALUES (
+         '${COORDINATOR}',
+         '${DECISION_DATE}',
+         '${SLUG}',
+         '${DEST}',
+         'captured via decision-capture skill'
+       );"
+  db_open "$_DB_WRITE_PATH" 2>/dev/null || true
+  db_write_tx "$_DB_WRITE_PATH" "$SQL" 2>/dev/null || \
+    printf '[capture-decision] WARNING: DB write failed — markdown shard is source of truth\n' >&2
 fi
 
 # ---------------------------------------------------------------------------

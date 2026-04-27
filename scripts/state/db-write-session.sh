@@ -44,10 +44,10 @@ SQL="INSERT OR IGNORE INTO sessions (id, coordinator, started_at, ended_at, shar
        '${ID}',
        '${COORDINATOR}',
        '${STARTED_AT}',
-       $([ -n "$ENDED_AT" ] && printf "'%s'" "$ENDED_AT" || printf 'NULL'),
+       nullif('${ENDED_AT}', ''),
        '${SHARD_PATH}',
-       $([ -n "$TLDR" ] && printf "'%s'" "$TLDR" || printf 'NULL'),
-       $([ -n "$BRANCH" ] && printf "'%s'" "$BRANCH" || printf 'NULL')
+       nullif('${TLDR}', ''),
+       nullif('${BRANCH}', '')
      );"
 
 db_open "$DB_PATH"
