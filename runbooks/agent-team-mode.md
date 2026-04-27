@@ -28,6 +28,20 @@ Agent({
 
 ---
 
+## Policy (mandatory for coordinators)
+
+From 2026-04-27 onward, coordinators (Evelynn, Sona) MUST use the Agent Team feature (`TeamCreate` + Agent dispatch with `team_name`) instead of one-shot background subagents for any work that may iterate.
+
+- **Spawn into a team, not as a one-shot.** Each new piece of work gets a `TeamCreate` with a descriptive `team_name`; agents are dispatched into that team and stay alive between turns.
+- **A task is "FULLY done" only when the entire build → review → re-review loop has converged green.** If a reviewer requests changes, the build agent's task is NOT done — another change-and-re-review turn must occur on the same teammate before shutdown. Same for QA: a FAIL verdict means the implementer's task is not done; re-dispatch them in-team for the fix.
+- **On full completion, shut down explicitly.** Send `{type: "shutdown_request"}` via `SendMessage` to each teammate, then `TeamDelete` to remove the team. Do not leave idle teammates lingering across unrelated work.
+- **Never declare "done" on partial loop state.** "Code shipped, awaiting review" is not done. "Reviewer LGTM but Akali pending" is not done. "Akali FAIL, fix dispatched" is not done. Done = green-on-all-gates AND merged AND no follow-on rework outstanding.
+- **Fallback exception list.** Ad-hoc one-shot Agent dispatches remain acceptable only for read-only excavation (Skarner), errands (Yuumi), single-pass status probes, and Lissandra/Orianna script-style invocations — work that genuinely cannot iterate.
+- **Fallback requires a justification trail.** Every fall back to bg one-shot dispatch (outside the exception list above) requires a decision-log entry under `agents/<coordinator>/memory/decisions/log/<date>-<slug>.md` documenting (i) which team-mode failure mode fired, (ii) what the fallback dispatch was, (iii) whether a follow-up plan or learning is needed.
+- **Escape hatch when team mode itself is broken.** If `TeamCreate` errors or teammate spawn returns a hex agentId / missing `members[]` / no `<teammate-message>` reply, fall back to bg one-shot AND log a decision-log entry titled `team-mode-unavailable-<reason>`. No special flag or sentinel file needed.
+
+---
+
 ## Settings — what controls backend selection
 
 `~/.claude/settings.json`:
@@ -39,7 +53,7 @@ Agent({
 | `teammateMode` | `"tmux"` | Force tmux backend. Fails (`"Failed to create swarm session: Unknown error"`) if tmux is uninstalled. |
 | `teammateMode` | `"it2"` | **Aspirational only** — documented at `code.claude.com/docs/en/agent-teams` but not shipped in v2.1.119. Do not use. |
 
-**Current repo state (2026-04-27):** tmux uninstalled (`brew uninstall tmux`), `teammateMode: "auto"` → all teammates route in-process. Empirically verified.
+**Current repo state (2026-04-27, post-reinstall):** tmux 3.6a is installed at `/opt/homebrew/bin/tmux`, `teammateMode: "auto"`. Teammates still route in-process because the parent CLI is not launched from inside a tmux session — `auto` only selects tmux when the parent is already inside one. To exercise the tmux backend, launch `claude` from inside `tmux new -s claude`.
 
 ---
 
@@ -136,6 +150,12 @@ Agent({
 6. Teardown when done: `SendMessage({to: "<name>", message: {type: "shutdown_request"}})` for each teammate, then `TeamDelete()`.
 
 ---
+
+## Operational hygiene
+
+- **Shut down idle teammates promptly when their work is done.** Do not let teammates linger across unrelated work — they consume context window and quietly accumulate stale state. Per the loop-convergence rule in `## Policy` above, "done" means green-on-all-gates AND merged AND no follow-on rework outstanding; once true, send `{type: "shutdown_request"}` to each teammate then `TeamDelete`.
+- **One team per coordinator session.** A lead can only manage one team at a time (per `## Failure modes` Failure 4). Tear down the previous team fully before `TeamCreate` for a new piece of work.
+- **Don't reuse teammates across unrelated work.** A teammate's context is shaped by its initial dispatch prompt. When the work topic shifts, shut them down and dispatch a fresh teammate rather than retasking — the fresh teammate gets a clean prompt aligned to the new work.
 
 ## Cross-references
 
