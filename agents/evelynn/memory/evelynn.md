@@ -529,7 +529,6 @@ Delta notes for next consolidation:
 - **Rule-18 working pattern confirmed**: Jhin advisory LGTM via `gh pr comment` + Duong merges via browser. Fold into protocols alongside "Reksai posts PR reviews as comments".
 - **Branch-from-main rule** for executors: never branch from a dependency's unmerged feature branch. Add to delegation protocols.
 - **Parallel Evelynns work** when tree territory is disjoint. First successful dual-stream session. Worth a working-pattern note.
-- **Background one-shots beat TeamCreate on serial PR→review→merge loops**. TeamCreate only when coordination/peer-DM/live-task-state is load-bearing.
 
 ## Session 2026-04-18 (S48, direct mode, Mac)
 
@@ -576,7 +575,6 @@ Portfolio v0 kickoff: ADR + tasks plan + test plan all promoted; Seraphine shipp
 - **Subagent MCP auth is per-spawn, not inherited.** Each subagent's MCP server is a separate process; OAuth at the parent level does not authenticate children. Plus the MCP client doesn't re-query `tools/list` after auth lands mid-spawn — the tool roster snapshots at spawn-start. Net: Figma/Discord MCP usage from subagents requires either per-spawn OAuth or pre-spawn tool roster definition + parent re-auth followed by child spawn. Document for the Lux + Bard MCP architecture conversations.
 - **Removing `tools:` field from agent def = inherit all tools** (Akali pattern). Used for Neeko + Ekko this session to grant Figma/Discord MCP access. Trade-off vs least-privilege; default for builder/designer agents that need broad tool access.
 - **Figma Starter plan ceiling:** 3 pages/file + ~5-call MCP tool-call rate limit per session. Pre-flight check before Figma materialization tasks. Free-tier rule still applies — paid upgrade is a gating question.
-- **TeamCreate ceremony is meaningful overhead.** For phase-gated work with 1-3 specialists per phase, background Agent spawns are simpler. Use TeamCreate only when the shared task-list view materially helps Duong/Evelynn track concurrent work across 4+ agents.
 - **Subagent context-death is the dominant failure mode at scale.** Tighter per-spawn scopes (4 tasks max for Sonnet builders), pre-baked answers for research detours (e.g., Jest xfail = `test.failing()`), and explicit "STOP after task X" instructions are the mitigations.
 - **DV0-1 RESOLVED:** portfolio v0 reuses `myapps-b31ea` (prod) / `myapps-b31ea-staging` (no new Firebase project).
 - **DV0-2 RESOLVED:** single-email allowlist `harukainguyen1411@gmail.com`, runtime-configurable via Firestore doc `config/auth_allowlist`. Adding the friend = doc edit, no redeploy.
