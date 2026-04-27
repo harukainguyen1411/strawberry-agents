@@ -13,7 +13,7 @@
 #   §5    coordinator column set correctly per invocation arg
 #   §6    Idempotency (UPSERT) — re-run with mutated note, assert update reflected
 
-# shellcheck disable=SC2317  # cleanup() called via trap — not a dead function
+# shellcheck disable=SC2329  # cleanup() called via trap — shellcheck 0.11+ uses SC2329
 
 set -euo pipefail
 
@@ -125,32 +125,45 @@ echo ""
 echo "§2.5 Evelynn source_ref content pins"
 
 # These headings exercise 4 distinct source_ref inference patterns:
-#   pr#NN  — "## PR #93 ..." (explicit PR number)
-#   named  — "## Dashboard Phase 1 — SHIPPED" (topic slug, no PR)
-#   plan   — "## Cornerstone Plan A (agent-feedback-system) — RESOLVED" (plan name ref)
-#   simple — "## canonical-v1 lock-watch" (plain descriptor, no PR/plan anchor)
+#   pr#NN  — "## PR #93 ..." → source_ref expected to contain "PR #93" or "T.P2.3"
+#   named  — "## Dashboard Phase 1 — SHIPPED" → source_ref contains "Dashboard Phase 1"
+#   plan   — "## Cornerstone Plan A (...)" → source_ref contains "agent-feedback-system"
+#   simple — "## canonical-v1 lock-watch" → source_ref contains "canonical-v1"
+#
+# Each LIKE substring is the *shortest distinctive fragment* that survives normalisation
+# (slug-ification, lowercasing, pr# extraction). Using the full heading would require
+# verbatim source_ref — but T7b infers source_ref from the heading, so only the
+# distinctive fragment is guaranteed to appear.
 EVELYNN_PINS=(
-  "PR #93 (T.P2.3 decision-rollup fidelity) — awaiting Senna r3"
-  "Dashboard Phase 1 — SHIPPED"
-  "Cornerstone Plan A (agent-feedback-system) — RESOLVED"
-  "Cornerstone Plan B (coordinator-decision-feedback) — MERGED"
-  "canonical-v1 lock-watch"
-  "PR #69 — RESOLVED"
-  "Inbox watcher PreToolUse hook — REMOVED"
+  "T.P2.3"
+  "Dashboard Phase 1"
+  "agent-feedback-system"
+  "coordinator-decision-feedback"
+  "canonical-v1"
+  "PR #69"
+  "Inbox watcher"
+)
+# Human-readable labels matching each pin above (for pass/fail messages)
+EVELYNN_PIN_LABELS=(
+  "PR #93 T.P2.3 (pr#NN pattern)"
+  "Dashboard Phase 1 — SHIPPED (topic slug)"
+  "Cornerstone Plan A agent-feedback-system (plan name)"
+  "Cornerstone Plan B coordinator-decision-feedback (plan name)"
+  "canonical-v1 lock-watch (plain descriptor)"
+  "PR #69 — RESOLVED (pr#NN short)"
+  "Inbox watcher PreToolUse hook — REMOVED (plain descriptor)"
 )
 
+i=0
 for pin in "${EVELYNN_PINS[@]}"; do
-  # source_ref may be exact heading text, a normalised slug, or an inferred pr/plan ref.
-  # We accept any non-null row whose source_ref contains the distinguishing substring.
-  # The substring chosen per pin is the most distinctive fragment that survives any
-  # reasonable normalisation (lowercasing, slug-ification, trimming).
-  hint=$(echo "$pin" | cut -c1-40)
+  label="${EVELYNN_PIN_LABELS[$i]}"
+  i=$((i + 1))
   count=$(db_read "$DB_PATH" \
     "SELECT COUNT(*) FROM open_threads WHERE coordinator='evelynn' AND source_ref LIKE '%$(echo "$pin" | sed "s/'/''/g")%';" 2>/dev/null || echo 0)
   if [ "$count" -ge 1 ]; then
-    pass "evelynn source_ref pin: '$hint...'"
+    pass "evelynn source_ref pin: '$label'"
   else
-    fail "evelynn source_ref pin missing: '$hint...' — regex misfire on this heading pattern?"
+    fail "evelynn source_ref pin missing: '$label' (substring: '$pin') — regex misfire?"
   fi
 done
 
@@ -188,24 +201,36 @@ echo "§3.5 Sona source_ref content pins"
 
 # Sona headings exercise: ALLCAPS topic (RUNWAY), date-tagged (S2 persistence),
 # resolution-tagged (RESOLVED), severity-tagged (HIGH SEVERITY), plain descriptor.
+# Each LIKE substring is the shortest distinctive fragment — not the full heading.
 SONA_PINS=(
-  "RUNWAY — E2E ship of demo-studio-v3 (live)"
-  "S2 persistence — in-progress (2026-04-24, shard ec53a0d6)"
-  "Work-reviewer identity model correction (2026-04-24, RESOLVED — standing rule update)"
-  "Plan lifecycle guard — heredoc false-close (2026-04-24, open, HIGH SEVERITY)"
-  "Co-authored-by Viktor leak on main (2026-04-24, open)"
-  "Self-invite ADR — in execution (2026-04-24, open)"
-  "Akali security breach — addressed (2026-04-24, shard ec53a0d6)"
+  "RUNWAY"
+  "S2 persistence"
+  "Work-reviewer identity"
+  "heredoc false-close"
+  "Viktor leak"
+  "Self-invite ADR"
+  "Akali security"
+)
+SONA_PIN_LABELS=(
+  "RUNWAY E2E ship (ALLCAPS topic)"
+  "S2 persistence in-progress (date-tagged)"
+  "Work-reviewer identity correction (RESOLVED)"
+  "Plan lifecycle guard heredoc false-close (HIGH SEVERITY)"
+  "Co-authored-by Viktor leak (plain descriptor)"
+  "Self-invite ADR (plain descriptor)"
+  "Akali security breach (plain descriptor)"
 )
 
+i=0
 for pin in "${SONA_PINS[@]}"; do
-  hint=$(echo "$pin" | cut -c1-40)
+  label="${SONA_PIN_LABELS[$i]}"
+  i=$((i + 1))
   count=$(db_read "$DB_PATH" \
     "SELECT COUNT(*) FROM open_threads WHERE coordinator='sona' AND source_ref LIKE '%$(echo "$pin" | sed "s/'/''/g")%';" 2>/dev/null || echo 0)
   if [ "$count" -ge 1 ]; then
-    pass "sona source_ref pin: '$hint...'"
+    pass "sona source_ref pin: '$label'"
   else
-    fail "sona source_ref pin missing: '$hint...' — regex misfire on this heading pattern?"
+    fail "sona source_ref pin missing: '$label' (substring: '$pin') — regex misfire?"
   fi
 done
 
@@ -271,6 +296,10 @@ if [ -n "$first_evelynn_ref" ]; then
 
   sentinel_before=$(db_read "$DB_PATH" \
     "SELECT note FROM open_threads WHERE coordinator='evelynn' AND source_ref='$(echo "$first_evelynn_ref" | sed "s/'/''/g")';" 2>/dev/null || echo "")
+
+  if [ "$sentinel_before" != "__SENTINEL_NOTE__" ]; then
+    fail "§6 UPSERT: sentinel UPDATE did not land (got: '$sentinel_before')"
+  fi
 
   err=$(run_migrate "$EVELYNN_FIXTURE" "evelynn" 2>&1); rc=$?
   if [ "$rc" -ne 0 ]; then
