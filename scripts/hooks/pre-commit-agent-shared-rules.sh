@@ -121,14 +121,23 @@ get_frontmatter_field() {
 
 # ---------------------------------------------------------------------------
 # Helper: extract inlined shared content from an agent file.
-# Returns everything below the <!-- include: _shared/<role>.md --> marker.
+# Returns lines between the <!-- include: _shared/<role>.md --> marker and
+# (a) the next <!-- include: --> line, or (b) EOF — whichever comes first.
+# This handles depth-2 nested includes (e.g. breakdown.md itself ends with
+# an <!-- include: --> for feedback-trigger.md; without this stop condition
+# the loop reads past the next top-level marker, producing a false-positive
+# drift error on any agent def with 2+ include blocks).
 # ---------------------------------------------------------------------------
 get_inlined_content() {
   local file="$1"
   local role="$2"
 
   awk -v marker="<!-- include: _shared/${role}.md -->" '
-    found { print; next }
+    found {
+      if ($0 ~ /^<!-- include: /) { exit }
+      print
+      next
+    }
     $0 == marker { found = 1 }
   ' "$file"
 }
