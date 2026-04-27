@@ -107,37 +107,34 @@ No Figma needed. The visible surface is one iframe rendering S5 content + an exi
 
 ## Tasks
 
-(High-level skeleton — no implementer assignment. Aphelios fills in `estimate_minutes` and substeps in breakdown.)
+Total estimate: ~155 minutes. Two parallel streams (xfails ‖ impl) after T1 (DONE). See §Dispatch at bottom.
 
-### T1 — Trigger fresh S2 deploy to land `--min-instances=1` on the live revision
+### QA Tasks
 
-`kind: ops`
+- [ ] **TQ1** — Akali Playwright RUNWAY per §QA Plan §Akali Playwright RUNWAY scope (sign-in → New session → preview iframe Allianz/DE within 4s). estimate_minutes: 45. Files: `assessments/qa-reports/2026-04-27-adr-3-default-config-greenfield.md` (new). DoD: video + per-step screenshots with observation narrative (Rule 16); QA report committed and linked from PR via `QA-Report:`. parallel_slice_candidate: wait-bound.
 
-Per D2: PR #117 is merged but the live S2 revision predates it. Run `tools/demo-config-mgmt/deploy.sh` (or equivalent) to roll a new revision. Verify via `gcloud run revisions list` that the new revision carries `--min-instances=1`. **No code change.** This is the load-bearing step — without it, ADR-3's "preview works immediately" guarantee does not hold.
+### Test Tasks (TDD — land before impl per Rule 12)
 
-### T2 — Surface seed failures from `create_new_session_ui` as 5xx
+- [ ] **TX1** — xfail integration test: happy path POST `/session/new` → 201, S2 has config keyed to `sessionId` with `brand="Allianz"`, `market="DE"`; `GET /session/{sid}/history` returns empty (no greeting). estimate_minutes: 25. Files: `tools/demo-studio-v3/tests/integration/test_session_create_seed.py` (new). DoD: test marked `@pytest.mark.xfail(reason="ADR-3 T-impl pending")`; mocks Anthropic at boundary; runs against fixture S2 instance; committed on `test/adr-3-session-seed-xfails` from `feat/demo-studio-v3`. parallel_slice_candidate: no.
+- [ ] **TX2** — xfail integration test: seed-failure → 5xx + rollback. Mock `config_mgmt_client.snapshot_config` to raise on both initial call and `force=True` retry. Assert `POST /session/new` returns 5xx; assert Firestore session doc is absent or marked `creation_failed`. estimate_minutes: 25. Files: `tools/demo-studio-v3/tests/integration/test_session_create_seed.py` (same file as TX1). DoD: `@pytest.mark.xfail(reason="ADR-3 T-impl pending")`; both initial and force-retry mocks asserted via call-count; committed on same test branch as TX1. parallel_slice_candidate: no.
 
-`kind: feature`
+### Implementation Tasks
 
-In `tools/demo-studio-v3/main.py:1854 create_new_session_ui`: replace the silent log-only branch in `_seed_s2_config`'s final-failure path with a 5xx response. Roll back (or mark `creation_failed`) the Firestore session doc that was created earlier in the handler — implementer picks the cleaner of the two given existing doc-already-written semantics. Existing toast/error UI on the studio shell shows the user the error.
+- [x] **T1** — Trigger fresh S2 deploy to land `--min-instances=1`. **DONE 2026-04-27** — revision `demo-config-mgmt-00015-c7b` live with `minScale: 1` (Ekko, 15:02 UTC). estimate_minutes: 0. Files: none. DoD: met. parallel_slice_candidate: no.
+- [ ] **T-impl** — Replace silent-swallow in seed-failure path with fail-loud + Firestore rollback/marker. In `tools/demo-studio-v3/main.py:1854 create_new_session_ui` (or inside `_seed_s2_config` — implementer's call): after `_seed_s2_config`'s internal retry (initial + `force=True`) both fail, return 5xx (`HTTPException(status_code=502, detail="session_seed_failed")` or equivalent) AND either `delete()` the Firestore session doc created earlier in the handler OR `update({"status": "creation_failed", "failure_reason": "..."})` — pick whichever is cleaner given doc-already-written semantics in the handler. Replace existing `logger.error("session_new_ui_seed_failed", ...)` log-only branch; keep the structured log line, add the new failure handling around it. estimate_minutes: 35. Files: `tools/demo-studio-v3/main.py` (~line 1854 region; `_seed_s2_config` if helper extraction is cleaner). DoD: TX1 + TX2 flip from xfail to pass; happy path 201 unchanged; failure path returns 5xx with no orphan Firestore doc (or doc with `creation_failed` marker); committed on `feat/adr-3-seed-fail-loud` from `feat/demo-studio-v3`. parallel_slice_candidate: no.
+- [ ] **T-merge** — Merge xfail branch into impl branch (or vice-versa per coordinator's pick), de-xfail TX1/TX2, run pytest green, open PR against `feat/demo-studio-v3`. estimate_minutes: 25. Files: `tools/demo-studio-v3/tests/integration/test_session_create_seed.py` (remove `@pytest.mark.xfail`). DoD: PR open with both `QA-Report:` (TQ1) and TX1/TX2 passing in CI; PR body cites ADR-3; pre-push hooks pass. parallel_slice_candidate: no.
 
-### T3 — Conditional: if Ekko's OQ-1 verification returns "S5 needs configVersion bump", add Firestore configVersion push
+### Dispatch
 
-`kind: feature` (conditional)
+Both worktrees base from `feat/demo-studio-v3` in `~/Documents/Work/mmp/workspace/missmp/company-os/`. Always `git pull` `feat/demo-studio-v3` before branching.
 
-If and only if OQ-1 resolves negatively: in `create_new_session_ui`, immediately after the successful `_seed_s2_config` and before returning, push `{configVersion: 1}` to `configs/{sessionId}` Firestore doc. Existing `studio.js:923` subscriber will refresh the iframe. If OQ-1 resolves positively, this task is dropped.
+| Stream | Branch | Tasks | Notes |
+|---|---|---|---|
+| Tests | `test/adr-3-session-seed-xfails` | TX1, TX2 | Land xfails first per Rule 12. Vi-tier. |
+| Impl  | `feat/adr-3-seed-fail-loud`      | T-impl | Jayce-tier. Can start in parallel with Tests stream — no shared file edits between branches. |
+| Merge/QA | `feat/adr-3-seed-fail-loud` (after merge of test branch) | T-merge, TQ1 | Serial after both upstream streams green. TQ1 wait-bound; can start once a Cloud Run revision of the impl branch is deployable. |
 
-### TX1 — xfail integration test: new session → seed in S2 → preview iframe renders
-
-`kind: xfail`
-
-`tools/demo-studio-v3/tests/integration/test_session_create_seed.py` (new). Per Rule 12. Asserts: after `POST /session/new` returns 201, S2 has a config keyed to `sessionId` with `brand == "Allianz"` and `market == "DE"`. Mocks Anthropic at boundary; uses test S2 instance.
-
-### TX2 — xfail integration test: seed-failure path returns 5xx
-
-`kind: xfail`
-
-Same file as TX1. Mocks `config_mgmt_client.snapshot_config` to raise on both initial and `force=True` retry. Asserts `POST /session/new` returns 5xx and Firestore session doc is either absent or marked `creation_failed`.
+T1 is DONE — coordinator skips it. T3 (conditional configVersion push) is dropped per OQ-1 RESOLVED.
 
 ## QA Plan
 
