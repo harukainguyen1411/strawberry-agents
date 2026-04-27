@@ -4,11 +4,18 @@ and shared rules files per the T6 enumeration in the plan.
 
 Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T6
 """
+import subprocess
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(
+    subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=Path(__file__).parent,
+        text=True,
+    ).strip()
+)
 PLAN_ID = "2026-04-27-agent-team-mode-comms-discipline"
 
 SONA_MEMORY = REPO_ROOT / "agents" / "sona" / "memory" / "sona.md"

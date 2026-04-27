@@ -5,11 +5,18 @@ the four marker types with the required schema.
 Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T1
 """
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(
+    subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=Path(__file__).parent,
+        text=True,
+    ).strip()
+)
 RUNBOOK = REPO_ROOT / "runbooks" / "agent-team-mode.md"
 
 PLAN_ID = "2026-04-27-agent-team-mode-comms-discipline"

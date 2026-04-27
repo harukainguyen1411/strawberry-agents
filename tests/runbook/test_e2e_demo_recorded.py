@@ -6,11 +6,18 @@ required schema elements.
 Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T10
 """
 import re
+import subprocess
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(
+    subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=Path(__file__).parent,
+        text=True,
+    ).strip()
+)
 ASSESSMENTS_DIR = REPO_ROOT / "assessments" / "personal"
 
 PLAN_ID = "2026-04-27-agent-team-mode-comms-discipline"

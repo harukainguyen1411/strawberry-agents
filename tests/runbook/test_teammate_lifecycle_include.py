@@ -4,11 +4,18 @@ and all 11 teammate-eligible agent defs embed the include marker.
 
 Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T3
 """
+import subprocess
 from pathlib import Path
 
 import pytest
 
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(
+    subprocess.check_output(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=Path(__file__).parent,
+        text=True,
+    ).strip()
+)
 SHARED_LIFECYCLE = REPO_ROOT / ".claude" / "agents" / "_shared" / "teammate-lifecycle.md"
 AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
 
