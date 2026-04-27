@@ -143,6 +143,48 @@ get_inlined_content() {
 }
 
 # ---------------------------------------------------------------------------
+# Helper: resolve the canonical content of a shared file, expanding any
+# depth-2 <!-- include: _shared/<nested>.md --> markers by inlining their
+# content (exactly as sync-shared-rules.sh:resolve_shared_content does).
+# This makes the canonical side comparable to what sync produces in agent defs.
+# Depth-3 markers (an include inside a depth-2 include) are an error.
+# Writes resolved content to stdout.
+# ---------------------------------------------------------------------------
+resolve_canonical() {
+  local shared_file="$1"
+
+  while IFS= read -r line; do
+    case "$line" in
+      "<!-- include: _shared/"*)
+        local nested_role="${line#<!-- include: _shared/}"
+        nested_role="${nested_role%.md -->}"
+        local nested_file="$SHARED_DIR/${nested_role}.md"
+
+        if [ ! -f "$nested_file" ]; then
+          warn "depth-2 nested shared file not found: _shared/${nested_role}.md (referenced from $(basename "$shared_file"))"
+          printf '%s\n' "$line"
+          continue
+        fi
+
+        if grep -q '<!-- include: _shared/' "$nested_file"; then
+          error "depth-3 nested include detected: _shared/${nested_role}.md (via $(basename "$shared_file")) — max depth is 2"
+          printf '%s\n' "$line"
+          continue
+        fi
+
+        cat "$nested_file"
+        local last_char
+        last_char="$(tail -c1 "$nested_file" | od -An -tx1 | tr -d ' \n')"
+        [ "$last_char" != "0a" ] && printf '\n'
+        ;;
+      *)
+        printf '%s\n' "$line"
+        ;;
+    esac
+  done < "$shared_file"
+}
+
+# ---------------------------------------------------------------------------
 # Determine which agent files to check:
 #   - When running as a pre-commit hook: check staged .claude/agents/*.md files
 #   - When called with --agents-dir (tests): check all *.md in that dir
@@ -212,7 +254,8 @@ while IFS= read -r agent_file; do
 
   # Extract inlined content (everything after the marker line)
   inlined="$(get_inlined_content "$agent_file" "$include_role")"
-  canonical="$(cat "$shared_file")"
+  # Resolve canonical with depth-2 expansion to match what sync-shared-rules.sh inlines
+  canonical="$(resolve_canonical "$shared_file")"
 
   if [ "$inlined" != "$canonical" ]; then
     error "$agent_basename: inlined shared content has drifted from _shared/${include_role}.md"

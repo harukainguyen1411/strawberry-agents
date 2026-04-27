@@ -43,6 +43,21 @@ SHARED
 
 This is the canonical beta block.
 SHARED
+
+  # Depth-2 fixture: alpha-with-nested ends with a depth-2 include marker.
+  # sync-shared-rules.sh would expand it to alpha-with-nested's prose + nested.md content.
+  cat > "$TMP_DIR/_shared/nested.md" <<'SHARED'
+# Nested shared content
+
+This is the canonical nested block (depth-2).
+SHARED
+
+  cat > "$TMP_DIR/_shared/alpha-with-nested.md" <<'SHARED'
+# Alpha-with-nested shared content
+
+This is the first part of alpha-with-nested.
+<!-- include: _shared/nested.md -->
+SHARED
 }
 
 teardown() {
@@ -140,4 +155,48 @@ FRONTMATTER
 
   run bash "$HOOK" --agents-dir "$TMP_DIR"
   [ "$status" -eq 0 ]
+}
+
+# ---------------------------------------------------------------------------
+# (e) Production-representative: _shared/alpha-with-nested.md ends with a
+#     depth-2 <!-- include: --> marker. sync-shared-rules.sh expands that
+#     marker and inlines nested.md content in the agent def. The hook's
+#     canonical side must resolve the same expansion; a raw cat would see
+#     the marker line where the agent has the nested content → false drift.
+# ---------------------------------------------------------------------------
+@test "(e) depth-2 in canonical: agent has sync-expanded content → no false-positive, exit 0" {
+  local agent_file="$TMP_DIR/agent-depth2-canonical.md"
+
+  # Build expanded content exactly as sync-shared-rules.sh would produce:
+  # alpha-with-nested prose (depth-2 marker stripped) + nested.md content.
+  local expanded
+  expanded="$(printf '%s\n' \
+    '# Alpha-with-nested shared content' \
+    '' \
+    'This is the first part of alpha-with-nested.' \
+    "$(cat "$TMP_DIR/_shared/nested.md")")"
+
+  cat > "$agent_file" <<FRONTMATTER
+---
+model: sonnet
+role_slot: devops-exec
+tier: single_lane
+name: TestAgent
+description: Synthetic agent def for depth-2 canonical expansion test.
+---
+
+# TestAgent
+
+Some preamble content.
+
+<!-- include: _shared/alpha-with-nested.md -->
+${expanded}
+FRONTMATTER
+
+  run bash "$HOOK" --agents-dir "$TMP_DIR"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"alpha-with-nested"* ]] || {
+    echo "FAIL: false-positive on depth-2 canonical expansion"
+    return 1
+  }
 }
