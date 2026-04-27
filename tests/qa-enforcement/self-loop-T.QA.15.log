@@ -19,69 +19,46 @@ $ bash scripts/hooks/pre-commit-zz-plan-structure.sh \
     --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
 ```
 
-**Exit code:** 1
+**Exit code:** 0 ✓ GREEN (after T.QA.6 fenced-block patch)
 
-**Stdout/stderr:**
-```
-[pre-commit-zz-plan-structure] plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md: ## QA Plan "**UI involvement:** yes | no" is invalid — only "yes" or "no" are accepted. See ADR D2/D5.
-```
+**Stdout/stderr:** *(no output)*
 
 ### 2. Linter against copy with real ## QA Plan section removed (reject attempt)
 
-Copy prepared: strip second `## QA Plan` heading and its body (lines 257–295 of original).
+Copy prepared: strip second `## QA Plan` heading and its body (line 257 onward, up to next `##`).
 
 ```
+$ awk 'NR==257{found=1} found && /^## / && NR>257{found=0} !found' \
+    plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md \
+  > /tmp/adr-no-qaplan.md
 $ bash scripts/hooks/pre-commit-zz-plan-structure.sh \
     --fixture-path /tmp/adr-no-qaplan.md \
     --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
 ```
 
-**Exit code:** 1
-
-**Stdout/stderr:**
-```
-[pre-commit-zz-plan-structure] plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md: ## QA Plan "**UI involvement:** yes | no" is invalid — only "yes" or "no" are accepted. See ADR D2/D5.
-```
-
-### 3. Linter against copy with ALL ## QA Plan occurrences removed (confirm different reject)
-
-```
-$ bash scripts/hooks/pre-commit-zz-plan-structure.sh \
-    --fixture-path /tmp/adr-no-qaplan-all.md \
-    --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
-```
-
-**Exit code:** 1
+**Exit code:** 1 ✓ (reject as expected)
 
 **Stdout/stderr:**
 ```
 [pre-commit-zz-plan-structure] plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md: ## QA Plan section missing. qa_plan: required demands a populated ## QA Plan section. See ADR D2/D5.
 ```
 
-## Finding
+## Finding (resolved by T.QA.6 patch)
 
-**Linter limitation discovered:** The linter does not skip content inside markdown fenced code blocks
+**Prior linter limitation:** The linter did not skip content inside markdown fenced code blocks
 (` ``` ` delimiters). This ADR contains a `## QA Plan` heading at line 120 inside a fenced code block
-(the D2 section's format-example). That embedded heading is detected as the first `## QA Plan`
+(the D2 section's format-example). That embedded heading was detected as the first `## QA Plan`
 occurrence; the body of that code-block section contains `**UI involvement:** yes | no` (the template
-placeholder), which fails the `yes|no` validation check.
+placeholder), which failed the `yes|no` validation check.
 
-The actual `## QA Plan` section (at line 257) containing `**UI involvement:** no` is never reached.
+**Fix landed in T.QA.6:** `has_qa_plan_heading` and `get_qa_plan_body` in
+`scripts/hooks/pre-commit-zz-plan-structure.sh` now track a `fence` flag that toggles on each
+` ``` ` line, and skip heading/body detection while `fence=1`. Both the as-is accept test (exit 0)
+and the section-removed reject test (exit 1) now behave correctly.
 
-**Rejection case (test 3) behaves correctly:** removing all `## QA Plan` occurrences produces the
-expected "section missing" rejection message. The linter's reject path is functional.
+## ADR T-QA2 status — RESOLVED GREEN
 
-**For ordinary ADRs** (which do not document their own format inside a code block), the linter
-correctly accepts a plan with a valid `## QA Plan` and `**UI involvement:** no` — confirmed by
-T.QA.3's fixture-g and fixture-h (accept cases, exit 0).
+- **Test 1 (as-is ADR):** exit 0 — linter accepts the ADR.
+- **Test 2 (real `## QA Plan` section removed):** exit 1 — linter rejects with "## QA Plan section missing".
 
-## ADR T-QA2 status
-
-ADR T-QA2 stated: "Verify the new plan-structure linter check rejects this very ADR if `## QA Plan`
-is removed (loop-back test)."
-
-Test 3 confirms: removing `## QA Plan` causes the linter to reject with the expected message
-(exit 1, "## QA Plan section missing").
-
-The additional finding (code-fence limitation) is a known linter edge case specific to self-referential
-meta-ADRs. Normal ADRs are not affected.
+All eight T.QA.0 fixtures still pass: a–f reject (exit 1), g–h accept (exit 0).

@@ -164,10 +164,16 @@ validate_last_reviewed() {
 }
 
 # has_qa_plan_heading <content>
-# Returns 0 if content contains a "## QA Plan" heading line, else 1.
+# Returns 0 if content contains a "## QA Plan" heading line outside a fenced
+# code block (``` delimiters), else 1.
 has_qa_plan_heading() {
   local content="$1"
+  local fence=0
   while IFS= read -r line; do
+    case "$line" in
+      '```'*) fence=$(( 1 - fence )); continue ;;
+    esac
+    [ "$fence" -eq 1 ] && continue
     case "$line" in
       "## QA Plan"|"## QA Plan "*) return 0 ;;
     esac
@@ -178,20 +184,26 @@ EOF
 }
 
 # get_qa_plan_body <content>
-# Prints the body text between "## QA Plan" and the next "## " heading (or EOF).
-# Strips leading/trailing whitespace from the result.
+# Prints the body text between the first "## QA Plan" heading (outside a fenced
+# code block) and the next "## " heading (or EOF).
 get_qa_plan_body() {
   local content="$1"
   local in_section=0
+  local fence=0
   local body=""
   while IFS= read -r line; do
+    case "$line" in
+      '```'*) fence=$(( 1 - fence )); continue ;;
+    esac
     if [ "$in_section" -eq 0 ]; then
+      [ "$fence" -eq 1 ] && continue
       case "$line" in
         "## QA Plan"|"## QA Plan "*) in_section=1 ;;
       esac
       continue
     fi
-    # Stop at next ## heading
+    # Inside the section — stop at next ## heading (fence irrelevant here: we
+    # already found our section, and we collect everything including inner fences)
     case "$line" in
       "## "*)
         break
