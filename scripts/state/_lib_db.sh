@@ -34,7 +34,7 @@ db_open() {
     # to call multiple times on the same DB.
     sqlite3 "$db_path" \
         "CREATE TABLE IF NOT EXISTS schema_migrations (
-           version TEXT PRIMARY KEY,
+           filename TEXT PRIMARY KEY,
            applied_at TEXT NOT NULL DEFAULT (datetime('now'))
          );" \
         > /dev/null
@@ -112,7 +112,7 @@ db_apply_migrations() {
 
         # Skip if already recorded in schema_migrations.
         already_applied=$(sqlite3 "$db_path" \
-            "SELECT COUNT(*) FROM schema_migrations WHERE version='${version}';" 2>/dev/null || echo 0)
+            "SELECT COUNT(*) FROM schema_migrations WHERE filename='${version}';" 2>/dev/null || echo 0)
         if [ "$already_applied" -gt 0 ]; then
             continue
         fi
@@ -125,7 +125,7 @@ db_apply_migrations() {
             "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT};
              BEGIN IMMEDIATE;
              ${sql_body}
-             INSERT INTO schema_migrations (version) VALUES ('${version}');
+             INSERT INTO schema_migrations (filename) VALUES ('${version}');
              COMMIT;" \
             > /dev/null 2>&1; then
             printf '[_lib_db] db_apply_migrations: failed applying %s\n' "$version" >&2
