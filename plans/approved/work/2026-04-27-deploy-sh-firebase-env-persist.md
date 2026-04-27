@@ -5,7 +5,7 @@ date: 2026-04-27
 concern: work
 tier: quick
 complexity: quick
-status: proposed
+status: approved
 owner: karma
 orianna_gate_version: 2
 tests_required: false
@@ -85,3 +85,10 @@ This is quick-lane: trivial, infra-only diff, no business-logic change, no tests
 - Firebase Web API key public-by-design: https://firebase.google.com/docs/projects/api-keys
 - Strawberry Rules: 5 (commit prefix), 11 (no rebase), 18 (no admin merge).
 - Stacked-PR pattern: PR #119 (base `feat/demo-studio-v3`).
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Structural gates green (qa_plan frontmatter + body checks pass; plan-structure-lint passes). Owner is karma; tasks T1–T4 are concrete with explicit files, DoDs, and estimates. The `qa_plan: none` justification correctly identifies the diff as infra-only with no UI/user-flow surface, satisfying Rule 16 carve-out. Quick-lane scope is appropriate for a four-line env-var persistence fix preventing hot-fix regression on next deploy.
