@@ -286,7 +286,7 @@ T6 and T7 declare hard dependencies on Xayah's parallel test plan: fixture-namin
 
 ## QA Plan
 
-**Akali Playwright script.** Browser-environment isolation: incognito context. ENV URL: `https://demo-studio-4nvufhmjiq-ew.a.run.app` once PR #120 lands, otherwise `https://demo-studio-266692422014.europe-west1.run.app`. Sign-in protocol: real Firebase Auth via Google OAuth popup (`duong@missmp.eu`); nonce URL bypass is **not** permitted (per Akali RUNWAY 2026-04-27 trigger learning). All Akali claims must carry `cite_kind: verified` markers per QA two-stage ADR D2. The deployed revision must match the commit under test (`head_sha:` frontmatter check per QA two-stage ADR D6.f).
+**Akali Playwright script.** Browser-environment isolation: incognito context. ENV URL: `https://demo-studio-4nvufhmjiq-ew.a.run.app` once PR #120 lands, otherwise `https://demo-studio-266692422014.europe-west1.run.app`. Sign-in protocol: real Firebase Auth via Google OAuth popup with the throwaway QA account `duong.missmp.qa@gmail.com` (credentials at `secrets/work/qa-bot-credentials.env`, mode 600, gitignored). The QA account is not in the `missmp.eu` Workspace; it is allowlisted at the app layer via the `ALLOWED_QA_EMAILS` env var on the Cloud Run revision under test. Nonce URL bypass is **not** permitted (per Akali RUNWAY 2026-04-27 trigger learning). All Akali claims must carry `cite_kind: verified` markers per QA two-stage ADR D2. The deployed revision must match the commit under test (`head_sha:` frontmatter check per QA two-stage ADR D6.f).
 
 ### Acceptance criteria
 
@@ -305,7 +305,7 @@ T6 and T7 declare hard dependencies on Xayah's parallel test plan: fixture-namin
 
 1. Open incognito browser context.
 2. Navigate to ENV URL `/`.
-3. Sign in via real Firebase Auth flow — click "Sign in with Google", complete OAuth in popup with `duong@missmp.eu`. Capture `01-signed-in.png`.
+3. Sign in via real Firebase Auth flow — click "Sign in with Google", complete OAuth in popup with `duong.missmp.qa@gmail.com` (password from `secrets/work/qa-bot-credentials.env`). Capture `01-signed-in.png`.
 
 | Step | Action | Pass criterion | Screenshot |
 |---|---|---|---|
