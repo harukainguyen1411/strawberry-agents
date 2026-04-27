@@ -60,6 +60,8 @@ tests_required: true
 
 **D7. Validation handling: soft-fail with `?force=true` fallback.** S2 validates on write and can reject. On first POST attempt, S1 sends without `force`. If S2 returns validation errors, S1 logs them + retries with `?force=true` exactly once + surfaces the validation array on the `set_config` tool result so the agent sees which fields failed. Rationale: agent-generated configs will occasionally miss required schema fields; hard-failing abandons the whole snapshot. Alternative (hard-fail always) rejected — no recovery path mid-chat.
 
+> **Superseded by `plans/approved/work/2026-04-27-adr-4-set-config-validation-framing.md` (2026-04-27).** The "soft-fail with warnings" strategy was a mechanism that hid validation errors and gaslighted the agent. Force-retry deleted; tool_result framing flipped to clean `is_error` on any non-canonical save.
+
 **D8. Hotfix first, full flow second.** Ship T-Hotfix (PATCH → POST-snapshot) to unblock prod before the system-block injection work (W1-W3). Hotfix is a minimum surgery: flip `_default_patch_config` to POST the single changed field merged into the last-known config (read via `fetch_config` first), write it back. Ugly but restores a working `set_config` in one PR. System-block injection (W1-W3) then supersedes.
 
 ## 3. Architecture Changes
