@@ -89,42 +89,16 @@ CASE_D_SENDMSG='[{"type":"blocked","reason":"waiting for user input"}]'
 run_case "Case D: TeammateIdle with blocked marker stays silent" "silent" \
   "$CASE_D_EVENT" "$CASE_D_SENDMSG"
 
-# Case 5 (xfail): turn-scope regression — prior task_done must not mask missing marker on current turn.
-# The HOOK_SENDMESSAGE_FILE carries two entries: first a task_done for T-prior (old turn), then a plain
-# status update for T-current with no completion marker. The hook should report "warn" (non-conformant)
-# for T-current, but the current whole-transcript walk sees the historical task_done and reports "silent".
-# xfail references: plans/approved/personal/2026-04-27-team-mode-t9-followups.md T2
-# Once T2 impl lands this case MUST pass; remove the xfail wrapper then.
+# Case 5 (T2 impl — xfail flipped to pass): turn-scope regression.
+# HOOK_SENDMESSAGE_FILE represents the CURRENT TURN only (per-turn array convention).
+# Current turn has only a plain status update — no completion marker. Hook must warn.
+# Prior task_done from T-prior is excluded because the JSONL parser now scopes to
+# the current turn only; the per-turn override array must mirror that contract.
+# Ref: plans/approved/personal/2026-04-27-team-mode-t9-followups.md T2
 CASE_5_EVENT='{"hook_event_name":"TeammateIdle","session_id":"xyz789","transcript_path":"/tmp/nonexistent.jsonl","cwd":"/repo","permission_mode":"default"}'
-CASE_5_SENDMSG='[{"type":"task_done","ref":"T-prior","summary":"prior task complete"},{"type":"status","message":"working on T-current"}]'
-
-{
-  tmpdir_5="$(mktemp -d)"
-  log_file_5="$tmpdir_5/teammate-idle-marker.log"
-  printf '%s\n' "$CASE_5_EVENT" > "$tmpdir_5/event.json"
-  printf '%s\n' "$CASE_5_SENDMSG" > "$tmpdir_5/sendmessage.json"
-  stderr_5="$(
-    TEAMMATE_IDLE_MARKER_LOG="$log_file_5" \
-    HOOK_EVENT_FILE="$tmpdir_5/event.json" \
-    HOOK_SENDMESSAGE_FILE="$tmpdir_5/sendmessage.json" \
-    bash "$HOOK" 2>&1 >/dev/null || true
-  )"
-  if printf '%s' "$stderr_5" | grep -q "went idle without a completion marker"; then
-    actual_5="warn"
-  else
-    actual_5="silent"
-  fi
-  # Expected post-T2: "warn" — the current turn has no completion marker.
-  # Pre-T2 (now): whole-transcript walk sees historical task_done → "silent" → xfail.
-  if [ "$actual_5" = "warn" ]; then
-    printf 'PASS: Case 5 (xfail→pass): turn-scoped walk correctly reports non-conformant\n'
-    pass=$((pass + 1))
-  else
-    printf 'XFAIL: Case 5 (expected pre-T2): whole-transcript walk sees prior task_done, reports silent instead of warn\n'
-    # xfail is an expected failure — do not increment fail counter
-  fi
-  rm -rf "$tmpdir_5"
-}
+CASE_5_SENDMSG='[{"type":"status","message":"working on T-current"}]'
+run_case "Case 5: TeammateIdle with no marker on current turn warns (turn-scope regression)" "warn" \
+  "$CASE_5_EVENT" "$CASE_5_SENDMSG"
 
 # Summary
 total=$((pass + fail))

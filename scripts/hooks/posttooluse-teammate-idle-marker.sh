@@ -50,12 +50,15 @@ transcript_path="$(printf '%s' "$event_json" | python3 -c "import sys,json; d=js
 if [ -n "${HOOK_SENDMESSAGE_FILE:-}" ] && [ -f "$HOOK_SENDMESSAGE_FILE" ]; then
   sendmessage_json="$(cat "$HOOK_SENDMESSAGE_FILE")"
 elif [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
-  # Extract SendMessage tool_use inputs from the teammate's transcript JSONL.
+  # Extract SendMessage tool_use inputs from the CURRENT TURN of the teammate's transcript JSONL.
+  # Walk the JSONL backward from the tail; collect SendMessage entries until hitting a turn
+  # delineator: a UserPromptSubmit event (hook_event_name field) or a user-role message entry.
+  # This ensures a task_done from a prior turn does not mask a missing marker on the current turn.
   sendmessage_json="$(python3 - "$transcript_path" <<'PYEOF'
 import sys, json
 
 transcript_path = sys.argv[1]
-messages = []
+all_entries = []
 try:
     with open(transcript_path, 'r') as f:
         for line in f:
@@ -66,17 +69,32 @@ try:
                 entry = json.loads(line)
             except json.JSONDecodeError:
                 continue
-            # Look for SendMessage tool_use entries in assistant messages
-            if entry.get('type') == 'assistant':
-                content = entry.get('message', {}).get('content', [])
-                if isinstance(content, list):
-                    for block in content:
-                        if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') == 'SendMessage':
-                            inp = block.get('input', {})
-                            if isinstance(inp, dict):
-                                messages.append(inp)
+            all_entries.append(entry)
 except Exception:
     pass
+
+# Walk backward; collect SendMessage inputs until a turn delineator is found.
+# Delineator: a 'user' type entry OR a UserPromptSubmit hook_event_name.
+# Stop collecting when we cross the delineator (delineator belongs to previous turn).
+messages = []
+for entry in reversed(all_entries):
+    # Check for turn delineator (start of current turn boundary)
+    if entry.get('type') == 'user':
+        break
+    if entry.get('hook_event_name') == 'UserPromptSubmit':
+        break
+    # Collect SendMessage tool_use entries from assistant messages
+    if entry.get('type') == 'assistant':
+        content = entry.get('message', {}).get('content', [])
+        if isinstance(content, list):
+            for block in reversed(content):
+                if isinstance(block, dict) and block.get('type') == 'tool_use' and block.get('name') == 'SendMessage':
+                    inp = block.get('input', {})
+                    if isinstance(inp, dict):
+                        messages.append(inp)
+
+# Reverse to restore chronological order within the current turn
+messages.reverse()
 print(json.dumps(messages))
 PYEOF
 )" 2>/dev/null || sendmessage_json="[]"
