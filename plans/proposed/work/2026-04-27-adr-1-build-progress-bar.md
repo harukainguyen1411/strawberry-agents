@@ -253,15 +253,26 @@ Implement the 1.5s dwell + 200ms color-shift hard-swap mechanism on `build_compl
 
 ## QA Plan
 
-**Akali Playwright script** (browser-environment isolation: incognito; ENV URL: `https://demo-studio-4nvufhmjiq-ew.a.run.app` once PR #120 lands, otherwise `https://demo-studio-266692422014.europe-west1.run.app`).
+**Akali Playwright script.** Browser-environment isolation: incognito context. ENV URL: `https://demo-studio-4nvufhmjiq-ew.a.run.app` once PR #120 lands, otherwise `https://demo-studio-266692422014.europe-west1.run.app`. Sign-in protocol: real Firebase Auth via Google OAuth popup (`duong@missmp.eu`); nonce URL bypass is **not** permitted (per Akali RUNWAY 2026-04-27 trigger learning). All Akali claims must carry `cite_kind: verified` markers per QA two-stage ADR D2. The deployed revision must match the commit under test (`head_sha:` frontmatter check per QA two-stage ADR D6.f).
 
-### Setup
+### Acceptance criteria
+
+**PASS** if all checkpoints in the happy-path lane AND the failure-modes lane render their expected UI within the documented time budgets, AND no JS console errors are observed, AND `head_sha:` of the deployed revision matches the commit under test.
+
+**FAIL** if any of the following occur:
+- The progress bar fails to render within 5 seconds of the session entering `status == "building"`.
+- The bar's `value` or step label disagrees with the SSE event stream observed in DevTools Network panel (`text/event-stream` channel on `/session/.../logs`).
+- The failure path silently hides the bar without rendering the error inline.
+- The build-complete dwell falls outside the 1400-1600ms window.
+- The hand-off transition to the verify placeholder is missing the 200ms color shift, OR remounts the `<progress>` element instead of re-classing it.
+- Page-reload mid-build does not call `GET /session/{id}/build-status` exactly once before re-opening the EventSource.
+- Either failure-mode dismiss path (manual × button, auto-clear on retry) does not unmount cleanly.
+
+### Happy path (user flow)
 
 1. Open incognito browser context.
 2. Navigate to ENV URL `/`.
-3. **Sign in via real Firebase Auth flow** — click "Sign in with Google", complete OAuth in popup with `duong@missmp.eu`. Do **not** use nonce URL bypass. Capture screenshot `01-signed-in.png`.
-
-### Per-step actions
+3. Sign in via real Firebase Auth flow — click "Sign in with Google", complete OAuth in popup with `duong@missmp.eu`. Capture `01-signed-in.png`.
 
 | Step | Action | Pass criterion | Screenshot |
 |---|---|---|---|
@@ -273,7 +284,9 @@ Implement the 1.5s dwell + 200ms color-shift hard-swap mechanism on `build_compl
 | 6 | Wait for `build_complete` | Bar fills to 100%. Label reads "Build complete". Component dwells visible for **~1.5 seconds** (timer-measured: 1400-1600ms acceptable). Then **hard-swap with 200ms color shift** (build-blue → verify-green) to ADR-2's verification placeholder in the same DOM slot — same `<progress>` element re-classed, no remount, no reflow. | `07a-build-complete-100pct.png` (during dwell), `07b-handoff-color-shift.png` (mid-transition), `07c-verify-placeholder.png` (post-handoff) |
 | 7 | Open browser console | No JS errors. No SSE reconnect errors. EventSource is closed (readyState === 2). | `08-console-clean.png` |
 
-### Failure-path lane (separate test run)
+### Failure modes (what could break)
+
+Run as a separate test run from the happy path; same setup (incognito + real Firebase OAuth).
 
 | Step | Action | Pass criterion | Screenshot |
 |---|---|---|---|
@@ -282,13 +295,38 @@ Implement the 1.5s dwell + 200ms color-shift hard-swap mechanism on `build_compl
 | F3a | Click the × close button | Component unmounts immediately. `deployBtn` restored to "Deploy Demo" enabled state. | `10a-failed-manual-dismiss.png` |
 | F3b | (Separate run) Re-trigger build instead of dismissing | Failed bar auto-clears on `configuring` → `building` transition; fresh indeterminate bar mounts with no flicker (single repaint between unmount and remount). | `10b-failed-auto-clear-on-retry.png` |
 
-### Pass / fail criteria
+Other failure modes the script must surface (no separate row needed; covered by "Acceptance criteria" FAIL list):
+- SSE stream closes without a terminal event mid-build (BFF fallback GET should fire — covered today by `_sse_fallback_get` at `tools/demo-studio-v3/main.py:344`; UI should still reach a terminal state).
+- Build is triggered but no `step_start` event arrives within 10s (bar should remain in indeterminate state with "Starting build…" — never silently disappear).
+- Page reload after `build_complete` but before user navigates away: `GET /build-status` returns terminal state; UI shows verify-placeholder without re-running build.
 
-**PASS** if all checkpoints in the happy path AND the failure path render their expected UI within the time budgets, AND no JS console errors are observed, AND `head_sha:` of the deployed revision matches the commit under test (per QA two-stage architecture ADR D6.f).
+### QA artifacts expected
 
-**FAIL** if any progress bar fails to render within 5 seconds of `status == "building"`, or shows incorrect step / percent versus the SSE event stream observed in DevTools Network panel, or the failure path silently hides the bar without rendering the error inline.
+**Screenshot set** (12 files total — happy path + failure modes):
 
-`cite_kind: verified` markers required on every observation Akali claims (per QA two-stage ADR D2).
+| File | When captured |
+|---|---|
+| `01-signed-in.png` | After successful Firebase OAuth |
+| `02-new-session.png` | After "+ New session" click, pre-build |
+| `03-build-triggered.png` | Within 2s of `status == "building"`, indeterminate bar visible above chat input |
+| `04-progress-mid.png` | Determinate bar at any mid-build step |
+| `05-step-advance.png` | Immediately after a `step_complete` event, bar value jumped ≥ 10 |
+| `06-reload-mid-build.png` | After Cmd+R during build, bar re-rendered at current step |
+| `07a-build-complete-100pct.png` | During the 1.5s dwell at 100% |
+| `07b-handoff-color-shift.png` | Mid 200ms color-shift transition (build-blue → verify-green) |
+| `07c-verify-placeholder.png` | Post hand-off, ADR-2's verify placeholder mounted in the same slot |
+| `08-console-clean.png` | DevTools console panel showing zero errors after build complete |
+| `09-build-failed.png` | Failure mode F2: red bar + × close button visible |
+| `10a-failed-manual-dismiss.png` | Failure mode F3a: post-× click, component unmounted |
+| `10b-failed-auto-clear-on-retry.png` | Failure mode F3b: post-retry, fresh indeterminate bar mounted |
+
+**QA report path:** `assessments/qa-reports/2026-MM-DD-adr-1-build-progress-bar-rev<NNNNN>-<short-sha>.md`. Linked from PR body via the `QA-Report:` line per CLAUDE.md Rule 16.
+
+**Frontmatter requirement:** the QA report MUST include a `head_sha:` field matching the deployed revision's commit SHA, per QA two-stage ADR D6.f. Mismatch = automatic FAIL regardless of screenshots.
+
+**Network capture:** retain the DevTools Network HAR file as evidence for steps 4 and 5 (SSE event stream verification + reload-resume single GET). Save alongside the screenshots: `network-happy.har`, `network-failure.har`.
+
+**Citation tagging:** every observation in the QA report body must carry `cite_kind: verified | inferred` and `cite_evidence:` per QA two-stage ADR D2. Verified = directly observed in screenshot or HAR; inferred = derived from observation but not directly visible.
 
 ## Out of scope
 
