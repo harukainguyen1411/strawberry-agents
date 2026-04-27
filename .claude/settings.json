@@ -165,6 +165,16 @@
           }
         ]
       }
+    ],
+    "TeammateIdle": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/posttooluse-teammate-idle-marker.sh"
+          }
+        ]
+      }
     ]
   },
   "enabledPlugins": {

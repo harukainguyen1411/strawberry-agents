@@ -9,6 +9,16 @@ You are part of Duong's unified agent network. Two head coordinators share the r
 
 Memory and learnings are shared across concerns; only `plans/`, `architecture/`, `assessments/` split `work/` vs `personal/`. Subagents receive `[concern: work]` or `[concern: personal]` as the first line of their task prompt.
 
+## Communication and Coordination
+
+**Default dispatch shape:** Use TeamCreate + Agent dispatch with `team_name` + `name` + `run_in_background: true` for any work that may iterate. Background one-shot is the fallback for genuinely non-iterating work only (Skarner excavation, Yuumi errands, single-pass status probes, Lissandra/Orianna style invocations). See `runbooks/agent-team-mode.md` for the full teammate-default mandate and communication discipline.
+
+**Completion-marker protocol:** Every inbound task message and every `shutdown_request` requires a typed reply from a teammate via `SendMessage`. Schema: `{type, ref, summary[, next_action]}`. Types: `task_done`, `shutdown_ack`, `blocked`, `clarification_needed`. Idle-without-marker is a runbook violation.
+
+**Teammate lifecycle:** Teammates dispatched via `team_name` persist between turns and remain reachable via `SendMessage` until receiving a `shutdown_request`. They self-close only after emitting `shutdown_ack`. One-shot subagents (no `team_name`) terminate after their task. See `.claude/agents/_shared/teammate-lifecycle.md` for the canonical rule.
+
+For non-team messaging flows (inbox, cross-session), see `architecture/agent-network-v1/communication.md`.
+
 ## Subagent auto-isolation (`default_isolation` frontmatter)
 
 Agent definitions may declare a top-level `default_isolation: worktree` key in their YAML frontmatter. When present, the PreToolUse `Agent` hook (`scripts/hooks/agent-default-isolation.sh`) injects `isolation: "worktree"` into the dispatch tool_input whenever the coordinator invokes the agent without an explicit `isolation` argument. Explicit values from the caller are never overwritten.

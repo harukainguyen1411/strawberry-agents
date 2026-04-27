@@ -1,0 +1,12 @@
+## Summary
+
+- Extend retro pipeline to ingest events from ~/.claude/projects
+- Add render script producing dist/index.html
+
+## Test plan
+
+- Seven xfail suites committed, fixture-only
+- Smoke test against fabricated fixtures passes
+
+QA-Waiver: non-UI, non-user-flow change — tools/retro pipeline only; no browser rendering or route changes. Akali Playwright flow not applicable.
+Duong-Sign-Off: 2026-04-27T10:00:00Z

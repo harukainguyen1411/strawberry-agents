@@ -44,6 +44,10 @@ Field semantics: the coordinator (Evelynn / Sona) reads this field at dispatch t
 
 Valid values: exactly `yes`, `no`, or `wait-bound` (lowercase, hyphen). Typos (e.g. `Yes`, `wait_bound`) silently treat as `no` — fail-soft, not fail-loud.
 
+## Hard Rules
+
+- Any `## Tasks` section you author MUST contain a `### QA Tasks` subsection with at least one task line. Failure to include = breakdown-incomplete; pre-commit `scripts/hooks/pre-commit-breakdown-qa-tasks.sh` will reject your commit. See ADR `plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md` D3.
+
 <!-- include: _shared/breakdown.md -->
 # Task breakdown role — shared rules
 

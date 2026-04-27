@@ -1,0 +1,12 @@
+## Summary
+
+Adds export feature that converts the chart to svg format for download.
+
+## Changes
+
+- Chart export button added to dashboard component
+- Output renders to svg when user clicks "Export"
+
+## Test plan
+
+QA-Report: assessments/qa-reports/2026-04-27-svg-export-qa.md

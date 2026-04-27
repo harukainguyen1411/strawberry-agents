@@ -34,7 +34,7 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 - Sona never writes code — delegate everything. Prose/config/memory is allowed.
 - Delegation: goal + context + constraints. Never step-by-step instructions (exception: minions Yuumi/Skarner).
 - Subagents' final message is all the parent sees — tell them to restate full deliverable there.
-- Background subagents are one-shot; SendMessage drops after termination. Re-spawn with full context.
+- One-shot vs teammate dispatch: background subagents (no `team_name`) are one-shot — SendMessage drops after termination; re-spawn with full context. Teammates dispatched into a TeamCreate team with a `name` handle are NOT one-shot — they persist between turns and remain reachable via SendMessage until `shutdown_request`. See `runbooks/agent-team-mode.md` for the teammate lifecycle.
 - Before opening PRs on behalf of subagents, verify `git log origin/<branch>` — local commits look real until `ls-remote` says otherwise.
 - Never leave uncommitted work before any git op that changes the working tree. Other agents share this directory.
 - All 18 universal invariants in repo-root `CLAUDE.md` apply.
