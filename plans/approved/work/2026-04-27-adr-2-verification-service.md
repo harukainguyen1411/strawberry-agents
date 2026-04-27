@@ -280,139 +280,303 @@ ADR-1's wireframe is sufficient as the visual is the same component. Verificatio
 
 ## Tasks
 
-(Skeleton — Aphelios + Xayah will detail estimate_minutes and substeps. Authoring agent does not assign implementers.)
+Refined inline by Aphelios 2026-04-27 (D1A). Owner lanes name *roles*, not specific implementers — Sona dispatches to actual agents (Jayce/Viktor for Go/Python impl, Vi/Rakan for tests, Lulu for copy). `parallel_slice_candidate` is read by the dispatch coordinator to decide whether to slice into parallel streams.
 
 ### Phase A — S4 service: SSE streaming on `POST /verify`
 
-> **All Phase A tasks carry `gate: khang-confirm`** (resolved OQ2 hands-off-autodecide 2026-04-27). S4 (`tools/demo-studio-verification/`) is owned by Khang. Aphelios's breakdown must surface a Khang-confirm checkpoint before any of T1/T2/T3/T4/T11 starts. The EXTEND posture (assume modifiable: YES) stands; this gate is a courtesy verification, not a re-litigation.
+> **Phase A gate: `khang-confirm`** (CC2 / OQ2 resolution 2026-04-27). S4 (`tools/demo-studio-verification/`) is Khang-owned. Before dispatching ANY of T1/T2/T3/T4/T11, Sona must surface a courtesy heads-up to Khang ("ADR-2 extends S4 with SSE on `POST /verify`, churn ~1 source file + handler branch + tests, ETA Tuesday") and obtain ack. Single ack unblocks all five tasks. If Khang signals he wants to own implementation himself, Phase A converts to a hand-off: Aphelios's spec stays, Khang implements; Phases B/C/D/E unaffected. The `gate: khang-confirm` field on each Phase A task is a dispatch-time check, NOT a re-litigation of the EXTEND decision.
+>
+> **Phase A internal ordering:** T3 (encoder util) is a leaf with no deps; T1 (event-sink hook) and T3 can run in parallel. T2 (handler SSE branch) consumes both T1 and T3 outputs. T4 (backwards-compat smoke) covers the JSON branch which is unchanged but must be re-verified post-T2 merge.
 
 #### T1 — `internal/checks` event-sink hook
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 45`
 `gate: khang-confirm`
+`owner_lane: jayce-go-impl`
+`parallel_slice_candidate: no`
+`blocked_by: phase-a-gate`
+`tdd_xfail_reference: T11 (Phase D — S4 SSE handler tests; xfail committed first against the OnEvent callback contract)`
+`files:`
+- `tools/demo-studio-verification/internal/checks/run.go` — extend `Options` struct with `OnEvent func(name string, payload any)`; thread through the per-category dispatch loop. Wrap each category invocation (`runIdentity`, `runBranding`, `runCardFields`, `runJourney`, `runTokenUI`, `runIpadDemo`, `runGpay`, `runI18nSweep`, opt-in `runTestPass`) with `OnEvent("category_start", {...})` before and `OnEvent("category_complete", {...})` after.
+- `tools/demo-studio-verification/internal/checks/options.go` (or wherever `Options` is currently declared — confirm during impl) — add `OnEvent` field.
 
-Refactor `checks.Run` to accept an optional `Options.OnEvent func(name string, payload any)` callback. Each category emits `category_start` before its `runX(...)` call and `category_complete` after, with a mini-summary. No behaviour change when `OnEvent == nil`.
+Mini-summary payload on `category_complete`: `{category, index, totalCategories, summary: {passed, failed, skipped}, duration_ms}` per D3. Compute `duration_ms` via `time.Since(start)` around each runX call. No behaviour change when `OnEvent == nil` — guard each emission with a nil-check. Skipped categories (per `Options` opt-out) do NOT emit start/complete events; only enabled categories count toward `totalCategories`.
 
 #### T2 — Handler SSE response when `Accept: text/event-stream`
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 50`
 `gate: khang-confirm`
+`owner_lane: jayce-go-impl`
+`parallel_slice_candidate: no`
+`blocked_by: T1, T3`
+`tdd_xfail_reference: T11 (Phase D — S4 SSE handler tests; xfail asserts header-negotiated branch + event order)`
+`files:`
+- `tools/demo-studio-verification/internal/api/handler.go::HandleVerify` — branch on `r.Header.Get("Accept") == "text/event-stream"` at the top of the handler.
 
-In `internal/api/handler.go::HandleVerify`, branch on Accept header. SSE branch:
+SSE branch:
+- Set response headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no`.
+- Assert `http.Flusher` interface on `w` (return 500 if not supported — Cloud Run supports it).
+- Emit `verify_start` with `{sessionId, projectId, totalCategories}` (count enabled categories from `Options`).
+- Construct `Options.OnEvent` closure that calls T3's encoder util to write each event to the writer + flush.
+- Call `checks.Run(ctx, cfg, snap, httpClient, opts)`.
+- On `Run` success: emit `verify_complete` with the full `Report` JSON-encoded into `data:`.
+- On hard error mid-run (config fetch fail, WS snapshot fail, internal error): emit `verify_error` with `{reason, error, partialReport?}` per D3.
+- Persist `Report` to Firestore as today via the existing store call (unchanged).
+- Close stream cleanly (single SSE response, no chunked-keepalive after terminal).
 
-- Set `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`.
-- Emit `verify_start` with totalCategories.
-- Wire `Options.OnEvent` to flush each event to the writer (with `http.Flusher`).
-- On `Run` completion, emit `verify_complete` with the full `Report`.
-- On hard error mid-run (config fetch fail, WS snapshot fail), emit `verify_error` with the in-flight partial state.
-- Persist Report to Firestore as today (unchanged).
+JSON branch: existing behaviour, untouched. The Accept-negotiation guard is a single early branch — do NOT duplicate the run logic.
 
-JSON branch: existing behaviour, untouched.
-
-#### T3 — SSE flush + tabbed-event encoding util
+#### T3 — SSE event encoding util
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 25`
 `gate: khang-confirm`
+`owner_lane: jayce-go-impl`
+`parallel_slice_candidate: no`
+`blocked_by: phase-a-gate`
+`tdd_xfail_reference: T11 (covered transitively — encoder unit-tested via the handler integration; no separate xfail required for the leaf util, just a table-test in the same package)`
+`files:`
+- `tools/demo-studio-verification/internal/api/sse.go` (new) — exports `WriteEvent(w io.Writer, flusher http.Flusher, name string, payload any) error`. Marshals `payload` to JSON, writes the wire frame `event: <name>\ndata: <json>\n\n`, then `flusher.Flush()`. Returns the underlying write/flush error so the handler can decide whether to abort.
+- Companion table-test in `internal/api/sse_test.go` (new) covering: simple payload roundtrip, JSON-unmarshalable payload (error return), flush failure (error return).
 
-Helper for `event: <name>\ndata: <json>\n\n` formatting + flush. Reused by all event types.
+Pure-leaf util, no external deps beyond `encoding/json` + `net/http`. Reused by all SSE emissions in T2.
 
 #### T4 — Backwards-compat smoke for non-SSE callers
 `kind: test`
-`estimate_minutes: TBD by Xayah`
+`estimate_minutes: 30`
 `gate: khang-confirm`
+`owner_lane: vi-go-tests`
+`parallel_slice_candidate: no`
+`blocked_by: T2`
+`tdd_xfail_reference: self (this IS the regression-test task — committed before T2 merge as xfail, flips green when T2 lands)`
+`files:`
+- `tools/demo-studio-verification/internal/api/handler_test.go` — add table-driven test `TestHandleVerify_BackwardsCompatNonSSE` covering: (a) `POST /verify` with no Accept header returns `application/json` body matching `QcReport` shape; (b) `POST /verify` with `Accept: application/json` returns same JSON body; (c) Firestore persistence still invoked once with the same `Report`.
 
-Verify existing curl-style `POST /verify` (no Accept header) still returns the JSON body identical to today. Persistence still hits Firestore.
+Use the existing test fixtures / mocks in the package (do NOT introduce new mock infrastructure). The test must run in CI under the existing `go test ./...` invocation.
 
 ### Phase B — BFF: replace S4 poller with streaming ingest
 
-#### T5 — Delete `start_s4_poller` / `run_s4_poller` / `poll_s4_verify` / replace with `start_s4_verify_stream`
+#### T5 — Replace BFF poller with `start_s4_verify_stream`
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 60`
+`owner_lane: viktor-python-impl`
+`parallel_slice_candidate: no`
+`blocked_by: T2 (depends on S4 SSE branch landing — though Phase B can author against the documented contract before T2 is merged, end-to-end verification requires T2 in the dev environment)`
+`tdd_xfail_reference: T12 (Phase D — BFF stream-ingest tests, xfail-first against canned SSE chunks)`
+`files:`
+- `tools/demo-studio-v3/verify_stream.py` (new) — exports `async def start_s4_verify_stream(session_id: str, project_id: str) -> None`. Internally:
+  - Uses `httpx.AsyncClient` with `stream("POST", f"{S4_VERIFY_URL}/verify", ...)`, headers `{Accept: text/event-stream, X-Verification-Token: ...}`, body `{sessionId, projectId}`.
+  - Iterates `response.aiter_lines()`, parses SSE frames (`event:` / `data:` line pairs separated by blank line).
+  - For each event: forwards via `emit_sse_event(session_id, "verification", payload)` (existing in `main.py`).
+  - On terminal `verify_complete`: parses embedded `report`, calls `set_verification_result(session_id, report.status, report)` (existing in `session.py:326`).
+  - On terminal `verify_error`: calls `set_verification_result(session_id, "failed", {reason, error, partialReport})`.
+  - On HTTP error / connection drop: calls `set_verification_result(session_id, "failed", {reason: "stream_error", error: str(exc)})` and emits final `event: verification` with `{status: "failed", reason: "stream_error"}`.
+  - Idempotency tracked via `_active_verify_streams: dict[str, asyncio.Task]` (renamed from `_active_pollers`); second call for same session is a noop (mirrors existing `start_s4_poller` semantics at `main.py:604`).
+  - Self-removes from `_active_verify_streams` on terminal/error in a `finally` block.
+- `tools/demo-studio-v3/main.py:2748-2753` — swap `start_s4_poller(session_id, project_id)` call for `start_s4_verify_stream(session_id, project_id)`. Update import.
+- `tools/demo-studio-v3/main.py:502-617` — DELETE `poll_s4_verify`, `run_s4_poller`, `start_s4_poller` and the `_active_pollers` dict (replaced by `_active_verify_streams` in `verify_stream.py`).
+- `tools/demo-studio-v3/main.py` — any remaining `_active_pollers` references (search `grep -n _active_pollers main.py`) updated or removed.
 
-New module `tools/demo-studio-v3/verify_stream.py` with `start_s4_verify_stream(session_id, project_id)`. Idempotency identical to current `start_s4_poller` semantics. On terminal: calls existing `set_verification_result` + emits final SSE via existing `emit_sse_event`. Build callback path at `main.py:2748-2753` swaps `start_s4_poller` for `start_s4_verify_stream`.
+Logging: structured log on stream-open, each event forwarded (debug level), terminal (info level), errors (warn/error). Match existing log conventions in this file.
 
 #### T6 — Stream-stall watchdog (60 s no event)
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 35`
+`owner_lane: viktor-python-impl`
+`parallel_slice_candidate: no`
+`blocked_by: T5`
+`tdd_xfail_reference: T12 (Phase D — extends BFF stream-ingest test with stall scenario; canned chunks with artificial 70 s gap)`
+`files:`
+- `tools/demo-studio-v3/verify_stream.py` — wrap the `async for line in response.aiter_lines()` loop with `asyncio.wait_for(...)` per-line read using a 60 s timeout. On `asyncio.TimeoutError`: call `set_verification_result(session_id, "failed", {reason: "stream_stalled", elapsed_s: 60})`, emit final `event: verification` with `{status: "failed", reason: "stream_stalled"}`, exit cleanly.
 
-Wraps the SSE-ingest loop with an inactivity timer. If no event arrives in 60 s, treat as stalled, write `failed reason=stream_stalled`, emit final `event: verification`.
+Watchdog applies between events, not to total stream duration. Reset timer on every line received (including SSE keepalive/comment lines if S4 emits any). Footnote in D8.2 notes `gpay` HEAD-checks may approach the threshold — if false-positive stalls are observed in prod, raise the threshold per category before adding retries.
 
-#### T7a — Set `S4_VERIFY_URL` in BFF deploy env
+#### T7a — Set `S4_VERIFY_URL` + token in BFF deploy env
 `kind: chore`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 40`
+`owner_lane: viktor-ops`
+`parallel_slice_candidate: yes`
+`blocked_by: phase-a-gate (env plumbing can land in parallel with T1–T6 since it's pure config; verification of end-to-end requires T5)`
+`tdd_xfail_reference: n/a (chore, no test xfail required — verified via T13 e2e and Akali QA gate)`
+`files:`
+- `tools/demo-studio-v3/deploy.sh` — add `--set-env-vars S4_VERIFY_URL=https://demo-studio-verification-...run.app` (resolve real URL via `gcloud run services describe demo-studio-verification --region europe-west1 --format='value(status.url)'`).
+- `tools/demo-studio-v3/deploy.sh` — add `--set-secrets S4_VERIFY_TOKEN=demo-studio-verification-token:latest` (or named env consistent with BFF — confirm against current `VERIFICATION_TOKEN` env name in `verify_stream.py`).
+- Secret Manager: confirm `demo-studio-verification-token` secret exists; if not, create via `gcloud secrets create` mirroring the value already set on the S4 Cloud Run service env.
+- IAM: confirm BFF service account has `roles/secretmanager.secretAccessor` on the secret.
 
-Plumb the live `demo-studio-verification` Cloud Run URL into the BFF's prod and stg environment via `deploy.sh` / Cloud Run env config. Without this, every other change in this ADR is inert (per Existing-state §1). Confirm the URL via `gcloud run services describe demo-studio-verification --region=...`. Plumb `VERIFICATION_TOKEN` as `S4_VERIFY_TOKEN` (or named env consistent with BFF) into BFF env via Secret Manager — verify whether this secret already exists or needs creation.
+Without this, every other change in this ADR is inert (per Existing-state §1: empty `S4_VERIFY_URL` short-circuits to in_progress sentinel). Apply to both stg and prod env profiles.
+
+Slice candidate `yes`: env plumbing + secret check + IAM grant are three independently verifiable workstreams; can be parallelised if dispatch wants to compress wall-clock.
 
 #### T7b — Expose head-SHA via `/__build_info` on demo-studio-v3 BFF
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 40`
+`owner_lane: viktor-python-impl`
+`parallel_slice_candidate: yes`
+`blocked_by: none (independent; Akali QA gate references it but T7b can land before any of T1–T7)`
+`tdd_xfail_reference: regression-test inline (small new endpoint — single test asserting shape + headers committed alongside impl; no separate xfail-first task)`
+`files:`
+- `tools/demo-studio-v3/main.py` — add route `@app.get("/__build_info")` returning JSON `{revision: BUILD_SHA, builtAt: BUILD_AT, service: "demo-studio-v3"}`. Read both from env (default to `"unknown"` if unset). No auth (read-only metadata). CORS: same-origin fetch is sufficient; no extra CORS middleware change needed if the frontend is same-origin.
+- `tools/demo-studio-v3/deploy.sh` — at image-build time, capture `BUILD_SHA=$(git rev-parse HEAD)` + `BUILD_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)` and substitute via `--set-env-vars` on the Cloud Run revision.
+- `tools/demo-studio-v3/tests/test_main.py` (or wherever existing route tests live — confirm during impl) — add `test_build_info_endpoint` asserting 200, JSON shape, no auth required.
 
-Resolves OQ9 (hands-off-autodecide 2026-04-27). The Akali QA gate's revision-SHA verification step (§QA Plan setup step 4) needs an enforceable revision marker to confirm the deployed Cloud Run revision matches the head SHA under test. Today no such endpoint exists.
+**Discovery step (first thing the impl agent does):** grep `tools/demo-studio-v3/` for an existing revision marker (`/version`, `/healthz` body, response header). If found, reuse it and amend the QA Plan reference (§QA Plan setup step 4) instead of adding a new endpoint. Report back to Sona either way.
 
-Add `GET /__build_info` to the demo-studio-v3 BFF returning `{revision: "<git-sha>", builtAt: "<iso-8601>", service: "demo-studio-v3"}` (or equivalent shape — bike-shed in breakdown). Source the SHA from a build-time-substituted env var (`BUILD_SHA`, plumbed via `deploy.sh` at image-build time). No auth — read-only, harmless metadata. CORS-permissive for fetch from the same-origin frontend console.
-
-If a revision marker already exists under another path on demo-studio-v3 BFF (e.g. `/version`, `/healthz` body), reuse it and amend the QA Plan reference instead of adding a new endpoint — confirm during breakdown discovery.
+Slice candidate `yes`: independent of the verification stream work; can be sliced to a separate dispatch and run in parallel with Phase A.
 
 #### T7 — Status enum unification
 `kind: chore`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 35`
+`owner_lane: viktor-python-impl`
+`parallel_slice_candidate: yes`
+`blocked_by: none (independent grep-and-replace; can land in parallel with T5/T6)`
+`tdd_xfail_reference: regression-test inline (existing tests asserting `passed`/`failed` are flipped to `pass`/`fail`/`failed` in this same task — they ARE the regression coverage)`
+`files:`
+- `tools/demo-studio-v3/mcp_tools.py:78-105` — update any `verificationStatus` reads/comparisons to canonical `pass | fail | failed` enum.
+- `tools/demo-studio-v3/session.py` — confirm `set_verification_result` writes only `pass | fail | failed`; update `_UPDATABLE_FIELDS` validator if it carries an explicit enum constraint.
+- `tools/demo-studio-v3/main.py` — grep for `passed`/`failed` literals in verification context; replace.
+- All BFF + MCP tests asserting `verificationStatus == "passed"` → `== "pass"` (see `tests/` directory).
+- Frontend: grep `apps/demo-studio-frontend/` (or wherever the studio frontend lives — discover during impl) for `verificationStatus === 'passed'` and update.
 
-Update `verificationStatus` writes/reads across BFF + MCP tools (`mcp_tools.py:78-105`) to canonical `pass | fail | failed`. Update `_UPDATABLE_FIELDS` validator if needed. Update tests that assert `passed`/`failed` to `pass`/`fail`/`failed`.
+**Verification step:** `grep -rE "verificationStatus.*\"passed\"|verificationStatus.*'passed'" tools/ apps/` returns zero hits after the change. The test plan §Test plan already asserts this.
 
 ### Phase C — UI integration
 
 #### T8 — Frontend: extend progress component for verification source
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 55`
+`owner_lane: seraphine-frontend-impl (impl) + lulu-copy (verify-step label table)`
+`parallel_slice_candidate: yes`
+`blocked_by: ADR-1 progress component landed (otherwise this task is grafting onto a moving target)`
+`tdd_xfail_reference: T13 (Phase D — end-to-end logs integration also exercises the frontend transition; component-level xfail in the studio frontend test suite if one exists)`
+`files:`
+- `apps/demo-studio-frontend/.../buildProgress.js` (or wherever ADR-1 landed the progress component — discover during impl) — add a `source: 'build' | 'verify'` discriminator. Source-specific state (label table, total steps, terminal copy) selected via the discriminator.
+- New `verifyLabels` table mapping the 8 category keys to the user-facing copy from D4 (`identity` → "Checking identity & branding metadata…", etc.). Lulu owns the copy review.
+- Terminal state copy table: `pass` → "Verification passed" (green), `fail` → "Verification completed with issues — N failed" (amber), `error` → "Verification could not run — {reason}" (red).
+- Accessibility per D4 §UX Spec: `aria-valuetext` and `aria-live="polite"` announcements for verify state transitions.
 
-Per D4. Source discriminator `'build' | 'verify'`, separate label tables, terminal state copy. Re-uses ADR-1's UI-progress contract. Owns the Lulu mapping table copy in §D4.
+UI-progress contract from ADR-1 §D2 is reused verbatim — do NOT introduce a parallel progress contract or a second component. Single component, two sources.
 
-#### T9 — Frontend: subscribe handoff
+Slice candidate `yes`: copy table (Lulu) + component code (Seraphine) + accessibility annotations are independent enough to parallelise if dispatch wants three streams.
+
+#### T9 — Frontend: subscribe handoff (build_complete → verify)
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 40`
+`owner_lane: seraphine-frontend-impl`
+`parallel_slice_candidate: no`
+`blocked_by: T8`
+`tdd_xfail_reference: T13 (e2e covers the handoff timing); component-level test optional`
+`files:`
+- `apps/demo-studio-frontend/.../buildProgress.js` (same file as T8) — on `event: build` arrival with `build_complete` data: hold bar at 100% with "Build complete" label for 1.5 s (per ADR-1 OQ-3 dwell time), then reset bar to 0% indeterminate with "Verifying demo…" label, switch source discriminator to `'verify'`.
+- Reuse the **same** `EventSource` connection — do NOT close and re-open. The multiplexer at `/session/{id}/logs` continues to deliver both `event: build` and `event: verification` chunks; the component just routes them by `event` field.
+- Wire dispatcher: incoming `MessageEvent` with `event === 'verification'` → existing verify handler from T8; with `event === 'build'` → existing build handler from ADR-1.
 
-On `event: build` `build_complete` arrival, hold component for 1.5 s, then reset and start consuming `event: verification` chunks from the same `EventSource`. No new connection.
+The 1.5 s dwell is a setTimeout; cancellable if a new build starts before it expires (defensive).
 
-#### T10 — `GET /session/{sessionId}/state` (or amend `/build-status`)
+#### T10 — `GET /session/{sessionId}/state` (unified build+verify seed)
 `kind: feature`
-`estimate_minutes: TBD by Aphelios`
+`estimate_minutes: 50`
+`owner_lane: viktor-python-impl`
+`parallel_slice_candidate: no`
+`blocked_by: T5 (verify fields), CC1 (ADR-1 `/build-status` → `/state` rename owned by parallel-Sona)`
+`cross_adr_blocked_by: ADR-1-T-rename (parallel-Sona's ADR-1 rename of `/build-status` → `/state`; if ADR-1 ships under `/build-status` first, T10 must include a transitional alias — see CC1)`
+`tdd_xfail_reference: T14 (Phase D — page-reload resume integration test, xfail-first)`
+`files:`
+- `tools/demo-studio-v3/main.py` — implement `@app.get("/session/{session_id}/state")` route. Reads session doc once via existing Firestore client; assembles the unified shape per D5 (build + verify fields). Auth: `require_session_or_owner` decorator (existing).
+- For `verificationStatus === 'in_progress'`: NO upstream call to S4. The seed returns the indeterminate marker; the frontend re-subscribes to SSE immediately after seeding and picks up future events from the multiplexer.
+- For terminal verify states: returns `verificationStatus`/`verificationReport` directly from session doc.
+- Coordinate with parallel-Sona: if ADR-1's `/build-status` ships before this rename lands, T10 adds a transitional alias `@app.get("/session/{session_id}/build-status")` that delegates to the same handler, returning the unified shape. Mark for removal in a follow-up.
 
-Per D5. Returns unified build+verify seed shape. Auth `require_session_or_owner`. For in-progress verify, no upstream call — returns indeterminate seed.
+CC1 coupling: this task is the ADR-2-side terminus of the rename. Aphelios surfaces the cross-ADR blocker explicitly; Sona must coordinate with parallel-Sona (ADR-1 holder) before kicking off T10.
 
 ### Phase D — Tests
 
+> **Phase D is a logical grouping, not a chronological one.** Per project rule §12 (TDD gate), each test task is xfail-committed BEFORE its covered impl tasks land on the same branch. So in branch-time, the order is roughly: T11 xfail → T1/T2/T3 impl (T11 flips green); T12 xfail → T5/T6 impl (T12 flips green); T13 xfail → T5 impl; T14 xfail → T10 impl. T4 (backwards-compat smoke for non-SSE callers, kept in Phase A as the JSON-branch regression) follows the same xfail-first discipline against T2.
+
 #### T11 — S4 SSE handler tests
 `kind: test`
-`estimate_minutes: TBD by Xayah`
+`estimate_minutes: 55`
 `gate: khang-confirm`
+`owner_lane: vi-go-tests`
+`parallel_slice_candidate: no`
+`blocked_by: T1, T2, T3 (covers all three S4-side impl tasks)`
+`covers: T1 + T2 + T3 (event-sink hook + handler SSE branch + encoder util)`
+`tdd_xfail_reference: self (this IS the xfail-first test for T1+T2+T3 — committed BEFORE T1/T2/T3 land, flips green when they all merge)`
+`files:`
+- `tools/demo-studio-verification/internal/api/handler_test.go` — add `TestHandleVerify_SSEBranch_EventSequence` asserting:
+  - Request with `Accept: text/event-stream` returns `Content-Type: text/event-stream` + flushable body.
+  - Event order on the wire: `verify_start` → 8 × (`category_start`, `category_complete`) → `verify_complete`.
+  - Each event payload shape matches D3 (totalCategories, category index, summary, etc.).
+  - Hard error mid-run (mock config client returns error) → `verify_error` with correct `reason` enum value, stream closes after.
+  - Firestore persistence still invoked (existing mock).
+- Mock the WS client + config client using existing test fixtures in the package.
 
-Tests `POST /verify` SSE branch emits the documented event sequence in order (`verify_start` → 8× `category_start`/`category_complete` → `verify_complete`). Mock the WS + config clients.
+xfail-first protocol per project rule §12: this test is committed (with `t.Skip` or build-tag-gated) on a branch BEFORE T1/T2/T3 implementation commits. The TDD gate verifies it precedes impl in branch history.
 
 #### T12 — BFF stream-ingest tests
 `kind: test`
-`estimate_minutes: TBD by Xayah`
+`estimate_minutes: 55`
+`owner_lane: rakan-python-tests`
+`parallel_slice_candidate: no`
+`blocked_by: none (xfail-first; precedes T5 + T6)`
+`covers: T5 + T6 (stream ingest + stall watchdog)`
+`tdd_xfail_reference: self (this IS the xfail-first test for T5/T6 — committed BEFORE T5/T6 land, flips green when they merge)`
+`files:`
+- `tools/demo-studio-v3/tests/test_verify_stream.py` (new) — pytest test module:
+  - `test_stream_ingest_terminal_complete`: feed canned SSE chunks (verify_start + 8 category pairs + verify_complete) via httpx mock; assert `set_verification_result(session_id, "pass", report)` called exactly once, each `event: verification` chunk reached `_verification_queues[session_id]` (assert via queue drain).
+  - `test_stream_ingest_terminal_error`: feed canned SSE ending in `verify_error`; assert `set_verification_result(session_id, "failed", {reason, error, partialReport})`.
+  - `test_stream_ingest_connection_drop`: simulate httpx connection error mid-stream; assert `set_verification_result(session_id, "failed", {reason: "stream_error", ...})`.
+  - `test_stream_stall_watchdog` (T6): simulate 70 s gap between events (mock `asyncio.wait_for` or use a timing scaffold); assert `set_verification_result(session_id, "failed", {reason: "stream_stalled"})` and final `event: verification` emitted.
+  - `test_stream_idempotent`: two concurrent calls for same session_id; second is noop, only one `_active_verify_streams` entry.
 
-xfail-first: feed canned SSE chunks into `start_s4_verify_stream` (httpx mock) and assert `set_verification_result` called once with the embedded report and that each `event: verification` chunk reaches `_verification_queues[session_id]`.
+xfail-first per project rule §12: tests committed on a branch with `pytest.mark.xfail(strict=True)` BEFORE T5/T6 impl commits. Flip strict-passing once impl lands.
 
 #### T13 — End-to-end `/session/{id}/logs` integration
 `kind: test`
-`estimate_minutes: TBD by Xayah`
+`estimate_minutes: 60`
+`owner_lane: rakan-python-tests`
+`parallel_slice_candidate: no`
+`blocked_by: T5, T7a (needs S4_VERIFY_URL plumbed even in test env), and ideally T2 (if integration runs against a real S4 dev instance)`
+`covers: T5 + build-callback path + multiplexer + session-doc terminal write`
+`tdd_xfail_reference: self (xfail-first; committed before T5 lands, flips green when full pipeline is up)`
+`files:`
+- `tools/demo-studio-v3/tests/test_e2e_verify_pipeline.py` (new) — integration test:
+  - Mock S4 with a local HTTP server (httpx ASGI app or `aiohttp` test server) that serves `POST /verify` returning canned SSE.
+  - Trigger `POST /session/{id}/build` callback (internal-secret) on the BFF.
+  - Subscribe to `GET /session/{id}/logs` via SSE client.
+  - Assert: `event: verification` chunks arrive in order matching the canned upstream sequence; terminal `verify_complete` lands on session doc as `verificationStatus="pass"` + `verificationReport` populated; bounded total time < 30 s for the test scenario.
 
-Build callback success → BFF subscribes upstream → upstream emits 8 categories → BFF re-emits as `event: verification` chunks → terminal report lands on session doc within bounded time.
+This is the integration that proves the full chain works without real S4. Akali's QA gate against the deployed env covers the production-path integration.
 
 #### T14 — Page-reload resume integration
 `kind: test`
-`estimate_minutes: TBD by Xayah`
+`estimate_minutes: 50`
+`owner_lane: rakan-python-tests`
+`parallel_slice_candidate: no`
+`blocked_by: T10 (the `/state` endpoint must exist), T9 (frontend re-subscribe behaviour)`
+`covers: T10 + T9 reload path`
+`tdd_xfail_reference: self (xfail-first; committed before T10 lands)`
+`files:`
+- `tools/demo-studio-v3/tests/test_e2e_reload_resume.py` (new) — integration test:
+  - Trigger build → wait for verify start → simulate page-reload by closing the SSE connection mid-verify.
+  - Issue `GET /session/{id}/state`; assert response shape includes `verificationStatus: "in_progress"`, indeterminate seed (no progress fields populated).
+  - Re-open SSE; assert remaining `category_*` events arrive normally and terminal `verify_complete` lands.
+  - Edge case: queue drained between disconnect and reconnect (per D5 caveat) — bar shows indeterminate until next event arrives. Test asserts indeterminate seed + correct flow once next event arrives.
 
-xfail-first. Mid-verify reload: `/state` returns indeterminate seed; SSE re-opens; remaining `category_*` events reach the bar.
+Bounded total time < 30 s.
 
 ### Phase E — Review
 
 #### T15 — Component visual smoke (Lulu / Caitlyn)
 `kind: review`
-`estimate_minutes: TBD by Lulu`
+`estimate_minutes: 45`
+`owner_lane: lulu-design-review`
+`parallel_slice_candidate: wait-bound`
+`blocked_by: T8, T9, T10 (frontend impl deployed) + Akali QA gate run`
+`tdd_xfail_reference: n/a (review task, not impl)`
+`files:`
+- `assessments/qa-reports/2026-04-27-adr-2-verification-service-<rev-sha>/lulu-visual-review.md` (new) — visual review of verify states on the `feat/demo-studio-v3` deployment, comparing rendered states (in-progress / pass / fail / error) against the §UX Spec and the D4 step-name mapping table copy.
 
-Visual review of verify states (in-progress / pass / fail / error) on `feat/demo-studio-v3` deployment.
+Slice candidate `wait-bound`: review duration is dominated by waiting for the deployment to land + Akali's QA artifacts to deposit; cannot be parallelised by slicing.
 
 ## Test plan
 
