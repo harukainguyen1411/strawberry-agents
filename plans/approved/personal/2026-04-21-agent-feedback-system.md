@@ -16,8 +16,8 @@ related:
   - feedback/2026-04-21-phase-discipline-approved-vs-in-progress.md
   - feedback/2026-04-21-viktor-context-ceiling-batched-impl.md
   - feedback/2026-04-22-coordinator-verify-qa-claims.md
-  - architecture/agent-pair-taxonomy.md
-  - architecture/key-scripts.md
+  - architecture/agent-network-v1/taxonomy.md
+  - architecture/agent-network-v1/key-scripts.md
 ---
 
 # Continuous agent-feedback system
@@ -759,7 +759,7 @@ No task in this breakdown amends `feedback/INDEX.md` columns. If a future feedba
 
 ## Test plan
 
-`tests_required: false` because this ADR is documentation + configuration + shell scripts. Rationale: no `apps/**` code lands; the Node shim in T2 is a thin YAML parser with no business logic; the hook logic is a bash if-then-regenerate pattern that's straightforward. Per `architecture/plan-frontmatter.md` Quick reference, opting out requires a justification in the plan body — this paragraph is that justification. <!-- orianna: ok -->
+`tests_required: false` because this ADR is documentation + configuration + shell scripts. Rationale: no `apps/**` code lands; the Node shim in T2 is a thin YAML parser with no business logic; the hook logic is a bash if-then-regenerate pattern that's straightforward. Per `architecture/agent-network-v1/plan-frontmatter.md` Quick reference, opting out requires a justification in the plan body — this paragraph is that justification. <!-- orianna: ok -->
 
 That said, three lightweight invariant checks run as part of the task DoDs and will be captured as bats tests alongside the existing `scripts/__tests__/` suite: <!-- orianna: ok -->
 
@@ -821,7 +821,7 @@ Three concerns surfaced while authoring this plan; each is now covered above but
 
 ## 7. Open questions
 
-- **OQ1 — Timezone confirmation.** All timestamps assumed Asia/Bangkok (UTC+7). Confirm against `architecture/plan-lifecycle.md` or Duong directly before T2 lands the filename convention in the `feedback-index.sh` regex. <!-- orianna: ok -->
+- **OQ1 — Timezone confirmation.** All timestamps assumed Asia/Bangkok (UTC+7). Confirm against `architecture/agent-network-v1/plan-lifecycle.md` or Duong directly before T2 lands the filename convention in the `feedback-index.sh` regex. <!-- orianna: ok -->
 - **OQ2 — Nested include depth.** Depth-2 resolves the current need. If a future ADR wants a third-level nested include, do we go recursive or do we keep enumerating passes? Deferred to when that need is concrete.
 - **OQ3 — Per-concern feedback folders.** This ADR mandates one global `feedback/` folder. If work-concern feedback grows to dominate and mixes poorly with personal-concern feedback in the INDEX, split to `feedback/work/` + `feedback/personal/`. Deferred; `concern:` frontmatter already enables the split cheaply later. <!-- orianna: ok -->
 - **OQ4 — High-severity real-time companion inbox shard.** §5 mitigation claims `severity: high` entries also write an inbox shard immediately. Should this be part of `scripts/hooks/pre-commit-feedback-index.sh` (same hook) or a separate `scripts/hooks/pre-commit-feedback-high-sev.sh`? Unify into one hook for simplicity unless a lint reason emerges. <!-- orianna: ok -->
@@ -844,7 +844,7 @@ None in v1. The system is additive:
 
 No architectural component or interface changes. No new universal invariant added to CLAUDE.md (the trigger stanza rides via shared-rules include, not via a rule-number entry). No existing rule modified.
 
-If the feedback system becomes a first-class named component in the agent-system story, a follow-up ADR adds it to `architecture/agent-system.md` and creates `architecture/feedback-system.md`. Deferred until volume justifies. <!-- orianna: ok -->
+If the feedback system becomes a first-class named component in the agent-system story, a follow-up ADR adds it to `architecture/archive/pre-network-v1/agent-system.md` and creates `architecture/feedback-system.md`. Deferred until volume justifies. <!-- orianna: ok -->
 
 ## Orianna approval
 

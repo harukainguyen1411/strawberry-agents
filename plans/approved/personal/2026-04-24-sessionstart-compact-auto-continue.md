@@ -74,7 +74,7 @@ Verification invariants, confirmed manually in T3:
 ## References
 
 - Hook: `scripts/hooks/sessionstart-coordinator-identity.sh`
-- Related: `architecture/compact-workflow.md` (mechanics of /pre-compact-save + /compact)
+- Related: `architecture/agent-network-v1/compact-workflow.md` (mechanics of /pre-compact-save + /compact)
 - Rule context: Universal Invariant (none directly — this is a UX polish on the coordinator-identity hook added in a prior plan)
 
 ## Orianna approval

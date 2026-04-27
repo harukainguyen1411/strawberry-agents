@@ -34,14 +34,14 @@ The taxonomy data is already first-class: every pair-mate-bearing agent def carr
 
 Ship Lux's recommendation **D, sequenced** — A + B together as one Karma → Talon plan, pre-canonical-v1 lock. C (PreToolUse hook) is **deferred** to a separate plan after the canonical-v1 measurement window per Lux §2.3; this plan does not specify or scaffold it.
 
-- **Artifact 1 (option A):** `architecture/agent-routing.md` — one-page glance-scannable lookup keyed by upstream-plan-author lane → required impl-set. Rule-12 sequencing prose lives in §3 of the doc + the include's reasoning block (per Evelynn's OQ1 resolution: lean table, prose lives elsewhere).
+- **Artifact 1 (option A):** `architecture/agent-network-v1/routing.md` — one-page glance-scannable lookup keyed by upstream-plan-author lane → required impl-set. Rule-12 sequencing prose lives in §3 of the doc + the include's reasoning block (per Evelynn's OQ1 resolution: lean table, prose lives elsewhere).
 - **Artifact 2 (option B):** `.claude/agents/_shared/coordinator-routing-check.md` — sibling to the existing `_shared/coordinator-intent-check.md` primitive, sourced via `<!-- include: -->` by Evelynn and Sona only (the two coordinators that dispatch). Encodes two structured pauses: a **Lane check** (Error 1 shape) and a **Pair-set completeness check** (Error 2 shape).
 
 Pre-lock urgency: both files touch canonical-v1 surfaces (`_shared/*.md`, top-level `architecture/`); must promote, execute, and ship before retrospection-dashboard Phase 2 freezes the canon.
 
 # 3. Artifact specs
 
-## 3.1. `architecture/agent-routing.md` (Artifact 1)
+## 3.1. `architecture/agent-network-v1/routing.md` (Artifact 1)
 
 **Shape:** single-page reference, glance-scannable.
 
@@ -83,7 +83,7 @@ Pre-lock urgency: both files touch canonical-v1 surfaces (`_shared/*.md`, top-le
 1. **Heading and scope line** — `# Coordinator routing primitive` + one-line "Sourced by: Evelynn, Sona." (mirrors intent-check's opening).
 2. **`## Pre-dispatch routing block`** — the active gate. Before any `Agent` tool call where a plan path is cited or implied, emit a 4-line block internally:
    1. **Plan author** — what is the upstream plan's `owner:` field? (or "no plan; ad-hoc" — exempt)
-   2. **Required impl-set** — given that owner, look up the row in `architecture/agent-routing.md` §2. State the full set.
+   2. **Required impl-set** — given that owner, look up the row in `architecture/agent-network-v1/routing.md` §2. State the full set.
    3. **Lane check (Error 1 shape)** — is the agent I am about to dispatch in that impl-set? If no, **stop** — pick from the correct set.
    4. **Pair-set completeness check (Error 2 shape)** — does the impl-set include a test-impl pair-mate (`rakan` or `vi`)? If yes, has that pair-mate's xfail commit already landed on the target branch? If no, dispatch the test-impl pair-mate **first**.
 3. **`## "This dispatch feels obvious" smell`** — pattern-match speed is not a license to skip the routing block. Mirrors the intent-check's "surgical is not a license" framing one floor up. Canonical failure mode: today's two errors (Talon-on-Swain-plan and Viktor-without-Rakan).
@@ -97,13 +97,13 @@ T1. **xfail bats fixture asserting routing-check primitive is wired into both co
 - kind: test
 - estimate_minutes: 20
 - files: `tests/agents/coordinator-routing-check-wired.bats` (new) <!-- orianna: ok -->
-- detail: New bats file with two test cases. Case 1: `grep -F '<!-- include: _shared/coordinator-routing-check.md -->' .claude/agents/evelynn.md` returns 0. Case 2: same grep against `.claude/agents/sona.md` returns 0. Add a third case asserting the include file exists at `.claude/agents/_shared/coordinator-routing-check.md`. Add a fourth asserting `architecture/agent-routing.md` exists and contains the literal heading `## 2. Lane lookup table` (or whatever §2 header T2 produces — Talon adjusts to match). Commit FIRST, expecting all four cases to fail (xfail per Rule 12). Use a `# bats test_tags=tag:routing-discipline` tag.
+- detail: New bats file with two test cases. Case 1: `grep -F '<!-- include: _shared/coordinator-routing-check.md -->' .claude/agents/evelynn.md` returns 0. Case 2: same grep against `.claude/agents/sona.md` returns 0. Add a third case asserting the include file exists at `.claude/agents/_shared/coordinator-routing-check.md`. Add a fourth asserting `architecture/agent-network-v1/routing.md` exists and contains the literal heading `## 2. Lane lookup table` (or whatever §2 header T2 produces — Talon adjusts to match). Commit FIRST, expecting all four cases to fail (xfail per Rule 12). Use a `# bats test_tags=tag:routing-discipline` tag.
 - DoD: file committed on the implementation branch as a failing test (xfail commit), referenced by plan slug; pre-push hook accepts the xfail commit.
 
-T2. **Author the cheat-sheet doc** at `architecture/agent-routing.md`.
+T2. **Author the cheat-sheet doc** at `architecture/agent-network-v1/routing.md`.
 - kind: docs
 - estimate_minutes: 30
-- files: `architecture/agent-routing.md` (new) <!-- orianna: ok -->
+- files: `architecture/agent-network-v1/routing.md` (new) <!-- orianna: ok -->
 - detail: Implement §3.1 spec above. Six sections in order. Lookup table is the lean two-column form (no Rule-12 column). §3 holds the Rule-12 prose. §4 covers Heimerdinger/Ekko, Senna+Lucian, Akali, Camille, Orianna, plus the Lux/Syndra self-dispatch special case. §5 is the four-question dispatch checklist. §6 cites Lux's memo, the intent-check primitive, and the pair-taxonomy plan.
 - DoD: file exists; bats case 4 passes (header literal present); humans can scan in under 60 seconds.
 
@@ -112,7 +112,7 @@ T3. **Author the routing-check include** at `.claude/agents/_shared/coordinator-
 - estimate_minutes: 25
 - files: `.claude/agents/_shared/coordinator-routing-check.md` (new) <!-- orianna: ok -->
 - detail: Implement §3.2 spec above. Mirror `_shared/coordinator-intent-check.md` shape — short markdown, "Sourced by:" line, three sections (`## Pre-dispatch routing block`, `## "This dispatch feels obvious" smell`, `## Read-only / status-ping dispatches exempt`). The block is 4 lines (plan author / required impl-set / lane check / pair-set completeness check). State explicitly that the block is internal and not emitted to Duong.
-- DoD: file exists; cross-reference to `architecture/agent-routing.md` §2 lookup table is present; bats case 3 passes.
+- DoD: file exists; cross-reference to `architecture/agent-network-v1/routing.md` §2 lookup table is present; bats case 3 passes.
 
 T4. **Wire the include into Evelynn's agent def.**
 - kind: chore
@@ -140,8 +140,8 @@ T6. **Run the full bats suite; confirm xfail cases now pass.**
 **Invariants protected by the bats fixture (T1, T6):**
 
 - **Wiring invariant:** Both coordinator defs (`evelynn.md`, `sona.md`) source `_shared/coordinator-routing-check.md` via the include directive. Drift here (someone deletes the include, or only Sona has it) is the primary regression risk — the include is useless if the def doesn't source it.
-- **Existence invariant:** Both new files (`architecture/agent-routing.md`, `.claude/agents/_shared/coordinator-routing-check.md`) exist on disk. Catches accidental deletion or path rename.
-- **Content shape invariant:** `architecture/agent-routing.md` contains the §2 lookup-table heading. This is a thin signal that the doc still has the table (a weak content check; a malformed table would still pass, but a missing-table refactor would not).
+- **Existence invariant:** Both new files (`architecture/agent-network-v1/routing.md`, `.claude/agents/_shared/coordinator-routing-check.md`) exist on disk. Catches accidental deletion or path rename.
+- **Content shape invariant:** `architecture/agent-network-v1/routing.md` contains the §2 lookup-table heading. This is a thin signal that the doc still has the table (a weak content check; a malformed table would still pass, but a missing-table refactor would not).
 
 **Out of scope for the test:** the include's expanded content inside the rendered def. The include mechanism + sync script is already covered by existing tests for the intent-check include; this plan inherits that coverage.
 
@@ -151,7 +151,7 @@ T6. **Run the full bats suite; confirm xfail cases now pass.**
 
 To revert this plan:
 
-1. Delete `architecture/agent-routing.md`.
+1. Delete `architecture/agent-network-v1/routing.md`.
 2. Delete `.claude/agents/_shared/coordinator-routing-check.md`.
 3. Remove the `<!-- include: _shared/coordinator-routing-check.md -->` line from `.claude/agents/evelynn.md` (originally added at line ~35) and `.claude/agents/sona.md` (same location).
 4. Run `scripts/sync-shared-rules.sh` to re-render both defs without the include.

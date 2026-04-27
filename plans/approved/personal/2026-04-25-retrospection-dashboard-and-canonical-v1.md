@@ -12,8 +12,8 @@ related:
   - plans/archived/personal/2026-04-21-retrospection-dashboard.md
   - plans/pre-orianna/proposed/2026-04-19-usage-dashboard-subagent-task-attribution.md
   - assessments/research/2026-04-25-agent-observability-tooling.md
-  - architecture/plan-lifecycle.md
-  - architecture/coordinator-memory.md
+  - architecture/agent-network-v1/plan-lifecycle.md
+  - architecture/agent-network-v1/coordinator-memory.md
 architecture_impact: refactor
 ---
 

@@ -74,7 +74,7 @@ is_orianna() {
 
 is_admin() {
   # Note: `env -i git commit` can bypass this by clearing all env; PreToolUse guard is the
-  # primary defence — see architecture/plan-lifecycle.md.
+  # primary defence — see architecture/agent-network-v1/plan-lifecycle.md.
   # Both identity vars empty AND no agent-mode flag → treat as human/admin Duong.
   [ -z "$_agent" ] && [ -z "$_agent_mode" ]
 }

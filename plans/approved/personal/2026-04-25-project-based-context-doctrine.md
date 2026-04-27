@@ -19,12 +19,12 @@ related:
   - plans/in-progress/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
   - architecture/agent-network-v1/plan-lifecycle.md
   - architecture/agent-network-v1/coordinator-boot.md
-  - architecture/plan-frontmatter.md
+  - architecture/agent-network-v1/plan-frontmatter.md
   - CLAUDE.md
 architecture_changes:
   - architecture/agent-network-v1/projects.md
   - architecture/agent-network-v1/plan-lifecycle.md
-  - architecture/plan-frontmatter.md
+  - architecture/agent-network-v1/plan-frontmatter.md
 ---
 
 # Project-Based Context Doctrine — `projects/<concern>/<slug>.md` as the rich-yet-simple top-level intent
@@ -151,7 +151,7 @@ Four states: `proposed → active → completed → archived`. Transitions:
   Write the canonical projects doctrine doc: directory layout (§2.1), schema (§2.2), plan linking (§2.3), agent access (§2.4), lifecycle (§2.5), integration notes (§2.6). Cross-link from `architecture/agent-network-v1/README.md` index.
   **DoD**: file exists with all six sections; README links to it; `grep -r "projects/" architecture/agent-network-v1/` returns the new doc.
 
-- [ ] T2 — `kind: docs`, `estimate_minutes: 5`. Files: `architecture/plan-frontmatter.md` (existing).
+- [ ] T2 — `kind: docs`, `estimate_minutes: 5`. Files: `architecture/agent-network-v1/plan-frontmatter.md` (existing).
   Add `project:` to the canonical plan frontmatter spec; mark optional-with-warning for v1, scheduled to become required after retroactive sweep.
   **DoD**: spec lists `project:` with description, allowed values ("must reference an existing `projects/<concern>/{proposed,active}/<slug>.md`"), and current enforcement level (warn).
 

@@ -123,7 +123,7 @@ if [ -n "$violation" ]; then
   printf '    Duongntd <103487096+Duongntd@users.noreply.github.com>\n' >&2
   printf '\n  Set via: git config user.name Duongntd\n' >&2
   printf '           git config user.email 103487096+Duongntd@users.noreply.github.com\n' >&2
-  printf '\n  Reference: architecture/git-identity-enforcement.md\n' >&2
+  printf '\n  Reference: architecture/agent-network-v1/git-identity.md\n' >&2
   exit 1
 fi
 

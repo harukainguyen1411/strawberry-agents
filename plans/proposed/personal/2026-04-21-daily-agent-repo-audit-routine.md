@@ -4,6 +4,8 @@ concern: personal
 owner: lux
 architect: azir
 created: 2026-04-21
+last_reviewed: 2026-04-27
+priority: P2
 design_pass: 2026-04-23-azir-adr-ready
 tests_required: true
 complexity: complex
@@ -14,9 +16,9 @@ related:
   - plans/proposed/personal/2026-04-21-retrospection-dashboard.md
   - plans/proposed/personal/2026-04-21-coordinator-decision-feedback.md
   - plans/approved/2026-04-20-strawberry-inbox-channel.md
-  - architecture/agent-pair-taxonomy.md
-  - architecture/agent-network.md
-  - architecture/key-scripts.md
+  - architecture/agent-network-v1/taxonomy.md
+  - architecture/archive/pre-network-v1/agent-network.md
+  - architecture/agent-network-v1/key-scripts.md
 invariants:
   - Routine is advisory-only — never blocks commits, CI, or PRs
   - Audit subagents are read-only — enforced by tool-list restriction, not convention
@@ -40,7 +42,7 @@ invariants:
 - Architecture docs cite plans that have moved (`plans/approved/` → `plans/implemented/` → `plans/archived/`).
 - `.claude/agents/*.md` definitions pick up frontmatter drift — an agent's `pair_mate:` points at a retired agent, an agent directory exists without a def, a def exists without an agent directory.
 - New top-level directories appear (`mcps/`, `strawberry.pub/`, `design/`, `incidents/`) without being added to the CLAUDE.md file-structure table.
-- Scripts get added under `scripts/` without being listed in `architecture/key-scripts.md`.
+- Scripts get added under `scripts/` without being listed in `architecture/agent-network-v1/key-scripts.md`.
 - Upstream Claude Code / Anthropic / MCP ecosystem ships features that would retire bespoke custom code in this repo — nobody sees this unless somebody happens to be reading release notes on that day.
 - Rules get duplicated across CLAUDE.md, `architecture/*.md`, and `.claude/agents/_shared/*.md`; the duplicates drift against each other over weeks and the mismatch only surfaces when an agent behaves wrong. <!-- orianna: ok -->
 
@@ -161,14 +163,14 @@ Each subagent is invoked by the parent Routine via `Agent` tool with a **contrac
 - `agents/sona/CLAUDE.md`
 - All `.claude/agents/*.md` frontmatter + body (28 files as of 2026-04-21)
 - `.claude/agents/_shared/*.md` (10 files)
-- Path-expansion source: `architecture/key-scripts.md` (for script-existence cross-check)
+- Path-expansion source: `architecture/agent-network-v1/key-scripts.md` (for script-existence cross-check)
 
 **Checks:**
 
 1. **Dead references** — every path, script name, or plan mentioned in text is checked for existence on disk. Path patterns detected via regex (`scripts/\w+\.sh`, `plans/[a-z-]+/[\d-]+[\w-]+\.md`, `architecture/[\w-]+\.md`, `\.claude/agents/[\w-]+\.md`). Missing target → severity `medium`.
 2. **Contradicting rules** — heuristic: two rules with overlapping subject nouns (normalized to a 3-token shingle) but different imperatives. Example: rule A says "never X"; rule B says "X is permitted when Y". Only flagged if the shingle-match score exceeds a threshold (§D7). Severity `high` if both rules are numbered universal invariants; `medium` otherwise.
 3. **Rules that haven't fired in N days** — rule identifier (the `<!-- #rule-* -->` anchor comments in CLAUDE.md) is grepped across the last 30 days of commit bodies + PR bodies + inbox messages + session handoffs. If a rule has zero references in 30 days AND the rule text uses words like "every", "always", "must" (suggesting it should fire on routine work), emit `low`-severity candidate-for-removal finding. This is explicitly conservative — most rules are correct even when silent.
-4. **Missing expected sections** — for each `.claude/agents/<name>.md`, verify it contains a `## Startup` section, an `<!-- include: _shared/<role>.md -->` marker if paired, and frontmatter fields consistent with the taxonomy matrix (§1.1 of `architecture/agent-pair-taxonomy.md`). Severity `medium` for missing sections; `high` for taxonomy-matrix mismatch.
+4. **Missing expected sections** — for each `.claude/agents/<name>.md`, verify it contains a `## Startup` section, an `<!-- include: _shared/<role>.md -->` marker if paired, and frontmatter fields consistent with the taxonomy matrix (§1.1 of `architecture/agent-network-v1/taxonomy.md`). Severity `medium` for missing sections; `high` for taxonomy-matrix mismatch.
 5. **Cross-reference against architecture** — every rule text is checked against `architecture/*.md` for a canonical-home reference. Rules stated in CLAUDE.md that are NOT cross-linked to an architecture doc are candidate for architecture-doc creation (severity `low`).
 
 **Output shape:**
@@ -205,7 +207,7 @@ Each subagent is invoked by the parent Routine via `Agent` tool with a **contrac
 **Checks:**
 
 1. **Stale file references** — same as Dimension 1 but scoped to `architecture/**.md`. Target paths extracted from prose, fenced code blocks, and link targets. Missing target → `medium`.
-2. **Freshness vs. code-change** — for each architecture doc that describes a code path (e.g. `architecture/key-scripts.md` describes scripts), cross-check the referenced code's `git log --since='30 days ago'`. If code has changed ≥ 3 commits in 30d AND doc has zero commits → `medium` severity "code drift, docs frozen". If code has zero commits in 90d → `low` severity "possibly-stale doc, possibly-dead code".
+2. **Freshness vs. code-change** — for each architecture doc that describes a code path (e.g. `architecture/agent-network-v1/key-scripts.md` describes scripts), cross-check the referenced code's `git log --since='30 days ago'`. If code has changed ≥ 3 commits in 30d AND doc has zero commits → `medium` severity "code drift, docs frozen". If code has zero commits in 90d → `low` severity "possibly-stale doc, possibly-dead code".
 3. **Orphan docs** — any `architecture/*.md` that is not referenced by any other file in the repo (grep across `CLAUDE.md`, `agents/`, `plans/`, `.claude/agents/`, other `architecture/` docs). `low` severity; these may be fine, they may be rot.
 4. **Missing index** — `architecture/README.md` should list every file in `architecture/`. Each discrepancy is a `low`-severity finding.
 5. **ADR citation rot** — for every `plans/implemented/<foo>.md` cited in architecture prose, verify the plan is still in `plans/implemented/` (not moved to `plans/archived/`). Archived ADRs that are still cited as the source of a live architectural claim → `medium` severity (the claim may need re-sourcing).
@@ -221,13 +223,13 @@ Each subagent is invoked by the parent Routine via `Agent` tool with a **contrac
 - `.claude/agents/` listing (full)
 - `agents/` listing (top two levels)
 - CLAUDE.md file-structure table
-- `architecture/key-scripts.md` (the canonical script index)
-- `architecture/agent-network.md` + `agents/memory/agents-table.md` (the canonical agent index)
+- `architecture/agent-network-v1/key-scripts.md` (the canonical script index)
+- `architecture/archive/pre-network-v1/agent-network.md` + `agents/memory/agents-table.md` (the canonical agent index)
 
 **Checks:**
 
 1. **Undocumented top-level dirs** — any top-level dir not listed in CLAUDE.md's file-structure table. Example candidates today: `mcps/`, `strawberry.pub/`, `design/`, `incidents/`, `tasklist/`. `medium` severity (may be intentional; may be rot).
-2. **Scripts in `scripts/` not in `architecture/key-scripts.md`** — the canonical key-scripts table should list every script with operational meaning. New scripts get added, nobody backfills the doc. `low` severity per missing script; `medium` in aggregate if >5 missing.
+2. **Scripts in `scripts/` not in `architecture/agent-network-v1/key-scripts.md`** — the canonical key-scripts table should list every script with operational meaning. New scripts get added, nobody backfills the doc. `low` severity per missing script; `medium` in aggregate if >5 missing.
 3. **Agents without defs** — `agents/<name>/` directory exists but `.claude/agents/<name>.md` does not. `high` severity (the audit of 2026-04-21 caught exactly this with `agents/vex/`).
 4. **Defs without agent directories** — `.claude/agents/<name>.md` exists but `agents/<name>/` directory does not. Skip single-lane Orianna exception; otherwise `medium` severity.
 5. **New `.claude/agents/` additions lacking memory structure** — `agents/<name>/memory/<name>.md` must exist for every paired agent. Missing → `medium` severity; Lux's own directory failed this check in the 2026-04-21 audit.
@@ -773,16 +775,16 @@ This ADR modifies `architecture/**` in a structural way:
 - **New doc:** `architecture/audit-routine.md` — the operating manual for the Routine (config, subagent contracts, tracker schema, disable path).
 - **New entry in `architecture/README.md`** — pointer to the new doc.
 - **New file-structure row in top-level `CLAUDE.md`** — the `audits/` directory and the `assessments/audits/` directory added to the file-structure table.
-- **Key-scripts update** — `architecture/key-scripts.md` gains entries for `scripts/audit-routine-run.sh`, `scripts/audit-routine-validate.sh`, `scripts/audit-dim-{1..5}.sh`, `scripts/audit-dim-5-fetch.sh` (the prompt-injection quarantine wrapper — §D12), and `scripts/audit-routine-seed.sh`.
+- **Key-scripts update** — `architecture/agent-network-v1/key-scripts.md` gains entries for `scripts/audit-routine-run.sh`, `scripts/audit-routine-validate.sh`, `scripts/audit-dim-{1..5}.sh`, `scripts/audit-dim-5-fetch.sh` (the prompt-injection quarantine wrapper — §D12), and `scripts/audit-routine-seed.sh`.
 - **New Python library** — `audits/lib/scan_injection.py` + `audits/requirements.txt`. Documented in `architecture/audit-routine.md`'s "Prompt-injection mitigation" section, cross-linked from the key-scripts entry for `scripts/audit-dim-5-fetch.sh`.
 
-These updates ship under T14 in Phase 3. Per `architecture/plan-frontmatter.md`, exactly one of `architecture_changes` or `architecture_impact: none` must be declared at the `in-progress → implemented` gate. This plan's touched-paths are:
+These updates ship under T14 in Phase 3. Per `architecture/agent-network-v1/plan-frontmatter.md`, exactly one of `architecture_changes` or `architecture_impact: none` must be declared at the `in-progress → implemented` gate. This plan's touched-paths are:
 
 ```yaml
 architecture_changes:
   - architecture/audit-routine.md
   - architecture/README.md
-  - architecture/key-scripts.md
+  - architecture/agent-network-v1/key-scripts.md
 ```
 
 …plus a CLAUDE.md file-structure table row addition (not under `architecture/`, so it is not itself an `architecture_changes:` entry but is listed here for completeness).

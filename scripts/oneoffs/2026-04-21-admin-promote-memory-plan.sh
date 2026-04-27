@@ -93,7 +93,7 @@ All 12 tasks landed on main. Evidence trail:
   T8  bootstrap open-threads.md + INDEX.md — commit 6935a98
   T9  boot rewrites + filter-last-sessions.sh deletion — commit 5f519dd
   T10 CLAUDE.md startup + agent-network consumption — commit 24d238f
-  T11 architecture/coordinator-memory.md — commit 66111f9
+  T11 architecture/agent-network-v1/coordinator-memory.md — commit 66111f9
   T12 dogfood evidence — commit 682a976
 
 Orianna-Bypass: All impl complete. Body-hash signature re-sign chain blocked

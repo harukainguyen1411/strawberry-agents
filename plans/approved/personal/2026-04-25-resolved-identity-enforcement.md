@@ -12,7 +12,7 @@ related:
   - scripts/install-hooks.sh
   - scripts/hooks/commit-msg-no-ai-coauthor.sh
   - scripts/hooks/agent-identity-default.sh
-  - architecture/plan-lifecycle.md
+  - architecture/agent-network-v1/plan-lifecycle.md
 references:
   - PR #45 review by Lucian (NEW-BP-4 through NEW-BP-12 reproducers): https://github.com/harukainguyen1411/strawberry-agents/pull/45
 ---
@@ -55,13 +55,13 @@ Action: T9 closes #45 with a comment linking the new PR and explaining the layer
 
 - [ ] **T5 — kind: code, estimate_minutes: 10.** Files: `scripts/hooks/pretooluse-subagent-identity.sh` (carry-over from PR #45). Detail: add a header comment explicitly marking this hook as **defense-in-depth, advisory-only** with a pointer to `pre-commit-resolved-identity.sh` as the primary gate. Reference NEW-BP-4..12 to explain why it cannot be the primary gate. No behavior change. DoD: comment block present; no test assertions touch this file.
 
-- [ ] **T6 — kind: docs, estimate_minutes: 15.** Files: `architecture/git-identity-enforcement.md` (new). <!-- orianna: ok --> Detail: short architecture note documenting the three-layer model (PreToolUse advisory → pre-commit primary → pre-push backstop), the regex set, the allowlist, the Orianna carve-out scope (pre-commit only), and the rationale anchored in Lucian's PR #45 NEW-BP-* findings. Link back to this plan. DoD: file committed; CLAUDE.md universal-invariants list (Rule list in repo root) NOT modified by this plan — that lift happens only after the new hooks bake for one week.
+- [ ] **T6 — kind: docs, estimate_minutes: 15.** Files: `architecture/agent-network-v1/git-identity.md` (new). <!-- orianna: ok --> Detail: short architecture note documenting the three-layer model (PreToolUse advisory → pre-commit primary → pre-push backstop), the regex set, the allowlist, the Orianna carve-out scope (pre-commit only), and the rationale anchored in Lucian's PR #45 NEW-BP-* findings. Link back to this plan. DoD: file committed; CLAUDE.md universal-invariants list (Rule list in repo root) NOT modified by this plan — that lift happens only after the new hooks bake for one week.
 
 - [ ] **T7 — kind: test, estimate_minutes: 10.** Files: `tests/hooks/test_pre_commit_resolved_identity.sh`, `tests/hooks/test_pre_push_resolved_identity.sh`. Detail: add two POSITIVE tests per hook — (a) neutral `Duongntd` identity passes both, (b) `STRAWBERRY_AGENT=orianna` with persona-named author passes pre-commit but FAILS pre-push (carve-out boundary). DoD: tests pass against T2/T3 implementations.
 
 - [ ] **T8 — kind: code, estimate_minutes: 10.** Files: `scripts/install-hooks.sh`. Detail: append a smoke test stanza at the end of the installer that runs the four test files (`tests/hooks/test_pre_commit_resolved_identity.sh`, `tests/hooks/test_pre_push_resolved_identity.sh`, plus the existing `test_commit_msg_no_ai_coauthor.sh` already wired). Surface failures fail-loud. DoD: `bash scripts/install-hooks.sh` runs the suite; output greps `OK` for each.
 
-- [ ] **T9 — kind: ops, estimate_minutes: 10.** Files: none (GitHub action). Detail: after the new PR merges, close PR #45 with a comment: "Superseded by #<NEW>. Lucian's NEW-BP-4..12 review showed the PreToolUse scanner cannot serve as a primary gate (regex arms race vs shell indirection). The scanner survives in the new PR as advisory defense-in-depth; the primary gate is now the resolved-identity `pre-commit` + `pre-push` hooks per `architecture/git-identity-enforcement.md`." DoD: PR #45 closed with comment; new PR linked.
+- [ ] **T9 — kind: ops, estimate_minutes: 10.** Files: none (GitHub action). Detail: after the new PR merges, close PR #45 with a comment: "Superseded by #<NEW>. Lucian's NEW-BP-4..12 review showed the PreToolUse scanner cannot serve as a primary gate (regex arms race vs shell indirection). The scanner survives in the new PR as advisory defense-in-depth; the primary gate is now the resolved-identity `pre-commit` + `pre-push` hooks per `architecture/agent-network-v1/git-identity.md`." DoD: PR #45 closed with comment; new PR linked.
 
 ## 4. Test plan
 
@@ -89,7 +89,7 @@ Per Rule 12, T1 commits the xfail suite first. T2 and T3 each flip their respect
 - Existing PreToolUse scanner: `scripts/hooks/pretooluse-subagent-identity.sh` (PR #45 branch)
 - Identity-default helper: `scripts/hooks/agent-identity-default.sh`
 - Hook installer: `scripts/install-hooks.sh`
-- Plan lifecycle: `architecture/plan-lifecycle.md`
+- Plan lifecycle: `architecture/agent-network-v1/plan-lifecycle.md`
 
 ## Orianna approval
 

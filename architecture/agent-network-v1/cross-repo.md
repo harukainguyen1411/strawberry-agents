@@ -114,7 +114,7 @@ Enforcement is automatic:
 - Pre-commit hook scans commit messages when `origin` matches `[:/]missmp/`
 - `scripts/reviewer-auth.sh` scans review/comment bodies before posting
 
-Full denylist and guidance: `architecture/pr-rules.md` `#work-scope-anonymity`.
+Full denylist and guidance: `architecture/agent-network-v1/pr-rules.md` `#work-scope-anonymity`.
 
 ---
 

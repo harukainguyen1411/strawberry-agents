@@ -199,7 +199,7 @@ Coordinators (Evelynn, Sona) use a two-layer memory shape. Subagents MUST NOT ea
 
 **To search across historical shards:** delegate to Skarner (read-only memory excavator). Do not load shards in bulk at startup.
 
-**Full design:** `architecture/coordinator-memory.md`.
+**Full design:** `architecture/agent-network-v1/coordinator-memory.md`.
 
 ### Decision-tier memory (coordinators only)
 
@@ -239,7 +239,7 @@ For one-shot bg subagents, before invoking `/end-subagent-session`:
 - Evelynn delegates execution, moving to `plans/in-progress/`
 - On completion, move to `plans/implemented/`
 
-**Promoting plans:** Invoke the **Orianna agent** (`.claude/agents/orianna.md`) via the Agent tool — never raw `git mv` out of `proposed/`. Orianna runs the gate, moves the file, rewrites `status:`, commits, and pushes. See `architecture/plan-lifecycle.md`.
+**Promoting plans:** Invoke the **Orianna agent** (`.claude/agents/orianna.md`) via the Agent tool — never raw `git mv` out of `proposed/`. Orianna runs the gate, moves the file, rewrites `status:`, commits, and pushes. See `architecture/agent-network-v1/plan-lifecycle.md`.
 
 No agent self-implements their own plan without approval.
 

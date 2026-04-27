@@ -8,7 +8,7 @@
 
 ### /compact workflow
 
-Before running `/compact` on a coordinator session, run `/pre-compact-save` first. The PreCompact hook will block a bare `/compact` and prompt you to run the skill. To opt out for a specific session, `touch .no-precompact-save` in the repo root. Full mechanics: `architecture/compact-workflow.md`.
+Before running `/compact` on a coordinator session, run `/pre-compact-save` first. The PreCompact hook will block a bare `/compact` and prompt you to run the skill. To opt out for a specific session, `touch .no-precompact-save` in the repo root. Full mechanics: `architecture/agent-network-v1/compact-workflow.md`.
 
 ## Scope
 
@@ -115,7 +115,7 @@ See `agents/memory/agent-network.md` for the full roster.
     `plans/pre-orianna/proposed/2026-04-17-branch-protection-enforcement.md` §3).
 
 <!-- #rule-orianna-callable-agent -->
-19. **Plan promotions are gated by the Orianna agent** — Orianna is a callable Opus agent at `.claude/agents/orianna.md`. Only she (and Duong's admin identities, `harukainguyen1411` / `Duongntd`) may commit plan moves out of `plans/proposed/`; enforced by the single PreToolUse guard at `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` (wired via `.claude/settings.json`). The guard covers Bash tool calls (mv/cp/rm/tee/touch + bashlex AST path scan) AND Write/Edit/NotebookEdit tool calls targeting protected plan directories. Identity is resolved in order: framework `agent_type` (Agent-tool subagent dispatch) → `CLAUDE_AGENT_NAME` env var → `STRAWBERRY_AGENT` env var → fail-closed. No `Orianna-Bypass:` trailer mechanism; no `_orianna_identity.txt` file. No body-hash signatures, no fact-check artifacts — Orianna reads the plan, renders APPROVE or REJECT, and on APPROVE she `git mv`s the file, appends a cosmetic approval block, commits, and pushes. See `architecture/plan-lifecycle.md` for the full lifecycle.
+19. **Plan promotions are gated by the Orianna agent** — Orianna is a callable Opus agent at `.claude/agents/orianna.md`. Only she (and Duong's admin identities, `harukainguyen1411` / `Duongntd`) may commit plan moves out of `plans/proposed/`; enforced by the single PreToolUse guard at `scripts/hooks/pretooluse-plan-lifecycle-guard.sh` (wired via `.claude/settings.json`). The guard covers Bash tool calls (mv/cp/rm/tee/touch + bashlex AST path scan) AND Write/Edit/NotebookEdit tool calls targeting protected plan directories. Identity is resolved in order: framework `agent_type` (Agent-tool subagent dispatch) → `CLAUDE_AGENT_NAME` env var → `STRAWBERRY_AGENT` env var → fail-closed. No `Orianna-Bypass:` trailer mechanism; no `_orianna_identity.txt` file. No body-hash signatures, no fact-check artifacts — Orianna reads the plan, renders APPROVE or REJECT, and on APPROVE she `git mv`s the file, appends a cosmetic approval block, commits, and pushes. See `architecture/agent-network-v1/plan-lifecycle.md` for the full lifecycle.
 
 <!-- #rule-subagent-auto-isolation -->
 20. **Breakdown and test-plan subagents auto-isolate into worktrees; `Write` is revoked for inline-edit discipline** — Agent defs may declare `default_isolation: worktree` in frontmatter; the PreToolUse `Agent` hook (`scripts/hooks/agent-default-isolation.sh`) reads the target subagent's def and injects `isolation: "worktree"` into the dispatch when the caller did not supply an explicit value. Opt-ins today: `aphelios`, `kayn`, `xayah`, `caitlyn` — these same four also have `Write` removed from their `tools:` list so they cannot create sibling `-tasks.md` / `-breakdown.md` files (D1A inline enforcement via tool permissions). See `plans/proposed/personal/2026-04-23-subagent-worktree-and-edit-only.md` for rationale. New breakdown/plan-authoring roles opt in by adding the frontmatter field.
@@ -134,7 +134,7 @@ See `agents/memory/agent-network.md` for the full roster.
 | `plans/` | Execution plans (`YYYY-MM-DD-<slug>.md`, YAML frontmatter). Subdirs: `proposed/`, `approved/`, `in-progress/`, `implemented/`, `archived/` |
 | `assessments/` | Analyses, recommendations, evaluations |
 | `agents/` | Profiles, memory, journals, learnings per agent |
-| `scripts/` | POSIX-portable shell scripts — see `architecture/key-scripts.md` |
+| `scripts/` | POSIX-portable shell scripts — see `architecture/agent-network-v1/key-scripts.md` |
 | `tools/` | Helper binaries (e.g. `tools/decrypt.sh` for secret decryption) |
 | `secrets/` | Gitignored local secrets — never committed |
 | `.claude/agents/` | Agent definition files (`.md` with frontmatter) |

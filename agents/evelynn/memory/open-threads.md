@@ -43,7 +43,7 @@ Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 48ac7433).
 
 ## Coordinator routing discipline — PR #57 and PR #58 shipped
 
-**Current status (2026-04-25):** PR #57 merged (orianna-identity-protocol-alignment, tip `b1d85e15`). PR #58 merged (coordinator-routing-discipline) — cheat-sheet at `architecture/agent-routing.md`, `_shared/coordinator-routing-check.md` include sourced by both coordinators, two structured lane/pair-set pauses. Three coordinator slips logged at `feedback/2026-04-25-coordinator-discipline-slips.md`. Slip 3 (compact-watch miss) NOT covered by PR #58 — candidate for canonical-v1 retro.
+**Current status (2026-04-25):** PR #57 merged (orianna-identity-protocol-alignment, tip `b1d85e15`). PR #58 merged (coordinator-routing-discipline) — cheat-sheet at `architecture/agent-network-v1/routing.md`, `_shared/coordinator-routing-check.md` include sourced by both coordinators, two structured lane/pair-set pauses. Three coordinator slips logged at `feedback/2026-04-25-coordinator-discipline-slips.md`. Slip 3 (compact-watch miss) NOT covered by PR #58 — candidate for canonical-v1 retro.
 **Next:** Internalize routing check pause on every dispatch. Slip 3 fix deferred to canonical-v1 retro.
 **Shard:** 56777883
 

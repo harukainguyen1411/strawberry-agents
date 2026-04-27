@@ -20,7 +20,7 @@
 # cases and shortens the feedback loop (fires before the commit, not at push).
 # It CANNOT be the primary gate.
 #
-# Reference: architecture/git-identity-enforcement.md
+# Reference: architecture/agent-network-v1/git-identity.md
 #            plans/approved/personal/2026-04-25-resolved-identity-enforcement.md §2
 # ============================================================================
 #

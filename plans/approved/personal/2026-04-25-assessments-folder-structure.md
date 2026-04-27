@@ -12,7 +12,7 @@ related:
   - plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md
   - plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md
   - CLAUDE.md
-  - architecture/plan-lifecycle.md
+  - architecture/agent-network-v1/plan-lifecycle.md
   - feedback/
 architecture_impact: refactor
 ---
@@ -61,7 +61,7 @@ Restructure `assessments/` into a **category-first, concern-aware, lifecycle-awa
 - The lifecycle (`active|archived`, archival triggers, archive location convention).
 - The per-category INDEX.md contract (what it lists, who maintains it, auto-generation eligibility).
 - The README.md at `assessments/` root (top-level navigation).
-- Cross-references from `CLAUDE.md` File Structure table and `architecture/plan-lifecycle.md` (assessments-lifecycle is sibling content, not derivative).
+- Cross-references from `CLAUDE.md` File Structure table and `architecture/agent-network-v1/plan-lifecycle.md` (assessments-lifecycle is sibling content, not derivative).
 
 ## 3. Canonical category taxonomy
 
@@ -265,7 +265,7 @@ Migration execution and enforcement-hook plans are separate and follow this ADR.
 - `plans/approved/personal/2026-04-25-architecture-consolidation-v1.md` — sibling consolidation effort, deliberately scopes out assessments and defers here.
 - `plans/proposed/personal/2026-04-25-qa-two-stage-architecture.md` — Azir's parallel ADR; owns the content shape inside `qa-reports/`.
 - `plans/proposed/personal/2026-04-25-akali-qa-discipline-hooks.md` — Karma's tactical Akali fixes; pairs with Azir's structural pivot.
-- `architecture/plan-lifecycle.md` — sibling lifecycle doc for plans; this ADR's lifecycle section is the assessments-side counterpart.
+- `architecture/agent-network-v1/plan-lifecycle.md` — sibling lifecycle doc for plans; this ADR's lifecycle section is the assessments-side counterpart.
 - `feedback/` — flat-shape precedent (small enough to stay flat); not a model for assessments scale.
 - `CLAUDE.md` File Structure table — must be updated by the migration plan to point at the new shape.
 
@@ -311,11 +311,11 @@ Per §9 sketch and the live-tree audit. Each B-task: classify → `git mv` with 
 ### Phase D — Cross-references (CLAUDE.md, architecture/, related plans)
 
 - [ ] **T17** — Update `CLAUDE.md` File Structure table row for `assessments/` to describe the new shape (categories, naming, frontmatter, lifecycle); link this ADR. Per §6 acceptance criterion. estimate_minutes: 20. parallel_slice_candidate: yes. Files: `CLAUDE.md`. DoD: the `assessments/` row in the File Structure table mentions the 8 categories, the `YYYY-MM-DD-<slug>.md` rule, the 8-field frontmatter, and the active/archived lifecycle; links to `plans/approved/personal/2026-04-25-assessments-folder-structure.md`.
-- [ ] **T18** — Update `architecture/plan-lifecycle.md` to add an explicit cross-reference: "for the assessments-side counterpart see `plans/approved/personal/2026-04-25-assessments-folder-structure.md` §6 lifecycle." Per §13 References. estimate_minutes: 10. parallel_slice_candidate: yes. Files: `architecture/plan-lifecycle.md`. DoD: a clearly-labelled section or bottom-of-file reference points readers to this ADR's §6 lifecycle.
+- [ ] **T18** — Update `architecture/agent-network-v1/plan-lifecycle.md` to add an explicit cross-reference: "for the assessments-side counterpart see `plans/approved/personal/2026-04-25-assessments-folder-structure.md` §6 lifecycle." Per §13 References. estimate_minutes: 10. parallel_slice_candidate: yes. Files: `architecture/agent-network-v1/plan-lifecycle.md`. DoD: a clearly-labelled section or bottom-of-file reference points readers to this ADR's §6 lifecycle.
 - [ ] **T19** — Update the architecture-consolidation plan `plans/approved/personal/2026-04-25-architecture-consolidation-v1.md` to remove its "assessments deferred — see follow-up plan" placeholder and replace with a closed reference to this ADR. Edit-only (do not move the file out of `approved/`). estimate_minutes: 10. parallel_slice_candidate: yes. Files: `plans/approved/personal/2026-04-25-architecture-consolidation-v1.md`. DoD: the placeholder language is replaced with a concrete reference to this ADR; no semantic change to the consolidation plan's own scope.
 - [ ] **T20** — Sweep `agents/<name>/profile.md` and `.claude/agents/<name>.md` for the highest-write owners (Lux, Skarner, Akali, Lucian, Senna) per §11 risk mitigation, adding a single one-line pointer to this ADR in their "where to write assessments" guidance. estimate_minutes: 30. parallel_slice_candidate: yes. Files: `.claude/agents/{lux,skarner,akali,lucian,senna}.md` (and corresponding `agents/<name>/profile.md` if the routine-update marker exists there). DoD: each of the 5 agent defs has a one-line addition pointing to `plans/approved/personal/2026-04-25-assessments-folder-structure.md`; commit message lists each touched agent.
 
-### Phase D gate: every cross-reference identified in the ADR is updated; readers landing on `CLAUDE.md`, `architecture/plan-lifecycle.md`, or the consolidation plan can find this ADR within one hop.
+### Phase D gate: every cross-reference identified in the ADR is updated; readers landing on `CLAUDE.md`, `architecture/agent-network-v1/plan-lifecycle.md`, or the consolidation plan can find this ADR within one hop.
 
 ### Phase E — Verification (post-migration sanity, not enforcement)
 

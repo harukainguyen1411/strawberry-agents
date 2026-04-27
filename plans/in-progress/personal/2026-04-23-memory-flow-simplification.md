@@ -11,7 +11,7 @@ related:
   - plans/implemented/personal/2026-04-21-memory-consolidation-redesign.md
   - plans/implemented/personal/2026-04-21-coordinator-boot-chain-cache-reorder.md
   - plans/proposed/personal/2026-04-21-coordinator-decision-feedback.md
-  - architecture/coordinator-memory.md
+  - architecture/agent-network-v1/coordinator-memory.md
   - agents/evelynn/CLAUDE.md
   - agents/sona/CLAUDE.md
   - .claude/skills/end-session/SKILL.md
@@ -258,7 +258,7 @@ estimate_minutes: 35, kind: refactor
 **T3. Seed `live-threads.md` from current `open-threads.md`** — one-shot copy with `git mv`. Shape-normalise entries to the §3.3 schema. Commit per coordinator. <!-- orianna: ok -- prospective path cited by ADR -->
 estimate_minutes: 25, kind: refactor
 
-**T4. Update `agents/evelynn/CLAUDE.md` + `agents/sona/CLAUDE.md` + `.claude/agents/evelynn.md` + `.claude/agents/sona.md`** — change initialPrompt position 7 from `open-threads.md` to `live-threads.md`. Remove any read of `.remember/`. Update boot-position docs in `architecture/coordinator-memory.md`. <!-- orianna: ok -- directory reference with trailing slash -->
+**T4. Update `agents/evelynn/CLAUDE.md` + `agents/sona/CLAUDE.md` + `.claude/agents/evelynn.md` + `.claude/agents/sona.md`** — change initialPrompt position 7 from `open-threads.md` to `live-threads.md`. Remove any read of `.remember/`. Update boot-position docs in `architecture/agent-network-v1/coordinator-memory.md`. <!-- orianna: ok -- directory reference with trailing slash -->
 estimate_minutes: 30, kind: refactor
 
 ### Phase 2 — cutover
@@ -266,7 +266,7 @@ estimate_minutes: 30, kind: refactor
 **T5. Flip coordinators to the new skill** — update `agents/evelynn/CLAUDE.md` + `agents/sona/CLAUDE.md` to invoke `/close-coordinator-session end` instead of `/end-session`. Old `/end-session` becomes a deprecation-banner alias.
 estimate_minutes: 25, kind: refactor
 
-**T6. Retire `open-threads.md`** — `git mv` any remaining open-threads files to a one-shot archive location `agents/<coordinator>/memory/archive/open-threads-<date>.md` so git history is preserved. Remove from `architecture/coordinator-memory.md` §3 file-layout. One-liner in learnings describing the rename. <!-- orianna: ok -- prospective path cited by ADR -->
+**T6. Retire `open-threads.md`** — `git mv` any remaining open-threads files to a one-shot archive location `agents/<coordinator>/memory/archive/open-threads-<date>.md` so git history is preserved. Remove from `architecture/agent-network-v1/coordinator-memory.md` §3 file-layout. One-liner in learnings describing the rename. <!-- orianna: ok -- prospective path cited by ADR -->
 estimate_minutes: 20, kind: refactor
 
 **T7. Suppress `remember:remember` for coordinators** — extend Evelynn's current bypass (already documented in `agents/evelynn/CLAUDE.md`) to Sona. Add SessionStart hook guard that skips the plugin when the session's initial greeting matches `/^Hey Sona/i` or the agent-def `concern:` field is `personal` or `work`. Plugin remains installed for Sonnet subagents that opt in.
@@ -286,7 +286,7 @@ estimate_minutes: 20, kind: cleanup
 **T11. Fold `journal/cli-*.md` into new snapshot shape (documentation-only)** — update agent-def boot prompts and `agents/<agent>/CLAUDE.md` files to describe the `## Journal` section of the snapshot as the canonical first-person-reflection location. Existing `journal/cli-*.md` files stay on disk as historical artifacts; no further writes by the close-session skill. <!-- orianna: ok -- prospective path cited by ADR -->
 estimate_minutes: 20, kind: doc
 
-**T12. Update architecture doc** — rewrite `architecture/coordinator-memory.md` to reflect §3 (six surfaces, `live-threads.md`, single sessions root, no `.remember`, unified close skill, parameterised modes). <!-- orianna: ok -- prospective path cited by ADR -->
+**T12. Update architecture doc** — rewrite `architecture/agent-network-v1/coordinator-memory.md` to reflect §3 (six surfaces, `live-threads.md`, single sessions root, no `.remember`, unified close skill, parameterised modes). <!-- orianna: ok -- prospective path cited by ADR -->
 estimate_minutes: 45, kind: doc
 
 **T13. Write migration learning** — `agents/swain/learnings/2026-04-23-memory-surface-collapse.md` capturing the O1–O10 collapse table and the "single-source-of-truth by construction" principle. Index entry appended. <!-- orianna: ok -- prospective path cited by ADR -->
@@ -316,7 +316,7 @@ Evelynn's brief framed coverage in 9 buckets (caller-T1…caller-T9). The existi
 | caller-T6 update /check-inbox, /agent-ops | **GAP → T14 below** | Audit confirms zero `now.md` / `open-threads.md` refs in either skill today; task is a regression-guard grep + explicit note, not a rewrite. | <!-- orianna: ok -- now.md + open-threads.md are retired surfaces cited by ADR -->
 | caller-T7 update Lissandra, Skarner agent-defs | **GAP → T15 below** | Lissandra `.claude/agents/lissandra.md` lines 47 to 51 reference `open-threads.md` and Step 6b — must rewrite. Skarner `.claude/agents/skarner.md` line 28 references `journal/` — must add `sessions/` + `live-threads.md` surfaces. | <!-- orianna: ok -- open-threads.md/journal/sessions/live-threads.md cited as retired or prospective surfaces by ADR -->
 | caller-T8 automated backfill for historical shards | Partially T2.1 + T3.1 + T8.5 | **GAP → T16 below** for orchestration wrapper. |
-| caller-T9 architecture doc update | T12 (full rewrite of `architecture/coordinator-memory.md`) | Already broken into 6 substeps. |
+| caller-T9 architecture doc update | T12 (full rewrite of `architecture/agent-network-v1/coordinator-memory.md`) | Already broken into 6 substeps. |
 
 **Gap-closing tasks:**
 
@@ -382,7 +382,7 @@ Numbered a/b/c per Duong's convention. If skipped, Duong concurs with the Pick.
 
 1. **Scope of the ledger rename** — should we literally rename `open-threads.md` to `live-threads.md`? <!-- orianna: ok -- prospective path cited by ADR -->
    a: Yes, rename — the new semantic (in-session-writable ledger) deserves a new name; preserves git history via `git mv`.
-   b: Keep the name `open-threads.md` — less churn across docs/prompts; semantic shift documented in `architecture/coordinator-memory.md`. <!-- orianna: ok -- prospective path cited by ADR -->
+   b: Keep the name `open-threads.md` — less churn across docs/prompts; semantic shift documented in `architecture/agent-network-v1/coordinator-memory.md`. <!-- orianna: ok -- prospective path cited by ADR -->
    c: Alias — keep both names as a symlink during migration, resolve after one stable week.
    **Pick: a** — renaming is cheap with `git mv`, and the behavioral change (in-session writable vs end-of-session authored) is load-bearing enough to deserve a distinct name. Sticking with `open-threads.md` invites "which behavior is this?" confusion. <!-- orianna: ok -- prospective path cited by ADR -->
 
@@ -600,7 +600,7 @@ Risk/rollback: if Phase 2 exposes a boot-chain gap, revert T6.1/T6.2 to restore 
 
 - [ ] **T6.1** — Evelynn residual check: `git ls-files agents/evelynn/memory/open-threads.md`; if present, `git mv` to `agents/evelynn/memory/archive/open-threads-2026-04-23.md`. If absent, skip to T6.2 (no commit). estimate_minutes: 5. tier: sonnet. STAGED_SCOPE: `agents/evelynn/memory/`. DoD: `open-threads.md` absent under `memory/` root; archive copy exists (either from T3.2 `git mv` or this one). blocks: T6.2.
 - [ ] **T6.2** — Same for Sona. estimate_minutes: 4. tier: sonnet. STAGED_SCOPE: `agents/sona/memory/`. DoD: same, sona side. T-INV-1 passes for both coordinators. blockedBy: T6.1. blocks: T6.3.
-- [ ] **T6.3** — Remove `open-threads.md` references from `architecture/coordinator-memory.md` §3 file-layout. Keep a §3 historical-note paragraph describing the rename. estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: `architecture/coordinator-memory.md`. DoD: grep `open-threads.md` outside a historical-note section returns zero. blockedBy: T6.2. blocks: T6.4.
+- [ ] **T6.3** — Remove `open-threads.md` references from `architecture/agent-network-v1/coordinator-memory.md` §3 file-layout. Keep a §3 historical-note paragraph describing the rename. estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: `architecture/agent-network-v1/coordinator-memory.md`. DoD: grep `open-threads.md` outside a historical-note section returns zero. blockedBy: T6.2. blocks: T6.4.
 - [ ] **T6.4** — Add one-line learnings entry `agents/evelynn/learnings/2026-04-23-open-threads-rename.md` capturing the rename + semantic shift (in-session-writable). Update learnings index. estimate_minutes: 3. tier: sonnet. STAGED_SCOPE: `agents/evelynn/learnings/2026-04-23-open-threads-rename.md` + `agents/evelynn/learnings/index.md` (two-file commit ok — same agent). DoD: file exists; index appended. blockedBy: T6.3. blocks: T7.
 
 #### T7 — SessionStart hook guard for `remember:remember` (30 min)
@@ -662,11 +662,11 @@ No direct test pair.
 - [ ] **T11.2** — Same for `agents/sona/CLAUDE.md`. estimate_minutes: 6. tier: sonnet. STAGED_SCOPE: `agents/sona/CLAUDE.md`. DoD: same assertion, sona side. blockedBy: T11.1. blocks: T11.3.
 - [ ] **T11.3** — Update `.claude/agents/evelynn.md` + `.claude/agents/sona.md` boot prompts if they mention the journal file pattern. Two commits (one per agent-def). estimate_minutes: 6. tier: sonnet. STAGED_SCOPE: per-agent-def, separate commits. DoD: boot prompts reference `## Journal` section, not `journal/cli-*.md`. blockedBy: T11.2. blocks: T12.
 
-#### T12 — Rewrite `architecture/coordinator-memory.md` (45 min)
+#### T12 — Rewrite `architecture/agent-network-v1/coordinator-memory.md` (45 min)
 
 No direct test pair (doc-only). Builder verifies the six-surface rewrite matches §3.1–§3.7 of this ADR.
 
-- [ ] **T12.1** — Rewrite §1–§2 (coordinator memory purpose, six-surface topology). estimate_minutes: 12. tier: opus. STAGED_SCOPE: `architecture/coordinator-memory.md`. DoD: references six surfaces — `<coordinator>.md`, `live-threads.md`, `sessions/<uuid>.md`, `sessions/INDEX.md`, `inbox/`, `learnings/` — and zero references to `.remember/`, `open-threads.md`, `last-sessions/`. blocks: T12.2.
+- [ ] **T12.1** — Rewrite §1–§2 (coordinator memory purpose, six-surface topology). estimate_minutes: 12. tier: opus. STAGED_SCOPE: `architecture/agent-network-v1/coordinator-memory.md`. DoD: references six surfaces — `<coordinator>.md`, `live-threads.md`, `sessions/<uuid>.md`, `sessions/INDEX.md`, `inbox/`, `learnings/` — and zero references to `.remember/`, `open-threads.md`, `last-sessions/`. blocks: T12.2.
 - [ ] **T12.2** — Rewrite §3 file-layout tree per §3.1 of this ADR. estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: same. DoD: tree diagram verbatim per §3.1; paths exist on disk post-T2/T3/T6. blockedBy: T12.1. blocks: T12.3.
 - [ ] **T12.3** — Rewrite §4 single-source-of-truth rules S1–S4 from §3.2. estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: same. DoD: all four rules present, worded as §3.2. blockedBy: T12.2. blocks: T12.4.
 - [ ] **T12.4** — Rewrite §5 close-skill dispatch (§3.6) — `/close-coordinator-session` modes table. estimate_minutes: 8. tier: sonnet. STAGED_SCOPE: same. DoD: modes table present; old skill names only appear as "was: /end-session". blockedBy: T12.3. blocks: T12.5.
