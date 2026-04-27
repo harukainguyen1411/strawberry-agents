@@ -170,11 +170,7 @@ fi
 echo ""
 echo "§5 Coordinator column correctness"
 
-evelynn_wrong_coord=$(db_read "$DB_PATH" \
-  "SELECT COUNT(*) FROM open_threads WHERE coordinator != 'evelynn' AND rowid IN (
-     SELECT rowid FROM open_threads WHERE coordinator='evelynn'
-   );" 2>/dev/null || echo 0)
-# Simpler: just assert all evelynn rows have coordinator='evelynn'
+# assert all evelynn rows have coordinator='evelynn'
 evelynn_coord_ok=$(db_read "$DB_PATH" \
   "SELECT COUNT(*) FROM open_threads WHERE coordinator='evelynn';")
 if [ "$evelynn_coord_ok" -eq "$EVELYNN_HEADING_COUNT" ]; then
