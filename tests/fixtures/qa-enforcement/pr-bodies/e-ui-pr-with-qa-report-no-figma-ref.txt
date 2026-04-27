@@ -1,0 +1,19 @@
+## Summary
+
+- Add /dashboard route rendering session analytics
+- Static HTML page generated from events.jsonl
+
+## Test plan
+
+- Akali Playwright run: login → view chart → click filter
+- Screenshots captured at route-entry, post-filter-click, final state
+- Per-screenshot observation narrative in QA report
+
+## Changes
+
+UI-involving deliverable: browser-rendered HTML dashboard for human visual inspection.
+
+QA-Report: assessments/qa-reports/2026-04-27-dashboard-phase2-qa.md
+
+Design-Spec: N/A — no Figma-Ref opt-in in this plan or upstream project scope.
+Accessibility-Check: WCAG AA color contrast verified; keyboard navigation tested.

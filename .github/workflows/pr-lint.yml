@@ -114,6 +114,27 @@ jobs:
           echo "See CLAUDE.md Rule 16 and .claude/agents/akali.md for details." >&2
           exit 1
 
+  pr-no-qa-bypass:
+    name: QA verification marker (Rule 16 amended — D6)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Checkout repo (for helper script)
+        uses: actions/checkout@v4
+
+      - name: Run QA verification marker check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$REPO" --json body --jq '.body // ""')
+          printf '%s' "$PR_BODY" > /tmp/pr-body.txt
+          bash scripts/ci/pr-lint-qa-verification.sh --pr-body-file /tmp/pr-body.txt
+
   pr-frontend-markers:
     # Rule 22 / D7 — Frontend / UI marker gate.
     # Runs on PRs to main that touch UI file paths (D1 glob).

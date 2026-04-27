@@ -1,0 +1,64 @@
+---
+task: T.QA.15
+date: 2026-04-27
+satisfies: ADR T-QA2 (plan-structure linter self-loop)
+plan: plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+linter: scripts/hooks/pre-commit-zz-plan-structure.sh
+---
+
+# T.QA.15 — Self-loop: plan-structure linter vs. this ADR
+
+## Commands run
+
+### 1. Linter against the ADR as-is (pass attempt)
+
+```
+$ cd /private/tmp/qa-enforcement-phase-a
+$ bash scripts/hooks/pre-commit-zz-plan-structure.sh \
+    --fixture-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md \
+    --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+```
+
+**Exit code:** 0 ✓ GREEN (after T.QA.6 fenced-block patch)
+
+**Stdout/stderr:** *(no output)*
+
+### 2. Linter against copy with real ## QA Plan section removed (reject attempt)
+
+Copy prepared: strip second `## QA Plan` heading and its body (line 257 onward, up to next `##`).
+
+```
+$ awk 'NR==257{found=1} found && /^## / && NR>257{found=0} !found' \
+    plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md \
+  > /tmp/adr-no-qaplan.md
+$ bash scripts/hooks/pre-commit-zz-plan-structure.sh \
+    --fixture-path /tmp/adr-no-qaplan.md \
+    --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+```
+
+**Exit code:** 1 ✓ (reject as expected)
+
+**Stdout/stderr:**
+```
+[pre-commit-zz-plan-structure] plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md: ## QA Plan section missing. qa_plan: required demands a populated ## QA Plan section. See ADR D2/D5.
+```
+
+## Finding (resolved by T.QA.6 patch)
+
+**Prior linter limitation:** The linter did not skip content inside markdown fenced code blocks
+(` ``` ` delimiters). This ADR contains a `## QA Plan` heading at line 120 inside a fenced code block
+(the D2 section's format-example). That embedded heading was detected as the first `## QA Plan`
+occurrence; the body of that code-block section contains `**UI involvement:** yes | no` (the template
+placeholder), which failed the `yes|no` validation check.
+
+**Fix landed in T.QA.6:** `has_qa_plan_heading` and `get_qa_plan_body` in
+`scripts/hooks/pre-commit-zz-plan-structure.sh` now track a `fence` flag that toggles on each
+` ``` ` line, and skip heading/body detection while `fence=1`. Both the as-is accept test (exit 0)
+and the section-removed reject test (exit 1) now behave correctly.
+
+## ADR T-QA2 status — RESOLVED GREEN
+
+- **Test 1 (as-is ADR):** exit 0 — linter accepts the ADR.
+- **Test 2 (real `## QA Plan` section removed):** exit 1 — linter rejects with "## QA Plan section missing".
+
+All eight T.QA.0 fixtures still pass: a–f reject (exit 1), g–h accept (exit 0).
