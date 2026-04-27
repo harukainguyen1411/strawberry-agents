@@ -6,7 +6,7 @@ tier: quick
 complexity: normal
 concern: work
 project: bring-demo-studio-live-e2e-v1
-status: proposed
+status: approved
 orianna_gate_version: 2
 tests_required: true
 qa_plan: inline
@@ -125,3 +125,10 @@ Estimated diff: ~30-40 lines in `main.py` `_vanilla_sse_generator` block (lines 
 - Build trigger path: `tools/demo-studio-v3/main.py` lines 2670-2770 (`/build/start`, `transition_session_status`, `factory_bridge_v2.trigger_factory_v2`)
 - HTTP seed endpoint (working, for contrast): `tools/demo-studio-v3/main.py` lines 2884-2945 (`/session/{id}/build-status`)
 - Project: `projects/work/active/bring-demo-studio-live-e2e-v1.md`
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Both prior REJECT items resolved (qa_plan/priority/last_reviewed frontmatter present; QA Plan heading correct). Owner is karma, tasks are concrete with file paths and line ranges, xfail-first ordering (T1 before T2) honors Rule 12, and DoD is testable. Backend-only diff in `_vanilla_sse_generator` — no UI surface, linter passed without flag. P0 unblocks ADR-1 progress-bar QA.
