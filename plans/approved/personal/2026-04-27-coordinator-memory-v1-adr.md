@@ -385,6 +385,51 @@ COMMIT;
 
 ---
 
+### D6.2. Timestamp precision contract — **All state-DB writes use `strftime('%Y-%m-%d %H:%M:%f','now')` (millisecond precision)**
+
+**Added by amendment 2026-04-28** (see §Amendment log). This sub-decision formalises the timestamp-precision invariant that PR #100 (Vi T4a, merged), PR #103 (Viktor T6b, merged), and PR #104 (Jayce T4b, in r2) review surfaced as an under-specified gap in the original ADR.
+
+**Contract:**
+
+Every column whose canonical type is "ISO-8601 timestamp" in the schema (defined in §D3) — `sessions.started_at`, `sessions.ended_at`, `decisions.decided_at`, `learnings.learned_at`, `*_index.refreshed_at`, `open_threads.last_touched`, `refresh_log.last_refreshed_at`, `schema_migrations.applied_at`, and any future timestamp column — MUST be written using SQLite's millisecond-precision form:
+
+```sql
+strftime('%Y-%m-%d %H:%M:%f','now')   -- yields 'YYYY-MM-DD HH:MM:SS.SSS'
+```
+
+NOT the second-precision form:
+
+```sql
+datetime('now')                       -- yields 'YYYY-MM-DD HH:MM:SS'
+```
+
+**Why this matters (the bug class this contract closes):**
+
+Two coordinator sessions writing authored entities (a decision, a session-close shard, a learning) within the same wall-clock second produce ties on the timestamp column. SQLite's `ORDER BY <ts>` on tied values falls back to rowid order, which is *implementation-defined* — specifically, on a WAL-mode DB with concurrent writers, rowid-assignment order is the order in which `COMMIT` quiesces, which can differ from the order in which `BEGIN IMMEDIATE` acquired the write lock. Result: cross-coordinator views in v2 (Evelynn ↔ Sona joint decision history, joint open-threads ordering) can render the same two events in different orders depending on which coordinator reads them. This is exactly the failure mode the v2-readiness `coordinator` column from §D3 was added to enable querying across — but ambiguous ordering would undercut the queries that column unlocks.
+
+Millisecond precision is sufficient: SQLite write transactions on local SSD complete on the order of 100µs; two coordinators racing to the same `BEGIN IMMEDIATE` are serialized (the second waits up to `busy_timeout=5000ms` per §D6), so post-serialization the COMMIT timestamps are guaranteed to differ by at least the second writer's wall-clock observation latency. Sub-millisecond precision would offer no additional discrimination given clock granularity.
+
+**Lex-sortability invariant (why this is safe to mix during retrofit):**
+
+`%f` always renders 3 fractional digits with no trimming (`.000` for an exact second boundary), so `strftime('%Y-%m-%d %H:%M:%f','now')` produces a fixed-width 23-character string that lex-sorts identically to chronological order. This matters because rows already written via `datetime('now')` (Viktor T6b, pre-amendment) coexist in the same column as rows written post-retrofit via `strftime('...%f','now')`. The two forms differ in width (19 vs 23 chars), so lex-comparison treats `'2026-04-28 10:00:00'` < `'2026-04-28 10:00:00.000'` (shorter string sorts before longer same-prefix string in SQLite's default collation). This is a one-way ordering artefact: any pre-retrofit row with a tied second always sorts BEFORE any post-retrofit row at the same second. Acceptable: pre-retrofit rows are timestamped earlier in real time anyway. No data migration of existing rows is required.
+
+**Currently shipped vs gap:**
+
+- **Read-side checks (PR #100, Vi T4a, merged):** assert `*_index.refreshed_at` is ms-precision. Already correct.
+- **Refresh-script writes (PR #104, Jayce T4b, in r2):** use `strftime('%Y-%m-%d %H:%M:%f','now')` for `*_index.refreshed_at` and `refresh_log.last_refreshed_at`. Already correct.
+- **Authored-entity writes (PR #103, Viktor T6b, merged):** `db-write-session.sh`, `db-write-learning.sh`, `capture-decision.sh` use `datetime('now')` — second precision. **Gap: retrofit required.**
+
+**Retrofit task (separate, queued by team-lead post-amendment):** modify the three Viktor helpers to substitute the SQL expression. Surgical change — single-line per helper, no schema migration, no data migration (existing rows remain valid per the lex-sortability invariant above). Helper-level test surface (Rakan T6a) needs an assertion-tightening pass to require ms-precision; existing functional assertions remain green.
+
+**Test surface this amendment requires the eventual implementation to cover:**
+
+- T6a (existing xfail) extended to assert every column listed above is populated with a 23-character `YYYY-MM-DD HH:MM:SS.fff` string after a write.
+- A new assertion in T-VI-2 (concurrent writes, per §D6) that two writers committing within 1ms produce distinct timestamps — exercises the ordering invariant directly.
+
+**Why §D6.2 (not §D5):** §D5 governs *when* refreshes run (cadence). §D6 governs *how* writes interact (concurrency, ordering, read-your-writes). Timestamp precision is a write-side ordering concern — it lives next to the BEGIN IMMEDIATE / busy-timeout invariants that share the same failure-mode class.
+
+---
+
 ### D7. Migration approach — **Hard cutover** (validates team-lead's stated preference)
 
 **Choice space:**
@@ -543,6 +588,23 @@ Post-approval inline amendments to this ADR. Each entry: date, driver, change, l
 **No downstream task changes:** PR #103 r3 functional contract already holds and Lucian APPROVED on that basis. This amendment is the spec-catches-up-to-shipped-code pass — same pattern as the §D6.1 amendment and amendment 2 (the §D3 schema sketch update). No follow-up Viktor commit required; the env-default fallback is reserved as an option, not a gap.
 
 **Re-author note (2026-04-28):** Original commit `b6ff1224` was authored 2026-04-27 but became unreachable from origin/main following Ekko's history-rewrite session. Re-authored verbatim here. Original semantic intent and attribution preserved.
+
+### 2026-04-28 — Add §D6.2 timestamp-precision contract (millisecond-precision via `strftime('...%f','now')` for all state-DB writes)
+
+**Driver:** Same gap surfaced from two independent review lanes:
+1. **Lucian PR #100 r3 cross-lane → PR #104 escalate** — read-side ms-precision checks (Vi T4a) imply a write-side contract that wasn't documented.
+2. **Senna PR #104 IMPORTANTs §strengths** — flagged that Vi's read-side and Jayce's write-side both use `strftime('%Y-%m-%d %H:%M:%f','now')`, but Viktor's authored-entity helpers (`db-write-session.sh`, `db-write-learning.sh`, `capture-decision.sh`, all merged via PR #103) use `datetime('now')` (second precision). Two coordinators racing within the same second produce timestamp ties; SQLite's tiebreak fallback to rowid is implementation-defined under WAL with concurrent writers — exactly the cross-coordinator-ordering failure mode the v2-readiness `coordinator` column from §D3 was added to enable querying across.
+
+**Change:**
+1. New §D6.2 inserted between §D6.1 and §D7. Establishes that every ISO-8601 timestamp column in the schema MUST be written via `strftime('%Y-%m-%d %H:%M:%f','now')` (23-char ms-precision), not `datetime('now')` (19-char second-precision). Documents the lex-sortability invariant that makes the retrofit safe (ms-precision is fixed-width 3-digit fractional via `%f`; pre-retrofit second-precision rows lex-sort BEFORE post-retrofit ms-precision rows at the same second, which matches their real-time ordering — no data migration of existing rows required). Enumerates currently-shipped (PR #100, PR #104) vs gap (PR #103 helpers) and names the retrofit surface.
+2. Added rationale for why §D6 (not §D5) is the canonical home: timestamp precision is a write-side ordering concern, sibling to BEGIN IMMEDIATE / busy-timeout / read-your-writes invariants in §D6.
+3. Names two test-surface extensions the eventual retrofit implementation must cover: T6a assertion tightened to ms-precision; new sub-millisecond-distinct-timestamps assertion in the T-VI-2 concurrent-writers test.
+
+**Locations touched in this file:** new §D6.2 inserted between §D6.1 and §D7; this Amendment log.
+
+**Downstream task expected (not authored here):** team-lead is queueing a follow-up retrofit task to modify Viktor's three helpers (single-line SQL substitution per helper; surgical change; no schema migration). Test-surface extensions land alongside.
+
+**Meta-observation (relayed from team-lead, recorded for amendment-discipline lessons):** this is the fourth ADR amendment authored after implementation revealed a spec gap (§D6.1, amendment 2, amendment 3, now amendment 4). Pattern is converging on a candidate "ADRs default to outcome-language not mechanism-language" lesson (already present in amendment 3) plus a question of whether a formal "spec ratification gate after first impl lands" should be introduced, vs the current "catch-up via reviewer escalates" pattern. Out of scope for this amendment; flagged for an eventual amendment-discipline learning at session-end.
 
 ---
 
