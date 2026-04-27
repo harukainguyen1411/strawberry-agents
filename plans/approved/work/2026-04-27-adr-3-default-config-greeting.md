@@ -4,7 +4,7 @@
 title: "ADR-3 — Default config seeded on session creation, preview live at moment-zero (steps 2–3)"
 project: bring-demo-studio-live-e2e-v1
 concern: work
-status: proposed
+status: approved
 owner: azir
 priority: P1
 tier: normal
@@ -218,3 +218,10 @@ Greeting message + a11y (aria-live announcement, conversation-store insert with 
 - `tools/demo-studio-v3/seed_config.py` — `DEFAULT_SEED` (read-only here).
 - `tools/demo-config-mgmt/main.py:84` — S2 `_session_configs: dict` (in-memory substrate).
 - PR #117 — `--min-instances=1` on S2's deploy.sh (merged; live revision predates merge — T1 redeploys).
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Structural gates pass (qa_plan frontmatter, qa_plan body subheadings including the now-present `### Happy path (user flow)` and `### Failure modes (what could break)`, UX spec linter). Plan has clear owner (azir), concrete §Tasks anchored to specific file:line extension points, TX1/TX2 satisfy `tests_required: true`, OQ-1 is RESOLVED so T3 cleanly dropped, D2 substrate trade-off is reasoned with explicit accepted risk, D3's fail-loud-with-rollback substitutes today's silent-swallow with a justified UX. §UX Spec present and proportionate (one iframe + error toast). No gating TBDs remain.
