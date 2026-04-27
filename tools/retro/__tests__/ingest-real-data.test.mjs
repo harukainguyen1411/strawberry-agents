@@ -146,6 +146,7 @@ function runIngestOnRealFixtures(setup) {
     .map(l => JSON.parse(l));
 }
 
+// xfail: real-data smoke test — fails before normalizeLine fix; green after (Rule 12)
 describe('ingest-real-data: Phase-1 event kinds from real-format JSONL', () => {
   let events;
 
