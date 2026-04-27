@@ -10,6 +10,7 @@ owner: karma
 orianna_gate_version: 2
 tests_required: false
 qa_plan: none
+qa_plan_none_justification: "infra-only diff (deploy.sh + .env.example); no UI/user-flow surface; verification is bash -n syntax check + manual /auth/config probe post-deploy"
 priority: P1
 last_reviewed: 2026-04-27
 ---
