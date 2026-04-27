@@ -32,6 +32,42 @@ import { parseDecisionFrontmatter } from './decision-axes.mjs';
 import { computePromptStats } from './prompt-stats.mjs';
 
 // ---------------------------------------------------------------------------
+// Line normalization — real vs fixture JSONL format
+// ---------------------------------------------------------------------------
+
+/**
+ * Normalize a raw JSONL line to a consistent shape consumed by the parsers.
+ *
+ * Real Claude JSONL (produced by the Claude desktop/CLI app) wraps usage and
+ * model inside a nested `message` object:
+ *   { type, timestamp, isSidechain, message: { role, usage, model, content }, ... }
+ *
+ * Fixture JSONL (used by the test suite) uses a flat format:
+ *   { type, role, timestamp, isSidechain, usage, model, content, ... }
+ *
+ * This function produces a flat view regardless of which format the line is in,
+ * preserving all original top-level fields and lifting message.usage, message.model,
+ * and message.content when they are absent at the top level.
+ *
+ * @param {Object} line — parsed JSON object from a JSONL file
+ * @returns {Object} normalized line with usage, model, content at top level
+ */
+function normalizeLine(line) {
+  if (!line || typeof line !== 'object') return line;
+  const msg = line.message;
+  if (!msg || typeof msg !== 'object') return line;
+  // Lift fields from message only when absent at top level (fixture compat).
+  const usage = line.usage !== undefined ? line.usage : msg.usage;
+  const model = line.model !== undefined ? line.model : msg.model;
+  const role  = line.role  !== undefined ? line.role  : msg.role;
+  // content: real data wraps user content in message.content; flat fixtures expose it at top.
+  // Use message.content as fallback when top-level content is absent (undefined) or null.
+  const content = (line.content != null) ? line.content : msg.content;
+  // Return a new object; do not mutate the original.
+  return { ...line, usage, model, role, content };
+}
+
+// ---------------------------------------------------------------------------
 // Wall-active-delta computation (§3 idle-gap stripping)
 // ---------------------------------------------------------------------------
 
@@ -111,7 +147,7 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
     lines = readFileSync(filePath, 'utf8')
       .split('\n')
       .filter(Boolean)
-      .map(l => JSON.parse(l));
+      .map(l => normalizeLine(JSON.parse(l)));
   } catch {
     // Skip malformed JSONL files (real Claude session files may have complex schemas)
     return [];
@@ -222,7 +258,7 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
     lines = readFileSync(jsonlPath, 'utf8')
       .split('\n')
       .filter(Boolean)
-      .map(l => JSON.parse(l));
+      .map(l => normalizeLine(JSON.parse(l)));
   } catch {
     return { turns: [], dispatch: null };
   }
