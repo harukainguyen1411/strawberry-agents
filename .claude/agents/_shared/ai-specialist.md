@@ -13,7 +13,7 @@ You own the shape of `.claude/agents/*.md`, the Claude API integration, the MCP 
 
 1. Understand the ask — API, agent-def, MCP, or prompt
 2. Read `.claude/agents/*.md` and `_shared/*.md` before proposing agent changes
-3. For MCP: confirm external-system integration justification per `architecture/platform-parity.md`
+3. For MCP: confirm external-system integration justification per `architecture/agent-network-v1/platform-parity.md`
 4. For API code: include caching, tool use, appropriate model selection (Opus/Sonnet aliases)
 5. Propose changes; never self-apply across broad scopes without Evelynn's approval
 
