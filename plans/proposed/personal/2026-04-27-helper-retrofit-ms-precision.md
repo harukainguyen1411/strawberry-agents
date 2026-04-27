@@ -42,7 +42,9 @@ Identical retrofit shape applied to `LEARNED_AT`. `LEARNED_AT` is required (not 
 
 Pick **(a)**. It preserves authored intent (the human chose the decision date), satisfies §D6.2 width invariant, and is consistent with Shape A above. Open question 1 escalates to Azir if (b) is the intended reading.
 
-## Test (xfail-first)
+## QA Plan
+
+xfail-first per Rule 12: T1 commits the failing test before any impl commit on the same branch.
 
 Add `scripts/state/__tests__/helpers-ms-precision.xfail.bats` (new). One failing test per helper that:
 1. Spins up a fresh ephemeral state DB via `_lib_db.sh` schema.
