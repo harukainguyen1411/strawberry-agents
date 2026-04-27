@@ -42,6 +42,119 @@ From 2026-04-27 onward, coordinators (Evelynn, Sona) MUST use the Agent Team fea
 
 ---
 
+## SendMessage Contract
+
+Substantive teammate output MUST go via `SendMessage` to the lead (or to a peer teammate when peer-to-peer applies). Terminal output is a Duong-only side channel; the lead never reads it. If information is not in a `SendMessage`, the lead does not have it.
+
+**Conformant turn (lead receives the result):**
+```
+SendMessage({ to: "evelynn", message: "T3 impl complete — PR #42 opened, checks green." })
+```
+
+**Non-conformant turn (lead is blind):**
+```
+[Teammate writes output only into its own terminal — lead receives nothing]
+```
+
+**Rule:** every turn that produces a substantive result — completed work, a finding, a blocker, a question — closes with a `SendMessage` to the lead. Turns that produce no substantive result (a tool call that only reads state, an intermediate step) do not require a marker, but the *final* turn of any work unit always does.
+
+---
+
+## Completion-Marker Protocol
+
+Every inbound task message AND every `shutdown_request` requires a typed reply via `SendMessage` to the lead. Idle-without-marker is a runbook violation.
+
+**Schema:**
+```json
+{
+  "type": "task_done" | "shutdown_ack" | "blocked" | "clarification_needed",
+  "ref": "<task-id or inbound-message-id>",
+  "summary": "<≤150 chars>",
+  "next_action": "<what unblocks you>"  // optional, only on "blocked"
+}
+```
+
+| Type | When to send |
+|---|---|
+| `task_done` | Work unit complete — result ready for lead to consume |
+| `shutdown_ack` | `shutdown_request` received; teammate is closing |
+| `blocked` | Cannot proceed without lead intervention; include `next_action` |
+| `clarification_needed` | Task is ambiguous; awaiting lead clarification |
+
+**Worked example — stale-task pattern:**
+
+Lead dispatches Task #5 to a teammate that already finished Task #4 and went idle. In the next turn, when the teammate receives the Task #5 `task_assignment`, it MUST reply even if it already finished that work:
+
+```
+SendMessage({ to: "evelynn", message: {
+  type: "task_done",
+  ref: "#5",
+  summary: "Task #5 was already completed in prior turn; result: PR #42 merged."
+}})
+```
+
+Silently swallowing the message is a violation. The marker reply is what neutralizes harness re-dispatch bugs and keeps the lead's state consistent.
+
+**Note:** this protocol was first validated end-to-end during this plan's own authoring session (Karma, 2026-04-27) — the protocol worked on first invocation.
+
+---
+
+## Peer-to-peer SendMessage
+
+Teammates can send `SendMessage` to each other directly. The graph is full — any teammate can address any other teammate by name.
+
+**When peer-to-peer is appropriate:**
+- An implementer–reviewer fix-and-recheck loop where the lead does not need to mediate each round
+- A localized handoff (e.g. "here is the artifact, ready for your review") where both parties are already aligned on scope
+- Short confirmations that would create noise if routed through the lead
+
+**When peer-to-peer is NOT appropriate:**
+- Scope or priority decisions that could affect other tasks or the lead's plan
+- Cross-cutting structural changes — always route through the lead
+- Anything the lead must arbitrate or approve before the peer can proceed
+
+**Always cc the lead when a peer-to-peer thread converges.** Send a summary `task_done` or `blocked` marker to the lead at the end of any peer-to-peer sub-thread. The lead should never learn of a completed coordination loop only by reading both terminals.
+
+---
+
+## Failure Modes Appendix
+
+In addition to the structural failure modes above (missing `name` field, foreground dispatch, tmux fragility, single-team-per-lead), the following protocol-level failure modes have been observed:
+
+### Failure 5: React Ink crash on large-prompt teammates (in-process backend)
+
+**Symptom:** Teammate spawn returns `agent_id: <name>@<team>` correctly, but the teammate's pane crashes immediately with a React Ink rendering error. Subsequent `SendMessage` to the teammate produces no reply.
+
+**Cause:** The initial prompt injected into the teammate's context exceeds what the in-process Ink renderer can handle.
+
+**Fix:** Reduce the teammate's initial prompt size. Move bulk context (long plan excerpts, large file contents) to a file reference the teammate reads on its first turn, rather than injecting inline. See `agents/.../learnings/2026-04-26-team-mode-ink-crash-and-tmux-fallback.md` for the original investigation.
+
+**tmux footnote:** the existing `teammateMode` escape hatch in `~/.claude/settings.json` (set to `"tmux"`) routes teammates into tmux panes instead of in-process, which sidesteps the Ink rendering limit. Only relevant if tmux is installed and the parent CLI is running inside a tmux session.
+
+### Failure 6: Missing `name` field — not a real teammate (duplicate of Failure 1)
+
+See Failure 1 above. Symptom: spawn returns hex agentId, not `<name>@<team>`.
+
+### Failure 7: TaskList ↔ team-dispatch desynchronization
+
+**Symptom:** A teammate marks a task `completed` via `TaskUpdate` in turn N. In turn N+1, the team harness re-dispatches the same task as a new `task_assignment` message.
+
+**Cause:** A known harness bug where the team event store and the shared TaskList can transiently disagree on task state.
+
+**Protocol response:** The teammate MUST reply with a completion marker referencing the new task ID:
+
+```
+SendMessage({ to: "<lead>", message: {
+  type: "task_done",
+  ref: "<new-task-id>",
+  summary: "Already completed in prior turn — no new work needed."
+}})
+```
+
+Silently swallowing the re-dispatched task assignment is a violation. The marker reply neutralizes the harness bug. This was the first end-to-end validation of the completion-marker protocol (Evelynn session 2026-04-27, Karma plan authoring).
+
+---
+
 ## Settings — what controls backend selection
 
 `~/.claude/settings.json`:
