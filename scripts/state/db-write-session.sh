@@ -56,8 +56,8 @@ SQL="INSERT OR IGNORE INTO sessions (id, coordinator, started_at, ended_at, shar
      VALUES (
        '$(_esc "$ID")',
        '$(_esc "$COORDINATOR")',
-       '$(_esc "$STARTED_AT")',
-       nullif('$(_esc "$ENDED_AT")', ''),
+       strftime('%Y-%m-%d %H:%M:%f', '$(_esc "$STARTED_AT")'),
+       nullif(strftime('%Y-%m-%d %H:%M:%f', '$(_esc "$ENDED_AT")'), strftime('%Y-%m-%d %H:%M:%f', '')),
        '$(_esc "$SHARD_PATH")',
        nullif('$(_esc "$TLDR")', ''),
        nullif('$(_esc "$BRANCH")', '')
