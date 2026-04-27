@@ -355,6 +355,81 @@ All seven OQs resolved by Duong via hands-off autodecide on 2026-04-27. Audit tr
 
 - **Trigger-tool reconciliation stays in ADR-5 (sanity sweep), NOT pulled into ADR-1.** ADR-1 remains UI-only: it consumes a `buildId` from the session doc and renders progress, regardless of whether the build was started by an agent `trigger_factory` tool call (today's behaviour) or a user button click against `POST /session/{id}/build` (project DoD target). See §Out of scope.
 
+## Test plan
+
+_Authored by Xayah on 2026-04-27 (complex-track). Pair: Rakan (test impl) ↔ Viktor (impl). xfail-first per Rule 12: every TX-xfail-* test below lands as its own commit on `adr-1-test-plan` BEFORE the impl task it pairs with._
+
+### Coverage matrix (what each test protects)
+
+| Surface | Count | Invariant |
+|---|---|---|
+| Unit (contract translator) | 7 | `BuildProgress` shape (D2) is the single seam between factory wire-shape and UI; no caller depends on raw event names. |
+| Integration (xfail, end-to-end SSE → UI) | 4 | BFF `/session/{id}/logs` → frontend `EventSource` → `BuildProgress` state pipeline emits the contract D2 declares; reload-resume seeds via `/build-status` then SSE fans in (D6). |
+| Fault injection | 6 | UI never wedges, never silently disappears, never double-applies a terminal event when factory or transport misbehaves. |
+| Cross-ADR contract | 2 | The `BuildProgress` shape (D2) and the same DOM slot (D5) are reused by ADR-2 (verify) without modification. |
+
+**Total: 19 test tasks** — 7 unit, 4 xfail integration, 6 fault-injection, 2 cross-ADR seam.
+
+### Pairing & ordering with Aphelios's §Tasks
+
+- T7 (unit translator tests) → expanded below as **TX-unit-1..TX-unit-7**. Pairs with Aphelios's T2 (translator impl). Ordering: TX-unit-* commits land BEFORE T2 impl on the same branch.
+- T6 (page-reload resume integration test) → expanded below as **TX-int-3 (xfail)**. Pairs with Aphelios's T3 + T1 (subscribe + `/build-status` endpoint). Ordering: TX-int-3 lands BEFORE T1/T3 impl.
+- New: **TX-int-1, TX-int-2, TX-int-4 (xfail)**, **TX-fault-1..TX-fault-6**, **TX-seam-1..TX-seam-2** — Xayah-introduced; Aphelios picks them up into his §Tasks under T6/T7's pair-mate ownership when he sees this section.
+
+### Unit tests — `buildProgress.js` translator (T7 expansion)
+
+All seven tests are pure-function: feed canned SSE chunk strings (or pre-parsed event objects, depending on translator surface) into `applyEvent(state, chunk)` and assert the resulting `BuildProgress` shape. No DOM, no network, no timers.
+
+- [ ] **TX-unit-1** — translator: `step_start` builds initial `BuildProgress`. estimate_minutes: 25. Files: `tools/demo-studio-v3/static/buildProgress.test.js` (or equivalent test file colocated with the new module). DoD: feeding `event: build` + `data: {"event":"step_start","step":1,"totalSteps":10,"name":"clone_blank_template"}` produces `{status:'in_progress', step:1, totalSteps:10, stepName:<mapped from T4 table>, percent:0, error:undefined}`. **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-2** — translator: `step_complete` advances `percent`. estimate_minutes: 20. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: after `step_complete{step:3,name:'upload_logos',duration_ms:1200}`, `percent === 30` and `step === 3`. Asserts `percent` derives from `step_complete.step`, NOT `step_start.step` (D2 explicit). **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-3** — translator: `step_error` sets `status:'failed'` + freezes `step` at last completed. estimate_minutes: 25. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: sequence `step_complete{step:3}` → `step_start{step:4}` → `step_error{step:4,name:'build_ios_template',error:'X'}` → result is `{status:'failed', step:3, percent:30, stepName:<step 4 mapped name>, error:{message:'X', code:?}}`. Bar freezes at last *completed* step (D3 failure-state row in UX Spec). **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-4** — translator: `build_complete` sets terminal state. estimate_minutes: 15. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: `build_complete{shortcode:'X', projectUrl:..., demoUrl:...}` → `{status:'complete', percent:100, stepName:'Build complete'}`. Idempotency check: applying it twice yields identical state and no thrown error. **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-5** — translator: `build_error` without preceding `step_error` still sets failed. estimate_minutes: 15. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: from a `step_complete{step:5}` mid-state, applying `build_error{error:'global'}` directly (no `step_error` first) produces `{status:'failed', step:5, percent:50, error:{message:'global'}}` — translator must not require the `step_error` precursor. **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-6** — translator: malformed/unknown event names no-op. estimate_minutes: 20. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: feeding `data: {"event":"unknown_thing"}`, `data: {malformed json`, empty string, `event: build` with empty data — translator returns prior state unchanged, no throw. Asserts the wire-shape isolation guarantee (D2: factory can rename internals without UI crash). **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+- [ ] **TX-unit-7** — translator: `step_complete.step > totalSteps` clamps to 100% without throwing. estimate_minutes: 15. Files: `tools/demo-studio-v3/static/buildProgress.test.js`. DoD: `step_start{step:1,totalSteps:10}` then `step_complete{step:11}` → `percent === 100` (clamped), `status` stays `in_progress` until terminal event. Guards against factory off-by-one. **Committed before T2 impl per Rule 12.** parallel_slice_candidate: no.
+
+### Integration tests — end-to-end SSE → UI (T6 expansion + new)
+
+These exercise the BFF multiplexer + frontend subscriber + component together. Use a stubbed upstream factory SSE source (replay canned event sequences over a local HTTP server) and a JSDOM/headless browser harness for the frontend.
+
+- [ ] **TX-int-1 (xfail)** — happy-path full pipeline: 10-step build renders 0% → 100% in DOM. estimate_minutes: 50. Files: `tests/integration/test_build_progress_e2e.py` (or `.spec.js` if the harness is JS; pick whatever sibling integration tests already use). DoD: stub factory emits all 10 `step_start`/`step_complete` pairs + `build_complete`; assertions: `<progress value>` advances monotonically through `0,10,20,...,100`; label updates on every `step_start`; `EventSource.readyState === 2` (closed) after terminal. xfail because component does not exist yet. **Committed before T2/T3 impl per Rule 12.** parallel_slice_candidate: yes.
+- [ ] **TX-int-2 (xfail)** — failure-path full pipeline: `step_error` at step 4 surfaces inline error + × button. estimate_minutes: 40. Files: `tests/integration/test_build_progress_e2e.py`. DoD: stub factory emits steps 1-3 complete, then `step_start{4}` + `step_error{4}` + `build_error`; assertions: bar value frozen at 30, bar has `failed` class (red), label contains the error message verbatim, × button is in DOM and keyboard-focusable (`tabindex >= 0`), clicking × unmounts the component. xfail because component does not exist yet. **Committed before T2/T3/T5 impl per Rule 12.** parallel_slice_candidate: yes.
+- [ ] **TX-int-3 (xfail)** — page-reload resume seeds via `/build-status` then SSE fans in (T6). estimate_minutes: 45. Files: `tests/integration/test_build_progress_reload_resume.py`. DoD: (a) start a build, advance to step 5 via stub SSE; (b) tear down the EventSource and re-mount the component (simulating reload); (c) assert exactly one `GET /session/{id}/build-status` is fired; (d) assert seed produces `<progress value="50">` BEFORE any subsequent SSE event; (e) feed `step_complete{6}` over fresh SSE, assert value advances to 60 within 2 seconds. Single-call assertion is load-bearing per QA Plan FAIL list. xfail because `/build-status` endpoint and component do not exist yet. **Committed before T1/T2/T3 impl per Rule 12.** parallel_slice_candidate: yes.
+- [ ] **TX-int-4 (xfail)** — auto-clear-on-retry: failed bar unmounts and remounts indeterminate on next `building` transition (T5 path A). estimate_minutes: 35. Files: `tests/integration/test_build_progress_retry.py`. DoD: drive component to `failed` state via TX-int-2 setup, then dispatch a fresh `status: building` chat-stream event; assert: failed component unmounts, fresh component mounts in indeterminate state (no `value` attribute on `<progress>`), single repaint between unmount and remount (no flicker — measured via JSDOM mutation observer count or Playwright's `page.locator(...).count()` timeline). xfail because component does not exist yet. **Committed before T5 impl per Rule 12.** parallel_slice_candidate: yes.
+
+### Fault-injection harnesses (Xayah-introduced)
+
+Each harness targets one specific failure mode the QA Plan FAIL list or §Goal "survives a full page reload mid-build" promises. Run as part of the integration suite; each may be marked xfail until its corresponding impl path lands.
+
+- [ ] **TX-fault-1** — SSE stream cut mid-build (network drop after step 5). estimate_minutes: 40. Files: `tests/integration/test_build_progress_fault_sse_drop.py`. DoD: stub factory emits steps 1-5 complete, then closes the TCP connection without a terminal event. Assertion: BFF's `_sse_fallback_get` (already present at `tools/demo-studio-v3/main.py:344`) fires, the UI eventually reaches a terminal `complete` or `failed` state from session-doc fields within 30s, and the component does NOT silently disappear. **Committed before T3 impl per Rule 12.** parallel_slice_candidate: yes.
+- [ ] **TX-fault-2** — terminal event arrives without preceding `step_start` (out-of-order). estimate_minutes: 25. Files: `tests/integration/test_build_progress_fault_out_of_order.py`. DoD: stub factory emits `build_complete` as the FIRST event (no `step_*` prelude). Assertion: component transitions cleanly to terminal state, percent jumps to 100, no thrown error in console. parallel_slice_candidate: yes.
+- [ ] **TX-fault-3** — `step_complete.step > totalSteps` integration check. estimate_minutes: 20. Files: `tests/integration/test_build_progress_fault_overflow_step.py`. DoD: stub factory emits `step_start{1,totalSteps:10}` then `step_complete{step:11}`. Assertion: bar clamps to 100%, no JS error, label still shows a sensible `stepName`. End-to-end counterpart of TX-unit-7. parallel_slice_candidate: yes.
+- [ ] **TX-fault-4** — `build_complete` arrives twice (idempotency). estimate_minutes: 25. Files: `tests/integration/test_build_progress_fault_double_terminal.py`. DoD: stub factory emits `build_complete`, then a duplicate `build_complete` 200ms later (simulating BFF retry or upstream stutter). Assertion: dwell timer fires exactly once (1.5s window), color-shift transition fires exactly once, no double-mount of the verify placeholder. Asserts the QA Plan FAIL list "remounts the `<progress>` element instead of re-classing it" guarantee. **Committed before T9 impl per Rule 12.** parallel_slice_candidate: yes.
+- [ ] **TX-fault-5** — SSE opens then closes within 10s with zero events (timeout guard). estimate_minutes: 30. Files: `tests/integration/test_build_progress_fault_silent_sse.py`. DoD: stub factory accepts the connection, holds it open for 10s, sends nothing, closes. Assertion: indeterminate `<progress>` (no `value` attr) remains visible with label "Starting build…" — does NOT silently unmount. Matches QA Plan failure-modes bullet "Build is triggered but no `step_start` event arrives within 10s". parallel_slice_candidate: yes.
+- [ ] **TX-fault-6** — page-reload AFTER `build_complete` (terminal seed-only path). estimate_minutes: 25. Files: `tests/integration/test_build_progress_fault_reload_post_terminal.py`. DoD: drive build to terminal-complete state, simulate reload. Assert: `GET /session/{id}/build-status` returns terminal state from session-doc fields (no upstream factory call); UI shows the verify-placeholder bar in `verify-green` (per ADR-1/ADR-2 seam in T9), not the build bar; no SSE connection opened. Matches QA Plan failure-modes bullet "Page reload after `build_complete`". **Committed before T1 impl per Rule 12.** parallel_slice_candidate: yes.
+
+### Cross-ADR contract tests
+
+ADR-1 owns the build channel; ADR-2 will reuse the multiplexer + UI slot for verify. These two tests freeze the seam shape now so ADR-2 cannot drift.
+
+- [ ] **TX-seam-1** — contract shape stability: `BuildProgress` interface snapshot. estimate_minutes: 15. Files: `tests/contract/test_build_progress_shape.py` (or a JS snapshot test colocated with the module). DoD: snapshot of the `BuildProgress` TypeScript-style interface (or runtime shape via `Object.keys`) committed alongside the test. Any change to field names, types, or the `status` enum breaks the snapshot — ADR-2 must explicitly update it. Asserts D2's "single load-bearing seam" promise. parallel_slice_candidate: no.
+- [ ] **TX-seam-2** — DOM-slot reuse: same `<progress>` element accepts both `event: build` and `event: verification` chunks. estimate_minutes: 30. Files: `tests/integration/test_build_progress_slot_reuse.py`. DoD: mount the component, drive build to `build_complete`, dwell 1.5s, then synthesise an `event: verification` `step_start` chunk in the same EventSource stream. Assertion: same `<progress>` DOM node persists (`element === sameElement` via JS reference check), only its className shifts from `build-blue` to `verify-green`, no `unmount` lifecycle fires. Asserts D5 cross-ADR contract: "one UI component, two data sources, no duplication". **Committed before T9 impl per Rule 12.** parallel_slice_candidate: no.
+
+### Architectural ambiguity surfaced (report-back to team-lead)
+
+Three points worth flagging to Aphelios + Swain before impl starts:
+
+1. **Translator surface shape is undefined.** D2 names the contract but does not specify whether `applyEvent` takes a raw SSE chunk string (and parses) or a pre-parsed event object. TX-unit-* assume the former (string in, state out — purer, no parser dependency in tests). Aphelios's T2 should pin this in his impl breakdown; tests will pivot if the surface is the latter.
+2. **`/build-status` upstream call is not idempotent-defined.** D6 says "makes a single upstream `GET /build/{buildId}` call to factory" for `building` state. If the user reloads twice in 5s, do we hit factory twice, or do we cache for N seconds? TX-int-3 only asserts a single call per page-load; multi-reload behaviour is undefined. Worth a 2-line clarification in D6 or a follow-up plan.
+3. **Color-shift transition mechanism for TX-fault-4 idempotency.** The QA Plan FAIL list says "remounts the `<progress>` element instead of re-classing it" is a fail. That implies the transition uses `classList.replace` not `replaceChild`. T9 should make this explicit; TX-seam-2 hard-asserts it via DOM-node identity. If T9 implements via `replaceChild` for any reason, TX-seam-2 will fail and we'll need to amend.
+
+### Notes on isolation, commits, and ordering
+
+- This section was authored in worktree `xayah/adr-1-test-plan` (branch `adr-1-test-plan`) per Rule 20 auto-isolation.
+- Edit-only — no sibling `-tests.md` file created (D1A inline enforcement; `Write` is revoked from Xayah's tool list).
+- Commit prefix: `chore: xayah breakdown for adr-1-build-progress-bar (D1A inline)`.
+- Plan body has been modified — if any pre-existing Orianna body-hash signature exists, this edit invalidates it. The §Orianna approval block below has no body-hash field; no re-sign dance required, but report this edit to Sona/team-lead for awareness.
+
 ## Orianna approval
 
 - **Date:** 2026-04-27
