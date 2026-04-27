@@ -8,6 +8,7 @@ priority: P1
 last_reviewed: 2026-04-27
 orianna_gate_version: 2
 tests_required: true
+qa_plan: inline
 parent_adr: plans/approved/personal/2026-04-27-coordinator-memory-v1-adr.md
 parent_amendment_sha: e07bf8ad
 ---
