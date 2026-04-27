@@ -580,11 +580,237 @@ Slice candidate `wait-bound`: review duration is dominated by waiting for the de
 
 ## Test plan
 
-- All Phase D unit + integration tests green in CI.
-- Akali QA Plan executes against `feat/demo-studio-v3` deployment with all checkpoints green.
-- Status enum is `{pass, fail, failed}` everywhere (BFF + MCP tools + tests + frontend). Grep verifies no surviving `passed` literal.
-- The deleted poller files do not regress (`grep -r 'start_s4_poller\|run_s4_poller\|poll_s4_verify' tools/demo-studio-v3/` returns nothing).
+Authored inline by Xayah 2026-04-27 (D1A). Layer below the §QA Plan: unit / integration / contract / resilience / fault-injection. xfail-first per project rule §12 — every test task in §Tasks Phase D commits BEFORE the impl task it covers, on the same branch. Akali UI flow (above, §QA Plan) is the user-flow gate; this section is the developer-test gate.
+
+**Global rollup (acceptance):**
+- All Phase D unit + integration tests green in CI (pytest + `go test ./...`).
+- Status enum is `{pass, fail, failed}` everywhere (BFF + MCP tools + tests + frontend). Grep verifies no surviving `passed` literal in `tools/` or `apps/`.
+- Deleted poller does not regress: `grep -r 'start_s4_poller\|run_s4_poller\|poll_s4_verify' tools/demo-studio-v3/` returns zero hits.
 - Pre-push hook + CI green; PR e2e green; PR-lint detects required `Design-Spec:`, `Accessibility-Check:`, `Visual-Diff:`, `QA-Report:` markers.
+- Akali §QA Plan executes against `feat/demo-studio-v3` deployment with all checkpoints green (covers user-flow layer; this §Test Plan covers code layer).
+
+### Coverage matrix
+
+Each impl task is paired with its xfail-first test task per project rule §12. Test types: **unit** = single-package, no I/O; **integration** = multi-component within a service; **contract** = wire-format / event-vocabulary assertion; **e2e** = cross-service via test-server fakes; **resilience** = fault-injected behaviour.
+
+| Impl task | Covered by | Test type(s) | xfail-first posture |
+|---|---|---|---|
+| T1 — `internal/checks` event-sink hook (Go) | T11 | unit + integration + contract | T11 committed BEFORE T1; flips green when T1+T2+T3 land |
+| T2 — Handler SSE branch (Go) | T11 + T4 | integration + contract + resilience | T11 + T4 both xfail BEFORE T2 |
+| T3 — SSE encoder util (Go) | T11 (transitive) + T3-inline table-test | unit + contract | T3's own table-test commits with the impl; T11 covers integration |
+| T4 — Backwards-compat smoke (non-SSE) | T4 (self) | unit + contract | T4 IS the regression for T2 JSON branch — committed before T2 merge as xfail |
+| T5 — `start_s4_verify_stream` (Python) | T12 + T13 | integration + contract + resilience | T12 + T13 xfail BEFORE T5 |
+| T6 — Stream-stall watchdog (Python) | T12 (extended) | resilience (fault injection) | Same xfail commit as T12 |
+| T7 — Status enum unification | T7-inline (existing tests flipped to canonical enum) | unit | Tests ARE the regression; flipped in same task |
+| T7a — `S4_VERIFY_URL` deploy env | T13 (e2e gates depends on env plumbed) + Akali QA gate | e2e (transitively) | n/a — chore; verified via T13 + Akali |
+| T7b — `/__build_info` endpoint | T7b-inline (`test_build_info_endpoint`) | unit | Test commits with impl; small surface |
+| T8 — Frontend progress component (verify source) | T13 (transitively) + Lulu visual review T15 | e2e + visual | T13 xfail BEFORE T8 |
+| T9 — Build→verify handoff (frontend) | T13 + Akali §QA Plan happy-path step 4 | e2e + UI flow | Covered by T13 e2e + Akali |
+| T10 — `GET /session/{id}/state` | T14 | integration + contract | T14 xfail BEFORE T10 |
+
+Layer summary: 4 unit-bearing tasks (T3 inline, T4, T7 inline, T7b inline), 1 unit/integration/contract bundle (T11), 1 integration/contract/resilience bundle (T12), 2 e2e bundles (T13, T14), 1 visual review (T15). Resilience cases concentrated in T11 (handler-side `verify_error`) and T12 (BFF-side stream-error / stalled / drop / idempotency).
+
+### Unit tests
+
+Pure-package, no network, no Firestore writes (mocked). Run under `go test ./...` and `pytest`.
+
+#### S4 (Go) — `internal/api/sse_test.go` (companion to T3)
+Lives with T3 impl. Covers the SSE encoder util in isolation:
+- `TestWriteEvent_RoundtripSimplePayload` — `{a:1, b:"x"}` produces wire frame `event: foo\ndata: {"a":1,"b":"x"}\n\n` and `Flush()` is invoked exactly once.
+- `TestWriteEvent_UnmarshalableReturnsError` — payload with channel/func field returns the JSON marshal error; nothing is written; flusher is NOT called.
+- `TestWriteEvent_FlushFailureSurfaces` — fake flusher returning error; the flush error is returned to caller (handler can decide to abort).
+- `TestWriteEvent_NewlinesInPayloadEscaped` — JSON-encoded payload with embedded `\n` doesn't break the SSE frame boundary (`\n\n` terminator detection stays unambiguous).
+
+#### S4 (Go) — `internal/checks/run_test.go` extension (covered by T11 but unit-shaped at the leaf)
+Adds a unit-level slice to T11's coverage:
+- `TestRun_OnEventNilIsNoop` — when `Options.OnEvent == nil`, no panic, no observable behaviour change vs. pre-T1 baseline (assert against the same `QcReport` shape today's tests produce).
+- `TestRun_OnEventEmitsPerCategoryStartCompletePairs` — capture all callbacks into a slice; assert exactly `2 * enabledCategoryCount` callbacks, alternating `category_start` / `category_complete`, with monotonic `index`.
+- `TestRun_SkippedCategoriesNotEmitted` — disable `gpay` via `Options`; assert no `category_start` for `gpay` and `totalCategories` reflects 7 (not 8).
+- `TestRun_DurationMsPositive` — every `category_complete` payload has `duration_ms >= 0`.
+
+#### BFF (Python) — `tools/demo-studio-v3/tests/test_verify_stream_unit.py` (companion to T12)
+Pure-unit slice of T12, no real httpx network:
+- `test_parse_sse_frame_well_formed` — feed a known `event: x\ndata: {...}\n\n` byte string into the SSE-frame parser helper; assert event name + parsed JSON payload.
+- `test_parse_sse_frame_malformed_chunk_dropped` — feed a chunk missing the blank-line terminator or with a non-JSON `data:` payload; parser returns None / raises a typed error and the consumer logs+skips (does NOT terminate the stream early).
+- `test_active_streams_dict_idempotency` — call helper that registers a session-task into `_active_verify_streams`; second call for same session returns the existing task and does not create a new one.
+
+#### BFF (Python) — `tools/demo-studio-v3/tests/test_main.py` extension (companion to T7b)
+- `test_build_info_endpoint` — `GET /__build_info` returns 200, JSON shape `{revision, builtAt, service: "demo-studio-v3"}`, no auth required.
+- `test_build_info_defaults_when_unset` — env unset → `revision == "unknown"`, `builtAt == "unknown"`.
+
+#### BFF (Python) — `tools/demo-studio-v3/tests/test_session.py` extension (companion to T7)
+- `test_set_verification_result_canonical_enum` — calling with `"pass"`, `"fail"`, `"failed"` writes verbatim; calling with the legacy `"passed"` either rejects (preferred) or normalises (acceptable) — assert behaviour is one of the two and is documented.
+- `test_set_verification_result_persists_lastVerificationAt` — ISO-8601 timestamp set on every write.
+
+### Integration tests
+
+Cross-component within a service. Use existing in-package fixtures + mocks (S4) or `aiohttp`/`httpx` test servers (BFF). No real Cloud Run, no real Firestore.
+
+#### S4 (Go) — `internal/api/handler_test.go::TestHandleVerify_SSEBranch_EventSequence` (T11)
+Per task spec. Drives `HandleVerify` with `Accept: text/event-stream`, asserts:
+1. `Content-Type: text/event-stream`, `Cache-Control: no-cache`, `Connection: keep-alive`, `X-Accel-Buffering: no` headers all present on the response.
+2. Wire event order: `verify_start` → 8 × (`category_start`, `category_complete`) → `verify_complete` (8-category default; `test_pass` disabled per §Service definition `TEST_PASS_ENABLED=0`).
+3. Each event payload conforms to D3 shape — see §Contract tests for the explicit shape assertions.
+4. Existing Firestore mock receives the same `Report` it does in the JSON branch (persistence parity).
+5. `http.Flusher` is asserted to be invoked at least once per event (no buffering of >1 event into a single flush).
+
+#### S4 (Go) — `internal/api/handler_test.go::TestHandleVerify_BackwardsCompatNonSSE` (T4)
+Per task spec. Three sub-cases (table-driven):
+- (a) No `Accept` header → `Content-Type: application/json`, body is `QcReport`.
+- (b) `Accept: application/json` → same as (a).
+- (c) Firestore persistence invoked exactly once with the canonical `Report`.
+
+T4 is the JSON-branch regression and the proof that the Accept-header guard is a single-branch early-return, not a duplicated run path.
+
+#### BFF (Python) — `test_verify_stream.py` (T12 — see §Resilience for the fault-injection cases)
+Happy path:
+- `test_stream_ingest_terminal_complete` — feed canned SSE bytes (`verify_start` + 8 category-pairs + `verify_complete`) via httpx mock transport. Assert:
+  - `set_verification_result(session_id, "pass", report)` invoked exactly once with the embedded report.
+  - Each `event: verification` chunk reached `_verification_queues[session_id]` (drain queue and assert event sequence + count).
+  - `_active_verify_streams[session_id]` is removed in the `finally` block (post-condition).
+
+#### BFF (Python) — `test_e2e_verify_pipeline.py` (T13)
+Per task spec. Mock S4 with a local `aiohttp` test server serving canned SSE on `POST /verify`. Cross-component:
+1. `POST /session/{id}/build` callback (internal-secret header) lands → `start_s4_verify_stream` task spawns.
+2. Subscribe to `GET /session/{id}/logs` SSE channel — assert `event: verification` chunks arrive in order matching the upstream canned sequence.
+3. Terminal `verify_complete` causes `set_verification_result(session_id, "pass", report)` → assert via session-doc read or mock spy.
+4. Total wall-clock < 30 s under normal scheduling.
+
+This is the layer below Akali — it proves the chain works without a real S4 binary and without a real browser.
+
+#### BFF (Python) — `test_e2e_reload_resume.py` (T14)
+Per task spec. Mock S4 emits a slow stream (artificial delay between category events). Mid-stream, simulate page-reload by closing the BFF-facing SSE consumer. Then:
+1. `GET /session/{id}/state` returns the unified shape from §D5: `verificationStatus: "in_progress"`, no progress fields populated (indeterminate seed, per D5 caveat — no replay buffer in v1).
+2. Re-open SSE consumer; assert remaining `category_*` events arrive normally; terminal `verify_complete` lands on session doc.
+3. **Dual-state assertion (T10 cross-ADR coupling, see §CC1).** If T10 ships under a transitional alias `/build-status`, run the same scenario twice — once issuing `GET /session/{id}/state` and once `GET /session/{id}/build-status`. Both must return the same unified body. Drop the alias half once ADR-1's rename to `/state` is in main.
+
+### Contract tests
+
+Pin the SSE event vocabulary in §D3 so frontend, BFF, and S4 cannot drift independently. Lives partly in T11 (Go side) and partly in T12 (Python side).
+
+**Event vocabulary under test (per D3 — snake_case, NOT the kebab-case sketched in some upstream notes):**
+
+| Event | Fields asserted present | Fields asserted typed |
+|---|---|---|
+| `verify_start` | `sessionId`, `projectId`, `totalCategories` | `totalCategories: int` |
+| `category_start` | `category`, `index`, `totalCategories`, `name` | `index: int`, `0 <= index < totalCategories` |
+| `category_complete` | `category`, `index`, `totalCategories`, `summary.{passed,failed,skipped}`, `duration_ms` | all ints; `duration_ms >= 0` |
+| `verify_complete` | full `QcReport`: `status ∈ {pass, fail}`, `summary`, `checks[]` | `status` is exactly `"pass"` or `"fail"` (NOT `"passed"`/`"failed"`) |
+| `verify_error` | `reason ∈ {config_fetch_failed, ws_unavailable, snapshot_failed, internal_error}`, `error: str`, optional `partialReport` | `reason` is from the closed enum |
+
+S4-side contract assertions live inside T11 sub-cases:
+- `TestSSEContract_VerifyStartShape` — table-test asserting required keys + types.
+- `TestSSEContract_CategoryStartIndexMonotonic` — across the 8-category run, `index` is strictly increasing 0..7.
+- `TestSSEContract_CategoryCompleteSummaryShape` — `summary` always has `passed`, `failed`, `skipped` as ints; sum equals total checks in that category.
+- `TestSSEContract_VerifyErrorReasonEnum` — drive the run with each of the four `reason` paths (mock config client fail, mock WS-unreachable, mock snapshot fail, mock internal error); assert the emitted `reason` is the corresponding enum value, never an unbounded string.
+- `TestSSEContract_TerminalEnumPassFail` — `verify_complete.report.status` is exactly `"pass"` or `"fail"` literally — no `"passed"` / `"failed"` regression.
+
+BFF-side contract assertions in T12:
+- `test_contract_status_enum_canonical` — every `set_verification_result` call sees one of `{"pass", "fail", "failed"}`. `"passed"` would raise. (Pairs with T7 status-enum unification chore.)
+- `test_contract_event_passthrough_unchanged` — payloads forwarded via `emit_sse_event(session_id, "verification", payload)` are byte-equivalent to upstream (no BFF mutation of the wire shape — frontend depends on this).
+
+**Frontend contract** is asserted transitively by T13 happy-path event-order assertion; an explicit frontend-side contract test is optional for v1 (component is small enough that ADR-1's existing assertions plus T13 cover it).
+
+### Resilience / fault injection
+
+The fault-injection lane. Each scenario is a deterministic test (no flakiness from real timing) that drives the system into a failure mode and asserts the documented response from §D7 / §D8.
+
+#### R1 — S4 dies mid-stream (BFF connection drop) — covered by T12
+Test: `test_stream_ingest_connection_drop`. Mock httpx transport raises `httpx.RemoteProtocolError` after the 4th `category_complete`. Assert:
+- `set_verification_result(session_id, "failed", {reason: "stream_error", error: <str>})` invoked exactly once.
+- Final `event: verification` with `{status: "failed", reason: "stream_error"}` enqueued before queue teardown.
+- `_active_verify_streams[session_id]` removed in `finally`.
+
+#### R2 — Malformed SSE chunk from S4 — covered by T12 + unit (`test_parse_sse_frame_malformed_chunk_dropped`)
+Test: `test_stream_ingest_malformed_chunk_skipped` (T12 sub-case, NEW — flagged for Aphelios in §Reply gaps). Inject a chunk with bad JSON in `data:` between two valid category events. Assert:
+- The malformed chunk is logged at warn level, dropped, and the stream continues processing subsequent valid chunks.
+- The terminal event still reaches `set_verification_result`.
+- The malformed chunk does NOT terminate with `stream_error` (transient parse error, not a connection failure).
+
+> **Gap:** if Aphelios judges malformed-chunk handling should fail-loud (terminate stream → `stream_error`) instead, the test flips to assert termination. Pinging Aphelios in reply.
+
+#### R3 — Stream stalls (60 s no event) — covered by T12 (`test_stream_stall_watchdog`, T6's home)
+Per task spec. Mock httpx feeds 3 category events then stops emitting. Test scaffold either uses real `asyncio.sleep` with a fast-clock fixture (recommended: `pytest-asyncio` + `freezegun` or asyncio loop's `time` patched to advance) OR mocks `asyncio.wait_for` to raise `TimeoutError` directly. Assert:
+- After the 60 s threshold expires, watchdog terminates with `set_verification_result(session_id, "failed", {reason: "stream_stalled", elapsed_s: 60})`.
+- Final `event: verification` with `{status: "failed", reason: "stream_stalled"}` enqueued.
+- Watchdog timer resets on every line received (assert with a 50 s gap + 1 line + 50 s gap scenario — should NOT trigger stall, total elapsed > 60 s but no single inter-event gap exceeds threshold).
+
+#### R4 — Watchdog reset semantics edge — sub-case of R3
+Test: `test_stream_stall_watchdog_resets_on_keepalive_comment`. If S4 emits SSE comments (`: keepalive\n\n`) every 30 s during a slow `gpay` category, those comment lines must reset the watchdog timer. Assert no `stream_stalled` over a 90 s window with comments at 30 / 60 s.
+
+> **Gap:** D8.2 footnote acknowledges `gpay` may approach 60 s; if S4 doesn't actually emit keepalive comments today, this test exposes a real prod-stability hole. Pinging Aphelios — may need a T-impl follow-up to add S4-side keepalive emission. NOT adding the test-task unilaterally.
+
+#### R5 — Idempotency on duplicate `start_s4_verify_stream` — covered by T12 (`test_stream_idempotent`)
+Per task spec. Two concurrent `start_s4_verify_stream(session_id, project_id)` calls. Assert:
+- Only one `_active_verify_streams[session_id]` entry exists.
+- Only one outbound `POST /verify` is fired (mock httpx call count == 1).
+- Second caller's coroutine returns immediately (noop).
+
+#### R6 — `verify_error` mid-run from S4 — covered by T11 + T12
+S4-side (T11): drive the run with mocked WS-unavailable error in the middle of `card_fields`. Assert handler emits `verify_error` with `reason: "ws_unavailable"` + a `partialReport` carrying the categories completed so far. Stream closes after.
+
+BFF-side (T12): canned SSE ending in `verify_error`. Assert:
+- `set_verification_result(session_id, "failed", {reason: "ws_unavailable", error: "...", partialReport: {...}})` invoked.
+- Frontend receives final `event: verification` with `{status: "failed", reason: "ws_unavailable"}`.
+
+#### R7 — S4 unreachable (Cloud Run cold start / network partition) — covered by T12
+Test: `test_stream_ingest_open_fails`. Mock httpx transport raises `httpx.ConnectError` on stream-open (BEFORE any bytes arrive). Assert:
+- `set_verification_result(session_id, "failed", {reason: "stream_error", error: "<connect error str>"})` invoked.
+- Final `event: verification` with `{status: "failed"}` enqueued.
+- No retry attempted (per OQ3 resolution — fast-fail in v1).
+
+#### R8 — Status enum drift regression — covered by T7 + T12 contract
+Grep-test (chore, runs in CI as part of T7):
+- `scripts/ci/grep-no-passed-literal.sh` (or equivalent in existing CI) — `grep -rE 'verificationStatus.*"passed"|verificationStatus.*\\'"'"'passed\\'"'"''` over `tools/` + `apps/` returns zero hits. Hard-fail CI on regression.
+
+#### R9 — Network partition mid-build-callback (idempotency-on-retry of upstream callback) — defensive
+Test: `test_build_callback_retry_does_not_double_start_verify`. If factory S3 retries the `POST /session/{id}/build` callback (network blip, 5xx-then-2xx), the second invocation MUST hit the existing `_active_verify_streams[session_id]` idempotency guard and noop. Asserts the production-grade idempotency contract from §D7.
+
+#### R10 — Concurrent builds for same session — punt-acknowledged in §D8.4 but assertion-cheap
+Test: `test_concurrent_build_callbacks_single_verify_stream`. Fire two `POST /session/{id}/build` callbacks 100 ms apart. Assert exactly one `start_s4_verify_stream` task is active. (v1 single-user-single-build invariant — punted in §D8 but cheap to lock down at test time.)
+
+### Khang-confirm gate
+
+Phase A is gated per §CC2 and the Phase A preamble. The following test tasks are **blocked at dispatch** by the same gate:
+
+- **T11 — S4 SSE handler tests** carries `gate: khang-confirm`. Cannot start until Khang acks the EXTEND posture.
+- **T4 — Backwards-compat smoke for non-SSE callers** carries `gate: khang-confirm`. Same gate (it touches `internal/api/handler_test.go`).
+- **T3 inline `sse_test.go`** is part of T3 (Khang-gated).
+
+If Khang opts to own S4 implementation himself per §CC2 fall-through, **Xayah's Phase A test plan stays valid** — Khang implements against the same xfail tests; Phase A becomes a hand-off, the test layer is unchanged. Phase B/C/D test tasks (T12, T13, T14) are NOT Khang-gated and dispatch on their own schedule.
+
+### Test artifacts expected
+
+Files that land in the tree as part of test impl. Provides Aphelios + Sona a checklist.
+
+#### Go side (Phase A)
+- `tools/demo-studio-verification/internal/api/sse_test.go` — NEW (T3 companion).
+- `tools/demo-studio-verification/internal/api/handler_test.go` — extended with `TestHandleVerify_SSEBranch_EventSequence` + sub-cases (T11) and `TestHandleVerify_BackwardsCompatNonSSE` (T4).
+- `tools/demo-studio-verification/internal/checks/run_test.go` — extended with `TestRun_OnEvent*` family (T11 leaf).
+- `tools/demo-studio-verification/internal/checks/testdata/` — fixtures for canned `QcReport` shapes asserted in contract tests. Specifically:
+  - `testdata/qcreport_pass_8cat.json` — golden `verify_complete` payload (8 categories, all pass).
+  - `testdata/qcreport_fail_branding.json` — `status: fail` with one branding failure (also referenced by Akali F4).
+  - `testdata/qcreport_partial_ws_unavailable.json` — `partialReport` for `verify_error` cases.
+
+#### Python side (Phases B + C + D)
+- `tools/demo-studio-v3/tests/test_verify_stream.py` — NEW (T12 home — happy-path + 8 resilience sub-cases).
+- `tools/demo-studio-v3/tests/test_verify_stream_unit.py` — NEW (T12 unit slice — frame parser + idempotency dict).
+- `tools/demo-studio-v3/tests/test_e2e_verify_pipeline.py` — NEW (T13).
+- `tools/demo-studio-v3/tests/test_e2e_reload_resume.py` — NEW (T14).
+- `tools/demo-studio-v3/tests/fixtures/sse_canned/` — NEW directory holding canned SSE byte streams as `.txt` files:
+  - `verify_pass_happy.sse` — full happy path.
+  - `verify_fail_branding.sse` — fail-path terminal.
+  - `verify_error_ws_unavailable.sse` — error-path terminal with `partialReport`.
+  - `verify_stalled_3cat_then_silence.sse` — feeds 3 categories then silence (R3).
+  - `verify_malformed_midstream.sse` — bad JSON `data:` in chunk 5 (R2).
+- `tools/demo-studio-v3/tests/test_main.py` — extended (T7b `test_build_info_endpoint`).
+- `tools/demo-studio-v3/tests/test_session.py` — extended (T7 status-enum unification).
+
+#### CI scripts
+- `scripts/ci/grep-no-passed-literal.sh` — NEW (R8 grep regression). Runs as a step in the existing PR-lint workflow alongside the existing markers checks.
+
+#### Visual-review (T15)
+- `assessments/qa-reports/2026-04-27-adr-2-verification-service-<rev-sha>/lulu-visual-review.md` — per task spec. Lives outside the test-impl tree; produced by Lulu, consumed by Sona at sign-off.
 
 ## QA Plan
 
