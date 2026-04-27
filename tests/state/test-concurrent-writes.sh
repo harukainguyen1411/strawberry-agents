@@ -95,10 +95,11 @@ PID_A=$!
 run_writer "B" "$DB_PATH" "$RESULT_B" &
 PID_B=$!
 
-wait "$PID_A"
-EXITCODE_A=$?
-wait "$PID_B"
-EXITCODE_B=$?
+# Capture exit codes without letting set -e abort on a non-zero child exit.
+# `wait $PID || EXITCODE=$?` is the POSIX-safe idiom; bare `wait $PID; EXITCODE=$?`
+# would work but `set -e` aborts before $? is captured when the child exits non-zero.
+EXITCODE_A=0; wait "$PID_A" || EXITCODE_A=$?
+EXITCODE_B=0; wait "$PID_B" || EXITCODE_B=$?
 
 # ── §3: Assert both writers exited cleanly ───────────────────────────────────
 echo ""
