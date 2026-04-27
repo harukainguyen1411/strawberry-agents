@@ -268,29 +268,40 @@ Tests live downstream in the implementation breakdown (Aphelios). High-level tes
 
 **Output surface:** files only — `CLAUDE.md` text, two new shell scripts, two amended shell scripts, one CI workflow YAML, three agent-def amendments, one new ADR-template file. No browser surface, no dashboards, no rendered reports.
 
-**Real-data acceptance gate:** the four regression scenarios in §Test plan above must all pass against real `pre-commit` hook invocation (not mocked); the PR-lint extension must be green on a fixture PR opened against a throwaway branch.
+### Acceptance criteria
 
-**Fixture-vs-real split:** linter unit tests run against fixture plans in `tests/fixtures/qa-enforcement/`; the regression test against PR #59's exact `QA-Waiver:` string runs against a real `gh pr view` of a fixture PR opened on this repo. CI wires the fixture-PR run into the pr-lint workflow's self-test path.
+- All four regression scenarios in §Test plan above pass against real `pre-commit` hook invocation (not mocked); the PR-lint extension is green on a fixture PR opened against a throwaway branch.
+- Edge cases covered (each must reject as listed):
+  - `qa_plan: none` + missing `qa_plan_none_justification:` → reject.
+  - `## QA Plan` heading present, body whitespace-only → reject.
+  - `**UI involvement:`** line missing → reject.
+  - `**UI involvement:** maybe` (invalid value) → reject.
+- Out-of-scope (explicitly): plan moved by Orianna with concurrent edit by another agent — linter sees only the staged version; concurrent untracked plan files are ignored. Aphelios-identity check against `STRAWBERRY_AGENT` env var spoofing — same threat-model as plan-lifecycle guard, which trusts the env var.
 
-**Edge cases covered:**
+### Happy path (user flow)
 
-- `qa_plan: none` + missing `qa_plan_none_justification:` → reject.
-- `## QA Plan` heading present, body whitespace-only → reject.
-- `**UI involvement:`** line missing → reject.
-- `**UI involvement:** maybe` (invalid value) → reject.
-- Plan moved by Orianna with concurrent edit by another agent → linter sees only the staged version; concurrent untracked plan files are ignored.
-- Aphelios-identity check against `STRAWBERRY_AGENT` env var spoofing — out of scope (same threat-model as plan-lifecycle guard, which trusts the env var).
-
-**Manual verification (coordinator before flipping DoD checkboxes):**
+Coordinator manual verification before flipping DoD checkboxes:
 
 1. Re-run the PR #59 false-waiver fixture against the deployed pr-lint workflow; confirm it rejects.
 2. Open one real UI ADR in `proposed/` (e.g. retro-dashboard P2) and confirm its §QA Plan is non-empty UI-branch.
 3. Open one real non-UI ADR in `proposed/` (e.g. a hook plan) and confirm its §QA Plan is non-empty non-UI-branch.
 4. Confirm Akali's amended agent-def reads correctly when she boots fresh.
 
-**xfail tests:** four xfail test files committed first, one per regression scenario in §Test plan. Aphelios names them in the breakdown.
+### Failure modes (what could break)
 
-**PR marker:** the implementation PR carries `QA-Verification: <command list and pass output>` per D7 non-UI branch.
+The four regression surfaces from §Test plan, restated as failure modes the gates must catch:
+
+1. **Plan-structure linter regression** — plan without `## QA Plan` slips through pre-commit; empty `## QA Plan` slips through; `qa_plan: none` without justification slips through.
+2. **Breakdown-qa-tasks linter regression** — Aphelios commits a `## Tasks` block without `### QA Tasks` and the gate fails to block; or the gate over-blocks a non-breakdown identity (`STRAWBERRY_AGENT=evelynn`).
+3. **Pre-dispatch gate regression** — Jayce dispatched on a plan without `## QA Plan` and the gate fails to block; or `QA-Bypass:` mechanism mis-handled.
+4. **PR-lint extension regression** — PR body with `QA-Waiver: non-UI ...` and no `Duong-Sign-Off:` reaches merge (the explicit PR #59 regression); or non-UI PR body without `QA-Verification:` reaches merge.
+5. **Akali agent-def regression** — Akali refuses a static-HTML deliverable on the basis that "no routes / no flows" instead of running the screenshot-observation flow.
+
+### QA artifacts expected
+
+- **Fixture-vs-real split:** linter unit tests run against fixture plans in `tests/fixtures/qa-enforcement/`; the regression test against PR #59's exact `QA-Waiver:` string runs against a real `gh pr view` of a fixture PR opened on this repo. CI wires the fixture-PR run into the pr-lint workflow's self-test path.
+- **xfail tests:** four xfail test files committed first, one per regression scenario in §Test plan. Aphelios names them in the breakdown.
+- **PR marker:** the implementation PR carries `QA-Verification: <command list and pass output>` per D7 non-UI branch.
 
 ## Open Questions
 
