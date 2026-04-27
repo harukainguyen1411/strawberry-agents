@@ -1,6 +1,6 @@
 ---
 slug: agent-team-mode-comms-discipline
-status: active
+status: completed
 concern: personal
 scope: [personal, work]
 owner: duong
@@ -90,6 +90,28 @@ _(Running log — appended as project-level binding decisions are made.)_
   - Senna two new IMPORTANT findings: (a) hook walks whole transcript, degrades to a
     one-time check after first `task_done`; (b) transcript-parsing python heredoc has zero
     real-path test coverage. Tracked as a separate Karma quick-lane plan.
+
+- **2026-04-27 — PR #111 merged (T9 follow-ups).** Merge commit `2c4cd330`. Karma
+  follow-up plan shipped via Talon (one-shot Agent). R1: Lucian APPROVE, Senna COMMENT
+  with 3 IMPORTANT findings (wrong delineator vs real shape, synthesized fixtures, parser
+  intermediate-output not asserted). R2 after Talon repair grounded in 5000-line
+  empirical sample: Senna APPROVE. Both PR #110 follow-ups closed.
+
+- **2026-04-27 — T11 demo artifact committed.** Commit `96661e51`, artifact at
+  `assessments/artifacts/2026-04-27-team-mode-comms-e2e-demo.md`. Controlled demo on
+  team `team-mode-comms-e2e-demo` with Talon + Senna as real teammates exercising the
+  full protocol (peer-to-peer SendMessage, typed markers, shutdown handshake, TeamDelete
+  no orphans). Convergence in zero iterations on orphan-fixture-DELETE verdict.
+
+- **2026-04-27 — Both plans promoted to `implemented/`.** Parent plan promotion commit
+  `08d36a2c`, follow-up plan promotion commit `2a43a15c`. Orianna gated both
+  re-dispatches (5 total rejects across the project, all schema/structural — strong
+  shift-left signal logged for runbook follow-up).
+
+- **2026-04-27 — DoD MET. Project closed.** All five DoD bullets satisfied. Three
+  caveats deferred for next-iteration runbook polish (camelCase vs snake_case field
+  name, per-team TaskList scoping documentation, idle_notification summary-field shape) —
+  all logged in the T11 demo artifact, none blocking.
 
 ## Out of scope
 
