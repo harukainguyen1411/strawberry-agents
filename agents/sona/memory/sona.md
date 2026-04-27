@@ -101,6 +101,261 @@ Head coordinator and secretary for Duong's work concern. Pair to Evelynn (person
 
 <!-- sessions:auto-below -->
 
+## Session 2026-04-22 (eleventh leg, cli, direct mode)
+
+One-line summary: Direct-mode execution under Duong's standing cron directive — chat bubble rendering + SSE deadlock shipped on `feat/demo-studio-v3`, Playwright-verified live on two fresh sessions. Coordinator-identity misroute at close caught by Duong; postmortem in `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`.
+
+### Delta notes to Key Context
+
+- `demo-studio-v3` vanilla Option B chat path now works end-to-end locally. Fresh-send renders agent bubbles progressively via `currentAssistantNode`/`currentAssistantText` accumulation. Remaining rough edges: preview iframe staleness, trigger_factory → S3 chain, whitespace concat cosmetics.
+- Port 8080 had orphan uvicorn workers the sandbox refused to `kill -9`. Workaround: use 8088. Worth remembering for next local-boot session.
+- Coordinator-identity inheritance across `/compact` is a live failure mode. Postmortem filed; class-of-bug not one-off.
+
+### Delta notes to Working Patterns
+
+- **Direct-mode works** when the bug class is a tight Playwright ↔ code ↔ tests loop. Every delegation handoff costs more than the actual code change when iterating on live browser state.
+- **FastAPI Dependant graph contamination** — patching `auth.require_session_or_internal` then `import main` caches the MagicMock's `*args, **kwargs` signature into the Dependant graph; subsequent real requests fail 422 "query:args, query:kwargs". Fix: autouse fixture that re-imports `main` after each test without active patches. Pattern committed in `test_chat_sse_handshake.py:_restore_clean_main`.
+- **Self-verify rule held** — never trust my own summary of a UI change; always re-open the browser. Caught two false "done" states this session by re-checking.
+- **Concern-check on resume is non-negotiable** — compaction-summary identity tags are advisory only. Read the last user message and the first few tool paths before committing to a coordinator identity. `~/Documents/Work/mmp/workspace/` paths = Sona, `~/Documents/Personal/` = Evelynn.
+
+### Sessions row
+
+- 2026-04-22 (S-eleventh, cli): Shipped chat bubble rendering + SSE deadlock fixes in direct mode. Playwright verified. 4 commits on feat/demo-studio-v3. Coordinator identity misroute caught mid-close and reverted.
+
+# Session 2026-04-22 (3a5b4781, coordinator + direct-execution hybrid)
+
+**Session ID:** 1423e23d-e7aa-41ee-9558-fa5f6deed2b3
+**Concern:** work
+**Mode at compact:** coordinator (subagent dispatch) + direct-execution override (Duong standing directive)
+
+## One-line summary
+
+Dashboard-split W1 scaffolded (PR #65 open, retargeted to god branch, Viktor resolving drift); Firestore config-leak T1-T6+T8 shipped (T7 wipe held); Loop 2b/2c Firebase auth plans proposed; coordinator identity misroute mitigated; Lissandra pre-compact consolidation fired before `/compact`.
+
+## Delta notes
+
+- Plan `plans/in-progress/work/2026-04-22-demo-dashboard-service-split.md` promoted to in-progress; Viktor W1 scaffold committed (`fede8ac` + `cb57ce6`); PR #65 opened and retargeted from main to `feat/demo-studio-v3`.
+- God-branch drift discovered (20+ commits): Viktor dispatched for `main → feat/demo-studio-v3` merge (task #33, in-flight at compact).
+- Firestore config-leak plan promoted to in-progress (`82d9cba`); Talon T1-T6 + T8-partial + T7-script shipped (`cc34cb3` + `12b9fd7`); T7 wipe HELD on Duong go-ahead.
+- Loop 2b (`73c28af`) and Loop 2c (`d045852`) plans committed to `plans/proposed/work/`; awaiting Duong approval.
+- reviewer-auth.sh failure on `missmp/company-os` identified as structural gap (not transient).
+- Coordinator identity misroute: Evelynn mitigation #3 landed (`8e796f1`); ulimit fix in place.
+- Bash cwd-wedge protocol documented in both coordinator CLAUDE.mds.
+- Firebase auth Ekko OQ dispatch in-flight at compact boundary.
+- Prior direct-execution work (chat bubble rendering + SSE deadlock fix) committed this session on `feat/demo-studio-v3` — 4 commits, 7 tests green, Playwright verified on Aviva + Lemonade.
+
+# Session 2026-04-22 (dd3ae6e1, coordinator)
+
+**Session ID:** 69f3fb3e-b759-4c53-9e4e-88ba7e728afe
+**Concern:** work
+**Prior shard:** `3a5b4781` (first pre-compact this session, commit `514b112`)
+
+## One-line summary
+
+Dashboard-split W1/W2/preview-port merged + deployed; dashboard W5 deploy prep OPEN (IAM blocked); PR #69 Firebase 2b OPEN (Lucian request-changes on test strategy); Loop 2c dispatched; T7 wipe harness-blocked; Firebase 2a→implemented, 2b+2c→approved; coordinator QA-verify feedback landed.
+
+## Delta notes (since shard 3a5b4781)
+
+- PR #65 merged (`0bb60d8`): Viktor resolved god-branch drift (main→feat/demo-studio-v3 merge, task #33). Dashboard W1 scaffold live.
+- PR #66 merged (`4c1d4bb`): Dashboard W2 — 8 routes migrated from S1 to new dashboard service. Lucian learning `c6b820b`.
+- PR #67 merged (`ccd7a32`) + deployed (`demo-preview-00010-ff4`): Preview iframe staleness fix — ported `origin/main server.py`, wired `/preview`, brand-correctness. Smoke green.
+- PR #68 OPEN (`feat/demo-dashboard-w5-deploy-prep`): W5 deploy prep — SA created, `deploy.sh` fixed, IAM binds blocked (project Owner required). Ekko learning `3597698`.
+- PR #69 OPEN (`feat/firebase-auth-2b-frontend-signin`): Loop 2b frontend sign-in UI. Akali: PASS. Senna: advisory LGTM. Lucian: REQUEST-CHANGES (test strategy: plan promised emulator, impl delivered source-grep).
+- Firebase 2a promoted full chain to implemented (`5d76d1c`). 2b + 2c promoted to approved (Ekko `120c584`).
+- Loop 2c dispatched: Vi on `feat/firebase-auth-2c-xfails`, Jayce on `feat/firebase-auth-2c-impl`. Remote push unconfirmed at compact boundary.
+- T7 Firestore wipe: Duong green-light given, Ekko harness-blocked on subprocess. T7 outcome ambiguous — field may still exist in staging docs.
+- Dashboard scope contracted: deliverable is "working URL + handoff," not full P5. W1+W2 merged; W5 deploy pending IAM.
+- Coordinator QA verification feedback landed: `feedback/2026-04-22-coordinator-verify-qa-claims.md` (`c19c190`) — coordinator must independently verify QA claims, not relay pass verdicts unchecked.
+- reviewer-auth.sh gap confirmed structural: both `strawberry-reviewers` identities lack access to `missmp/company-os`; Yuumi-fallback is the only code-review path for work PRs.
+
+## Session 2026-04-23 (b1acd96a, cli)
+
+**Session ID:** c4af884e-8cc7-46ce-a76f-f63c08798c14
+**Mode:** cli, compact-boundary consolidation
+**Platform:** Claude Code
+
+Seven-way parallel review dispatch on PR #75 surfaced three API-shape mismatches between xfail suite (PR #70) and impl (PR #75); second wave (Vi reconciliation + Viktor Phase B + Jayce Phase C) dispatched and in-flight at compact. PR #69 (Firebase 2b) merged. T.P1.0 Xayah and T.P1.11 Jayce both landed on their respective branches. PR #32 god-PR status formally confirmed; memory-drift class bug diagnosed and proposal forwarded to Evelynn.
+
+**Delta notes:**
+- Firebase 2b: CLOSED (PR #69 merged)
+- Firebase 2c: BLOCKED pending Vi test reconciliation on PR #75
+- P1 Phase A: T.P1.0 xfails landed (`test/p1-t0-contract-scaffolds`), T.P1.11 landed (`feat/p1-t11-session-allowlist`)
+- P1 Phase B: Viktor in flight
+- P1 Phase C: Jayce in flight (T.P1.8)
+- open-threads.md updated + committed `0e21c7c` this session
+
+# Session 2026-04-23 (SN2, hands-dirty)
+
+**Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003
+**Shard UUID:** cbe48dfe
+**Prior shard this session:** b1acd96a (02:42 compact)
+**Concern:** work
+
+## Summary
+
+Second leg of the 2026-04-23 demo-studio-v3 ship session. Firebase 2c (PR #75) fully resolved after Vi reconciliation + dual Ekko baseline verification; merged by Duong. Karma authored TOCTOU I1 and legacy-cookie follow-up plans. P1 Phase B (Viktor S3) and Phase C (Jayce T.P1.8/T.P1.9) landed; PR #77 open. Rakan T.P1.7 fault-injection fixture complete. Cleanup automation planned + T1/T2 shipped. Firebase P0 login verified locally by Duong. Loop 2d directed; Swain ADR in-flight at compact boundary.
+
+## Delta notes
+
+- PR #69 (Loop 2b) — already merged before this leg; confirmed in thread update
+- PR #75 (Loop 2c) — MERGED this leg after Vi v2 reconciliation + Ekko verification + Senna re-review + Akali re-QA
+- PR #77 (T.P1.9) — opened this leg, not yet reviewed
+- Viktor Phase B branches: `feat/p1-s3-stream` — 9 xfails flipped
+- Rakan T.P1.7: `test/p1-t7-fault-injection`, commit `5761785`
+- Jayce T.P1.9: PR #77 on `feat/p1-t9-trigger-factory-v2`
+- Talon cleanup T1/T2: `b2b8944` (AI-trailer violation present)
+- Ekko T.P1.E1+E2: commit `ee6fd96`, S3 staging env vars live
+- 10 merged branches cleaned from company-os
+- Karma follow-up plans: `81b0d17` (TOCTOU I1 + legacy-cookie)
+- Karma cleanup plan: `cb5be8b` + `cebd145`; Orianna promoted to in-progress (`70dee7b`)
+- Parallel dispatch correction: independent measurements = parallel dispatch (captured as learning)
+- `scripts/plan-promote.sh` archived in Orianna v2 restructure — Orianna now a callable agent
+
+# Session 2026-04-23 (SN3, hands-dirty)
+
+**Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003
+**Shard UUID:** 5bc52df0
+**Prior shards this session:** b1acd96a (02:42 compact), cbe48dfe (13:20 compact)
+**Concern:** work
+
+## Summary
+
+Third leg of the 2026-04-23 demo-studio-v3 ship session. Loop 2d (Swain ADR approved + Aphelios decomposed + Viktor W1/W2/W5 stacked chain shipped, PRs #80/#81/#82 merged). Slack-triage removal (T.COORD.5, PRs #79) shipped T.0–T.6 complete. T.P1.10a SSE relay writer complete. T.P1.13b demo-ready panel (PR #83) + T.P1.10b SSE fallback (PR #84) reviewed and awaiting Duong merge. Config-architecture ADR (Swain) in-flight at compact boundary. Evelynn messaged on three structural items: AI-coauthor hook port, inbox direct-write block, and Akali-QA reminder hook.
+
+## Delta notes
+
+- Loop 2d ADR: `plans/proposed/work/2026-04-23-demo-studio-loop2d-slack-removal.md`, commit `0fab59ed`; Orianna approved + promoted to in-progress
+- Loop 2d W1/W2/W5: branches on Viktor, PRs #80/#81/#82 — all merged
+- T.COORD.5 slack-triage removal: PR #79 `feat/slack-triage-removal`, T.0–T.6 complete
+- T.P1.10a SSE relay writer: branch `feat/p1-t10a-sse-relay-writer`, done
+- T.P1.13b demo-ready panel: branch `feat/p1-t13b-demo-ready-panel`, PR #83, Lucian APPROVE
+- T.P1.10b SSE fallback GET: branch `feat/p1-t10b-sse-fallback-get`, PR #84, Lucian APPROVE + Senna LGTM
+- Xayah Loop 2d xfail stubs: branch `test/loop2d-xfail`
+- Evelynn inbox: AI-coauthor hook port request + inbox direct-write block feedback + Akali-QA reminder hook request
+- God branch pulled + S1 restarted (Ekko PIDs 17629)
+- Config-architecture Swain ADR in-flight at compact boundary
+
+## Session 2026-04-23 (SN, cli — fourth compact leg)
+
+**Short UUID:** 148e1b03
+**Session ID:** 536df25c-700d-43f8-bf9a-98a86580e003
+**Leg:** fourth compact leg (prior shards: b1acd96a, cbe48dfe, 5bc52df0)
+
+**One-line summary:** Config-architecture ADR approved + decomposed; PR #87 S2 hotfix reviewed (Senna REQUEST_CHANGES → Jayce fix → ADVISORY LGTM); Viktor W1 seed-config hit Opus limit mid-task (WIP defensively committed `a86f739`, re-dispatched).
+
+**Delta notes:**
+
+- Swain config-architecture ADR returned: `plans/proposed/work/2026-04-23-agent-owned-config-flow.md`. Orianna promoted (`79981e1`). Aphelios decomposed into 29 tasks (`4bb30da`).
+- PR #87 (S2 set_config hotfix): opened, Senna REQUEST_CHANGES 3 criticals (C1/C2/C3), Jayce fixed, Senna ADVISORY LGTM + Lucian APPROVE. Awaiting Duong web-UI approve.
+- Loop 2d W1 xfails: Rakan `fa6c54b` on `test/w1-xfail-stubs` (19 strict xfails).
+- Viktor W1 impl: `a86f739` (WIP commit, mid-task), re-dispatched as task #78 at session compact boundary.
+- PRs #83 + #84 still waiting Duong merge (unchanged from prior leg).
+- Trust-but-verify violation noted: Ekko-vs-deployed-S2 mismatch prompted Sona `CLAUDE.md` rule addition.
+
+# Session 2026-04-24 (SN1, cli)
+
+**Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3
+**Shard UUID:** 9b238384
+**Prior session:** 2026-04-23-536df25c (full end-session close)
+**Concern:** work
+
+## Summary
+
+Ship wave on demo-studio-v3 continuing from 2026-04-23 close. TOCTOU I1 (PR #104) merged; S2 patch-drift (PR #103) merged; Ekko env vars provisioned for T.P1.E1/E2; Rakan T.P1.12 xfails committed on chore/p1-t12-xfail (awaiting deps); Talon unblocked P1 chain — PRs #105+#106 opened with Senna/Lucian reviews and post-review fixes landed (15c8407, 01f67ef); W3 config-flow in flight at compact boundary (Rakan xfails 5a8ad11 on test/w3-config-schema-flip-xfail; Viktor impl running). Config-flow ADR corrective phase promotion by Orianna (5f08075). Rule retirement and simplicity directive applied.
+
+## Delta notes
+
+- PR #104 (TOCTOU I1) — MERGED; Akali Rule-16 PASS; legacy-cookie 500 pre-existing bug re-flagged
+- PR #103 (S2 patch-drift) — MERGED
+- T.P1.E1/E2 — Ekko env vars live on staging
+- Rakan T.P1.12 xfails — `chore/p1-t12-xfail`, commit `f026f92`; awaiting deps before PR
+- PRs #105 + #106 — open, reviewed by Senna + Lucian; post-review fixes `15c8407` (BuildFailed stub) + `01f67ef` (AI-trailer scrub); awaiting Duong merge
+- W3 Rakan xfails — `test/w3-config-schema-flip-xfail`, commit `5a8ad11`; `_w3_impl_present()` self-healing guard
+- Viktor W3 impl — running at compact boundary
+- Config-flow ADR phase corrected: approved → in-progress, Orianna commit `5f08075`
+- "Never parallelize same agent" rule retired; Evelynn sweep commit `d1a075d`
+- Simplicity directive: residuals assessment pattern locked in; `assessments/work/2026-04-24-deploy-hygiene-residuals.md`
+- 38 stale worktrees on company-os — deferred
+
+## Session 2026-04-24 (SN2, cli — second compact boundary)
+
+**Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3
+**Shard:** 2026-04-24-4eb1eb78 (second pre-compact consolidation this session)
+**Prior shard:** 2026-04-24-9b238384
+
+**One-line summary:** W3 config-flow shipped (PR #107 merged), PRs #105/#106 conflict-resolved and merged, PR #109 cleanup open and ready; local W3 testing confirmed end-to-end by Duong; security incident — JSONL secret leak from `.env.local` cat — scrubbed by Yuumi + Skarner, rotation pending.
+
+---
+
+## Delta notes
+
+- PRs #105 (T.P1.5b) + #106 (T.P1.7) merged after two Talon conflict-resolve rounds; stale `@P1_XFAIL` decorators resolved base-parity.
+- W3 shipped: Viktor `2a10732` impl + Rakan `5a8ad11` xfails; Senna critical fixes resolved in Viktor `51a39e2`; Lucian CLEAN. PR #107 merged.
+- Orianna flipped TOCTOU I1 → implemented (`4fa6ef8b`) and S2 patch-drift → implemented (`d4112dd8`).
+- PR #109 (W3 xfail cleanup, 97 deletions): Senna LGTM + Lucian CLEAN. Ready for Duong merge.
+- Local W3 confirmed end-to-end. Root cause of `set_config` failure: local S2 stub pre-W3. Workaround: use deployed S2 via `.env` prod URL.
+- SECURITY: `cat .env.local` exposed 6 secrets into JSONL. Yuumi 3-round scrub complete. INTERNAL_SECRET + CONFIG_MGMT_TOKEN in git history (`0c2c5362`) — Duong must rotate on GCP.
+- Reviewer-auth gap confirmed: `strawberry-reviewers-2` also returns 404 on `missmp/company-os`; all reviews advisory via executor auth.
+
+# Session 2026-04-24 (576ce828, cli)
+
+**Short-UUID:** ec53a0d6
+**Concern:** work
+**Compact boundary:** fourth consolidation of session 576ce828 / session 84b7ba50
+
+## Summary
+
+Parallel burst of 6 agents (Talon, Viktor, Explore, Soraka, Ekko, Yuumi) resolved Wave B/C completions, diagnosed Wave B.5 prod-preview-404, shipped S2 persistence plans via Karma+Orianna, and exposed two recurring patterns (stale plan checkboxes; shared-tree commit sweep). Duong corrected the work-reviewer identity model (Senna/Lucian post as PR comments under `duongntd99`; Duong approves manually). Akali security breach addressed via Yuumi learning + agent-def amendment. Hands-off + Slack-ping protocol formalized.
+
+## Delta notes
+
+- **Waves resolved this leg:** Wave B (T3+T4 done, T1 flipped), Wave C (PR #116 open), Wave B.6 (PRs #114/#115), Wave B.7 (PR #117).
+- **Akali breach:** severity-high learning written; akali.md Hard Rules amended (commit 6593cd32); Evelynn inbox'd re cross-concern impact.
+- **Reviewer identity model:** corrected in agents/sona/CLAUDE.md (commits 22bb605a, d2e90e1c). Senna verified PR #114 verdict as PR comment.
+- **Karma S2 persistence plans:** P0 (min-instances quick-lane) + P2 (stub Firestore) authored; Orianna gated both to in-progress.
+- **Rule 19 guard hole identified:** plan-lifecycle-guard doesn't cover already-staged-then-committed paths (b11eb761 swept in staged plan files). Evelynn inbox'd.
+- **Hands-off/Slack-ping canonical:** agents/memory/duong.md; pointer added to agents/sona/CLAUDE.md.
+- **Cross-concern FYI rule formalized:** Duong directed after proactive Akali breach FYI to Evelynn.
+- **PRs open at close:** #114, #115, #116, #117 (awaiting Duong manual approve). PR #32 body updated by Viktor.
+
+## Session 2026-04-24 (b3d87376, cli)
+
+**Session ID:** 84b7ba50-c664-40d8-9865-eb497b704fb3
+**Concern:** work
+**Mode:** cli, post-compact round 4 (fifth consolidation this session)
+
+One-line summary: Self-invite ADR shipped through Aphelios breakdown + first-batch execution; Co-authored-by Viktor leak discovered on 3 merged PRs; dual-reviewer slip corrected; Wave D unblocker (company-os PR #32) xfail flipped; Swain secretary ADR dispatched; plan-lifecycle guard heredoc hit for the third time this session.
+
+### Delta notes
+
+- Self-invite ADR: Orianna promoted (`775b2b90`), Aphelios decomposed 17 tasks (`0314b7cc`), T11 committed (`6d60964e`), T13 PR #32 (mcps) approved by Senna+Lucian, T1 PR #2108 got Lucian REQUEST CHANGES (stale-base contamination).
+- Co-authored-by Viktor leak: GitHub squash-merge UI autopopulates agent identity from per-worktree `.git/config` into commit trailers on main. Affects PRs #114/#115/#117. Forward-only. Learning + Evelynn inbox.
+- Dual-reviewer slip: Senna-only on 4 PRs; Lucian skipped. Corrected. Evelynn inbox'd.
+- Wave D unblocker: Viktor commit `64eb362` flips T.P1.12 xfail on company-os PR #32 (0.37s, 4/4 pass). Senna+Lucian reviews in flight.
+- Plan lifecycle guard heredoc: third recurrence (Aphelios, Sona, Lucian). Promoted to high severity. Evelynn inbox'd.
+- Swain secretary ADR: background agent dispatched, plan pending.
+- Hands-off 3-track mode (default/fast-track/slow-track) proposed to Evelynn.
+
+## Session 2026-04-24 (dad16397, cli)
+
+**Session ID:** 576ce828-0eb2-457e-86ac-2864607e9f22
+**Compact boundary:** sixth consolidation (resumed post-compact, hands-off slow-track)
+**Concern:** work
+
+### One-line summary
+
+Hands-off slow-track leg: cleaned stale-base contamination on self-invite PRs #2108/#2109 via cherry-pick, secured Swain secretary ADR approval + Aphelios breakdown, resolved OQ-P1-4 via Heimerdinger decrypt.sh analysis, and dispatched company-os PR #32 fix-up for re-review — three subagents still running at compact boundary.
+
+### Delta notes
+
+- PRs #2108 + #2109 stripped of foreign commits, re-reviewed clean, ready for Duong approve+merge
+- Swain secretary ADR gated to approved (8f9e8829); Aphelios 17-task breakdown committed (b3171945)
+- Heimerdinger confirmed `--exec` mode in `tools/decrypt.sh`; five new tasks T-new-A..E added
+- Viktor company-os PR #32 fix: sys.path.append + autouse reset fixture + required-kwargs restored (6d3c15b)
+- Briefing-verbosity proposal routed to Evelynn inbox (20260424-1125-029953.md)
+- Hands-off slow-track mode set; priority order P1→P2→P3 explicit
+- Still-running: Senna #103, Lucian #104, Aphelios #101
+
 ## Session 2026-04-21 (s1, hands-off)
 
 **Summary:** PR #10 + PR #7 merged; Karma redesigned Orianna routing as concern-as-root; Talon implemented + PR #11 merged; CLAUDE.md refresh clarifying plan-promote.sh is agent-runnable; Ekko re-signing 4 work ADRs in progress.
