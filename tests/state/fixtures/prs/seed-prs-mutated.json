@@ -1,0 +1,22 @@
+[
+  {
+    "number": 101,
+    "title": "feat: seed PR alpha MUTATED for upsert test",
+    "state": "open",
+    "author": {"login": "duongntd"},
+    "baseRefName": "main",
+    "headRefName": "feat/alpha",
+    "updatedAt": "2026-04-27T12:00:00Z",
+    "repository": {"nameWithOwner": "harukainguyen1411/strawberry-agents"}
+  },
+  {
+    "number": 102,
+    "title": "fix: seed PR beta for refresh test",
+    "state": "open",
+    "author": {"login": "duongntd"},
+    "baseRefName": "main",
+    "headRefName": "fix/beta",
+    "updatedAt": "2026-04-27T11:00:00Z",
+    "repository": {"nameWithOwner": "harukainguyen1411/strawberry-agents"}
+  }
+]
