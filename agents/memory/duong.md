@@ -80,13 +80,3 @@ Applies to both Evelynn and Sona. Governs any response to: "what's going on", "g
 Applies equally to /check-inbox summaries, morning-brief output, session-resume reports, and any ad-hoc "status" query. Overrides any default in individual skills that might produce a fuller dump.
 
 "High level" means PM-altitude — rich on outcome, risk, and decision; no SHAs, paths, IDs, or tool jargon unless asked. It is not "terse."
-
-## Agent Team mode (mandatory for coordinators)
-
-From 2026-04-27 onward, coordinators (Evelynn, Sona) MUST use the **Agent Team feature** (`TeamCreate` + Agent dispatch with `team_name`) instead of one-shot background subagents for any work that may iterate.
-
-- **Spawn into a team, not as a one-shot.** Each new piece of work gets a `TeamCreate` with a descriptive `team_name`; agents are dispatched into that team and stay alive between turns.
-- **A task is "FULLY done" only when the entire build → review → re-review loop has converged green.** If a reviewer requests changes, the build agent's task is NOT done — another change-and-re-review turn must occur on the same teammate before shutdown. Same for QA: a FAIL verdict means the implementer's task is not done; re-dispatch them in-team for the fix.
-- **On full completion, shut down explicitly.** Send `{type: "shutdown_request"}` via `SendMessage` to each teammate, then `TeamDelete` to remove the team. Do not leave idle teammates lingering across unrelated work.
-- **Never declare "done" on partial loop state.** "Code shipped, awaiting review" is not done. "Reviewer LGTM but Akali pending" is not done. "Akali FAIL, fix dispatched" is not done. Done = green-on-all-gates AND merged AND no follow-on rework outstanding.
-- Ad-hoc one-shot Agent dispatches remain acceptable only for read-only excavation (Skarner), errands (Yuumi), single-pass status probes, and Lissandra/Orianna script-style invocations — work that genuinely cannot iterate.
