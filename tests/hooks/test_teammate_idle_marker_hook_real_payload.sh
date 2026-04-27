@@ -101,6 +101,86 @@ CASE_D_SENDMSG='[]'
 run_xfail_case "Case D (old fake payload): tool-field payload → silent (hook ignores non-TeammateIdle)" "silent" \
   "$CASE_D_EVENT" "$CASE_D_SENDMSG"
 
+# Case real_jsonl_fixture_conformant (xfail): real-path JSONL parser coverage.
+# Points transcript_path at a checked-in fixture; HOOK_SENDMESSAGE_FILE is NOT set
+# so the actual python JSONL parser runs. The fixture contains a UserPromptSubmit
+# delineator followed by a SendMessage tool_use with task_done — hook should report
+# conformant (silent). The parser has zero real-path test coverage today; this case
+# is expected to fail or produce unexpected output until T4 impl lands.
+# xfail-plan: plans/approved/personal/2026-04-27-team-mode-t9-followups.md T4
+FIXTURE_DIR="$(dirname "$0")/fixtures"
+FIXTURE_CONFORMANT="$FIXTURE_DIR/teammate-idle-conformant-turn.jsonl"
+
+{
+  if [ ! -f "$FIXTURE_CONFORMANT" ]; then
+    printf 'XFAIL: case_real_jsonl_fixture_conformant: fixture file missing: %s\n' "$FIXTURE_CONFORMANT"
+    xfail=$((xfail + 1))
+  else
+    tmpdir_r="$(mktemp -d)"
+    log_file_r="$tmpdir_r/teammate-idle-marker.log"
+    event_r="{\"hook_event_name\":\"TeammateIdle\",\"session_id\":\"fixture-session\",\"transcript_path\":\"$FIXTURE_CONFORMANT\",\"cwd\":\"/repo\",\"permission_mode\":\"default\"}"
+    printf '%s\n' "$event_r" > "$tmpdir_r/event.json"
+    # Intentionally do NOT set HOOK_SENDMESSAGE_FILE — force real JSONL parser path
+    stderr_r="$(
+      TEAMMATE_IDLE_MARKER_LOG="$log_file_r" \
+      HOOK_EVENT_FILE="$tmpdir_r/event.json" \
+      bash "$HOOK" 2>&1 >/dev/null || true
+    )"
+    if printf '%s' "$stderr_r" | grep -q "went idle without a completion marker"; then
+      actual_r="warn"
+    else
+      actual_r="silent"
+    fi
+    # Fixture has task_done in last SendMessage → expected "silent" (conformant).
+    if [ "$actual_r" = "silent" ]; then
+      printf 'PASS (xfail→pass): case_real_jsonl_fixture_conformant: real JSONL parser returned conformant\n'
+      pass=$((pass + 1))
+    else
+      printf 'XFAIL: case_real_jsonl_fixture_conformant: real JSONL parser path untested or buggy (expected silent, got warn)\n'
+      xfail=$((xfail + 1))
+    fi
+    rm -rf "$tmpdir_r"
+  fi
+}
+
+# Case real_jsonl_fixture_nonconformant (T4 impl): real-path parser symmetry case.
+# Fixture spans 2 turns: task_done on T-prior in turn 1, plain status on T-current in turn 2.
+# Turn-scoped parser must only see turn-2 SendMessages (no task_done) → hook warns.
+# This validates Finding 1 fix via real JSONL file rather than HOOK_SENDMESSAGE_FILE override.
+FIXTURE_NONCONFORMANT="$FIXTURE_DIR/teammate-idle-nonconformant-turn.jsonl"
+
+{
+  if [ ! -f "$FIXTURE_NONCONFORMANT" ]; then
+    printf 'FAIL: case_real_jsonl_fixture_nonconformant: fixture file missing: %s\n' "$FIXTURE_NONCONFORMANT" >&2
+    fail=$((fail + 1))
+  else
+    tmpdir_nc="$(mktemp -d)"
+    log_file_nc="$tmpdir_nc/teammate-idle-marker.log"
+    event_nc="{\"hook_event_name\":\"TeammateIdle\",\"session_id\":\"nc-session\",\"transcript_path\":\"$FIXTURE_NONCONFORMANT\",\"cwd\":\"/repo\",\"permission_mode\":\"default\"}"
+    printf '%s\n' "$event_nc" > "$tmpdir_nc/event.json"
+    # Intentionally do NOT set HOOK_SENDMESSAGE_FILE — force real JSONL parser path
+    stderr_nc="$(
+      TEAMMATE_IDLE_MARKER_LOG="$log_file_nc" \
+      HOOK_EVENT_FILE="$tmpdir_nc/event.json" \
+      bash "$HOOK" 2>&1 >/dev/null || true
+    )"
+    if printf '%s' "$stderr_nc" | grep -q "went idle without a completion marker"; then
+      actual_nc="warn"
+    else
+      actual_nc="silent"
+    fi
+    # Fixture current turn has only status update, no task_done → expected "warn".
+    if [ "$actual_nc" = "warn" ]; then
+      printf 'PASS: case_real_jsonl_fixture_nonconformant: turn-scoped parser correctly warns on current turn\n'
+      pass=$((pass + 1))
+    else
+      printf 'FAIL: case_real_jsonl_fixture_nonconformant: parser returned silent but should warn (prior task_done leaked)\n' >&2
+      fail=$((fail + 1))
+    fi
+    rm -rf "$tmpdir_nc"
+  fi
+}
+
 # Summary
 total=$((pass + fail + xfail))
 printf '\n--- T9-repair hook xfail test summary ---\n'

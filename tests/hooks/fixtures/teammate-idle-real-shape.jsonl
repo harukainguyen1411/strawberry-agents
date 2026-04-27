@@ -1,0 +1,18 @@
+# Captured-from: ~/.claude/projects/-Users-duongntd99-Documents-Personal-strawberry-agents/d32decd7-d25f-400f-91ee-5c273c68158b/subagents/agent-a494f4854eee234e6.jsonl
+# Sanitized: tool_result payloads truncated; PII-free content kept; structure preserved exactly.
+# Captures: 2 turns of real subagent work — prior turn ending with a status SendMessage,
+# then real turn boundary (user[str] teammate-message), then current turn with Read tool_use,
+# then Write tool_use, then SendMessage(task_done), then its tool_result loopback.
+# This fixture exercises the F1 delineator bug: the old parser stops at the first user[tool_result]
+# encountered while walking backward, which appears AFTER the SendMessage in chronological order —
+# causing the parser to miss the SendMessage(task_done) entirely.
+{"type":"user","message":{"role":"user","content":"<teammate-message teammate_id=\"team-lead\" summary=\"Prior turn task assignment\">Run the QA check on rev00035.</teammate-message>"},"uuid":"prior-turn-user","timestamp":"2026-04-27T10:00:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Starting QA run..."},{"type":"tool_use","id":"tu-read-1","name":"Read","input":{"file_path":"/repo/assessments/qa-reports/prev.md"}}]},"uuid":"prior-turn-asst-1","timestamp":"2026-04-27T10:00:10Z"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-read-1","content":[{"type":"text","text":"[sanitized: prior report content]"}]}]},"uuid":"prior-turn-tool-result-1","timestamp":"2026-04-27T10:00:15Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tu-sendmsg-prior","name":"SendMessage","input":{"to":"team-lead","type":"status","message":"Starting QA run on rev00035 — reading prior checkpoint state."}}]},"uuid":"prior-turn-asst-2","timestamp":"2026-04-27T10:00:20Z"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-sendmsg-prior","content":[{"type":"text","text":"{\"success\":true,\"message\":\"Message sent\"}"}]}]},"uuid":"prior-turn-tool-result-2","timestamp":"2026-04-27T10:00:25Z"}
+{"type":"user","message":{"role":"user","content":"<teammate-message teammate_id=\"team-lead\" summary=\"Run #6 verdict please\">You signaled idle but I have no run #6 verdict from you. Please send verdict via SendMessage.</teammate-message>"},"uuid":"current-turn-user","timestamp":"2026-04-27T10:01:00Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"Writing the FAIL report now."},{"type":"tool_use","id":"tu-write-1","name":"Write","input":{"file_path":"/repo/assessments/qa-reports/2026-04-27-run6.md","content":"[sanitized: QA report content]"}}]},"uuid":"current-turn-asst-1","timestamp":"2026-04-27T10:01:10Z"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-write-1","content":[{"type":"text","text":"File created successfully"}]}]},"uuid":"current-turn-tool-result-1","timestamp":"2026-04-27T10:01:15Z"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"tool_use","id":"tu-sendmsg-done","name":"SendMessage","input":{"to":"team-lead","type":"task_done","ref":"T6","summary":"Run #6 QA complete — verdict FAIL (infra-dependency-down). Report written."}}]},"uuid":"current-turn-asst-2","timestamp":"2026-04-27T10:01:20Z"}
+{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"tu-sendmsg-done","content":[{"type":"text","text":"{\"success\":true,\"message\":\"Message sent\"}"}]}]},"uuid":"current-turn-tool-result-2","timestamp":"2026-04-27T10:01:25Z"}
