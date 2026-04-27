@@ -5,7 +5,7 @@ concern: personal
 scope: [personal, work]
 owner: duong
 created: 2026-04-27
-deadline: TBD
+deadline: 2026-04-28
 claude_budget: resourceful
 tools_budget: limited
 risk: medium
@@ -37,13 +37,13 @@ This is v1. We will iterate to v2 once we see how v1 behaves under real use.
 
 - A measured reduction in coordinator boot cost against a documented pre-project baseline.
 - A canonical "open threads / status quo" view that stays correct after PRs merge, plans archive, and inbox messages land — without manual upkeep.
-- Two parallel sessions of the same coordinator identity can run end-to-end without corrupting shared state, demonstrated by an explicit dual-session smoke test.
+- Two parallel sessions of the same coordinator identity can run end-to-end without corrupting shared state.
 - Existing static memory artifacts are either migrated into the new model or formally archived.
 - The new model is the source of truth at boot.
 
 ## Constraints
 
-- **Deadline:** TBD — set after the first sub-plan (measurement + ADR) lands.
+- **Deadline:** Tuesday 2026-04-28.
 - **Claude usage budget:** resourceful — boot cost is itself the metric this project is optimising.
 - **Tools budget:** limited — prefer boring, free, well-supported primitives. No new cloud services or paid SaaS.
 - **Risk:** medium — touches the boot path of every coordinator session; a regression here costs every future session until rolled back.
