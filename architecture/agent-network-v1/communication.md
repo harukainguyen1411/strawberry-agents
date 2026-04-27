@@ -14,7 +14,7 @@ Evelynn and Sona coordinate by launching subagents via the **Agent tool**. Every
 
 Every subagent's **final message** is the only output the coordinator receives. Intermediate output is invisible. Subagents must restate their complete deliverable (commit SHAs, findings, gating questions) in their final message.
 
-All background subagents run with `run_in_background: true`. Foreground dispatch is reserved for results strictly needed before any further action can be taken.
+Dispatch shape is governed by `runbooks/agent-team-mode.md` §Policy — teammate dispatch (`TeamCreate` + Agent with `team_name` + `name` + `run_in_background: true`) is the default for iterating work; background one-shot (`run_in_background: true`, no `team_name`) is the fallback. Foreground dispatch is hard-blocked by the PreToolUse hook unless `team_name` is set.
 
 ---
 
