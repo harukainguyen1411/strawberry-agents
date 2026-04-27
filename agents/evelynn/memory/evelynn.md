@@ -73,6 +73,37 @@ Personal assistant and life coordinator. Manages life admin, delegates to specia
 ## Sessions
 <!-- sessions:auto-below — managed by scripts/evelynn-memory-consolidate.sh. Do not hand-edit below this line. -->
 
+## Session 2026-04-25 (ce6fec9a, hands-off default-track, pre-compact leg 2)
+
+One-line summary: SessionStart literal-sentinel fix shipped clean; env-hygiene gate-bypass incident reverted and routed through Karma; three Karma quick-lane plans authored and in Orianna gating; PR #45 awaiting Duong architectural decision; briefing-altitude discipline tightened in duong.md after two in-session violations.
+
+### Delta notes
+
+- `b6321bcd` — SessionStart FRESH SESSION sentinel. Surgical and clean (no cross-process semantics, single script, no coupling).
+- `240bd394` → `bcbe4a3b` — env-hygiene revert. Lesson: "3-line edit" framing collapsed when exec-env changed subprocess env-inheritance semantics for Monitor-spawned watchers. Gate-bypass learning filed.
+- Three Karma plans: worktree-hooks-propagation, plan-lifecycle-guard-heredoc-fp, coordinator-identity-leak-watcher-fix — all in Orianna gating at shard time.
+- PR #45 round 4 Senna verdict: shlex tokenizer closed round-3 bypass shapes but nine new bypasses survive (all post-expansion). Architectural decision route given to Duong; three options on table.
+- Briefing-altitude rule now in duong.md. Violated twice in this session before it landed.
+
+### Prior shard
+
+c1463e58 (same session close shard from earlier)
+
+## Session 2026-04-25 (SN, hands-off default-track)
+
+**Session-id:** db2e8cdf-06d6-4cc9-98f6-885e346b857d
+**Shard:** e7221955
+**Consolidated by:** Lissandra (pre-compact)
+
+Five PRs landed in sequence: #49 deliberation primitive (`7cb7fb07`), #50 worktree-hooks propagation (`bf38b505`), #51 coordinator-identity-leak-watcher fix (`5fa097ac`), #52 heredoc-FP fix (`2113ee2b`), #53 anti-AI-attribution defense-in-depth (`a08daf10`). Critical-thinking arc: Duong instructed critical-thinking adoption; Lux diagnosed the structural absence of a deliberation pause in coordinator defs; PR #49 installed `_shared/coordinator-intent-check.md` inlined into both coordinator defs. Anti-AI-attribution hardened to three layers (prompt, hook, CI lint). Slack notify_duong verified live.
+
+**Delta notes:**
+- Filing-question reflex caught mid-session (asking Lux *where* to put words instead of *what* shifts behavior); corrected to open-ended problem framing.
+- Env-hygiene bypass incident (`240bd394` → reverted `bcbe4a3b`): "surgical" framing breaks on cross-process coupling. Learning filed.
+- `/agent-ops send` confirmed as canonical inter-coordinator inbox surface (Yuumi+Bash bypass corrected live).
+- Orianna git-index race anomaly observed twice: sibling sync commits absorbing staged plan moves. No fix in flight.
+- PR #45 still awaiting Duong architectural-pivot decision (three options on the table).
+
 ## Session 2026-04-24 → 2026-04-25 (cli, hands-off + auto + course-corrected)
 
 UUID: c1463e58.

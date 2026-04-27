@@ -13,6 +13,7 @@ priority: P1
 tests_required: true
 complexity: standard
 qa_plan: required
+qa_co_author: senna
 orianna_gate_version: 2
 tags: [architecture, qa, rule-16, breakdown, discipline, akali, dod]
 related:
