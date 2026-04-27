@@ -1,0 +1,13 @@
+## Summary
+
+- Add pre-commit linter for plan structure
+- Wire linter into hook chain
+
+## Test plan
+
+- Unit tests run against fixture plans
+- Hooks installed via scripts/install-hooks.sh
+
+## Changes
+
+Non-UI deliverable. Shell scripts, YAML, no browser surface.

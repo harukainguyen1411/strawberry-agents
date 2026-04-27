@@ -1,0 +1,15 @@
+## Summary
+
+- Add pre-commit linter for plan structure
+- Wire linter into hook chain
+
+## Test plan
+
+- Unit tests run against fixture plans
+- Hooks installed via scripts/install-hooks.sh
+
+## Changes
+
+Non-UI deliverable. Shell scripts, YAML, no browser surface.
+
+QA-Verification: ran bash scripts/hooks/pre-commit-zz-plan-structure.sh --fixture-path tests/fixtures/qa-enforcement/plan-structure/a-missing-qa-plan-heading.md --staged-path plans/proposed/test.md; exit 1 (reject) as expected. Ran against g-valid-ui-branch.md; exit 0 (accept) as expected. All eight fixture cases passed.
