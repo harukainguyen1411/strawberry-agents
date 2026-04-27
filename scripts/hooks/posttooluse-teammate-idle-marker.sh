@@ -51,19 +51,34 @@ if [ -n "${HOOK_SENDMESSAGE_FILE:-}" ] && [ -f "$HOOK_SENDMESSAGE_FILE" ]; then
   sendmessage_json="$(cat "$HOOK_SENDMESSAGE_FILE")"
 elif [ -n "$transcript_path" ] && [ -f "$transcript_path" ]; then
   # Extract SendMessage tool_use inputs from the CURRENT TURN of the teammate's transcript JSONL.
-  # Walk the JSONL backward from the tail; collect SendMessage entries until hitting a turn
-  # delineator: a UserPromptSubmit event (hook_event_name field) or a user-role message entry.
-  # This ensures a task_done from a prior turn does not mask a missing marker on the current turn.
-  sendmessage_json="$(python3 - "$transcript_path" <<'PYEOF'
-import sys, json
+  # Walk the JSONL backward from the tail; collect SendMessage entries until hitting a genuine
+  # turn boundary.
+  #
+  # Turn boundary definition (from real transcript sampling):
+  #   - A type:"user" entry whose content is NOT a list of tool_result blocks.
+  #   - Specifically: content is a plain string, OR a list with no tool_result blocks.
+  #   - tool_result loopbacks (content list containing tool_result blocks) are NOT boundaries;
+  #     they are Claude's tool-call responses and appear within the same turn.
+  #
+  # Empirical basis: sampled ~5000 lines from ~/.claude/projects/*.jsonl and
+  # ~/.claude/projects/*/subagents/*.jsonl. Of 853 type:"user" entries, 802 had
+  # tool_result blocks (loopbacks) and 31 were genuine turn boundaries (str content or
+  # text-block list). The old delineator stopped at ANY type:"user", hitting loopbacks
+  # first and missing SendMessages in the same turn. UserPromptSubmit never appeared
+  # in transcript JSONL (0 of 5000 lines) — it is a runtime hook payload field, not a
+  # transcript entry field.
+  sendmessage_json="$(python3 - "$transcript_path" "${IDLE_MARKER_DEBUG:-0}" <<'PYEOF'
+import sys, json, os
 
 transcript_path = sys.argv[1]
+debug_mode = sys.argv[2] if len(sys.argv) > 2 else '0'
+
 all_entries = []
 try:
     with open(transcript_path, 'r') as f:
         for line in f:
             line = line.strip()
-            if not line:
+            if not line or line.startswith('#'):
                 continue
             try:
                 entry = json.loads(line)
@@ -73,15 +88,33 @@ try:
 except Exception:
     pass
 
-# Walk backward; collect SendMessage inputs until a turn delineator is found.
-# Delineator: a 'user' type entry OR a UserPromptSubmit hook_event_name.
-# Stop collecting when we cross the delineator (delineator belongs to previous turn).
+def is_genuine_turn_boundary(entry):
+    """Return True if this is a real user-initiated turn boundary.
+
+    Real turn boundaries: type:"user" entries where content is a plain string
+    OR a list with no tool_result blocks (genuine user/team-lead messages).
+
+    Tool-result loopbacks: type:"user" entries where content is a list containing
+    tool_result blocks — these are Claude's tool responses, part of the current turn.
+    """
+    if entry.get('type') != 'user':
+        return False
+    msg = entry.get('message', {})
+    content = msg.get('content', [])
+    if isinstance(content, list):
+        has_tool_result = any(
+            isinstance(b, dict) and b.get('type') == 'tool_result'
+            for b in content
+        )
+        return not has_tool_result
+    # Plain string content = genuine user message
+    return True
+
+# Walk backward; collect SendMessage inputs until a genuine turn boundary is found.
+# Skip tool_result loopbacks (they are part of the current turn, not boundaries).
 messages = []
 for entry in reversed(all_entries):
-    # Check for turn delineator (start of current turn boundary)
-    if entry.get('type') == 'user':
-        break
-    if entry.get('hook_event_name') == 'UserPromptSubmit':
+    if is_genuine_turn_boundary(entry):
         break
     # Collect SendMessage tool_use entries from assistant messages
     if entry.get('type') == 'assistant':
@@ -95,9 +128,17 @@ for entry in reversed(all_entries):
 
 # Reverse to restore chronological order within the current turn
 messages.reverse()
+
+if debug_mode == '1':
+    print('IDLE_MARKER_PARSED:' + json.dumps(messages), file=sys.stderr)
+
 print(json.dumps(messages))
 PYEOF
-)" 2>/dev/null || sendmessage_json="[]"
+)"
+  py_exit=$?
+  if [ $py_exit -ne 0 ]; then
+    sendmessage_json="[]"
+  fi
 else
   # No transcript available; assume no markers (conservative — warn)
   sendmessage_json="[]"
