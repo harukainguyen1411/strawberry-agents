@@ -173,6 +173,8 @@
 
 - 2026-04-25 (ekko — Sona dispatch): T.P1.14 final ship deploy. demo-factory → demo-factory-00011-wpv (code), demo-factory-00012-9mg (FACTORY_REAL_BUILD=1, prod). demo-studio → demo-studio-00029-8bk. All smoke GREEN. FACTORY_REAL_BUILD=1 is live on demo-factory prod. Rollback revisions: demo-factory-00010-645, demo-studio-00028-2n2. Stg/prod is same Cloud Run service (no separate stg services for demo-factory or demo-studio). `scripts/deploy/rollback.sh` does not exist — rollback via `gcloud run services update-traffic --to-revisions=PREV=100`.
 
+- 2026-04-27 (ekko — Sona dispatch): Redeployed demo-studio-v3 from feat/demo-studio-v3 HEAD b18eb112 (PR #119 merge). New revision: demo-studio-00030-2zg, 100% traffic. Smoke green: /health → 200 {"status":"ok"}. Previous revision (rollback target): demo-studio-00029-8bk. No MANAGED_AGENT_MCP_INPROCESS in current service env (was removed in prior session). deploy.sh env vars extracted from live service via gcloud describe.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
