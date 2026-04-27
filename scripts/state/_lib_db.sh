@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+# scripts/state/_lib_db.sh — bash 3.2+, macOS + Git Bash SQLite helper library
+# Plan: plans/approved/personal/2026-04-27-coordinator-memory-v1-adr.md §D6 §T3b
+#
+# Exposes four functions:
+#   db_open <path>                       — apply D6 pragmas; create schema_migrations table
+#   db_write_tx <db_path> <sql>          — BEGIN IMMEDIATE + 3-retry on BUSY + 250ms backoff
+#   db_read <db_path> <sql>              — read-only passthrough with D6 pragmas applied
+#   db_apply_migrations <db_path> <dir>  — lex-ordered, idempotent migration runner
+#
+# Source this file; do not execute it directly.
+# All functions are exported so forked subshells inherit them (concurrent-write tests).
+
+_DB_BUSY_TIMEOUT=5000
+_DB_MAX_RETRIES=3
+_DB_BACKOFF_MS=250
+
+db_open() {
+    local db_path="$1"
+    if [ -z "$db_path" ]; then
+        printf '[_lib_db] db_open: db_path is required\n' >&2
+        return 1
+    fi
+
+    # Apply D6 pragmas. journal_mode=WAL persists in the DB header once set;
+    # busy_timeout and synchronous are per-connection, so we emit them on every
+    # db_open call to guarantee they are active for the current process.
+    sqlite3 "$db_path" \
+        "PRAGMA journal_mode=WAL; PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT}; PRAGMA synchronous=NORMAL;" \
+        > /dev/null
+
+    # schema_migrations tracking table — created here so it exists before
+    # db_apply_migrations is called. Using IF NOT EXISTS so db_open is safe
+    # to call multiple times on the same DB.
+    sqlite3 "$db_path" \
+        "CREATE TABLE IF NOT EXISTS schema_migrations (
+           filename TEXT PRIMARY KEY,
+           applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+         );" \
+        > /dev/null
+}
+
+db_write_tx() {
+    local db_path="$1"
+    local sql="$2"
+    if [ -z "$db_path" ] || [ -z "$sql" ]; then
+        printf '[_lib_db] db_write_tx: db_path and sql are required\n' >&2
+        return 1
+    fi
+
+    local attempt=1
+    local rc err
+    while [ "$attempt" -le "$_DB_MAX_RETRIES" ]; do
+        # BEGIN IMMEDIATE acquires the RESERVED lock up-front, so we fail fast
+        # instead of getting SQLITE_BUSY mid-transaction (D6 rationale).
+        err=$(sqlite3 "$db_path" \
+            "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT}; PRAGMA synchronous=NORMAL; BEGIN IMMEDIATE; ${sql}; COMMIT;" \
+            2>&1)
+        rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+            return 0
+        fi
+
+        # Exit code 5 = SQLITE_BUSY. Only retry on BUSY; fail fast on all other errors
+        # (syntax errors, constraint violations, etc.) to avoid misleading diagnostics.
+        if [ "$rc" -ne 5 ]; then
+            printf '[_lib_db] db_write_tx: fatal error (rc=%d): %s\n' "$rc" "$err" >&2
+            return "$rc"
+        fi
+
+        if [ "$attempt" -lt "$_DB_MAX_RETRIES" ]; then
+            # 250ms backoff — sleep accepts fractional seconds on macOS and
+            # GNU coreutils; on minimal POSIX shells use perl as fallback.
+            sleep 0.25 2>/dev/null || perl -e 'select(undef,undef,undef,0.25)' 2>/dev/null || true
+        fi
+        attempt=$((attempt + 1))
+    done
+
+    printf '[_lib_db] db_write_tx: SQLITE_BUSY after %d retries — hard failure\n' "$_DB_MAX_RETRIES" >&2
+    return 5
+}
+
+db_read() {
+    local db_path="$1"
+    local sql="$2"
+    if [ -z "$db_path" ] || [ -z "$sql" ]; then
+        printf '[_lib_db] db_read: db_path and sql are required\n' >&2
+        return 1
+    fi
+
+    sqlite3 \
+        -cmd ".output /dev/null" \
+        -cmd "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT};" \
+        -cmd "PRAGMA synchronous=NORMAL;" \
+        -cmd ".output stdout" \
+        "$db_path" "$sql"
+}
+
+db_apply_migrations() {
+    local db_path="$1"
+    local migrations_dir="$2"
+    if [ -z "$db_path" ] || [ -z "$migrations_dir" ]; then
+        printf '[_lib_db] db_apply_migrations: db_path and migrations_dir are required\n' >&2
+        return 1
+    fi
+    if [ ! -d "$migrations_dir" ]; then
+        printf '[_lib_db] db_apply_migrations: directory not found: %s\n' "$migrations_dir" >&2
+        return 1
+    fi
+
+    # Ensure D6 pragmas + schema_migrations table exist before we iterate.
+    db_open "$db_path" || return 1
+
+    # Collect .sql files in lexicographic order (POSIX-portable glob expansion).
+    local migration_file filename already_applied sql_body err rc
+    for migration_file in "$migrations_dir"/*.sql; do
+        [ -f "$migration_file" ] || continue
+
+        filename="$(basename "$migration_file")"
+
+        # Route through db_read so busy_timeout=5000 applies — prevents a raw
+        # connection racing another coordinator's write lock and seeing defaults.
+        already_applied=$(db_read "$db_path" \
+            "SELECT COUNT(*) FROM schema_migrations WHERE filename='${filename}';" 2>/dev/null || echo 0)
+        if [ "$already_applied" -gt 0 ]; then
+            continue
+        fi
+
+        # Apply the migration file, then record it as applied. Both steps inside
+        # a single BEGIN IMMEDIATE transaction so a crash between them leaves the
+        # DB consistent (either both land or neither does).
+        sql_body="$(cat "$migration_file")"
+        err=$(sqlite3 "$db_path" \
+            "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT};
+             BEGIN IMMEDIATE;
+             ${sql_body}
+             INSERT INTO schema_migrations (filename) VALUES ('${filename}');
+             COMMIT;" \
+            2>&1)
+        rc=$?
+        if [ "$rc" -ne 0 ]; then
+            printf '[_lib_db] db_apply_migrations: failed applying %s (rc=%d): %s\n' \
+                "$filename" "$rc" "$err" >&2
+            return "$rc"
+        fi
+    done
+}
+
+# Export all four functions so forked subshells (concurrent-writer tests) inherit them.
+export -f db_open
+export -f db_write_tx
+export -f db_read
+export -f db_apply_migrations
