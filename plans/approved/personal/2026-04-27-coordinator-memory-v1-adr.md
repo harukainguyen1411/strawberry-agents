@@ -137,7 +137,7 @@ CREATE TABLE sessions (
 );
 
 CREATE TABLE decisions (
-  id INTEGER PRIMARY KEY,                 -- plain rowid alias; no AUTOINCREMENT (see §D3.1)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   coordinator TEXT NOT NULL,
   decided_at TEXT NOT NULL,
   slug TEXT NOT NULL,
@@ -148,9 +148,8 @@ CREATE TABLE decisions (
 );
 
 CREATE TABLE learnings (
-  id INTEGER PRIMARY KEY,                 -- plain rowid alias; no AUTOINCREMENT (see §D3.1)
-  agent TEXT NOT NULL,                    -- author of the learning (any agent, incl. sub-agents)
-  coordinator TEXT NOT NULL,              -- dispatching coordinator: 'evelynn' | 'sona' (see §D3.1)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent TEXT NOT NULL,
   learned_at TEXT NOT NULL,
   slug TEXT NOT NULL,
   path TEXT NOT NULL,
@@ -206,7 +205,7 @@ CREATE TABLE feedback_index (
 
 CREATE TABLE open_threads (
   -- pure VIEW over the derived tables + decisions, with optional note overlay
-  id INTEGER PRIMARY KEY,                 -- plain rowid alias; no AUTOINCREMENT (see §D3.1)
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   coordinator TEXT NOT NULL,
   source_kind TEXT NOT NULL,              -- pr|plan|project|inbox|decision
   source_ref TEXT NOT NULL,               -- pr#93 | plans/.../foo.md | projects/.../bar.md | ...
@@ -234,46 +233,6 @@ CREATE TABLE schema_migrations (
   applied_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
-
----
-
-### D3.1. Schema details surfaced by implementation — `agent` vs `coordinator` on `learnings`, and no `AUTOINCREMENT` on rowid PKs
-
-**Added by amendment 2026-04-28** (see §Amendment log). Two tactical refinements that the T6b / PR #103 implementation arc and the T2a clean-rollback test (PR #96) surfaced as under-specified in the original §D3 sketch.
-
-#### D3.1.a — `learnings` carries BOTH `agent` and `coordinator`
-
-The original sketch had only `agent` on `learnings`, which collapsed two distinct identities into one column and broke v2-readiness for cross-coordinator queries (the same reason every other authored table carries `coordinator NOT NULL` per §D3's locked decision).
-
-The live schema (`agents/_state/migrations/0001-init.sql`) splits them:
-
-- **`agent TEXT NOT NULL`** — author of the learning. Any agent in the roster: a sub-agent like Vi, Talon, Senna, etc., or a coordinator authoring its own learning.
-- **`coordinator TEXT NOT NULL`** — the dispatching coordinator at the time the learning was written. Always `'evelynn'` or `'sona'`. For coordinator-authored learnings, `agent == coordinator`.
-
-This resolves the open question Lucian raised on PR #96 about what `coordinator` means when a sub-agent writes a learning: the sub-agent records *its own identity* in `agent` AND the dispatching coordinator's identity in `coordinator`.
-
-**Write contract (system-level outcome — mechanism-agnostic):** every `learnings` row, every `sessions` row, and every authored-entity row generally MUST be inserted with a non-null `coordinator` value resolved to the dispatching coordinator's identity (`'evelynn'` or `'sona'`). The schema enforces non-null at the storage boundary; correct *value* selection is the caller's responsibility. How callers obtain that value is an implementation detail that may evolve:
-
-- **Currently shipped (PR #103 r3, `db-write-session.sh`, `db-write-learning.sh`):** callers pass `coordinator` as a positional argument. The lower-level `db_write_tx` in `_lib_db.sh` is a generic SQL wrapper and is not learnings-aware — no env defaulting at the library layer today.
-- **Reserved future option:** higher-level write helpers MAY adopt env-default behaviour (e.g. `COORDINATOR="${N:-${STRAWBERRY_COORDINATOR:-}}"`), with the dispatching coordinator's identity plumbed into the sub-agent's environment at Agent-tool dispatch time. This is a non-breaking enhancement — positional callers continue to work — and does not require an ADR amendment to adopt.
-
-The contract that matters across both the current and future shape is the same: dispatching coordinator's identity reaches the row, every time. Tightened by amendment 3 (2026-04-28) to match the shipped helper signature surfaced in Lucian's PR #103 r3 review — see §Amendment log.
-
-Query consequence: cross-coordinator views (which sub-agent has been most active under each coordinator? which coordinator owns which knowledge surface?) become trivial — `SELECT coordinator, agent, COUNT(*) FROM learnings GROUP BY coordinator, agent`. Without the column we'd have to back-derive the dispatcher from filesystem path conventions, which is exactly the brittleness the v2-readiness column was added to avoid.
-
-#### D3.1.b — Plain `INTEGER PRIMARY KEY`, no `AUTOINCREMENT`, on `learnings.id`, `decisions.id`, `open_threads.id`
-
-The original sketch used `INTEGER PRIMARY KEY AUTOINCREMENT`. The live schema uses plain `INTEGER PRIMARY KEY`.
-
-**Why the change:** SQLite's `AUTOINCREMENT` keyword has a side effect — it materialises a system table named `sqlite_sequence` to enforce the "monotonic, never-reuse-deleted-rowids" guarantee. That system table broke the rollback-clean-state assertion in T2a (`tests/state/test-migration.sh`): after `DROP`-ing all user tables on rollback, `sqlite_sequence` persisted and the "DB is clean" assertion failed. PR #96 review (Talon) caught it; the pragmatic fix landed by removing `AUTOINCREMENT`.
-
-**What we lose by removing it:** monotonic-never-reuse on rowids. After deletion of the highest-id row, the next insert can reuse that id.
-
-**Why we don't care:** these are runtime projection tables. `decisions`, `learnings`, `open_threads` rows are keyed by their UNIQUE constraints (`(coordinator, slug, decided_at)`, `(agent, slug, learned_at)`, `(coordinator, source_kind, source_ref)`) — the integer `id` is an internal rowid alias for join convenience, not a stable external reference. Nothing outside the DB names a row by integer id, so reuse is invisible.
-
-Plain `INTEGER PRIMARY KEY` still gives auto-assignment of unique rowids on insert (SQLite's default rowid behaviour). The only thing we give up is the monotonic guarantee — which we never relied on.
-
-**Test surface (T2a covers):** rollback (`DROP TABLE` for every user table) leaves zero residual system tables; second migration apply on the cleaned DB succeeds.
 
 ---
 
@@ -511,34 +470,6 @@ Post-approval inline amendments to this ADR. Each entry: date, driver, change, l
 **Locations touched in this file:** §D3 entity table; §D3 schema sketch; new §D6.1 inserted between §D6 and §D7; this Amendment log.
 
 **No downstream task changes:** T3a (xfail) and T3b (impl) already cover the contract — this amendment makes the ADR catch up to the implementation, not the other way around.
-
-### 2026-04-28 — Schema-sketch fidelity: drop `AUTOINCREMENT`; add `learnings.coordinator`; clarify agent-vs-coordinator semantic
-
-**Driver:** Two real drifts between §D3's schema sketch and the live `agents/_state/migrations/0001-init.sql` surfaced via implementation review:
-
-1. **Talon, PR #96 review (T2a clean-rollback finding)** — `AUTOINCREMENT` on integer-PK columns materialises a `sqlite_sequence` system table that survives `DROP` of user tables, breaking T2a's "rollback leaves DB clean" assertion. Pragmatic fix landed by switching to plain `INTEGER PRIMARY KEY` on `learnings.id`, `decisions.id`, and `open_threads.id`. ADR sketch still showed `AUTOINCREMENT`.
-2. **Viktor, T6b implementation + Senna PR #103 review** — `learnings` was implemented with BOTH `agent` (author) and `coordinator` (dispatcher) columns, the latter satisfying the §D3 v2-readiness convention. Original ADR sketch had only `agent`, leaving Lucian's PR #96 question — "what does `coordinator` mean for a sub-agent's learning?" — unanswered at the schema level. The agent-vs-coordinator split resolves it: `agent` = author (any agent, incl. sub-agents); `coordinator` = dispatcher (always evelynn or sona).
-
-**Change:**
-1. §D3 schema sketch — `decisions`, `learnings`, `open_threads` now show plain `INTEGER PRIMARY KEY` (annotated "no AUTOINCREMENT — see §D3.1").
-2. §D3 schema sketch — `learnings` now enumerates `coordinator TEXT NOT NULL` directly under `agent`, with column comment naming the semantic.
-3. New §D3.1 inserted between §D3 and §D4: §D3.1.a documents the `agent` vs `coordinator` semantic split on `learnings` (incl. helper-library default behaviour and the cross-coordinator query consequence); §D3.1.b documents the `AUTOINCREMENT` removal (mechanism, what we lose, why we don't care, T2a coverage).
-
-**Locations touched in this file:** §D3 schema sketch (`decisions`, `learnings`, `open_threads` blocks); new §D3.1 inserted; this Amendment log.
-
-**No downstream task changes:** T2a (xfail) and T6b (skill integration) already cover the contracts in their live shape — this amendment makes the ADR catch up to the implementation, same pattern as the §D6.1 amendment above.
-
-### 2026-04-28 — §D3.1.a tighten: write contract is system-level, helper mechanism is implementation detail
-
-**Driver:** Lucian's PR #103 r3 review (commit `9dbe39d9`) flagged a NON-BLOCKING gap between §D3.1.a (just landed at amendment 2, SHA `8ef6bad1`) and the shipped helper surface. The amendment-2 prose said: *"Helper-library write path (`db_write_tx` in `_lib_db.sh`) defaults `coordinator` to `$STRAWBERRY_COORDINATOR` (or equivalent) at insert."* Reality: the new helpers `db-write-session.sh` and `db-write-learning.sh` take `coordinator` as a positional arg from the caller; `db_write_tx` itself is a generic SQL wrapper, not learnings-aware, with no env defaulting. Functional contract held (every authored row carries the right coordinator because callers pass it), but the named *mechanism* in the ADR didn't literally exist.
-
-**Change:**
-- §D3.1.a — replaced the single mechanism-naming sentence with an explicit "Write contract" paragraph that states the system-level invariant (every authored row MUST carry a non-null `coordinator` resolved to the dispatching coordinator's identity), then enumerates two implementation shapes: (a) **currently shipped** = positional arg from caller (`db-write-session.sh`, `db-write-learning.sh` per PR #103 r3); (b) **reserved future option** = higher-level helpers MAY adopt env-default with `$STRAWBERRY_COORDINATOR` fallback as a non-breaking enhancement.
-- Closing line clarifies the contract is shape-invariant and points to this amendment row for traceability.
-
-**Locations touched in this file:** §D3.1.a (replaced one paragraph with a tightened multi-paragraph block); this Amendment log.
-
-**No downstream task changes:** PR #103 r3 functional contract already holds and Lucian APPROVED on that basis. This amendment is the spec-catches-up-to-shipped-code pass — same pattern as the §D6.1 amendment (2026-04-28 entry one above) and amendment 2 (the §D3 schema sketch update). No follow-up Viktor commit required; the env-default fallback is reserved as an option, not a gap.
 
 ---
 
