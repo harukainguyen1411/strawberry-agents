@@ -1,6 +1,6 @@
 ---
 slug: bring-demo-studio-live-e2e-v1
-status: proposed
+status: active
 concern: work
 scope: [work]
 owner: duong
@@ -54,7 +54,18 @@ The DoD is met when Duong runs the above flow on prod once successfully and Akal
 
 ## Decisions
 
-(None at project level yet — to be filled as cross-plan choices land.)
+### 2026-04-27 — ADR sequencing
+
+ADRs land in this order (Duong, 2026-04-27). Each is a separate ADR with its own plan, breakdown, test plan, and qa_plan. PR target stays `feat/demo-studio-v3`; PR #32 stays open and merges into `main` last, after all DoD steps green on the feat branch.
+
+1. **ADR-1: Build progress bar** — backend progress emission (factory S3) + UI surface + observation contract. Step 7 of DoD.
+2. **ADR-2: Verification service** — service definition, API surface, progress reporting, post-build trigger. Steps 9–10 of DoD. Highest pre-build unknown.
+3. **ADR-3: Default-config greeting** — new-session creation flow, default-config template source, preview attachment at session creation. Steps 2–3 of DoD.
+4. **ADR-4: Async agent notifications** — agent message injection on build/verify state changes; chat-side push or poll mechanism; final-result handoff. Steps 8 + 11 of DoD.
+5. **ADR-5: Conflict / sanity sweep** — confirms no agent-tool registration conflicts on Build (#6) and Verify (#7), final demo-link URL contract (#9), any remaining uncertainty cleanup. Smaller scoped ADR(s) as needed.
+6. **PR #32 merge into `main`** — final step, only when all five ADRs are landed on `feat/demo-studio-v3` and Akali validates the full E2E happy path against the feat-branch deployment.
+
+Each ADR carries its own `qa_plan: required` with a fully-written Akali test script: per-step Playwright actions, screenshot checkpoints, pass/fail criteria, env URL, sign-in path, browser-environment isolation (incognito vs persistent). Akali's RUNWAY scope-gap on 2026-04-27 (she validated F1+F2 but bypassed sign-in via nonce URLs) is the trigger learning for this requirement.
 
 ## Out of scope
 
