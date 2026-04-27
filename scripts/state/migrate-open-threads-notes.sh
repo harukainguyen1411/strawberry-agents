@@ -5,9 +5,12 @@
 # Usage:
 #   bash migrate-open-threads-notes.sh --db <path> --file <open-threads.md> --coordinator <name>
 #
-# Parses ## headings from the source file, inserts/upserts rows into open_threads.note
-# via _lib_db.sh helpers. Idempotent (UPSERT on coordinator+source_kind+source_ref).
-# Does NOT archive or delete source files — archive step is caller's responsibility.
+# Parses ## headings from the source file, inserts/upserts rows into open_threads
+# via _lib_db.sh helpers. After all rows are written, archives the source file to
+# <source-dir>/_migrated/open-threads-YYYY-MM-DD.md (preserving the original; not
+# deleting it). Uses `git mv` when inside a git repo; falls back to `cp` otherwise.
+# Idempotent: UPSERT on coordinator+source_kind+source_ref; archive skips if dated
+# file already exists at the destination.
 
 set -euo pipefail
 
@@ -138,4 +141,38 @@ done < "$SOURCE_FILE"
 # Flush the final heading.
 flush_row "$current_heading" "$current_body"
 
-printf '[migrate-open-threads-notes] done: coordinator=%s file=%s\n' "$COORDINATOR" "$SOURCE_FILE" >&2
+# ── Archive step — runs only after all DB writes succeed ──────────────────────
+# Derive archive destination relative to the source file's own directory so the
+# script works correctly with both live paths and test fixture paths.
+SOURCE_DIR="$(cd "$(dirname "$SOURCE_FILE")" && pwd)"
+SOURCE_BASENAME="$(basename "$SOURCE_FILE" .md)"
+ARCHIVE_DATE="$(date -u +%Y-%m-%d)"
+ARCHIVE_DIR="${SOURCE_DIR}/_migrated"
+ARCHIVE_DEST="${ARCHIVE_DIR}/${SOURCE_BASENAME}-${ARCHIVE_DATE}.md"
+
+mkdir -p "$ARCHIVE_DIR"
+
+if [ -e "$ARCHIVE_DEST" ]; then
+    printf '[migrate-open-threads-notes] archive already exists, skipping: %s\n' "$ARCHIVE_DEST" >&2
+else
+    # DoD: "preserve, do not delete" — always cp (not mv/git mv) so the source
+    # file remains in place. git add the archive into the index when inside a repo.
+    SOURCE_ABS="$(cd "$(dirname "$SOURCE_FILE")" && pwd)/$(basename "$SOURCE_FILE")"
+    cp "$SOURCE_ABS" "$ARCHIVE_DEST"
+    if git -C "$SOURCE_DIR" rev-parse --git-dir > /dev/null 2>&1; then
+        GIT_ROOT="$(git -C "$SOURCE_DIR" rev-parse --show-toplevel)"
+        REL_DEST="${ARCHIVE_DEST#"${GIT_ROOT}/"}"
+        git -C "$GIT_ROOT" add "$REL_DEST" 2>/dev/null || true
+        printf '[migrate-open-threads-notes] archived + staged: %s\n' "$REL_DEST" >&2
+    else
+        printf '[migrate-open-threads-notes] archived (no git repo): %s\n' "$ARCHIVE_DEST" >&2
+    fi
+
+    # Smoke check: verify the archive destination exists after the operation.
+    if [ ! -f "$ARCHIVE_DEST" ]; then
+        printf '[migrate-open-threads-notes] ERROR: archive not found after write: %s\n' "$ARCHIVE_DEST" >&2
+        exit 1
+    fi
+fi
+
+printf '[migrate-open-threads-notes] done: coordinator=%s file=%s archive=%s\n' "$COORDINATOR" "$SOURCE_FILE" "$ARCHIVE_DEST" >&2
