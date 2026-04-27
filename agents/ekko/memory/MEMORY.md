@@ -187,6 +187,8 @@
 
 - 2026-04-28 (ekko — Sona dispatch): Deployed demo-config-mgmt from feat/demo-studio-v3 HEAD e52c94c8 (PRs #130 schema-wire + #133 .gcloudignore fix). New revision: demo-config-mgmt-00017-f5n, 100% traffic. All 7 stg+prod smoke gates pass. /v1/schema returns 200, Content-Type: text/yaml, 19377 bytes, all canonical fields present (card, params, ipadDemo, journey, tokenUi), MOCK_SCHEMA_YAML absent. Rollback target: demo-config-mgmt-00015-c7b. Auth: static bearer token from DS_CONFIG_MGMT_TOKEN (NOT identity token — those return 401). No /__build_info endpoint on demo-config-mgmt; use git-sha Cloud Run label for SHA verification.
 
+- 2026-04-28 (ekko — Sona dispatch URGENT REVERT): Reverted demo-config-mgmt from 00017-f5n (broken binding) to 00015-c7b. Traffic flip: 100% on 00015-c7b. Binding smoke PASS: POST brand="Aviva-revert-test" survives GET. /v1/schema on 00015 serves MOCK STUB (11 fields, ~1031 bytes) — canonical schema from PR #130 is LOST. PR #130 + PR #133 need re-application on top of a branch from 24b1e22fd114. Root cause of binding bug unclear — code identical between 00015 and 00017; may be environmental/cold-start related. Current live revision: demo-config-mgmt-00015-c7b (SHA 24b1e22fd114).
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
