@@ -10,6 +10,7 @@ tier: quick
 complexity: quick
 priority: P2
 qa_plan: required
+qa_co_author: senna
 tests_required: true
 related_decisions: [2026-04-27-team-mode-completion-signal]
 related_plans:
