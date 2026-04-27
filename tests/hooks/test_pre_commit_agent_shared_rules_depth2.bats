@@ -106,14 +106,13 @@ FRONTMATTER
 # ---------------------------------------------------------------------------
 @test "(b) depth-2 include: block-1 correct, second block present → no false-positive, exit 0" {
   local agent_file="$TMP_DIR/agent-beta-different.md"
-  # alpha block matches canonical; beta block has different content
-  # (beta canonical is not in _shared/ here, so the hook will warn on beta but
-  #  must NOT error on alpha — the regression guard is that alpha is not false-positive)
+  # alpha block matches canonical; beta has different text.
+  # The hook checks only the first include per agent def, so beta is not
+  # evaluated — exit must be 0 and no alpha drift must be reported.
   make_agent_file "$agent_file" "$(cat "$TMP_DIR/_shared/alpha.md")" "SOME OTHER CONTENT FOR BETA"
 
   run bash "$HOOK" --agents-dir "$TMP_DIR"
-  # alpha must not be reported as drifted — exit depends on whether beta is checked,
-  # but alpha must be clean. We assert stderr does not mention alpha drift.
+  [ "$status" -eq 0 ]
   [[ "$output" != *"alpha"* ]] || {
     echo "FAIL: false-positive on alpha block — regression reproduced"
     return 1
