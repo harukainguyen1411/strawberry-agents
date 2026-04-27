@@ -76,18 +76,28 @@ _jq() {
   printf '%s' "$RAW_INPUT" | jq -r "$1"
 }
 
-MODEL=$(_jq '.model.display_name // "--"')
+MODEL=$(_jq '.model.display_name // "--"' | tr -d '\n\r')
+
+# _clamp_pct: format a raw percentage value to integer, or "--" on non-numeric input
+_clamp_pct() {
+  local raw="$1"
+  case "$raw" in
+    ''|'--') printf '%s' '--' ;;
+    *[!0-9.]*) printf '%s' '--' ;;
+    *) printf '%.0f' "$raw" 2>/dev/null || printf '%s' '--' ;;
+  esac
+}
 
 CTX_RAW=$(_jq '.context_window.used_percentage // empty')
 if [ -n "$CTX_RAW" ]; then
-  CTX=$(printf '%.0f' "$CTX_RAW" 2>/dev/null || printf '%s' "$CTX_RAW")
+  CTX=$(_clamp_pct "$CTX_RAW")
 else
   CTX="--"
 fi
 
 FH_PCT_RAW=$(_jq '.rate_limits.five_hour.used_percentage // empty')
 if [ -n "$FH_PCT_RAW" ]; then
-  FH_PCT=$(printf '%.0f' "$FH_PCT_RAW" 2>/dev/null || printf '%s' "$FH_PCT_RAW")
+  FH_PCT=$(_clamp_pct "$FH_PCT_RAW")
 else
   FH_PCT="--"
 fi
@@ -101,7 +111,7 @@ fi
 
 SD_PCT_RAW=$(_jq '.rate_limits.seven_day.used_percentage // empty')
 if [ -n "$SD_PCT_RAW" ]; then
-  SD_PCT=$(printf '%.0f' "$SD_PCT_RAW" 2>/dev/null || printf '%s' "$SD_PCT_RAW")
+  SD_PCT=$(_clamp_pct "$SD_PCT_RAW")
 else
   SD_PCT="--"
 fi

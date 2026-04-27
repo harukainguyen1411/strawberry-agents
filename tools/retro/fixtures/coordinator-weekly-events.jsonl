@@ -1,0 +1,22 @@
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-coord-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:10.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-coord-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:20.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-coord-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:30.000Z"}
+{"kind": "turn", "role": "coordinator-inline", "sessionId": "sess-coord-001", "coordinator": "evelynn", "ts": "2026-04-21T08:00:40.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-a001", "ts": "2026-04-21T08:01:00.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-a001", "ts": "2026-04-21T08:01:05.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-a001", "ts": "2026-04-21T08:01:10.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-a001", "ts": "2026-04-21T08:01:15.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-b001", "ts": "2026-04-21T08:02:00.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-b001", "ts": "2026-04-21T08:02:05.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-b001", "ts": "2026-04-21T08:02:10.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-b001", "ts": "2026-04-21T08:02:15.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-c001", "ts": "2026-04-21T08:03:00.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-c001", "ts": "2026-04-21T08:03:05.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-c001", "ts": "2026-04-21T08:03:10.000Z"}
+{"kind": "turn", "role": "delegated", "sessionId": "sess-coord-001", "coordinator": "evelynn", "agentId": "agent-c001", "ts": "2026-04-21T08:03:15.000Z"}
+{"kind": "dispatch", "agentId": "agent-a001", "sessionId": "sess-coord-001", "coordinator": "evelynn", "dispatch_start_ts": "2026-04-21T08:00:50.000Z", "dispatch_end_ts": "2026-04-21T08:01:30.000Z", "ts": "2026-04-21T08:00:50.000Z"}
+{"kind": "dispatch", "agentId": "agent-b001", "sessionId": "sess-coord-001", "coordinator": "evelynn", "dispatch_start_ts": "2026-04-21T08:01:40.000Z", "dispatch_end_ts": "2026-04-21T08:02:30.000Z", "ts": "2026-04-21T08:01:40.000Z"}
+{"kind": "dispatch", "agentId": "agent-c001", "sessionId": "sess-coord-001", "coordinator": "evelynn", "dispatch_start_ts": "2026-04-21T08:02:40.000Z", "dispatch_end_ts": "2026-04-21T08:03:30.000Z", "ts": "2026-04-21T08:02:40.000Z"}
+{"kind": "dispatch-prompt-stats", "coordinator": "evelynn", "sessionId": "sess-coord-001", "agentId": "agent-a001", "ts": "2026-04-21T08:00:50.000Z", "prompt_chars": 200, "dispatch_prompt_tokens": 50, "header_count": 0, "concern_tag_present": false, "plan_citation_present": false, "compression_ratio": 2.0}
+{"kind": "dispatch-prompt-stats", "coordinator": "evelynn", "sessionId": "sess-coord-001", "agentId": "agent-b001", "ts": "2026-04-21T08:01:40.000Z", "prompt_chars": 1200, "dispatch_prompt_tokens": 300, "header_count": 2, "concern_tag_present": true, "plan_citation_present": true, "compression_ratio": 2.5}
+{"kind": "dispatch-prompt-stats", "coordinator": "evelynn", "sessionId": "sess-coord-001", "agentId": "agent-c001", "ts": "2026-04-21T08:02:40.000Z", "prompt_chars": 3500, "dispatch_prompt_tokens": 875, "header_count": 4, "concern_tag_present": true, "plan_citation_present": true, "compression_ratio": 2.0}

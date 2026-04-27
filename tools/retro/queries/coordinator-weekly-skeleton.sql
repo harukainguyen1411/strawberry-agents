@@ -1,4 +1,6 @@
 -- coordinator-weekly-skeleton.sql
+-- DEPRECATED: superseded by coordinator-weekly.sql (T.P2.4).
+-- Retained for Phase-1 boundary guard (TP1.T5 DoD (d)) and historical reference.
 -- Guards: T.P1.3 DoD (b), TP1.T5 DoD (d) Phase-2 boundary check
 -- Plan-Ref: plans/approved/personal/2026-04-25-retrospection-dashboard-and-canonical-v1.md
 --

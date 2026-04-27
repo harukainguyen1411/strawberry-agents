@@ -28,6 +28,8 @@ import {
   maybePlanStageFromDispatch,
 } from './plan-stage-detect.mjs';
 import { parseDecisionFrontmatter } from './decision-axes.mjs';
+// T.P2.4: prompt-stats emitter — wired into the subagent-jsonl source below
+import { computePromptStats } from './prompt-stats.mjs';
 
 // ---------------------------------------------------------------------------
 // Wall-active-delta computation (§3 idle-gap stripping)
@@ -115,6 +117,23 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
     return [];
   }
 
+  // C2 round-trip fix: derive coordinator from sibling <sessionId>.meta.json if present.
+  // Parent JSONL files carry no coordinator field natively — the meta sidecar is the only
+  // structured source. Without coordinator, turns are excluded by the SQL WHERE
+  // coordinator IS NOT NULL predicate, leaving inline_tool_calls always 0 against real data.
+  // Invariant: coordinator null for sessions without a sidecar (old data, non-strawberry
+  // projects) — those rows are simply absent from coordinator-weekly; no fabrication.
+  const metaSiblingPath = filePath.replace(/\.jsonl$/, '.meta.json');
+  let parentMeta = null;
+  if (existsSync(metaSiblingPath)) {
+    try {
+      parentMeta = JSON.parse(readFileSync(metaSiblingPath, 'utf8'));
+    } catch {
+      // ignore malformed meta sidecar
+    }
+  }
+  const coordinator = parentMeta ? (parentMeta.coordinator || null) : null;
+
   // Extract plan slug from first user message
   const firstUserMsg = lines.find(l => l.type === 'user' || l.role === 'user');
   const firstUserText = firstUserMsg && Array.isArray(firstUserMsg.content)
@@ -164,6 +183,7 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
       kind: 'turn',
       role: 'coordinator-inline',
       sessionId,
+      coordinator,
       ts: row.ts,
       input_tokens: row.usage.input_tokens || 0,
       output_tokens: row.usage.output_tokens || 0,
@@ -187,11 +207,14 @@ export function parseParentSession(filePath, sessionId, slug, planStageEvents) {
 /**
  * Parse a subagent JSONL file and its paired meta.json.
  *
+ * T.P2.4: also computes a dispatch-prompt-stats event (§Q9 three deterministic signals)
+ * from the subagent's first user message + total output-token count.
+ *
  * @param {string} jsonlPath — absolute path to agent-<id>.jsonl
  * @param {string} metaPath — absolute path to agent-<id>.meta.json
  * @param {string} agentId — extracted from filename
  * @param {Array<Object>} planStageEvents — plan-stage events (trailer wins per §Q2 + OQ-R3)
- * @returns {{ turns: Array<Object>, dispatch: Object | null }}
+ * @returns {{ turns: Array<Object>, dispatch: Object | null, promptStats: Object | null }}
  */
 export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEvents) {
   let lines;
@@ -264,6 +287,10 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
       sessionId,
       parentSessionId,
       agentId,
+      // C2 round-trip fix: plumb coordinator from meta.json so SQL WHERE coordinator IS NOT NULL
+      // matches real production turns. Pre-fix: turn events lacked coordinator → filtered out →
+      // delegated_tool_calls always 0, delegate_ratio always NULL for every coordinator week.
+      coordinator: meta ? (meta.coordinator || null) : null,
       ts: row.ts,
       input_tokens: row.usage.input_tokens || 0,
       output_tokens: row.usage.output_tokens || 0,
@@ -277,6 +304,10 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
   }
 
   // Dispatch event from meta.json
+  // C1 fix: include coordinator + ts so SQL's coordinator IS NOT NULL filter matches,
+  // and dispatch_count aggregation (which groups on coordinator) works against real data.
+  // coordinator: from meta.coordinator (coordinator field written by end-subagent-session skill)
+  // ts: from meta.startTs (dispatch_start_ts is the event's canonical timestamp)
   let dispatch = null;
   if (meta) {
     dispatch = {
@@ -285,12 +316,44 @@ export function parseSubagentSession(jsonlPath, metaPath, agentId, planStageEven
       parentSessionId,
       // sessionId for dispatch = parentSessionId (dispatch attributed to coordinator session)
       sessionId: parentSessionId,
+      coordinator: meta.coordinator || null,
+      ts: meta.startTs || null,
       dispatch_start_ts: meta.startTs || null,
       dispatch_end_ts: meta.endTs || null,
     };
   }
 
-  return { turns, dispatch };
+  // T.P2.4: emit one dispatch-prompt-stats event per subagent (§Q9 three signals).
+  // Uses the already-extracted firstUserText (dispatch prompt) and sums output_tokens
+  // from all assistant turns in this subagent session.
+  const subagentTotalOutputTokens = assistantRows.reduce(
+    (sum, row) => sum + (row.usage.output_tokens || 0), 0
+  );
+  // I1: dispatch_prompt_tokens denominator — using first-turn input_tokens as an approximation.
+  // Known systematic bias: the first assistant turn's input_tokens includes the full API context
+  // (system prompt + tools + prior conversation history + the dispatch prompt), not just the
+  // dispatch prompt text. This overstates the denominator, making compression_ratio smaller than
+  // the true value. A more precise denominator would require the API to expose per-segment token
+  // counts (not available in Claude JSONL format). Accepted trade-off: the ratio is still
+  // directionally correct and consistent across dispatches (bias is proportional to overhead size
+  // which is roughly stable across coordinator sessions). If a more accurate denominator becomes
+  // available (e.g. a dispatch_prompt_tokens field in the meta.json), prefer that.
+  const dispatchPromptTokens = assistantRows.length > 0
+    ? (assistantRows[0].usage.input_tokens || 0)
+    : 0;
+
+  const promptStats = computePromptStats({
+    dispatch_prompt_text: firstUserText,
+    dispatch_prompt_tokens: dispatchPromptTokens,
+    subagent_total_output_tokens: subagentTotalOutputTokens,
+    // coordinator field: derived from meta if available; null otherwise
+    coordinator: meta ? (meta.coordinator || null) : null,
+    sessionId: parentSessionId,
+    agentId,
+    ts: dispatch ? (dispatch.dispatch_start_ts || null) : null,
+  });
+
+  return { turns, dispatch, promptStats };
 }
 
 // ---------------------------------------------------------------------------
@@ -837,7 +900,7 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
             const agentId = jsonlFile.replace(/\.jsonl$/, '');
             const jsonlPath = join(subagentsDir, jsonlFile);
             const metaPath = join(subagentsDir, `${agentId}.meta.json`);
-            const { turns, dispatch } = parseSubagentSession(
+            const { turns, dispatch, promptStats } = parseSubagentSession(
               jsonlPath, metaPath, agentId, planStageEvents
             );
             events.push(...turns);
@@ -848,6 +911,10 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
               }
               events.push(dispatch);
             }
+            // T.P2.4: emit prompt-stats event if the subagent had content to measure
+            if (promptStats) {
+              events.push(promptStats);
+            }
           }
         }
       }
@@ -857,6 +924,11 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
   // --- Sentinel-only dispatch events ---
   // For sentinels without a corresponding subagent JSONL+meta (test isolation case),
   // emit a minimal dispatch event so the sentinel mtime is captured.
+  // TODO (C2 round-trip, 2026-04-26): orphan-sentinel events are emitted without coordinator or ts.
+  //   The SQL WHERE coordinator IS NOT NULL predicate therefore excludes these from dispatch_count.
+  //   Resolution: these sentinels arise when no meta.json is present (test isolation case only;
+  //   production always has meta.json). If coordinator becomes available here in future (e.g. via
+  //   a sentinel manifest file), add coordinator + ts to the emitted event and update the SQL test.
   const emittedAgentIds = new Set(events.filter(e => e.kind === 'dispatch').map(e => e.agentId));
   for (const [agentId, endTs] of Object.entries(sentinelEndTimes)) {
     if (!emittedAgentIds.has(agentId)) {
@@ -865,6 +937,8 @@ export function scanAllSources({ cacheDir, sentinelDirs, projectsDir, repoRoot =
         agentId,
         parentSessionId: null,
         sessionId: null,
+        coordinator: null,
+        ts: null,
         dispatch_start_ts: null,
         dispatch_end_ts: endTs,
       });

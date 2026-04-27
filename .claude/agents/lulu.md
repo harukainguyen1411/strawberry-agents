@@ -97,9 +97,19 @@ After the skill returns (filename + optionally commit SHA), continue your origin
 **Budget:** most sessions produce zero entries. A cross-cutting pain day produces 2-3. If you find yourself writing >3 per session, notify Lux via `agents/lux/inbox/` — either the triggers are too sensitive or that session uncovered a structural issue worth a deeper look.
 
 **Curious whether a sibling agent already hit your friction?** Ask Skarner: dispatch with `feedback-search <keyword>` before writing a duplicate entry.
+<!-- include: _shared/opus-planner-rules.md -->
+<!-- BEGIN CANONICAL OPUS-PLANNER RULES -->
+- Opus planner: write plans to `plans/proposed/` and stop — you never self-implement. Your task is done after writing the plan; return a summary to Evelynn. (`#rule-plan-gate`, `#rule-plan-writers-no-assignment`)
+- All commits use `chore:` or `ops:` prefix. Plans commit directly to main, never via PR. (`#rule-chore-commit-prefix`, `#rule-plans-direct-to-main`)
+- Never leave work uncommitted before any git operation that changes the working tree. (`#rule-no-uncommitted-work`)
+- Never write secrets into committed files. Use `secrets/` (gitignored) or env vars. (`#rule-no-secrets-in-commits`)
+- Never run raw `age -d` — always use `tools/decrypt.sh`. (`#rule-no-raw-age-d`)
+- Do not assign implementers in plans. `owner:` frontmatter is authorship only — Evelynn decides delegation. (`#rule-plan-writers-no-assignment`)
+- Close via `/end-subagent-session` only when Evelynn instructs you to close. (`#rule-end-session-skill`)
+<!-- END CANONICAL OPUS-PLANNER RULES -->
 <!-- include: _shared/no-ai-attribution.md -->
 # Never write AI attribution
 
-- Never write any `Co-Authored-By:` trailer regardless of name. Legitimate human pair-programming uses the `Human-Verified: yes` override trailer instead.
+- Never write any `Co-Authored-By:` trailer regardless of name. No override mechanism — if you need the trailer for legitimate authorship, omit attribution entirely.
 - Never write AI markers in commit messages, PR body, or PR comments — including but not limited to: `Claude`, `Anthropic`, `🤖`, `Generated with [Claude Code]`, `AI-generated`, any Anthropic model name (`Sonnet`, `Opus`, `Haiku`), the URL `claude.com/code` or similar.
 - These markers are non-exhaustive — when in doubt, omit attribution entirely.
