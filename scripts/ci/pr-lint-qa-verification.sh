@@ -70,31 +70,28 @@ fi
 
 body_lower="$(printf '%s' "$pr_body" | tr '[:upper:]' '[:lower:]')"
 
+# UI keyword classification uses word-boundary grep to avoid substring false-positives.
+# e.g. "svg" in prose ("convert to svg format") must match, but "csvg" or "msgsvg" must not.
+_body_has_ui_keyword() {
+  local pattern="$1"
+  printf '%s' "$body_lower" | grep -qE "$pattern"
+}
+
 is_ui=0
-case "$body_lower" in
-  *"new route"*|*"new form"*|*"state transition"*|*"auth flow"*|*"session lifecycle"*|*"user flow"*)
-    is_ui=1 ;;
-esac
-
 if [ "$is_ui" -eq 0 ]; then
-  case "$body_lower" in
-    *"dashboard"*|*"static html"*|*"rendered output"*|*"visual inspection"*)
-      is_ui=1 ;;
-  esac
+  _body_has_ui_keyword '\bnew route\b|\bnew form\b|\bstate transition\b|\bauth flow\b|\bsession lifecycle\b|\buser flow\b' && is_ui=1
 fi
 
 if [ "$is_ui" -eq 0 ]; then
-  case "$body_lower" in
-    *"browser-renderable"*|*"html page"*|*"svg"*|*"pdf report"*)
-      is_ui=1 ;;
-  esac
+  _body_has_ui_keyword '\bdashboard\b|\bstatic html\b|\brendered output\b|\bvisual inspection\b' && is_ui=1
 fi
 
 if [ "$is_ui" -eq 0 ]; then
-  case "$body_lower" in
-    *"ui-involving"*|*"ui involving"*)
-      is_ui=1 ;;
-  esac
+  _body_has_ui_keyword '\bbrowser-renderable\b|\bhtml page\b|\bsvg\b|\bpdf report\b' && is_ui=1
+fi
+
+if [ "$is_ui" -eq 0 ]; then
+  _body_has_ui_keyword '\bui-involving\b|\bui involving\b' && is_ui=1
 fi
 
 # Also classify as UI if body explicitly states QA-Report: marker

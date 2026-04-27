@@ -64,6 +64,11 @@ run_fixture "b-waiver-with-sign-off.txt"               0  # valid escape hatch w
 run_fixture "d-non-ui-with-verification.txt"           0  # non-UI with QA-Verification
 run_fixture "e-ui-pr-with-qa-report-no-figma-ref.txt"  0  # UI PR with QA-Report, no Figma-Ref (Visual-Diff not required)
 
+# Word-boundary regression fixtures (Fix 2 — Senna IMPORTANT):
+# "svg" as a bare word classifies as UI; "csvg"/"msgsvg" substrings do not.
+run_fixture "f-svg-in-prose-classifies-as-ui.txt"      0  # "svg" word → UI → QA-Report present → accept
+run_fixture "g-no-svg-word-boundary-non-ui.txt"        0  # "csvg"/"msgsvg" → not UI → QA-Verification present → accept
+
 printf '\n=== Results: %s passed, %s failed ===\n' "$PASS" "$FAIL"
 
 if [ "$FAIL" -gt 0 ]; then

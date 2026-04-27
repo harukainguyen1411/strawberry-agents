@@ -1,0 +1,13 @@
+## Summary
+
+Refactors the csvg (compressed scalable-vector serialization) module. No visual output.
+Updates msgsvg utility wrapper used in build pipeline.
+
+## Changes
+
+- csvg encoder: fix off-by-one in bit packing
+- msgsvg wrapper: update flags for new encoder API
+
+## Test plan
+
+QA-Verification: ran unit tests — csvg_test.go and msgsvg_test.go both green (12 cases).
