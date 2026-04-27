@@ -189,6 +189,8 @@
 
 - 2026-04-28 (ekko — Sona dispatch URGENT REVERT): Reverted demo-config-mgmt from 00017-f5n (broken binding) to 00015-c7b. Traffic flip: 100% on 00015-c7b. Binding smoke PASS: POST brand="Aviva-revert-test" survives GET. /v1/schema on 00015 serves MOCK STUB (11 fields, ~1031 bytes) — canonical schema from PR #130 is LOST. PR #130 + PR #133 need re-application on top of a branch from 24b1e22fd114. Root cause of binding bug unclear — code identical between 00015 and 00017; may be environmental/cold-start related. Current live revision: demo-config-mgmt-00015-c7b (SHA 24b1e22fd114).
 
+- 2026-04-28 (ekko — Sona dispatch): Flipped demo-config-mgmt to 00014-2bn (tuan.pham@missmp.eu's revision, createdAt 2026-04-23T08:22:40Z). Binding smoke PASS: POST brand="Aviva-tuan-revert-test" with sessionId+force=true survives GET. /v1/schema: 200, 19415 bytes, canonical 524-line schema, all 5 canonical fields (card, params, ipadDemo, journey, tokenUi) PRESENT, TODO:implement ABSENT. NOTE: 00014-2bn uses canonical schema (not the mock stub). POST body is camelCase sessionId + nested config object (NOT top-level brand). Use ?force=true for partial configs in smoke tests. Current live revision: demo-config-mgmt-00014-2bn.
+
 ## Archive Note
 
 Commit SHAs prior to 2026-04-19 resolve against `Duongntd/strawberry` (archive, 90-day retention through 2026-07-18).
