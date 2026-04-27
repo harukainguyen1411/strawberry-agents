@@ -168,6 +168,30 @@ if git -C "${REPO_ROOT}" add "$DEST" 2>/dev/null; then
 fi
 
 # ---------------------------------------------------------------------------
+# DB write — projection into decisions table (non-fatal if DB unavailable)
+# ---------------------------------------------------------------------------
+if [ -n "${STRAWBERRY_STATE_DB:-}" ]; then
+  DB_LIB="${SCRIPT_DIR}/state/_lib_db.sh"
+  if [ -f "$DB_LIB" ]; then
+    # shellcheck source=/dev/null
+    . "$DB_LIB"
+    # slug = decision_id with the leading YYYY-MM-DD- prefix stripped
+    SLUG="$(printf '%s' "$DECISION_ID" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')"
+    SQL="INSERT OR IGNORE INTO decisions (coordinator, decided_at, slug, shard_path, summary)
+         VALUES (
+           '${COORDINATOR}',
+           '${DECISION_DATE}',
+           '${SLUG}',
+           '${DEST}',
+           'captured via decision-capture skill'
+         );"
+    db_open "$STRAWBERRY_STATE_DB" 2>/dev/null || true
+    db_write_tx "$STRAWBERRY_STATE_DB" "$SQL" 2>/dev/null || \
+      printf '[capture-decision] WARNING: DB write failed — markdown shard is source of truth\n' >&2
+  fi
+fi
+
+# ---------------------------------------------------------------------------
 # Output final path
 # ---------------------------------------------------------------------------
 printf '%s\n' "$DEST"
