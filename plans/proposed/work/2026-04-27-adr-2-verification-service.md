@@ -433,7 +433,9 @@ Visual review of verify states (in-progress / pass / fail / error) on `feat/demo
 3. **Sign in via real Firebase Auth flow** — click "Sign in with Google", complete OAuth in popup with `duong@missmp.eu`. **Do not use nonce URL bypass**, do not use any session-handoff URL parameter. The QA gate explicitly requires the real OAuth path (per project §Decisions 2026-04-27 and the trigger-learning around Akali's RUNWAY scope-gap on 2026-04-27). Capture screenshot `01-signed-in.png`.
 4. Verify the deployed revision matches the head SHA under test: open browser console, fetch `/__build_info` (or equivalent revision marker exposed by BFF — confirm with breakdown). Capture `02-revision-match.png` showing the SHA. **PASS only if SHA matches.**
 
-### Per-step actions — happy path
+### Happy path (user flow)
+
+(Per-step actions — happy path lane.)
 
 | Step | Action | Pass criterion | Screenshot |
 |---|---|---|---|
@@ -448,7 +450,11 @@ Visual review of verify states (in-progress / pass / fail / error) on `feat/demo
 | 9 | Confirm session-doc state via `GET /session/{id}` (BFF debug or DevTools) | `verificationStatus === "pass"`, `verificationReport` populated, `projectId`, `demoUrl`, `projectUrl`, `shortcode` all present and non-empty, `lastVerificationAt` is recent. | `11-session-doc.png` |
 | 10 | Open browser console | No JS errors. EventSource closed cleanly (readyState === 2). | `12-console-clean.png` |
 
-### Per-step actions — verification-fail path (separate test run)
+### Failure modes (what could break)
+
+Two failure-mode lanes are exercised as separate test runs: the verification-fail path (S4 returns `status: fail` for valid project state with bad config) and the verification-error path (S4 itself unreachable / stream errored). Both are required for sign-off.
+
+#### Verification-fail path (separate test run)
 
 Pre-condition: pre-set the session config to one that passes build but fails one or more verification checks (e.g. wrong logo URL → `branding` category fails).
 
@@ -459,7 +465,7 @@ Pre-condition: pre-set the session config to one that passes build but fails one
 | F3 | Wait for `verify_complete` | Bar at 100%, **amber/red**, label "Verification completed with issues — N failed" (N matches `report.summary.failed`). | `13-verify-failed.png` |
 | F4 | Open `verificationReport` via DevTools | `status === "fail"`, `summary.failed >= 1`, `checks[]` includes failed `branding` check, `diagnosis[]` includes corresponding entry. | `14-verify-report.png` |
 
-### Per-step actions — verification-error path (separate test run)
+#### Verification-error path (separate test run)
 
 Pre-condition: temporarily set `S4_VERIFY_URL` env on a one-off Cloud Run revision to a non-routable URL (or kill the S4 service). Restore after.
 
@@ -469,7 +475,9 @@ Pre-condition: temporarily set `S4_VERIFY_URL` env on a one-off Cloud Run revisi
 | E2 | Wait up to 5 s after build_complete | Verify component shows red bar with label matching `"Verification could not run — stream_error"` (or similar `reason` value per D8.1). | `15-verify-stream-error.png` |
 | E3 | Confirm session doc | `verificationStatus === "failed"`, `verificationReport.reason === "stream_error"`. | `16-session-doc-error.png` |
 
-### Pass / fail criteria
+### Acceptance criteria
+
+(Pass / fail criteria for the QA gate.)
 
 **PASS** if:
 - All happy-path checkpoints render their expected UI within the time budgets (≤ 2 s for transition steps, total verify duration ≤ 120 s for typical projects).
@@ -483,6 +491,18 @@ Pre-condition: temporarily set `S4_VERIFY_URL` env on a one-off Cloud Run revisi
 - Progress bar fails to update through at least 3 distinct category states (DoD step 10 violation).
 - Session doc lacks any required field after terminal verify (D6 contract violation).
 - Any FAIL/PARTIAL in Akali's report is `cite_kind: inferred` rather than `verified` (per QA two-stage ADR D2).
+
+### QA artifacts expected
+
+Akali deposits the following under `assessments/qa-reports/2026-04-27-adr-2-verification-service-<rev-sha>/`:
+
+- **Screenshots (happy path):** `01-signed-in.png`, `02-revision-match.png`, `03-new-session.png`, `04-build-starting.png`, `05-build-complete.png`, `06-verify-starting.png`, `07-verify-mid-1.png`, `08-verify-mid-2.png`, `09-verify-reload.png`, `10-verify-passed.png`, `11-session-doc.png`, `12-console-clean.png`.
+- **Screenshots (failure modes):** `13-verify-failed.png`, `14-verify-report.png`, `15-verify-stream-error.png`, `16-session-doc-error.png`.
+- **QA report markdown:** `report.md` with the §QA two-stage ADR template — `head_sha:` frontmatter, per-step OBSERVE/VERIFY findings, each tagged `cite_kind: verified | inferred` with `cite_evidence:` (screenshot path or DevTools quote).
+- **Network HAR (optional but preferred):** `network.har` capturing `/session/.../logs` SSE channel for the happy-path run, used for re-deriving the event sequence under audit.
+- **Console log dump:** `console.log` from DevTools for the happy-path run, asserting JS-error-free.
+
+PR body links the report folder via `QA-Report:` line per Rule 16.
 
 ### Citation discipline
 
