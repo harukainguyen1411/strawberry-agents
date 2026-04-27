@@ -113,6 +113,7 @@ Each decision below states the choice space, names the trade-offs, picks a recom
 | `prs_index` | **Derived** | Refresh from `gh pr list --json ...` | GitHub is source of truth. |
 | `inbox_index` | **Derived** | Refresh from `find agents/<c>/inbox/ -name '*.md'` | Inbox files are source of truth. |
 | `feedback_index` | **Derived** | Refresh from `find feedback/ -name '*.md'` + frontmatter parse | Already file-backed. |
+| `schema_migrations` | **System** | Written by `db_apply_migrations()` in `_lib_db.sh`; one row per applied migration filename | Bookkeeping for safe re-application of `0001-init.sql` and any future migration. Not authored (no human writes it), not derived (not a projection of a markdown source) — a runtime system table. No `coordinator` column needed; migration state is per-DB, not per-coordinator. Added by amendment 2026-04-28 — see §Amendment log. |
 
 **Validation of the team-lead's instinct:**
 
@@ -223,6 +224,14 @@ CREATE TABLE refresh_log (
   rows_in INTEGER,
   rows_out INTEGER
 );
+
+-- System table — tracks which migration files have been applied to this DB.
+-- Written exclusively by db_apply_migrations() in scripts/state/_lib_db.sh.
+-- Not authored (no human writes it), not derived (not a projection); per-DB bookkeeping.
+CREATE TABLE schema_migrations (
+  filename TEXT PRIMARY KEY,              -- e.g. '0001-init.sql' (basename, lex-sortable)
+  applied_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 ```
 
 ---
@@ -310,6 +319,28 @@ COMMIT;
 **Deadlock avoidance:** SQLite has no true deadlocks because there is at most one writer at a time (RESERVED lock is exclusive). The only failure shape is busy-wait timeout, handled above.
 
 **What this does NOT cover:** a coordinator session that has read state, *thought about it for 5 minutes*, and then wants to write based on that read. Between read and write, another session can have advanced state. We accept this — the operations a coordinator performs (record a decision, record a session close, annotate an open thread) are write-once and idempotent. Cross-session "compare-and-swap" is not in scope for v1.
+
+---
+
+### D6.1. Migration-tracking contract — `db_apply_migrations()` is the sole writer of `schema_migrations`
+
+**Added by amendment 2026-04-28** (see §Amendment log). This sub-decision formalises the runtime migration-state contract that PR #96 review and the T3a/T3b implementation arc surfaced as an under-specified gap in the original ADR.
+
+**Contract:**
+
+- The `schema_migrations` table (defined in §D3) is the single source of truth for which migration files have been applied to a given `state.db`.
+- Exactly one writer: `db_apply_migrations()` in `scripts/state/_lib_db.sh`. No other script, skill, or agent writes this table. No coordinator-facing helper exposes a write path.
+- Algorithm:
+  1. Open the DB (creating it if absent; first connection is responsible for the WAL/busy-timeout PRAGMAs from §D6).
+  2. Ensure `schema_migrations` itself exists (idempotent `CREATE TABLE IF NOT EXISTS`); this bootstrap step is the only write outside the per-migration loop.
+  3. Enumerate `agents/_state/migrations/*.sql` in **lexicographic filename order** (the `0001-`, `0002-`, … prefix convention makes lex-order = apply-order).
+  4. For each file: `SELECT 1 FROM schema_migrations WHERE filename = ?`. If present, skip. If absent, apply the file inside a `BEGIN IMMEDIATE … COMMIT` transaction that **also** inserts the `schema_migrations` row in the same transaction — so an applied migration and its bookkeeping land atomically, or neither does.
+  5. On any SQL error mid-application, the transaction rolls back and `db_apply_migrations()` exits non-zero with a diagnostic naming the offending file.
+- Re-runnability invariant: `db_apply_migrations()` is safe to call on every coordinator boot. If all migrations have been applied, it is a near-noop (one indexed lookup per file). This is what makes the boot-refresh pattern in §D5 safe.
+
+**Why no `coordinator` column on `schema_migrations`:** migration state is per-DB, not per-coordinator. Both Evelynn and Sona share the single DB at `~/.strawberry-state/state.db` (per §D2) and therefore share the migration ledger. Adding a `coordinator` column would imply per-coordinator migration application, which is wrong — schema is global.
+
+**Test surface (covered by T3a, the xfail Rakan pre-emptively wrote):** apply on fresh DB lands all rows; second apply on the same DB is a noop; partial-failure (mock SQL error in second migration of three) leaves migrations 1 applied + recorded, migration 2 not applied + not recorded, migration 3 not attempted.
 
 ---
 
@@ -423,6 +454,25 @@ All five Open Questions raised in the first draft of this ADR have been resolved
 
 ---
 
+## Amendment log
+
+Post-approval inline amendments to this ADR. Each entry: date, driver, change, locations touched. Tactical inline amendments only — substantive direction changes warrant a successor ADR rather than an amendment row here.
+
+### 2026-04-28 — Add `schema_migrations` as 11th table + §D6.1 migration-tracking contract
+
+**Driver:** Lucian's PR #98 fidelity review surfaced that `schema_migrations` was being implemented (Viktor's T3b `db_apply_migrations`) without being formally enumerated in the ADR. Senna's PR #96 IMPORTANT finding identified the same gap, and Rakan pre-emptively wrote the T3a xfail test covering the apply / re-apply / partial-failure invariants. The team converged on amending the ADR rather than treating it as a silent implementation detail.
+
+**Change:**
+1. Added `schema_migrations` row to the §D3 entity table, classified as **System** (neither authored nor derived). No `coordinator` column — schema state is per-DB, not per-coordinator.
+2. Added the `CREATE TABLE schema_migrations` block to the §D3 schema sketch (after `refresh_log`).
+3. Added new §D6.1 formalising the migration-tracking contract: `db_apply_migrations()` is the sole writer; lex-order enumeration of `agents/_state/migrations/*.sql`; per-migration apply + bookkeeping inside a single `BEGIN IMMEDIATE` transaction so they land atomically; safe to call on every coordinator boot.
+
+**Locations touched in this file:** §D3 entity table; §D3 schema sketch; new §D6.1 inserted between §D6 and §D7; this Amendment log.
+
+**No downstream task changes:** T3a (xfail) and T3b (impl) already cover the contract — this amendment makes the ADR catch up to the implementation, not the other way around.
+
+---
+
 ## Cross-references
 
 - Project: `projects/personal/active/coordinator-memory-improvement-v1.md`
@@ -432,6 +482,267 @@ All five Open Questions raised in the first draft of this ADR have been resolved
 - Plan frontmatter contract: `architecture/agent-network-v1/plan-frontmatter.md`
 - Decision-capture skill (write path that becomes a DB write): `.claude/skills/decision-capture/SKILL.md`
 - Session-close skill (write path): `.claude/skills/end-session/SKILL.md`
+
+## Breakdown
+
+Authored by Aphelios on 2026-04-27. Translates the 12 high-level §Tasks above into per-agent executable entries. Each entry names: subject, owner agent, files-to-touch, dependencies, complexity, `parallel_slice_candidate`, and (for code-producing tasks) the xfail-test pair-mate per Rule 12.
+
+**Track decisions locked in this breakdown:**
+
+- **Helper library (T3) and concurrency model (T6)** — **complex track** (Rakan xfail → Viktor impl). Rationale: D6's WAL + `BEGIN IMMEDIATE` + busy-timeout + retry-loop + read-your-writes invariants are non-trivial to test correctly. Concurrent-writer test (T-VI-2 in Azir's test plan) requires fork/exec choreography, race-window verification, and assertion of zero hard SQLITE_BUSY failures — that is Rakan-grade test authorship. Routine-track Vi handles the simpler refresh / migration / projection tests.
+- **Migration (T7 — annotation migration)** — **Talon multi-step plan**, not a Yuumi errand. Touches both coordinator memory trees (`evelynn/`, `sona/`), parses today's `open-threads.md` prose into `open_threads.note` rows by inferring `source_ref` per heading, AND is one-shot but irreversible (annotation prose lost if mis-parsed). Talon owns multi-file one-time migrations; Yuumi is sized for single-file errands. Pair-mate xfail by Vi (deterministic fixture-based).
+- **Boot-cost re-measurement (T12)** — Talon, re-runs D8 protocol against the new boot path, **appends** results to `assessments/2026-04-27-coordinator-boot-baseline.md` (same artifact T1 creates, post-impl section). DoD validation gate.
+
+**Universal dependency:** every task except T1 is `blockedBy: T1` because the baseline assessment artifact is the validation reference for the entire project. Implementation can begin on schema/library scaffolding pre-baseline ONLY if Duong explicitly waives — default is hard-block.
+
+---
+
+### T1 — Baseline measurement (Evelynn + Sona boots)
+
+- **Owner:** Talon
+- **Subject:** Execute D8 protocol against fresh Evelynn AND Sona boots; produce baseline assessment.
+- **Files:** `assessments/2026-04-27-coordinator-boot-baseline.md` (new); reads existing `scripts/coordinator-boot.sh`, `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`.
+- **DoD:** Assessment file committed with: 3-run table per coordinator (input tokens, wall-clock seconds), per-file byte/token table, official "pre-project" number for each coordinator, methodology section reproducible by re-running. Boot-cost reduction TARGET also written into this same file (per D8 / OQ O3 resolution).
+- **Dependencies:** none — this is the gate.
+- **Complexity:** moderate (measurement choreography + telemetry extraction technique selection).
+- **xfail-test-first?** No — measurement / assessment task, not code.
+- **`parallel_slice_candidate: no`** — single Talon flow; Evelynn and Sona measurements share the methodology authoring step.
+
+---
+
+### T2a — xfail test for schema migration (apply + rollback + replay)
+
+- **Owner:** Vi
+- **Subject:** Author `tests/state/test-migration.sh` as xfail (impl absent); covers apply on fresh DB → assert tables/indexes per D3 schema → rollback via DROP → replay clean.
+- **Files:** `tests/state/test-migration.sh` (new); `agents/_state/migrations/.gitkeep` if needed for path discoverability.
+- **DoD:** Test committed; runs red with clear "migration file not present" failure; references this ADR slug + T2 in test header.
+- **Dependencies:** T1.
+- **Complexity:** simple.
+- **`parallel_slice_candidate: yes`** — independent of T3a/T4a/T5a.
+
+### T2b — Implement schema migration `0001-init.sql`
+
+- **Owner:** Talon
+- **Subject:** Author the initial schema migration file from D3's schema sketch, refined with explicit indexes (`coordinator`, `decided_at`, `refreshed_at`) and the `refresh_log` projection table. WAL pragma is set by helper library, not migration.
+- **Files:** `agents/_state/migrations/0001-init.sql` (new); `agents/_state/README.md` (new — one-paragraph "what lives here" pointer to D2/D3).
+- **DoD:** T2a passes green; migration applies cleanly to a fresh `state.db`; all 9 tables from D3 created with the `coordinator` column on every authored table; FTS5 not wired in v1 (deferred per OOS).
+- **Dependencies:** T1, T2a.
+- **Complexity:** simple.
+- **`parallel_slice_candidate: no`** — single SQL file authoring step, dependent on T2a green.
+
+---
+
+### T3a — xfail tests for state helper library (concurrency invariants)
+
+- **Owner:** Rakan (complex track — concurrent-writer choreography is non-trivial)
+- **Subject:** Author `tests/state/test-concurrent-writes.sh` AND `tests/state/test-helper-lib-pragmas.sh` as xfail. Concurrent-writer test forks two writer processes each doing 100 inserts, asserts 200 rows land with zero hard SQLITE_BUSY failures (per D6). Pragma test asserts `journal_mode=WAL`, `busy_timeout=5000`, `synchronous=NORMAL` are applied by the connection wrapper.
+- **Files:** `tests/state/test-concurrent-writes.sh` (new); `tests/state/test-helper-lib-pragmas.sh` (new).
+- **DoD:** Both tests committed; run red against missing `_lib_db.sh`; reference D6 invariants in headers.
+- **Dependencies:** T1, T2b (needs schema present to insert against).
+- **Complexity:** complex (race-window assertions, timing tolerance, fork-and-join shell choreography).
+- **`parallel_slice_candidate: no`** — pair tests authored together to share fixture scaffolding.
+
+### T3b — Implement `_lib_db.sh` helper library
+
+- **Owner:** Viktor (complex track — concurrency primitives + retry semantics)
+- **Subject:** POSIX-portable bash library exposing: `db_open`, `db_write_tx <sql>` (wraps BEGIN IMMEDIATE + retry 3x with 250ms backoff per D6), `db_read <sql>`, `db_apply_migrations`. Sets all D6 pragmas on connection open.
+- **Files:** `scripts/state/_lib_db.sh` (new).
+- **DoD:** T3a's two tests pass green; library passes shellcheck; portable on macOS + Git Bash (per Rule 10).
+- **Dependencies:** T1, T2b, T3a.
+- **Complexity:** complex.
+- **`parallel_slice_candidate: no`** — single library file, sequential after tests.
+
+---
+
+### T4a — xfail tests for refresh scripts (idempotency + per-projection)
+
+- **Owner:** Vi
+- **Subject:** Author `tests/state/test-refresh-idempotent.sh` as xfail — runs each of the 5 refresh scripts twice against a seeded fixture, asserts row counts identical between runs and `refresh_log` updated. Plus stub per-projection tests that assert basic seed-and-reflect behavior.
+- **Files:** `tests/state/test-refresh-idempotent.sh` (new); `tests/state/fixtures/` (new — seed PRs JSON, plan markdown, inbox markdown).
+- **DoD:** Tests committed; run red against missing refresh scripts.
+- **Dependencies:** T1, T2b, T3b (needs helper library).
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: yes`** — independent of T5a/T6a.
+
+### T4b — Implement 5 refresh scripts
+
+- **Owner:** Jayce (normal track — refresh logic is straightforward parse-and-INSERT)
+- **Subject:** Author `refresh-prs.sh`, `refresh-plans.sh`, `refresh-projects.sh`, `refresh-inbox.sh`, `refresh-feedback.sh`. Each reads source-of-truth files / `gh` output, upserts into the corresponding `*_index` table, writes a row into `refresh_log`. Plus parent `refresh.sh --all | --<projection>` dispatcher.
+- **Files:** `scripts/state/refresh.sh` (new); `scripts/state/refresh-prs.sh`, `refresh-plans.sh`, `refresh-projects.sh`, `refresh-inbox.sh`, `refresh-feedback.sh` (all new).
+- **DoD:** T4a passes green; each refresh script bounded to <2s wall-clock per D5 SLA; `gh pr list` cached for 60s as specified.
+- **Dependencies:** T1, T2b, T3b, T4a.
+- **Complexity:** moderate (5 distinct projections; all share parse-and-upsert pattern).
+- **`parallel_slice_candidate: yes`** — five distinct scripts can be implemented in parallel by sub-streams of Jayce dispatch (each script is its own commit; merge friction zero because each touches disjoint files).
+
+---
+
+### T5a — xfail test for boot context renderer (output bound + content shape)
+
+- **Owner:** Vi
+- **Subject:** Author `tests/state/test-context-render-bound.sh` as xfail — runs renderer against realistic seed, asserts output ≤ 8 KB (per D4 plus test-plan row), asserts presence of "open threads", "recent decisions", "recent sessions", "high-severity feedback" sections.
+- **Files:** `tests/state/test-context-render-bound.sh` (new).
+- **DoD:** Test committed; runs red against missing renderer.
+- **Dependencies:** T1, T2b, T3b, T4b.
+- **Complexity:** simple.
+- **`parallel_slice_candidate: yes`** — independent of T6a/T7a.
+
+### T5b — Implement `coordinator-context.sh` renderer
+
+- **Owner:** Jayce
+- **Subject:** Bash script that takes `<coordinator>` arg, runs `refresh.sh --all` (bounded), queries DB for top-20 open threads / last-10 sessions / top-5 high-severity feedback, renders to a single markdown report on stdout per D4.
+- **Files:** `scripts/state/coordinator-context.sh` (new).
+- **DoD:** T5a passes green; output bounded; rendered shape matches D4 specification.
+- **Dependencies:** T1, T2b, T3b, T4b, T5a.
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: no`** — single script.
+
+---
+
+### T6a — xfail tests for authored-entity write paths (skill DB-write integration)
+
+- **Owner:** Rakan (complex track — exercises three skill integrations + idempotency under retry)
+- **Subject:** Author `tests/state/test-authored-writes.sh` as xfail — invokes `decision-capture`, `/end-session` Step 6/6b, and `/end-subagent-session` learning-write code paths against a fixture DB; asserts each writes both the markdown shard AND the corresponding DB row; asserts re-running the skill is idempotent (UNIQUE constraint per D3).
+- **Files:** `tests/state/test-authored-writes.sh` (new).
+- **DoD:** Test committed; runs red against unmodified skills.
+- **Dependencies:** T1, T2b, T3b.
+- **Complexity:** complex (multi-skill integration test surface).
+- **`parallel_slice_candidate: no`** — single test file scoping all three skill paths.
+
+### T6b — Modify three write-path skills to also write DB rows
+
+- **Owner:** Viktor (complex track — touches three coordinator-critical skills, must not regress markdown write behavior)
+- **Subject:** Modify `.claude/skills/decision-capture/SKILL.md` (decision write), `.claude/skills/end-session/SKILL.md` (Step 6/6b session shard write), and `/end-subagent-session` skill (learning write) so each authored markdown write is followed by a DB INSERT via `_lib_db.sh`. Markdown remains source of truth.
+- **Files:** `.claude/skills/decision-capture/SKILL.md`, `.claude/skills/end-session/SKILL.md`, `.claude/skills/end-subagent-session/SKILL.md` (all modified).
+- **DoD:** T6a passes green; all three skills idempotent under re-run; markdown write semantics unchanged.
+- **Dependencies:** T1, T2b, T3b, T6a.
+- **Complexity:** complex.
+- **`parallel_slice_candidate: yes`** — three skills are independent edits, each its own commit; can run in parallel sub-streams.
+
+---
+
+### T7a — xfail test for open-threads annotation migration
+
+- **Owner:** Vi
+- **Subject:** Author `tests/state/test-open-threads-annotation-migration.sh` as xfail — feeds today's `open-threads.md` content (snapshotted as fixture) into the migration script, asserts every `## <thread>` heading lands as an `open_threads.note` row keyed by inferred `source_ref`, asserts no annotation text lost.
+- **Files:** `tests/state/test-open-threads-annotation-migration.sh` (new); `tests/state/fixtures/open-threads-evelynn-snapshot.md`, `open-threads-sona-snapshot.md` (new).
+- **DoD:** Test committed; runs red against missing migration script.
+- **Dependencies:** T1, T2b, T3b.
+- **Complexity:** moderate (fixture authoring + heading parse semantics).
+- **`parallel_slice_candidate: yes`** — independent of T8a/T9.
+
+### T7b — Implement annotation migration script
+
+- **Owner:** Talon (multi-step one-shot migration touching both coordinator trees; irreversible-ish, hence Talon over Yuumi per the locked decision above)
+- **Subject:** Bash script that parses `agents/evelynn/memory/open-threads.md` AND `agents/sona/memory/open-threads.md`, infers `source_ref` per `## <thread>` heading (per-coordinator regex tuned to today's heading conventions), inserts `open_threads.note` rows, archives the source file post-migration to `agents/<c>/memory/_migrated/open-threads-2026-04-27.md`.
+- **Files:** `scripts/state/migrate-open-threads-notes.sh` (new); reads `agents/evelynn/memory/open-threads.md`, `agents/sona/memory/open-threads.md`; writes archives under `agents/{evelynn,sona}/memory/_migrated/`.
+- **DoD:** T7a passes green; both source files archived (not deleted); annotation row count matches fixture-derived expectation.
+- **Dependencies:** T1, T2b, T3b, T7a.
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: no`** — single script, sequential after T7a.
+
+---
+
+### T8a — xfail test for change-event hook firing
+
+- **Owner:** Vi
+- **Subject:** Author `tests/hooks/test-state-refresh-hook.sh` as xfail — invokes a fake `gh pr merge` Bash event → asserts sentinel file created at `~/.strawberry-state/refresh-pending/prs_index` → runs `coordinator-context.sh` → asserts refresh consumed sentinel and re-projected `prs_index`.
+- **Files:** `tests/hooks/test-state-refresh-hook.sh` (new).
+- **DoD:** Test committed; runs red against missing hook.
+- **Dependencies:** T1, T2b, T3b, T4b, T5b.
+- **Complexity:** moderate (hook simulation + sentinel-consumption semantics).
+- **`parallel_slice_candidate: yes`** — independent of T9.
+
+### T8b — Implement PostToolUse change-event hook
+
+- **Owner:** Jayce
+- **Subject:** Hook script that pattern-matches `Bash` tool calls for `gh pr (merge|close|create)` and Orianna's plan-promotion `git mv` invocations; on match, touches sentinel `~/.strawberry-state/refresh-pending/<projection>`. Wire into `.claude/settings.json` PostToolUse. Modify refresh dispatcher to consume sentinels at next read.
+- **Files:** `scripts/hooks/posttooluse-state-refresh-sentinel.sh` (new); `.claude/settings.json` (modified — add hook entry); `scripts/state/refresh.sh` (modified — sentinel-consumption pass on entry).
+- **DoD:** T8a passes green; hook runs cleanly with no spurious sentinels on unrelated Bash calls.
+- **Dependencies:** T1, T2b, T3b, T4b, T5b, T8a.
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: no`** — single hook + dispatcher edit.
+
+---
+
+### T9 — Boot-chain swap (coordinator startup + architecture docs)
+
+- **Owner:** Talon (multi-file orchestration: 2 coordinator CLAUDE.md files + 2 architecture docs in one coherent flip per D7 hard-cutover)
+- **Subject:** Modify Evelynn and Sona Startup Sequences to (i) call `scripts/state/coordinator-context.sh <coordinator>` and read its output instead of reading `open-threads.md`, `last-sessions/INDEX.md`, `feedback/INDEX.md`. Update `architecture/agent-network-v1/coordinator-memory.md` and `architecture/agent-network-v1/coordinator-boot.md` to describe the new boot shape. Preserve eager reads of `decisions/preferences.md` and `decisions/axes.md` per OOS-1.
+- **Files:** `agents/evelynn/CLAUDE.md`, `agents/sona/CLAUDE.md`, `architecture/agent-network-v1/coordinator-memory.md`, `architecture/agent-network-v1/coordinator-boot.md` (all modified).
+- **DoD:** Both coordinators boot via the new chain; rendered context appears at the position previously occupied by the three retired files; architecture docs reflect the new shape.
+- **Dependencies:** T1, T5b (renderer must exist), T6b (write paths must populate the DB), T7b (annotation migration must have run so notes are present in renderer output), T8b (event hooks armed).
+- **Complexity:** moderate (cross-file consistency, irreversible-ish without revert).
+- **xfail-test-first?** No — boot-chain wiring is doc + invocation glue; integration verified by T12 re-measurement.
+- **`parallel_slice_candidate: no`** — single coherent cutover; T5b/T6b/T7b/T8b must all be green first.
+
+---
+
+### T10a — xfail test for rebuild-from-sources
+
+- **Owner:** Vi
+- **Subject:** Author `tests/state/test-rebuild.sh` as xfail — nukes DB, runs `rebuild.sh`, asserts authored-entity row counts match counts of committed shard files (decisions, learnings, session shards). Derived projections asserted to refresh on rebuild path.
+- **Files:** `tests/state/test-rebuild.sh` (new).
+- **DoD:** Test committed; runs red against missing rebuild script.
+- **Dependencies:** T1, T2b, T3b, T4b, T6b.
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: yes`** — independent of T11.
+
+### T10b — Implement `rebuild.sh`
+
+- **Owner:** Jayce
+- **Subject:** Script that wipes runtime DB, applies migrations via `_lib_db.sh`, walks committed sources (`agents/*/memory/decisions/log/*.md`, `agents/*/memory/last-sessions/*.md`, `agents/*/learnings/*.md`) re-inserting authored rows, then runs `refresh.sh --all` for derived projections.
+- **Files:** `scripts/state/rebuild.sh` (new).
+- **DoD:** T10a passes green; rebuild idempotent; new-machine bootstrap flow described in `agents/_state/README.md`.
+- **Dependencies:** T1, T2b, T3b, T4b, T6b, T10a.
+- **Complexity:** moderate.
+- **`parallel_slice_candidate: no`** — single script.
+
+---
+
+### T11 — Skarner SQL access tool surface
+
+- **Owner:** Yuumi (single-file errand — append a tool entry to Skarner's def + brief usage note)
+- **Subject:** Add `sqlite3 ~/.strawberry-state/state.db "<query>"` invocation pattern to Skarner's tool list and document the read-only query convention in Skarner's CLAUDE.md.
+- **Files:** `.claude/agents/skarner.md` (modified); optionally `agents/skarner/CLAUDE.md` (modified) for usage examples.
+- **DoD:** Skarner can run a `SELECT` against `state.db` and surface the result to coordinator.
+- **Dependencies:** T1, T2b, T3b.
+- **Complexity:** trivial.
+- **xfail-test-first?** No — agent-def edit, not code under test.
+- **`parallel_slice_candidate: yes`** — independent edit, can run alongside any T*b stream after T3b lands.
+
+---
+
+### T12 — Post-implementation re-measurement (DoD validation)
+
+- **Owner:** Talon
+- **Subject:** Re-execute D8 protocol against the post-cutover boot path for both Evelynn and Sona; append "Post-implementation results" section to `assessments/2026-04-27-coordinator-boot-baseline.md` with min/median/max input tokens + wall-clock; compare against pre-project baseline AND the target documented in T1; emit PASS / FAIL verdict against project DoD.
+- **Files:** `assessments/2026-04-27-coordinator-boot-baseline.md` (modified — append-only).
+- **DoD:** Post-impl section committed; verdict line states PASS or FAIL against the T1-documented target. On FAIL, opens follow-up plan; on PASS, project moves to `completed/` (Orianna handles).
+- **Dependencies:** T1 (baseline reference), T9 (boot chain swapped), T7b (annotation migration done), T8b (hooks live).
+- **Complexity:** moderate (re-measurement choreography + comparison reporting).
+- **`parallel_slice_candidate: wait-bound`** — duration dominated by 3-run re-measurement on each of two coordinators; cannot usefully parallelise the runs themselves (boot is the metric).
+
+---
+
+### Dependency map (compact)
+
+```
+T1 ──┬── T2a ── T2b ──┬── T3a ── T3b ──┬── T4a ── T4b ──┬── T5a ── T5b ──┐
+     │                │                │                │                │
+     │                │                ├── T6a ── T6b ──┤                │
+     │                │                ├── T7a ── T7b ──┤                │
+     │                │                ├── T10a ── T10b ┤                │
+     │                │                └── T11          │                │
+     │                │                                 ├── T8a ── T8b ──┤
+     │                │                                                  │
+     │                                                                   ├── T9 ── T12
+     │                                                                   │
+     └───────────────────────────────────────────────────────────────────┘
+```
+
+**Critical path:** T1 → T2a → T2b → T3a → T3b → T5a → T5b → T9 → T12. Eight sequential gates plus T1.
+
+---
 
 ## Orianna approval
 
