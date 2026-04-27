@@ -3,7 +3,7 @@ slug: adr-1-build-progress-bar
 title: "ADR-1 — Live build progress bar (factory S3 → studio v3 UI)"
 project: bring-demo-studio-live-e2e-v1
 concern: work
-status: proposed
+status: approved
 owner: swain
 priority: P1
 tier: standard
@@ -354,3 +354,10 @@ All seven OQs resolved by Duong via hands-off autodecide on 2026-04-27. Audit tr
 ### Scope-boundary clarification (added 2026-04-27, team-lead directive)
 
 - **Trigger-tool reconciliation stays in ADR-5 (sanity sweep), NOT pulled into ADR-1.** ADR-1 remains UI-only: it consumes a `buildId` from the session doc and renders progress, regardless of whether the build was started by an agent `trigger_factory` tool call (today's behaviour) or a user button click against `POST /session/{id}/build` (project DoD target). See §Out of scope.
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** All three gates pass on this third attempt: QA-plan frontmatter (`qa_co_author: lulu` present), QA-plan body (four canonical sub-headings — Acceptance criteria / Happy path / Failure modes / QA artifacts expected — all present), and §UX Spec linter. Plan has clear owner (Swain), all seven OQs resolved 2026-04-27, tests_required satisfied by T6 (xfail integration test) + T7 (unit tests). Trigger-surface scope explicitly confined to ADR-5. No overengineering smells: D1 reuses existing transport, D5 commits to zero factory changes, OQ5 defers SSE polling fallback to v2.
