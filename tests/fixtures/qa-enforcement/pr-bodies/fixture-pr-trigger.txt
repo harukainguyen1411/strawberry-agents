@@ -1,0 +1,2 @@
+This file exists solely to give the fixture PR a non-empty diff.
+It is not a test artifact — the PR body is the test artifact.
