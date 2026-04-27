@@ -1,0 +1,77 @@
+---
+task: T.QA.16
+date: 2026-04-27
+satisfies: ADR T-QA3 (breakdown-qa-tasks linter self-loop)
+plan: plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+linter: scripts/hooks/pre-commit-breakdown-qa-tasks.sh
+---
+
+# T.QA.16 — Self-loop: breakdown-qa-tasks linter vs. this ADR's §Breakdown
+
+## Commands run
+
+### 1. Accept case: STRAWBERRY_AGENT=aphelios, ### QA Tasks present in ADR
+
+```
+$ cd /private/tmp/qa-enforcement-phase-a
+$ STRAWBERRY_AGENT=aphelios bash scripts/hooks/pre-commit-breakdown-qa-tasks.sh \
+    --fixture-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md \
+    --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+```
+
+**Exit code:** 0
+
+**Stdout/stderr:** (none — clean pass)
+
+### 2. Reject case: STRAWBERRY_AGENT=aphelios, ### QA Tasks removed from copy
+
+Copy prepared: strip all `### QA Tasks` subsections from the ADR (both in §Tasks and §Breakdown).
+Confirmed zero `### QA Tasks` heading lines remain in the stripped copy.
+
+```
+$ STRAWBERRY_AGENT=aphelios bash scripts/hooks/pre-commit-breakdown-qa-tasks.sh \
+    --fixture-path /tmp/adr-no-qa-tasks.md \
+    --staged-path plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+```
+
+**Exit code:** 1
+
+**Stdout/stderr:**
+```
+[pre-commit-breakdown-qa-tasks] plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md: breakdown agent "aphelios" committed a ## Tasks section without a ### QA Tasks subsection.
+[pre-commit-breakdown-qa-tasks] See .claude/agents/aphelios.md Hard Rules and ADR D3:
+[pre-commit-breakdown-qa-tasks]   plans/approved/personal/2026-04-27-qa-enforcement-and-breakdown-discipline.md
+```
+
+## Additional fixture verification (T.QA.1 suite)
+
+```
+# fixture-a: aphelios identity, ## Tasks present, no ### QA Tasks → reject
+$ STRAWBERRY_AGENT=aphelios bash scripts/hooks/pre-commit-breakdown-qa-tasks.sh \
+    --fixture-path tests/fixtures/qa-enforcement/breakdowns/a-aphelios-tasks-no-qa-tasks.md \
+    --staged-path plans/proposed/personal/test.md
+Exit code: 1  ✓
+
+# fixture-c: aphelios identity, ## Tasks present, ### QA Tasks with task line → accept
+$ STRAWBERRY_AGENT=aphelios bash scripts/hooks/pre-commit-breakdown-qa-tasks.sh \
+    --fixture-path tests/fixtures/qa-enforcement/breakdowns/c-aphelios-tasks-with-qa-tasks.md \
+    --staged-path plans/proposed/personal/test.md
+Exit code: 0  ✓
+
+# fixture-d: evelynn identity, ## Tasks present, no ### QA Tasks → accept (non-breakdown identity)
+$ STRAWBERRY_AGENT=evelynn bash scripts/hooks/pre-commit-breakdown-qa-tasks.sh \
+    --fixture-path tests/fixtures/qa-enforcement/breakdowns/d-evelynn-tasks-no-qa-tasks.md \
+    --staged-path plans/proposed/personal/test.md
+Exit code: 0  ✓
+```
+
+## ADR T-QA3 status
+
+ADR T-QA3 stated: "Verify the new breakdown-qa-tasks linter rejects an Aphelios commit that adds
+`## Tasks` but no `### QA Tasks`."
+
+Both self-loop tests confirm:
+- accept case (exit 0): `STRAWBERRY_AGENT=aphelios` + `### QA Tasks` present
+- reject case (exit 1): `STRAWBERRY_AGENT=aphelios` + `### QA Tasks` removed
+
+ADR T-QA3 is satisfied.
