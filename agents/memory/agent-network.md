@@ -218,11 +218,13 @@ Per plan §6.5 (`plans/approved/personal/2026-04-21-coordinator-decision-feedbac
 - To search decisions by axis or keyword: delegate to Skarner; Skarner greps `log/` and returns file paths + excerpts.
 - Subagents MUST NOT eagerly load another coordinator's `decisions/` tree.
 
-### Final-message rule (applies to all background subagents)
+### Final-message rule (applies to one-shot bg subagents only)
 
-Background subagents run via the Agent tool with `run_in_background: true`. The dispatching parent session **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
+Background one-shot subagents run via the Agent tool with `run_in_background: true` and no `team_name`. The dispatching parent session **only sees your final message as the task result**. Anything you write or output in earlier turns is invisible to the parent.
 
-Therefore, before invoking `/end-subagent-session`:
+**This rule does NOT apply to teammates.** If you were dispatched as a teammate (Agent dispatch included `team_name` + `name`), your `<teammate-message>` blocks reach the lead during your lifetime — the lead sees your intermediate output. The final-message constraint is a bg-one-shot artifact.
+
+For one-shot bg subagents, before invoking `/end-subagent-session`:
 
 - Restate your complete deliverable in your **final message** — full findings, commit SHAs, file paths, recommendations, gating questions, whatever the dispatcher needs.
 - Do not close with "report delivered above" or "see learnings file" as the final content. The parent has no "above" and will not read your learnings file.
