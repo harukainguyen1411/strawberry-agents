@@ -844,7 +844,7 @@ None in v1. The system is additive:
 
 No architectural component or interface changes. No new universal invariant added to CLAUDE.md (the trigger stanza rides via shared-rules include, not via a rule-number entry). No existing rule modified.
 
-If the feedback system becomes a first-class named component in the agent-system story, a follow-up ADR adds it to `architecture/archive/pre-network-v1/agent-system.md` and creates `architecture/feedback-system.md`. Deferred until volume justifies. <!-- orianna: ok -->
+If the feedback system becomes a first-class named component in the agent-system story, a follow-up ADR adds it to `architecture/agent-network-v1/agents.md` <!-- TODO: re-target after W2 successor doc confirmed; pre-W4 sweep text named the live architecture/agent-system.md, now archived --> and creates `architecture/feedback-system.md`. Deferred until volume justifies. <!-- orianna: ok -->
 
 ## Orianna approval
 
