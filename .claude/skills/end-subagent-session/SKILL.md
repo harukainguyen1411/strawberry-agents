@@ -62,6 +62,20 @@ Only if the session produced a **generalizable lesson** — something a future y
 
 Bar is high. A one-line "completed X" is not a learning. If the session was routine execution with no surprises, skip.
 
+## Step 4b — DB write for learning row (CONDITIONAL)
+
+If Step 4 wrote a learning file, also write a learnings row to the state DB:
+
+```bash
+bash scripts/state/db-write-learning.sh \
+  "${STRAWBERRY_STATE_DB:-$HOME/.strawberry-state/state.db}" \
+  "<agent>" "<coordinator>" "<YYYY-MM-DD>" "<topic-slug>" \
+  "agents/<agent>/learnings/<YYYY-MM-DD>-<topic>.md" \
+  "<topic-one-liner>"
+```
+
+Non-fatal: if the script fails or the DB is unreachable, log the warning and continue. Markdown file is source of truth.
+
 ## Step 5 — Commit + push (CONDITIONAL)
 
 Only if steps 2-4 staged anything.

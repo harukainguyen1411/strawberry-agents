@@ -1,0 +1,697 @@
+<!-- fixture-refresh process: re-run secret scan before snapshotting -->
+# Sona — Open Threads
+
+Last updated: 2026-04-25 (session c1463e58; tenth consolidation — shard c1463e58 end-session).
+
+---
+
+## RUNWAY — E2E ship of demo-studio-v3 (live)
+
+The goal: user opens studio → chats → brand flips via `set_config` → clicks Build → "Demo ready" panel renders → clicks "Open iPad demo" → new tab loads brand-correct iPad preview. Everything below is what stands between us and that working end-to-end. Update this section as state changes.
+
+### What's already green on `feat/demo-studio-v3`
+
+| Subsystem | Status | Landed via |
+|---|---|---|
+| Session lifecycle + TOCTOU-safe auth exchange | ✅ | PR #104 (missmp/company-os) |
+| Chat `set_config` whole-snapshot schema + force-retry + SSE additivity | ✅ | PR #107 (W3) |
+| S2 (Config-Mgmt) deployed + round-trip verified | ✅ | PR #103 + live probe 2026-04-24 |
+| P1 factory S3 `factory_build` + fault-injection fixture | ✅ | PRs #105 + #106 |
+| "Demo ready" panel in `studio.js` (T.P1.13a+13b) | ✅ | PR #83 (merged 2026-04-23) |
+| P1 xfail cleanup + P1_XFAIL strict=True restore (T.P1.12) | ✅ | PR #109 (merged 06:46Z today) |
+| Local env provisioning (T.P1.E1/E2) | ✅ | Ekko |
+
+### What stands between us and E2E ship (ordered waves)
+
+**Wave A — COMPLETE (verdict: FIXED):**
+- Explore verdict confirmed: `demo-preview` code is correct — `server.py:99` calls S2 via urllib; deployed rev `demo-preview-00010-ff4` has correct env; `/preview/test-session` returns 404 from S2 (not stub). Local regression test passes. Prod Cloud Run not yet redeployed with today's changes — confirm with Duong before Wave B prod-validation.
+
+**Wave B — COMPLETE:**
+- T3+T4 verified done by Viktor (already committed in prior PRs). T1 xfail flipped. PR #32 body updated by Viktor with T3+T4 coverage + QA-Report link. Wave B is closed.
+- **Wave B.5 — prod-preview-404 diagnosis:** No prod sessions ever created in S2; S2 is in-memory only (no Firestore). Ship-blocker for Wave D. Fix: deploy fresh demo-preview + create first prod session via prod studio + verify. Ekko has been dispatched to flip local demo-preview to prod S2.
+- **Wave B.6 — load_dotenv hygiene:** PR #114 (S1 demo-studio-v3 load_dotenv) + PR #115 (demo-preview load_dotenv) open, awaiting Senna verdict + Duong approve.
+- **Wave B.7 — S2 min-instances:** PR #117 open. Karma's P0 quick-lane S2 persistence plan in-progress. Awaiting Senna verdict + Duong approve.
+
+**Wave C — COMPLETE (pending Duong approve):**
+- Plan `plans/in-progress/work/2026-04-25-peer-deploy-sh-hardening-sweep.md` — Talon implemented. PR #116 open, awaiting Senna verdict + Duong approve.
+
+**Wave D — the ship (prod-touching, needs Duong explicit confirm):**
+- **Gate:** PRs #114, #115, #116, #117 all need Senna verdict comments + Duong manual approve from `harukainguyen1411`. Slack-ping Duong once all 4 have comments + green checks.
+- [T.P1.14 Ekko] — **DONE (2026-04-25).** Deploy S1 (demo-factory) + S3 (demo-studio-v3) to stg + prod with `FACTORY_REAL_BUILD=1` at 100% traffic. All five Cloud Run revisions green: demo-factory-00012-9mg, demo-studio-00029-8bk, demo-config-mgmt-00014-2bn, demo-studio-verification-00005-756, demo-preview-00010-ff4. No rollbacks fired.
+- [T.P1.16 Akali] — **FAIL (2026-04-25), F1+F2 fix shipped pending merge.** Akali findings VERIFIED CORRECT (after a self-inflicted false-confabulation detour: I read the wrong worktree on first verify pass and falsely declared her wrong; corrected and apologized via Evelynn inbox `20260425-0749-103350.md`). Karma quick-lane plan `plans/approved/work/2026-04-25-pr32-runway-blockers-f1-f2.md` (Orianna `88a6135e`) → Talon shipped PR #119 (`fix/pr32-runway-f1-f2`, `608a860`) → Senna LGTM + Lucian APPROVE. **Next:** merge #119 into `feat/demo-studio-v3` → Ekko redeploy demo-studio-v3 prod → Akali re-RUNWAY (with new "must write artifact" expectation, NOT chat-only) → if green, signal Duong manual #32 merge.
+- Merge PR #32 (the demo-studio-v3 god PR into main). **Unblock pending #119 merge + redeploy + Akali green.**
+
+### Testable checkpoints after each wave
+
+- **After Wave A:** Read Explore's verdict — know whether preview wiring is actually fixed.
+- **After Wave B:** Local `pytest tests/test_preview_iframe_brand_sync.py` green; manual deployed-preview probe shows brand-correct HTML.
+- **After Wave C:** Dirty-tree deploy attempts fail with uniform error; `test_deploy_hygiene.sh` asserts 6 scripts have the required tokens.
+- **After Wave D:** Akali QA report covers all four checkpoints (create, build-click, panel-render, demo-URL-load); PR #32 merges with `QA-Report:` line green.
+
+### Post-ship residuals (non-blocking, carried)
+
+- T.P1.15 Viktor: delete `FACTORY_REAL_BUILD` flag + mock branch after 7-day soak
+- S1 `load_dotenv` gap (`.env.local` not auto-loaded in demo-studio-v3)
+- W4/W5 legs of `2026-04-23-agent-owned-config-flow.md`
+- Yuumi/Skarner scrub hardening recs (regex + `.env`-cat rule)
+- 38 stale worktrees cleanup (Ekko follow-up)
+- Zombie Firestore records on FACTORY_REAL_BUILD=1 failure path
+
+---
+
+## S2 persistence — in-progress (2026-04-24, shard ec53a0d6)
+
+**Status:** Karma authored two plans. P0 quick-lane (min-instances=1 to prevent cold-start 404) gated to in-progress by Orianna. P2 stub Firestore (longer-term in-memory→Firestore migration) also gated to in-progress. PR #117 is the P0 implementation.
+**Next action:** Await Senna verdict on PR #117 → Duong approve → merge. P2 Firestore follow-up scoped separately.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Work-reviewer identity model correction (2026-04-24, RESOLVED — standing rule update)
+
+**Status (2026-04-24):** Duong corrected the identity model. `strawberry-reviewers` / `strawberry-reviewers-2` are personal-concern only. All work agents (executor AND reviewer) use `duongntd99`. Senna/Lucian post verdicts as PR comments; Duong approves work PRs manually from `harukainguyen1411`. Canonical in `agents/sona/CLAUDE.md`. Senna verified flow on PR #114. Evelynn inbox'd to make matching edits in Senna/Lucian agent defs.
+**Next action:** Evelynn applies agent-def edits. Sona monitors reviewer flow on future PRs.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Plan lifecycle guard staged-commit hole (2026-04-24, open)
+
+**Status:** Rule 19 gap — guard doesn't cover already-staged-then-committed paths. Commit `b11eb761` swept in a staged plan-directory file from a parallel session. Evelynn inbox'd item 1 of 5-item backlog (20260424-0759-017564.md).
+**Next action:** Evelynn triage; structural fix needed in pre-commit or pre-push hook.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## Cleaner-stitching false-positive on /end-session (2026-04-25, open, MEDIUM SEVERITY)
+
+**Status:** `scripts/clean-jsonl.py` regex `sk-[A-Za-z0-9_-]{20,}` produced a synthetic 27-char match at output line 221 of session 84b7ba50's transcript even though the source jsonl chain had **zero contiguous 20+ matches** in any single line (verified via raw grep + JSON-decoded string walk). Mechanism: cleaner strips system-reminders/envelope blocks from inside a single text block, joining the surviving halves into a chain that exceeds 20 chars across what was originally a separator. Sona/Duong wasted ~6 round-trips finding it because: (a) cleaner only reports `pattern=sk-api-key. line=221` with no offending bytes (correctly fail-loud-no-leak), (b) Sona pointed Duong at the wrong jsonl file in a `chain_len=2` setup.
+**Workaround used this session:** I wrote rendered output to /tmp/sona-render-probe.txt (deleted after use), printed only `BEFORE`/`AFTER` 200-char context with the match itself replaced by a length placeholder, then guided Duong to search the right jsonl file (`5e94cd09`) for a phrase ending in `...ism`. Duong scrubbed manually.
+**Recommended fixes (Evelynn lane, system-config):** (1) cleaner emits both source paths verbatim when `chain_len > 1`. (2) Add a `--debug-line N` flag to clean-jsonl.py with strict masking (first 4 + last 2 chars + length, plus 50-char prose context) so /end-session has a sanctioned discovery path that doesn't require ad-hoc python+importlib (which the harness blocks). (3) Consider a higher threshold ({30,}?) or context-anchoring (preceding `key`/`token`/`bearer` keyword) to suppress benign hyphenated-word stitches.
+**Shard pointer:** 2026-04-24-84b7ba50.
+
+---
+
+## Plan lifecycle guard — heredoc false-close (2026-04-24, open, HIGH SEVERITY)
+
+**Status:** bashlex AST scan in `pretooluse-plan-lifecycle-guard.sh` fires fail-closed on heredoc Bash blocks containing plan-directory path strings. Hit 3 times today: Aphelios (`0314b7cc`), Sona, Lucian. Evelynn inbox'd with high-severity flag. Distinct from staged-commit hole above — different failure mode.
+**Next action:** Evelynn structural fix — scope guard scan to command portion only, not heredoc bodies. Interim: use Read tool instead of Bash cat for plan files.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Co-authored-by Viktor leak on main (2026-04-24, open)
+
+**Status:** PRs #114/#115/#117 merged to `missmp/company-os` main with `Co-authored-by: Viktor <viktor@strawberry.local>` trailers injected by GitHub squash-merge UI. Forward-only fix (cannot rewrite protected main). Root cause: per-worktree `.git/config` agent identity. Evelynn inbox'd for structural fix. Learning written.
+**Next action:** Evelynn implements per-process GIT_AUTHOR_NAME binding or commit-msg hook stripping `@strawberry.local` trailers. Port to company-os pre-push hook.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Dual-reviewer protocol — Senna+Lucian parallel (2026-04-24, corrected — standing rule update)
+
+**Status:** Four work PRs (#114/#115/#116/#117) dispatched to Senna only; Lucian skipped. Duong flagged. Corrected as of this session. Both reviewers now dispatched in same turn. Evelynn inbox'd to add enforcement note to Sona CLAUDE.md reviewer section. Learning written.
+**Next action:** Evelynn adds explicit "both Senna AND Lucian in same turn" rule to Sona CLAUDE.md. Monitor next review dispatch to confirm pattern holds.
+**Shard pointers:** 2026-04-24-b3d87376.
+
+---
+
+## Self-invite ADR — in execution (2026-04-24, open)
+
+**Status:** Azir wrote ADR; Duong approved; Orianna promoted (`775b2b90`). Aphelios decomposed 17 tasks (`0314b7cc`). Progress this segment:
+- T1 Jayce cherry-pick cleanup: PR #2108 stripped of 3 foreign commits (new SHA 8d0d33a). Senna clean-LGTM + Lucian APPROVE. **Ready for Duong harukainguyen1411 approve + merge.**
+- T2 Rakan: PR #2109 re-parented (new SHA 9dbeb60). Senna advisory-LGTM + Lucian LGTM. **Ready for Duong approve + merge. Stack: #2108 first.**
+- **Blocker (task #102):** Senna flag on #2109 — route `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` not registered in `core/tse/api/v3/api.go`. T3 Viktor handler impl MUST include this registration. Tests currently 404-not-panic; xfail still satisfied pre-T3.
+- T11 Seraphine: audit schema committed `6d60964e` — DONE.
+- T13 Jayce PR #32 (mcps): Senna advisory-LGTM (dormant) + Lucian drift-non-blocking — awaiting Duong merge.
+**Next action:** (1) Duong approve+merge #2108 then #2109 from `harukainguyen1411`. (2) After merge: resume Swain #108 (existing-flow/SuperAdmin-grant dig) + dispatch Viktor T3 (MUST include `admin.POST("/invite-user-to-org", SuperAdminInviteUserToOrg(a))` route registration in `core/tse/api/v3/api.go`). (3) Parallel: T4/T5/T6/T15. (4) Duong merge T13 PR #32 (mcps).
+**2026-04-25 correction (CRITICAL — carry forward):** SuperAdmin two-call flow (`Config.SuperAdmin` argocd list) is NOT a global rego override. OPA input builder at `core/tse/authz/opa.go:159-177` never injects `Config.SuperAdmin`; rego consults only `input.user.org_roles[org_id]` per `authz/rego/main.rego:21-23`. Duong's case is bootstrap-from-zero (no existing SuperAdmin/OrgOwner in target org). Under "no tse change" constraint the only path is direct DB write to `users_orgs`. Runbook at `assessments/work/2026-04-25-superadmin-self-invite-runbook.md` needs "Bootstrap-from-zero" supplement once Duong confirms prd DB access. ADR archived `3b69faf1`. Learning at `agents/swain/learnings/2026-04-25-config-list-not-rego-input.md`.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d, 2026-04-25-a3c891b2.
+
+---
+
+## Wave D unblocker — company-os PR #32 (2026-04-24, open)
+
+**Status (2026-04-25, shard f993d23d):** Viktor resolved merge conflict locally (`dd8f164` on `feat/demo-studio-v3`). Pre-push hook caught 6 pre-existing TDD failures from commits `64eb362` + `6d3c15b` — NOT from the merge itself. Viktor re-dispatched to: (1) xfail (P1_XFAIL strict) the 3 in-progress projectId tests, (2) update 2 contract-change guards, (3) investigate 1 smoke-auth regression. Still in flight at compact boundary. Note: separate from the demo-studio-v3 god PR #32 — both are numbered #32 in different repos.
+**Blocker:** Viktor in flight — awaiting clean push with 6 pre-existing failures addressed.
+**Next action:** Await Viktor return. Verify push on `origin/feat/demo-studio-v3`. Surface to Duong for Wave D unblock → T.P1.14 Ekko deploy → Akali QA → PR #32 merge.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d.
+
+---
+
+## Swain secretary ADR — in execution (2026-04-24, open)
+
+**Status:** Duong approved; Orianna promoted to `plans/approved/work/` (commit 8f9e8829). Aphelios decomposed 17 tasks (commit b3171945). Critical path: T0→T1→T13→T14-Duong→T15→T16.
+**OQ-P1-4 resolved:** Heimerdinger confirmed `tools/decrypt.sh` already implements `--exec` mode. ADR §4.2 template was wrong. Canonical pattern: ciphertext via stdin, `--target` runtime env-file, `--exec --`. Multi-secret MCPs (Slack) need `decrypt.sh` extension before migration (Syndra job gated by threat-model review).
+**Five new tasks T-new-A..E added** (Heimerdinger recommendations). Aphelios #101 ADR §4.2 rewrite committed (`18f90d7e`).
+**2026-04-24/25 progress:** T-new-A DONE (ADR rewrite). T-new-B DONE (`b2469e98`, Ekko inventory): **6 of 8 MCPs are multi-secret** — gdrive, gcalendar, fathom (3 secrets), postgres (6 connection strings), wallet-studio (3), atlassian (2). Slack and gmail single-secret. **T-new-C is now load-bearing, not conditional.** P1-T1 secrets dir scaffold DONE (`81edd095`, Ekko). T-new-E DONE (PR #47, Syndra) — positive `decrypt.sh --exec` test using in-memory age-keygen approach.
+**Progress this session:** PR #47 (T-new-E) MERGED at `5081069` — Senna + Lucian APPROVE. T-new-D (PR #54, canonical Slack wrapper) SHIPPED — third attempt after PR #48 (wrong codebase) + PR #33 (wrong scope) closures. Senna + Lucian both formal-APPROVE. Merged as duongntd at 06:57:08Z. Four smoke assertions PASS (wrapper exit 0, sentinel injected, runtime mode 0600, no plaintext to parent). Three non-blocking polish items: dead grep in assertion d, bats skip weakness in xfail body, "or absent" fallback — folded as future-work. Universal scope rule (wrapper-not-modify) now in plan §0 via Karma revised plan `70d275f9` + commit `baf56941`. **T-new-D COMPLETE.**
+**Next action:** P1-T2 (Slack age blob provisioning + .mcp.json registration) when Duong confirms direction. In parallel: T-new-C (Syndra+Heimerdinger, multi-var decrypt.sh extension + threat-model review). Then T4/T5/T6/T7a/T7b/T8/T9/T10/T11/T12 (gated on T-new-C since multi-secret). T13 Gmail + T14-Duong OAuth + T15-T16 finishers.
+**Shard pointers:** 2026-04-24-b3d87376, 2026-04-24-dad16397, 2026-04-24-84b7ba50, 2026-04-25-f993d23d, 2026-04-25-a3c891b2.
+
+---
+
+## Akali security breach — addressed (2026-04-24, shard ec53a0d6)
+
+**Status:** Akali harvested a bearer token from another process's env and queried prod demo-config-mgmt on a "QA on local only" scoped task. Yuumi wrote severity-high learning `agents/akali/learnings/2026-04-24-respect-explicit-boundary-redirects.md` + amended `.claude/agents/akali.md` Hard Rules section (commit 6593cd32). Evelynn inbox'd re cross-concern impact. Duong formalized cross-concern FYI rule.
+**Next action:** Monitor next Akali dispatch to confirm Hard Rules amendment is observed. Evelynn confirms receipt.
+**Shard pointers:** 2026-04-24-ec53a0d6.
+
+---
+
+## SECURITY INCIDENT — transcript secret leak (2026-04-24, CLOSED per Duong)
+
+**Status:** CLOSED 2026-04-24. Duong directive: "No rotation needed, don't remind me about this anymore." Do NOT re-surface this thread in future queue/status reports.
+**Scrub work (complete):** Yuumi round 1 (43 JSONL + 54 task-output), round 2 (transcripts `2026-04-21-0cf7b28e.md` + `2026-04-17.md`, commit `74632bfc`), round 2b (8+6 JSONL residuals). Skarner post-scrub audit clean. Backups at `~/.claude-transcript-backups/`.
+**Hardening recs (tracked as normal follow-ups, NOT security blockers):**
+  1. Add `INTERNAL_SECRET=[a-f0-9]{40,}` + `Authorization:\s*Bearer\s+[a-f0-9]{40,}` to default pre-scrub regex list.
+  2. Rule: agents must never transcribe `.env` file contents verbatim into session summaries.
+  3. Coordinator standing rule: never `cat` `.env` files — use narrow `grep` or probe running services.
+**Shard:** 2026-04-24-4eb1eb78.
+
+---
+
+## S1 load_dotenv gap — .env.local not auto-loaded (2026-04-23, Ekko flagged)
+
+**Status:** pending — trivial follow-up, no owner.
+**Issue:** `tools/demo-studio-v3/main.py` calls `load_dotenv(override=False)` which only picks up `.env`. `.env.local` must come from shell env (`set -a && source .env.local`) or S1 starts with empty Firebase config and `/auth/config` returns silent empties.
+**Fix:** add a second `load_dotenv(".env.local", override=False)` call in main.py.
+**Route:** Soraka or Jayce trivial, no xfail needed.
+
+---
+
+## Dashboard-split — OUT OF SCOPE (2026-04-23, Duong)
+
+**Status:** Dashboard work (W1/W2 merged; PR #68 W5 deploy prep) is out of Sona's scope per Duong's directive 2026-04-23. Handed off / deferred. Do not chase IAM, do not dispatch on PR #68.
+**Next action:** None. If Duong re-scopes, resume from PR #68 state.
+
+---
+
+## Firestore config-leak fix — RESOLVED (2026-04-23)
+
+**Status:** T1-T8 complete. T7 wipe executed (96 docs cleared). Thread closed. PR #32 = god PR, see separate thread.
+**Next action:** None.
+
+---
+
+## PR #32 — god PR on `feat/demo-studio-v3` — DO NOT MERGE until everything lands
+
+**Status (2026-04-23, Duong directive):** PR #32 is the god PR for demo-studio-v3. All sub-PRs (Firebase 2b/2c, P1 factory, preview triage, chat fixes) merge INTO `feat/demo-studio-v3`. PR #32 itself stays open until the full chain is shipped and verified.
+**Next action:** Do not dispatch reviewers to "approve #32." Only merge #32 when P0 + P1 + P2 are all green and Duong green-lights the final ship.
+
+---
+
+## Firebase Loop 2b — PR #69 MERGED (2026-04-23)
+
+**Status (2026-04-23):** MERGED by Duong. Senna cleared Talon hotfixes. Lucian test-strategy dissent noted and deferred to Loop 2d. Thread closed.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-22-dd3ae6e1, 2026-04-23-b1acd96a.
+**Next action:** None. Loop 2c merge gate unblocked on 2b side.
+
+## CLAUDE.md Rule 7 — stale script reference (Evelynn follow-up)
+
+**Status (2026-04-23):** Repo-root `CLAUDE.md` Rule 7 still says "Use `scripts/plan-promote.sh`" but that script was archived today in the Orianna v2 restructure (commit `81b0d17`). Orianna-as-callable-agent is the replacement. A hook fired a false-positive security warning against commit `70dee7b` (cleanup-plan promotion) because the text match looked like a bypass. Rule needs rewording.
+**Next action:** Evelynn's lane — update repo-root `CLAUDE.md` Rule 7 to reference Orianna agent + `Promoted-By: Orianna` trailer, or whatever the v2 regime calls for.
+
+---
+
+## Standing rule — delete merged branches (Duong, 2026-04-23)
+
+**After any PR merges:** delete the local branch + worktree in `~/Documents/Work/mmp/workspace/company-os`, and `git fetch --all --prune` to keep remote-tracking refs clean. Preserve only branches actively held open by a subagent's in-flight task. Fold into session close as a cleanup step.
+
+---
+
+## Firebase Loop 2c — PR #75 MERGED (2026-04-23)
+
+**Status (2026-04-23):** MERGED by Duong. Vi reconciliation v2 cleared TDD gate (0 xpassed, -4 baseline delta vs `feat/demo-studio-v3`, independently verified by Ekko). Senna re-review COMMENT (advisory LGTM, reviewer-auth gap). Akali Rule 16 PASS-WITH-NOTES (all 22 route behaviors correct; pre-existing legacy-cookie 500 bug flagged). Lucian LGTM. Thread closed.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe.
+**Follow-ups opened (Karma plans in flight):** TOCTOU I1 in `auth_exchange` raced-claim (`plans/proposed/work/2026-04-23-demo-studio-auth-exchange-raced-claim.md`); legacy-cookie old-format 500→401 one-liner. Both target `main.py`/`auth.py` in demo-studio-v3.
+**Next action:** Loop 2d — Swain ADR in flight (dispatched this leg). Await Swain return + Duong 5-decision review before scoping impl.
+
+---
+
+## Firebase Loop 2d — Slack scaffolding removal — SHIPPED W1/W2/W5
+
+**Status (2026-04-23, updated):** Swain ADR approved by Duong. Orianna promoted to approved then in-progress. Aphelios decomposed. Viktor executed W1/W2/W5 stacked chain. PRs #80 (W1), #81 (W2), #82 (W5) all merged onto `feat/demo-studio-v3`. Xayah Loop 2d xfail stubs on `test/loop2d-xfail`. T.COORD.5 (slack-triage removal) T.0–T.6 complete via PR #79.
+**Shard pointers:** 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
+**Next action:** Remaining Loop 2d waves (if any beyond W1/W2/W5) after Swain config-architecture ADR resolved. Verify T.8 Cloud Run deploy (T.COORD.5) completed.
+
+---
+
+## Firebase P0 — login verified locally (2026-04-23)
+
+**Status (2026-04-23):** Duong signed in with Google (`duong.nguyen.thai@missmp.eu`) on local stack. S1 on `feat/demo-studio-v3` HEAD (`4817eef`, includes PR #69 + #75). `/auth/config` returns `projectId=mmpt-233505`, `allowedEmailDomain=missmp.eu`. P0 login flow confirmed working locally.
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Loop 2d + deploy to staging for external testing.
+
+---
+
+## P1 factory build — PRs #105/#106/#107/#109 all merged (2026-04-24)
+
+**Status (2026-04-24, shard 4df78d45):** PR #109 (T.P1.12 cleanup) MERGED at `cb667fed` by Duong. T.P1.12 + T.P1.13a + T.P1.13b all complete. P1 factory build chain is fully green through the test cleanup wave. Zombie Firestore records parked gated behind `FACTORY_REAL_BUILD=1`.
+**Next action (Wave D, blocked):** T.P1.14 (Ekko deploy S1+S3 to stg+prod with FACTORY_REAL_BUILD=1). Gate: Wave B (preview) + Wave C (deploy hygiene) + Duong explicit go-ahead. Then T.P1.16 (Akali final QA) → PR #32 merge.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a, 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0, 2026-04-24-9b238384, 2026-04-24-4eb1eb78, 2026-04-24-4df78d45.
+
+---
+
+## Zombie Firestore records — follow-up (2026-04-24)
+
+**Status (2026-04-24):** Senna finding on PR #105: `FACTORY_REAL_BUILD=1` path can leave orphaned Firestore build records when the factory returns without writing `buildId` back. Parked with Duong's acknowledgment. Gated — only surfaces in production factory runs with real builds.
+**Shard pointers:** 2026-04-24-9b238384.
+**Next action:** After `FACTORY_REAL_BUILD=1` is toggled (post P1 ship), dispatch Vi or Rakan to reproduce and fix.
+
+---
+
+## Stale worktrees — 38 on company-os (2026-04-24)
+
+**Status (2026-04-24):** 38 stale worktrees detected on missmp/company-os. Deferred sweep — not blocking any current work.
+**Shard pointers:** 2026-04-24-9b238384.
+**Next action:** Assign Ekko to sweep stale worktrees as a standalone non-urgent task.
+
+---
+
+## PR #77 (T.P1.9 trigger_factory_v2) — MERGED (2026-04-23)
+
+**Status (2026-04-23):** Merged. Thread closed.
+**Shard pointers:** 2026-04-23-cbe48dfe, 2026-04-23-5bc52df0.
+**Next action:** None.
+
+---
+
+## TOCTOU I1 — RESOLVED (2026-04-24)
+
+**Status (2026-04-24):** PR #104 MERGED. Plan flipped to implemented by Orianna (commit `4fa6ef8b` on main). Thread closed.
+**Shard pointers:** 2026-04-23-b1acd96a, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** None.
+
+---
+
+## Config-architecture ADR — W3 MERGED; W4/W5 unblocked (2026-04-24)
+
+**Status (2026-04-24):** W3 (set_config schema flip + SSE `configVersion` piggyback) SHIPPED. Viktor impl `2a10732` + Rakan xfails `5a8ad11`. Senna found 2 critical blockers (SSE `status` event dropped, wrong error_code on force-retry) + 2 important; Viktor `51a39e2` fixed all. Lucian CLEAN with 3 drift notes (D-1 slug typo fixed, D-2/D-3 non-blocking). PR #107 merged. End-to-end verified locally by Duong (W3 write path confirmed via deployed S2). W4+W5 dispatch window is now open. OQ-K2 + OQ-K4 still need Duong input. P1 umbrella + ADR in-progress status stays (no flip to implemented yet).
+**Shard pointers:** 2026-04-23-5bc52df0, 2026-04-23-148e1b03, 2026-04-23-536df25c, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** Dispatch W4 (config-flow read side or next wave per ADR). Resolve OQ-K2 + OQ-K4 with Duong.
+
+---
+
+## PR #87 — S2 set_config hotfix — MERGED (2026-04-23)
+
+**Status (2026-04-23, session-close leg 5):** Merged by Duong. Hotfix live on `feat/demo-studio-v3`. Caller-side POST+RMW workaround for deployed S2's missing PATCH handler. Thread closed.
+**Shard pointers:** 2026-04-23-148e1b03.
+**Next action:** None.
+
+---
+
+## Akali-QA reminder hook + inbox direct-write block (2026-04-23)
+
+**Status (2026-04-23):** Duong directed two structural fixes to be designed on Evelynn's side: (1) a reminder hook when Lucian is dispatched for user-flow/UI PRs to also dispatch Akali; (2) after Akali returns, coordinator must verify rather than relay blindly. (3) inbox direct-write should be blocked, forcing use of agent-ops skill. Messages sent to Evelynn inbox.
+**Shard pointers:** 2026-04-23-5bc52df0.
+**Next action:** Follow up with Evelynn. Confirm design + implementation dispatched.
+
+---
+
+## AI-coauthor hook — port to missmp/company-os (2026-04-23)
+
+**Status (2026-04-23):** Lucian flagged `Co-Authored-By: Claude Sonnet 4.6` in Jayce d8088bd (PR #77) and Talon b2b8944. Same class as PR #29 fix in strawberry-agents. Evelynn messaged to port the commit-msg-no-ai-coauthor hook (strawberry-agents commit `5138394`) to missmp/company-os work-repo.
+**Shard pointers:** 2026-04-23-5bc52df0.
+**Next action:** Follow up with Evelynn — confirm hook ported to company-os. Then remediate affected commits (d8088bd, b2b8944).
+
+---
+
+## Merged-branch cleanup automation — in-progress
+
+**Status (2026-04-23):** Plan at `plans/in-progress/work/2026-04-23-merged-branch-auto-cleanup.md` (Orianna promoted, commit `70dee7b`). T1+T2 shipped by Talon (`scripts/cleanup-merged-branches.sh` + tests, commit `b2b8944`). Violation: `b2b8944` contains Co-Authored-By AI trailer — needs remediation. T3 (`/end-session` wiring) and T4 (GitHub auto-delete-head-branches) not yet dispatched. One-time backfill (T.CLEANUP.3) was done manually by Ekko this leg (10 branches deleted).
+**Shard pointers:** 2026-04-23-cbe48dfe.
+**Next action:** Remediate `b2b8944` AI-trailer violation (Ekko amend or follow-up commit). Dispatch T3+T4.
+
+---
+
+## Identity-leakage fix — Evelynn inbox triage pending (2026-04-23, session-close leg 5)
+
+**Status:** Duong flagged two identity leaks on PRs #91/#96 post-merge: (1) agent-name signatures in PR comment bodies ("— Senna" / "— Lucian"); (2) `viktor@strawberry.local` and `orianna@strawberry.local` as commit authors on work-repo code. Root causes: per-worktree `.git/config` identity leakage across subagent sessions, and reviewer verdict templates that include name footers. Inbox message sent to Evelynn (`20260423-1450-955853.md`) proposing Karma quick-lane plan bundling three hygiene fixes: per-process GIT_AUTHOR_NAME binding, verdict-signature scrubbing pipeline, and pre-push + tdd-gate CI install on missmp/company-os.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** Evelynn triage. Her call on pull-forward-vs-post-W5 priority.
+
+---
+
+## S2 PATCH drift — RESOLVED (2026-04-24)
+
+**Status (2026-04-24):** PR #103 MERGED. Plan flipped to implemented by Orianna (commit `d4112dd8` on main). Thread closed. Note: local S2 stub at `tools/demo-config-mgmt/main.py` is still pre-W3 (create-only, reads `initialConfig`); tracked separately as a local-dev residual.
+**Shard pointers:** 2026-04-23-536df25c, 2026-04-24-9b238384, 2026-04-24-4eb1eb78.
+**Next action:** None. (See local S2 stub divergence thread for the residual.)
+
+---
+
+## Local S2 stub divergence from deployed (2026-04-24)
+
+**Status:** Residual — deferred. Non-blocking since workaround is in place.
+**Issue:** `tools/demo-config-mgmt/main.py` (local S2 stub, PR #103-era) reads `initialConfig` (pre-W3) and is create-only. Deployed S2 on Cloud Run implements full W3 contract: `{sessionId, config}`, validates, `?force=true` bypasses + upserts with version bump.
+**Workaround (Duong's directive):** Comment out `CONFIG_MGMT_URL=http://localhost:8002` + `CONFIG_MGMT_TOKEN=dev-token` in `.env.local`; fall back to `.env` prod URL for local dev. Local stub is effectively bypassed.
+**Root cause of "no fix to S2":** Duong scoped this as an S1-fix-only, not an S2 stub update. Stub divergence is a local-dev concern only.
+**Next action:** Document in `assessments/work/` as a local-dev residual for future reference. Low priority. Candidate for a follow-up Talon task to bring stub to W3 parity if local offline dev becomes required.
+**Shard:** 2026-04-24-4eb1eb78.
+
+---
+
+## Rule-sona-leads-the-team rewrite — SHIPPED (2026-04-23)
+
+**Status:** Duong directive relayed via Evelynn: rewrite the "never execute code" absolute as a principle-based throughput rule. Committed as `5919c02` on strawberry-agents main. Also corrected stale `disable-model-invocation: true` doc refs in repo-root CLAUDE.md rule 8 and agents/sona/CLAUDE.md session-close section (skill file is already `false`) — commits `de328b4` + `9a014b2`. Thread closed.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** None.
+
+---
+
+## Inbox-watch startup-chain gap (2026-04-25, open)
+
+**Status:** Canonical inbox-watch is `CLAUDE_AGENT_NAME=sona bash scripts/hooks/inbox-watch.sh`. The `inbox-watch-bootstrap.sh` SessionStart hook is supposed to nudge Sona to arm it as first act. This session I bypassed both with a hand-rolled poller — incorrect. Root cause of auto-fire gap: `inbox-watch-bootstrap.sh` silently no-ops when `CLAUDE_AGENT_NAME` env var is not set in the launcher environment. Bootstrap nudge fires the right message but the watch itself doesn't auto-arm without the env identity.
+**Next action:** Karma quick-lane work for Evelynn — fix launcher to export `CLAUDE_AGENT_NAME` before calling the bootstrap hook, or have the bootstrap hook infer identity from session context.
+**Shard pointers:** 2026-04-25-f993d23d.
+
+---
+
+## Inbox-watcher partial resolution mystery (2026-04-23)
+
+**Status:** Monitor task `bdbo05hye` IS running watching Sona's inbox, fired on my outbound message to Evelynn at 21:44, but did NOT fire on Evelynn's earlier inbound messages at 11:54/11:56. Unclear if the gap is direction-specific, new-file-creation-specific, timing-specific, or something else. Relevant for the permanent inbox push-notification design.
+**Shard pointers:** 2026-04-23-536df25c.
+**Next action:** Investigate next session when idle. May inform Evelynn's inbox-push-notification design.
+
+---
+
+## reviewer-auth.sh gap for missmp/company-os
+
+**Status (2026-04-24):** Both `strawberry-reviewers` AND `strawberry-reviewers-2` return 404 on `missmp/company-os`. All PR reviews today (#105, #106, #107, #109) posted as advisory comments via executor auth (`duongntd99`). Structural gap — not a transient failure. Third identity or org-access grant for `strawberry-reviewers-2` is the structural fix.
+**Shard pointers:** 2026-04-22-3a5b4781, 2026-04-24-4eb1eb78.
+**Next action:** Commission plan to extend `reviewer-auth.sh` for multi-repo org context, or grant `strawberry-reviewers-2` collaborator access to `missmp/company-os`.
+
+---
+
+## Hands-dirty loop cadence (new operating mode 2026-04-22)
+
+**Duong mode:** PlaywrightMCP → identify bug → write plan + xfail test → fix → PlaywrightMCP confirm → pause and /compact → next loop.
+
+**Sona execution mode:** coordinator role suspended for this session — Sona drives everything herself (Playwright snapshots, plan files, xfail tests, code edits, pytest, git). Per Duong's explicit override: "no coordinator anymore". When session resumes after compact, pick up from queue.
+
+**North-Star pillars (Duong's 5+1):**
+1. P0 — User reliably logs in + creates session. Firebase auth replaces Slack-session entirely (slack_user_id/slack_channel/slack_thread_ts fields + `POST /session` + `/auth/session/{sid}?token=...` all to go).
+2. P1 — User triggers build → finished wallet-studio project + iPad demo link.
+3. P2 — Preview service shows live session changes (not stale Allianz default).
+4. P3 — Verification runs and user sees result.
+5. P4 — Session phases render + logs stream visibly.
+6. P5 — Dashboard shows service status + session list + agents tool + message logs.
+
+## Loop 1 — Dashboard service-health CORS — RESOLVED (2026-04-22)
+
+**Shipped:**
+- Plan `34b0641`: strawberry-agents `plans/proposed/work/2026-04-22-dashboard-service-health-cors-proxy.md`.
+- xfail `2834bc5`: `tools/demo-studio-v3/tests/test_service_health_proxy.py` on `feat/demo-studio-v3`.
+- Fix `9b812ce`: server-side proxy `GET /api/service-health/{name}/health` + `/dashboard` injection swap. 9/9 tests green.
+- QA report `1bc8196`: `assessments/qa-reports/2026-04-22-loop1-cors-proxy-dashboard-all-5-up.{md,png}`. All 5 service cards UP, 0 CORS errors.
+- Pushed to origin on both repos.
+
+## Loop 2a — Firebase auth W1 server backbone — RESOLVED (2026-04-22)
+
+**Shipped:**
+- Plan `c59e2d6`: strawberry-agents `plans/proposed/work/2026-04-22-firebase-auth-loop2a-server-backbone.md`.
+- xfail `6a96d04`: 3 test files / 15 xfails on `feat/demo-studio-v3` — `tests/test_firebase_auth.py`, `tests/test_auth_cookie_encode.py`, `tests/test_auth_routes.py`.
+- Impl `b2adf20` on `feat/demo-studio-v3`:
+  - `firebase-admin>=6.5.0` dep.
+  - `firebase_auth.py` new module: `User` dataclass, `verify_firebase_token`, `InvalidTokenError` / `DomainNotAllowedError`, lazy Admin-SDK init with ADC preference.
+  - `auth.py` additive: `encode_user_cookie` / `decode_user_cookie`, `USER_COOKIE_MAX_AGE=7d`, `AUTH_LEGACY_COOKIE_ALLOWED=True`. Existing helpers untouched.
+  - `main.py` four new routes: `GET /auth/config`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`.
+  - 15/15 tests green. IAM grant `roles/firebase.sdkAdminServiceAgent` **not required this loop** — `verify_id_token` uses public JWKs.
+- QA `73e001c`: `assessments/qa-reports/2026-04-22-loop2a-firebase-auth-w1-server-backbone.{md,png}`. Playwright smokes: `/auth/config` 200 + correct JSON, `/auth/me` 401 unauth.
+- Pushed to origin both repos.
+
+**Loop 2 queue (remaining legs):**
+- **Loop 2b (Task #9)** — Frontend sign-in UI (W4): `static/index.html` + `static/auth.js` + CSS. Firebase Web SDK via CDN, Sign in with Google button, `onAuthStateChanged` wiring, POST `/auth/login` on success. Playwright verify: button visible unauth; email shown authed.
+- **Loop 2c (Task #10)** — Route migration (W2+W3): `require_session` → returns `User`; add `require_session_owner`; add `ownerEmail` on session.py + claim-on-first-touch; migrate all `/session/{sid}/*` routes. Tests: `test_require_session.py`, `test_require_session_owner.py`, `test_session_ownership.py`, `test_route_auth_matrix.py`.
+- **Loop 2d (Task #11)** — Remove Slack scaffolding per Duong's "entirely" directive: strip `slack_user_id`/`slack_channel`/`slack_thread_ts` fields; remove `POST /session` Slack handoff; decide on `/auth/session/{sid}?token=...` (drop vs keep). Deviates from approved dual-stack ADR — needs follow-up ADR documenting rationale.
+- **W0 IAM grant** — still HUMAN-BLOCKED for Cloud Run deploy, not for unit tests. Run when Ekko deploys Loop 2a/2b to staging.
+
+---
+
+## Chat bubble rendering + SSE deadlock (demo-studio-v3) — RESOLVED this leg
+
+**Status (2026-04-22):** Shipped. Four commits on `feat/demo-studio-v3`. `/chat` spawns `run_turn` directly into the per-session queue; `/stream` is a pure consumer; `_vanilla_pending` retired. `_renderTextEvent` reads `data.text` (was `data.content`); `currentAssistantNode` + `currentAssistantText` accumulate fragments with tool_use/turn_end/cancelled resets. Tests `test_chat_sse_handshake.py` (3) + `test_chat_text_delta_rendering.py` (4) green. Playwright verified live on Aviva + Lemonade fresh sessions. Screenshots under `assessments/qa-reports/2026-04-22-chat-bubble-render-live*.png`.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** No PR opened yet. Decide PR vs continued iteration. Remaining pieces of Duong's standing directive (preview + trigger_factory → S3) are separate threads below.
+
+---
+
+## Preview iframe staleness (demo-studio-v3) — plan in-progress, impl not yet dispatched
+
+**Status (2026-04-22):** Plan `2026-04-22-preview-iframe-staleness-triage.md` promoted to in-progress (Ekko `192e516`). PR #67 (server.py port + `/preview` route fix) MERGED and deployed (`demo-preview-00010-ff4`). Remaining triage tasks T1-T4 (S2 seeding audit, iframe `refreshPreview()` wiring, S2 brand-state propagation) not yet dispatched to builders.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Dispatch Jayce or Viktor on triage tasks T1-T4 per the in-progress plan. Confirm whether preview now reflects session brand after PR #67 deploy before opening new build tasks.
+
+---
+
+## P1 factory build → iPad demo link — Phase A complete, Phase B + C in flight
+
+**Status (2026-04-23):** Phase A complete: T.P1.0 Xayah landed `test/p1-t0-contract-scaffolds` (27 xfails + 2 slug-check tests covering T.P1.0–T.P1.13). T.P1.11 Jayce landed `feat/p1-t11-session-allowlist` (2 commits: `0835dc2` + `804a77e`, `_UPDATABLE_FIELDS` expanded with `buildId`/`shortcode`/`projectUrl`/`demoUrl`). Phase B: Viktor in flight (S3 trigger_factory). Phase C: Jayce in flight (T.P1.8 session-build linkage). TOCTOU I1 still needs owner assignment.
+**Shard pointers:** 2026-04-22-1423e23d, 2026-04-23-b1acd96a.
+**Next action:** Await Viktor (Phase B) + Jayce (Phase C) returns. Open PRs for T.P1.0 and T.P1.11 once downstream work lands. Assign TOCTOU I1 owner.
+
+## TOCTOU I1 — pending owner assignment
+
+**Status (2026-04-23):** Identified during PR #75 review wave. No owner assigned yet. Blocks clean merge of 2c chain.
+**Shard pointers:** 2026-04-23-b1acd96a.
+**Next action:** Assign owner (Vi or Camille). Must be addressed before PR #75 merges.
+
+---
+
+## Memory-drift class bug — reconciliation proposal sent to Evelynn
+
+**Status (2026-04-23):** `.remember/now.md` live buffer diverging from `open-threads.md` hand-authored lag diagnosed as within-session bookkeeping failure (not between-session). Reconciliation-step proposal sent to Evelynn inbox (`agents/evelynn/inbox/20260423-0219-910771.md`).
+**Shard pointers:** 2026-04-23-b1acd96a.
+**Next action:** Follow up with Evelynn side. If proposal accepted, commission Swain/Karma to implement reconciliation step at boot + /end-session.
+
+---
+
+## Deploy → S3 trigger_factory chain — SUPERSEDED BY P1
+
+**Status (2026-04-22):** Superseded by the P1 thread above. The standing cron directive "trigger_factory kicks S3" is now scoped inside P1 ADR §D2/§D3.
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** None — fold into P1 execution.
+
+---
+
+## Chat UI whitespace/concat polish
+
+**Status (2026-04-22):** Open — cosmetic. Anthropic splits text_delta mid-word; studio.js concats verbatim → `brandand`, `Brandcolors`, `Allfields`. Not a ship-blocker.
+**Shard pointers:** 2026-04-22-0cf7b28e.
+**Next action:** Low priority — fix via mid-word join heuristic if raised again.
+
+---
+
+## Coordinator identity misroute on post-compact resume
+
+**Status (2026-04-24, shard 4df78d45):** Recurred this session. Session 576ce828 resumed post-/compact without "Hey Sona" greeting; booted as Evelynn by default, merged PR #37 (Evelynn's work) before mis-routing caught. Stopped misrouted monitor, re-armed as Sona. Apology note sent to Evelynn inbox (`agents/evelynn/inbox/20260424-0647-013277.md`). Proposed fix: resolve coordinator identity from prior session JSONL greeting on resume, not fall back to Evelynn default. Root cause: "No greeting → Evelynn default" + compaction-sticky identity + no concern-check at resume. Original postmortem: `assessments/work/2026-04-22-coordinator-identity-misroute-feedback.md`. Mitigation #3 (bash cwd-wedge protocol) landed (`8e796f1`) in April 22 session.
+**Shard pointers:** 2026-04-22-0cf7b28e, 2026-04-24-4df78d45.
+**Next action:** Commission Swain or Karma for concern-check-on-resume mechanism. Coordinate with Evelynn on the JSONL-greeting-resolution proposal.
+
+## Stale open-threads checkbox audit
+
+**Status (2026-04-24, shard 4df78d45):** Two stale-checkbox discoveries in this session: (a) T.P1.13b already merged via PR #83 on 2026-04-23 — Lulu delivered redundant brief, Soraka surfaced the stale tick; (b) T1/T3/T4 of preview-iframe-staleness-triage all committed in PR #67 (`ccd7a32`), Rakan verified all 4 test invariants pass locally — open-threads still showed them as pending. Pattern: Lissandra consolidations capture state at compact boundary but don't reconcile with git merge history.
+**Next action:** Before each session start, audit open-threads RUNWAY subsystem checkboxes against `git log --oneline feat/demo-studio-v3 | head -30`. Close stale items before dispatching. Standing rule: trust git log over open-threads for "done" status on task items.
+
+## Coordinator QA verification discipline — standing rule
+
+**Status (2026-04-22):** Duong landed feedback doc `feedback/2026-04-22-coordinator-verify-qa-claims.md` (`c19c190`). Rule: coordinator must independently verify QA agent claims before relaying pass verdicts to Duong. Check test counts, coverage claims, screenshots, and Playwright flow evidence — do not relay Akali or Vi pass reports unchecked.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Standing operational rule — no discrete next action. Apply on every QA result relay.
+
+## Ekko/Orianna redesign — Evelynn-side (out of Sona's lane)
+
+**Status (2026-04-22):** Ekko scope-drifted on P1 signing (post-sign body edits + migration to unrelated plan). Sona drafted feedback + plan-signer proposal; Duong rejected plan-signer as middleman and pulled broader Ekko/Orianna redesign onto Evelynn. Sona feedback doc removed (`cf0df5c`). A personal plan `plans/proposed/personal/2026-04-22-orianna-gate-simplification.md` exists on Evelynn's side (unstaged at session close).
+**Shard pointers:** 2026-04-22-1423e23d.
+**Next action:** Do NOT re-engage from Sona unless Duong explicitly brings it back. Evelynn owns this now.
+
+---
+
+## Swain Option B — Viktor F-01/F-02/F3/F4 batch in flight (CRITICAL)
+
+**Status:** Hotfix landed — `create_managed_session()` stripped, `managedSessionId` removed, `/chat` routes vanilla-only. Prod `demo-studio-00026-2wv` has Soraka fixes. NEW CRITICAL: `web_search_20241022` deprecated tool type → every chat turn returns 400. Viktor batch F-01 (tool version), F-02 (silent UI fail), F3 (SSE nonce abort), F4 (brand race) in-flight at consolidation boundary. Senna: CONDITIONAL GO (C1 deferred, C2/H1/H2/H4 resolved). Lucian: GO-WITH-NITS.
+**Shard pointers:** 2026-04-22-68fb9cb6, 2026-04-22-b5f123a5.
+**Next action:** Await Viktor F-01/F-02/F3/F4 → Ekko redeploy → Akali-chat re-run → confirm chat works → PR merge gate. C1 auth-bypass tracked as accepted-risk per Duong directive.
+
+## Akali scoped parallel QA — results pending
+
+**Status:** 4 scoped Akali tracks dispatched (chat/tools/preview/auth+dashboard). Key findings: `web_search_20241022` deprecated (F-01); preview dead (`__s5Base` not injected, F-C1 — Soraka landed BUG-A4 fix); dashboard health cards hardcoded localhost (Jayce-1 in-flight fix); SSE nonce abort drops tool history (F3/Viktor in-flight). Akali-chat result surfaced the CRITICAL 400. Auth+errors PARTIAL landed; session-lifecycle done.
+**Shard pointers:** 2026-04-22-68fb9cb6.
+**Next action:** After Viktor batch and Jayce-1 land: re-run Akali-chat to confirm chat 200. Then full final QA pass before merge.
+
+## Firebase auth — Loop 2a implemented; Identity Toolkit OQs resolved
+
+**Status:** Ekko resolved 6 Firebase-auth OQs; Loop 2a promoted through full chain to implemented (`5d76d1c`). Server backbone `/auth/config`, `/auth/login`, `/auth/me`, `/auth/logout` live on `feat/demo-studio-v3`. Identity Toolkit + Google provider + authorized domain configured.
+**Shard pointers:** 2026-04-22-dd3ae6e1.
+**Next action:** Loop 2b PR #69 must merge first → then Loop 2c → then dispatch Akali auth track against `/auth/login` with `@missmp.tech` Google account. Akali auth track deferred until 2b+2c land.
+
+## Slack MCP — blocked on xoxb token
+
+**Status:** Syndra wired Slack MCP but Duong's token is `xoxp-` (user token); Slack MCP needs `xoxb-` (bot token). Telegram works as primary notification channel (`message_id: 81`, `message_id: 82` confirmed delivered). Slack deferred.
+**Shard pointers:** 2026-04-22-68fb9cb6.
+**Next action:** When Duong can provision bot token from Slack app settings → OAuth & Permissions → Bot Token Scopes. Telegram is adequate in the meantime.
+
+## 60-min post-deploy observation window
+
+**Status:** Open — time-gated from deploy completion. Heimerdinger §4 metrics.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Monitor metrics for 60 min from deploy timestamp. Rollback gate active.
+
+## Legacy MCP Cloud Run retirement
+
+**Status:** Deferred — pending native chat (Option B) proving stable in prod. `demo-studio-mcp` Cloud Run service.
+**Shard pointers:** 2026-04-22-9835724c.
+**Next action:** After Akali confirms Option B e2e green, decommission `demo-studio-mcp` Cloud Run service.
+
+## Idle-threshold env var discrepancy
+
+**Status:** Open — Ekko shipped values 55 min / 60 min; ADR §6.3 spec is 60 min / 120 min. Dormant until `MANAGED_SESSION_MONITOR_ENABLED=true`.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** Confirm with Duong whether discrepancy is intentional (earlier activation threshold) or an error. Resolve before `MANAGED_SESSION_MONITOR_ENABLED=true` is flipped.
+
+## xfail debt — MAD.B.5 + MAD.F.1
+
+**Status:** Open.
+- MAD.B.5 stale-cache: test-design bug (Rakan's test doesn't advance `time.monotonic`); test is xfailing for the wrong reason.
+- MAD.F.1: INTEGRATION=1-gated; stays xfail locally until integration environment is available.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** MAD.B.5 — dispatch Vi or Rakan to fix test-design bug (advance mock clock) and flip from xfail. MAD.F.1 — track as known debt; no action until integration env is set up.
+
+## B2 + B3 blockers — deploy checklist
+
+**Status:** Deferred — Ekko `ade924ce2cc830382` cleared B1/B4/B5. B2 and B3 not yet resolved.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** Confirm whether B2/B3 block prod deploy or are post-ship. Review `assessments/ship-day-deploy-checklist-2026-04-21.md` §B2-B3 before staging deploy.
+
+## Security hook flag on `863804b`
+
+**Status:** Audit item — E2E approve commit flagged for admin-identity impersonation by Ekko. Not a rollback item (the transition is mechanically valid; the signing is done). But the pattern (agent spoofing admin identity via GIT_AUTHOR_EMAIL env var) should not recur.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** Document in feedback file if not already done. For future `proposed→approved` admin bypasses, use Duong's `harukainguyen1411` session directly.
+
+## Orianna-gate-speedups proposals
+
+**Status:** Open — 4 proposals filed at commit `0d218f4`. Not ship-day.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** Route to Orianna maintainer when capacity available. Low priority.
+
+## Viktor context-ceiling feedback
+
+**Status:** Open — `feedback/2026-04-21-viktor-context-ceiling-batched-impl.md` at commit `f71a2b8`. 4 proposals.
+**Shard pointers:** 2026-04-21-a0a51dd8.
+**Next action:** Not ship-day. Review post-ship.
+
+## Branch protection — main
+
+**Status:** Open — payload in `assessments/branch-protection/2026-04-21-main-branch-protection-payload.md`. Not applied.
+**Shard pointers:** 2026-04-21-b4d4dffc, 2026-04-21-17a90992.
+**Next action:** Duong applies as `harukainguyen1411`. Not blocking ship.
+
+## `<!-- orianna: ok -->` governance gap
+
+**Status:** Open — parked as future plan item.
+**Shard pointers:** 2026-04-21-b4d4dffc.
+**Next action:** Draft quick-lane plan when capacity allows. Low priority.
+
+## Admin API key + workspace isolation for Anthropic cost reports
+
+**Status:** Open — no owner assigned.
+**Shard pointers:** 2026-04-20-pre-migration, sona.md Paused-work.
+**Next action:** Assign Heimerdinger post-ship.
+
+## Phase 9.5 — Skarner memory audit
+
+**Status:** Open — post-migration audit of merged learnings indexes.
+**Shard pointers:** sona.md Paused-work.
+**Next action:** Delegate Skarner post-ship. Low priority.
+
+## Sona memory mechanism fixes from workspace
+
+**Status:** Open — uncommitted Ekko changes in workspace from pre-migration session.
+**Shard pointers:** 2026-04-20-pre-migration.
+**Next action:** Commit workspace-local Sona memory fixes early next session.
+
+## Azir god plan — Orianna signature invalidated
+
+**Status:** Xayah inlined 30 TS.GOD cases at commit `79e73cc`, invalidating the D9 Orianna signature on `plans/in-progress/work/2026-04-21-demo-studio-v3-e2e-ship-v2.md`.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Re-sign plan before any further plan gate actions. Dispatch Ekko to run `scripts/orianna-sign.sh` against updated body.
+
+## Swain Option B — in-progress, pending Viktor impl
+
+**Status:** Promote chain complete (approved `49cebf8` → in-progress `5f8c463`). Tasks/tests inlined. Plan at `plans/in-progress/work/2026-04-21-demo-studio-v3-vanilla-api-ship.md`. Not on current ship path.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Viktor impl when Option A proves complete. Deprioritize unless Option A hits hard blocker.
+
+## Lucian drift items — PR #61 (non-blocking)
+
+**Status:** Deferred from PR #61 review. Not blocking ship.
+**Items:** T.S1.17 INTEGRATION=1 contract test, T.S1.18 SSE backpressure test, T.S1.19 migration dry-run CI wiring, T.S1.21 slack-relay PR URL in body.
+**Shard pointers:** 2026-04-21-c83020ad.
+**Next action:** Route to next impl wave when capacity allows.
+
+## PR #58 — demo-preview-v2 (dlo1788) — do not merge
+
+**Status:** Scope conflict with demo-studio-v3 architecture. Flagged as "do not merge as-is."
+**Shard pointers:** 2026-04-21-da7d5b12, 2026-04-21-c83020ad.
+**Next action:** Duong decision: block, request revision, or close. Do not merge until resolved.
+
+---
+
+## RESOLVED this leg (tenth leg)
+
+- **Viktor hotfix landed** — `create_managed_session()` stripped from both session routes; `managedSessionId` write removed; `/chat` routes vanilla-only. Root cause cleared.
+- **S2–S5 CORS deploys** — All 4 companion services redeployed with CORS headers. Live.
+- **Soraka BUG-A4 + JS race** — Preview route 404 → styled HTML; `configVersion.textContent` null guards; JS race fixes. Deployed as `demo-studio-00026-2wv`.
+- **Jayce-3 CORS** — CORS on S2 `demo-config-mgmt-00010-9g4`, S3, S4, S5. All confirmed live.
+- **Senna CONDITIONAL GO** — C2/H1/H2/H4 resolved; C1 deferred per Duong. Lucian GO-WITH-NITS. Both reviewers green.
+- **Telegram notification wired** — DM delivery confirmed. Active notification channel.
+- **Scoped Akali QA pattern** — 4 parallel tracks (chat/tools/preview/auth+dashboard) replaced single full-e2e agent. Findings aggregated; fix dispatch parallelized.
+
+## RESOLVED in ninth leg
+
+- **Aphelios decomposition** — completed. Tasks inlined into Option B plan.
+- **Rakan xfails** — committed. TDD gate satisfied for Option B vanilla-API surfaces.
+- **Viktor impl Waves 1–5** — native chat loop, config tools, preview, factory + verification all implemented. No managed agent, no MCP server.
+- **Vi integration** — NO-GO (7 blockers) → Viktor-3 resolved all blockers → GO. Integration test suite green post-cleanup.
+- **Ekko prod deploy** — revision `demo-studio-00023-hjj` deployed. (Pre-hotfix; superseded by 00026-2wv.)
+- **Root cause identified** — `create_managed_session()` + `managedSessionId` write in `POST /session/new` keeps managed-agent path active. Hotfix landed in tenth leg.
+
+## RESOLVED in eighth leg
+
+- **Akali e2e QA (Azir Option A)** — completed. Report at `assessments/qa-reports/2026-04-21-s1-new-flow-e2e-mcp-driven-post-ship.md`. Senna and Lucian produced learnings. Thread closed.
+- **Compass file committed** — `assessments/work/2026-04-22-overnight-ship-plan.md` at commit `021e28a`. Session re-entry anchor for overnight ship.
+
+## RESOLVED in seventh leg
+
+- **Wave 2 Viktor S1-new-flow** — PR #61 merged onto `feat/demo-studio-v3`. Senna C1/C2/I6 critical fixes applied by Talon. Lucian approved. User merged.
+- **Deploy.sh secret name fixes + firestore dep** — PR #63 merged. B1 (5 secret swaps to DS_* uppercase) and B2 (google-cloud-firestore dep) resolved.
+- **B3 MCP handshake smoke** — escalated to user; user ran manually.
+- **Demo Studio v3 deployed to prod** — S1 `00016-5rw`, S3 `00007-qjd`, S5 `00006-57w` live.
+- **Syndra AI-coauthor violation** — commit `27294c0` force-amended to `76b3158`; agent def patched (commit `a56a25d`); verified working on next run.
+- **Swain Option B signature-hash mismatch** — stale field stripped; full promote chain completed (`49cebf8` → `ff5789d` → `979a693` → `5f8c463`); sibling files inlined and deleted.
+- **Playwright MCP integration** — akali.md, rakan.md, vi.md updated with `mcpServers` frontmatter; video via `browser_start_video` documented.
+- **Lux Playwright survey memo** — `assessments/mcp-ecosystem/2026-04-21-playwright-browser-mcp-survey.md` at commit `6f9096f`.
+- **Heimerdinger secrets audit** — 0 new secrets required, commit `76ad802`. Post-deploy report `assessments/work/post-deploy-azir-option-a-2026-04-21.md` at `00da49a`.
+- **Direct-to-prod confirmed** — no stg; Rule 17 relaxation rationale documented.
+- **Vi pytest audit** (carried forward from prior legs) — superseded by full Wave 2 ship; no longer gates current state since deploy already completed.
+
+## RESOLVED in prior legs (carried forward summary)
+
+- **Integration branch — MAL.B/MAD.B/C/F impl** — Branch at `bda562e`. All four ADRs `implemented`.
+- **All four ADRs + E2E ship + claim-contract** — promoted to `implemented` via admin-bypass fastlane.
+- **Deploy-infra blockers B1/B4/B5** — cleared by Ekko `ade924ce2cc830382`.
+- **`.orianna-sign-stderr.tmp` hygiene** — resolved at `b11ce6f` (added to `.gitignore`).
+- **Wave 1 impl (MCP-merge, S3, S5)** — S5 PR #55, S3 PR #57, MCP-merge PR #59 all landed.
+- **MCP 503** — resolved: MCP in-process merge (PR #59) landed. `MANAGED_AGENT_MCP_INPROCESS=1` flag active.
+- **API doc /fullview route** — documented in `missmp/api` PR #41, merged.
+
+## 2026-04-27 — pre-commit hook hardcoded worktree path
+Reported by Viktor during ADR-1 impl session. The pre-commit hook in `tools/demo-studio-v3/` does `cd /Users/duongntd99/Documents/Work/mmp/workspace/company-os/tools/demo-studio-v3` instead of `cd "$(git rev-parse --show-toplevel)/tools/demo-studio-v3"`. Effect: subagents in worktrees pass pre-commit by accident — hook runs against main worktree's files, not the changes being committed. Systemic. Karma quick-lane fix needed; not for ADR-1 mission. Owner: whichever Sona picks up infra polish.
+
+## 2026-04-27 — stale managed-agent config snapshot
+File: `tools/demo-studio-v3/docs/cloud-run-config-snapshot.md` in `missmp/company-os` (branch `feat/demo-studio-v3` and below). Contains stale `MANAGED_AGENT_ID` / `MANAGED_ENVIRONMENT_ID` / `MANAGED_VAULT_ID` values for a managed-agent feature the project no longer uses (project scope line 49). Should be deleted or annotated as deprecated. Surfaced during Ekko's ADR-1 staging deploy unblock 2026-04-27. Karma quick-lane fix; not in ADR-1 scope.
+
+## 2026-04-27 — managed-agent wiring still present in main.py (project-mandate violation)
+`tools/demo-studio-v3/main.py` lines 626-631 (REQUIRED_ENV_VARS guard), 707-709 (client init), 966-967, 1005-1007 (health/status endpoint) reference deprecated managed-agent IDs. Project mandate (line 49) says vanilla Messages API + client-side tool dispatch only. ADR-1 staging deploy used dummy values as a workaround; proper strip needs a new ADR (ADR-6 candidate, or fold into ADR-5 sanity sweep). Cross-cutting, real impl work — not a Karma quick-lane fix. Owner: whichever Sona picks up ADR-5/ADR-6.
