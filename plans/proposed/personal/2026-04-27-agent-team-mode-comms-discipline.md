@@ -91,7 +91,7 @@ This plan codifies those decisions across (A) the runbook, (B) the 11 teammate-e
   - detail: Talon (or Evelynn herself) runs a real two-teammate team exercising the new discipline end-to-end on a small real task in this repo (suggested: a one-file doc-tidy where reviewer dual-loop converges). Records the transcript per T10 schema. This task is the project's DoD-closer.
   - DoD: T10 flips green; artifact committed; project doc gets a Decisions-log entry confirming DoD met.
 
-## Test plan
+## QA Plan
 
 xfail-first per Rule 12. Each impl task (T2, T4+T5, T7, T9, T11) is preceded on this branch by its xfail counterpart (T1, T3, T6, T8, T10). Invariants protected:
 
