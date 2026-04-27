@@ -1,6 +1,7 @@
 ---
 status: approved
 concern: personal
+project: agent-network-v1
 owner: karma
 created: 2026-04-27
 tier: quick
