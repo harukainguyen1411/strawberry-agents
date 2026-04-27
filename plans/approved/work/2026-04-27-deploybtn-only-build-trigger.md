@@ -36,6 +36,13 @@ The user-clicked `deployBtn` becomes the **sole** build trigger. The agent retai
 
 No UI/UX changes ship with this plan. No S2 changes. Code-check QA only (visual QA waived per Duong instruction).
 
+**Signal path (T3 audit):**
+- **PATH A — text-regex (PRIMARY, OPERATIVE):** `static/studio.js:887` — `_applyPhaseHeuristics` matches accumulated agent text against `/ready to deploy|approve|click.*deploy/i` and calls `showDeployButton()`. With the updated `SYSTEM_PROMPT` directing the agent to tell the user to click Deploy, agent utterances will match this regex. This is the sole operative path post T1.
+- **PATH B — Firestore snapshot:** `static/studio.js:940` — `d.awaitingApproval` read from Firestore doc. No Python server code writes `awaitingApproval` to Firestore anywhere in `tools/demo-studio-v3/`. **Inoperative** unless an external process sets the field.
+- **PATH C — SSE chat event:** `static/studio.js:1193` — `data.awaitingApproval` on chat events. No server code emits this field. **Inoperative.**
+- **PATH D — SSE status event:** `static/studio.js:1236` — `data.awaitingApproval` on status events. No server code emits this field. **Inoperative.**
+- **Summary:** PATH A (text regex at `studio.js:887`) is the sole operative `awaitingApproval` signal path post trigger_factory removal. No gap; no stop-the-line condition. Reliability hardening of PATH A (making the regex more precise or adding a structured signal) is deferred to a follow-up plan per §Out of scope.
+
 ## Tasks
 
 ### T1 — Remove trigger_factory from tool registry (impl)
@@ -136,6 +143,16 @@ No artifacts ship for this plan beyond the test files themselves (TX1, TX2). Spe
 - `tools/demo-studio-v3/static/studio.css:186` — `display: none` default.
 - `tools/demo-studio-v3/main.py:2635` — `POST /session/{id}/build` endpoint.
 - Strawberry Rule 12 — xfail-first TDD gate.
+
+## Scope amendment 2026-04-27 (post-review)
+
+Post-review findings from Senna (BLOCKER B1) and Lucian (IMPORTANT I1) identified two gaps that the original plan did not size:
+
+- **T4** — Wire `doDeploy()` in `static/studio.js` to `POST /session/{id}/build`. The original plan left `doDeploy()` as a no-op (system message only, no `fetch()`). Combined with the `trigger_factory` MCP removal, the build path was completely dead. Fix: add `fetch('/session/' + sessionId + '/build', {method: 'POST', credentials: 'same-origin'})` in `doDeploy()`, modelled on the `doStop()` pattern (error handling, response shape, message rendering). Endpoint confirmed live at `main.py:2635`. Fixes Senna B1.
+
+- **T5** — Strip `trigger_factory` from `mcp_app.py`'s registered MCP tool list (L131, L289-294, L329 — `_handle_trigger_factory` handler + `trigger_factory` tool registration + `_TOOL_REGISTRY` entry). The managed-agent runtime (`MANAGED_AGENT_ID` path) could still hit `trigger_factory` via `/mcp`, leaving T2 DoD unmet. Additionally: add a `# DEPRECATED — Wave 6 deletion target; kept until then` banner at the top of `setup_agent.py` and update its embedded `SYSTEM_PROMPT` copy to drop all `trigger_factory` references. Do not delete `setup_agent.py` — Wave 6's job. Fixes Lucian I1 and completes T2 DoD.
+
+**Rationale:** original plan undersized the surface; `mcp_app.py` and `studio.js` `doDeploy()` were outside original scope but are required for a complete build path. Post-review scope expansion is bounded: no S2 changes, no UI CSS, no agent-proxy changes.
 
 ## Orianna approval
 
