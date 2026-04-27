@@ -181,6 +181,8 @@
 
 - 2026-04-27 (ekko — Sona dispatch): ADR-3 TQ1 deploy check. feat/demo-studio-v3 HEAD 24b1e22fd114 was already live as demo-studio-00040-kgk (100% traffic), confirmed via /__build_info. No redeploy triggered — idempotency constraint met. Stopped and reported: Cloud Run service name is `demo-studio` not `demo-studio-v3`.
 
+- 2026-04-27 (ekko — Sona dispatch): PROD deploy of feat/demo-studio-v3 HEAD f313b92 (PRs #126-#129). Used detached worktree at /tmp/demo-studio-prod-deploy (avoids dirty main tree without stash). New revision: demo-studio-00041-5h8, 100% traffic. /__build_info: {"revision":"f313b927d9f7","builtAt":"2026-04-27T16:09:43Z"}. All smoke checks pass. Rollback target: demo-studio-00040-kgk.
+
 - 2026-04-27 (ekko — Evelynn dispatch): Secret scrub via git-filter-repo. 5 secrets scrubbed from full history. Main rewritten: before=8ca4eadd, after=2b1d0a7f. Main force-pushed. PR branches vi/coord-memory-v1-T4a, T7a, viktor/T6b, jayce/T4b NOT pushed — blocked by pre-push-resolved-identity hook on Orianna-authored commits. Duong-manual push needed for 4 PR branches. Stale branches rakan/T3a, talon/T2b, viktor/T3b, vi/T2a absent from origin.
 
 ## Archive Note
