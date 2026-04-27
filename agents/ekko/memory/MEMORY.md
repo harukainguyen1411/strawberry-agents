@@ -175,6 +175,8 @@
 
 - 2026-04-27 (ekko — Sona dispatch): Redeployed demo-studio-v3 from feat/demo-studio-v3 HEAD b18eb112 (PR #119 merge). New revision: demo-studio-00030-2zg, 100% traffic. Smoke green: /health → 200 {"status":"ok"}. Previous revision (rollback target): demo-studio-00029-8bk. No MANAGED_AGENT_MCP_INPROCESS in current service env (was removed in prior session). deploy.sh env vars extracted from live service via gcloud describe.
 
+- 2026-04-27 (ekko — Sona dispatch): Deployed demo-studio-v3 from feat/demo-studio-v3 HEAD 24b1e22 (PRs #126 + #127). New revision: demo-studio-00052-tow, 100% traffic. Smoke green: /health → 200 {"status":"ok"}. Previous revision (rollback target): demo-studio-00039-qz7. NOTE: --to-latest pointed to stale pinned revision — always use explicit --to-revisions=<rev>=100 after source deploy.
+
 - 2026-04-27 (ekko — Evelynn dispatch): Secret scrub via git-filter-repo. 5 secrets scrubbed from full history. Main rewritten: before=8ca4eadd, after=2b1d0a7f. Main force-pushed. PR branches vi/coord-memory-v1-T4a, T7a, viktor/T6b, jayce/T4b NOT pushed — blocked by pre-push-resolved-identity hook on Orianna-authored commits. Duong-manual push needed for 4 PR branches. Stale branches rakan/T3a, talon/T2b, viktor/T3b, vi/T2a absent from origin.
 
 ## Archive Note
