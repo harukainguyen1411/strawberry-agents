@@ -2,7 +2,7 @@
 date: 2026-04-27
 created: 2026-04-27
 concern: work
-status: proposed
+status: approved
 author: karma
 owner: karma
 complexity: quick
@@ -206,3 +206,10 @@ schema).
 - `plans/proposed/work/2026-04-27-adr-4-set-config-validation-framing.md` — sibling concern, NOT bundled with this plan.
 - Session `e352044b37c04e828c7524c7034fdb75` — origin symptom (agent gaslighting from contract mismatch).
 - CLAUDE.md Rule 12 (xfail-first), Rule 14 (pre-commit unit tests), Rule 16 (non-UI QA branch), Rule 17 (post-deploy smoke).
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** r2 cosmetic fixes from r1 REJECT verified — §UX Spec linter and qa_plan structural checks all pass (frontmatter, body, lint). Plan content remains concrete: owner is karma, TX1 establishes xfail-first per Rule 12, D1/D2/D3 decisions are committed with a bounded fallback for D1, anchors are line-pinned, DoD is explicit per task, and the QA Plan non-UI branch is fully specified with acceptance criteria, happy path, failure modes, and expected artifacts. Scope is single PR, single service, with explicit non-bundling note against the sibling ADR-4 plan.
