@@ -183,7 +183,7 @@ if [ -f "$DB_LIB" ] && { [ -f "$_DB_WRITE_PATH" ] || [ -d "$(dirname "$_DB_WRITE
   SQL="INSERT OR IGNORE INTO decisions (coordinator, decided_at, slug, shard_path, summary)
        VALUES (
          '$(_cdesc "$COORDINATOR")',
-         '$(_cdesc "$DECISION_DATE")',
+         strftime('%Y-%m-%d %H:%M:%f', '$(_cdesc "$DECISION_DATE")'),
          '$(_cdesc "$SLUG")',
          '$(_cdesc "$DEST")',
          'captured via decision-capture skill'
