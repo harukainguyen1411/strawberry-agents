@@ -52,6 +52,24 @@ teardown() {
   [[ "$result" =~ $MS_REGEX ]]
 }
 
+# ── T1-session-ended: second-precision ended_at is stored as 23-char ms-precision ─
+
+@test "T1-session-ended: ended_at written by db-write-session.sh matches ms-precision regex" {
+  export STRAWBERRY_STATE_DB="$DB_PATH"
+  run bash "$WRITE_SESSION" \
+    "$DB_PATH" \
+    "test-session-002" \
+    "evelynn" \
+    "2026-04-27 10:00:00" \
+    "2026-04-27 11:30:00" \
+    "agents/evelynn/memory/last-sessions/test.md"
+  [ "$status" -eq 0 ]
+
+  result="$(sqlite3 "$DB_PATH" "SELECT ended_at FROM sessions WHERE id='test-session-002';")"
+  [ -n "$result" ]
+  [[ "$result" =~ $MS_REGEX ]]
+}
+
 # ── T1-learning: second-precision learned_at is stored as 23-char ms-precision ─
 
 @test "T1-learning: learned_at written by db-write-learning.sh matches ms-precision regex" {
