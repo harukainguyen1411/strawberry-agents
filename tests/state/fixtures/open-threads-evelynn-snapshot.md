@@ -1,3 +1,4 @@
+<!-- fixture-refresh process: re-run secret scan before snapshotting -->
 # Evelynn — Open Threads
 
 Last updated: 2026-04-26 (Lissandra pre-compact consolidation, shard 48ac7433).

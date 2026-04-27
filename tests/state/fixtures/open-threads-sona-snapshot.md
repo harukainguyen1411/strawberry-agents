@@ -1,3 +1,4 @@
+<!-- fixture-refresh process: re-run secret scan before snapshotting -->
 # Sona — Open Threads
 
 Last updated: 2026-04-25 (session c1463e58; tenth consolidation — shard c1463e58 end-session).
