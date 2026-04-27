@@ -2,7 +2,7 @@
 
 ---
 
-## status: proposed
+## status: approved
 
 project: agent-network-v1
 concern: personal
@@ -360,4 +360,12 @@ The four regression surfaces from §Test plan, restated as failure modes the gat
 - `.claude/agents/akali.md` (scope amendment target).
 - `projects/personal/active/agent-network-v1.md` (project DoD: data transparency, dashboard for visibility).
 - PR #59 (`chore: xfail test skeletons — dashboard Phase 1 (TP1.T1–T7)`, merged 2026-04-25 13:34:52Z) — the demonstrated false-waiver case driving this ADR.
+
+## Orianna approval
+
+- **Date:** 2026-04-27
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Structural gates pass (qa_plan frontmatter, qa_plan body with all four H3 sub-headings, plan-structure linter). Plan has clear owner (swain), concrete architecture-impact table, eight decisions with named linter shapes and frontmatter contracts, all eight Open Questions resolved with explicit picks and rationale. The §QA Plan is populated under the non-UI branch with acceptance criteria, happy path, failure modes, and QA artifacts — internally consistent with the discipline this ADR proposes. Coordination tasks (T1–T3) and QA tasks (T-QA1–T-QA4) are concrete and owner-tagged.
+- **Simplicity:** WARN: possible overengineering — three lint surfaces (pre-commit plan-structure extension, new pre-commit breakdown-qa-tasks hook, pre-dispatch QA-plan gate, plus PR-lint extension) for a single invariant (§QA Plan presence). D6 acknowledges the pre-dispatch gate's allow-rate is high since impl agents only fire on already-promoted plans that already passed Surface 1 — defense-in-depth is the stated rationale, but a single seam (promotion linter) plus PR-lint may suffice. Worth revisiting in breakdown whether D6 is load-bearing.
 
