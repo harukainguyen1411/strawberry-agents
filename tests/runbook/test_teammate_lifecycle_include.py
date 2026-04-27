@@ -1,8 +1,8 @@
 """
-T3 — xfail: asserts _shared/teammate-lifecycle.md exists with required clauses,
+T3 — asserts _shared/teammate-lifecycle.md exists with required clauses,
 and all 11 teammate-eligible agent defs embed the include marker.
 
-Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T3
+Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T3/T4/T5
 """
 import subprocess
 from pathlib import Path
@@ -18,8 +18,6 @@ REPO_ROOT = Path(
 )
 SHARED_LIFECYCLE = REPO_ROOT / ".claude" / "agents" / "_shared" / "teammate-lifecycle.md"
 AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
-
-PLAN_ID = "2026-04-27-agent-team-mode-comms-discipline"
 
 TEAMMATE_ELIGIBLE_AGENTS = [
     "senna",
@@ -46,7 +44,6 @@ REQUIRED_CLAUSES = [
 INCLUDE_MARKER = "<!-- include: _shared/teammate-lifecycle.md -->"
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T4 not landed", strict=True)
 def test_teammate_lifecycle_file_exists():
     """_shared/teammate-lifecycle.md must exist."""
     assert SHARED_LIFECYCLE.exists(), (
@@ -54,7 +51,6 @@ def test_teammate_lifecycle_file_exists():
     )
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T4 not landed", strict=True)
 def test_teammate_lifecycle_required_clauses():
     """teammate-lifecycle.md must contain all required clauses."""
     text = SHARED_LIFECYCLE.read_text()
@@ -64,7 +60,6 @@ def test_teammate_lifecycle_required_clauses():
         )
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T5 not landed", strict=True)
 def test_all_teammate_eligible_agents_have_include():
     """All 11 teammate-eligible agent defs must embed the include marker."""
     missing = []

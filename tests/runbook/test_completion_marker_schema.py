@@ -1,8 +1,8 @@
 """
-T1 — xfail: asserts runbook §Completion-Marker Protocol section exists and documents
+T1 — asserts runbook §Completion-Marker Protocol section exists and documents
 the four marker types with the required schema.
 
-Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T1
+Plan: plans/approved/personal/2026-04-27-agent-team-mode-comms-discipline.md T1/T2
 """
 import re
 import subprocess
@@ -19,8 +19,6 @@ REPO_ROOT = Path(
 )
 RUNBOOK = REPO_ROOT / "runbooks" / "agent-team-mode.md"
 
-PLAN_ID = "2026-04-27-agent-team-mode-comms-discipline"
-
 REQUIRED_MARKER_TYPES = [
     "task_done",
     "shutdown_ack",
@@ -31,7 +29,6 @@ REQUIRED_MARKER_TYPES = [
 REQUIRED_SCHEMA_FIELDS = ["type", "ref", "summary"]
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T2 not landed", strict=True)
 def test_completion_marker_section_exists():
     """Runbook must have a §Completion-Marker Protocol heading."""
     text = RUNBOOK.read_text()
@@ -41,7 +38,6 @@ def test_completion_marker_section_exists():
     ), "§Completion-Marker Protocol section not found in runbook"
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T2 not landed", strict=True)
 def test_completion_marker_all_four_types_documented():
     """Runbook §Completion-Marker Protocol must list all four type literals."""
     text = RUNBOOK.read_text()
@@ -51,11 +47,9 @@ def test_completion_marker_all_four_types_documented():
         )
 
 
-@pytest.mark.xfail(reason=f"{PLAN_ID}: T2 not landed", strict=True)
 def test_completion_marker_schema_fields_documented():
     """Runbook must document the {type, ref, summary} schema fields together."""
     text = RUNBOOK.read_text()
-    # Find the section and verify all three fields appear within it
     section_match = re.search(
         r"#{1,4}\s+Completion-Marker Protocol(.+?)(?=\n#{1,4}\s|\Z)",
         text,
