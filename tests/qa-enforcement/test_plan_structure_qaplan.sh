@@ -88,6 +88,11 @@ run_fixture "h-valid-non-ui-branch.md" 0
 # MUST be accepted (grandfathered). The --is-new 0 flag simulates status-M.
 run_fixture_modified "i-pre-existing-no-qa-plan-grandfathered.md" 0 "plans/approved/personal/test-grandfathered.md"
 
+# Fenced-block extension (Fix 4 — Senna IMPORTANT):
+# Tilde fences (~~~) and longer backtick fences (4+) must be skipped.
+run_fixture "j-tilde-fence-skipped.md"        0  # ## QA Plan inside ~~~ fence → skipped; real heading after → ACCEPT
+run_fixture "k-long-backtick-fence-skipped.md" 0  # ## QA Plan inside ```` fence → skipped; real heading after → ACCEPT
+
 printf '\n=== Results: %s passed, %s failed ===\n' "$PASS" "$FAIL"
 
 if [ "$FAIL" -gt 0 ]; then

@@ -163,20 +163,65 @@ validate_last_reviewed() {
   return 1
 }
 
+# _fence_open_len <line>
+# Prints the fence length (number of leading ` or ~ chars) if the line is a
+# fence opener/closer, else prints 0.  A fence is 3+ of the same character
+# (` or ~) optionally followed by an info string.
+_fence_open_len() {
+  local line="$1"
+  local char len
+  # Check backtick fence
+  char='`'
+  len=0
+  case "$line" in
+    '```'*)
+      len="$(printf '%s' "$line" | sed 's/[^`].*//' | awk '{print length}')"
+      ;;
+    '~~~'*)
+      char='~'
+      len="$(printf '%s' "$line" | sed 's/[^~].*//' | awk '{print length}')"
+      ;;
+  esac
+  if [ "$len" -ge 3 ]; then
+    printf '%s %s' "$char" "$len"
+  else
+    printf '0 0'
+  fi
+}
+
 # has_qa_plan_heading <content>
 # Returns 0 if content contains a "## QA Plan" heading line outside a fenced
-# code block (``` delimiters), else 1.
+# code block (``` or ~~~ delimiters, matched by type and minimum length), else 1.
 has_qa_plan_heading() {
   local content="$1"
-  local fence=0
+  local fence_char="" fence_len=0
   while IFS= read -r line; do
-    case "$line" in
-      '```'*) fence=$(( 1 - fence )); continue ;;
-    esac
-    [ "$fence" -eq 1 ] && continue
-    case "$line" in
-      "## QA Plan"|"## QA Plan "*) return 0 ;;
-    esac
+    if [ "$fence_len" -eq 0 ]; then
+      # Not inside a fence — check if this line opens one
+      local _fc _fl
+      read -r _fc _fl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+      if [ "$_fl" -ge 3 ]; then
+        fence_char="$_fc"
+        fence_len="$_fl"
+        continue
+      fi
+      case "$line" in
+        "## QA Plan"|"## QA Plan "*) return 0 ;;
+      esac
+    else
+      # Inside a fence — check if this line closes it (same char, same or longer)
+      local _cc _cl
+      read -r _cc _cl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+      if [ "$_cc" = "$fence_char" ] && [ "$_cl" -ge "$fence_len" ]; then
+        fence_char=""
+        fence_len=0
+      fi
+      continue
+    fi
   done <<EOF
 $content
 EOF
@@ -186,24 +231,42 @@ EOF
 # get_qa_plan_body <content>
 # Prints the body text between the first "## QA Plan" heading (outside a fenced
 # code block) and the next "## " heading (or EOF).
+# Uses the same fence-matching logic as has_qa_plan_heading (type + length).
 get_qa_plan_body() {
   local content="$1"
   local in_section=0
-  local fence=0
+  local fence_char="" fence_len=0
   local body=""
   while IFS= read -r line; do
-    case "$line" in
-      '```'*) fence=$(( 1 - fence )); continue ;;
-    esac
     if [ "$in_section" -eq 0 ]; then
-      [ "$fence" -eq 1 ] && continue
-      case "$line" in
-        "## QA Plan"|"## QA Plan "*) in_section=1 ;;
-      esac
+      # Before the §QA Plan heading — track fences to skip fenced heading look-alikes
+      if [ "$fence_len" -eq 0 ]; then
+        local _fc _fl
+        read -r _fc _fl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+        if [ "$_fl" -ge 3 ]; then
+          fence_char="$_fc"
+          fence_len="$_fl"
+          continue
+        fi
+        case "$line" in
+          "## QA Plan"|"## QA Plan "*) in_section=1 ;;
+        esac
+      else
+        local _cc _cl
+        read -r _cc _cl <<FEOF
+$(_fence_open_len "$line")
+FEOF
+        if [ "$_cc" = "$fence_char" ] && [ "$_cl" -ge "$fence_len" ]; then
+          fence_char=""
+          fence_len=0
+        fi
+      fi
       continue
     fi
-    # Inside the section — stop at next ## heading (fence irrelevant here: we
-    # already found our section, and we collect everything including inner fences)
+    # Inside the section — stop at next ## heading.
+    # We collect everything including inner fences as body content.
     case "$line" in
       "## "*)
         break
