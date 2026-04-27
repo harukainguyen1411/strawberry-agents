@@ -56,7 +56,7 @@ This ADR proposes:
 - **Plans (ADRs)** carry a mandatory `## QA Plan` section that explicitly declares whether the deliverable has UI involvement, and routes to one of two QA branches. There is **no third "skip QA" branch**.
 - **Breakdowns** (Aphelios / Kayn task lists) carry a mandatory `### QA Tasks` subsection that converts the ADR's QA Plan into concrete enumerated tasks: which Playwright flows for UI; which fixture-vs-real-data smoke for non-UI; success thresholds; manual verification steps; xfail tests; PR markers.
 - **Rule 16 in `CLAUDE.md**` is amended: `_User-flow`_ becomes `_UI-involvement_`, defined to include any browser-renderable artifact. The blanket `QA-Waiver:` carve-out is removed; specific narrow waivers require explicit Duong sign-off.
-- **Three lint surfaces** enforce the contract: `## QA Plan` at ADR promotion, `### QA Tasks` at breakdown commit, `QA-Verification:` PR-body marker on non-UI PRs.
+- **Three enforcement surfaces** enforce the contract: `## QA Plan` at ADR promotion (D5 Surface 1), `### QA Tasks` at breakdown commit (D5 Surface 2), `QA-Verification:` PR-body marker on non-UI PRs (D6).
 - **Akali's agent-def** broadens scope from "user-flow routes" to "any browser-renderable output".
 - **The ADR-template** in `_shared/` gains a §QA Plan stub so Azir / Swain / Karma include it by default.
 
@@ -71,7 +71,6 @@ This ADR amends or creates the following surfaces. It is a rule amendment + mult
 | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `CLAUDE.md` Rule 16                                              | Amend definition of `_User-flow_` → `_UI-involvement_`; remove blanket QA-Waiver carve-out; replace with narrow Duong-sign-off-required path                                                                                                                                                                                                                                                                                            |
 | `CLAUDE.md` Rule 22                                              | Cross-reference §QA Plan (already lists §UX Spec); ensure both gates are described as parallel structural requirements                                                                                                                                                                                                                                                                                                                  |
-| `scripts/hooks/pretooluse-uxspec-gate.sh`                        | Either extend (sibling-branch detector) or pair with a new `pretooluse-qaplan-gate.sh` to require non-empty `## QA Plan` section in proposed plans before any impl-dispatch agent fires (block list: Jayce, Viktor, Seraphine, Soraka, Talon, Ekko, Vi, Rakan)                                                                                                                                                                          |
 | `scripts/hooks/pre-commit-zz-plan-structure.sh`                  | New check at plan-promotion time: any plan in `plans/proposed/` being promoted to `approved/` MUST contain non-empty `## QA Plan`; missing/empty → reject. Orianna agent honors the linter rejection                                                                                                                                                                                                                                    |
 | New `scripts/hooks/pre-commit-breakdown-qa-tasks.sh`             | New pre-commit linter. Fires when `aphelios` or `kayn` (or any `default_isolation: worktree` breakdown agent) commits a plan amend that contains a `## Tasks` section. Requires that section (or one of its phase children) to contain a `### QA Tasks` subsection with at least one task line. Identity gate: same `STRAWBERRY_AGENT` / `CLAUDE_AGENT_NAME` resolution as the plan-lifecycle guard                                     |
 | `.github/workflows/pr-lint.yml`                                  | Extend `pr-lint` job. UI-involving PRs (existing path-glob) keep `QA-Report:` requirement. Non-UI PRs gain a new requirement: `QA-Verification: <commands-and-results>` marker that cites the ADR's QA Plan branch and lists the verification commands the implementer ran. Empty / missing → fail. `QA-Waiver:` is restricted: must include `Duong-Sign-Off: <iso8601-timestamp>` line — without that line the waiver fails the linter |
@@ -141,7 +140,7 @@ Every ADR proposed for promotion to `approved/` MUST contain a non-empty `## QA 
 - PR marker `QA-Verification: <commands>` citing the verification run
 ```
 
-The linter (D7) checks for the `**UI involvement:**` line and at least one populated bullet under the chosen branch. Empty section or missing branch routing → reject.
+The linter (D5 Surface 1) checks for the `**UI involvement:**` line and at least one populated bullet under the chosen branch. Empty section or missing branch routing → reject.
 
 `qa_plan: required` in plan frontmatter is the assertion that the section is populated. `qa_plan: none` is permitted only with a `qa_plan_none_justification:` string (sibling pattern to QA two-stage ADR's `qa_plan_none_justification` field) — this covers advisory ADRs whose downstream impl plans carry the actual QA Plan. Linter requires presence of one or the other.
 
@@ -186,7 +185,7 @@ Every `## Tasks` section authored by Aphelios or Kayn MUST contain a `### QA Tas
   owner: implementer
 ```
 
-The linter (D7) checks for `### QA Tasks` heading inside any `## Tasks` block in a plan committed by Aphelios or Kayn (identity-gated). Missing → reject. Empty (heading present, no task lines) → reject. The breakdown agent's worktree-isolation rule already applies (Rule 20).
+The linter (D5 Surface 2) checks for `### QA Tasks` heading inside any `## Tasks` block in a plan committed by Aphelios or Kayn (identity-gated). Missing → reject. Empty (heading present, no task lines) → reject. The breakdown agent's worktree-isolation rule already applies (Rule 20).
 
 ### D4 — Rule 16 amendment in `CLAUDE.md`
 
@@ -212,15 +211,9 @@ Two lint surfaces, one new and one extended, both at pre-commit:
 - The plan MUST contain a `### QA Tasks` subsection (anywhere — typically inside `## Tasks` or in a phase subsection) with at least one task line. Missing → reject.
 - The reject message names the failure clearly and points the agent at the breakdown contract in `.claude/agents/aphelios.md`'s Hard Rules.
 
-Together these two surfaces cover plan-time and breakdown-time. PR-time is covered by D7.
+Together these two surfaces cover plan-time and breakdown-time. PR-time is covered by D6.
 
-### D6 — Pre-dispatch gate (sibling to UX-Spec gate)
-
-Either (a) extend `scripts/hooks/pretooluse-uxspec-gate.sh` to also enforce §QA Plan, or (b) author a sibling `scripts/hooks/pretooluse-qaplan-gate.sh`. Recommended: (b) sibling — keeps the UX-Spec hook readable, avoids tangling two distinct gate concerns. The new hook fires before any **impl-dispatch** agent (Jayce, Viktor, Seraphine, Soraka, Talon, Ekko, Vi, Rakan) runs against a plan, and blocks if the plan lacks `## QA Plan`. Bypass: same `qa_plan: none` + justification frontmatter, or `QA-Bypass: <reason>` in the dispatch description (Duong only).
-
-This catches the case where the plan-structure linter was somehow not fired (e.g. plan was created manually before linter installed) but an impl agent is about to dispatch — defense in depth. Allow rate is high (impl agents only fire on already-promoted plans, which already passed Surface 1), so the gate's normal output is `ALLOW qa-plan-present`.
-
-### D7 — PR-lint extension
+### D6 — PR-lint extension
 
 Extend `.github/workflows/pr-lint.yml`'s `pr-lint` job:
 
@@ -229,7 +222,7 @@ Extend `.github/workflows/pr-lint.yml`'s `pr-lint` job:
 3. Non-UI PRs: NEW requirement — `QA-Verification: <commands-and-results>` line in PR body, OR `QA-Verification-Skipped: <reason> Duong-Sign-Off: <iso8601>` paired escape. Missing both → fail.
 4. Failure message names the missing marker and points at Rule 16 + the ADR's QA Plan branch.
 
-### D8 — ADR-template
+### D7 — ADR-template
 
 Add a new file `.claude/agents/_shared/adr-template.md` (if not present) or amend the existing template that Azir / Swain / Karma reference. The template includes a §QA Plan stub matching D2's shape with both branches commented out so the ADR author selects one and populates it. The template also includes a frontmatter `qa_plan: required | none` field with a comment naming the `qa_plan_none_justification:` companion field.
 
@@ -239,7 +232,7 @@ This is the cheapest leverage point: most ADR authors will encounter §QA Plan a
 
 This ADR's tasks are coordination-level only. The detailed breakdown belongs to Aphelios in a downstream task list once the ADR is approved. Three coordination tasks tracked here:
 
-- T1: Synthesize this ADR with concurrent plans (`2026-04-25-akali-qa-discipline-hooks.md`, `2026-04-25-qa-two-stage-architecture.md`, `2026-04-25-structured-qa-pipeline.md`) — confirm no double-coverage on the §QA Plan / §QA Tasks surface; confirm Akali's broadened scope in D8 of this ADR is consistent with the citation-tagging contract from the QA two-stage ADR. owner: evelynn estimate_minutes: 20
+- T1: Synthesize this ADR with concurrent plans (`2026-04-25-akali-qa-discipline-hooks.md`, `2026-04-25-qa-two-stage-architecture.md`, `2026-04-25-structured-qa-pipeline.md`) — confirm no double-coverage on the §QA Plan / §QA Tasks surface; confirm Akali's broadened scope in D4 of this ADR is consistent with the citation-tagging contract from the QA two-stage ADR. owner: evelynn estimate_minutes: 20
 - T2: After Duong's OQ resolutions, dispatch Aphelios for the implementation breakdown (Surfaces 1+2 hooks, PR-lint extension, agent-def amendments, ADR-template, Rule 16 text). owner: evelynn estimate_minutes: 5
 - T3: After breakdown lands, dispatch Orianna to promote this ADR `proposed/` → `approved/`. owner: evelynn estimate_minutes: 5
 
@@ -258,9 +251,8 @@ Tests live downstream in the implementation breakdown (Aphelios). High-level tes
 
 1. **Plan-structure linter regression** — fixture plan without `## QA Plan` rejected at pre-commit; fixture with empty `## QA Plan` rejected; fixture with `qa_plan: none` + justification accepted; fixture with populated branch accepted.
 2. **Breakdown-qa-tasks linter regression** — fixture commit by `STRAWBERRY_AGENT=aphelios` adding `## Tasks` without `### QA Tasks` rejected; same commit by `STRAWBERRY_AGENT=evelynn` (non-breakdown identity) allowed; fixture commit with `### QA Tasks` accepted.
-3. **Pre-dispatch gate regression** — Jayce dispatch on a plan without `## QA Plan` blocked with clear advisor message; Jayce dispatch on a plan with `## QA Plan` allowed; Jayce dispatch with `QA-Bypass:` allowed.
-4. **PR-lint extension regression** — fixture PR body with `QA-Waiver: non-UI ...` (no `Duong-Sign-Off:`) fails the new check (this is the explicit PR #59 regression test); fixture with `QA-Waiver: ... Duong-Sign-Off: 2026-04-27T10:00:00Z` passes; non-UI PR body without `QA-Verification:` fails; non-UI PR body with `QA-Verification: ran X; passed.` passes.
-5. **Akali agent-def regression** — manual: dispatch Akali on a static-HTML deliverable; she does not refuse on the basis that "no routes / no flows".
+3. **PR-lint extension regression** — fixture PR body with `QA-Waiver: non-UI ...` (no `Duong-Sign-Off:`) fails the new check (this is the explicit PR #59 regression test); fixture with `QA-Waiver: ... Duong-Sign-Off: 2026-04-27T10:00:00Z` passes; non-UI PR body without `QA-Verification:` fails; non-UI PR body with `QA-Verification: ran X; passed.` passes.
+4. **Akali agent-def regression** — manual: dispatch Akali on a static-HTML deliverable; she does not refuse on the basis that "no routes / no flows".
 
 ## QA Plan
 
@@ -270,7 +262,7 @@ Tests live downstream in the implementation breakdown (Aphelios). High-level tes
 
 ### Acceptance criteria
 
-- All four regression scenarios in §Test plan above pass against real `pre-commit` hook invocation (not mocked); the PR-lint extension is green on a fixture PR opened against a throwaway branch.
+- All three linter-regression scenarios in §Test plan above (plan-structure, breakdown-qa-tasks, PR-lint) pass against real `pre-commit` hook invocation (not mocked); the PR-lint extension is green on a fixture PR opened against a throwaway branch.
 - Edge cases covered (each must reject as listed):
   - `qa_plan: none` + missing `qa_plan_none_justification:` → reject.
   - `## QA Plan` heading present, body whitespace-only → reject.
@@ -293,54 +285,48 @@ The four regression surfaces from §Test plan, restated as failure modes the gat
 
 1. **Plan-structure linter regression** — plan without `## QA Plan` slips through pre-commit; empty `## QA Plan` slips through; `qa_plan: none` without justification slips through.
 2. **Breakdown-qa-tasks linter regression** — Aphelios commits a `## Tasks` block without `### QA Tasks` and the gate fails to block; or the gate over-blocks a non-breakdown identity (`STRAWBERRY_AGENT=evelynn`).
-3. **Pre-dispatch gate regression** — Jayce dispatched on a plan without `## QA Plan` and the gate fails to block; or `QA-Bypass:` mechanism mis-handled.
-4. **PR-lint extension regression** — PR body with `QA-Waiver: non-UI ...` and no `Duong-Sign-Off:` reaches merge (the explicit PR #59 regression); or non-UI PR body without `QA-Verification:` reaches merge.
-5. **Akali agent-def regression** — Akali refuses a static-HTML deliverable on the basis that "no routes / no flows" instead of running the screenshot-observation flow.
+3. **PR-lint extension regression** — PR body with `QA-Waiver: non-UI ...` and no `Duong-Sign-Off:` reaches merge (the explicit PR #59 regression); or non-UI PR body without `QA-Verification:` reaches merge.
+4. **Akali agent-def regression** — Akali refuses a static-HTML deliverable on the basis that "no routes / no flows" instead of running the screenshot-observation flow.
 
 ### QA artifacts expected
 
 - **Fixture-vs-real split:** linter unit tests run against fixture plans in `tests/fixtures/qa-enforcement/`; the regression test against PR #59's exact `QA-Waiver:` string runs against a real `gh pr view` of a fixture PR opened on this repo. CI wires the fixture-PR run into the pr-lint workflow's self-test path.
-- **xfail tests:** four xfail test files committed first, one per regression scenario in §Test plan. Aphelios names them in the breakdown.
-- **PR marker:** the implementation PR carries `QA-Verification: <command list and pass output>` per D7 non-UI branch.
+- **xfail tests:** three xfail test files committed first, one per linter-regression scenario in §Test plan. Aphelios names them in the breakdown.
+- **PR marker:** the implementation PR carries `QA-Verification: <command list and pass output>` per D6 non-UI branch.
 
 ## Open Questions
 
-1. **Single QA-Plan gate vs. sibling UX-Spec gate — merge or keep separate?**
-  a: Keep separate (`pretooluse-uxspec-gate.sh` + `pretooluse-qaplan-gate.sh`). Cleaner single-responsibility per hook; easier to debug.
-   b: Merge into one `pretooluse-plan-discipline-gate.sh` checking both §UX Spec (UI plans only) and §QA Plan (all plans).
-   c: Skip the pre-dispatch gate entirely; rely on plan-structure linter at promotion time only.
-   Pick: **a** (separate) — UX-Spec is UI-only; QA-Plan is all-plans; merging tangles two different scoping rules. The cost of two hooks is one extra `python3` invocation per dispatch (~5ms); not material.
-2. **Non-UI PR `QA-Verification:` content — free-form vs structured?**
+1. **Non-UI PR `QA-Verification:` content — free-form vs structured?**
   a: Structured with required sub-fields (`Commands:`, `Pass-Output:`, `Real-Data-Source:`).
    b: Free-form single line; linter only checks presence and non-empty.
    c: Free-form but linter requires at least one `$` or `>` character (heuristic for "an actual command was cited").
    Pick: **b** (free-form non-empty) — Duong's principle is simple-yet-clean; structured sub-fields are easy to write but easy to fake; the real signal is whether the implementer can describe the verification in their own words. CI can tighten later.
-3. `**Duong-Sign-Off:` format — iso8601 timestamp vs free-form?**
+2. `**Duong-Sign-Off:` format — iso8601 timestamp vs free-form?**
   a: Strict iso8601 (`2026-04-27T10:00:00Z`); linter regex-validates.
    b: Free-form ("Duong, Apr 27"); linter checks presence of the literal `Duong-Sign-Off:` line.
    c: Cryptographic — require commit signed by `harukainguyen1411` GPG key.
    Pick: **a** (iso8601) — keeps log-grep predictable for the weekend-retro review; cost to write is one date stamp; (c) is over-engineered for the threat model (Duong already gates merges from his admin identity).
-4. **Should the new `QA-Verification:` requirement apply retroactively to in-flight non-UI PRs?**
+3. **Should the new `QA-Verification:` requirement apply retroactively to in-flight non-UI PRs?**
   a: Yes — every open non-UI PR added after this ADR lands must add the marker before merge.
    b: No — apply only to PRs opened after the workflow change deploys; in-flight PRs grandfathered.
    c: Apply to PRs whose plan is in `approved/` after this ADR lands (carve via plan-creation date, not PR-creation date).
    Pick: **b** (forward-only) — minimum disruption, no scramble across in-flight branches; the population of in-flight non-UI PRs at any moment is small.
-5. **Should `qa_plan: none` for advisory ADRs require a downstream-implementation plan reference?**
+4. **Should `qa_plan: none` for advisory ADRs require a downstream-implementation plan reference?**
   a: Yes — `qa_plan_none_justification:` must include `downstream_plan: <path>` pointing at the plan that owns the actual QA. Linter validates the path exists (or is in `proposed/`).
    b: Yes — required prose justification, no path validation.
    c: No constraint beyond the justification string.
    Pick: **a** (path required + linted) — aligns with the project's "data transparency" focus; an advisory ADR that abdicates QA without naming who owns it is a structural hole. Path-validation is cheap.
-6. **Akali scope statement — list of artifact types, or principle-based?**
+5. **Akali scope statement — list of artifact types, or principle-based?**
   a: Enumerate explicitly (HTML, SVG, PDF, dashboards, generated docs, ...). Easy to lint, easy to game by adding a new artifact type the list missed.
    b: Principle-based ("any browser-renderable artifact intended for human visual inspection"). Forces case-by-case judgement; harder to lint.
    c: Both — enumerate as examples, principle as the authoritative test. ADR §D4 already does this.
    Pick: **c** (both) — already drafted this way in D4; preserves both the lintable list and the catch-all principle.
-7. **Should the §QA Plan section be required for `karma` quick-lane plans too?**
+6. **Should the §QA Plan section be required for `karma` quick-lane plans too?**
   a: Yes — same shape, no exception for quick-lane.
    b: No — quick-lane plans are by definition trivial; require only a single-line `qa_plan: <yes|no> + <one-sentence-rationale>` in frontmatter.
    c: No — quick-lane plans are exempt; Karma's collapsed plan-build-test pass implicitly covers QA.
    Pick: **a** (yes, full shape) — PR #59 was a quick-shipping flow that skipped layered checks; the cost of a 5-line §QA Plan is negligible. This is exactly where the discipline matters most.
-8. **Should we backfill §QA Plan on already-approved plans, or only enforce forward?**
+7. **Should we backfill §QA Plan on already-approved plans, or only enforce forward?**
   a: Backfill all `plans/approved/**.md` and `plans/in-progress/**.md` in a sweep before turning on the gate.
    b: Forward-only — gate triggers only on plans whose `created:` frontmatter is `>= 2026-04-27`.
    c: Backfill on first-touch — when an already-approved plan is next edited, the linter requires §QA Plan to be added.
@@ -354,7 +340,6 @@ The four regression surfaces from §Test plan, restated as failure modes the gat
 - `plans/approved/personal/2026-04-25-qa-two-stage-architecture.md` (QA two-stage architecture — Akali OBSERVE + cite-tag, Senna DIAGNOSE; complementary to this ADR's plan-time enforcement).
 - `plans/approved/personal/2026-04-25-akali-qa-discipline-hooks.md` (Karma's tactical patches; complementary).
 - `plans/approved/personal/2026-04-25-structured-qa-pipeline.md` (related QA pipeline work).
-- `scripts/hooks/pretooluse-uxspec-gate.sh` (template for the new pretooluse-qaplan-gate hook).
 - `scripts/hooks/pre-commit-zz-plan-structure.sh` (extension target for §QA Plan check).
 - `.github/workflows/pr-lint.yml` (extension target for `QA-Verification:` requirement and tightened `QA-Waiver:`).
 - `.claude/agents/akali.md` (scope amendment target).
@@ -365,12 +350,12 @@ The four regression surfaces from §Test plan, restated as failure modes the gat
 
 Breakdown authored by Aphelios 2026-04-27. Task IDs `T.QA.*` are the breakdown's namespace and are distinct from the ADR's existing `T-QA*` self-referential coordination tasks (which remain unchanged in §Tasks above). Every implementation task is paired with an xfail task that lands first, per Rule 12. Test-fixture authoring is split out as its own task ahead of the linter implementations so xfail commits can reference real fixture paths.
 
-Phase ordering: **A** = fixtures + xfail tests. **B** = pre-commit linter surfaces (D5 Surface 1, D5 Surface 2). **C** = pre-dispatch hook (D6). **D** = PR-lint extension (D7) + regression PR fixture. **E** = agent-def + ADR-template + CLAUDE.md text edits (D4, D8). **F** = self-loop verification (the ADR's own §QA Tasks T-QA1..T-QA3 against the now-live linters).
+Phase ordering: **A** = fixtures + xfail tests. **B** = pre-commit linter surfaces (D5 Surface 1, D5 Surface 2). **C** = PR-lint extension (D6) + regression PR fixture. **D** = agent-def + ADR-template + CLAUDE.md text edits (D4, D7). **E** = self-loop verification (the ADR's own §QA Tasks T-QA1..T-QA3 against the now-live linters).
 
 ### Phase A — Fixtures + xfail tests (test-first per Rule 12)
 
 - T.QA.0 — Author plan-structure linter test fixtures.
-  - description: Create `tests/fixtures/qa-enforcement/plans/` with eight fixture plans covering D5 Surface 1: (a) missing `## QA Plan` heading, (b) empty `## QA Plan` body, (c) `## QA Plan` with body but missing `**UI involvement:**` line, (d) `**UI involvement:** maybe` invalid value, (e) `qa_plan: none` frontmatter without `qa_plan_none_justification`, (f) `qa_plan: none` with justification missing `downstream_plan:` path (per OQ #5 pick a), (g) populated UI-branch valid, (h) populated non-UI-branch valid. Each fixture is a minimal `.md` file under the fixtures dir; reject cases (a–f) and accept cases (g–h).
+  - description: Create `tests/fixtures/qa-enforcement/plans/` with eight fixture plans covering D5 Surface 1: (a) missing `## QA Plan` heading, (b) empty `## QA Plan` body, (c) `## QA Plan` with body but missing `**UI involvement:**` line, (d) `**UI involvement:** maybe` invalid value, (e) `qa_plan: none` frontmatter without `qa_plan_none_justification`, (f) `qa_plan: none` with justification missing `downstream_plan:` path (per OQ #4 pick a), (g) populated UI-branch valid, (h) populated non-UI-branch valid. Each fixture is a minimal `.md` file under the fixtures dir; reject cases (a–f) and accept cases (g–h).
   - acceptance: 8 fixture files committed; each is < 40 lines; README.md in fixtures dir maps each fixture to the D5/OQ rule it exercises.
   - parallel_slice_candidate: yes
   - est_minutes: 35
@@ -384,35 +369,28 @@ Phase ordering: **A** = fixtures + xfail tests. **B** = pre-commit linter surfac
   - depends_on: []
 
 - T.QA.2 — Author PR-lint regression fixture for the PR #59 false-waiver case.
-  - description: Create `tests/fixtures/qa-enforcement/pr-bodies/` with five PR-body fixtures covering D7: (a) `QA-Waiver: non-UI ...` without `Duong-Sign-Off:` (reject — the explicit PR #59 regression), (b) `QA-Waiver: non-UI ... Duong-Sign-Off: 2026-04-27T10:00:00Z` (accept), (c) non-UI PR body without `QA-Verification:` (reject), (d) non-UI PR body with `QA-Verification: ran X; passed.` (accept), (e) UI-PR with `QA-Report:` populated and no `Figma-Ref:` opt-in (accept; `Visual-Diff:` not required).
+  - description: Create `tests/fixtures/qa-enforcement/pr-bodies/` with five PR-body fixtures covering D6: (a) `QA-Waiver: non-UI ...` without `Duong-Sign-Off:` (reject — the explicit PR #59 regression), (b) `QA-Waiver: non-UI ... Duong-Sign-Off: 2026-04-27T10:00:00Z` (accept), (c) non-UI PR body without `QA-Verification:` (reject), (d) non-UI PR body with `QA-Verification: ran X; passed.` (accept), (e) UI-PR with `QA-Report:` populated and no `Figma-Ref:` opt-in (accept; `Visual-Diff:` not required).
   - acceptance: 5 PR-body fixtures committed as plain `.txt` files; companion expected-result table in `README.md`.
   - parallel_slice_candidate: yes
   - est_minutes: 25
   - depends_on: []
 
 - T.QA.3 — xfail test: plan-structure linter rejects missing/empty §QA Plan.
-  - description: Add an xfail test file `tests/qa-enforcement/test_plan_structure_qaplan.sh` that invokes `scripts/hooks/pre-commit-zz-plan-structure.sh` against fixtures from T.QA.0 cases (a)–(f) and asserts non-zero exit; against (g)–(h) asserts zero exit. Test must xfail (RED) at commit time because the §QA Plan check is not yet added in Surface 1. Reference task `T.QA.5` in the xfail marker.
+  - description: Add an xfail test file `tests/qa-enforcement/test_plan_structure_qaplan.sh` that invokes `scripts/hooks/pre-commit-zz-plan-structure.sh` against fixtures from T.QA.0 cases (a)–(f) and asserts non-zero exit; against (g)–(h) asserts zero exit. Test must xfail (RED) at commit time because the §QA Plan check is not yet added in Surface 1. Reference task `T.QA.6` in the xfail marker.
   - acceptance: `tests/qa-enforcement/test_plan_structure_qaplan.sh` committed; running it RED (exits non-zero on the cases that should reject); xfail marker references the implementation task.
   - parallel_slice_candidate: no
   - est_minutes: 20
   - depends_on: ["T.QA.0"]
 
 - T.QA.4 — xfail test: breakdown-qa-tasks linter rejects/accepts per identity.
-  - description: Add `tests/qa-enforcement/test_breakdown_qa_tasks.sh` exercising all four T.QA.1 fixtures against `scripts/hooks/pre-commit-breakdown-qa-tasks.sh`. xfail because hook does not exist yet. References implementation task T.QA.6.
-  - acceptance: test file committed RED; xfail marker references T.QA.6.
+  - description: Add `tests/qa-enforcement/test_breakdown_qa_tasks.sh` exercising all four T.QA.1 fixtures against `scripts/hooks/pre-commit-breakdown-qa-tasks.sh`. xfail because hook does not exist yet. References implementation task T.QA.7.
+  - acceptance: test file committed RED; xfail marker references T.QA.7.
   - parallel_slice_candidate: no
   - est_minutes: 15
   - depends_on: ["T.QA.1"]
 
-- T.QA.5 — xfail test: pre-dispatch QA-plan gate blocks impl agents on bare plans.
-  - description: Add `tests/qa-enforcement/test_pretooluse_qaplan_gate.sh` simulating impl-dispatch tool calls (Jayce, Viktor, Seraphine, Soraka, Talon, Ekko, Vi, Rakan) against (i) a plan missing `## QA Plan` (expect block), (ii) a plan with populated `## QA Plan` (expect allow), (iii) dispatch carrying `QA-Bypass: <reason>` (expect allow). xfail because hook does not exist. References T.QA.7.
-  - acceptance: test file committed RED; xfail marker references T.QA.7.
-  - parallel_slice_candidate: no
-  - est_minutes: 20
-  - depends_on: ["T.QA.0"]
-
-- T.QA.6 — xfail test: PR-lint workflow rejects PR #59 false-waiver pattern.
-  - description: Add `tests/qa-enforcement/test_pr_lint_qa_verification.sh` invoking `scripts/ci/pr-lint-qa-verification.sh` (the new helper authored in Phase D) against all five fixtures from T.QA.2. xfail because the helper does not exist. References T.QA.8.
+- T.QA.5 — xfail test: PR-lint workflow rejects PR #59 false-waiver pattern.
+  - description: Add `tests/qa-enforcement/test_pr_lint_qa_verification.sh` invoking `scripts/ci/pr-lint-qa-verification.sh` (the new helper authored in Phase C) against all five fixtures from T.QA.2. xfail because the helper does not exist. References T.QA.8.
   - acceptance: test file committed RED; xfail marker references T.QA.8.
   - parallel_slice_candidate: no
   - est_minutes: 15
@@ -420,104 +398,95 @@ Phase ordering: **A** = fixtures + xfail tests. **B** = pre-commit linter surfac
 
 ### Phase B — Pre-commit linter surfaces (D5)
 
-- T.QA.7 — Implement plan-structure linter §QA Plan extension (D5 Surface 1).
-  - description: Extend `scripts/hooks/pre-commit-zz-plan-structure.sh` to: (1) require `## QA Plan` heading with non-empty body OR `qa_plan: none` + `qa_plan_none_justification:` frontmatter (and per OQ #5a, the justification must include a `downstream_plan: <path>` line whose target plan exists in `proposed/`, `approved/`, or `in-progress/`); (2) require a line matching `^**UI involvement:** (yes|no)` (case-insensitive on the value); (3) reject `**UI involvement:** maybe` or other invalid values. Reject messages name the failing rule and point at the ADR's D2/D5. POSIX-portable bash per Rule 10.
+- T.QA.6 — Implement plan-structure linter §QA Plan extension (D5 Surface 1).
+  - description: Extend `scripts/hooks/pre-commit-zz-plan-structure.sh` to: (1) require `## QA Plan` heading with non-empty body OR `qa_plan: none` + `qa_plan_none_justification:` frontmatter (and per OQ #4a, the justification must include a `downstream_plan: <path>` line whose target plan exists in `proposed/`, `approved/`, or `in-progress/`); (2) require a line matching `^**UI involvement:** (yes|no)` (case-insensitive on the value); (3) reject `**UI involvement:** maybe` or other invalid values. Reject messages name the failing rule and point at the ADR's D2/D5. POSIX-portable bash per Rule 10.
   - acceptance: T.QA.3 xfail flips to PASS; running `scripts/install-hooks.sh` then committing a fixture-(g) plan succeeds; committing fixture-(a)–(f) plans rejects with the expected message text.
   - parallel_slice_candidate: no
   - est_minutes: 50
   - depends_on: ["T.QA.3"]
 
-- T.QA.8 — Implement breakdown-qa-tasks linter (D5 Surface 2).
+- T.QA.7 — Implement breakdown-qa-tasks linter (D5 Surface 2).
   - description: Author `scripts/hooks/pre-commit-breakdown-qa-tasks.sh` and wire it into the pre-commit chain. Identity resolution mirrors `pretooluse-plan-lifecycle-guard.sh` (framework `agent_type` → `CLAUDE_AGENT_NAME` → `STRAWBERRY_AGENT` → fail-open for non-breakdown identities). When identity is `aphelios` or `kayn` AND staged diff touches a plan with a `## Tasks` heading, require a `### QA Tasks` subsection containing at least one task line (line starting with `-` or `*`). Reject message names the contract location in `.claude/agents/aphelios.md` Hard Rules and the ADR's D3. POSIX bash.
   - acceptance: T.QA.4 xfail flips to PASS; non-breakdown identity commits with `## Tasks` and no `### QA Tasks` succeed; aphelios identity commit with empty `### QA Tasks` heading rejects.
   - parallel_slice_candidate: no
   - est_minutes: 50
   - depends_on: ["T.QA.4"]
 
-### Phase C — Pre-dispatch gate (D6)
+### Phase C — PR-lint extension (D6) + regression PR fixture
 
-- T.QA.9 — Implement pretooluse QA-plan gate (D6 sibling hook).
-  - description: Author `scripts/hooks/pretooluse-qaplan-gate.sh` modeled on `scripts/hooks/pretooluse-uxspec-gate.sh`. Fires on `Agent` tool calls dispatching impl agents (Jayce, Viktor, Seraphine, Soraka, Talon, Ekko, Vi, Rakan). Block when the target plan referenced in the dispatch description lacks `## QA Plan` (or carries `qa_plan: none` without justification). Allow `QA-Bypass: <reason>` in dispatch description (Duong only — log to `.claude/logs/qaplan-gate.log` for retro review). Wire into `.claude/settings.json` PreToolUse handlers. POSIX bash.
-  - acceptance: T.QA.5 xfail flips to PASS; allow-path normal output is `ALLOW qa-plan-present`; block-path message names the missing section and points at D2.
-  - parallel_slice_candidate: no
-  - est_minutes: 45
-  - depends_on: ["T.QA.5"]
-
-### Phase D — PR-lint extension (D7) + regression PR fixture
-
-- T.QA.10 — Author PR-lint helper `scripts/ci/pr-lint-qa-verification.sh`.
-  - description: New helper invoked from `.github/workflows/pr-lint.yml`. UI classification: extend existing path-glob to include `tools/**/*.html`, `tools/**/render*.{mjs,js,ts}`, `**/dashboard/**`; extend body-keyword set with `dashboard | static html | rendered output | visual inspection`. UI-PR rules: keep `QA-Report:`; conditional `Visual-Diff:` only when linked plan or upstream project carries `Figma-Ref:` opt-in (resolved via grep against linked plan path inferred from PR body or branch convention). Tighten `QA-Waiver:` — accept only with paired `Duong-Sign-Off: <iso8601>` line (regex `^Duong-Sign-Off: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`, OQ #3a). Non-UI PR rules: require `QA-Verification: <free-form non-empty>` OR `QA-Verification-Skipped: <reason> Duong-Sign-Off: <iso8601>`. Failure messages cite Rule 16 + ADR §QA Plan branch.
-  - acceptance: T.QA.6 xfail flips to PASS; helper passes against all five T.QA.2 fixtures; outputs structured failure messages naming the missing marker.
+- T.QA.8 — Author PR-lint helper `scripts/ci/pr-lint-qa-verification.sh`.
+  - description: New helper invoked from `.github/workflows/pr-lint.yml`. UI classification: extend existing path-glob to include `tools/**/*.html`, `tools/**/render*.{mjs,js,ts}`, `**/dashboard/**`; extend body-keyword set with `dashboard | static html | rendered output | visual inspection`. UI-PR rules: keep `QA-Report:`; conditional `Visual-Diff:` only when linked plan or upstream project carries `Figma-Ref:` opt-in. Resolution convention (per Breakdown Note 3 RESOLVED): the helper resolves "linked plan" via the PR body's plan-link line, then reads each linked plan's frontmatter `related:` line for `plans/**` paths, and checks each linked plan for a `Figma-Ref:` line; presence of any opt-in triggers `Visual-Diff:` enforcement. Tighten `QA-Waiver:` — accept only with paired `Duong-Sign-Off: <iso8601>` line (regex `^Duong-Sign-Off: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$`, OQ #2a). Non-UI PR rules: require `QA-Verification: <free-form non-empty>` OR `QA-Verification-Skipped: <reason> Duong-Sign-Off: <iso8601>`. Failure messages cite Rule 16 + ADR §QA Plan branch.
+  - acceptance: T.QA.5 xfail flips to PASS; helper passes against all five T.QA.2 fixtures; outputs structured failure messages naming the missing marker.
   - parallel_slice_candidate: no
   - est_minutes: 55
-  - depends_on: ["T.QA.6"]
+  - depends_on: ["T.QA.5"]
 
-- T.QA.11 — Wire helper into `.github/workflows/pr-lint.yml`.
-  - description: Add new `pr-no-qa-bypass` job (or extend existing `pr-lint` job) invoking T.QA.10's helper. Job is required-status-check; failure blocks merge.
+- T.QA.9 — Wire helper into `.github/workflows/pr-lint.yml`.
+  - description: Add new `pr-no-qa-bypass` job (or extend existing `pr-lint` job) invoking T.QA.8's helper. Job is required-status-check; failure blocks merge.
   - acceptance: workflow YAML lints (`actionlint`); fixture PR with `QA-Waiver: non-UI ...` and no sign-off fails the job; fixture PR with paired sign-off passes.
   - parallel_slice_candidate: no
   - est_minutes: 25
-  - depends_on: ["T.QA.10"]
+  - depends_on: ["T.QA.8"]
 
-- T.QA.12 — Regression PR fixture: open a real PR exercising the PR #59 false-waiver pattern.
+- T.QA.10 — Regression PR fixture: open a real PR exercising the PR #59 false-waiver pattern.
   - description: Per the ADR's §QA artifacts and §Test plan, create a throwaway branch with a trivial non-UI commit, open a PR with body `QA-Waiver: non-UI tools/retro pipeline only — no browser rendering. Akali Playwright flow not applicable.` (no `Duong-Sign-Off:`). Confirm the new pr-lint job rejects red. Then amend body to add `Duong-Sign-Off: 2026-04-27T10:00:00Z`, confirm green. Close the PR (do not merge). Record the run URLs in the implementation PR body under `QA-Verification:`.
   - acceptance: PR opened, two CI runs (red then green) recorded; URLs captured; PR closed unmerged.
   - parallel_slice_candidate: wait-bound
   - est_minutes: 30
-  - depends_on: ["T.QA.11"]
+  - depends_on: ["T.QA.9"]
 
-### Phase E — Text + agent-def + ADR-template (D4, D8)
+### Phase D — Text + agent-def + ADR-template (D4, D7)
 
-- T.QA.13 — Amend `CLAUDE.md` Rule 16 + Rule 22 cross-reference.
+- T.QA.11 — Amend `CLAUDE.md` Rule 16 + Rule 22 cross-reference.
   - description: Replace Rule 16 body with the D4 text verbatim from this ADR (UI-involvement formulation, screenshot-observation narrative requirement, Figma-Ref opt-in, no blanket QA-Waiver, paired Duong-Sign-Off requirement, non-UI PR `QA-Verification:` requirement). Add to Rule 22 a one-sentence cross-reference noting §QA Plan is the structural sibling to §UX Spec.
   - acceptance: CLAUDE.md diff matches D4 text (whitespace tolerated); existing Rule 17–22 unchanged.
   - parallel_slice_candidate: yes
   - est_minutes: 15
   - depends_on: []
 
-- T.QA.14 — Amend `.claude/agents/akali.md` scope statement (D4 + OQ #6c).
-  - description: Broaden scope to "any browser-renderable artifact intended for human visual inspection — including but not limited to: routes, forms, state-transition changes, auth flows, session lifecycle, static HTML pages, dashboards, generated reports, SVG/PDF artifacts, CLI tools whose primary output is HTML/SVG/Markdown rendered for human eyes" (enumerated examples + open-category principle, OQ #6c). Add explicit instruction: per-screenshot observation narrative ("what was checked, observed vs expected, pass/fail") in QA report; screenshots-as-receipts disallowed.
+- T.QA.12 — Amend `.claude/agents/akali.md` scope statement (D4 + OQ #5c).
+  - description: Broaden scope to "any browser-renderable artifact intended for human visual inspection — including but not limited to: routes, forms, state-transition changes, auth flows, session lifecycle, static HTML pages, dashboards, generated reports, SVG/PDF artifacts, CLI tools whose primary output is HTML/SVG/Markdown rendered for human eyes" (enumerated examples + open-category principle, OQ #5c). Add explicit instruction: per-screenshot observation narrative ("what was checked, observed vs expected, pass/fail") in QA report; screenshots-as-receipts disallowed.
   - acceptance: agent-def diff matches; running `<!-- include: -->` sync via `scripts/sync-shared-rules.sh` re-renders cleanly.
   - parallel_slice_candidate: yes
   - est_minutes: 15
   - depends_on: []
 
-- T.QA.15 — Amend `.claude/agents/aphelios.md` and `.claude/agents/kayn.md` Hard Rules.
+- T.QA.13 — Amend `.claude/agents/aphelios.md` and `.claude/agents/kayn.md` Hard Rules.
   - description: Add to each agent's Hard Rules a line: "Any `## Tasks` section you author MUST contain a `### QA Tasks` subsection with at least one task line. Failure to include = breakdown-incomplete; pre-commit `pre-commit-breakdown-qa-tasks.sh` will reject your commit. See ADR D3."
-  - acceptance: both agent-defs carry the line; identity-gated linter from T.QA.8 is the enforcement mechanism named in the rule body.
+  - acceptance: both agent-defs carry the line; identity-gated linter from T.QA.7 is the enforcement mechanism named in the rule body.
   - parallel_slice_candidate: yes
   - est_minutes: 10
   - depends_on: []
 
-- T.QA.16 — Author `.claude/agents/_shared/adr-template.md` §QA Plan stub (D8).
-  - description: Create or amend the canonical ADR template that Azir / Swain / Karma reference. Include §QA Plan section matching D2 shape with both UI / non-UI branches commented in. Frontmatter stub adds `qa_plan: required # or 'none' with qa_plan_none_justification:` field. Include `Figma-Ref: # optional — required only for design-comparison gating per OQ #6` comment line. Run `scripts/sync-shared-rules.sh` to fan out includes.
+- T.QA.14 — Author `.claude/agents/_shared/adr-template.md` §QA Plan stub (D7).
+  - description: Create or amend the canonical ADR template that Azir / Swain / Karma reference. Include §QA Plan section matching D2 shape with both UI / non-UI branches commented in. Frontmatter stub adds `qa_plan: required # or 'none' with qa_plan_none_justification:` field. Include `Figma-Ref: # optional — required only for design-comparison gating per OQ #5` comment line. Run `scripts/sync-shared-rules.sh` to fan out includes.
   - acceptance: template file present; sync script run clean; one downstream agent-def re-renders to include the stub.
   - parallel_slice_candidate: yes
   - est_minutes: 25
   - depends_on: []
 
-### Phase F — Self-loop verification (ADR's own T-QA1..T-QA3)
+### Phase E — Self-loop verification (ADR's own T-QA1..T-QA3)
 
-- T.QA.17 — Self-loop: verify this ADR survives its own linter (ADR T-QA2).
-  - description: Run T.QA.7's extended plan-structure linter against this ADR's current file in-tree. Confirm `## QA Plan` is detected, `**UI involvement:** no` is matched, and the linter exits 0. Then run a temporary test removing `## QA Plan` from a copy and confirm the linter rejects (loop-back). Record commands and outputs in the implementation PR's `QA-Verification:` marker.
+- T.QA.15 — Self-loop: verify this ADR survives its own linter (ADR T-QA2).
+  - description: Run T.QA.6's extended plan-structure linter against this ADR's current file in-tree. Confirm `## QA Plan` is detected, `**UI involvement:** no` is matched, and the linter exits 0. Then run a temporary test removing `## QA Plan` from a copy and confirm the linter rejects (loop-back). Record commands and outputs in the implementation PR's `QA-Verification:` marker.
   - acceptance: command outputs captured in PR body; both pass-on-real and reject-on-removed cases verified; ADR's own T-QA2 satisfied.
   - parallel_slice_candidate: no
   - est_minutes: 15
-  - depends_on: ["T.QA.7"]
+  - depends_on: ["T.QA.6"]
 
-- T.QA.18 — Self-loop: verify breakdown-qa-tasks linter against this very breakdown (ADR T-QA3).
+- T.QA.16 — Self-loop: verify breakdown-qa-tasks linter against this very breakdown (ADR T-QA3).
   - description: With `STRAWBERRY_AGENT=aphelios`, stage a copy of this ADR with the §Breakdown's `### QA Tasks` removed; confirm rejection. Restore and confirm acceptance. Record in PR body.
   - acceptance: both runs captured; ADR's own T-QA3 satisfied.
   - parallel_slice_candidate: no
   - est_minutes: 15
-  - depends_on: ["T.QA.8"]
+  - depends_on: ["T.QA.7"]
 
-- T.QA.19 — Self-loop: verify regression PR fixture covers PR #59 case (ADR T-QA1).
-  - description: Confirm T.QA.12's PR fixture URL is recorded; reference it in the implementation PR's `QA-Verification:` marker as the regression-test commitment for the PR #59 false-waiver case. Cross-reference satisfies ADR T-QA1.
-  - acceptance: implementation PR body's `QA-Verification:` cites T.QA.12 fixture run URLs and the corresponding ADR T-QA reference.
+- T.QA.17 — Self-loop: verify regression PR fixture covers PR #59 case (ADR T-QA1).
+  - description: Confirm T.QA.10's PR fixture URL is recorded; reference it in the implementation PR's `QA-Verification:` marker as the regression-test commitment for the PR #59 false-waiver case. Cross-reference satisfies ADR T-QA1.
+  - acceptance: implementation PR body's `QA-Verification:` cites T.QA.10 fixture run URLs and the corresponding ADR T-QA reference.
   - parallel_slice_candidate: no
   - est_minutes: 5
-  - depends_on: ["T.QA.12"]
+  - depends_on: ["T.QA.10"]
 
 ### QA Tasks
 
@@ -533,12 +502,12 @@ This breakdown is itself subject to D3's `### QA Tasks` requirement. Per the ADR
   - estimate_minutes: 10
   - success: CI green on fixture-only path; regression PR run URLs recorded.
 
-- T.QA.QA3 — xfail commits per Rule 12: confirm Phase A xfail tests (T.QA.3, T.QA.4, T.QA.5, T.QA.6) land as red commits BEFORE their paired implementation tasks (T.QA.7, T.QA.8, T.QA.9, T.QA.10) on the same branch. Pre-push hook enforces this; no `--no-verify`.
+- T.QA.QA3 — xfail commits per Rule 12: confirm Phase A xfail tests (T.QA.3, T.QA.4, T.QA.5) land as red commits BEFORE their paired implementation tasks (T.QA.6, T.QA.7, T.QA.8) on the same branch. Pre-push hook enforces this; no `--no-verify`.
   - owner: implementer
   - estimate_minutes: 5
   - success: `git log --oneline` shows xfail commit precedes impl commit for each pair.
 
-- T.QA.QA4 — PR-body marker: implementation PR carries `QA-Verification:` with the exact commands from T.QA.17, T.QA.18, T.QA.19 and their pass-output (stdout snippet OK). Per OQ #2b, free-form non-empty is sufficient. Per ADR §QA artifacts, this marker is the non-UI branch contract.
+- T.QA.QA4 — PR-body marker: implementation PR carries `QA-Verification:` with the exact commands from T.QA.15, T.QA.16, T.QA.17 and their pass-output (stdout snippet OK). Per OQ #1b, free-form non-empty is sufficient. Per ADR §QA artifacts, this marker is the non-UI branch contract.
   - owner: implementer
   - estimate_minutes: 5
   - success: PR body contains the marker; pr-lint job green on the implementation PR itself (eats its own dogfood).
@@ -547,15 +516,15 @@ This breakdown is itself subject to D3's `### QA Tasks` requirement. Per the ADR
 
 Items surfaced during breakdown that are coordination/design concerns rather than execution issues. Not pre-decided — flagged for Swain/Duong revisit.
 
-1. **D6 redundancy concern (carried forward from Orianna's WARN)**: This ADR introduces FOUR enforcement surfaces for one invariant — (i) D5 Surface 1 pre-commit plan-structure linter extension at promotion time, (ii) D5 Surface 2 pre-commit breakdown-qa-tasks linter at breakdown commit time, (iii) D6 pre-dispatch QA-plan gate at impl-agent-fire time, (iv) D7 PR-lint extension at PR-merge time. Surface (iii) D6's allow-rate is structurally near-100% because impl agents only fire on already-promoted plans, which already passed Surface 1. D6's stated rationale is defense-in-depth against manually-created plans that bypassed Surface 1 — a small population. **Open concern**: is D6 load-bearing? If Surface 1 + Surface 4 (PR-lint) suffice, D6 could be dropped to reduce hook count and per-dispatch latency (~5ms × N dispatches/day). Conversely, D6 catches a class of failure (manual plan creation bypassing pre-commit) that Surface 4 catches only at PR time, potentially after substantial implementation work has been done against an unspec'd plan. **This is a Swain-revisit decision, not a breakdown decision.** I have included T.QA.5 (xfail) and T.QA.9 (impl) for D6 as the ADR specifies. If Swain decides to drop D6, those two tasks are deletable as a clean unit.
+1. **D6 redundancy concern (carried forward from Orianna's WARN)**: RESOLVED — applied: D6 dropped per coordinator decision 2026-04-27-qa-adr-d6-redundancy-drop. Three enforcement surfaces remain (D5 Surface 1 promotion-time plan-structure linter, D5 Surface 2 breakdown-time breakdown-qa-tasks linter, D6 PR-lint extension); they form a complete defense.
 
-2. **Identity resolution divergence**: D5 Surface 2 (T.QA.8) uses the same identity-resolution chain as the plan-lifecycle guard (`agent_type` → `CLAUDE_AGENT_NAME` → `STRAWBERRY_AGENT` → fail-open for non-breakdown). D6 (T.QA.9) needs the same chain but applied to the `Agent` tool dispatch context, where the *target* agent matters (Jayce, Viktor, etc.) not the dispatching agent. The ADR does not explicitly call out this contextual difference. **Surfaced as note** so the implementer (per T.QA.9) does not blindly copy the plan-lifecycle guard's identity logic without adapting for dispatch-context.
+2. **Identity resolution divergence (D5-S2 vs former D6)**: RESOLVED — moot after D6 drop. D5 Surface 2 (T.QA.7) is the only remaining identity-gated surface; it uses the plan-lifecycle guard's chain unchanged.
 
-3. **Figma-Ref opt-in resolution path is under-specified**: D7 calls for the PR-lint helper to grep the linked plan path for `^Figma-Ref:` to decide whether `Visual-Diff:` is required. The ADR is silent on how the helper resolves "linked plan path" from the PR body or branch convention. **Surfaced as note** so T.QA.10's implementer either picks an explicit convention (e.g. PR body `Plan-Ref: <path>` line, or branch-name slug match against `plans/**`) and documents it in the helper's header comment, or escalates to Swain. I have not pre-decided this in the breakdown.
+3. **Figma-Ref opt-in resolution path**: RESOLVED — convention: PR-lint helper resolves "linked plan" via the PR body's plan-link line, then reads frontmatter `related:` line for `plans/**` paths, then checks each linked plan for `Figma-Ref:`. Encoded in T.QA.8's description.
 
-4. **OQ #5a `downstream_plan:` validation depth**: The picked answer requires the linter to validate the path exists in `proposed/`/`approved/`/`in-progress/`. Lifecycle of the downstream plan changes over time (proposed → approved → in-progress → implemented → archived). **Surfaced as note**: T.QA.7's implementer must decide whether the linter accepts only the three "live" stages or also `implemented/` (likely yes — an advisory ADR whose downstream is already implemented is in a fine state). I have left this latitude to the implementer rather than encoding a stricter contract that may be wrong.
+4. **OQ #4a `downstream_plan:` validation depth**: RESOLVED — accept lifecycle stages: `proposed/`, `approved/`, `in-progress/` (the live three). T.QA.6's implementer encodes exactly these three.
 
-5. **Self-loop ordering caveat**: T.QA.17 / T.QA.18 / T.QA.19 satisfy this ADR's own §QA Tasks (T-QA1, T-QA2, T-QA3) only AFTER the corresponding implementation tasks land. The ADR's §QA Tasks are written as if they precede implementation; in practice they are post-implementation verifications that the linters work against the ADR itself. **Not a blocker**, just a note that the ADR's own §QA Tasks are eaten-its-own-dogfood verifications, not pre-conditions.
+5. **Self-loop ordering caveat**: T.QA.15 / T.QA.16 / T.QA.17 satisfy this ADR's own §QA Tasks (T-QA1, T-QA2, T-QA3) only AFTER the corresponding implementation tasks land. The ADR's §QA Tasks are written as if they precede implementation; in practice they are post-implementation verifications that the linters work against the ADR itself. **Not a blocker**, just a note that the ADR's own §QA Tasks are eaten-its-own-dogfood verifications, not pre-conditions.
 
 ## Orianna approval
 
@@ -563,5 +532,5 @@ Items surfaced during breakdown that are coordination/design concerns rather tha
 - **Agent:** Orianna
 - **Transition:** proposed → approved
 - **Rationale:** Structural gates pass (qa_plan frontmatter, qa_plan body with all four H3 sub-headings, plan-structure linter). Plan has clear owner (swain), concrete architecture-impact table, eight decisions with named linter shapes and frontmatter contracts, all eight Open Questions resolved with explicit picks and rationale. The §QA Plan is populated under the non-UI branch with acceptance criteria, happy path, failure modes, and QA artifacts — internally consistent with the discipline this ADR proposes. Coordination tasks (T1–T3) and QA tasks (T-QA1–T-QA4) are concrete and owner-tagged.
-- **Simplicity:** WARN: possible overengineering — three lint surfaces (pre-commit plan-structure extension, new pre-commit breakdown-qa-tasks hook, pre-dispatch QA-plan gate, plus PR-lint extension) for a single invariant (§QA Plan presence). D6 acknowledges the pre-dispatch gate's allow-rate is high since impl agents only fire on already-promoted plans that already passed Surface 1 — defense-in-depth is the stated rationale, but a single seam (promotion linter) plus PR-lint may suffice. Worth revisiting in breakdown whether D6 is load-bearing.
+- **Simplicity:** Resolved 2026-04-27 — D6 (pre-dispatch QA-plan gate) dropped per coordinator decision `agents/evelynn/memory/decisions/log/2026-04-27-qa-adr-d6-redundancy-drop.md`. Three enforcement surfaces remain: D5 Surface 1 promotion-time linter, D5 Surface 2 breakdown-time linter, D6 PR-lint extension. The original WARN that flagged the pre-dispatch gate's near-100% allow-rate is now moot.
 
