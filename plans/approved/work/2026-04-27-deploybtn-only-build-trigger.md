@@ -154,6 +154,13 @@ Post-review findings from Senna (BLOCKER B1) and Lucian (IMPORTANT I1) identifie
 
 **Rationale:** original plan undersized the surface; `mcp_app.py` and `studio.js` `doDeploy()` were outside original scope but are required for a complete build path. Post-review scope expansion is bounded: no S2 changes, no UI CSS, no agent-proxy changes.
 
+## Scope amendment 2026-04-27 (Senna r3 BLOCKER)
+
+- **T6** — Migrate `POST /session/{id}/build` auth from inline `verify_internal_secret` to `Depends(require_session_or_owner)`. Senna r3 found T4's wire-fix surfaced a server-side auth mismatch — the endpoint was never migrated in loop 2c. Browser `fetch` with `credentials: 'same-origin'` sends the `ds_session` cookie, but the endpoint only accepted `X-Internal-Secret`, returning 401. Aligning auth model with `/chat` and `/cancel-build` (both already use `require_session_or_owner`). Dual-auth preserved: `require_session_or_owner` accepts either cookie-owner OR internal-secret, so server-to-server callers are unaffected.
+  - Files: `tools/demo-studio-v3/main.py:2635-2661`
+  - Test: `tools/demo-studio-v3/tests/integration/test_build_endpoint_auth.py` (behavioral — xfail-first per Rule 12)
+  - Commits: xfail 42f649b → impl 85058e1 on `feat/deploybtn-only-build-trigger`
+
 ## Orianna approval
 
 - **Date:** 2026-04-27
