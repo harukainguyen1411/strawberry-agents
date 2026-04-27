@@ -4,6 +4,7 @@
 #
 # Usage: refresh-projects.sh <db_path>
 #   env T4A_FIXTURE_PROJECTS_DIR — directory to walk (overrides live projects/)
+#   env STRAWBERRY_STATE_DB      — override db_path default (~/.strawberry-state/state.db)
 
 set -euo pipefail
 
@@ -12,20 +13,34 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=./_lib_db.sh
 . "$SCRIPT_DIR/_lib_db.sh"
 
-DB_PATH="${1:?refresh-projects.sh: db_path required as \$1}"
+DB_PATH="${1:-${STRAWBERRY_STATE_DB:-$HOME/.strawberry-state/state.db}}"
 
 t_start=$(date +%s 2>/dev/null || echo 0)
+rows_in=0
+rows_out=0
+
+_esc() { printf '%s' "${1//\'/\'\'}"; }
+
+_emit_refresh_log() {
+    local t_end duration_ms
+    t_end=$(date +%s 2>/dev/null || echo 0)
+    duration_ms=$(( (t_end - t_start) * 1000 ))
+    db_write_tx "$DB_PATH" \
+        "INSERT INTO refresh_log (projection,last_refreshed_at,duration_ms,rows_in,rows_out)
+         VALUES ('projects_index',strftime('%Y-%m-%d %H:%M:%f','now'),$duration_ms,$rows_in,$rows_out)
+         ON CONFLICT(projection) DO UPDATE SET
+           last_refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now'),
+           duration_ms=excluded.duration_ms,
+           rows_in=excluded.rows_in,
+           rows_out=excluded.rows_out;" 2>/dev/null || true
+}
+trap '_emit_refresh_log' EXIT
 
 if [ -n "${T4A_FIXTURE_PROJECTS_DIR:-}" ]; then
     SCAN_DIR="$T4A_FIXTURE_PROJECTS_DIR"
-    PROJECT_FILES=$(find "$SCAN_DIR" -maxdepth 2 -name "*.md" 2>/dev/null | sort)
 else
     SCAN_DIR="$REPO_ROOT/projects"
-    PROJECT_FILES=$(find "$SCAN_DIR" -name "*.md" 2>/dev/null | sort)
 fi
-
-rows_in=0
-rows_out=0
 
 _frontmatter_field() {
     local file="$1" field="$2"
@@ -35,7 +50,7 @@ _frontmatter_field() {
     " "$file" 2>/dev/null | tr -d "'\""
 }
 
-for md_file in $PROJECT_FILES; do
+while IFS= read -r -d '' md_file; do
     [ -f "$md_file" ] || continue
 
     status=$(_frontmatter_field "$md_file" "status")
@@ -45,32 +60,14 @@ for md_file in $PROJECT_FILES; do
 
     concern=$(_frontmatter_field "$md_file" "concern")
     deadline=$(_frontmatter_field "$md_file" "deadline")
-
-    # slug = basename without .md extension
     slug="$(basename "$md_file" .md)"
-    slug_esc="${slug//\'/\'\'}"
-    status_esc="${status//\'/\'\'}"
-    concern_esc="${concern:-personal}"
-    concern_esc="${concern_esc//\'/\'\'}"
-    deadline_esc="${deadline//\'/\'\'}"
 
     db_write_tx "$DB_PATH" \
         "INSERT INTO projects_index (slug,status,concern,deadline,refreshed_at)
-         VALUES ('$slug_esc','$status_esc','$concern_esc','$deadline_esc',strftime('%Y-%m-%d %H:%M:%f','now'))
+         VALUES ('$(_esc "$slug")','$(_esc "$status")','$(_esc "${concern:-personal}")',
+                 '$(_esc "$deadline")',strftime('%Y-%m-%d %H:%M:%f','now'))
          ON CONFLICT(slug) DO UPDATE SET
            status=excluded.status, concern=excluded.concern,
-           deadline=excluded.deadline, refreshed_at=excluded.refreshed_at;"
+           deadline=excluded.deadline, refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now');"
     rows_out=$((rows_out + 1))
-done
-
-t_end=$(date +%s 2>/dev/null || echo 0)
-duration_ms=$(( (t_end - t_start) * 1000 ))
-
-db_write_tx "$DB_PATH" \
-    "INSERT INTO refresh_log (projection,last_refreshed_at,duration_ms,rows_in,rows_out)
-     VALUES ('projects_index',strftime('%Y-%m-%d %H:%M:%f','now'),$duration_ms,$rows_in,$rows_out)
-     ON CONFLICT(projection) DO UPDATE SET
-       last_refreshed_at=strftime('%Y-%m-%d %H:%M:%f','now'),
-       duration_ms=excluded.duration_ms,
-       rows_in=excluded.rows_in,
-       rows_out=excluded.rows_out;"
+done < <(find "$SCAN_DIR" -name "*.md" -print0 2>/dev/null | sort -z)

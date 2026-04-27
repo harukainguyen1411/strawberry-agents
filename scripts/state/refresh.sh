@@ -17,7 +17,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PENDING_DIR="${STRAWBERRY_STATE_DIR:-$HOME/.strawberry-state}/refresh-pending"
 
-DB_PATH="${1:?refresh.sh: db_path required as \$1}"
+DB_PATH="${1:-${STRAWBERRY_STATE_DB:-$HOME/.strawberry-state/state.db}}"
 MODE="${2:?refresh.sh: mode required as \$2 (--all or --<projection>)}"
 
 _consume_sentinels() {
