@@ -55,7 +55,7 @@ SQL="INSERT OR IGNORE INTO learnings (agent, coordinator, learned_at, slug, path
      VALUES (
        '$(_esc "$AGENT")',
        '$(_esc "$COORDINATOR")',
-       '$(_esc "$LEARNED_AT")',
+       strftime('%Y-%m-%d %H:%M:%f', '$(_esc "$LEARNED_AT")'),
        '$(_esc "$SLUG")',
        '$(_esc "$LEARNING_PATH")',
        nullif('$(_esc "$TOPIC")', '')
