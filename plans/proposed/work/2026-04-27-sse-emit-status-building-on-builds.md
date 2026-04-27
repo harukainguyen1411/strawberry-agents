@@ -82,7 +82,7 @@ Estimated diff: ~30-40 lines in `main.py` `_vanilla_sse_generator` block (lines 
 - **Detail:** After T1+T2 PR merges and `demo-studio-v3` redeploys, instruct Akali to re-run the ADR-1 Build Progress Bar QA flow against the new revision. Akali's check matrix: (a) DOM MutationObserver catches `.build-progress-bar` insertion within 5s of clicking Generate, (b) `connected` SSE frame arrives within 2s of EventSource open, (c) `[data-phase]` wrapper transitions to `"build"` within 5s of `/build/start` returning, (d) progress steps advance as `/build-status` polls report new `step` values.
 - **DoD:** Akali QA report PASS for `progress-bar-never-mounts` category. Linked in PR body via `QA-Report:` line per Strawberry Rule 16.
 
-## Test plan
+## QA Plan
 
 **Invariants protected:**
 1. **SSE seed frame on connect** — every `EventSource` open against `/session/{id}/stream` for a vanilla session receives a `connected` event within 2s carrying current `{sessionId, status, phase}`. Without this, mid-build reconnects can never hydrate the progress bar.
