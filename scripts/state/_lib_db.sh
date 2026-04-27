@@ -54,7 +54,7 @@ db_write_tx() {
         # BEGIN IMMEDIATE acquires the RESERVED lock up-front, so we fail fast
         # instead of getting SQLITE_BUSY mid-transaction (D6 rationale).
         if sqlite3 "$db_path" \
-            "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT}; BEGIN IMMEDIATE; ${sql}; COMMIT;" \
+            "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT}; PRAGMA synchronous=NORMAL; BEGIN IMMEDIATE; ${sql}; COMMIT;" \
             > /dev/null 2>&1; then
             return 0
         fi
@@ -80,7 +80,12 @@ db_read() {
         return 1
     fi
 
-    sqlite3 -cmd "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT};" "$db_path" "$sql"
+    sqlite3 \
+        -cmd ".output /dev/null" \
+        -cmd "PRAGMA busy_timeout=${_DB_BUSY_TIMEOUT};" \
+        -cmd "PRAGMA synchronous=NORMAL;" \
+        -cmd ".output stdout" \
+        "$db_path" "$sql"
 }
 
 db_apply_migrations() {
