@@ -143,6 +143,44 @@ FIXTURE_CONFORMANT="$FIXTURE_DIR/teammate-idle-conformant-turn.jsonl"
   fi
 }
 
+# Case real_jsonl_fixture_nonconformant (T4 impl): real-path parser symmetry case.
+# Fixture spans 2 turns: task_done on T-prior in turn 1, plain status on T-current in turn 2.
+# Turn-scoped parser must only see turn-2 SendMessages (no task_done) → hook warns.
+# This validates Finding 1 fix via real JSONL file rather than HOOK_SENDMESSAGE_FILE override.
+FIXTURE_NONCONFORMANT="$FIXTURE_DIR/teammate-idle-nonconformant-turn.jsonl"
+
+{
+  if [ ! -f "$FIXTURE_NONCONFORMANT" ]; then
+    printf 'FAIL: case_real_jsonl_fixture_nonconformant: fixture file missing: %s\n' "$FIXTURE_NONCONFORMANT" >&2
+    fail=$((fail + 1))
+  else
+    tmpdir_nc="$(mktemp -d)"
+    log_file_nc="$tmpdir_nc/teammate-idle-marker.log"
+    event_nc="{\"hook_event_name\":\"TeammateIdle\",\"session_id\":\"nc-session\",\"transcript_path\":\"$FIXTURE_NONCONFORMANT\",\"cwd\":\"/repo\",\"permission_mode\":\"default\"}"
+    printf '%s\n' "$event_nc" > "$tmpdir_nc/event.json"
+    # Intentionally do NOT set HOOK_SENDMESSAGE_FILE — force real JSONL parser path
+    stderr_nc="$(
+      TEAMMATE_IDLE_MARKER_LOG="$log_file_nc" \
+      HOOK_EVENT_FILE="$tmpdir_nc/event.json" \
+      bash "$HOOK" 2>&1 >/dev/null || true
+    )"
+    if printf '%s' "$stderr_nc" | grep -q "went idle without a completion marker"; then
+      actual_nc="warn"
+    else
+      actual_nc="silent"
+    fi
+    # Fixture current turn has only status update, no task_done → expected "warn".
+    if [ "$actual_nc" = "warn" ]; then
+      printf 'PASS: case_real_jsonl_fixture_nonconformant: turn-scoped parser correctly warns on current turn\n'
+      pass=$((pass + 1))
+    else
+      printf 'FAIL: case_real_jsonl_fixture_nonconformant: parser returned silent but should warn (prior task_done leaked)\n' >&2
+      fail=$((fail + 1))
+    fi
+    rm -rf "$tmpdir_nc"
+  fi
+}
+
 # Summary
 total=$((pass + fail + xfail))
 printf '\n--- T9-repair hook xfail test summary ---\n'
