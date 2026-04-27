@@ -94,20 +94,21 @@ if [ "$is_ui" -eq 0 ]; then
   _body_has_ui_keyword '\bui-involving\b|\bui involving\b' && is_ui=1
 fi
 
-# Also classify as UI if body explicitly states QA-Report: marker
-case "$pr_body" in
-  *"QA-Report:"*) is_ui=1 ;;
-esac
+# Also classify as UI if body explicitly states QA-Report: marker (line-anchored)
+if printf '%s' "$pr_body" | grep -qE '^QA-Report:'; then
+  is_ui=1
+fi
 
 # ---------------------------------------------------------------------------
-# Marker extraction
+# Marker extraction — all four markers use line-anchored grep (^Marker:)
+# to avoid matching the marker text in prose, code blocks, or comments.
 # ---------------------------------------------------------------------------
 
-# Check for QA-Waiver: line
+# Check for QA-Waiver: line (line-anchored)
 has_waiver=0
-case "$pr_body" in
-  *"QA-Waiver:"*) has_waiver=1 ;;
-esac
+if printf '%s' "$pr_body" | grep -qE '^QA-Waiver:'; then
+  has_waiver=1
+fi
 
 # Check for Duong-Sign-Off: <iso8601> line
 # Pattern: Duong-Sign-Off: YYYY-MM-DDTHH:MM:SSZ
@@ -116,7 +117,7 @@ if printf '%s' "$pr_body" | grep -qE '^Duong-Sign-Off: [0-9]{4}-[0-9]{2}-[0-9]{2
   has_duong_signoff=1
 fi
 
-# Check for QA-Report: line (non-empty)
+# Check for QA-Report: line (non-empty, line-anchored)
 has_qa_report=0
 _qa_report_val="$(printf '%s' "$pr_body" | grep -m1 '^QA-Report:' | sed 's/^QA-Report://' || true)"
 _qa_report_val="${_qa_report_val#"${_qa_report_val%%[![:space:]]*}"}"
@@ -125,7 +126,7 @@ if [ -n "$_qa_report_val" ]; then
   has_qa_report=1
 fi
 
-# Check for QA-Verification: line (non-empty — free-form per OQ#1b)
+# Check for QA-Verification: line (non-empty, line-anchored — free-form per OQ#1b)
 has_qa_verification=0
 _qa_verif_val="$(printf '%s' "$pr_body" | grep -m1 '^QA-Verification:' | sed 's/^QA-Verification://' || true)"
 _qa_verif_val="${_qa_verif_val#"${_qa_verif_val%%[![:space:]]*}"}"
@@ -134,11 +135,11 @@ if [ -n "$_qa_verif_val" ]; then
   has_qa_verification=1
 fi
 
-# Check for QA-Verification-Skipped: (with paired sign-off)
+# Check for QA-Verification-Skipped: (line-anchored, with paired sign-off)
 has_qa_verif_skipped=0
-case "$pr_body" in
-  *"QA-Verification-Skipped:"*) has_qa_verif_skipped=1 ;;
-esac
+if printf '%s' "$pr_body" | grep -qE '^QA-Verification-Skipped:'; then
+  has_qa_verif_skipped=1
+fi
 
 # ---------------------------------------------------------------------------
 # Waiver validation (shared path)
