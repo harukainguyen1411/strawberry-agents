@@ -250,7 +250,14 @@ The live schema (`agents/_state/migrations/0001-init.sql`) splits them:
 - **`agent TEXT NOT NULL`** — author of the learning. Any agent in the roster: a sub-agent like Vi, Talon, Senna, etc., or a coordinator authoring its own learning.
 - **`coordinator TEXT NOT NULL`** — the dispatching coordinator at the time the learning was written. Always `'evelynn'` or `'sona'`. For coordinator-authored learnings, `agent == coordinator`.
 
-This resolves the open question Lucian raised on PR #96 about what `coordinator` means when a sub-agent writes a learning: the sub-agent records *its own identity* in `agent` AND the dispatching coordinator's identity in `coordinator`. Helper-library write path (`db_write_tx` in `_lib_db.sh`) defaults `coordinator` to `$STRAWBERRY_COORDINATOR` (or equivalent) at insert; the dispatching coordinator's identity is plumbed into the sub-agent's environment at Agent-tool dispatch time.
+This resolves the open question Lucian raised on PR #96 about what `coordinator` means when a sub-agent writes a learning: the sub-agent records *its own identity* in `agent` AND the dispatching coordinator's identity in `coordinator`.
+
+**Write contract (system-level outcome — mechanism-agnostic):** every `learnings` row, every `sessions` row, and every authored-entity row generally MUST be inserted with a non-null `coordinator` value resolved to the dispatching coordinator's identity (`'evelynn'` or `'sona'`). The schema enforces non-null at the storage boundary; correct *value* selection is the caller's responsibility. How callers obtain that value is an implementation detail that may evolve:
+
+- **Currently shipped (PR #103 r3, `db-write-session.sh`, `db-write-learning.sh`):** callers pass `coordinator` as a positional argument. The lower-level `db_write_tx` in `_lib_db.sh` is a generic SQL wrapper and is not learnings-aware — no env defaulting at the library layer today.
+- **Reserved future option:** higher-level write helpers MAY adopt env-default behaviour (e.g. `COORDINATOR="${N:-${STRAWBERRY_COORDINATOR:-}}"`), with the dispatching coordinator's identity plumbed into the sub-agent's environment at Agent-tool dispatch time. This is a non-breaking enhancement — positional callers continue to work — and does not require an ADR amendment to adopt.
+
+The contract that matters across both the current and future shape is the same: dispatching coordinator's identity reaches the row, every time. Tightened by amendment 3 (2026-04-28) to match the shipped helper signature surfaced in Lucian's PR #103 r3 review — see §Amendment log.
 
 Query consequence: cross-coordinator views (which sub-agent has been most active under each coordinator? which coordinator owns which knowledge surface?) become trivial — `SELECT coordinator, agent, COUNT(*) FROM learnings GROUP BY coordinator, agent`. Without the column we'd have to back-derive the dispatcher from filesystem path conventions, which is exactly the brittleness the v2-readiness column was added to avoid.
 
@@ -522,6 +529,20 @@ Post-approval inline amendments to this ADR. Each entry: date, driver, change, l
 **No downstream task changes:** T2a (xfail) and T6b (skill integration) already cover the contracts in their live shape — this amendment makes the ADR catch up to the implementation, same pattern as the §D6.1 amendment above.
 
 **Re-author note (2026-04-28):** Original commit `8ef6bad1` was authored 2026-04-27 but became unreachable from origin/main following Ekko's history-rewrite session that scrubbed leaked secrets. Re-authored verbatim here. Original semantic intent and attribution preserved; SHA chain rebuilds from the post-rewrite main.
+
+### 2026-04-28 — §D3.1.a tighten: write contract is system-level, helper mechanism is implementation detail
+
+**Driver:** Lucian's PR #103 r3 review (commit `9dbe39d9`) flagged a NON-BLOCKING gap between §D3.1.a (just landed at amendment 2) and the shipped helper surface. The amendment-2 prose said: *"Helper-library write path (`db_write_tx` in `_lib_db.sh`) defaults `coordinator` to `$STRAWBERRY_COORDINATOR` (or equivalent) at insert."* Reality: the new helpers `db-write-session.sh` and `db-write-learning.sh` take `coordinator` as a positional arg from the caller; `db_write_tx` itself is a generic SQL wrapper, not learnings-aware, with no env defaulting. Functional contract held (every authored row carries the right coordinator because callers pass it), but the named *mechanism* in the ADR didn't literally exist.
+
+**Change:**
+- §D3.1.a — replaced the single mechanism-naming sentence with an explicit "Write contract" paragraph that states the system-level invariant (every authored row MUST carry a non-null `coordinator` resolved to the dispatching coordinator's identity), then enumerates two implementation shapes: (a) **currently shipped** = positional arg from caller (`db-write-session.sh`, `db-write-learning.sh` per PR #103 r3); (b) **reserved future option** = higher-level helpers MAY adopt env-default with `$STRAWBERRY_COORDINATOR` fallback as a non-breaking enhancement.
+- Closing line clarifies the contract is shape-invariant and points to this amendment row for traceability.
+
+**Locations touched in this file:** §D3.1.a (replaced one paragraph with a tightened multi-paragraph block); this Amendment log.
+
+**No downstream task changes:** PR #103 r3 functional contract already holds and Lucian APPROVED on that basis. This amendment is the spec-catches-up-to-shipped-code pass — same pattern as the §D6.1 amendment and amendment 2 (the §D3 schema sketch update). No follow-up Viktor commit required; the env-default fallback is reserved as an option, not a gap.
+
+**Re-author note (2026-04-28):** Original commit `b6ff1224` was authored 2026-04-27 but became unreachable from origin/main following Ekko's history-rewrite session. Re-authored verbatim here. Original semantic intent and attribution preserved.
 
 ---
 
