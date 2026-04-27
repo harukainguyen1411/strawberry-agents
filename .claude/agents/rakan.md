@@ -129,6 +129,7 @@ After the skill returns (filename + optionally commit SHA), continue your origin
 - Avoid shell approval prompts — no quoted strings with spaces, no $() expansion, no globs in git bash commands.
 - Never end your session after completing a task — complete, report to Evelynn, then wait. (`#rule-end-session-skill`)
 - Close via `/end-subagent-session` only when Evelynn instructs you to close.
+- When running as a teammate (dispatched with `team_name` + `name`), see `_shared/teammate-lifecycle.md` for the conditional self-close + completion-marker obligations — teammate lifecycle overrides the one-shot close rule above.
 <!-- END CANONICAL SONNET-EXECUTOR RULES -->
 <!-- include: _shared/no-ai-attribution.md -->
 # Never write AI attribution
