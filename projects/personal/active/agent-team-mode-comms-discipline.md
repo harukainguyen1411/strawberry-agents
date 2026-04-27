@@ -78,6 +78,18 @@ _(Running log — appended as project-level binding decisions are made.)_
   fixes the stale-task-already-done pattern (a teammate that completed prior work cannot
   silently swallow a late-arriving task — it must reply with the marker referencing the new
   task ID).
+- **2026-04-27 — PR #110 merged (T1–T10).** Merge commit `0737035b`. Karma plan at
+  `plans/in-progress/personal/2026-04-27-agent-team-mode-comms-discipline.md` shipped via
+  Talon (real teammate, eat-dogfood validation). Reviewers: Lucian COMMENT (mergeable +
+  follow-up required), Senna initial REQUEST-CHANGES → APPROVE after T9 dead-hook repair
+  commits `bbbba2d0` + `1b0b6df5`. T9 hook rewired from `PostToolUse:SendMessage` to
+  canonical `TeammateIdle` event with real `transcript_path` JSONL parsing.
+
+  Open follow-ups before project DoD:
+  - T11 e2e meta-spawn demo (deferred to Evelynn; 3 xfails awaiting flip).
+  - Senna two new IMPORTANT findings: (a) hook walks whole transcript, degrades to a
+    one-time check after first `task_done`; (b) transcript-parsing python heredoc has zero
+    real-path test coverage. Tracked as a separate Karma quick-lane plan.
 
 ## Out of scope
 
