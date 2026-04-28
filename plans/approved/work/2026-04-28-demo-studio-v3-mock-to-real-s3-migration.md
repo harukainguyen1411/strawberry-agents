@@ -90,18 +90,18 @@ The following surfaces presume the legacy `demo-factory` mock contract and are n
 
 ### D4 — New code introduced by Plan 1 (only on the new branch, not present anywhere on `feat/demo-studio-v3`)
 
-1. **`tools/demo-studio-v3/factory_client_v3.py`** — SSE client speaking to real `demo-studio-factory`. Contract:
-   - `POST <FACTORY_V3_BASE_URL>/build` with the session's resolved config payload.
-   - Receives an SSE stream of events. Event taxonomy honored: `step_start`, `step_complete`, `step_failed`, `build_complete`, `build_failed`, `error`. (Implementer confirms the event names against `tools/demo-studio-factory/` source on `origin/main` during xfail authoring; if the Go service uses different names, the client matches.)
-   - Translates each SSE event to S1's existing internal event schema so the cherry-picked progress-bar UI (ADR-1 / ADR-2 work, brought forward in §D2.1) consumes them without modification.
-   - Emits `build_complete` event to S1's session state machine; S3 itself triggers S4 (per project DoD step 9), so S1 does NOT initiate a verify call. S1 listens for S4's progress events via the same SSE channel S3 multiplexes them on, OR via a separate verify-progress channel — implementer confirms against S3's actual contract.
+1. **`tools/demo-studio-v3/factory_client_v3.py`** — SSE client speaking to real `demo-studio-factory`. Contract (canonicalized 2026-04-28 against `tools/demo-studio-factory/openapi.yaml` per Xayah's §Test Plan recon, superseding the original Plan 1 draft strings):
+   - `POST <FACTORY_V3_BASE_URL>/build` with body `{"sessionId": "<str>"}`. Real S3 fetches the resolved config from S2 itself given the sessionId — S1 does NOT inline the config. (S3's `/build-from-direct-config` variant accepts inline config; Plan 1 does not use it.)
+   - Receives an SSE stream of events. Canonical event taxonomy per openapi.yaml: `step_start`, `step_complete`, `step_error`, `build_complete`, `build_error`. (No `step_failed`, no `build_failed`, no generic `error` — those names from earlier drafts are wrong.) `build_complete` and `build_error` are terminal; the stream closes after either.
+   - Translates each SSE event to S1's existing internal event schema so the cherry-picked progress-bar UI (ADR-1 / ADR-2 work, brought forward in §D2.1) consumes them without modification. The translation layer must be audited during cherry-pick (T6) for stale `step_failed`/`build_failed`/`error` strings; any references are updated to the canonical names.
+   - On `build_complete`, S1's session state machine flips to `built`; S3 itself triggers S4 (per project DoD step 9), so S1 does NOT initiate a verify call. **Open question (deferred to follow-on plan if unresolved at impl time):** whether S4 progress is multiplexed onto the same SSE stream after `build_complete`, or surfaced via a separate verify-progress channel. openapi.yaml treats `build_complete` as terminal — pointing toward a separate channel — but the prod wiring is not yet confirmed. T9.0 reconnaissance resolves this; the verify-progress UI tests are gated on the resolution and may move out of Plan 1 scope.
 2. **`/session/{sid}/build` handler in `main.py`, replaced** — drives `factory_client_v3` instead of `factory_client_v2`. Auth: dual-auth (session cookie OR Firebase ID token) per PR #127. Idempotency: rejects with 409 if `lastBuildAt` < N seconds ago AND `status == "building"` (watchdog handles stale state — see §D4.3).
 3. **Stale-`lastBuildAt` watchdog** — the field is already written at `main.py:2562` on every `/build` call. Plan 1 makes it readable: a session whose `status == "building"` AND `lastBuildAt` more than a configurable timeout ago (default 15 minutes) is considered stale; on the next user action (`GET /session/{sid}` or attempted rebuild) the watchdog flips `status=failed` with `failure_reason="build_pipeline_timeout"` and allows the user to trigger a fresh build. Resolves the wedged-session class of bug seen in tonight's session `93ddfa6b…`.
 4. **Tests** — xfail-first per Rule 12, then de-xfailed by the impl pair-mate (Rakan, complex tier). Coverage:
    - Happy-path SSE handshake against a captured replay of `demo-studio-factory`'s stream (replay fixture lives under `tools/demo-studio-v3/tests/fixtures/`).
-   - `step_failed` event → session state `failed`, no further events processed.
-   - Factory-unreachable (connection refused, DNS failure) → 503 to client, session `failed`.
-   - Invalid request (missing `config`, malformed `session_id`) → 400 to client, session not transitioned.
+   - Terminal failure: `step_error` followed by `build_error` → session state `failed` exactly once, no further events processed after `build_error`.
+   - Factory-unreachable (connection refused, DNS failure, mid-stream disconnect, empty stream) → 503 to client, session `failed`.
+   - Invalid request (missing `sessionId`, malformed `sessionId`) → 400 to client, session not transitioned.
    - Watchdog stale-detect → status flips `building` → `failed` after N seconds; subsequent build attempt accepted.
    - Watchdog non-stale → in-flight build is not disturbed.
 
