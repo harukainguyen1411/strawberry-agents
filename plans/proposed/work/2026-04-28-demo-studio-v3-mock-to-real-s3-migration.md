@@ -10,7 +10,7 @@ tier: complex
 created: 2026-04-28
 last_reviewed: 2026-04-28
 qa_plan: required
-qa_co_author: akali
+qa_co_author: lulu
 tests_required: true
 architecture_impact: major
 ux_waiver: "Refactor — cherry-picked UI surfaces preserved unchanged; the change is a backend SSE-source switch (mock-factory sync JSON → real demo-studio-factory SSE). No visible design delta. UI surfaces (auth, default-config greeting, chat panel, preview iframe, deployBtn, build-progress bar) carry forward bit-for-bit from feat/demo-studio-v3."
