@@ -201,7 +201,9 @@ Reviewer (Senna code-quality + Lucian plan-fidelity) confirms via code-check; Ak
 - `projects/work/active/bring-demo-studio-live-e2e-v1.md` carries the one-line disposition note (§D6).
 - PR #32 is CLOSED (not MERGED) with a comment linking to Plan 1's PR.
 
-### Happy path (Akali Playwright RUNWAY — full DoD walk)
+### Happy path (user flow)
+
+Akali Playwright RUNWAY — full DoD walk.
 
 1. Akali signs in via Google (`@missmp.eu` test account); lands in studio shell. (DoD step 1)
 2. Akali clicks "New session"; lands in `/session/{sid}` with the seeded default config greeting and a live preview iframe attached. (DoD steps 2–3)
@@ -212,13 +214,32 @@ Reviewer (Senna code-quality + Lucian plan-fidelity) confirms via code-check; Ak
 7. Verify completes. Agent narrates the result, the project ID, and the demo link in chat. UI shows the demo link as a clickable element. (DoD step 11)
 8. Akali clicks the demo link; opens to a live, working demo URL backed by real Wallet Studio artifacts. (Validates that the URL is real, not a mock-invented placeholder.)
 
-### Failure-mode walk (smoke-shaped, not full Playwright)
+### Failure modes (what could break)
 
-These are exercised by Vi (test execution) against a stg deploy before the prod cutover:
+Smoke-shaped, not full Playwright. Exercised by Vi (test execution) against a stg deploy before the prod cutover:
 
 - Factory unreachable: stg `FACTORY_V3_BASE_URL` temporarily pointed at a 127.0.0.1:nonexistent. Click deployBtn → red error toast within ~2s; session state is `failed`, not stuck `building`.
 - Factory rejects request (synthesized 400 from a stub): UI shows the structured error; session state `failed`.
 - Watchdog: a session is poked into `status=building, lastBuildAt=<now-30min>` via a debug endpoint; next `GET /session/{sid}` flips it to `failed` and allows a fresh build trigger.
+
+### QA artifacts expected
+
+The PR body must carry the following markers, each pointing at a real artifact:
+
+- `QA-Report: assessments/qa-reports/2026-04-28-demo-studio-v3-mock-to-real-s3-migration.md` — Akali's full Playwright RUNWAY narrative with per-screenshot observations (what was checked, observed vs expected, pass/fail) for every step of the §Happy path (user flow) above. Required by Rule 16.
+- `Visual-Diff: <screenshots-directory or none>` — the cherry-picked UI surfaces are bit-for-bit per `ux_waiver`; if Akali's RUNWAY confirms zero visual delta against a baseline screenshot capture from `feat/demo-studio-v3` qa-adr2-c (or equivalent), the value is `none — refactor with no visible delta confirmed`. If any visual delta IS observed, the marker points at a side-by-side comparison.
+- `Accessibility-Check: <command-or-tool-output>` — axe-core run against the staged S1 sign-in page and session shell post-deploy; no new violations vs. baseline. Output captured as part of the QA report.
+- `Design-Spec: ux_waiver` — frontmatter-declared UX-Waiver lifts the §UX Spec requirement; this marker points at the waiver line.
+
+Akali's deliverable (the Playwright run video + screenshot narrative) lives under `assessments/qa-reports/`. The video file pairs with the markdown report (same slug, `.mp4` extension).
+
+The stg-deploy smoke evidence (per Rule 17) comprises:
+
+- Cloud Run inbound-traffic log line on `demo-studio-factory` confirming the first SSE request from `demo-studio` (S1) — captured from `gcloud run services logs read demo-studio-factory --region=europe-west1 --limit=50` immediately after Akali's stg run.
+- Stg `/build` SSE stream capture (curl -N output) showing the canonical event taxonomy.
+- Watchdog smoke log: a synthesized stale-`lastBuildAt` session flipping `building → failed` after the configured timeout.
+
+The prod-deploy smoke evidence (also per Rule 17) is one Akali pass against prod after the stg run is green; produces an additional QA report under the same `assessments/qa-reports/` slug suffixed `-prod`. Failure on prod triggers `scripts/deploy/rollback.sh` per Rule 17 and a follow-up incident plan.
 
 ### Non-UI verification
 
