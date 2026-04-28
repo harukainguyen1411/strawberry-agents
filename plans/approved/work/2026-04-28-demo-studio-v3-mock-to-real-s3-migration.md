@@ -3,7 +3,7 @@ slug: demo-studio-v3-mock-to-real-s3-migration
 title: "Demo Studio v3 — migrate S1 from mock-factory to real S3 on a fresh branch off main"
 project: bring-demo-studio-live-e2e-v1
 concern: work
-status: proposed
+status: approved
 owner: swain
 priority: P0
 tier: complex
@@ -281,3 +281,10 @@ The above is authorship guidance only — Sona makes the actual delegation calls
 ## Approval gate
 
 This plan moves from `plans/proposed/work/` → `plans/approved/work/` via Orianna once Duong approves. Promotion is a single Orianna invocation; no other agent moves the file.
+
+## Orianna approval
+
+- **Date:** 2026-04-28
+- **Agent:** Orianna
+- **Transition:** proposed → approved
+- **Rationale:** Structural gates (qa_plan frontmatter, qa_plan body sub-headings, §UX Spec linter with valid `ux_waiver`) all pass on pass 3. Plan has clear owner (swain), explicit cherry-pick set (§D2) and drop-set (§D3), strictly-new code enumerated (§D4) with xfail-first commitment per Rule 12, explicit PR #32 disposition (§D6), and concrete §QA Plan covering happy-path Playwright RUNWAY, failure-mode smoke, and the full Rule-17 stg+prod evidence chain. Risks honestly flag the empirical unknowns of first-prod real-S3 invocation. Tasks T1–T18 are actionable.
