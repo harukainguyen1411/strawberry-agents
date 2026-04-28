@@ -339,6 +339,180 @@ The prod-deploy smoke evidence (also per Rule 17) is one Akali pass against prod
 - `curl -N <stg S1>/session/<test-sid>/build` against a test session: receives an SSE stream with the expected event taxonomy (`step_start`, `step_complete`, ..., `build_complete`).
 - Cloud Run logs on `demo-studio-factory` show inbound traffic from `demo-studio` (S1) for the first time in production.
 
+## Test plan
+
+Authored by Xayah (complex-track resilience / fault-injection planner). Executed by Rakan (xfail authoring) against the new branch from §D1. All xfail commits land **before** the paired Viktor impl commit on the same branch, per Rule 12. Pair-mate commit ordering is called out per task in DoD.
+
+### Scope and proportionality
+
+Plan 1 is scoped to happy-path real-S3 (§D5). The fault-injection coverage below is the **floor** for the complex-track tier — it covers the four classes of failure that *must* hold before any S1 user clicks deployBtn against the real Go service for the first time in production:
+
+1. **Contract conformance** — the client correctly parses the canonical SSE event taxonomy emitted by `demo-studio-factory` source (not the names assumed in §D4.1). Establishes the basis on which all other failure tests are written.
+2. **Terminal-error handling** — the two terminal failure events (`step_error`+`build_error`) flip the session to `failed` exactly once and stop processing further bytes.
+3. **Transport failure** — the four ways an SSE connection can fail outside the protocol (DNS, refused, mid-stream close, truncation without terminal event) all land the session in `failed`, never wedged in `building`.
+4. **Watchdog liveness** — the stale-`lastBuildAt` flip is the only mechanism that can recover a session whose build process died without emitting any signal. The watchdog tests are non-negotiable; without them, a transport-failure escape that bypasses (3) silently wedges the user.
+
+Coverage that is **explicitly out of scope** for Plan 1 (per §D5): retry counts, exponential backoff curves, mid-stream-disconnect *recovery* (vs. clean failure), keep-alive interval tuning, telemetry/metrics emission, multi-tenant fairness, partial-failure rollback semantics. Tests for these are deferred to the follow-on plan referenced in §D5. Rakan does **not** author xfails for this deferred set.
+
+### Pre-requisite — confirm the real SSE event taxonomy from source
+
+The plan in §D4.1 lists the event taxonomy as `step_start`, `step_complete`, `step_failed`, `build_complete`, `build_failed`, `error`. **The real `demo-studio-factory` service uses different names** — confirmed by reading `tools/demo-studio-factory/openapi.yaml` (sibling repo `~/Documents/Work/mmp/workspace/company-os-w3-impl/tools/demo-studio-factory/`). The canonical names per source are:
+
+| Event | Terminal? | Payload (per openapi.yaml §POST /build response 200) |
+|-------|-----------|-------------------------------------------------------|
+| `step_start` | no | `{"step": <int>, "totalSteps": 10, "name": "<step_name>"}` |
+| `step_complete` | no | `{"step": <int>, "name": "<step_name>", "duration_ms": <int>}` |
+| `step_error` | no — always followed by `build_error` | `{"step": <int>, "name": "<step_name>", "error": {"code": "BUILD_FAILED", "message": "<str>"}}` |
+| `build_complete` | yes (stream closes) | `{"sessionId": "<str>", "projectId": <int>, "projectUrl": "<url>", "demoUrl": "<url>", "passUrls": {"apple": "<url>", "google": "<url>"}}` |
+| `build_error` | yes (stream closes; project archived before emission) | `{"failedStep": <int>, "failedStepName": "<step_name>", "projectId": <int>, "archived": true, "error": {"code": "<code>", "message": "<str>"}}` |
+
+The `error` event in §D4.1 does not exist in the source. The names `step_failed` / `build_failed` from §D4.1 are wrong; the real names are `step_error` / `build_error`. **All test fixtures and `factory_client_v3` parser code use the real names.** Rakan's first task (T9.0 below) is to re-confirm this by re-reading the openapi.yaml on `origin/main` of the sibling repo at xfail-authoring time (in case the contract changed between this plan's authoring and impl); if any names disagree, Rakan flags to Sona for a plan-amendment pass before T9.1.
+
+Additional contract details that the test plan assumes (also confirmed from openapi.yaml, §POST /build):
+
+- **Request envelope** is `{"sessionId": "<str>"}` — NOT `{"config": {...}}` as one might infer from §D4.1's "session's resolved config payload" phrasing. Real S3 fetches the resolved config from S2 (Config Mgmt) itself, given only the sessionId. This is a **plan-impl mismatch** Rakan flags to Sona during T9.0 — the impl in T10 must send `sessionId`, not `config`. Tests assert the request body shape.
+- **Auth** is `Authorization: Bearer <DS_CONFIG_MGMT_TOKEN>`. Tests cover the unauthenticated 401 case.
+- **501 `NOT_CONFIGURED`** is returned when S3's S2 wiring is missing. This shouldn't fire in stg/prod but the client MUST handle it as a failure (not a retryable state).
+- **502 `CONFIG_FETCH_FAILED`** is returned when S3 cannot reach S2. From S1's perspective this is indistinguishable from any other upstream failure — session goes to `failed`.
+
+### Surface map — what each test file owns
+
+Three new test files are added on the new branch under `tools/demo-studio-v3/tests/`. Each is owned by a specific surface and lists xfail-marked tests that pair 1:1 with Viktor impl tasks:
+
+- **`test_factory_client_v3.py`** — the SSE client itself: parser, transport, error-translation. Pairs with §Tasks T10.
+- **`test_build_handler_v3.py`** — the `/session/{sid}/build` route handler: auth, request validation, idempotency, session-state transitions, response envelope. Pairs with §Tasks T11.
+- **`test_lastbuildat_watchdog.py`** — the watchdog logic on `GET /session/{sid}` and `/build`. Pairs with §Tasks T12.
+
+A fourth artifact directory holds replay fixtures consumed by all three test files:
+
+- **`tools/demo-studio-v3/tests/fixtures/factory_v3_sse_replay/`** — captured-and-trimmed SSE byte streams. Captured via `curl -N -H 'Authorization: Bearer ...' <stg-factory-url>/build-from-direct-config?sessionId=test-replay-001 -d @<fixture-config>.json > happy_path.txt` against the stg deploy of `demo-studio-factory`. Synthetic-but-realistic byte streams (with hand-edited terminal events) are used for the `step_error` and `build_error` cases since those require provoking real failures upstream.
+
+### Test tasks (resilience / fault-injection layer for §D4.4)
+
+Each task is an xfail-first commit. The xfail commit lands on the new branch from §D1 **before** the paired Viktor impl commit. `parallel_slice_candidate` is set per the slicing rule in `agents/xayah/CLAUDE.md`. Files: paths relative to repo root.
+
+#### T9.0 — Confirm SSE event taxonomy from `demo-studio-factory` source
+
+- [ ] **T9.0** — Re-read `~/Documents/Work/mmp/workspace/company-os-w3-impl/tools/demo-studio-factory/openapi.yaml` on `origin/main` HEAD. Diff its event taxonomy against the table in §Test plan above. estimate_minutes: 15. Files: (read-only — no commit). DoD: (a) Confirm event names `step_start`, `step_complete`, `step_error`, `build_complete`, `build_error` are still canonical. (b) Confirm `/build` request body is `{"sessionId": "<str>"}`. (c) If any name or shape differs, Rakan posts to `agents/sona/inbox/` with a flag and waits for Sona's go/no-go before continuing T9.1+. (d) Otherwise, log "taxonomy-confirmed-<git-sha-of-openapi.yaml>" in Rakan's session memory and proceed. parallel_slice_candidate: no.
+
+#### T9.1 — Capture happy-path SSE replay fixture
+
+- [ ] **T9.1** — Capture a real happy-path SSE stream from stg `demo-studio-factory` against a small `direct-config` fixture (single template, single language). estimate_minutes: 30. Files: `tools/demo-studio-v3/tests/fixtures/factory_v3_sse_replay/happy_path.txt`, `tools/demo-studio-v3/tests/fixtures/factory_v3_sse_replay/happy_path_config.json`, `tools/demo-studio-v3/tests/fixtures/factory_v3_sse_replay/README.md`. DoD: (a) `happy_path.txt` is the verbatim `curl -N` output of a successful build, with all 10 `step_start`+`step_complete` pairs and a terminal `build_complete`. (b) `README.md` documents the capture command, stg revision SHA, and date. (c) Sensitive values (auth tokens, real projectIds) scrubbed; replace with placeholders `__REDACTED__`. (d) Committed before T9.2 since downstream fixtures derive from this byte stream. parallel_slice_candidate: wait-bound (capture is bounded by real build duration ~minutes).
+
+#### T9.2 — Synthesize failure-mode replay fixtures
+
+- [ ] **T9.2** — Hand-edit copies of `happy_path.txt` to produce three failure-mode byte streams. estimate_minutes: 30. Files: `tools/demo-studio-v3/tests/fixtures/factory_v3_sse_replay/step_error_then_build_error.txt`, `.../truncated_after_step_3.txt`, `.../empty_stream.txt`. DoD: (a) `step_error_then_build_error.txt` truncates at step 4, emits a `step_error` event with `{"step":4, "name":"build_ios_template", "error":{"code":"BUILD_FAILED", "message":"validate ios template: missing translation key"}}`, then a terminal `build_error` event with `archived: true`. (b) `truncated_after_step_3.txt` ends abruptly mid-byte after `step_complete` for step 3 — no terminal event. (c) `empty_stream.txt` is a 0-byte file (server returned 200 but emitted nothing before disconnect). parallel_slice_candidate: no.
+
+#### T9.3 — xfail: happy-path SSE handshake against replay fixture (pairs with T10)
+
+- [ ] **T9.3** — Add xfail test `test_happy_path_replay_drives_session_to_built` covering parse-and-translate of every event in `happy_path.txt`. estimate_minutes: 45. Files: `tools/demo-studio-v3/tests/test_factory_client_v3.py`. DoD: (a) Test loads `happy_path.txt`, feeds bytes through `factory_client_v3.parse_stream()`, asserts each emitted internal event matches expected step name + duration. (b) Asserts the terminal `build_complete` translates to a session-state transition `building → built` with `projectId`, `demoUrl`, `passUrls.apple`, `passUrls.google` populated. (c) Marked `@pytest.mark.xfail(reason="factory_client_v3 not yet implemented", strict=True)`. (d) Committed before T10 per Rule 12. parallel_slice_candidate: yes.
+
+#### T9.4 — xfail: terminal step_error + build_error → session failed (pairs with T10)
+
+- [ ] **T9.4** — Add xfail test `test_step_error_then_build_error_flips_session_to_failed`. estimate_minutes: 35. Files: `tools/demo-studio-v3/tests/test_factory_client_v3.py`. DoD: (a) Test feeds `step_error_then_build_error.txt` through the client. (b) Asserts session state transitions `building → failed` exactly once. (c) Asserts `failure_reason` equals `"step_error: build_ios_template: BUILD_FAILED"` (or whatever canonical shape the impl chooses — Rakan picks a shape, Viktor implements to match). (d) Asserts no internal event is emitted after the `build_error` (parser stops reading; even if more bytes follow, they are discarded). (e) xfail until T10. Committed before T10 per Rule 12. parallel_slice_candidate: yes.
+
+#### T9.5 — xfail: factory unreachable (connection refused, DNS failure) → 503 + session failed (pairs with T11)
+
+- [ ] **T9.5** — Add xfail test `test_factory_unreachable_returns_503_and_fails_session`. estimate_minutes: 40. Files: `tools/demo-studio-v3/tests/test_build_handler_v3.py`. DoD: (a) Two parametrized cases: (i) `FACTORY_V3_BASE_URL` points at `http://127.0.0.1:1` (connection refused), (ii) `FACTORY_V3_BASE_URL` points at `http://nonexistent-host-deadbeef.invalid` (DNS NXDOMAIN). (b) `POST /session/{sid}/build` returns HTTP 503 to the client within ~2s (assert `response.elapsed < 5s` to catch hangs). (c) Session state is `failed`, `failure_reason` ∈ {`"factory_unreachable"`, `"factory_dns_failure"`}. (d) Response body contains a structured error envelope (shape decided by Viktor in T11). (e) xfail until T11. Committed before T11 per Rule 12. parallel_slice_candidate: yes.
+
+#### T9.6 — xfail: mid-stream SSE disconnect / truncation → session failed cleanly (pairs with T10/T11)
+
+- [ ] **T9.6** — Add xfail test `test_mid_stream_truncation_does_not_wedge_session`. estimate_minutes: 50. Files: `tools/demo-studio-v3/tests/test_factory_client_v3.py`. DoD: (a) Use a local fake SSE server (pytest fixture, `aiohttp.test_utils` or equivalent) that emits the bytes of `truncated_after_step_3.txt` then closes the TCP connection without flushing a terminal event. (b) Client detects the close-without-terminal condition and raises a typed exception (e.g. `FactoryStreamTruncatedError`). (c) Handler catches the exception, transitions session to `failed`, `failure_reason="factory_stream_truncated"`. (d) Assert session is **never** observed in `building` state after the disconnect (poll session state for 2s post-disconnect; must be `failed` within that window). (e) Also covers the `empty_stream.txt` case — server returns 200 with 0 bytes, client raises `FactoryStreamEmptyError`, session → `failed`. (f) xfail until T10 + T11 both land. Committed before whichever lands first per Rule 12. parallel_slice_candidate: yes.
+
+#### T9.7 — xfail: invalid request envelope → 400, session not transitioned (pairs with T11)
+
+- [ ] **T9.7** — Add xfail test `test_invalid_request_envelope_returns_400_no_transition`. estimate_minutes: 30. Files: `tools/demo-studio-v3/tests/test_build_handler_v3.py`. DoD: Three parametrized cases — (i) empty body, (ii) malformed `session_id` (e.g. contains `/`), (iii) session_id refers to a session whose config has never been saved (no S2 record). (a) Each returns HTTP 400 with a structured error code (`MISSING_BODY`, `INVALID_SESSION_ID`, `NO_CONFIG_FOR_SESSION` respectively — Viktor picks final names). (b) Critically: session state in S1 is **NOT** transitioned — if it was `idle` before the call it remains `idle`; `lastBuildAt` is **not** written. (c) Assert no SSE connection to S3 was opened (use a counting mock client; `mock.call_count == 0`). (d) xfail until T11. Committed before T11. parallel_slice_candidate: yes.
+
+#### T9.8 — xfail: factory returns 4xx/5xx pre-stream → session failed (pairs with T11)
+
+- [ ] **T9.8** — Add xfail test `test_factory_pre_stream_error_responses_fail_session`. estimate_minutes: 35. Files: `tools/demo-studio-v3/tests/test_build_handler_v3.py`. DoD: Five parametrized cases against a fake S3 that returns the response code synchronously without opening a stream — (i) 400 `INVALID_REQUEST`, (ii) 400 `INVALID_CONFIG`, (iii) 401 `UNAUTHORIZED` (auth misconfigured), (iv) 501 `NOT_CONFIGURED`, (v) 502 `CONFIG_FETCH_FAILED`. (a) For each, S1 session goes to `failed` with `failure_reason` carrying the upstream code. (b) S1 returns 502 to the user (the upstream's status is internal; user sees a "factory error" envelope). (c) Note: this is **not** retry — Plan 1 is happy-path-only per §D5. The client surfaces the failure cleanly; retry policy is the follow-on plan's job. (d) xfail until T11. Committed before T11. parallel_slice_candidate: yes.
+
+#### T9.9 — xfail: watchdog stale-detect flips building → failed and accepts fresh build (pairs with T12)
+
+- [ ] **T9.9** — Add xfail test `test_watchdog_stale_session_flips_to_failed_and_accepts_rebuild`. estimate_minutes: 40. Files: `tools/demo-studio-v3/tests/test_lastbuildat_watchdog.py`. DoD: (a) Seed a session with `status="building"` and `lastBuildAt = now - (configured_timeout + 60s)`. (b) Call `GET /session/{sid}` — assert response carries `status="failed"`, `failure_reason="build_pipeline_timeout"`. (c) Assert the session record in store has been mutated (not just the response) — re-fetch directly via store API confirms `status==failed`. (d) Issue `POST /session/{sid}/build` immediately after — assert it is accepted (200/202), not rejected with 409. (e) Watchdog timeout configurable via env var (`FACTORY_V3_WATCHDOG_TIMEOUT_SECONDS`, default 900); test parametrizes on a 60s timeout for speed. (f) xfail until T12. Committed before T12. parallel_slice_candidate: yes.
+
+#### T9.10 — xfail: watchdog non-stale leaves in-flight build undisturbed (pairs with T12)
+
+- [ ] **T9.10** — Add xfail test `test_watchdog_non_stale_does_not_disturb_in_flight_build`. estimate_minutes: 30. Files: `tools/demo-studio-v3/tests/test_lastbuildat_watchdog.py`. DoD: (a) Seed a session with `status="building"` and `lastBuildAt = now - 30s` (well under the 60s test timeout). (b) Call `GET /session/{sid}` — assert response carries `status="building"`, `failure_reason` absent. (c) Assert the session record is **not** mutated (re-fetch confirms `status==building`, `lastBuildAt` unchanged within 1s tolerance). (d) Issue `POST /session/{sid}/build` — assert it is rejected with HTTP 409 `BUILD_IN_PROGRESS` (per §D4.2 idempotency). (e) xfail until T12. Committed before T12. parallel_slice_candidate: yes.
+
+#### T9.11 — xfail: idempotency under rapid double-click (pairs with T11)
+
+- [ ] **T9.11** — Add xfail test `test_rapid_double_build_second_call_returns_409`. estimate_minutes: 30. Files: `tools/demo-studio-v3/tests/test_build_handler_v3.py`. DoD: (a) Call `POST /session/{sid}/build` twice in quick succession (second call within 1s of the first, both before any SSE events arrive). (b) Assert first call returns 200/202 and opens an SSE stream. (c) Assert second call returns HTTP 409 with `error.code = "BUILD_IN_PROGRESS"` and does NOT open a second SSE stream to S3 (counting mock confirms `S3.build_call_count == 1`). (d) Models the deployBtn-double-click case which today's mock-factory tolerated invisibly. (e) xfail until T11. Committed before T11. parallel_slice_candidate: yes.
+
+#### T9.12 — xfail: auth — unauthenticated /build is rejected pre-stream (pairs with T11)
+
+- [ ] **T9.12** — Add xfail test `test_unauthenticated_build_rejected_before_factory_call`. estimate_minutes: 25. Files: `tools/demo-studio-v3/tests/test_build_handler_v3.py`. DoD: (a) Call `POST /session/{sid}/build` with neither a valid session cookie nor a Firebase ID token. (b) Assert HTTP 401 returned. (c) Assert no S3 call was made (counting mock `call_count == 0`). (d) Assert session state untouched. (e) xfail until T11 (T11 cherry-picks the dual-auth wiring from §D2.4 / PR #127, then plumbs it). parallel_slice_candidate: yes.
+
+#### T9.13 — Audit: sweep for missing-coverage gaps after impl green
+
+- [ ] **T9.13** — After Viktor's T10/T11/T12 land and all xfails de-xfail, Rakan re-reads the test files and the impl to flag any uncovered branch. estimate_minutes: 45. Files: (read-only audit; output is a comment trail or follow-on issue, not new tests). DoD: (a) Walk `factory_client_v3.py`, `main.py` `/build` handler, and watchdog code paths line-by-line. (b) For each conditional, confirm at least one test exercises both branches OR document the unexercised branch as a known follow-on plan item (with rationale). (c) Output: PR comment on Plan 1's PR titled "Coverage audit — Xayah/Rakan complex-track" linking each conditional to its test or to a follow-on item. (d) Does NOT block PR merge — informational signal for reviewers and the follow-on plan. parallel_slice_candidate: no.
+
+### Coverage matrix
+
+| Failure class | Test task(s) | Assertion floor |
+|---------------|--------------|-----------------|
+| Happy path conformance | T9.3 | All 10 steps + terminal `build_complete` parsed; session reaches `built` with all artifact URLs populated |
+| Terminal protocol failure (`step_error` + `build_error`) | T9.4 | Session → `failed` once, no events processed after `build_error` |
+| Transport — connection refused / DNS | T9.5 | 503 to client < 5s; session → `failed`; `failure_reason` distinguishes refused vs DNS |
+| Transport — mid-stream truncation / empty stream | T9.6 | Client raises typed exception; session → `failed`; never wedged in `building` |
+| Request validation (envelope, session_id, no config) | T9.7 | 400 to client; session NOT transitioned; no S3 call made |
+| Pre-stream upstream errors (S3 4xx/5xx) | T9.8 | Session → `failed` with upstream code in `failure_reason`; user sees 502 |
+| Watchdog — stale flip + recovery | T9.9 | `building → failed` after timeout; subsequent build accepted |
+| Watchdog — non-stale safety | T9.10 | In-flight build undisturbed; concurrent build attempt → 409 |
+| Idempotency — double-click | T9.11 | Second call → 409; only one S3 stream opened |
+| Auth — unauthenticated | T9.12 | 401 returned; no S3 call; session untouched |
+| Coverage audit | T9.13 | Every conditional in new code is covered or explicitly deferred |
+
+### Hand-off contract to Rakan
+
+Rakan executes T9.0 through T9.12 in commit order. The recommended commit-graph shape on the new branch from §D1, woven with Viktor's impl tasks:
+
+```
+... (cherry-picks T2..T8 land first) ...
+T9.0 (no commit — confirmation only; or a `chore: confirm factory SSE taxonomy from origin/main` note commit if desired)
+T9.1 (chore: capture factory v3 happy-path SSE replay fixture)
+T9.2 (chore: synthesize factory v3 failure-mode SSE fixtures)
+T9.3 (test: xfail factory_client_v3 happy-path replay)
+T9.4 (test: xfail factory_client_v3 step_error then build_error)
+T9.6 (test: xfail factory_client_v3 mid-stream truncation)         ← split: client-side cases land before T10
+T10  (feat: implement factory_client_v3 against real S3 SSE)        ← Viktor; de-xfails T9.3, T9.4, T9.6 client-side cases
+T9.5 (test: xfail build handler factory unreachable)
+T9.6 (already committed; de-xfail completes after T11 lands)
+T9.7 (test: xfail build handler invalid request envelope)
+T9.8 (test: xfail build handler factory pre-stream errors)
+T9.11 (test: xfail build handler rapid double-click idempotency)
+T9.12 (test: xfail build handler unauthenticated)
+T11  (feat: replace /build handler to drive factory_client_v3)      ← Viktor; de-xfails T9.5, T9.6 handler-side, T9.7, T9.8, T9.11, T9.12
+T9.9 (test: xfail watchdog stale flip)
+T9.10 (test: xfail watchdog non-stale safety)
+T12  (feat: implement lastBuildAt watchdog)                          ← Viktor; de-xfails T9.9, T9.10
+T13  (deploy manifest)
+T14  (project doc one-liner)
+T9.13 (audit — comment on PR; does not block merge)
+T15..T18 (QA, review, merge, close PR #32)
+```
+
+T9.6 spans both T10 and T11; commit it once (before T10) but its `strict=True` xfail flips green only after T11 lands as well. If pytest's xfail strictness errors at T10's de-xfail attempt because T9.6's handler-path is still red, Rakan splits T9.6 into T9.6a (client-side, lands before T10) and T9.6b (handler-side, lands before T11).
+
+### Plan-impl mismatches Rakan flags during T9.0
+
+These are not test-plan tasks; they are **flags Rakan posts to Sona's inbox** so Sona can re-route to Aphelios for a §D4 amendment if needed:
+
+1. **Event names.** §D4.1 says `step_failed` / `build_failed` / `error`. Source says `step_error` / `build_error`; no `error` event exists. Impact: `factory_client_v3` parser must use the real names; the v3 progress-bar UI translation layer (cherry-picked from ADR-1/ADR-2) may already use the wrong names if the cherry-picked code reused §D4.1's strings.
+2. **Request body shape.** §D4.1 says "session's resolved config payload"; openapi.yaml says `{"sessionId": "<str>"}`. Impact: `factory_client_v3.build()` sends sessionId only — the real S3 fetches the config from S2 itself. (`/build-from-direct-config` accepts inline JSON, but Plan 1 uses `/build`.)
+3. **S3 → S4 trigger channel.** §D4.1 says "S1 listens for S4's progress events via the same SSE channel S3 multiplexes them on, OR via a separate verify-progress channel". The openapi.yaml does not document S4 events on the S3 stream — `build_complete` is terminal. **This may mean S3 does NOT multiplex S4 progress.** Rakan flags this open question to Sona; resolution may require either reading more S3 source (e.g. `pkg/logic/`) or talking to Heimerdinger/Ekko about how the S3→S4 hop is wired in the deployed Cloud Run revision. Tests for the S3→S4 progress UI are explicitly **deferred** to the follow-on plan if this remains unresolved at impl time.
+
+### Out-of-scope (deferred to follow-on plan per §D5)
+
+The following coverage is intentionally **not** authored by Rakan in Plan 1; tests for these are reserved for the follow-on plan informed by real-traffic empirical data:
+
+- Retry on transient SSE disconnect (Plan 1 fails cleanly; retry is follow-on).
+- Recovery from partial step failures (e.g. step 8 fails after step 7 succeeded — does the project get cleaned up server-side? Plan 1 trusts S3's `archived: true` flag in `build_error`).
+- Telemetry / metrics emission (no Prometheus, no structured logs assertions).
+- Concurrent multi-session fairness (single-user constraint per parent project).
+- SSE keep-alive interval tuning (real builds take minutes; if S1's HTTP client times out reading idle stream, that's a follow-on tune).
+- Schema-version skew between S1's local schema cache and S2's live `/v1/schema` (`config_mgmt_client.py` cherry-picked tests cover this within their own surface; not a `factory_client_v3` concern).
+
 ## Risks
 
 - **Real S3 contract drift.** The Go `demo-studio-factory` service has never been exercised from prod. Its SSE event names, payload shapes, and error envelopes may differ from what the implementer infers from source. Mitigation: implementer reads `tools/demo-studio-factory/` source on origin/main during T9 xfail authoring; tests use replay fixtures captured from a stg invocation, not invented payloads.
