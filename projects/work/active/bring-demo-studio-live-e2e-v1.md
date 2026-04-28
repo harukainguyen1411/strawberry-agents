@@ -54,6 +54,10 @@ The DoD is met when Duong runs the above flow on prod once successfully and Akal
 
 ## Decisions
 
+### 2026-04-28 — Plan 1 wired (mock-to-real-S3 migration)
+
+`plans/approved/work/2026-04-28-demo-studio-v3-mock-to-real-s3-migration.md` is now implemented and in review. PR #134 (`feat/demo-studio-v3-clean`) is the merge target. Plan 1 supersedes the prior "PR #32 stays open" framing below: PR #32 closes without merge once PR #134 lands. The new branch carries all real subsystems from `feat/demo-studio-v3` (cherry-picked) plus `factory_client_v3` (real SSE client against `demo-studio-factory` Go service) as new code. The ADR sequencing below applies to ADRs 1–5 which were already implemented on the cherry-picked path; Plan 1 is the migration vehicle that brings them to `main` cleanly.
+
 ### 2026-04-27 — ADR sequencing
 
 ADRs land in this order (Duong, 2026-04-27). Each is a separate ADR with its own plan, breakdown, test plan, and qa_plan. PR target stays `feat/demo-studio-v3`; PR #32 stays open and merges into `main` last, after all DoD steps green on the feat branch.
