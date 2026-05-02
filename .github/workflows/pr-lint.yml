@@ -17,7 +17,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo (for helper script)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Scan PR body for AI attribution markers
         if: github.event_name == 'pull_request'
@@ -123,7 +123,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo (for helper script)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Run QA verification marker check
         env:
@@ -151,7 +151,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repo (for lint script)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Extract changed files
         id: changed
